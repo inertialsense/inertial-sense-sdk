@@ -213,7 +213,7 @@ public:
 
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds,
             ISBootloader::pfnBootloadProgress uploadProgress, ISBootloader::pfnBootloadProgress verifyProgress, ISBootloader::pfnBootloadStatus infoProgress, void (*waitAction)()
-    );
+);
 
     bool fwUpdateInProgress();
     bool fwUpdate();

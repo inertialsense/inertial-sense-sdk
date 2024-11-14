@@ -126,7 +126,7 @@ class cDataType:
         self.dtype = dtype
 
 
-#     def nameID(self, did, name ):
+#     def nameID(self, did, name):
 #         self.id = did
 #         self.name = name
 #
@@ -440,12 +440,12 @@ class cDevice:
 
         self.di[21].set('gps1RtkPosRel', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
-            ('timeOfWeekMs', u32 ),
-            ('differentialAge', f32 ),
-            ('arRatio', f32 ),
+            ('timeOfWeekMs', u32),
+            ('differentialAge', f32),
+            ('arRatio', f32),
             ('vectorToBase', (f32, 3)),
-            ('distanceToBase', f32 ),
-            ('headingToBase', f32 ),
+            ('distanceToBase', f32),
+            ('headingToBase', f32),
         ]))
 
         self.di[22].set('gps1RtkPosMisc', np.dtype([
@@ -587,12 +587,12 @@ class cDevice:
 
         self.di[55].set('gps1RtkCmpRel', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
-            ('timeOfWeekMs', u32 ),
-            ('differentialAge', f32 ),
-            ('arRatio', f32 ),
+            ('timeOfWeekMs', u32),
+            ('differentialAge', f32),
+            ('arRatio', f32),
             ('vectorToBase', (f32, 3)),
-            ('distanceToBase', f32 ),
-            ('headingToBase', f32 ),
+            ('distanceToBase', f32),
+            ('headingToBase', f32),
         ]))
 
         self.di[56].set('gpsVersion', np.dtype([
@@ -832,7 +832,7 @@ class cDevice:
                 count = cHdr['dataSize']
 
                 if np.shape(cHdr)[0] == 0 or cHdr['marker'][0] != 0xFC05EA32:
-                    #                     print( "Done parsing data!" )
+                    #                     print("Done parsing data!")
                     break
 
                 # Read chunk sub header
@@ -842,7 +842,7 @@ class cDevice:
                 did = sHdr['dHdr']['id'][0]
                 dsize = sHdr['dHdr']['size'][0]
                 #                 if did == 6:
-                #                     print( "DID: ",did )
+                #                     print("DID: ",did)
                 if did >= self.DID_COUNT:
                     if did not in self.unknownDidDisplayed.keys():
                         self.unknownDidDisplayed[did] = True

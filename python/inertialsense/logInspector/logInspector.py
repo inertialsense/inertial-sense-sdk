@@ -48,7 +48,7 @@ def cleanFolder(path, toplevel=True):
 
     for fname in os.listdir(path):
         fpath = os.path.join(path, fname)
-        if os.path.isdir( fpath ):
+        if os.path.isdir(fpath):
             if fname == 'post_processed':
                 removeDirectory(fpath)
             else:
@@ -729,7 +729,7 @@ class LogInspectorWindow(QMainWindow):
         action = menu.exec_(self.fileTree.viewport().mapToGlobal(event))
         if action == copyAction:
             cb = QApplication.clipboard()
-            cb.clear(mode=cb.Clipboard )
+            cb.clear(mode=cb.Clipboard)
             cb.setText(directory, mode=cb.Clipboard)
         if action == nppActionHot:
             self.runNpp(directory, START_MODE_HOT)

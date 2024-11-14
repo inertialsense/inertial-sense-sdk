@@ -72,7 +72,7 @@ bool cDeviceLogRaw::FlushToFile()
     cDeviceLog::FlushToFile();
 
     if (m_writeMode)
-    {	// Write any remaining chunk data to file
+    {   // Write any remaining chunk data to file
         WriteChunkToFile();
 
         return true;
@@ -149,7 +149,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             }
 
             // Update log statistics
-        	m_logStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
+            m_logStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
             globalLogStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
         }
     }
@@ -279,7 +279,7 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
         uint8_t *dataPtr = m_chunk.GetDataPtr();
 
         if (dataPtr == NULL)
-        {	// No more data
+        {   // No more data
             ptype = _PTYPE_NONE;
             return NULL;
         }

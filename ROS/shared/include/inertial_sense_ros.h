@@ -246,7 +246,7 @@ public:
     ROS_TIMER rtk_connectivity_watchdog_timer_;
     void start_rtk_connectivity_watchdog_timer();
     void stop_rtk_connectivity_watchdog_timer();
-    void rtk_connectivity_watchdog_timer_callback( ROS1_TIMEREVENT_ARG );
+    void rtk_connectivity_watchdog_timer_callback(ROS1_TIMEREVENT_ARG);
 
     void INS1_callback(eDataIDs DID, const ins_1_t *const msg);
     void INS2_callback(eDataIDs DID, const ins_2_t *const msg);
@@ -261,12 +261,12 @@ public:
     void baro_callback(eDataIDs DID, const barometer_t *const msg);
     void preint_IMU_callback(eDataIDs DID, const pimu_t *const msg);
     void strobe_in_time_callback(eDataIDs DID, const strobe_in_time_t *const msg);
-    void diagnostics_callback( ROS1_TIMEREVENT_ARG );
+    void diagnostics_callback(ROS1_TIMEREVENT_ARG);
     void GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg);
     void GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg);
     void GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg);
     void GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, int nObs);
-    void GPS_obs_bundle_timer_callback( ROS1_TIMEREVENT_ARG );
+    void GPS_obs_bundle_timer_callback(ROS1_TIMEREVENT_ARG);
     void GPS_eph_callback(eDataIDs DID, const eph_t *const msg);
     void GPS_geph_callback(eDataIDs DID, const geph_t *const msg);
     void RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *const msg);
@@ -283,7 +283,7 @@ public:
 #endif
     struct
     {
-    	ins_1_t ins1;
+        ins_1_t ins1;
     } did_;
 
     struct

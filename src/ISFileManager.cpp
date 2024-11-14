@@ -533,7 +533,7 @@ namespace ISFileManager {
         char fullPath[PATH_MAX];
         bool created = (_MKDIR(directory.c_str()) == 0);
 
-        if(!created)
+        if (!created)
             CreateDirectory(directory.c_str());
 
         if (realpath(directory.c_str(), fullPath) == NULL)
@@ -600,7 +600,7 @@ namespace ISFileManager {
         char fullPath[PATH_MAX];
         bool created = (_MKDIR(directory.c_str()) == 0);
 
-        if(!created)
+        if (!created)
             CreateDirectory(directory.c_str());
 
         if (realpath(directory.c_str(), fullPath) == NULL)
@@ -650,7 +650,7 @@ namespace ISFileManager {
                 if (pos == std::string::npos)
     #endif
                     return false;
-                if (!CreateDirectory( path.substr(0, pos) ))
+                if (!CreateDirectory(path.substr(0, pos)))
                     return false;
             }
             // now, try to create again

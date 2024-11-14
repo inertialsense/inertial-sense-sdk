@@ -91,7 +91,7 @@ public:
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
         void                                    (*waitAction)()
-    );
+);
 
     static is_operation_result update(
         std::vector<std::string>&               comPorts,
@@ -102,7 +102,7 @@ public:
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
         void                                    (*waitAction)()
-    );
+);
 
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
     static std::mutex m_ctx_mutex;

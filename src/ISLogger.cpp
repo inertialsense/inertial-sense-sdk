@@ -46,9 +46,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-// #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
-#define LOG_DEBUG_PRINT_READ		0
-#define STATS_ALL_FILENAME          "/stats_all.txt"
+// #define DONT_CHECK_LOG_DATA_SET_SIZE     // uncomment to allow reading in of new data logs into older code sets
+#define LOG_DEBUG_PRINT_READ                0
+#define STATS_ALL_FILENAME                  "/stats_all.txt"
 
 const string cISLogger::g_emptyString;
 
@@ -362,12 +362,12 @@ bool nextStreamDigit(stringstream &ss, string &str)
 {
     if (!getline(ss, str, '_'))
     {
-        return false;	// No data 
+        return false;    // No data 
     }
 
     if (str.size() == 0 || !isdigit(str[0]))
     {
-        return false;	// No numerical data 
+        return false;    // No numerical data 
     }
 
     return true;
@@ -384,7 +384,7 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
     // Remove file extension
     size_t n = filename.rfind('.');
     if (n == string::npos)
-    {	// No file extension
+    {   // No file extension
         return false;
     }
     string content = filename.substr(0, n);
@@ -392,24 +392,24 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
     n = content.find(IS_LOG_FILE_PREFIX);
     string str;
     if (n != string::npos)
-    {	// Has prefix - get serial number
+    {   // Has prefix - get serial number
         content = content.substr(n + sizeof(IS_LOG_FILE_PREFIX) - 1);
         stringstream ss(content);
 
         // Read serial number, date, time, index
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }     
         serialNum = stoi(str);
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }     
         date = str;
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }     
         time = str;
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }     
         index = stoi(str);
     }
     else
-    {	// No prefix - only index number
+    {   // No prefix - only index number
         stringstream ss(content);
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	
+        if (!nextStreamDigit(ss, str) && str.size()) { return false; }     
         index = stoi(str);
     }
 
@@ -538,7 +538,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     }
 #if 1
     else
-    {	// Success
+    {   // Success
         m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
@@ -583,12 +583,12 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
 
     m_lastCommTime = GetTime();
     if (!deviceLog->SaveData(dataSize, dataBuf, m_logStats))
-    {	// Save Error
+    {   // Save Error
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
         m_logStats.LogError(NULL);
     }
     else
-    {	// Success
+    {   // Success
 
     }
     return true;
@@ -827,9 +827,9 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 
     EnableLogging(true);
     p_data_buf_t *data = NULL;
-    for ( auto& srcDev : log.DeviceLogs() )
+    for (auto& srcDev : log.DeviceLogs())
     {
-        auto dstDev = ( srcDev->Device() != nullptr ? registerDevice((srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()) );
+        auto dstDev = (srcDev->Device() != nullptr ? registerDevice((srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()));
 
 #if LOG_DEBUG_GEN == 2
         // Don't print status here
@@ -862,7 +862,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
                     hasIns1 = true;
                 }
                 if (data->hdr.id == DID_INS_2 && !hasIns1)
-                {	// Convert INS2 to INS1 when creating .csv logs
+                {   // Convert INS2 to INS1 when creating .csv logs
                     ins_1_t ins1;
                     ins_2_t ins2;
 
@@ -879,7 +879,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 
             // Save data
             if (logType == LOGTYPE_RAW)
-            {	// Encode data into to ISB packet
+            {   // Encode data into to ISB packet
                 int pktSize = is_comm_data_to_buf(comm.rxBuf.start, comm.rxBuf.size, &comm, data->hdr.id, data->hdr.size, data->hdr.offset, data->buf);
                 LogData(dstDev, pktSize, comm.rxBuf.start);
             }

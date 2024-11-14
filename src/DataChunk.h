@@ -16,9 +16,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 
 #if PLATFORM_IS_EVB_2
-#define DEFAULT_CHUNK_DATA_SIZE     16384			// 16 KB (EVB)
+#define DEFAULT_CHUNK_DATA_SIZE     16384           // 16 KB (EVB)
 #else
-#define DEFAULT_CHUNK_DATA_SIZE     (128 * 1024)          // 128 KB
+#define DEFAULT_CHUNK_DATA_SIZE     (128 * 1024)    // 128 KB
 #endif
 
 #define DATA_CHUNK_MARKER           0xFC05EA32
@@ -88,37 +88,37 @@ struct sChunkHeader
     void print()
     {
     #ifdef CHUNK_VER_1
-        logStats( "Chunk Header\n" );
-        logStats( "         marker:  %u (0x%x)\n", marker, marker );
-        logStats( "        version:  %d\n", version );
-        logStats( " classification:  %d\n", classification );
-        logStats( "           name:  %c%c%c%c\n", name[0], name[1], name[2], name[3] );
-        logStats( "        invName:  %c%c%c%c\n", invName[0], invName[1], invName[2], invName[3] );
-        logStats( "       dataSize:  %d\n", dataSize );
-        logStats( "    invDataSize:  %d\n", invDataSize );
-        logStats( "         grpNum:  %d\n", grpNum );
-        logStats( "   devSerialNum:  %d\n", devSerialNum );
-        logStats( "        port:  %d\n", port );
-        logStats( "       reserved:  %d\n", reserved );
+        logStats("Chunk Header\n");
+        logStats("         marker:  %u (0x%x)\n", marker, marker);
+        logStats("        version:  %d\n", version);
+        logStats(" classification:  %d\n", classification);
+        logStats("           name:  %c%c%c%c\n", name[0], name[1], name[2], name[3]);
+        logStats("        invName:  %c%c%c%c\n", invName[0], invName[1], invName[2], invName[3]);
+        logStats("       dataSize:  %d\n", dataSize);
+        logStats("    invDataSize:  %d\n", invDataSize);
+        logStats("         grpNum:  %d\n", grpNum);
+        logStats("   devSerialNum:  %d\n", devSerialNum);
+        logStats("        port:  %d\n", port);
+        logStats("       reserved:  %d\n", reserved);
     #else
-		logStats( "Chunk Header\n" );
-		logStats( "         marker:  %u (0x%x)\n", marker, marker );
-		logStats( "        version:  %d\n", version );
-		logStats( "     dataOffset:  %d\n", dataOffset );
-        logStats( "protocolVersion:  %c.%c", protocolVersion[0], protocolVersion[1] );
-		logStats( "           name:  %c%c%c%c\n", name[0], name[1], name[2], name[3] );
-		logStats( "        invName:  %c%c%c%c\n", invName[0], invName[1], invName[2], invName[3] );
-		logStats( "       dataSize:  %d\n", dataSize );
-		logStats( "    invDataSize:  %d\n", invDataSize );
-		logStats( "         grpNum:  %d\n", grpNum );
-		logStats( "   devSerialNum:  %d\n", devSerialNum );
+        logStats("Chunk Header\n");
+        logStats("         marker:  %u (0x%x)\n", marker, marker);
+        logStats("        version:  %d\n", version);
+        logStats("     dataOffset:  %d\n", dataOffset);
+        logStats("protocolVersion:  %c.%c", protocolVersion[0], protocolVersion[1]);
+        logStats("           name:  %c%c%c%c\n", name[0], name[1], name[2], name[3]);
+        logStats("        invName:  %c%c%c%c\n", invName[0], invName[1], invName[2], invName[3]);
+        logStats("       dataSize:  %d\n", dataSize);
+        logStats("    invDataSize:  %d\n", invDataSize);
+        logStats("         grpNum:  %d\n", grpNum);
+        logStats("   devSerialNum:  %d\n", devSerialNum);
         #ifndef port_handle_t
-        logStats( "        pHandle:  %d\n", pHandle );
+        logStats("        pHandle:  %d\n", pHandle);
         #else
-        logStats( "         portId:  %d\n", portId);
-		logStats( "       portType:  %04X\n", portType);
+        logStats("         portId:  %d\n", portId);
+        logStats("       portType:  %04X\n", portType);
         #endif
-		logStats( "firmwareVersion:  %c.%c.%c.%c\n", fwVersion[0], fwVersion[1], fwVersion[2], fwVersion[3] );
+        logStats("firmwareVersion:  %c.%c.%c.%c\n", fwVersion[0], fwVersion[1], fwVersion[2], fwVersion[3]);
     #endif
     }
 #endif
@@ -159,9 +159,9 @@ public:
 #if LOG_CHUNK_STATS
     struct
     {
-        uint32_t count;		// Number of occurrences
-        uint32_t size;		// Size of each data structure
-        uint32_t total;		// Total bytes read
+        uint32_t count;     // Number of occurrences
+        uint32_t size;      // Size of each data structure
+        uint32_t total;     // Total bytes read
     } m_stats[DID_COUNT];
 #endif
 

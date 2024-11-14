@@ -44,8 +44,8 @@ static int staticReadData(port_handle_t port, uint8_t* buf, int len)
 {
     int bytesRead = serialPortReadTimeout(port, buf, len, 1);
 
-	if (s_is) {	// Save raw data to ISlogger
-		s_is->LogRawData(s_is->DeviceByPort(port), bytesRead, buf);
+    if (s_is) {   // Save raw data to ISlogger
+        s_is->LogRawData(s_is->DeviceByPort(port), bytesRead, buf);
     }
     return bytesRead;
 }
@@ -80,7 +80,7 @@ static int staticProcessRxData(p_data_t* data, port_handle_t port)
             static time_t lastTime;
             time_t currentTime = time(NULLPTR);
             if (abs(currentTime - lastTime) > 5)
-            {	// Update every 5 seconds
+            {   // Update every 5 seconds
                 lastTime = currentTime;
                 gps_pos_t &gps = *((gps_pos_t*)data->ptr);
                 if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
@@ -120,7 +120,7 @@ InertialSense::InertialSense(
     m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;  // For Intellian
 
-    for(int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
+    for (int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
     {
         m_comManagerState.binaryCallback[i] = {};
     }
@@ -148,9 +148,9 @@ InertialSense::InertialSense(
 
 InertialSense::~InertialSense()
 {
-	Close();
-	CloseServerConnection();
-	DisableLogging();
+    Close();
+    CloseServerConnection();
+    DisableLogging();
 }
 
 bool InertialSense::EnableLogging(const string& path, const cISLogger::sSaveOptions& options)
@@ -175,17 +175,17 @@ bool InertialSense::EnableLogging(const string& path, const cISLogger::sSaveOpti
 
 void InertialSense::DisableLogging()
 {
-	if (m_logger.Enabled() || m_logThread != NULLPTR)
-	{
-		m_logger.EnableLogging(false);
-		printf("Disabling logger...");
-		fflush(stdout);
+    if (m_logger.Enabled() || m_logThread != NULLPTR)
+    {
+        m_logger.EnableLogging(false);
+        printf("Disabling logger...");
+        fflush(stdout);
 
-		// just sets a bool no need to lock
-		threadJoinAndFree(m_logThread);
-		m_logThread = NULLPTR;
-		m_logger.CloseAllFiles();
-	}
+        // just sets a bool no need to lock
+        threadJoinAndFree(m_logThread);
+        m_logThread = NULLPTR;
+        m_logger.CloseAllFiles();
+    }
 }
 
 void InertialSense::LogRawData(ISDevice* device, int dataSize, const uint8_t* data)
@@ -286,7 +286,7 @@ void InertialSense::RemoveDevice(ISDevice* device)
             }
         }
     }
-    std::remove_if(m_comManagerState.devices.begin(), m_comManagerState.devices.end(), [&](const ISDevice* d){
+    std::remove_if (m_comManagerState.devices.begin(), m_comManagerState.devices.end(), [&](const ISDevice* d){
         return d == device;
     });
     // TODO: remove the device from m_comManagerState
@@ -343,7 +343,7 @@ void InertialSense::LoggerThread(void* info)
         inertialSense->m_logger.Update();
     }
 
-	printf("...logger thread terminated.\n");
+    printf("...logger thread terminated.\n");
 }
 
 void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, port_handle_t port)
@@ -373,7 +373,7 @@ bool InertialSense::EnableLogger(
             return true;
         }
 
-        if(rmcPreset)
+        if (rmcPreset)
         {
             BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions);
         }
@@ -627,7 +627,7 @@ bool InertialSense::UpdateServer()
             }
 
             if (ptype != _PTYPE_NONE)
-            {	// Record message info
+            {   // Record message info
                 messageStatsAppend(str, m_serverMessageStats, ptype, comm->rxPkt.id, m_timeMs);
             }
         }
@@ -681,7 +681,7 @@ bool InertialSense::UpdateClient()
 
                 case _PTYPE_PARSE_ERROR:
                     if (error)
-                    {	// Don't print first error.  Likely due to port having been closed.
+                    {   // Don't print first error.  Likely due to port having been closed.
                         printf("InertialSense::UpdateClient() PARSE ERROR count: %d\n", error);
                     }
                     error++;
@@ -692,7 +692,7 @@ bool InertialSense::UpdateClient()
             }
 
             if (ptype != _PTYPE_NONE)
-            {	// Record message info
+            {   // Record message info
                 messageStatsAppend(str, m_clientMessageStats, ptype, comm->rxPkt.id, m_timeMs);
             }
         }
@@ -792,11 +792,11 @@ void InertialSense::SendRaw(uint8_t* data, uint32_t length)
 void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
 {
     if (port == nullptr)
-    {	// Send to all
+    {   // Send to all
         for (auto device : m_comManagerState.devices) { device->SetSysCmd(command); }
     }
     else
-    {	// Specific port
+    {   // Specific port
         ISDevice* device = DeviceByPort(port);
         if (device) device->SetSysCmd(command);
     }
@@ -830,11 +830,11 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
     filter.eventMask.priorityLevel = priorityLevel;
     filter.eventMask.msgTypeIdMask = msgTypeIdMask;
 
-    if(target == 0)
+    if (target == 0)
         event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_FILTER;
-    else if(target == 1)
+    else if (target == 1)
         event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER;
-    else if(target == 2)
+    else if (target == 2)
         event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
     else 
         return;
@@ -842,7 +842,7 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
     memcpy(data, &event, DID_EVENT_HEADER_SIZE);
     memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
 
-    if(!port)
+    if (!port)
         SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
     else    
         comManagerSendData(port, data, DID_EVENT, DID_EVENT_HEADER_SIZE + event.length, 0);
@@ -860,9 +860,9 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
     for (auto device : m_comManagerState.devices)
     {
         if (device->flashCfgUploadTimeMs)
-        {	// Upload in progress
+        {   // Upload in progress
             if (timeMs - device->flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
-            {	// Wait for upload to process.  Pause sync.
+            {   // Wait for upload to process.  Pause sync.
                 device->sysParams.flashCfgChecksum = 0;
             }
         }
@@ -887,7 +887,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
                 }
             }
             else
-            {	// Out of sync.  Request flash config.
+            {   // Out of sync.  Request flash config.
                 DEBUG_PRINT("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
                 comManagerGetData(device->port, DID_FLASH_CONFIG, 0, 0, 0);
             }
@@ -1017,7 +1017,7 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
         return false;   // No device, no flash-sync
 
     unsigned int startMs = current_timeMs();
-    while(!FlashConfigSynced(device->port))
+    while (!FlashConfigSynced(device->port))
     {   // Request and wait for flash config
         Update();
 
@@ -1077,8 +1077,8 @@ void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
             break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&(device->flashCfg), data, sizeof(nvm_flash_cfg_t));
-            if ( dataOverlap( offsetof(nvm_flash_cfg_t, checksum), 4, data ) )
-            {	// Checksum received
+            if (dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data))
+            {   // Checksum received
                 device->sysParams.flashCfgChecksum = device->flashCfg.checksum;
             }
             DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
@@ -1187,7 +1187,7 @@ is_operation_result InertialSense::updateFirmware(
     printf("\n\r");
 
 #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25h", stdout);	// Turn cursor back on
+    fputs("\e[?25h", stdout);    // Turn cursor back on
 #endif
 
     return IS_OP_OK;
@@ -1217,7 +1217,7 @@ is_operation_result InertialSense::updateFirmware(
     printf("\n\r");
 
 #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25h", stdout);	// Turn cursor back on
+    fputs("\e[?25h", stdout);    // Turn cursor back on
 #endif
 
     return IS_OP_OK;
@@ -1241,13 +1241,13 @@ bool InertialSense::isFirmwareUpdateSuccessful() {
     for (auto device : m_comManagerState.devices) {
         ISFirmwareUpdater *fwUpdater = device->fwUpdater;
         if (fwUpdater->hasErrors() ||
-            (   (fwUpdater != nullptr) &&
+            ((fwUpdater != nullptr) &&
                 fwUpdater->fwUpdate_isDone() &&
                 (
                         (fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) ||
                         fwUpdater->hasErrors()
-                )
-            ))
+              )
+          ))
         return false;
     }
     return true;
@@ -1321,11 +1321,11 @@ is_operation_result InertialSense::BootloadFile(
     // On non-Windows systems, try to interpret each user-specified port as a symlink and find what it is pointing to
     // TODO: This only works for "/dev/" ports
 #if !PLATFORM_IS_WINDOWS
-    for(unsigned int k = 0; k < comPorts.size(); k++)
+    for (unsigned int k = 0; k < comPorts.size(); k++)
     {
         char buf[PATH_MAX];
         int newsize = readlink(comPorts[k].c_str(), buf, sizeof(buf)-1);
-        if(newsize < 0)
+        if (newsize < 0)
         {
             continue;
         }
@@ -1352,7 +1352,7 @@ is_operation_result InertialSense::BootloadFile(
     }
 
     #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25l", stdout);	// Turn off cursor during firmware update
+    fputs("\e[?25l", stdout);    // Turn off cursor during firmware update
     #endif
 
     printf("\n\r");
@@ -1382,7 +1382,7 @@ is_operation_result InertialSense::BootloadFile(
     printf("\n\r");
 
     #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25h", stdout);	// Turn cursor back on
+    fputs("\e[?25h", stdout);    // Turn cursor back on
     #endif
 
     return IS_OP_OK;
@@ -1683,109 +1683,109 @@ void InertialSense::SaveFlashConfigFile(std::string path, port_handle_t port)
 
     YAML::Node map = YAML::Node(YAML::NodeType::Map);
 
-    map["size"] 					= outData->size;
-    map["checksum"] 				= outData->checksum;
-    map["key"] 						= outData->key;
-    map["startupImuDtMs"] 			= outData->startupImuDtMs;
-    map["startupNavDtMs"] 			= outData->startupNavDtMs;
-    map["ser0BaudRate"] 			= outData->ser0BaudRate;
-    map["ser1BaudRate"] 			= outData->ser1BaudRate;
+    map["size"]             = outData->size;
+    map["checksum"]         = outData->checksum;
+    map["key"]              = outData->key;
+    map["startupImuDtMs"]   = outData->startupImuDtMs;
+    map["startupNavDtMs"]   = outData->startupNavDtMs;
+    map["ser0BaudRate"]     = outData->ser0BaudRate;
+    map["ser1BaudRate"]     = outData->ser1BaudRate;
 
     YAML::Node insRotation = YAML::Node(YAML::NodeType::Sequence);
     insRotation.push_back(outData->insRotation[0]);
     insRotation.push_back(outData->insRotation[1]);
     insRotation.push_back(outData->insRotation[2]);
-    map["insRotation"] 				= insRotation;
+    map["insRotation"]                 = insRotation;
 
     YAML::Node insOffset = YAML::Node(YAML::NodeType::Sequence);
     insOffset.push_back(outData->insOffset[0]);
     insOffset.push_back(outData->insOffset[1]);
     insOffset.push_back(outData->insOffset[2]);
-    map["insOffset"] 				= insOffset;
+    map["insOffset"]                 = insOffset;
 
     YAML::Node gps1AntOffset = YAML::Node(YAML::NodeType::Sequence);
     gps1AntOffset.push_back(outData->gps1AntOffset[0]);
     gps1AntOffset.push_back(outData->gps1AntOffset[1]);
     gps1AntOffset.push_back(outData->gps1AntOffset[2]);
-    map["gps1AntOffset"] 			= gps1AntOffset;
+    map["gps1AntOffset"]    = gps1AntOffset;
 
-    map["dynamicModel"] 				= (uint16_t)outData->dynamicModel;
-    map["debug"] 					= (uint16_t)outData->debug;
-    map["gnssSatSigConst"] 			= outData->gnssSatSigConst;
-    map["sysCfgBits"] 				= outData->sysCfgBits;
+    map["dynamicModel"]     = (uint16_t)outData->dynamicModel;
+    map["debug"]            = (uint16_t)outData->debug;
+    map["gnssSatSigConst"]  = outData->gnssSatSigConst;
+    map["sysCfgBits"]       = outData->sysCfgBits;
 
     YAML::Node refLla = YAML::Node(YAML::NodeType::Sequence);
     refLla.push_back(outData->refLla[0]);
     refLla.push_back(outData->refLla[1]);
     refLla.push_back(outData->refLla[2]);
-    map["refLla"] 					= refLla;
+    map["refLla"]                     = refLla;
 
     YAML::Node lastLla = YAML::Node(YAML::NodeType::Sequence);
     lastLla.push_back(outData->lastLla[0]);
     lastLla.push_back(outData->lastLla[1]);
     lastLla.push_back(outData->lastLla[2]);
-    map["lastLla"] 					= lastLla;
+    map["lastLla"]                     = lastLla;
 
-    map["lastLlaTimeOfWeekMs"] 		= outData->lastLlaTimeOfWeekMs;
-    map["lastLlaWeek"] 				= outData->lastLlaWeek;
-    map["lastLlaUpdateDistance"] 	= outData->lastLlaUpdateDistance;
-    map["ioConfig"] 				= outData->ioConfig;
-    map["platformConfig"] 			= outData->platformConfig;
+    map["lastLlaTimeOfWeekMs"]      = outData->lastLlaTimeOfWeekMs;
+    map["lastLlaWeek"]              = outData->lastLlaWeek;
+    map["lastLlaUpdateDistance"]    = outData->lastLlaUpdateDistance;
+    map["ioConfig"]                 = outData->ioConfig;
+    map["platformConfig"]           = outData->platformConfig;
 
     YAML::Node gps2AntOffset = YAML::Node(YAML::NodeType::Sequence);
     gps2AntOffset.push_back(outData->gps2AntOffset[0]);
     gps2AntOffset.push_back(outData->gps2AntOffset[1]);
     gps2AntOffset.push_back(outData->gps2AntOffset[2]);
-    map["gps2AntOffset"] 			= gps2AntOffset;
+    map["gps2AntOffset"]            = gps2AntOffset;
 
     YAML::Node zeroVelRotation = YAML::Node(YAML::NodeType::Sequence);
     zeroVelRotation.push_back(outData->zeroVelRotation[0]);
     zeroVelRotation.push_back(outData->zeroVelRotation[1]);
     zeroVelRotation.push_back(outData->zeroVelRotation[2]);
-    map["zeroVelRotation"] 			= zeroVelRotation;
+    map["zeroVelRotation"]          = zeroVelRotation;
 
     YAML::Node zeroVelOffset = YAML::Node(YAML::NodeType::Sequence);
     zeroVelOffset.push_back(outData->zeroVelOffset[0]);
     zeroVelOffset.push_back(outData->zeroVelOffset[1]);
     zeroVelOffset.push_back(outData->zeroVelOffset[2]);
-    map["zeroVelOffset"] 			= zeroVelOffset;
+    map["zeroVelOffset"]            = zeroVelOffset;
 
-    map["gpsTimeUserDelay"] 		= outData->gpsTimeUserDelay;
-    map["magDeclination"] 			= outData->magDeclination;
-    map["gpsTimeSyncPeriodMs"] 		= outData->gpsTimeSyncPeriodMs;
-    map["startupGPSDtMs"] 			= outData->startupGPSDtMs;
-    map["RTKCfgBits"] 				= outData->RTKCfgBits;
-    map["sensorConfig"] 			= outData->sensorConfig;
-    map["gpsMinimumElevation"] 		= outData->gpsMinimumElevation;
-    map["ser2BaudRate"] 			= outData->ser2BaudRate;
+    map["gpsTimeUserDelay"]         = outData->gpsTimeUserDelay;
+    map["magDeclination"]           = outData->magDeclination;
+    map["gpsTimeSyncPeriodMs"]      = outData->gpsTimeSyncPeriodMs;
+    map["startupGPSDtMs"]           = outData->startupGPSDtMs;
+    map["RTKCfgBits"]               = outData->RTKCfgBits;
+    map["sensorConfig"]             = outData->sensorConfig;
+    map["gpsMinimumElevation"]      = outData->gpsMinimumElevation;
+    map["ser2BaudRate"]             = outData->ser2BaudRate;
 
-    YAML::Node wheelCfgTransE_b2w 	= YAML::Node(YAML::NodeType::Sequence);
+    YAML::Node wheelCfgTransE_b2w   = YAML::Node(YAML::NodeType::Sequence);
     wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[0]);
     wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[1]);
     wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[2]);
-    map["wheelCfgTransE_b2w"] 		= wheelCfgTransE_b2w;
+    map["wheelCfgTransE_b2w"]       = wheelCfgTransE_b2w;
 
     YAML::Node wheelCfgTransE_b2wsig = YAML::Node(YAML::NodeType::Sequence);
     wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[0]);
     wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[1]);
     wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[2]);
-    map["wheelCfgTransE_b2wsig"] 	= wheelCfgTransE_b2wsig;
+    map["wheelCfgTransE_b2wsig"]    = wheelCfgTransE_b2wsig;
 
     YAML::Node wheelCfgTransT_b2w = YAML::Node(YAML::NodeType::Sequence);
     wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[0]);
     wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[1]);
     wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[2]);
-    map["wheelCfgTransT_b2w"] 	= wheelCfgTransT_b2w;
+    map["wheelCfgTransT_b2w"]       = wheelCfgTransT_b2w;
 
     YAML::Node wheelCfgTransT_b2wsig = YAML::Node(YAML::NodeType::Sequence);
     wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[0]);
     wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[1]);
     wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[2]);
-    map["wheelCfgTransT_b2wsig"] 	= wheelCfgTransT_b2wsig;
+    map["wheelCfgTransT_b2wsig"]    = wheelCfgTransT_b2wsig;
 
-    map["wheelConfigTrackWidth"] 	= outData->wheelConfig.track_width;
-    map["wheelConfigRadius"] 		= outData->wheelConfig.radius;
-    map["wheelConfigBits"] 			= outData->wheelConfig.bits;
+    map["wheelConfigTrackWidth"]    = outData->wheelConfig.track_width;
+    map["wheelConfigRadius"]        = outData->wheelConfig.radius;
+    map["wheelConfigBits"]          = outData->wheelConfig.bits;
 
     std::ofstream fout(path);
 
@@ -1827,7 +1827,7 @@ int InertialSense::LoadFlashConfig(std::string path, port_handle_t port)
         loaded_flash.gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
         loaded_flash.gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
 
-        loaded_flash.dynamicModel              = (uint8_t)inData["dynamicModel"].as<uint16_t>();
+        loaded_flash.dynamicModel             = (uint8_t)inData["dynamicModel"].as<uint16_t>();
         loaded_flash.debug                    = (uint8_t)inData["debug"].as<uint16_t>();
         loaded_flash.gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
         loaded_flash.sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();

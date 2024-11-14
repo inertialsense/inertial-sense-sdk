@@ -140,7 +140,7 @@ def computeRmsAccuracies(log, directory, subdir):
                 insA.append({})
                 insA[devIndex][stateSet] = shiftTime(ins[devIndex].v['tow'],ins[devIndex].v[stateSet],time)
                 rebaseline += 1
-                print("Rebaselining - %d of %d" % (rebaseline,totalRebaselines) )
+                print("Rebaselining - %d of %d" % (rebaseline,totalRebaselines))
 
         # --------------------------------------------- Calc RMS --------------------------------------------         
         cumulativeValues = {}
@@ -278,18 +278,18 @@ def computeRmsAccuracies(log, directory, subdir):
 
         filename = os.path.join(directory,'RMS_report.txt');
         f = open(filename, 'w')
-        f.write(    '*****   Performance Analysis Report - %s   *****\n' % (subdir))
-        f.write(    '\n');
-        f.write(    'Directory: %s\n' % (directory))
-        f.write(    '\n');
+        f.write('*****   Performance Analysis Report - %s   *****\n' % (subdir))
+        f.write('\n');
+        f.write('Directory: %s\n' % (directory))
+        f.write('\n');
 
         # Print Table of RMS accuracies
         line =      'Device       '
         if navMode:
-            f.write(    '--------------------------------------------------- RMS Accuracy -------------------------------------------\n')
+            f.write('--------------------------------------------------- RMS Accuracy -------------------------------------------\n')
             line = line + 'UVW[  (m/s)   (m/s)   (m/s) ],  NED[    (m)     (m)     (m) ],'
         else:   # AHRS mode
-            f.write(    '-------------- RMS Accuracy --------------\n')
+            f.write('-------------- RMS Accuracy --------------\n')
         line = line +   '  Eul[  (deg)   (deg)   (deg) ]\n'
         f.write(line)
 
@@ -304,11 +304,11 @@ def computeRmsAccuracies(log, directory, subdir):
 
         line = 'AVERAGE:        '
         if navMode:
-            f.write(    '------------------------------------------------------------------------------------------------------------\n')
+            f.write('------------------------------------------------------------------------------------------------------------\n')
             line        = line + '[%7.4f %7.4f %7.4f ],     ' % (averageRMS['uvw'][0],averageRMS['uvw'][1],averageRMS['uvw'][2])
             line        = line + '[%7.4f %7.4f %7.4f ],     ' % (averageRMS['ned'][0],averageRMS['ned'][1],averageRMS['ned'][2])
         else:   # AHRS mode
-            f.write(    '------------------------------------------\n')
+            f.write('------------------------------------------\n')
         line            = line + '[%7.4f %7.4f %7.4f ]\n' % (averageRMS['euler'][0]*RAD2DEG,averageRMS['euler'][1]*RAD2DEG,averageRMS['euler'][2]*RAD2DEG)
         f.write(line)
 
@@ -333,15 +333,15 @@ def computeRmsAccuracies(log, directory, subdir):
         f.write('(NAV mode)\n\n' if ins[0].iStatus().navMode[-1] else '(AHRS mode)\n\n')
 
         # Print Mounting Biases        
-        f.write(    '--------------- Angular Mounting Biases ----------------\n')
-        f.write(    'Device       Euler Biases[   (deg)     (deg)     (deg) ]\n')
+        f.write('--------------- Angular Mounting Biases ----------------\n')
+        f.write('Device       Euler Biases[   (deg)     (deg)     (deg) ]\n')
         for n in range(0,numDev):
             devInfo = itd.cDevInfo(log.devices[n].data['devInfo'])
             f.write('%2d SN%d               [ %7.4f   %7.4f   %7.4f ]\n' % (n, devInfo.v['serialNumber'][-1],bias['euler'][n][0]*RAD2DEG,bias['euler'][n][1]*RAD2DEG,bias['euler'][n][2]*RAD2DEG))
         f.write('\n')
 
         # Print Device Version Information
-        f.write(    '------------------------------------------- Device Info -------------------------------------------------\n')
+        f.write('------------------------------------------- Device Info -------------------------------------------------\n')
         for n in range(0,numDev):
             devInfo = itd.cDevInfo(log.devices[n].data['devInfo'])
             hver = devInfo.v['hardwareVer'][-1]
@@ -359,7 +359,7 @@ def computeRmsAccuracies(log, directory, subdir):
                 cver[3], cver[2], cver[1], cver[0],
                 2000+date[2], date[1], date[0],
                 time[3], time[2], time[1],
-                addi ) )
+                addi))
         f.write('\n')
 
         f.close()

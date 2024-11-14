@@ -116,7 +116,7 @@ public:
         pfnBootloadProgress upload_cb,
         pfnBootloadProgress verify_cb,
         pfnBootloadStatus info_cb
-    ) : 
+  ) : 
         m_update_callback{upload_cb}, 
         m_verify_callback{verify_cb}, 
         m_info_callback{info_cb}
@@ -130,9 +130,9 @@ public:
         m_finished_flash = false;
         m_verify = false;
 
-        if(m_update_callback == NULL) m_update_callback = dummy_update_callback;
-        if(m_verify_callback == NULL) m_verify_callback = dummy_verify_callback;
-        if(m_info_callback == NULL) m_info_callback = dummy_info_callback;
+        if (m_update_callback == NULL)  m_update_callback = dummy_update_callback;
+        if (m_verify_callback == NULL)  m_verify_callback = dummy_verify_callback;
+        if (m_info_callback == NULL)    m_info_callback = dummy_info_callback;
     }
 
     virtual ~cISBootloaderBase() {};
@@ -231,7 +231,7 @@ public:
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context
-    );
+);
 
     static is_operation_result get_device_isb_version(
         firmwares_t filenames,
@@ -242,7 +242,7 @@ public:
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context
-    );
+);
 
     static is_operation_result mode_device_isb(
         firmwares_t filenames,
@@ -254,7 +254,7 @@ public:
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context
-    );
+);
 
     static is_operation_result update_device(
         firmwares_t filenames,
@@ -266,7 +266,7 @@ public:
         std::mutex* addMutex,
         cISBootloaderBase** new_context,
         uint32_t baud = BAUDRATE_921600
-    );
+);
     static is_operation_result update_device(
         firmwares_t filenames,
         libusb_device_handle* handle,
@@ -276,7 +276,7 @@ public:
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context
-    );
+);
 
     std::string m_filename;
     bool m_isISB;
@@ -284,7 +284,7 @@ public:
 protected:
     void status_update(const char* info, eLogLevel level) 
     { 
-        if(m_info_callback) m_info_callback((void*)this, level, info);
+        if (m_info_callback) m_info_callback((void*)this, level, info);
     }
 
     struct

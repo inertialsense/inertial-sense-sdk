@@ -12,7 +12,7 @@
 /**
  * A macro to generate a random integer number between two values.
  */
-#define RAND_RANGE(MIN, MAX) ( MIN + rand() / (RAND_MAX / (MAX - MIN + 1) + 1) )
+#define RAND_RANGE(MIN, MAX) (MIN + rand() / (RAND_MAX / (MAX - MIN + 1) + 1))
 
 /**
  * Generates a string of some arbitrary length, containing some number of random sentences/paragraphs of "Lorem Ipsum" text.

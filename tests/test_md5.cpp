@@ -22,7 +22,7 @@ void check_md5_file(const char *filename)
     size_t filesize = 0;
     md5hash_t hash;
     std::ifstream s(filename);
-    EXPECT_EQ( md5_file_details(&s, filesize, hash), 0 );
+    EXPECT_EQ(md5_file_details(&s, filesize, hash), 0);
 
     // Compare md5 hash using Linux md5sum app
     string hashStr = md5_to_string(hash); 
@@ -94,7 +94,7 @@ TEST(md5, hash_from_file_1_to_400k_file_size)
     // GTEST_SKIP();
     const char *filename = "md5_test.txt";
 
-    for (int len=1; len<400000; )
+    for (int len=1; len<400000;)
     {
         // Create test file
         ofstream myfile(filename);

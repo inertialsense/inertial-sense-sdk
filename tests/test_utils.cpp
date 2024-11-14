@@ -23,17 +23,17 @@ std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSent
     {
         for (int s = 0; s < numSentences; s++)
         {
-            for( int w = 0; w < numWords; w++ )
+            for (int w = 0; w < numWords; w++)
             {
-                if( w > 0 ) { sb.append(" "); }
+                if (w > 0) { sb.append(" "); }
                 int word_idx = RAND_RANGE(0, words.size() - 1);
                 std::string word = words[ word_idx ];
-                if( w == 0 ) { word[0] = toupper(word[0]); }
-                sb.append( word );
+                if (w == 0) { word[0] = toupper(word[0]); }
+                sb.append(word);
             }
             sb.append(". ");
         }
-        if ( p < numLines-1 ) sb.append("\n");
+        if (p < numLines-1) sb.append("\n");
     }
     return sb;
 }

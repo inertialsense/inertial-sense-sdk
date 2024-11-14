@@ -124,7 +124,7 @@ class logPlot:
 
     def setPlotYSpanMin(self, ax, limit):
         ylim = ax.get_ylim()
-        yspn = np.max( [ylim[1] - ylim[0], limit] )
+        yspn = np.max([ylim[1] - ylim[0], limit])
         ylim = (np.mean(ylim)-yspn/2, np.mean(ylim)+yspn/2)
         ax.set_ylim(ylim)
 
@@ -181,14 +181,14 @@ class logPlot:
             ax[1,0].plot(time, ned[:,1])
             ax[2,0].plot(time, ned[:,2])
 
-            if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
+            if (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
                 ax[0,0].plot(timeGPS, nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
                 ax[1,0].plot(timeGPS, nedGps[:, 1])
                 ax[2,0].plot(timeGPS, nedGps[:, 2])
 
-            if(np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
+            if (np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs', True))
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla', True))
                 ax[0,0].plot(timeGPS, nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
@@ -257,7 +257,7 @@ class logPlot:
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b', True))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
-            if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
+            if (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 if (np.shape(self.active_devs)[0]==1):
                     self.drawNEDMapArrow(ax, time, ned, euler[:, 2])
 
@@ -331,7 +331,7 @@ class logPlot:
             ax[1].plot(time, lla[:,1])
             ax[2].plot(time, lla[:,2])
 
-            if(np.shape(self.active_devs)[0]==1):
+            if (np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 ax[0].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS1')
                 ax[1].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 1])
@@ -1421,8 +1421,8 @@ class logPlot:
                 for k in range(M):
                     sat_k = obs['sat'][k]
                     # add satellite if not in the list and if L1 observations are valid
-                    if ( sat_k != 0 and (sat_k not in sat) and 
-                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
+                    if (sat_k != 0 and (sat_k not in sat) and 
+                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0):
                         sat = np.append(sat, sat_k)
 
             Nsat = len(sat)
@@ -1559,8 +1559,8 @@ class logPlot:
                 for k in range(M):
                     sat_k = obs['sat'][k]
                     # add satellite if not in the list and if L1 observations are valid
-                    if ( sat_k != 0 and (sat_k not in sat) and 
-                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
+                    if (sat_k != 0 and (sat_k not in sat) and 
+                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0):
                         sat = np.append(sat, sat_k)
             sat2 = np.empty(0, dtype=int)
             for j in range(N2):
@@ -1569,8 +1569,8 @@ class logPlot:
                 for k in range(M):
                     sat_k = obs['sat'][k]
                     # add satellite if not in the list and if L1 observations are valid
-                    if ( sat_k != 0 and (sat_k not in sat2) and 
-                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
+                    if (sat_k != 0 and (sat_k not in sat2) and 
+                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0):
                         sat2 = np.append(sat2, sat_k)
             del_ind = np.empty(0, dtype = int)
             for is_, j in enumerate(sat):
@@ -3404,8 +3404,8 @@ class logPlot:
                         else:
                             x = time
 
-                    # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None )
-                    ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d] )
+                    # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None)
+                    ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d])
                     ax[1,i].plot(x, sensor[:,1]*scalar)
                     ax[2,i].plot(x, sensor[:,2]*scalar)
                     if not useTemp:

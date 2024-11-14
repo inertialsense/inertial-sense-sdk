@@ -81,7 +81,7 @@ public:
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
-#define SIZE_BINARY_CALLBACK	256
+#define SIZE_BINARY_CALLBACK    256
         pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK];
         pfnStepLogFunction stepLogFunction;
         InertialSense* inertialSenseInterface;
@@ -240,27 +240,27 @@ public:
     bool LoggerEnabled() { return m_logger.Enabled(); }
 
     /**
-	 * @brief Get pointer to ISLogger
-	 * 
-	 * @return cISLogger* ISLogger pointer
-	 */
-	cISLogger* Logger() { return &m_logger; }
+     * @brief Get pointer to ISLogger
+     * 
+     * @return cISLogger* ISLogger pointer
+     */
+    cISLogger* Logger() { return &m_logger; }
 
-	/**
-	 * @brief Log raw data directly to ISLogger
-	 * 
-	 * @param device device associated with this raw data.
-	 * @param dataSize Number of bytes of raw data.
-	 * @param data Pointer to raw data.
-	 */
-	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
+    /**
+     * @brief Log raw data directly to ISLogger
+     * 
+     * @param device device associated with this raw data.
+     * @param dataSize Number of bytes of raw data.
+     * @param data Pointer to raw data.
+     */
+    void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
-	/**
-	* Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
-	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
-	* @return true if connection opened, false if failure
-	*/
-	bool OpenConnectionToServer(const std::string& connectionString);
+    /**
+    * Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
+    * @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
+    * @return true if connection opened, false if failure
+    */
+    bool OpenConnectionToServer(const std::string& connectionString);
 
     /**
     * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
@@ -599,7 +599,7 @@ public:
             ISBootloader::pfnBootloadProgress verifyProgress = NULLPTR,
             ISBootloader::pfnBootloadStatus infoProgress = NULLPTR,
             void (*waitAction)() = NULLPTR
-    );
+);
 
     /**
      * V2 firmware update mechanism. Calling this function will attempt to inititate a firmware update with the targeted device(s) on the connected port(s), with callbacks to provide information about the status
@@ -624,7 +624,7 @@ public:
             ISBootloader::pfnBootloadProgress verifyProgress,
             ISBootloader::pfnBootloadStatus infoProgress,
             void (*waitAction)()
-    );
+);
 
     is_operation_result updateFirmware(
             ISDevice* device,
@@ -634,7 +634,7 @@ public:
             ISBootloader::pfnBootloadProgress verifyProgress,
             ISBootloader::pfnBootloadStatus infoProgress,
             void (*waitAction)()
-    );
+);
 
     /**
      * @return true if all devices have finished all firmware update steps
@@ -724,7 +724,7 @@ private:
     bool m_forwardGpgga;
 
     cISTcpServer m_tcpServer;
-    cISStream* m_clientStream;				// Our client connection to a server
+    cISStream* m_clientStream;                // Our client connection to a server
     uint64_t m_clientServerByteCount;
     int m_clientConnectionsCurrent = 0;
     int m_clientConnectionsTotal = 0;

@@ -28,35 +28,35 @@ extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 
 #define MAX_SERIAL_PORT_NAME_LENGTH 63
 
-// Standard Baud Rates - FTDI Functional.	// Bit period = 1/baudrate, Actual baud (FTDI,AVR,ARM)
-#define BAUDRATE_300			300			// 3333 us
-#define BAUDRATE_600			600			// 1667 us
-#define BAUDRATE_1200			1200		//  833 us
-#define BAUDRATE_2400			2400		//  417 us
-#define BAUDRATE_4800			4800		//  208 us
-#define BAUDRATE_9600			9600		//  104 us
-#define BAUDRATE_19200			19200		//   52 us
-#define BAUDRATE_38400			38400		//   26 us
-#define BAUDRATE_57600			57600		//   17 us
-#define BAUDRATE_115200			115200		// 8680 ns
-#define BAUDRATE_230400			230400		// 4340 ns
-#define BAUDRATE_460800			460800		// 2170 ns
-#define BAUDRATE_921600			921600		// 1085 ns
-#define BAUDRATE_1000000		1000000		// 1000 ns
-#define BAUDRATE_1220000		1220000		//  820 ns
-#define BAUDRATE_1440000		1440000		//  794 ns
-#define BAUDRATE_1500000		1500000		//  667 ns	(FTDI 1520, AFR 1500)
-#define BAUDRATE_2000000		2000000		//  500 ns	(FTDI 2080, AVR/ARM 2016)
-#define BAUDRATE_3000000		3000000		//  333 ns	(FTDI 3150, AVR/ARM 3030)
+// Standard Baud Rates - FTDI Functional.   // Bit period = 1/baudrate, Actual baud (FTDI,AVR,ARM)
+#define BAUDRATE_300        300             // 3333 us
+#define BAUDRATE_600        600             // 1667 us
+#define BAUDRATE_1200       1200            //  833 us
+#define BAUDRATE_2400       2400            //  417 us
+#define BAUDRATE_4800       4800            //  208 us
+#define BAUDRATE_9600       9600            //  104 us
+#define BAUDRATE_19200      19200           //   52 us
+#define BAUDRATE_38400      38400           //   26 us
+#define BAUDRATE_57600      57600           //   17 us
+#define BAUDRATE_115200     115200          // 8680 ns
+#define BAUDRATE_230400     230400          // 4340 ns
+#define BAUDRATE_460800     460800          // 2170 ns
+#define BAUDRATE_921600     921600          // 1085 ns
+#define BAUDRATE_1000000    1000000         // 1000 ns
+#define BAUDRATE_1220000    1220000         //  820 ns
+#define BAUDRATE_1440000    1440000         //  794 ns
+#define BAUDRATE_1500000    1500000         //  667 ns    (FTDI 1520, AFR 1500)
+#define BAUDRATE_2000000    2000000         //  500 ns    (FTDI 2080, AVR/ARM 2016)
+#define BAUDRATE_3000000    3000000         //  333 ns    (FTDI 3150, AVR/ARM 3030)
 
 enum eSerialPortOptions
 {
-	OPT_PARITY_NONE = 0x0,	
-	OPT_PARITY_ODD = 0x1,
-	OPT_PARITY_EVEN = 0x2,	
-	OPT_PARITY_MASK = 0x3,
+    OPT_PARITY_NONE = 0x0,    
+    OPT_PARITY_ODD = 0x1,
+    OPT_PARITY_EVEN = 0x2,    
+    OPT_PARITY_MASK = 0x3,
 
-	SERIAL_PORT_OPTIONS_MASK = OPT_PARITY_MASK,
+    SERIAL_PORT_OPTIONS_MASK = OPT_PARITY_MASK,
 };
 
 typedef int(*pfnSerialPortOpen)(port_handle_t port, const char* portName, int baudRate, int blocking);
@@ -101,11 +101,11 @@ struct serial_port_s
     // length of error
     int errorLength;
 
-	// Number of bytes sent
-	int txBytes;
+    // Number of bytes sent
+    int txBytes;
 
-	// Number of bytes received
-	int rxBytes;
+    // Number of bytes received
+    int rxBytes;
 
     // Options for encoding like parity, stop bits, etc. (see eSerialPortOptions)
     uint32_t options;
@@ -131,7 +131,7 @@ struct serial_port_s
     // close the serial port
     pfnSerialPortClose pfnClose;
 
-	// discard all data from all buffers
+    // discard all data from all buffers
     pfnSerialPortFlush pfnFlush;
 
     // block until all queued TX data has been sent
@@ -316,11 +316,11 @@ int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, int wri
 int serialPortWriteAscii(port_handle_t port, const char* buffer, int bufferLength);
 
 // write and wait for a response, returns 1 if success, 0 if failure
-int serialPortWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength);
+int serialPortWriteAndWaitFor (port_handle_t port, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength);
 int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength, const int timeoutMilliseconds);
 
 // wait for a response, returns 0 if failure, 1 if success
-int serialPortWaitFor(port_handle_t port, const unsigned char* waitFor, int waitForLength);
+int serialPortWaitFor (port_handle_t port, const unsigned char* waitFor, int waitForLength);
 int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, int waitForLength, int timeoutMilliseconds);
 
 // get available bytes in the receive buffer

@@ -51,7 +51,7 @@ is_operation_result cISBootloaderSTM32::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port->port, 100) == 0)
+    if (strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port->port, 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -73,7 +73,7 @@ uint8_t cISBootloaderSTM32::check_is_compatible(uint32_t imgSign)
     serialPortWriteAndWaitForTimeout(m_port, (const uint8_t*)STM32_AUTOBAUD, 1, (const uint8_t*)STM32_ACK, 1, 1000U);
 
     // Read the device ID
-    if(get_id() != STM32_ACK) return IS_IMAGE_SIGN_NONE;
+    if (get_id() != STM32_ACK) return IS_IMAGE_SIGN_NONE;
 
     // Check the device ID
     switch(m_pid)
@@ -95,7 +95,7 @@ uint8_t cISBootloaderSTM32::check_is_compatible(uint32_t imgSign)
 is_operation_result cISBootloaderSTM32::reboot_up()
 {
     // Jump to the application in FLASH memory
-    if(go(0x08000000) != STM32_ACK)
+    if (go(0x08000000) != STM32_ACK)
     {
         m_info_callback(this, "Failed to jump to application in FLASH memory", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
@@ -121,11 +121,11 @@ is_operation_result cISBootloaderSTM32::download_image(void)
 
     // Load the firmware image from the Intel HEX file
     const size_t numSections = ihex_load_sections(m_filename.c_str(), image, MAX_NUM_IHEX_SECTIONS);
-    if(numSections <= 0) return IS_OP_ERROR;
+    if (numSections <= 0) return IS_OP_ERROR;
 
     uint32_t totalLen = 0U;         // Holds the total length of the firmware image
     uint32_t bytesWritten = 0U;     // Holds the number of bytes written to the device
-    for(size_t i = 0U; i < numSections; i++)
+    for (size_t i = 0U; i < numSections; i++)
     {
         totalLen += image[i].len;
     }
@@ -133,7 +133,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
     status_update("(STM) Erasing flash...", IS_LOG_LEVEL_INFO);
     
     // Perform the erase operation
-    if(mass_erase() != STM32_ACK)
+    if (mass_erase() != STM32_ACK)
     {
         ihex_unload_sections(image, numSections);
         return IS_OP_ERROR;
@@ -145,7 +145,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
     stm32_data_t payload; payload.data = dataBuf;
 
     // Write memory
-    for(size_t i = 0; i < numSections; i++)
+    for (size_t i = 0; i < numSections; i++)
     {
         uint32_t bytesLeft = image[i].len;
         uint32_t offset = 0U;
@@ -154,26 +154,26 @@ is_operation_result cISBootloaderSTM32::download_image(void)
         // Check the address range
         switch(m_pid)
         {
-        case 0x62:      // STM32L452 (IMX-5.0)
-            // TODO: Add support for other areas.
-            if(image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x0807FFFF)
-            {
-                m_info_callback(this, "Invalid address range for STM32L4 device", IS_LOG_LEVEL_WARN);
-                continue;
-            }
-            break;
-        case 0x82:      // STM32U575/STM32U585 (GPX-1/IMX-5.1)
-            // TODO: Add support for other areas.
-            if(image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x08200000)
-            {
-                m_info_callback(this, "Invalid address range for STM32U5 device", IS_LOG_LEVEL_WARN);
-                continue;
-            }
-            break;
-        default: 
-            m_info_callback(this, "No STM32 device detected", IS_LOG_LEVEL_DEBUG);
-            ihex_unload_sections(image, numSections);
-            return IS_OP_ERROR;
+            case 0x62:      // STM32L452 (IMX-5.0)
+                // TODO: Add support for other areas.
+                if (image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x0807FFFF)
+                {
+                    m_info_callback(this, "Invalid address range for STM32L4 device", IS_LOG_LEVEL_WARN);
+                    continue;
+                }
+                break;
+            case 0x82:      // STM32U575/STM32U585 (GPX-1/IMX-5.1)
+                // TODO: Add support for other areas.
+                if (image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x08200000)
+                {
+                    m_info_callback(this, "Invalid address range for STM32U5 device", IS_LOG_LEVEL_WARN);
+                    continue;
+                }
+                break;
+            default: 
+                m_info_callback(this, "No STM32 device detected", IS_LOG_LEVEL_DEBUG);
+                ihex_unload_sections(image, numSections);
+                return IS_OP_ERROR;
         }
 
         while (bytesLeft > 0 && bytesLeft < MAX_IHEX_SECTION_LEN)
@@ -189,7 +189,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
             memcpy(payload.data, &image[i].image[offset], (size_t)payload.len + 1);
 
             // Write the memory
-            if(write_memory(&payload) != STM32_ACK && ++retries > 3) 
+            if (write_memory(&payload) != STM32_ACK && ++retries > 3) 
             {
                 ihex_unload_sections(image, numSections);
                 return IS_OP_ERROR;
@@ -214,7 +214,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
 
 uint8_t cISBootloaderSTM32::send_command(uint8_t cmd)
 {
-    if((m_port->options & OPT_PARITY_MASK) != OPT_PARITY_EVEN)
+    if ((m_port->options & OPT_PARITY_MASK) != OPT_PARITY_EVEN)
     {
         serialPortClose(m_port);
         serialPortSetOptions(m_port, OPT_PARITY_EVEN);
@@ -229,7 +229,7 @@ uint8_t cISBootloaderSTM32::send_command(uint8_t cmd)
     serialPortWrite(m_port, cmdbuf, sizeof(cmdbuf));
 
     int ackLen = serialPortReadTimeout(m_port, &resp, 1, 1000U);
-    if(ackLen != 1 || resp != STM32_ACK) return STM32_NACK;
+    if (ackLen != 1 || resp != STM32_ACK) return STM32_NACK;
 
     return STM32_ACK;
 
@@ -238,13 +238,13 @@ uint8_t cISBootloaderSTM32::send_command(uint8_t cmd)
 uint8_t cISBootloaderSTM32::get(void)
 {
     // Send the command and check for ACK
-    if(send_command(STM32_GET) != STM32_ACK) return STM32_NACK;
+    if (send_command(STM32_GET) != STM32_ACK) return STM32_NACK;
 
     // Read the first byte of the response to get the length
     uint8_t respBuf[32];
     uint8_t xor = 0;
     int respLen = serialPortReadTimeout(m_port, respBuf, 1, 1000U);
-    if(respLen != 1) return STM32_NACK;
+    if (respLen != 1) return STM32_NACK;
 
     // Compute the checksum and get the length of the response
     xorCompute(&xor, respBuf, 1);
@@ -252,16 +252,16 @@ uint8_t cISBootloaderSTM32::get(void)
     
     // Read the rest of the response
     respLen = serialPortReadTimeout(m_port, respBuf, bytesLeft, 1000U);
-    if(respLen != bytesLeft) return STM32_NACK;
+    if (respLen != bytesLeft) return STM32_NACK;
     xorCompute(&xor, respBuf, respLen);
 
     // Read and check the checksum
     uint8_t csum;
     respLen = serialPortReadTimeout(m_port, &csum, 1, 100U);
-    if(respLen != 1 || csum != xor) return STM32_NACK;
+    if (respLen != 1 || csum != xor) return STM32_NACK;
 
     // Populate the list of valid commands in the class
-    if(bytesLeft > sizeof(m_valid_commands)) bytesLeft = sizeof(m_valid_commands);
+    if (bytesLeft > sizeof(m_valid_commands)) bytesLeft = sizeof(m_valid_commands);
     memset(m_valid_commands, 0U, sizeof(m_valid_commands));
     memcpy(m_valid_commands, respBuf, bytesLeft);
     
@@ -271,13 +271,13 @@ uint8_t cISBootloaderSTM32::get(void)
 uint8_t cISBootloaderSTM32::get_version(void)
 {
     // Send the command and check for ACK
-    if(send_command(STM32_GET_VERSION) != STM32_ACK) return STM32_NACK;
+    if (send_command(STM32_GET_VERSION) != STM32_ACK) return STM32_NACK;
 
     // Read the first two bytes of the response to get the length
     uint8_t respBuf[32];
     uint8_t xor = 0;
     int respLen = serialPortReadTimeout(m_port, respBuf, 4, 1000U);
-    if(respLen != 4 || respBuf[3] != STM32_ACK) return STM32_NACK;
+    if (respLen != 4 || respBuf[3] != STM32_ACK) return STM32_NACK;
 
     m_version = respBuf[0];
     
@@ -287,19 +287,19 @@ uint8_t cISBootloaderSTM32::get_version(void)
 uint8_t cISBootloaderSTM32::get_id(void)
 {
     // Send the command and check for ACK
-    if(send_command(STM32_GET_ID) != STM32_ACK) return STM32_NACK;
+    if (send_command(STM32_GET_ID) != STM32_ACK) return STM32_NACK;
 
     // Read the first byte of the response to get the length
     uint8_t respBuf[10];
     uint8_t xor = 0;
     int respLen = serialPortReadTimeout(m_port, respBuf, 1, 1000U);
-    if(respLen != 1) return STM32_NACK;
+    if (respLen != 1) return STM32_NACK;
 
     // Read the id
     uint8_t lenVer = respBuf[0] + 2;    // 2 for checksum, 1 for length
-    if(lenVer > sizeof(respBuf)) lenVer = sizeof(respBuf);
+    if (lenVer > sizeof(respBuf)) lenVer = sizeof(respBuf);
     respLen = serialPortReadTimeout(m_port, respBuf, lenVer, 1000U);
-    if(respLen != lenVer || respBuf[lenVer] != STM32_ACK) return STM32_NACK;
+    if (respLen != lenVer || respBuf[lenVer] != STM32_ACK) return STM32_NACK;
 
     // Copy the PID into the class (respBuf[0] is always 0x04 for all STM32 devices)
     m_pid = respBuf[1];
@@ -311,23 +311,23 @@ uint8_t cISBootloaderSTM32::get_id(void)
 uint8_t cISBootloaderSTM32::mass_erase(void)
 {
     // Send the command and check for ACK
-    if(send_command(STM32_ERASE) != STM32_ACK) return STM32_NACK;
+    if (send_command(STM32_ERASE) != STM32_ACK) return STM32_NACK;
 
     // Send the mass erase command
     uint8_t cmd[2] = { 0xFF, 0x00 };
     serialPortWrite(m_port, cmd, 2);
 
-    if(checkAck() != STM32_ACK) return STM32_NACK;
+    if (checkAck() != STM32_ACK) return STM32_NACK;
 
     return STM32_ACK;
 }
 
 uint8_t cISBootloaderSTM32::read_memory(stm32_data_t *data)
 {
-    if(data == NULL || data->data == NULL) return STM32_NACK;
+    if (data == NULL || data->data == NULL) return STM32_NACK;
 
     // Send the command and check for ACK
-    if(send_command(STM32_READ_MEMORY) != STM32_ACK) return STM32_NACK;
+    if (send_command(STM32_READ_MEMORY) != STM32_ACK) return STM32_NACK;
 
     // Send address to jump to
     uint8_t buf[5];
@@ -335,7 +335,7 @@ uint8_t cISBootloaderSTM32::read_memory(stm32_data_t *data)
     serialPortWrite(m_port, buf, sizeof(buf));
 
     // Wait for ACK
-    if(checkAck() != STM32_ACK) return STM32_NACK;
+    if (checkAck() != STM32_ACK) return STM32_NACK;
 
     // Send the number of bytes to read with a checksum
     uint8_t len[2] = { data->len - 1, 0x00 };
@@ -343,18 +343,18 @@ uint8_t cISBootloaderSTM32::read_memory(stm32_data_t *data)
     serialPortWrite(m_port, len, 2);
     
     // Wait for ACK
-    if(checkAck() != STM32_ACK) return STM32_NACK;
+    if (checkAck() != STM32_ACK) return STM32_NACK;
 
     // Read memory into buffer
     int respLen = serialPortReadTimeout(m_port, data->data, data->len, 1000U);
-    if(respLen != data->len) return STM32_NACK;
+    if (respLen != data->len) return STM32_NACK;
     
     // Make sure the checksum is correct
     uint8_t chksum = 0, lastbyte;
     xorCompute(&chksum, data->data, data->len);
     respLen = serialPortReadTimeout(m_port, &lastbyte, 1, 1000U);
     xorCompute(&chksum, &lastbyte, 1);
-    if(respLen != 1 || chksum != 0) return STM32_NACK;
+    if (respLen != 1 || chksum != 0) return STM32_NACK;
 
     return STM32_ACK;
 }
@@ -362,7 +362,7 @@ uint8_t cISBootloaderSTM32::read_memory(stm32_data_t *data)
 uint8_t cISBootloaderSTM32::write_memory(stm32_data_t *data)
 {
     // Send the command and check for ACK
-    if(send_command(STM32_WRITE_MEMORY) != STM32_ACK) return STM32_NACK;
+    if (send_command(STM32_WRITE_MEMORY) != STM32_ACK) return STM32_NACK;
 
     // Send address to jump to
     uint8_t buf[5];
@@ -370,7 +370,7 @@ uint8_t cISBootloaderSTM32::write_memory(stm32_data_t *data)
     serialPortWrite(m_port, buf, sizeof(buf));
 
     // Wait for ACK
-    if(checkAck() != STM32_ACK) return STM32_NACK;
+    if (checkAck() != STM32_ACK) return STM32_NACK;
 
     // Send the number of bytes to write
     uint8_t len = data->len - 1;
@@ -386,7 +386,7 @@ uint8_t cISBootloaderSTM32::write_memory(stm32_data_t *data)
     serialPortWrite(m_port, &chksum, 1);
     
     // Wait for ACK
-    if(checkAck() != STM32_ACK) return STM32_NACK;
+    if (checkAck() != STM32_ACK) return STM32_NACK;
 
     return STM32_ACK;
 }
@@ -394,14 +394,14 @@ uint8_t cISBootloaderSTM32::write_memory(stm32_data_t *data)
 uint8_t cISBootloaderSTM32::go(uint32_t addr)
 {
     // Send the command and check for ACK
-    if(send_command(STM32_GO) != STM32_ACK) return STM32_NACK;
+    if (send_command(STM32_GO) != STM32_ACK) return STM32_NACK;
 
     // Send address to jump to
     uint8_t buf[5];
     addrBufCopy(addr, buf);
     serialPortWrite(m_port, buf, sizeof(buf));
 
-    if(checkAck() != STM32_ACK) return STM32_NACK;
+    if (checkAck() != STM32_ACK) return STM32_NACK;
     
     return STM32_ACK;
 }
@@ -419,14 +419,14 @@ uint8_t cISBootloaderSTM32::checkAck(void)
 {
     uint8_t respBuf[1];
     int respLen = serialPortReadTimeout(m_port, respBuf, 1, 1000U);
-    if(respLen != 1 || respBuf[0] != STM32_ACK) return STM32_NACK;
+    if (respLen != 1 || respBuf[0] != STM32_ACK) return STM32_NACK;
     
     return STM32_ACK;
 }
 
 void cISBootloaderSTM32::xorCompute(uint8_t *chksum, uint8_t *data, uint16_t len)
 {
-    for(uint16_t i = 0; i < len; i++)
+    for (uint16_t i = 0; i < len; i++)
     {
         *chksum ^= data[i];
     }

@@ -34,179 +34,179 @@ using namespace std;
 
 void cDeviceLogCSV::InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
-	m_logs.clear();
-	m_nextId = 0;
-	cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
+    m_logs.clear();
+    m_nextId = 0;
+    cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
 
 void cDeviceLogCSV::InitDeviceForReading()
 {
-	cDeviceLog::InitDeviceForReading();
+    cDeviceLog::InitDeviceForReading();
 
-	// Create a list of file for each possible data set
-	m_logs.clear();
-	for (uint32_t id = DID_NULL + 1; id < DID_COUNT; id++)
-	{
-		const char* dataSet = cISDataMappings::DataName(id);
-		if (dataSet != NULL)
-		{
-			string dataSetRegex = string(dataSet) + "\\.csv$";
-			if (m_devSerialNo > 0 && m_devSerialNo < 4294967295)	// < 0xFFFFFFFF
-			{	// Include serial number if valid
-				dataSetRegex = "LOG_SN" + to_string(m_devSerialNo) + ".*?" + dataSetRegex;
-			}
-			vector<ISFileManager::file_info_t> infos;
-			vector<string> files;
-			ISFileManager::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false, false);
-			if (infos.size() != 0)
-			{
-				cCsvLog log;
-				log.dataId = id;
-				log.dataSize = cISDataMappings::DataSize(log.dataId);
-				for (size_t i = 0; i < infos.size(); i++)
-				{
-					files.push_back(infos[i].name);
-				}
-				m_currentFiles[id] = files;
-				m_currentFileIndex[id] = 0;
-				while (OpenNewFile(log, true) && !GetNextLineForFile(log)) {}
-				if (log.nextLine.length() != 0)
-				{
-					m_logs[id] = log;
-				}
-			}
-		}
-	}
+    // Create a list of file for each possible data set
+    m_logs.clear();
+    for (uint32_t id = DID_NULL + 1; id < DID_COUNT; id++)
+    {
+        const char* dataSet = cISDataMappings::DataName(id);
+        if (dataSet != NULL)
+        {
+            string dataSetRegex = string(dataSet) + "\\.csv$";
+            if (m_devSerialNo > 0 && m_devSerialNo < 4294967295)    // < 0xFFFFFFFF
+            {   // Include serial number if valid
+                dataSetRegex = "LOG_SN" + to_string(m_devSerialNo) + ".*?" + dataSetRegex;
+            }
+            vector<ISFileManager::file_info_t> infos;
+            vector<string> files;
+            ISFileManager::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false, false);
+            if (infos.size() != 0)
+            {
+                cCsvLog log;
+                log.dataId = id;
+                log.dataSize = cISDataMappings::DataSize(log.dataId);
+                for (size_t i = 0; i < infos.size(); i++)
+                {
+                    files.push_back(infos[i].name);
+                }
+                m_currentFiles[id] = files;
+                m_currentFileIndex[id] = 0;
+                while (OpenNewFile(log, true) && !GetNextLineForFile(log)) {}
+                if (log.nextLine.length() != 0)
+                {
+                    m_logs[id] = log;
+                }
+            }
+        }
+    }
 }
 
 
 bool cDeviceLogCSV::CloseAllFiles()
 {
-	cDeviceLog::CloseAllFiles();
+    cDeviceLog::CloseAllFiles();
 
-	for (map<uint32_t, cCsvLog>::iterator i = m_logs.begin(); i != m_logs.end(); i++)
-	{
-		cCsvLog& log = i->second;
-		if (log.pFile)
-		{
-			fclose(log.pFile);
-			log.pFile = NULL;
-		}
-	}
-	m_logs.clear();
-	return true;
+    for (map<uint32_t, cCsvLog>::iterator i = m_logs.begin(); i != m_logs.end(); i++)
+    {
+        cCsvLog& log = i->second;
+        if (log.pFile)
+        {
+            fclose(log.pFile);
+            log.pFile = NULL;
+        }
+    }
+    m_logs.clear();
+    return true;
 }
 
 
 bool cDeviceLogCSV::OpenNewFile(cCsvLog& log, bool readonly)
 {
-	const char* dataSetName = cISDataMappings::DataName(log.dataId);
-	if (dataSetName == NULL)
-	{
-		return false;
-	}
+    const char* dataSetName = cISDataMappings::DataName(log.dataId);
+    if (dataSetName == NULL)
+    {
+        return false;
+    }
 
-	// Close existing file
-	if (log.pFile)
-	{
-		fclose(log.pFile);
-		log.pFile = NULL;
-	}
+    // Close existing file
+    if (log.pFile)
+    {
+        fclose(log.pFile);
+        log.pFile = NULL;
+    }
 
-	// Ensure directory exists
-	if (m_directory.empty())
-	{
-		return false;
-	}
+    // Ensure directory exists
+    if (m_directory.empty())
+    {
+        return false;
+    }
 
-	_MKDIR(m_directory.c_str());
+    _MKDIR(m_directory.c_str());
 
-	// Open new file
-	uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
-	if (!serNum)
-		return false;
+    // Open new file
+    uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
+    if (!serNum)
+        return false;
 
-	string fileName;
-	if (readonly)
-	{
+    string fileName;
+    if (readonly)
+    {
 tryNextFile:
-		{
-			uint32_t index = m_currentFileIndex[log.dataId];
-			vector<string>& files = m_currentFiles[log.dataId];
-			if (index >= files.size())
-			{
-				m_logs.erase(log.dataId);
-				return false;
-			}
-			fileName = files[index++];
-			m_currentFileIndex[log.dataId] = index;
-			log.pFile = fopen(fileName.c_str(), "r");
-			log.fileCount++;
-			struct stat st;
-			stat(fileName.c_str(), &st);
-			log.fileSize = st.st_size;
-			m_logSize += log.fileSize;
-			if (m_csv.ReadHeaderFromFile(log.pFile, log.dataId, log.columnHeaders) == 0)
-			{
-				goto tryNextFile;
-			}
-		}
-	}
-	else
-	{
-		log.fileCount++;
-		fileName = GetNewFileName(serNum, log.fileCount, dataSetName);
-		log.pFile = fopen(fileName.c_str(), "w");
+        {
+            uint32_t index = m_currentFileIndex[log.dataId];
+            vector<string>& files = m_currentFiles[log.dataId];
+            if (index >= files.size())
+            {
+                m_logs.erase(log.dataId);
+                return false;
+            }
+            fileName = files[index++];
+            m_currentFileIndex[log.dataId] = index;
+            log.pFile = fopen(fileName.c_str(), "r");
+            log.fileCount++;
+            struct stat st;
+            stat(fileName.c_str(), &st);
+            log.fileSize = st.st_size;
+            m_logSize += log.fileSize;
+            if (m_csv.ReadHeaderFromFile(log.pFile, log.dataId, log.columnHeaders) == 0)
+            {
+                goto tryNextFile;
+            }
+        }
+    }
+    else
+    {
+        log.fileCount++;
+        fileName = GetNewFileName(serNum, log.fileCount, dataSetName);
+        log.pFile = fopen(fileName.c_str(), "w");
 
-		// Write Header
-		int fileBytes = m_csv.WriteHeaderToFile(log.pFile, log.dataId);
+        // Write Header
+        int fileBytes = m_csv.WriteHeaderToFile(log.pFile, log.dataId);
 
-		// File byte size
-		log.fileSize = fileBytes;
-		m_logSize += fileBytes;
-	}
+        // File byte size
+        log.fileSize = fileBytes;
+        m_logSize += fileBytes;
+    }
 
-	if (log.pFile)
-	{
+    if (log.pFile)
+    {
 #if LOG_DEBUG_FILE_WRITE
-		printf("cDeviceLogCSV::OpenNewFile %s %s\n", (readonly?"read":"write"), fileName.c_str());
+        printf("cDeviceLogCSV::OpenNewFile %s %s\n", (readonly?"read":"write"), fileName.c_str());
 #endif
-		return true;
-	}
-	else
-	{
+        return true;
+    }
+    else
+    {
 #if LOG_DEBUG_FILE_WRITE
-		printf("cDeviceLogCSV::OpenNewFile FAILED to open save file: %s\n", fileName.c_str());
+        printf("cDeviceLogCSV::OpenNewFile FAILED to open save file: %s\n", fileName.c_str());
 #endif
-		m_logs.erase(log.dataId);
-		return false;
-	}
+        m_logs.erase(log.dataId);
+        return false;
+    }
 }
 
 
 bool cDeviceLogCSV::GetNextLineForFile(cCsvLog& log)
 {
-	if (log.pFile == NULL)
-	{
-		return false;
-	}
-	char lineBuffer[8192];
-	if (fgets(lineBuffer, _ARRAY_BYTE_COUNT(lineBuffer), log.pFile) == NULL)
-	{
-		return false;
-	}
-	log.nextLine = lineBuffer;
-	size_t index = log.nextLine.find(',', 0);
-	if (index < log.nextLine.size())
-	{
-		log.orderId = strtoull(log.nextLine.c_str(), NULL, 10);
-	}
-	else
-	{
-		return false;
-	}
-	return true;
+    if (log.pFile == NULL)
+    {
+        return false;
+    }
+    char lineBuffer[8192];
+    if (fgets(lineBuffer, _ARRAY_BYTE_COUNT(lineBuffer), log.pFile) == NULL)
+    {
+        return false;
+    }
+    log.nextLine = lineBuffer;
+    size_t index = log.nextLine.find(',', 0);
+    if (index < log.nextLine.size())
+    {
+        log.orderId = strtoull(log.nextLine.c_str(), NULL, 10);
+    }
+    else
+    {
+        return false;
+    }
+    return true;
 }
 
 
@@ -214,40 +214,40 @@ bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, prot
 {
     cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 
-	// Reference current log
-	cCsvLog& log = m_logs[dataHdr->id];
-	log.dataId = dataHdr->id;
+    // Reference current log
+    cCsvLog& log = m_logs[dataHdr->id];
+    log.dataId = dataHdr->id;
 
-	// Create first file it it doesn't exist, return out if failure
-	if (log.pFile == NULL && (!OpenNewFile(log, false) || log.pFile == NULL))
-	{
-		return false;
-	}
-	else if (dataHdr->id == DID_DEV_INFO && device)
-	{
-		memcpy((void *)&(device->devInfo), dataBuf, sizeof(dev_info_t));
-	}
+    // Create first file it it doesn't exist, return out if failure
+    if (log.pFile == NULL && (!OpenNewFile(log, false) || log.pFile == NULL))
+    {
+        return false;
+    }
+    else if (dataHdr->id == DID_DEV_INFO && device)
+    {
+        memcpy((void *)&(device->devInfo), dataBuf, sizeof(dev_info_t));
+    }
 
-	// Write date to file
+    // Write date to file
     int nBytes = m_csv.WriteDataToFile(m_nextId++, log.pFile, *dataHdr, dataBuf);
-	if (ferror(log.pFile) != 0)
-	{
-		return false;
-	}
+    if (ferror(log.pFile) != 0)
+    {
+        return false;
+    }
 
-	// File byte size
-	log.fileSize += nBytes;
-	m_logSize += nBytes;
+    // File byte size
+    log.fileSize += nBytes;
+    m_logSize += nBytes;
 
-	if (log.fileSize >= m_maxFileSize)
-	{
-		// Close existing file
-		fclose(log.pFile);
-		log.pFile = NULL;
-		log.fileSize = 0;
-	}
+    if (log.fileSize >= m_maxFileSize)
+    {
+        // Close existing file
+        fclose(log.pFile);
+        log.pFile = NULL;
+        log.fileSize = 0;
+    }
 
-	return true;
+    return true;
 }
 
 
@@ -255,61 +255,61 @@ p_data_buf_t* cDeviceLogCSV::ReadData()
 {
 
 tryAgain:
-	if (m_logs.size() == 0)
-	{
-		return NULL;
-	}
+    if (m_logs.size() == 0)
+    {
+        return NULL;
+    }
 
-	p_data_buf_t* data = NULL;
-	cCsvLog* nextLog = NULL;
-	uint64_t nextId = ULLONG_MAX;
-	for (map<uint32_t, cCsvLog>::iterator i = m_logs.begin(); i != m_logs.end(); )
-	{
-		if (i->second.orderId < nextId)
-		{
-			nextLog = &i->second;
-			nextId = i->second.orderId;
-		}
-		i++;
-	}
-	if (nextLog == NULL)
-	{
-		assert(false);
-		return NULL;
-	}
-	if ((data = ReadDataFromFile(*nextLog)) == NULL)
-	{
-		goto tryAgain;
-	}
+    p_data_buf_t* data = NULL;
+    cCsvLog* nextLog = NULL;
+    uint64_t nextId = ULLONG_MAX;
+    for (map<uint32_t, cCsvLog>::iterator i = m_logs.begin(); i != m_logs.end();)
+    {
+        if (i->second.orderId < nextId)
+        {
+            nextLog = &i->second;
+            nextId = i->second.orderId;
+        }
+        i++;
+    }
+    if (nextLog == NULL)
+    {
+        assert(false);
+        return NULL;
+    }
+    if ((data = ReadDataFromFile(*nextLog)) == NULL)
+    {
+        goto tryAgain;
+    }
 
     cDeviceLog::UpdateStatsFromFile(data);
-	return data;
+    return data;
 }
 
 
 p_data_buf_t* cDeviceLogCSV::ReadDataFromFile(cCsvLog& log)
 {
-	if (log.pFile == NULL)
-	{
-		assert(false);
-		return NULL;
-	}
+    if (log.pFile == NULL)
+    {
+        assert(false);
+        return NULL;
+    }
     memset(&m_data, 0, sizeof(m_data));
-	m_data.hdr.id = log.dataId;
-	m_data.hdr.size = log.dataSize;
-	if (m_csv.StringCSVToData(log.nextLine, m_data.hdr, m_data.buf, _ARRAY_BYTE_COUNT(m_data.buf), log.columnHeaders))
-	{
-		if (m_data.hdr.id == DID_DEV_INFO)
-		{
-			memcpy((void *)&(device->devInfo), m_data.buf, sizeof(dev_info_t));
-		}
-		log.nextLine.clear();
-		while (!GetNextLineForFile(log) && OpenNewFile(log, true)) {}
-		return &m_data;
-	}
-	log.nextLine.clear();
-	while (!GetNextLineForFile(log) && OpenNewFile(log, true)) {}
-	return NULL;
+    m_data.hdr.id = log.dataId;
+    m_data.hdr.size = log.dataSize;
+    if (m_csv.StringCSVToData(log.nextLine, m_data.hdr, m_data.buf, _ARRAY_BYTE_COUNT(m_data.buf), log.columnHeaders))
+    {
+        if (m_data.hdr.id == DID_DEV_INFO)
+        {
+            memcpy((void *)&(device->devInfo), m_data.buf, sizeof(dev_info_t));
+        }
+        log.nextLine.clear();
+        while (!GetNextLineForFile(log) && OpenNewFile(log, true)) {}
+        return &m_data;
+    }
+    log.nextLine.clear();
+    while (!GetNextLineForFile(log) && OpenNewFile(log, true)) {}
+    return NULL;
 }
 
 void cDeviceLogCSV::SetSerialNumber(uint32_t serialNumber)

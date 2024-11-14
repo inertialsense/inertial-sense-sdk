@@ -30,14 +30,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace ISBootloader;
 using namespace std;
 
-#define MAX_FILE_SIZE_DISK_PERCENT_50	.5
-#define MAX_FILE_SIZE_100k				100000
+#define MAX_FILE_SIZE_DISK_PERCENT_50   .5
+#define MAX_FILE_SIZE_100k              100000
 
 bool g_showProgress = true;
 
 bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 {
-    inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
+    inertialSenseInterface.StopBroadcasts();    // Stop streaming any prior messages
 
     // ask for device info every 2 seconds
     inertialSenseInterface.BroadcastBinaryData(DID_DEV_INFO, 2000);
@@ -81,7 +81,7 @@ static void statusText(void* obj, eLogLevel level, const char* info, ...)
     {
         printf("%s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
     }
-    else if(ctx->m_sn != 0)
+    else if (ctx->m_sn != 0)
     {
         printf("(SN%d):\r", ctx->m_sn);
     }
@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
     if (!inertialSenseInterface.Open(COMNum.c_str(), baudRate, true))
     {
         cout << "Failed to open serial port at " << COMNum.c_str() << endl;
-        return -1;	// Failed to open serial port
+        return -1;    // Failed to open serial port
     }
     else
         cout << "COM port open!\r\n";
@@ -313,7 +313,7 @@ int main(int argc, char* argv[])
                     {
                         // [C++ COMM INSTRUCTION] STEP 4: Read data
                         if (!inertialSenseInterface.Update())
-                        {	// device disconnected, exit
+                        {   // device disconnected, exit
                             cout << "Device disconnected!\r\n";
                             break;
                         }

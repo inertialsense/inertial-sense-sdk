@@ -281,7 +281,7 @@ private:
 
     int reset();
 
-    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr );
+    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr);
 
     int setAddress(uint16_t& wValue, uint32_t address);
 

@@ -8,13 +8,13 @@ extern "C" {
 #include <ctime>
 #include "stdint.h"
 
-#define C_SECONDS_PER_WEEK          (   604800)        // (60 * 60 * 24 * 7)
-#define C_SECONDS_PER_DAY           (    86400)
+#define C_SECONDS_PER_WEEK          (604800)        // (60 * 60 * 24 * 7)
+#define C_SECONDS_PER_DAY           (86400)
 #define C_MILLISECONDS_PER_WEEK     (604800000)     // (60 * 60 * 24 * 7 * 1000)
-#define C_MILLISECONDS_PER_DAY      ( 86400000)
-#define C_MILLISECONDS_PER_HOUR     (  3600000)
-#define C_MILLISECONDS_PER_MINUTE   (    60000)
-#define C_MILLISECONDS_PER_SECOND   (     1000)
+#define C_MILLISECONDS_PER_DAY      (86400000)
+#define C_MILLISECONDS_PER_HOUR     (3600000)
+#define C_MILLISECONDS_PER_MINUTE   (60000)
+#define C_MILLISECONDS_PER_SECOND   (1000)
 #define C_DAYS_PER_SECOND           (1.1574074074074074074074074074074e-5)
 #define C_GPS_TO_UNIX_OFFSET_S      (315964800)
 
@@ -114,7 +114,7 @@ int TIMECONV_GetSystemTime(
     double*             julian_date,  //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
     unsigned short*     gps_week,     //!< GPS week (0-1024+)            [week]
     double*             gps_tow       //!< GPS time of week (0-604800.0) [s]
-    );
+);
 
 
 #ifdef WIN32
@@ -133,7 +133,7 @@ int TIMECONV_SetSystemTime(
     const unsigned char   utc_hour,     //!< Universal Time Coordinated    [hours]
     const unsigned char   utc_minute,   //!< Universal Time Coordinated    [minutes]
     const float           utc_seconds   //!< Universal Time Coordinated    [s]
-    );
+);
 #endif
 
 
@@ -151,7 +151,7 @@ http://en.wikipedia.org/wiki/Julian_day
 int TIMECONV_GetDayOfWeekFromJulianDate(
     const double julian_date,   //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
     unsigned char *day_of_week  //!< 0-Sunday, 1-Monday, 2-Tuesday, 3-Wednesday, 4-Thursday, 5-Friday, 6-Saturday [].
-    );
+);
 
 
 /**
@@ -171,7 +171,7 @@ int TIMECONV_GetJulianDateFromGPSTime(
     const double            gps_tow,       //!< GPS time of week (0-604800.0)  [s]
     const unsigned char     utc_offset,    //!< Integer seconds that GPS is ahead of UTC time, always positive [s]
     double*                 julian_date    //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-    );
+);
 
 /**
 \brief    Computes the Julian date from UTC time
@@ -198,7 +198,7 @@ int TIMECONV_GetJulianDateFromUTCTime(
     const unsigned char      utc_minute,    //!< Universal Time Coordinated  [minutes]
     const float              utc_seconds,   //!< Universal Time Coordinated  [s]
     double*                  julian_date    //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-    );
+);
 
 
 
@@ -220,7 +220,7 @@ int TIMECONV_GetGPSTimeFromJulianDate(
     const unsigned char     utc_offset,  //!< Integer seconds that GPS is ahead of UTC time, always positive [s]
     unsigned short*         gps_week,    //!< GPS week (0-1024+)            [week]
     double*                 gps_tow      //!< GPS time of week [s]
-    );
+);
 
 /**
 \brief    Computes UTC time from the Julian date
@@ -242,7 +242,7 @@ int TIMECONV_GetUTCTimeFromJulianDate(
     unsigned char*      utc_hour,     //!< Universal Time Coordinated    [hours]
     unsigned char*      utc_minute,   //!< Universal Time Coordinated    [minutes]
     float*              utc_seconds   //!< Universal Time Coordinated    [s]
-    );
+);
 
 /**
 \brief    Computes GPS time from UTC time
@@ -268,7 +268,7 @@ int TIMECONV_GetGPSTimeFromUTCTime(
     float              utc_seconds,  //!< Universal Time Coordinated    [s]
     unsigned short*    gps_week,     //!< GPS week (0-1024+)            [week]
     double*            gps_tow       //!< GPS time of week (0-604800.0) [s]
-    );
+);
 
 
 /**
@@ -298,7 +298,7 @@ int TIMECONV_GetGPSTimeFromRinexTime(
     float              utc_seconds,  //!< Universal Time Coordinated    [s]
     unsigned short*    gps_week,     //!< GPS week (0-1024+)            [week]
     double*            gps_tow       //!< GPS time of week (0-604800.0) [s]
-    );
+);
 
 
 /**
@@ -325,7 +325,7 @@ int TIMECONV_UTCTimeFromGPSTime(
     unsigned char*     utc_hour,     //!< Universal Time Coordinated    [hours]
     unsigned char*     utc_minute,   //!< Universal Time Coordinated    [minutes]
     float*             utc_seconds   //!< Universal Time Coordinated    [s]
-    );
+);
 
 
 /**
@@ -364,7 +364,7 @@ UTCOffset, UTC Date, Julian Date [days]
 int TIMECONV_DetermineUTCOffset(
     double julian_date,       //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
     unsigned char* utc_offset //!< Integer seconds that GPS is ahead of UTC time, always positive             [s], obtained from a look up table
-    );
+);
 
 /**
 \brief    Determines the number of days in a month, given the month and year.
@@ -382,7 +382,7 @@ int TIMECONV_GetNumberOfDaysInMonth(
     const unsigned short year,        //!< Universal Time Coordinated    [year]
     const unsigned char month,        //!< Universal Time Coordinated    [1-12 months] 
     unsigned char* days_in_month      //!< Days in the specified month   [1-28|29|30|31 days]
-    );
+);
 
 
 /**
@@ -396,7 +396,7 @@ int TIMECONV_GetNumberOfDaysInMonth(
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
     Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
-int TIMECONV_IsALeapYear( const unsigned short year );
+int TIMECONV_IsALeapYear(const unsigned short year);
 
 
 /**
@@ -415,7 +415,7 @@ int TIMECONV_GetDayOfYear(
  const unsigned char  utc_month,   // Universal Time Coordinated           [1-12 months] 
  const unsigned char  utc_day,     // Universal Time Coordinated           [1-31 days]
  unsigned short*      dayofyear    // number of days into the year (1-366) [days]
- );
+);
 
 
 /**
@@ -431,7 +431,7 @@ int TIMECONV_GetGPSTimeFromYearAndDayOfYear(
  const unsigned short dayofyear, // The number of days into the year (1-366) [days]
  unsigned short*      gps_week,  //!< GPS week (0-1024+)            [week]
  double*              gps_tow    //!< GPS time of week (0-604800.0) [s]
- );
+);
 
 #endif  // #if 0
 

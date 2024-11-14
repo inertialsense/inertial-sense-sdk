@@ -34,7 +34,7 @@ def log2Data(log, dataClass, key):
         return 0;
 
 
-def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, saveFigs=False, saveFigsDirectory='', numDevs=None ):
+def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveFigs=False, saveFigsDirectory='', numDevs=None):
     global pt
     global g_imu1BiasPqr
     global g_imu2BiasPqr
@@ -87,71 +87,71 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 return
     print("==============================================================")
 
-    ins = log2Data( log, itd.cINS, key )
+    ins = log2Data(log, itd.cINS, key)
     log.ins = ins
     if ins:
-        itd.setGpsWeek( ins.v['week'] )
+        itd.setGpsWeek(ins.v['week'])
 
-    gps1Pos = log2Data( log, itd.cGPS, 'gps1Pos' )
-    # gps1Vel = log2Data( log, itd.cGPS, 'gps1Vel' )
-    gps1Ubx = log2Data( log, itd.cGPS, 'gps1UbxPos' )
-    gps1RtkPos = log2Data( log, itd.cGPS, 'gps1RtkPos' )
-    gps1Raw = log2Data( log, itd.cGPSRaw, 'GPS1Raw')
-    gps2Raw = log2Data( log, itd.cGPSRaw, 'GPS2Raw')
-    gpsBaseRaw = log2Data( log, itd.cGPSRaw, 'GPSBaseRaw')
-    imu1 = log2Data( log, itd.cIMU, 'imu1' )
-    dimu = log2Data( log, itd.cIMU, 'imu' )
-    dimu = log2Data( log, itd.cIMU, 'pimu' )
-    mag1 = log2Data( log, itd.cIMU, 'magnetometer' )
-    magInfo = log2Data( log, itd.cSIMPLE, 'inl2MagObs')
-    varInfo = log2Data( log, itd.cSIMPLE, 'inl2Variance')
-    baro = log2Data( log, itd.cIMU, 'barometer' )
+    gps1Pos = log2Data(log, itd.cGPS, 'gps1Pos')
+    # gps1Vel = log2Data(log, itd.cGPS, 'gps1Vel')
+    gps1Ubx = log2Data(log, itd.cGPS, 'gps1UbxPos')
+    gps1RtkPos = log2Data(log, itd.cGPS, 'gps1RtkPos')
+    gps1Raw = log2Data(log, itd.cGPSRaw, 'GPS1Raw')
+    gps2Raw = log2Data(log, itd.cGPSRaw, 'GPS2Raw')
+    gpsBaseRaw = log2Data(log, itd.cGPSRaw, 'GPSBaseRaw')
+    imu1 = log2Data(log, itd.cIMU, 'imu1')
+    dimu = log2Data(log, itd.cIMU, 'imu')
+    dimu = log2Data(log, itd.cIMU, 'pimu')
+    mag1 = log2Data(log, itd.cIMU, 'magnetometer')
+    magInfo = log2Data(log, itd.cSIMPLE, 'inl2MagObs')
+    varInfo = log2Data(log, itd.cSIMPLE, 'inl2Variance')
+    baro = log2Data(log, itd.cIMU, 'barometer')
 
     print("Timestamps:")
     if ins:
-        gmt1 = systime.gmtime( ins.time[0]  - systime.timezone )
-        gmt2 = systime.gmtime( ins.time[-1] - systime.timezone )
-        dgmt = systime.gmtime( ins.time[-1] - ins.time[0] )
+        gmt1 = systime.gmtime(ins.time[0]  - systime.timezone)
+        gmt2 = systime.gmtime(ins.time[-1] - systime.timezone)
+        dgmt = systime.gmtime(ins.time[-1] - ins.time[0])
         print("   INS:  %d-%d-%d %d:%d:%d - %d:%d:%d  (%d:%d:%d)" % (gmt1.tm_year, gmt1.tm_mon, gmt1.tm_mday,
                                                                      gmt1.tm_hour, gmt1.tm_min, gmt1.tm_sec,
                                                                      gmt2.tm_hour, gmt2.tm_min, gmt2.tm_sec,
                                                                      dgmt.tm_hour, dgmt.tm_min, dgmt.tm_sec))
     if imu1:
-        gmt1 = systime.gmtime( imu1.time[0]  - systime.timezone )
-        gmt2 = systime.gmtime( imu1.time[-1] - systime.timezone )
-        dgmt = systime.gmtime( imu1.time[-1] - imu1.time[0] )
+        gmt1 = systime.gmtime(imu1.time[0]  - systime.timezone)
+        gmt2 = systime.gmtime(imu1.time[-1] - systime.timezone)
+        dgmt = systime.gmtime(imu1.time[-1] - imu1.time[0])
         print("   IMU:  %d-%d-%d %d:%d:%d - %d:%d:%d  (%d:%d:%d)" % (gmt1.tm_year, gmt1.tm_mon, gmt1.tm_mday,
                                                                      gmt1.tm_hour, gmt1.tm_min, gmt1.tm_sec,
                                                                      gmt2.tm_hour, gmt2.tm_min, gmt2.tm_sec,
                                                                      dgmt.tm_hour, dgmt.tm_min, dgmt.tm_sec))
     if gps1Pos:
-        gmt1 = systime.gmtime( gps1Pos.time[0]  - systime.timezone )
-        gmt2 = systime.gmtime( gps1Pos.time[-1] - systime.timezone )
-        dgmt = systime.gmtime( gps1Pos.time[-1] - gps1Pos.time[0] )
+        gmt1 = systime.gmtime(gps1Pos.time[0]  - systime.timezone)
+        gmt2 = systime.gmtime(gps1Pos.time[-1] - systime.timezone)
+        dgmt = systime.gmtime(gps1Pos.time[-1] - gps1Pos.time[0])
         print("   GPS:  %d-%d-%d %d:%d:%d - %d:%d:%d  (%d:%d:%d)" % (gmt1.tm_year, gmt1.tm_mon, gmt1.tm_mday,
                                                                      gmt1.tm_hour, gmt1.tm_min, gmt1.tm_sec,
                                                                      gmt2.tm_hour, gmt2.tm_min, gmt2.tm_sec,
                                                                      dgmt.tm_hour, dgmt.tm_min, dgmt.tm_sec))
 
-    sysp = log2Data( log, itd.cSysParams, 'sysParams' )
-    sysp = log2Data( log, itd.cSysParams, 'ins2' )
+    sysp = log2Data(log, itd.cSysParams, 'sysParams')
+    sysp = log2Data(log, itd.cSysParams, 'ins2')
     if sysp == 0:
-        sysp = log2Data( log, itd.cSysParams, 'sysParams' )
-    ires = log2Data( log, itd.cInsRes, 'insResources')
-    info = log2Data( log, itd.cDevInfo, 'devInfo')
+        sysp = log2Data(log, itd.cSysParams, 'sysParams')
+    ires = log2Data(log, itd.cInsRes, 'insResources')
+    info = log2Data(log, itd.cDevInfo, 'devInfo')
 
     if info:
         print('Index:', log.index, '  Device S/N: ',info.v['serialNumber'][-1])
         hver = info.v['hardwareVer'][-1]
         cver = info.v['commVer'][-1]
         fver = info.v['firmwareVer'][-1]
-        print('  Hardware: %d.%d.%d.%d   Com: %d.%d.%d.%d   Firmware: %d.%d.%d.%d  b%d  r%d' %( hver[0], hver[1], hver[2], hver[3], cver[0], cver[1], cver[2], cver[3], fver[0], fver[1], fver[2], fver[3], info.v['build'][-1], info.v['repoRevision'][-1] ))
+        print('  Hardware: %d.%d.%d.%d   Com: %d.%d.%d.%d   Firmware: %d.%d.%d.%d  b%d  r%d' %(hver[0], hver[1], hver[2], hver[3], cver[0], cver[1], cver[2], cver[3], fver[0], fver[1], fver[2], fver[3], info.v['build'][-1], info.v['repoRevision'][-1]))
     else:
         print('Index:', log.index)
 
     if 'debugArray' in log.data.keys():
         pe['dbg'] = 1
-        dbg = log2Data( log, itd.cSIMPLE, 'debugArray')
+        dbg = log2Data(log, itd.cSIMPLE, 'debugArray')
         dbg.time = dbg.v['i'][:,0]*0.001
     else:
         pe['dbg'] = 0
@@ -264,9 +264,9 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         eulerErr = np.c_[insEuler[:,0] - rIns.offset[0],
                          insEuler[:,1] - rIns.offset[1],
                          insEuler[:,2] - rIns.offset[2]]
-        ins.eulerErrRms = np.sqrt( np.r_[np.mean(eulerErr[:,0]**2),
+        ins.eulerErrRms = np.sqrt(np.r_[np.mean(eulerErr[:,0]**2),
                                          np.mean(eulerErr[:,1]**2),
-                                         np.mean(eulerErr[:,2]**2)] )
+                                         np.mean(eulerErr[:,2]**2)])
         print("Euler Angles (deg):")
         print("  Offset from Truth:       \t", rIns.offset*RAD2DEG)
         print("  RMS Accuracy:            \t", ins.eulerErrRms*RAD2DEG)
@@ -274,17 +274,17 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
         # RMS Accuracy - Velocity
         uvwErr = ins.v['uvwErr'][start:,:]
-        ins.uvwErrRms = np.sqrt( np.r_[np.mean(uvwErr[:,0]**2),
+        ins.uvwErrRms = np.sqrt(np.r_[np.mean(uvwErr[:,0]**2),
                                        np.mean(uvwErr[:,1]**2),
-                                       np.mean(uvwErr[:,2]**2)] )
+                                       np.mean(uvwErr[:,2]**2)])
         print("UVW RMS Accuracy (m/s):    \t", ins.uvwErrRms)
 
 
         # RMS Accuracy - Position
         nedErr = ins.v['nedErr'][start:,:]
-        ins.nedErrRms = np.sqrt( np.r_[np.mean(nedErr[:,0]**2),
+        ins.nedErrRms = np.sqrt(np.r_[np.mean(nedErr[:,0]**2),
                                        np.mean(nedErr[:,1]**2),
-                                       np.mean(nedErr[:,2]**2)] )
+                                       np.mean(nedErr[:,2]**2)])
         print("NED RMS Accuracy (m):      \t", ins.nedErrRms)
 
     if peCheck('rawGPSStats'):
@@ -607,18 +607,18 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         else:
             altMode="clampToGround"
 
-        # kmlfile = log.directory + "/" + itd.lla2kml(ins.time[insTCnt:], ins.v['lla'][insTCnt:,:], log.serialNumber, "LOG_"+log.serialNumber+"ins.kml", timeStep=tStep, altitudeMode=altMode )
-        # kmlfile = log.directory + "/" + itd.lla2kml(ins.time, ins.v['lla'], log.serialNumber, "LOG_"+log.serialNumber+"ins.kml", timeStep=tStep, altitudeMode=altMode )
-        kmlfile = itd.lla2kml(ins.time, ins.v['lla'], log.serialNumber, log.directory + "/" + "LOG_"+log.serialNumber+"ins.kml", timeStep=tStep, altitudeMode=altMode )
-        os.startfile( kmlfile )
+        # kmlfile = log.directory + "/" + itd.lla2kml(ins.time[insTCnt:], ins.v['lla'][insTCnt:,:], log.serialNumber, "LOG_"+log.serialNumber+"ins.kml", timeStep=tStep, altitudeMode=altMode)
+        # kmlfile = log.directory + "/" + itd.lla2kml(ins.time, ins.v['lla'], log.serialNumber, "LOG_"+log.serialNumber+"ins.kml", timeStep=tStep, altitudeMode=altMode)
+        kmlfile = itd.lla2kml(ins.time, ins.v['lla'], log.serialNumber, log.directory + "/" + "LOG_"+log.serialNumber+"ins.kml", timeStep=tStep, altitudeMode=altMode)
+        os.startfile(kmlfile)
         if gps1Pos:
-            # kmlfile = log.directory + "/" + itd.lla2kml(gps1Pos.time, gps1Pos.v['lla'], log.serialNumber, "LOG_"+log.serialNumber+"gps1Pos.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.red )
-            kmlfile = itd.lla2kml(gps1Pos.time, gps1Pos.v['lla'], log.serialNumber, log.directory + "/" + "LOG_"+log.serialNumber+"gps1Pos.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.red )
-            os.startfile( kmlfile )
+            # kmlfile = log.directory + "/" + itd.lla2kml(gps1Pos.time, gps1Pos.v['lla'], log.serialNumber, "LOG_"+log.serialNumber+"gps1Pos.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.red)
+            kmlfile = itd.lla2kml(gps1Pos.time, gps1Pos.v['lla'], log.serialNumber, log.directory + "/" + "LOG_"+log.serialNumber+"gps1Pos.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.red)
+            os.startfile(kmlfile)
         if rIns:
-            # kmlfile = log.directory +  "/" + itd.lla2kml(rIns.v['time'], rIns.v['lla'], tru.serialNumber, "LOG_"+tru.serialNumber+"refIns.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.black )
-            kmlfile = itd.lla2kml(rIns.v['time'], rIns.v['lla'], tru.serialNumber, log.directory +  "/" + "LOG_"+tru.serialNumber+"refIns.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.black )
-            os.startfile( kmlfile )
+            # kmlfile = log.directory +  "/" + itd.lla2kml(rIns.v['time'], rIns.v['lla'], tru.serialNumber, "LOG_"+tru.serialNumber+"refIns.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.black)
+            kmlfile = itd.lla2kml(rIns.v['time'], rIns.v['lla'], tru.serialNumber, log.directory +  "/" + "LOG_"+tru.serialNumber+"refIns.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.black)
+            os.startfile(kmlfile)
 
         if pe['googleEarth'] == 2:
             return
@@ -639,7 +639,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             dimuTime.append(np.float64(dimu.time[i]).item())
 
         pt.subplotSingle(ax, counter, dimu.v['time'])
-        plt.ylim( -1, 10000 )
+        plt.ylim(-1, 10000)
 
         #############################################
         # Body Velocity
@@ -720,8 +720,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         f += 1;    legend = []
         fig, ax = pt.subplots(f,1, 'magNISThreshold')
         pt.labels('Mag NIS')
-        pt.subplotSingle(ax,magInfo.v['towMs'], magInfo.v['nis'] , 'nis' )
-        pt.subplotSingle(ax,magInfo.v['towMs'], magInfo.v['nis_threshold'] , 'nis_threshold' )
+        pt.subplotSingle(ax,magInfo.v['towMs'], magInfo.v['nis'] , 'nis')
+        pt.subplotSingle(ax,magInfo.v['towMs'], magInfo.v['nis_threshold'] , 'nis_threshold')
 
         #############################################
     # INL2 Vaiances
@@ -729,47 +729,47 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'Variance', sharex=True)
         pt.labels('INL2 Position Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,0] , 'INS Px N (NED)' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,1] , 'INS Py E (NED)' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,2] , 'INS Pz D (NED)' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,0] , 'INS Px N (NED)')
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,1] , 'INS Py E (NED)')
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,2] , 'INS Pz D (NED)')
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'Vel Variance', sharex=True)
         pt.labels('INL2 Velocity Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,0] , 'INS Pvx N (NED)' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,1] , 'INS Pvy E (NED)' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,2] , 'INS Pvz D (NED)' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,0] , 'INS Pvx N (NED)')
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,1] , 'INS Pvy E (NED)')
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,2] , 'INS Pvz D (NED)')
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'Att Variance', sharex=True)
         pt.labels('INL2 Attitude Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,0] , 'INS Pwx (NED)' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,1] , 'INS Pwy (NED)' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,2] , 'INS Pwz (NED)' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,0] , 'INS Pwx (NED)')
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,1] , 'INS Pwy (NED)')
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,2] , 'INS Pwz (NED)')
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'A Bias Variance', sharex=True)
         pt.labels('INL2 A Bias Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,0] , 'INS PA Bias x' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,1] , 'INS PA Bias y' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,2] , 'INS PA Bias z' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,0] , 'INS PA Bias x')
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,1] , 'INS PA Bias y')
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,2] , 'INS PA Bias z')
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'W Bias Variance', sharex=True)
         pt.labels('INL2 W Bias Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,0] , 'INS PW Bias x' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,1] , 'INS PW Bias y' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,2] , 'INS PW Bias z' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,0] , 'INS PW Bias x')
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,1] , 'INS PW Bias y')
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,2] , 'INS PW Bias z')
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,1, 'Baro Bias Variance', sharex=True)
         pt.labels('INL2 Baro Bias Variance')
-        pt.subplotSingle(ax,varInfo.v['towMs'], varInfo.v['StdBarBias'] , 'Baro Bias' )
+        pt.subplotSingle(ax,varInfo.v['towMs'], varInfo.v['StdBarBias'] , 'Baro Bias')
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,1, 'Declination Variance', sharex=True)
         pt.labels('INL2 Declination Variance')
-        pt.subplotSingle(ax,varInfo.v['towMs'], varInfo.v['StdMagDeclination'] , 'Declination' )
+        pt.subplotSingle(ax,varInfo.v['towMs'], varInfo.v['StdMagDeclination'] , 'Declination')
 
 
         #############################################
@@ -778,13 +778,13 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         pt.labels('GPS Vel NED', 'm/s')
         f += 1;    legend = []
         if rIns:
-            pt.plot3Axes(f, rIns.v['time'], rIns.v['nedDot'], options=rInsColor )
+            pt.plot3Axes(f, rIns.v['time'], rIns.v['nedDot'], options=rInsColor)
             legend += ['Truth']
         if gps1Vel:
-            pt.plot3Axes(f, gps1Vel.time, gps1Vel.v['velNed'], options=refColor )
+            pt.plot3Axes(f, gps1Vel.time, gps1Vel.v['velNed'], options=refColor)
             legend += ['GPS.velNed']
         gps1Pos.nedDot = ft.derivative(gps1Pos.time, gps1Pos.ned, delta=2)
-        # pt.plot3Axes(f, gps1Vel.time, gps1Vel.nedDot, options='m'  )
+        # pt.plot3Axes(f, gps1Vel.time, gps1Vel.nedDot, options='m')
         # legend += ['GPS.ned dot']
         plt.legend(legend)
         saveFigures('gpsVel.svg', f)
@@ -794,8 +794,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
     if peCheck('ekfStatesMagField') and 'ekfStates' in log.data.keys():
         f += 1;    legend = []
         fig, ax = pt.subplots(f,2, 'ekfStatesMagField', sharex=True)
-        pt.subplotSingle(ax[0], log.data['ekfStates']['time'], log.data['ekfStates']['magInc']*RAD2DEG, 'EKF States - Mag Inclination', 'deg', options=insColor )
-        pt.subplotSingle(ax[1], log.data['ekfStates']['time'], log.data['ekfStates']['magDec']*RAD2DEG, 'EKF States - Mag Declination', 'deg', options=insColor )
+        pt.subplotSingle(ax[0], log.data['ekfStates']['time'], log.data['ekfStates']['magInc']*RAD2DEG, 'EKF States - Mag Inclination', 'deg', options=insColor)
+        pt.subplotSingle(ax[1], log.data['ekfStates']['time'], log.data['ekfStates']['magDec']*RAD2DEG, 'EKF States - Mag Declination', 'deg', options=insColor)
 
         saveFigures('ekfStatesMagField.svg', fig=fig)
 
@@ -807,12 +807,12 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         crnFreq = 2
 
         if rIns:
-            pt.plot3Axes(f, rIns.v['time'], rIns.v['nedDot'], options=rInsColor )
+            pt.plot3Axes(f, rIns.v['time'], rIns.v['nedDot'], options=rInsColor)
             legend += ['Truth']
         if gps1Pos:
-            pt.plot3Axes(f, gps1Pos.time, gps1Pos.v['ned'], options=refColor )
+            pt.plot3Axes(f, gps1Pos.time, gps1Pos.v['ned'], options=refColor)
             legend += ['GPS']
-        pt.plot3Axes(f, ins.time, ins.velNed(), options=insColor )
+        pt.plot3Axes(f, ins.time, ins.velNed(), options=insColor)
         legend += ['INS']
 
         plt.legend(legend)
@@ -826,11 +826,11 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             ins.nedVelDot = ft.lpfNoDelay(ins.nedVelDot, cornerFreqHz=20, time=ins.time)
 
             if rIns:
-                pt.plot3Axes(f, rIns.v['time'], rIns.nedDotDot, options=rInsColor )
+                pt.plot3Axes(f, rIns.v['time'], rIns.nedDotDot, options=rInsColor)
                 legend += ['Truth']
-            pt.plot3Axes(f, ins.time, ins.nedVelDot )
+            pt.plot3Axes(f, ins.time, ins.nedVelDot)
             legend += ['ins']
-            pt.plot3Axes(f, gps1Pos.time, gps1Pos.nedVelDot, 'NED Vel Dot', 'm/s^2', options=refColor  )
+            pt.plot3Axes(f, gps1Pos.time, gps1Pos.nedVelDot, 'NED Vel Dot', 'm/s^2', options=refColor)
             legend += ['gps1Pos']
             plt.legend(legend)
 
@@ -847,15 +847,15 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         instime = getTimeFromTow(ins.v['tow'])
         gpstime = getTimeFromTowMs(gps1Pos.v['timeOfWeekMs'])
         pt.subplotSingle(ax[0], instime, ins.ecef()[:,0], 'X', 'm', options=insColor)
-        pt.subplotSingle(ax[0], gpstime, gps1Pos.v['ecef'][:,0], options=refColor )
+        pt.subplotSingle(ax[0], gpstime, gps1Pos.v['ecef'][:,0], options=refColor)
 
-        pt.subplotSingle(ax[1], instime, ins.ecef()[:,1], 'Y', 'm', options=insColor )
-        pt.subplotSingle(ax[1], gpstime, gps1Pos.v['ecef'][:,1], options=refColor )
+        pt.subplotSingle(ax[1], instime, ins.ecef()[:,1], 'Y', 'm', options=insColor)
+        pt.subplotSingle(ax[1], gpstime, gps1Pos.v['ecef'][:,1], options=refColor)
 
         pt.labels('Z', 'm')
-        pt.subplotSingle(ax[2], instime, ins.ecef()[:,2], options=insColor )
+        pt.subplotSingle(ax[2], instime, ins.ecef()[:,2], options=insColor)
         legend += ['INS']
-        pt.subplotSingle(ax[2], gpstime, gps1Pos.v['ecef'][:,2], options=refColor )
+        pt.subplotSingle(ax[2], gpstime, gps1Pos.v['ecef'][:,2], options=refColor)
         legend += ['GPS']
         ax[2].legend(legend)
 
@@ -867,30 +867,30 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'LLA', sharex=True)
         if rIns:
-            pt.subplotSingle(ax[0], rIns.v['time'], rIns.v['lla'][:,0], options=rInsColor )
+            pt.subplotSingle(ax[0], rIns.v['time'], rIns.v['lla'][:,0], options=rInsColor)
 
         instime = getTimeFromTow(ins.v['tow'])
         gpstime = getTimeFromTowMs(gps1Pos.v['timeOfWeekMs'])
         pt.subplotSingle(ax[0], instime, ins.v['lla'][:,0], 'Latitude', 'deg', options=insColor)
-        pt.subplotSingle(ax[0], gpstime, gps1Pos.v['lla'][:,0], options=refColor )
+        pt.subplotSingle(ax[0], gpstime, gps1Pos.v['lla'][:,0], options=refColor)
 
         if rIns:
-            pt.subplotSingle(ax[1], rIns.v['time'], rIns.v['lla'][:,1], options=rInsColor )
+            pt.subplotSingle(ax[1], rIns.v['time'], rIns.v['lla'][:,1], options=rInsColor)
 
-        pt.subplotSingle(ax[1], instime, ins.v['lla'][:,1], 'Longitude', 'deg', options=insColor )
-        pt.subplotSingle(ax[1], gpstime, gps1Pos.v['lla'][:,1], options=refColor )
+        pt.subplotSingle(ax[1], instime, ins.v['lla'][:,1], 'Longitude', 'deg', options=insColor)
+        pt.subplotSingle(ax[1], gpstime, gps1Pos.v['lla'][:,1], options=refColor)
 
         if rIns:
-            pt.subplotSingle(ax[2], rIns.v['time'], rIns.v['lla'][:,2], options=rInsColor )
+            pt.subplotSingle(ax[2], rIns.v['time'], rIns.v['lla'][:,2], options=rInsColor)
             legend += ['Truth']
 
         pt.labels('Elipsoid Alt', 'm')
-        pt.subplotSingle(ax[2], instime, ins.v['lla'][:,2], options=insColor )
+        pt.subplotSingle(ax[2], instime, ins.v['lla'][:,2], options=insColor)
         legend += ['INS']
-        pt.subplotSingle(ax[2], gpstime, gps1Pos.v['lla'][:,2], options=refColor )
+        pt.subplotSingle(ax[2], gpstime, gps1Pos.v['lla'][:,2], options=refColor)
         legend += ['GPS']
         if baro:
-            pt.subplotSingle(ax[2], baro.time, baro.v['mslBar'], options='m' )
+            pt.subplotSingle(ax[2], baro.time, baro.v['mslBar'], options='m')
             legend += ['mslBar']
         ax[2].legend(legend)
 
@@ -900,7 +900,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         # Position Error
     if peCheck('nedErr') and 'nedErr' in ins.v.dtype.names:
         f += 1;
-        pt.plot3Axes(f, ins.time, ins.v['nedErr'], 'NED Error from Truth INS', 'm' )
+        pt.plot3Axes(f, ins.time, ins.v['nedErr'], 'NED Error from Truth INS', 'm')
 
 
         #############################################
@@ -911,7 +911,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         fig, ax = pt.subplots(f,3, 'NED', sharex=True)
 
         #         if rIns:
-        #             pt.plot3Axes(f, rIns.v['time'], rIns.ned, options=rInsColor )
+        #             pt.plot3Axes(f, rIns.v['time'], rIns.ned, options=rInsColor)
         #             legend += ['Truth']
         #         if pe['ned == 1:     # INS & GPS
         #             j = 0
@@ -990,10 +990,10 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         #     legend += ['rtk']
         ax[2].legend(legend)
 
-        #         pt.plot3Axes(f, ins.time, ins.ned(), options=insColor )
+        #         pt.plot3Axes(f, ins.time, ins.ned(), options=insColor)
         #         legend += ['ins']
         #         if gps1Pos:
-        #             pt.plot3Axes(f, gps1Pos.time, gps1Pos.ned, options=refColor  )
+        #             pt.plot3Axes(f, gps1Pos.time, gps1Pos.ned, options=refColor)
         #             legend += ['gps1Pos']
 
         saveFigures('ned.svg', f)
@@ -1004,7 +1004,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         #         pt.labels('NED', 'm')
         f += 1;    legend = []
         #         if rIns:
-        #             pt.plot3Axes(f, rIns.v['time'], rIns.ned, options=rInsColor )
+        #             pt.plot3Axes(f, rIns.v['time'], rIns.ned, options=rInsColor)
         #             legend += ['Truth']
 
         fig, ax = pt.subplots(f,1, 'NED Map')
@@ -1094,24 +1094,24 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 gps1Pos.nedDot = ft.derivative(gps1Pos.time, gps1Pos.ned, delta)
             if rIns:
                 rIns.nedDot = ft.derivative(rIns.v['time'], rIns.ned, delta)
-                pt.plot3Axes(f, rIns.v['time'], rIns.nedDot, options=rInsColor )
+                pt.plot3Axes(f, rIns.v['time'], rIns.nedDot, options=rInsColor)
                 legend += ['Truth']
 
-            pt.plot3Axes(f, ins.time, ins.velNED )
+            pt.plot3Axes(f, ins.time, ins.velNED)
             legend += ['ins']
             if gps1Pos:
-                pt.plot3Axes(f, gps1Pos.time, gps1Pos.nedDot, 'NED Dot', 'm/s', options=refColor  )
+                pt.plot3Axes(f, gps1Pos.time, gps1Pos.nedDot, 'NED Dot', 'm/s', options=refColor)
                 legend += ['gps1Pos']
             plt.legend(legend)
 
     if peCheck('staticBiasAttEst'):
         f += 1;    legend = []
-        [ imu1.accAtt,  imu1.accBias] = pose.acc2AttAndBias( imu1.fltAcc())
+        [ imu1.accAtt,  imu1.accBias] = pose.acc2AttAndBias(imu1.fltAcc())
         if rIns:
             [rImu.accAtt, rImu.accBias] = pose.acc2AttAndBias(rImu.fltAcc())
             pt.plot3Axes(f, rImu.v['time'], rImu.accBias, options=rInsColor)
             legend += ['RefIMU'];
-        pt.plot3Axes(f, imu1.time, imu1.accBias, 'IMU Accel Bias','m/s^2' )
+        pt.plot3Axes(f, imu1.time, imu1.accBias, 'IMU Accel Bias','m/s^2')
         legend += ['imu1'];
         plt.legend(legend)
 
@@ -1130,15 +1130,15 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         fig, ax = pt.subplots(f,1, 'Altitude')
         pt.labels('Altitude', 'm')
 
-        pt.subplotSingle(ax, ins.time, ins.v['lla'][:,2], options=insColor )
+        pt.subplotSingle(ax, ins.time, ins.v['lla'][:,2], options=insColor)
         legend += ['INS']
         if baro:
-            pt.subplotSingle(ax, baro.time, baro.v['mslBar'], options='g' )
+            pt.subplotSingle(ax, baro.time, baro.v['mslBar'], options='g')
             legend += ['Baro MSL']
         if gps1Pos:
-            pt.subplotSingle(ax, gps1Pos.time - gps1Pos.time[0], gps1Pos.v['lla'][:,2], options=refColor )
+            pt.subplotSingle(ax, gps1Pos.time - gps1Pos.time[0], gps1Pos.v['lla'][:,2], options=refColor)
             legend += ['GPS ellipsoid']
-            pt.subplotSingle(ax, gps1Pos.time - gps1Pos.time[0], gps1Pos.v['hMSL'], options='m' )
+            pt.subplotSingle(ax, gps1Pos.time - gps1Pos.time[0], gps1Pos.v['hMSL'], options='m')
             legend += ['GPS geoid/MSL']
         ax.legend(legend)
 
@@ -1170,7 +1170,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 imu[1].pqr = ft.lpfNoDelay(imu[1].pqr, freq, time=dimu.time)
 
             if rIns:
-                pt.plot3Axes(f, rImu.v['time'], RAD2DEG * rImu.flt.pqr, options=rInsColor )
+                pt.plot3Axes(f, rImu.v['time'], RAD2DEG * rImu.flt.pqr, options=rInsColor)
                 legend += ['Truth']
 
             i = len(dimu.time)/2
@@ -1178,7 +1178,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             yspan = None
             if peCheck('sensorPqrSpan'):
                 yspan = pe['sensorPqrSpan']
-            pt.plot3Axes(f, dimu.time, imu[0].pqr * RAD2DEG, xlim=xlim )
+            pt.plot3Axes(f, dimu.time, imu[0].pqr * RAD2DEG, xlim=xlim)
             pt.plot3setYspan(f, yspan)
             legend += ['pqr1']
             if peCheck('sensorSeparate'):
@@ -1210,19 +1210,19 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 imu[1].acc = ft.lpfNoDelay(imu[1].acc, freq, time=dimu.time)
 
             if rIns:
-                pt.plot3Axes(f, rImu.v['time'], rImu.flt.acc+offset, options=rInsColor )
+                pt.plot3Axes(f, rImu.v['time'], rImu.flt.acc+offset, options=rInsColor)
                 legend += ['Truth'];
 
             yspan = None
             if peCheck('sensorAccSpan'):
                 yspan = pe['sensorAccSpan']
-            pt.plot3Axes(f, dimu.time, imu[0].acc+offset, xlim=xlim )
+            pt.plot3Axes(f, dimu.time, imu[0].acc+offset, xlim=xlim)
             pt.plot3setYspan(f, yspan)
             legend += ['acc1']
             if peCheck('sensorSeparate'):
                 plt.legend(legend); f += 1; legend = []
                 pt.labels('Sensors: Accel2','m/s^2')
-            pt.plot3Axes(f, dimu.time, imu[1].acc+offset, xlim=xlim )
+            pt.plot3Axes(f, dimu.time, imu[1].acc+offset, xlim=xlim)
             pt.plot3setYspan(f, yspan)
             legend += ['acc2']
             plt.legend(legend)
@@ -1248,7 +1248,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 pqrFftY = 2.0/N * np.abs(np.fft.fft(imu[0].pqr[:,i])[:N//2])
                 ax[i].set_xlabel('Freq (Hz)')
                 ax[i].set_ylim([-0.1*ylim,ylim])
-                pt.subplotSingle(ax[i], pqrFftX, pqrFftY )
+                pt.subplotSingle(ax[i], pqrFftX, pqrFftY)
 
             ax[0].set_ylabel('P')
             ax[1].set_ylabel('Q')
@@ -1273,7 +1273,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 accFftY = 2.0/N * np.abs(np.fft.fft(imu[0].acc[:,i])[:N//2])
                 ax[i].set_xlabel('Freq (Hz)')
                 ax[i].set_ylim([-0.1*ylim,ylim])
-                pt.subplotSingle(ax[i], accFftX, accFftY )
+                pt.subplotSingle(ax[i], accFftX, accFftY)
 
             ax[0].set_ylabel('X')
             ax[1].set_ylabel('Y')
@@ -1292,7 +1292,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         else:
             mag_1 = mag1.v['mag'][:,:]
 
-        pt.plot3Axes(f, mag1.v['time'], mag_1 )
+        pt.plot3Axes(f, mag1.v['time'], mag_1)
         legend += ['mag 1']
         plt.legend(legend)
 
@@ -1314,7 +1314,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             mag[0].mag = ft.lpfNoDelay(mag[0].mag, freq, time=mag[0].time)
             mag[1].mag = ft.lpfNoDelay(mag[1].mag, freq, time=mag[1].time)
 
-        pt.plot3Axes(f, mag[0].time, mag[0].mag, xlim=xlim )
+        pt.plot3Axes(f, mag[0].time, mag[0].mag, xlim=xlim)
         legend += ['mag1']
         plt.legend(legend)
 
@@ -1327,13 +1327,13 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         fig, ax = pt.subplots(f,1, 'Sensor Baro')
 
         pt.labels('Barometer MSL', 'm')
-        pt.subplotSingle(ax, baro.time, baro.v['mslBar'] )
+        pt.subplotSingle(ax, baro.time, baro.v['mslBar'])
         legend += ['mslBar']
         if rIns:
-            pt.subplotSingle(ax, rIns.v['time'], rIns.v['lla'][:,2], options=rInsColor )
+            pt.subplotSingle(ax, rIns.v['time'], rIns.v['lla'][:,2], options=rInsColor)
             legend += ['Truth']
         if pe['sensorBar'] == 2:
-            pt.subplotSingle(ax, gps1Pos.time, gps1Pos.v['lla'][:,2], options=refColor )
+            pt.subplotSingle(ax, gps1Pos.time, gps1Pos.v['lla'][:,2], options=refColor)
             legend += ['GPS']
         ax.legend(legend)
 
@@ -1365,8 +1365,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 freq = pe['sensorIs1PqrVsTemp']
                 mpu[0].pqr = ft.lpfNoDelay(mpu[0].pqr, freq, dt=dt)
                 mpu[1].pqr = ft.lpfNoDelay(mpu[1].pqr, freq, dt=dt)
-            pt.plot3Axes(f, mpu[0].temp, mpu[0].pqr*RAD2DEG, xlabel="temp (C)" )
-            pt.plot3Axes(f, mpu[1].temp, mpu[1].pqr*RAD2DEG, xlabel="temp (C)" )
+            pt.plot3Axes(f, mpu[0].temp, mpu[0].pqr*RAD2DEG, xlabel="temp (C)")
+            pt.plot3Axes(f, mpu[1].temp, mpu[1].pqr*RAD2DEG, xlabel="temp (C)")
             legend += ['mpu1','mpu2']
             plt.legend(legend)
 
@@ -1383,10 +1383,10 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                     f += 1;  legend = []
                     fig, ax = pt.subplots(f,4, 'SensorsIS1: PQR & Temp vs Time', sharex=True)
                 legend += ['mpu%d' % (m+1)]
-                pt.subplotSingle(ax[0], mpuTime, mpu[m].pqr[:,0]*RAD2DEG, 'P', 'deg/s' )
-                pt.subplotSingle(ax[1], mpuTime, mpu[m].pqr[:,1]*RAD2DEG, 'Q', 'deg/s' )
-                pt.subplotSingle(ax[2], mpuTime, mpu[m].pqr[:,2]*RAD2DEG, 'R', 'deg/s' )
-                pt.subplotSingle(ax[3], mpuTime, mpu[m].temp, 'Temp', 'C' )
+                pt.subplotSingle(ax[0], mpuTime, mpu[m].pqr[:,0]*RAD2DEG, 'P', 'deg/s')
+                pt.subplotSingle(ax[1], mpuTime, mpu[m].pqr[:,1]*RAD2DEG, 'Q', 'deg/s')
+                pt.subplotSingle(ax[2], mpuTime, mpu[m].pqr[:,2]*RAD2DEG, 'R', 'deg/s')
+                pt.subplotSingle(ax[3], mpuTime, mpu[m].temp, 'Temp', 'C')
                 ax[0].legend(legend)
 
             #############################################
@@ -1400,8 +1400,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 freq = pe['sensorIs1AccVsTemp']
                 mpu[0].acc = ft.lpfNoDelay(mpu[0].acc, freq, dt=dt)
                 mpu[1].acc = ft.lpfNoDelay(mpu[1].acc, freq, dt=dt)
-            pt.plot3Axes(f, mpu[0].temp, mpu[0].acc, xlabel="temp (C)" )
-            pt.plot3Axes(f, mpu[1].temp, mpu[1].acc, xlabel="temp (C)" )
+            pt.plot3Axes(f, mpu[0].temp, mpu[0].acc, xlabel="temp (C)")
+            pt.plot3Axes(f, mpu[1].temp, mpu[1].acc, xlabel="temp (C)")
             legend += ['mpu1','mpu2']
             plt.legend(legend)
 
@@ -1418,10 +1418,10 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                     f += 1;  legend = []
                     fig, ax = pt.subplots(f,4, 'SensorsIS1: PQR & Temp vs Time', sharex=True)
                 legend += ["mpu%d"%(m+1)]
-                pt.subplotSingle(ax[0], mpuTime, mpu[m].acc[:,0], 'Accel X', 'm/s^2' )
-                pt.subplotSingle(ax[1], mpuTime, mpu[m].acc[:,1], 'Accel Y', 'm/s^2' )
-                pt.subplotSingle(ax[2], mpuTime, mpu[m].acc[:,2], 'Accel Z', 'm/s^2' )
-                pt.subplotSingle(ax[3], mpuTime, mpu[m].temp, 'Temp', 'C' )
+                pt.subplotSingle(ax[0], mpuTime, mpu[m].acc[:,0], 'Accel X', 'm/s^2')
+                pt.subplotSingle(ax[1], mpuTime, mpu[m].acc[:,1], 'Accel Y', 'm/s^2')
+                pt.subplotSingle(ax[2], mpuTime, mpu[m].acc[:,2], 'Accel Z', 'm/s^2')
+                pt.subplotSingle(ax[3], mpuTime, mpu[m].temp, 'Temp', 'C')
                 ax[0].legend(legend)
 
             #############################################
@@ -1436,8 +1436,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 freq = pe['sensorMag']
                 mpu[0].mag = ft.smooth(mpu[0].mag, pe['sensorIs1Mag'])
                 mpu[1].mag = ft.smooth(mpu[1].mag, pe['sensorIs1Mag'])
-            pt.plot3Axes(f, mpu[0].temp, mpu[0].mag, xlabel="temp (C)" )
-            pt.plot3Axes(f, mpu[1].temp, mpu[1].mag, xlabel="temp (C)" )
+            pt.plot3Axes(f, mpu[0].temp, mpu[0].mag, xlabel="temp (C)")
+            pt.plot3Axes(f, mpu[1].temp, mpu[1].mag, xlabel="temp (C)")
             legend += lgd
             plt.legend(legend)
 
@@ -1454,12 +1454,12 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             gpsPos = log.data['gps1Pos']
             time = getTimeFromTowMs(gpsPos['timeOfWeekMs'])
 
-            pt.subplotSingle(ax[0], time, gpsPos['status'] & 0xFF, 'Satellites Used in Solution', '' )
-            pt.subplotSingle(ax[1], time, gpsPos['pDop'], 'Accuracy', 'm', options='m' )
+            pt.subplotSingle(ax[0], time, gpsPos['status'] & 0xFF, 'Satellites Used in Solution', '')
+            pt.subplotSingle(ax[1], time, gpsPos['pDop'], 'Accuracy', 'm', options='m')
             legend = ['pDop']
-            pt.subplotSingle(ax[1], time, gpsPos['hAcc'], 'Accuracy', 'm', options='r' )
+            pt.subplotSingle(ax[1], time, gpsPos['hAcc'], 'Accuracy', 'm', options='r')
             legend += ['Hor']
-            pt.subplotSingle(ax[1], time, gpsPos['vAcc'], options='b' )
+            pt.subplotSingle(ax[1], time, gpsPos['vAcc'], options='b')
             legend += ['Ver']
             if 'gps1RtkPos' in log.data.keys():
                 rtktime = getTimeFromTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
@@ -1467,7 +1467,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
                 legend += ['rtkHor']
             ax[1].legend(legend)
 
-            pt.subplotSingle(ax[2], time, gpsPos['cnoMean'], 'CNO', 'dBHz', options='b' )
+            pt.subplotSingle(ax[2], time, gpsPos['cnoMean'], 'CNO', 'dBHz', options='b')
             legend = ['Mean']
             ax[2].legend(legend)
 
@@ -1477,17 +1477,17 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'GPS1 Stats', sharex=True)
 
-        pt.subplotSingle(ax[0], gps1Ubx.time, gps1Ubx.satsUsed, 'Satellites Used in Solution', '' )
-        pt.subplotSingle(ax[1], gps1Ubx.time, gps1Ubx.v['pDop'], 'Accuracy', 'm', options='m' )
+        pt.subplotSingle(ax[0], gps1Ubx.time, gps1Ubx.satsUsed, 'Satellites Used in Solution', '')
+        pt.subplotSingle(ax[1], gps1Ubx.time, gps1Ubx.v['pDop'], 'Accuracy', 'm', options='m')
         legend = ['pDop']
-        pt.subplotSingle(ax[1], gps1Ubx.time, gps1Ubx.v['hAcc'], 'Accuracy', 'm', options='r' )
+        pt.subplotSingle(ax[1], gps1Ubx.time, gps1Ubx.v['hAcc'], 'Accuracy', 'm', options='r')
         legend += ['Hor']
-        pt.subplotSingle(ax[1], gps1Ubx.time, gps1Ubx.v['vAcc'], options='b' )
+        pt.subplotSingle(ax[1], gps1Ubx.time, gps1Ubx.v['vAcc'], options='b')
         legend += ['Ver']
         ax[1].legend(legend)
-        pt.subplotSingle(ax[2], gps1Ubx.time, gps1Ubx.v['cno'], 'CNO', 'dBHz', options='r' )
+        pt.subplotSingle(ax[2], gps1Ubx.time, gps1Ubx.v['cno'], 'CNO', 'dBHz', options='r')
         legend = ['Max']
-        pt.subplotSingle(ax[2], gps1Ubx.time, gps1Ubx.v['cnoMean'], 'CNO', 'dBHz', options='b' )
+        pt.subplotSingle(ax[2], gps1Ubx.time, gps1Ubx.v['cnoMean'], 'CNO', 'dBHz', options='b')
         legend += ['Mean']
         ax[2].legend(legend)
 
@@ -1513,7 +1513,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             compassing = log.data['gps1Pos']['status'][10] & 0x00400000
             if not compassing:
                 fixType = log.data['gps1Pos']['status'] >> 8 & 0xFF
-                pt.subplotSingle(ax[0], time, fixType, 'GPS Fix Type: 2=2D, 3=3D, 10=Single, 11=Float, 12=Fix', '' )
+                pt.subplotSingle(ax[0], time, fixType, 'GPS Fix Type: 2=2D, 3=3D, 10=Single, 11=Float, 12=Fix', '')
                 ax[0].legend(legend)
 
             time = getTimeFromTowMs(log.data['gps1RtkPosRel']['timeOfWeekMs'])
@@ -1521,19 +1521,19 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             if compassing:
                 fixType = log.data['gps1RtkPosRel']['arRatio'].copy()
                 iStatus
-                pt.subplotSingle(ax[0], time, fixType, 'GPS Fix Type: 2=2D, 3=3D, 10=Single, 11=Float, 12=Fix', '' )
+                pt.subplotSingle(ax[0], time, fixType, 'GPS Fix Type: 2=2D, 3=3D, 10=Single, 11=Float, 12=Fix', '')
 
             if 'gps1RtkPosRel' in log.data.keys():
                 disttobase = log.data['gps1RtkPosRel']['distanceToBase']
                 disttobase[disttobase > 100000] = np.nan
-                pt.subplotSingle(ax[1], time, log.data['gps1RtkPosRel']['differentialAge'], 'RTK: Age of Differential', 's' )
-                pt.subplotSingle(ax[2], time, log.data['gps1RtkPosRel']['arRatio'], 'RTK: AR Ratio', 'num' )
-                pt.subplotSingle(ax[3], time, disttobase, 'Distance to Base', 'm' )
+                pt.subplotSingle(ax[1], time, log.data['gps1RtkPosRel']['differentialAge'], 'RTK: Age of Differential', 's')
+                pt.subplotSingle(ax[2], time, log.data['gps1RtkPosRel']['arRatio'], 'RTK: AR Ratio', 'num')
+                pt.subplotSingle(ax[3], time, disttobase, 'Distance to Base', 'm')
 
             n_plot = 4
             if 'gps1RtkPosMisc' in log.data.keys():
                 rtkMiscTime = getTimeFromTowMs(log.data['gps1RtkPosMisc']['timeOfWeekMs'])
-                pt.subplotSingle(ax[n_plot], rtkMiscTime, log.data['gps1RtkPosMisc']['cycleSlipCount'], 'RTK: Slip Counter', ' ' )
+                pt.subplotSingle(ax[n_plot], rtkMiscTime, log.data['gps1RtkPosMisc']['cycleSlipCount'], 'RTK: Slip Counter', ' ')
                 n_plot += 1
 
 
@@ -1578,65 +1578,65 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         iStatus = ins.iStatus()
         #         ax.text(p1, -cnt*1.5, '___ ALIGNED ___')
         #         cnt+=1
-        #         pt.subplotSingle(ax, ins.time, -cnt*1.5+ iStatus.align.coarse.att, options='b' )
+        #         pt.subplotSingle(ax, ins.time, -cnt*1.5+ iStatus.align.coarse.att, options='b')
         #         ax.text(p1, -cnt*1.5, 'Att Conv. Done')
         #         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.coarse.att, options='b' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.coarse.att, options='b')
         p1 = ax.get_xlim()[0] + 0.02*(ax.get_xlim()[1] - ax.get_xlim()[0])
         ax.text(p1, -cnt*1.5, 'Att Coarse')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.good.att, options='b' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.good.att, options='b')
         ax.text(p1, -cnt*1.5, 'Att Good')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.fine.att, options='c' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.fine.att, options='c')
         ax.text(p1, -cnt*1.5, 'Att Fine')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.coarse.vel, options='g' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.coarse.vel, options='g')
         ax.text(p1, -cnt*1.5, 'Vel Coarse')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.good.vel, options='g' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.good.vel, options='g')
         ax.text(p1, -cnt*1.5, 'Vel Good')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.coarse.pos, options='r' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.coarse.pos, options='r')
         ax.text(p1, -cnt*1.5, 'Pos Coarse')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.good.pos, options='r' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.align.good.pos, options='r')
         ax.text(p1, -cnt*1.5, 'Pos Good')
         cnt+=1
         cnt+=1
 
         #         ax.text(p1, -cnt*1.5, '___ ALIGNING ___')
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.usingGps, options='b' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.usingGps, options='b')
         ax.text(p1, -cnt*1.5, 'Using GPS')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.usingMag, options='m' )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.usingMag, options='m')
         ax.text(p1, -cnt*1.5, 'Using MAG')
         cnt+=1
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.navMode )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.navMode)
         ax.text(p1, -cnt*1.5, 'Nav Mode')
         cnt+=1
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ (iStatus.solutionStatus)/4.0 )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ (iStatus.solutionStatus)/4.0)
         ax.text(p1, -cnt*1.5, 'Solution Status')
         cnt+=1
         cnt+=1
 
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.magActiveCalSet )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.magActiveCalSet)
         ax.text(p1, -cnt*1.5, 'Mag Active Cal Set')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.magRecalibrating )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.magRecalibrating)
         ax.text(p1, -cnt*1.5, 'Mag Recalibrating')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.magInterOrBadCal )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.magInterOrBadCal)
         ax.text(p1, -cnt*1.5, 'Mag Inter. or Bad Cal')
         cnt+=1
         cnt+=1
 
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.rtosTaskPeriodOverrun )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.rtosTaskPeriodOverrun)
         ax.text(p1, -cnt*1.5, 'RTOS Task Period Overrun')
         cnt+=1
-        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.generalFault )
+        pt.subplotSingle(ax, instime, -cnt*1.5+ iStatus.generalFault)
         ax.text(p1, -cnt*1.5, 'General Fault')
         cnt+=1
 
@@ -1647,7 +1647,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         f += 1;    legend = []
         fig, ax = pt.subplots(f,1, 'Solution Status')
         pt.labels('Solution Status', ' ')
-        pt.subplotSingle(ax, instime, iStatus.solutionStatus )
+        pt.subplotSingle(ax, instime, iStatus.solutionStatus)
 
         saveFigures('SolutionStatus.svg', f)
 
@@ -1665,77 +1665,77 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         cnt = 0
         p1 = ins.time[0]
 
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.motionGyrSig )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.motionGyrSig)
         ax.text(p1, -cnt*1.5, 'Motion Gyr Sig')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.motionAccSig )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.motionAccSig)
         ax.text(p1, -cnt*1.5, 'Motion Acc Sig')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.motionGyrDev )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.motionGyrDev)
         ax.text(p1, -cnt*1.5, 'Motion Gyr Dev')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.motionAccDev )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.motionAccDev)
         ax.text(p1, -cnt*1.5, 'Motion Acc Dev')
         cnt+=1
         cnt+=1
 
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.satellite_rx )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.satellite_rx)
         ax.text(p1, -cnt*1.5, 'Satellite Rx')
         cnt+=1
         cnt+=1
 
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationGyr )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationGyr)
         ax.text(p1, -cnt*1.5, 'Saturation Gyr')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationAcc )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationAcc)
         ax.text(p1, -cnt*1.5, 'Saturation Acc')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationMag )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationMag)
         ax.text(p1, -cnt*1.5, 'Saturation Mag')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationBaro )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationBaro)
         ax.text(p1, -cnt*1.5, 'Saturation Baro')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationHistory )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.saturationHistory)
         ax.text(p1, -cnt*1.5, 'Saturation History')
         cnt+=1
         cnt+=1
 
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errComTxLimited )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errComTxLimited)
         ax.text(p1, -cnt*1.5, 'Err Com Tx Limited')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errComRxOverrun )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errComRxOverrun)
         ax.text(p1, -cnt*1.5, 'Err Com Rx Overrun')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errGpsTxLimited )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errGpsTxLimited)
         ax.text(p1, -cnt*1.5, 'Err GPS Tx Limited')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errGpsRxOverrun )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errGpsRxOverrun)
         ax.text(p1, -cnt*1.5, 'Err GPS Rx Overrun')
         cnt+=1
         cnt+=1
 
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ (hStatus.comParseErrCount)/4 )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ (hStatus.comParseErrCount)/4)
         ax.text(p1, -cnt*1.5, 'Com Parse Error Count')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.selfTestFault )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.selfTestFault)
         ax.text(p1, -cnt*1.5, 'Self Test Fault')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errTemperature )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.errTemperature)
         ax.text(p1, -cnt*1.5, 'Temperature error')
         cnt+=1
         cnt+=1
 
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.faultWatchdogReset )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.faultWatchdogReset)
         ax.text(p1, -cnt*1.5, 'Watchdog Reset')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.faultBODReset )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.faultBODReset)
         ax.text(p1, -cnt*1.5, 'Brownout Reset')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.faultPORReset )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.faultPORReset)
         ax.text(p1, -cnt*1.5, 'Power-on Reset')
         cnt+=1
-        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.faultCPUErrReset )
+        pt.subplotSingle(ax, ins.time, -cnt*1.5+ hStatus.faultCPUErrReset)
         ax.text(p1, -cnt*1.5, 'CPU Error Reset')
         cnt+=1
         cnt+=1

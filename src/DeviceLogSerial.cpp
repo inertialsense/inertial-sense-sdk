@@ -73,7 +73,7 @@ bool cDeviceLogSerial::CloseAllFiles() {
 bool cDeviceLogSerial::FlushToFile() {
     cDeviceLog::FlushToFile();
 
-    if (m_writeMode) {    // Write any remaining chunk data to file
+    if (m_writeMode) {   // Write any remaining chunk data to file
         WriteChunkToFile();
 
         return true;

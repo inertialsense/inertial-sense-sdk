@@ -31,8 +31,8 @@
 
 #include "ParamHelper.h"
 
-#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; rclcpp::Logger logger_IS_resp_rec = rclcpp::get_logger("IS_response_received"); logger_IS_resp_rec.set_level(rclcpp::Logger::Level::Debug); RCLCPP_DEBUG(logger_IS_resp_rec,"InertialSenseROS: %s response received", cISDataMappings::DataName(DID)); }
-//#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; RCLCPP_DEBUG("InertialSenseROS: %s response received", cISDataMappings::DataName(DID)); }
+#define STREAMING_CHECK(streaming, DID)      if (!streaming){ streaming = true; rclcpp::Logger logger_IS_resp_rec = rclcpp::get_logger("IS_response_received"); logger_IS_resp_rec.set_level(rclcpp::Logger::Level::Debug); RCLCPP_DEBUG(logger_IS_resp_rec,"InertialSenseROS: %s response received", cISDataMappings::DataName(DID)); }
+//#define STREAMING_CHECK(streaming, DID)      if (!streaming){ streaming = true; RCLCPP_DEBUG("InertialSenseROS: %s response received", cISDataMappings::DataName(DID)); }
 //auto nh_ = std::make_shared<rclcpp::Node>("nh_");
 /**
  * Assigns an identity to the passed ROS:nav_msgs::Odometry pose/twist covariance matrix
@@ -157,7 +157,7 @@ void InertialSenseROS::initializeROS()
    if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
    if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub_gpsinfo2 = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
 
-    if (RTK_rover_ && RTK_rover_->positioning_enable )
+    if (RTK_rover_ && RTK_rover_->positioning_enable)
     {
         rs_.rtk_pos.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo>("RTK_pos/info", 10);
         rs_.rtk_pos.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel>("RTK_pos/rel", 10);
@@ -211,12 +211,12 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     if (useParamSvr)
     {
-        RCLCPP_INFO(rclcpp::get_logger("load_config_ros_param"), "InertialSenseROS: Loading configuration from ROS Parameter Server." );
+        RCLCPP_INFO(rclcpp::get_logger("load_config_ros_param"), "InertialSenseROS: Loading configuration from ROS Parameter Server.");
         ParamHelper::paramServerToYamlNode(node, "/");
     }
     else
     {
-        RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS: Loading configuration from YAML tree." );
+        RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS: Loading configuration from YAML tree.");
     }
 
     // Default values appear in the 3rd parameter
@@ -235,7 +235,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param);
     }
 
-    if(ports_.size() < 1)
+    if (ports_.size() < 1)
     {
         //No ports specified. Use default
         std::string param_1 = nh_->declare_parameter<std::string>("port_1", "/dev/ttyACM0");
@@ -469,7 +469,7 @@ void InertialSenseROS::configure_data_streams()
 }
 
 #define CONFIG_STREAM(stream, did, type, cb_fun) \
-    if((stream.enabled) && !(stream.streaming)){ \
+    if ((stream.enabled) && !(stream.streaming)){ \
         rclcpp::Logger logger_conf_str = rclcpp::get_logger("config_stream"); \
         logger_conf_str.set_level(rclcpp::Logger::Level::Debug); \
         RCLCPP_DEBUG(logger_conf_str,"InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::DataName(did), did); \
@@ -479,7 +479,7 @@ void InertialSenseROS::configure_data_streams()
     }
 
 #define CONFIG_STREAM_GPS(stream, did_pos, cb_fun_pos, did_vel, cb_fun_vel) \
-    if((stream.enabled) && !(stream.streaming_pos)){ \
+    if ((stream.enabled) && !(stream.streaming_pos)){ \
         rclcpp::Logger logger_conf_str_gps_pos = rclcpp::get_logger("config_stream_gps_pos"); \
         logger_conf_str_gps_pos.set_level(rclcpp::Logger::Level::Debug); \
         RCLCPP_DEBUG(logger_conf_str_gps_pos,"InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::DataName(did_pos), did_pos); \
@@ -487,7 +487,7 @@ void InertialSenseROS::configure_data_streams()
         if (!firstrun) \
             return; \
     } \
-    if((stream.enabled) && !(stream.streaming_vel)){ \
+    if ((stream.enabled) && !(stream.streaming_vel)){ \
         rclcpp::Logger logger_conf_str_gps_vel = rclcpp::get_logger("config_stream_gps_vel"); \
         logger_conf_str_gps_vel.set_level(rclcpp::Logger::Level::Debug); \
         RCLCPP_DEBUG(logger_conf_str_gps_vel,"InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::DataName(did_vel), did_vel); \
@@ -738,7 +738,7 @@ bool InertialSenseROS::firmware_compatiblity_check()
   //         IS_.DeviceInfo().firmwareVer[0],
   //         IS_.DeviceInfo().firmwareVer[1],
   //         IS_.DeviceInfo().firmwareVer[2]
-  // );
+  //);
     if (final_fault != rclcpp::Logger::Level::Debug) {
         RCLCPP_INFO(rclcpp::get_logger("final_fault_logger"), "Protocol version mismatch: \n"
             "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (SDK)\n"
@@ -827,7 +827,7 @@ void InertialSenseROS::configure_flash_parameters()
         // current_flash_cfg.magDeclination != magDeclination_ ||
         current_flash_cfg.dynamicModel != dynamicModel_ ||
         current_flash_cfg.platformConfig != platformConfig_
-        )
+      )
     {
         for (int i=0; i<3; i++)
         {
@@ -1123,7 +1123,7 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         msg_did_ins1.ned[0] = msg->ned[0];
         msg_did_ins1.ned[1] = msg->ned[1];
         msg_did_ins1.ned[2] = msg->ned[2];
-       if(rs_.did_ins1.pub_didins1 != NULL) {
+       if (rs_.did_ins1.pub_didins1 != NULL) {
            if (rs_.did_ins1.pub_didins1->get_subscription_count() > 0)
                rs_.did_ins1.pub_didins1->publish(msg_did_ins1);
        }

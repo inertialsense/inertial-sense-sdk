@@ -106,7 +106,7 @@ class cPlot:
             dates=[dt.datetime.fromtimestamp(ts) for ts in time]
             datenums=md.date2num(dates)        
     #         plt.subplots_adjust(bottom=0.2)
-            plt.xticks( rotation=25 )
+            plt.xticks(rotation=25)
             ax=plt.gca()
             if self.timeIsUtc==2:
                 xfmt = md.DateFormatter('%H:%M:%S.%f')
@@ -132,7 +132,7 @@ class cPlot:
             dates=[dt.datetime.fromtimestamp(ts) for ts in time]
             datenums=md.date2num(dates)        
     #         plt.subplots_adjust(bottom=0.2)
-            plt.xticks( rotation=25 )
+            plt.xticks(rotation=25)
             ax=plt.gca()
             if self.timeIsUtc==2:
                 xfmt = md.DateFormatter('%H:%M:%S.%f')
@@ -158,7 +158,7 @@ class cPlot:
             dates=[dt.datetime.fromtimestamp(ts) for ts in time]
             datenums=md.date2num(dates)        
     #         plt.subplots_adjust(bottom=0.2)
-            plt.xticks( rotation=25 )
+            plt.xticks(rotation=25)
             ax=plt.gca()
             if self.timeIsUtc==2:
                 xfmt = md.DateFormatter('%H:%M:%S.%f')
@@ -242,7 +242,7 @@ class cPlot:
             dates=[dt.datetime.fromtimestamp(ts) for ts in time]
             datenums=md.date2num(dates)        
     #         plt.subplots_adjust(bottom=0.2)
-            ax.xticks( rotation=25 )
+            ax.xticks(rotation=25)
             if self.timeIsUtc==2:
 #                 xfmt = md.DateFormatter('%H:%M:%S.%f')
                 xfmt = md.DateFormatter('%M:%S.%f')

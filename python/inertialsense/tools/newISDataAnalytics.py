@@ -150,7 +150,7 @@ def calcRMS(log, directory, subdir):
             plt.title("velocity error")
             for m in range(3):
                 for n in range(numDev):
-                    plt.plot(data[n,:,0], data[n, :, m+4], color = colors[m] )
+                    plt.plot(data[n,:,0], data[n, :, m+4], color = colors[m])
                 plt.plot(data[0,:,0], means[:, m+3], linewidth=2, color = colors[m])
             plt.subplot(3,1,3)
             plt.title("attitude")
@@ -166,7 +166,7 @@ def calcRMS(log, directory, subdir):
                     plt.plot(att_error[n, :, m])
             plt.show()
 
-        # RMS = sqrt ( 1/N sum(e^2) )
+        # RMS = sqrt (1/N sum(e^2))
         RMS = np.empty((numDev, 9))
         # Calculate RMS for position and velocity
         RMS[:,:6] = np.sqrt(np.mean(np.square(data[:, :, 1:7] - means[:,0:6]), axis=1))
@@ -224,8 +224,8 @@ def calcRMS(log, directory, subdir):
             devInfo = itd.cDevInfo(log.devices[n].data['devInfo'])
             line = '%2d SN%d      ' % (n, devInfo.v['serialNumber'][-1])
             if navMode:
-                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % ( RMS[n, 3], RMS[n, 4], RMS[n, 5])
-                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % ( RMS[n, 0], RMS[n, 1], RMS[n, 2])
+                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % (RMS[n, 3], RMS[n, 4], RMS[n, 5])
+                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % (RMS[n, 0], RMS[n, 1], RMS[n, 2])
             line = line + '[ %6.4f  %6.4f  %6.4f ]\n' % (RMS_euler[n, 0] * RAD2DEG, RMS_euler[n, 1] * RAD2DEG, RMS_euler[n, 2] * RAD2DEG)
             f.write(line)
 
