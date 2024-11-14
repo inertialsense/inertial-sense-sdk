@@ -85,10 +85,11 @@ class SuperNPP():
         except OSError:
             pass
 
-        f = open(logListFilename, "w")
+        results = []
         for subdir in self.subdirs:
             sdir = os.path.normpath(str(subdir) + "/post_processed")
             nppPrint("   " + sdir)
+
             ### Compute RMS ##################################################
             if self.computeRMS:
                 passRMS = 0
@@ -97,17 +98,19 @@ class SuperNPP():
                     self.log.calculateRMS()
                     passRMS = self.log.printRMSReport()
                     if passRMS == 1:
-                        f.write("[PASSED] " + sdir + "\n")
+                        results.append("[PASSED] " + sdir)
                         self.rmsPassResults.append(sdir)
                     else:
-                        f.write("[FAILED] " + sdir + "\n")
+                        results.append("[FAILED] " + sdir)
                         self.rmsFailResults.append(sdir)
                 else:
-                    f.write("[NODATA] " + sdir + "\n")
+                    results.append("[NODATA] " + sdir)
             else:
-                f.write("[      ] " + sdir + "\n")
+                results.append("[      ] " + sdir)
             ### Compute RMS ##################################################
-        f.close()
+        with open(logListFilename, "w") as f:
+            f.write("\n".join(results))
+            f.close()
         print('-------------------------------------------------------------')
         print(os.path.basename(logListFilename))
         self.print_file_contents(logListFilename)
