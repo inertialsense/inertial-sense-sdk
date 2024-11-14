@@ -235,7 +235,7 @@ uint32_t cISBootloaderSAMBA::get_device_info()
     int count = serialPortReadTimeout(m_port, buf, sizeof(buf), 100);
 
     // Set non-interactive mode and wait for response
-    count = serialPortWriteAndWaitfor (m_port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2);
+    count = serialPortWriteAndWaitFor(m_port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2);
     if (!count)
     {   // Failed to handshake with bootloader
         // serialPortClose(port);
