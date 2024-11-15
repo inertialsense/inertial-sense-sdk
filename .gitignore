@@ -37,6 +37,9 @@ CMakeFiles/
 /ExampleProjects/LogReader_RegCmp/Log
 /python/venv
 /python/logInspector/.eggs
+/python/.eggs
+/python/dist
+/python/inertialsense.egg-info
 /ros/install
 /ros/log
 /ros/ros2/install
