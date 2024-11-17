@@ -210,6 +210,7 @@ class BuildTestManager:
         result = 0
         if clean:
             build_dir = project_dir / "build"
+            print(f"=== Running make clean... ===")
             if os.path.exists(build_dir):
                 shutil.rmtree(build_dir)
 
