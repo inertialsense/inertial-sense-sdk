@@ -18,7 +18,6 @@ from log_reader import LogReader
 # from ci_hdw.data_sets import *
 from pylib.data_sets import *
 from inertialsense_math.pose import *
-from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 
 RAD2DEG = 180.0 / np.pi
 DEG2RAD = np.pi / 180.0
