@@ -6,6 +6,15 @@
 #include <sys/stat.h>
 #include "../ISConstants.h"
 #include "../util/md5.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#define popen _popen
+#define pclose _pclose
+#else
+#include <unistd.h>
+#endif
+
 using namespace std;
 
 
@@ -21,27 +30,58 @@ void check_md5_file(const char *filename)
     // Compute md5 hash using our library
     size_t filesize = 0;
     md5hash_t hash;
-    std::ifstream s(filename);
-    EXPECT_EQ( md5_file_details(&s, filesize, hash), 0 );
+    std::ifstream s(filename, std::ios::binary);
+    if (!s) {
+        throw std::runtime_error("Failed to open file for reading");
+    }
 
-    // Compare md5 hash using Linux md5sum app
-    string hashStr = md5_to_string(hash); 
+    EXPECT_EQ(md5_file_details(&s, filesize, hash), 0);
+
+    // Convert the computed hash to a string
+    std::string hashStr = md5_to_string(hash);
+
+    // Compare md5 hash using platform-specific commands
+    std::string cmdOutput;
     std::stringstream cmd;
+
+#ifdef _WIN32
+    cmd << "CertUtil -hashfile " << filename << " MD5";
+#else
     cmd << "md5sum " << filename;
+#endif
+
     FILE *fp = popen(cmd.str().c_str(), "r");
-    char path[PATH_MAX];
-    while (fgets(path, PATH_MAX, fp) != NULL)
-    path[32] = 0;   // Null terminate to omit filename
+    if (!fp) {
+        throw std::runtime_error("Failed to execute command");
+    }
+
+    char buffer[512];
+    while (fgets(buffer, sizeof(buffer), fp) != nullptr) {
+        cmdOutput += buffer;
+    }
     pclose(fp);
 
+#ifdef _WIN32
+    // Extract the MD5 hash from CertUtil output
+    std::string::size_type hashStart = cmdOutput.find(": ") + 2;
+    cmdOutput = cmdOutput.substr(hashStart, 32); // Extract only the hash
+#else
+    // Extract the MD5 hash from md5sum output
+    cmdOutput = cmdOutput.substr(0, 32); // Extract only the hash
+#endif
+
     // Compare two hash strings
-    EXPECT_EQ(hashStr, string(path));
+    EXPECT_EQ(hashStr, cmdOutput);
 
     // Compare filesize
-    EXPECT_EQ(filesize, GetFileSize(filename));
+    struct stat fileStat;
+    if (stat(filename, &fileStat) != 0) {
+        throw std::runtime_error("Failed to retrieve file size");
+    }
+    EXPECT_EQ(filesize, static_cast<size_t>(fileStat.st_size));
 
 #if 0   // Print results
-    printf("size: %d %s %s\n", (int)filesize, hashStr.c_str(), path);
+    printf("size: %d %s %s\n", static_cast<int>(filesize), hashStr.c_str(), cmdOutput.c_str());
 #endif
 }
 

@@ -13,8 +13,9 @@ from lib import python_venv
 
 class BuildTestManager:
     def __init__(self, release_name=None, release_dir=None):
-        python_venv.activate_virtualenv()
         self.is_windows = os.name == 'nt' or platform.system() == 'Windows'
+        if not self.is_windows:
+            python_venv.activate_virtualenv()
 
         self.generate_release = False
         self.release_name = release_name
