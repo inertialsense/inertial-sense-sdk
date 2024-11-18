@@ -653,7 +653,8 @@ void cISLogger::ShowParseErrors(bool show)
 
 uint64_t cISLogger::LogSize(uint32_t devSerialNo)
 {
-    return (DeviceLogBySerialNumber(devSerialNo) ? m_devices[devSerialNo]->LogSize() : 0);
+    auto device = DeviceLogBySerialNumber(devSerialNo);
+    return (device ? device->LogSize() : 0);
 }
 
 uint64_t cISLogger::LogSizeAll()
@@ -673,22 +674,26 @@ float cISLogger::LogSizeAllMB()
 
 float cISLogger::LogSizeMB(uint32_t devSerialNo)
 {
-    return (DeviceLogBySerialNumber(devSerialNo) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0);
+    auto device = DeviceLogBySerialNumber(devSerialNo);
+    return (device ? device->LogSize() * 0.000001f : 0);
 }
 
 float cISLogger::FileSizeMB(uint32_t devSerialNo)
 {
-    return (DeviceLogBySerialNumber(devSerialNo) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0);
+    auto device = DeviceLogBySerialNumber(devSerialNo);
+    return (device ? device->FileSize() * 0.000001f : 0);
 }
 
 uint32_t cISLogger::FileCount(uint32_t devSerialNo)
 {
-    return (DeviceLogBySerialNumber(devSerialNo) ? m_devices[devSerialNo]->FileCount() : 0);
+    auto device = DeviceLogBySerialNumber(devSerialNo);
+    return (device ? device->FileCount() : 0);
 }
 
 std::string cISLogger::GetNewFileName(uint32_t devSerialNo, uint32_t fileCount, const char *suffix)
 {
-    return (DeviceLogBySerialNumber(devSerialNo) ? m_devices[devSerialNo]->GetNewFileName(devSerialNo, fileCount, suffix) : "");
+    auto device = DeviceLogBySerialNumber(devSerialNo);
+    return (device ? device->GetNewFileName(devSerialNo, fileCount, suffix) : "");
 }
 
 int g_copyReadCount;
