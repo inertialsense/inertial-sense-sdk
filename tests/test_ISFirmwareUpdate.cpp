@@ -21,8 +21,8 @@
 
 static const char* MSG_TYPES[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND", "UPDATE_DONE" };
 
-static md5hash_t fake_md5 = { { (uint32_t)0x00010203, (uint32_t)0x04050607, (uint32_t)0x08090A0B, (uint32_t)0x0C0D0E0F } };
-static md5hash_t real_md5 = { { (uint32_t)0x13b16c00, (uint32_t)0x427089d8, (uint32_t)0x821f472b, (uint32_t)0xcb102f3c } };
+static md5hash_t fake_md5 = { { 0x00010203, 0x04050607, 0x08090A0B, 0x0C0D0E0F } };
+static md5hash_t real_md5 = { { 0x13b16c00, 0x427089d8, 0x821f472b, 0xcb102f3c } };
 
 class ExchangeBuffer {
 public:
