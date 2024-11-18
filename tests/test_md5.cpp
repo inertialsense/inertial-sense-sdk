@@ -89,6 +89,8 @@ void check_md5_file(const char *filename)
 #endif
 }
 
+#ifndef _WIN32
+
 TEST(md5, hash)
 {
     // GTEST_SKIP();
@@ -159,3 +161,4 @@ TEST(md5, hash_from_file_1_to_400k_file_size)
     remove(filename);
 }
 
+#endif

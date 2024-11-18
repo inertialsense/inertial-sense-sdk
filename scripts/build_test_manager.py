@@ -219,7 +219,7 @@ class BuildTestManager:
             print(f"=== Running make... ({build_type}) ===")
             try:
                 subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
-                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{os.cpu_count()-4}"], cwd=str(project_dir))
+                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{max(os.cpu_count()-4, 7)}"], cwd=str(project_dir))
             except subprocess.CalledProcessError as e:
                 print(f"Error building {project_name}!")
                 result = e.returncode
