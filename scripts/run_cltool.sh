@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-pushd "$(dirname "$(realpath $0)")" > /dev/null
+cd "$(dirname "$(realpath $0)")" > /dev/null
 
 ../cltool/build/cltool "$@"
