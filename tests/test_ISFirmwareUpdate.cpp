@@ -25,8 +25,15 @@ static md5hash_t fake_md5;
 static md5hash_t real_md5;
 
 void initialize_md5() {
-    fake_md5 = md5hash_t{ 0x00010203, 0x04050607, 0x08090A0B, 0x0C0D0E0F };
-    real_md5 = md5hash_t{ 0x13b16c00, 0x427089d8, 0x821f472b, 0xcb102f3c };
+    fake_md5.dwords[0] = 0x00010203;
+    fake_md5.dwords[1] = 0x04050607;
+    fake_md5.dwords[2] = 0x08090A0B;
+    fake_md5.dwords[3] = 0x0C0D0E0F;
+    
+    real_md5.dwords[0] = 0x13b16c00;
+    real_md5.dwords[1] = 0x427089d8;
+    real_md5.dwords[2] = 0x821f472b;
+    real_md5.dwords[3] = 0xcb102f3c;
 }
 
 class ExchangeBuffer {

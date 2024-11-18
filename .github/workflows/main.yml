@@ -54,8 +54,11 @@ jobs:
       - name: Build SDK
         run: ./build_is_sdk.sh
   
-      - name: Build/Run Unit Tests
-        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests IS-SDK_unit-tests
+      - name: Build Unit Tests
+        run: python3 build_test_manager.py IS-SDK_unit-tests ../tests
+
+      - name: Run Unit Tests
+        run: python3 build_test_manager.py IS-SDK_unit-tests ../tests --nobuild --test
 
       - name: Build cltool
         run: ./build_cltool.sh
