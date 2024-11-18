@@ -8,6 +8,7 @@ from pathlib import Path
 
 sdk_dir = Path(__file__).resolve().parent.parent
 log_inspector_dir = sdk_dir / "python"/ "logInspector/"
+is_windows = os.name == 'nt' or platform.system() == 'Windows'
 
 
 def source_virtualenv():
@@ -75,9 +76,13 @@ def run_build(args=[]):
             return build_process.returncode
 
         os.chdir(log_inspector_dir)
-        build_process = subprocess.run(["python3", "setup.py", "build_ext", "--inplace"])
+        if is_windows:
+            cmd = "python"
+        else:
+            cmd = "python3"
+        build_process = subprocess.run([cmd, "setup.py", "build_ext", "--inplace"])
         if build_process.returncode:
-            print("python3 setup build failed!")
+            print(f"{cmd} setup build failed!")
             return build_process.returncode
         return 0
 

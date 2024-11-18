@@ -49,7 +49,7 @@ class BuildTestManager:
                 sys.exit(0)
             elif arg in ("-n", "--nobuild"):
                 self.run_build = False
-            elif arg in ("-t", "--test"):
+            elif arg in ("-t", "--test", "--tests"):
                 self.run_test = True
             elif arg in ("-r", "--release"):
                 self.generate_release = True
@@ -62,9 +62,9 @@ class BuildTestManager:
         if 1 < len(no_dash_args):
             self.project_dir = os.path.abspath(no_dash_args[1])
             if not os.path.exists(self.project_dir):
-                self.project_dir = sdk_scripts_dir + no_dash_args[1]
+                self.project_dir = sdk_scripts_dir / no_dash_args[1]
                 if not os.path.exists(self.project_dir):
-                    self.project_dir = imx_scripts_dir + no_dash_args[1]
+                    self.project_dir = imx_scripts_dir / no_dash_args[1]
                     if not os.path.exists(self.project_dir):
                         raise TypeError(f"Project directory not found: {type(self.project_dir).__name__}.")
         if 2 < len(no_dash_args):

@@ -89,7 +89,7 @@ void check_md5_file(const char *filename)
 #endif
 }
 
-#ifndef _WIN32
+#ifndef _WIN32  // This test does not run correctly in Windows and needs to be debugged. (WHJ)
 
 TEST(md5, hash)
 {
