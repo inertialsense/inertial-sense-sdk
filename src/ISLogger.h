@@ -243,6 +243,7 @@ private:
     cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
+    bool DeviceLogBySerialNum(int serialNum);
     bool InitDevicesForWriting(std::vector<ISDevice>& devices);
     void Cleanup();
     void PrintProgress();
