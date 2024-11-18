@@ -231,12 +231,31 @@ class BuildTestManager:
         test_dir = str(test_dir) + "/build"
         if not exec_name:
             exec_name = test_name
-        if not self.is_windows:
+        if self.is_windows:
+            test_dir = test_dir + "/Release"
+            exec_name = exec_name + ".exe"
+        else:
             exec_name = "./" + exec_name
+
+        # Normalize paths
+        test_dir = os.path.normpath(test_dir)
+        exec_path = os.path.join(test_dir, exec_name)
+        
+        # Debug prints
+        print(f"test_dir: {test_dir}")
+        print(f"exec_name: {exec_name}")
+        print(f"exec_path: {exec_path}")
+        
+        # Check if paths exist
+        if not os.path.isdir(test_dir):
+            raise FileNotFoundError(f"Directory not found: {test_dir}")
+        if not os.path.isfile(exec_path):
+            raise FileNotFoundError(f"Executable not found: {exec_path}")
+
         self.test_header(test_name)
         result = 0
         try:
-            subprocess.check_call(exec_name, cwd=test_dir)
+            subprocess.check_call(exec_path, cwd=test_dir)
         except subprocess.CalledProcessError as e:
             print(f"Error building {test_name}!")
             result = e.returncode
