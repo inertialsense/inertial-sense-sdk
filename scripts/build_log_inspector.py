@@ -5,19 +5,11 @@ import sys
 import subprocess
 import shutil
 from pathlib import Path
+from lib import python_venv
 
 sdk_dir = Path(__file__).resolve().parent.parent
 log_inspector_dir = sdk_dir / "python"/ "logInspector/"
 is_windows = os.name == 'nt' or platform.system() == 'Windows'
-
-
-def source_virtualenv():
-    global sdk_dir
-    virtualenv_path = sdk_dir / "script" / "lib" / "python_venv.sh"
-    if os.path.exists(virtualenv_path):
-        subprocess.run(f"source {virtualenv_path}", shell=True, executable="/bin/bash")
-    else:
-        raise FileNotFoundError(f"Virtual environment script not found: {virtualenv_path}")
 
 def run_clean():
     global log_inspector_dir
