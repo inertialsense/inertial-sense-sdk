@@ -55,10 +55,10 @@ jobs:
         run: ./build_is_sdk.sh
   
       - name: Build Unit Tests
-        run: python3 build_test_manager.py IS-SDK_unit-tests ../tests
+        run: python3 build_manager.py IS-SDK_unit-tests ../tests
 
       - name: Run Unit Tests
-        run: python3 build_test_manager.py IS-SDK_unit-tests ../tests --nobuild --test
+        run: python3 build_manager.py IS-SDK_unit-tests ../tests --nobuild --test
 
       - name: Build cltool
         run: ./build_cltool.sh
@@ -91,7 +91,7 @@ jobs:
         run: ./clean_all.bat
 
       - name: Build Unit Tests
-        run: python build_test_manager.py IS-SDK_unit-tests ../tests
+        run: python build_manager.py IS-SDK_unit-tests ../tests
 
       - name: Build CLTool
         run: ./build_cltool.bat
