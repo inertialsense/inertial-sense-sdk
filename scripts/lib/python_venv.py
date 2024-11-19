@@ -1,6 +1,4 @@
 import os
-import sys
-import subprocess
 import venv
 
 def is_virtual_environment(path):
@@ -14,10 +12,10 @@ def is_virtual_environment(path):
 
 def create_virtual_environment(path):
     if os.path.exists(path):
-        print(f"Virtual environment already exists at '{path}'.")
+        print(f"Virtual environment already exists: '{path}'.")
     else:
         venv.create(path, with_pip=True)
-        print(f"Virtual environment created at '{path}'.")
+        print(f"New virtual environment created: '{path}'.")
         return path
 
 def find_virtualenv():
@@ -36,13 +34,15 @@ def find_virtualenv():
         os.path.join(script_dir, "../SDK/scripts"),             # find is-common/SDK/scripts from is-gpx/is-common/scripts 
     ]
 
-    # Search for existing .venv directories and return the first one found
+    # Search for existing .venv directory and return first one found
     for directory in dir_search_list:
+        directory = os.path.realpath(os.path.join(directory, ".venv"))
         if is_virtual_environment(directory):
-            # print(f"Found virtual environment at {os.path.realpath(os.path.join(directory, '.venv'))}")
+            print(f"Found virtual environment: {directory}")
             return directory
 
-    return create_virtual_environment(script_dir)
+    # Virtual environment not found.  Create one.
+    return create_virtual_environment(os.path.realpath(os.path.join(script_dir, ".venv")))
 
 if __name__ == "__main__":
     print(find_virtualenv())
