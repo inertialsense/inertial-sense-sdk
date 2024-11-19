@@ -1,13 +1,10 @@
-import os
-import shutil
-import subprocess
-import sys
 from pathlib import Path
 import build_manager
 import build_log_inspector
 
 sdk_dir = Path(__file__).resolve().parent.parent
 bm = build_manager.BuildTestManager()
+
 
 ###############################################################################
 #  Builds
