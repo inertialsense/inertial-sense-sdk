@@ -6,7 +6,6 @@ import setuptools
 
 __version__ = '2.2.1'
 
-
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path."""
 
@@ -51,7 +50,6 @@ def has_flag(compiler, flagname):
             return False
     return True
 
-
 def cpp_flag(compiler):
     """Return the -std=c++[11/17] compiler flag."""
     if has_flag(compiler, '-std=c++17'):
@@ -61,7 +59,6 @@ def cpp_flag(compiler):
     else:
         raise RuntimeError('Unsupported compiler -- at least C++11 support '
                            'is needed!')
-
 
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
@@ -84,7 +81,6 @@ class BuildExt(build_ext):
         for ext in self.extensions:
             ext.extra_compile_args = opts
         build_ext.build_extensions(self)
-
 
 setup(
     name='log_reader',
