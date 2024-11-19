@@ -9,7 +9,7 @@ echo_blue " Install Dependencies: SDK                     "
 echo_blue "==============================================="
 
 sudo apt install -y cmake unzip zip libyaml-cpp-dev libudev-dev
-python3 -m pip install colorama platform
+python3 -m pip install colorama
 
 if [[ -e ~/.bashrc ]]; then source ~/.bashrc; fi
 

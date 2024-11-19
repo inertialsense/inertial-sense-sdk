@@ -1,9 +1,9 @@
 import glob
 import os
+import platform
 import sys
 import subprocess
 import shutil
-import re
 from pathlib import Path
 
 sdk_dir = Path(__file__).resolve().parent.parent
