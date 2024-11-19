@@ -10,12 +10,38 @@ from lib import python_venv
 sdk_dir = Path(__file__).resolve().parent.parent
 log_inspector_dir = sdk_dir / "python"/ "logInspector/"
 is_windows = os.name == 'nt' or platform.system() == 'Windows'
+if is_windows:
+    python_exec = "python"
+else:   # Linux
+    python_exec = "python3"
+
+def run_setup_command(command):
+    try:
+        # Run the setup.py command
+        command = [python_exec, "setup.py"] + command.split()
+        result = subprocess.run(
+            command,
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        if result.returncode:
+            print(f"Setup.py failure: {command}")
+        return result.returncode
+    except subprocess.CalledProcessError as e:
+        print("Error while running command:")
+        print(e.stderr)
+        return e.returncode
 
 def run_clean():
     global log_inspector_dir
     os.chdir(log_inspector_dir)
 
     print("=== Running make clean... ===")
+    result = run_setup_command("clean")
+    if result:
+        return result
+
     paths_to_remove = [
         "tmp", "build", "log_reader.egg-info", "log_reader.cpython*",
         "*.so", "*.pyc"
@@ -68,15 +94,8 @@ def run_build(args=[]):
             return build_process.returncode
 
         os.chdir(log_inspector_dir)
-        if is_windows:
-            cmd = "python"
-        else:
-            cmd = "python3"
-        build_process = subprocess.run([cmd, "setup.py", "build_ext", "--inplace"])
-        if build_process.returncode:
-            print(f"{cmd} setup build failed!")
-            return build_process.returncode
-        return 0
+        return run_setup_command("build_ext --inplace")
+        # return run_setup_command("bdist_wheel")
 
 def main():
     clean = False
