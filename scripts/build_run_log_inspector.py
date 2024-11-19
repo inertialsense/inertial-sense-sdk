@@ -3,14 +3,6 @@ import subprocess
 import sys
 import build_log_inspector
 
-def source_virtualenv():
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    virtualenv_path = os.path.join(script_dir, "lib", "python_venv.sh")
-    if os.path.exists(virtualenv_path):
-        subprocess.run(f"source {virtualenv_path}", shell=True, executable="/bin/bash")
-    else:
-        raise FileNotFoundError(f"Virtual environment script not found: {virtualenv_path}")
-
 def source_script(script_name):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     script_path = os.path.join(script_dir, script_name)
@@ -34,7 +26,6 @@ def main():
     os.chdir(script_dir)
 
     # Source necessary scripts
-    source_virtualenv()
     source_script("./lib/echo_color.sh")
     source_script("./lib/results_build.sh")
     source_script("./lib/results_tests.sh")

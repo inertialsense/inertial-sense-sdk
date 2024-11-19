@@ -1,22 +1,15 @@
 import glob
 import os
+import platform
 import sys
 import subprocess
 import shutil
-import re
 from pathlib import Path
+from lib import python_venv
 
 sdk_dir = Path(__file__).resolve().parent.parent
 log_inspector_dir = sdk_dir / "python"/ "logInspector/"
-
-
-def source_virtualenv():
-    global sdk_dir
-    virtualenv_path = sdk_dir / "script" / "lib" / "python_venv.sh"
-    if os.path.exists(virtualenv_path):
-        subprocess.run(f"source {virtualenv_path}", shell=True, executable="/bin/bash")
-    else:
-        raise FileNotFoundError(f"Virtual environment script not found: {virtualenv_path}")
+is_windows = os.name == 'nt' or platform.system() == 'Windows'
 
 def run_clean():
     global log_inspector_dir
@@ -75,9 +68,13 @@ def run_build(args=[]):
             return build_process.returncode
 
         os.chdir(log_inspector_dir)
-        build_process = subprocess.run(["python3", "setup.py", "build_ext", "--inplace"])
+        if is_windows:
+            cmd = "python"
+        else:
+            cmd = "python3"
+        build_process = subprocess.run([cmd, "setup.py", "build_ext", "--inplace"])
         if build_process.returncode:
-            print("python3 setup build failed!")
+            print(f"{cmd} setup build failed!")
             return build_process.returncode
         return 0
 

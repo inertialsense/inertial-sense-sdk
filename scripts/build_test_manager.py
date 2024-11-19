@@ -13,8 +13,9 @@ from lib import python_venv
 
 class BuildTestManager:
     def __init__(self, release_name=None, release_dir=None):
-        python_venv.activate_virtualenv()
         self.is_windows = os.name == 'nt' or platform.system() == 'Windows'
+        if not self.is_windows:
+            python_venv.activate_virtualenv()
 
         self.generate_release = False
         self.release_name = release_name
@@ -48,7 +49,7 @@ class BuildTestManager:
                 sys.exit(0)
             elif arg in ("-n", "--nobuild"):
                 self.run_build = False
-            elif arg in ("-t", "--test"):
+            elif arg in ("-t", "--test", "--tests"):
                 self.run_test = True
             elif arg in ("-r", "--release"):
                 self.generate_release = True
@@ -61,9 +62,9 @@ class BuildTestManager:
         if 1 < len(no_dash_args):
             self.project_dir = os.path.abspath(no_dash_args[1])
             if not os.path.exists(self.project_dir):
-                self.project_dir = sdk_scripts_dir + no_dash_args[1]
+                self.project_dir = sdk_scripts_dir / no_dash_args[1]
                 if not os.path.exists(self.project_dir):
-                    self.project_dir = imx_scripts_dir + no_dash_args[1]
+                    self.project_dir = imx_scripts_dir / no_dash_args[1]
                     if not os.path.exists(self.project_dir):
                         raise TypeError(f"Project directory not found: {type(self.project_dir).__name__}.")
         if 2 < len(no_dash_args):
@@ -217,8 +218,10 @@ class BuildTestManager:
         else:   # Build process
             print(f"=== Running make... ({build_type}) ===")
             try:
+                num_proc = os.cpu_count()
+                num_proc = int(max(num_proc - num_proc/10, 6))
                 subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
-                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{os.cpu_count()-4}"], cwd=str(project_dir))
+                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
             except subprocess.CalledProcessError as e:
                 print(f"Error building {project_name}!")
                 result = e.returncode
@@ -230,12 +233,31 @@ class BuildTestManager:
         test_dir = str(test_dir) + "/build"
         if not exec_name:
             exec_name = test_name
-        if not self.is_windows:
+        if self.is_windows:
+            test_dir = test_dir + "/Release"
+            exec_name = exec_name + ".exe"
+        else:
             exec_name = "./" + exec_name
+
+        # Normalize paths
+        test_dir = os.path.normpath(test_dir)
+        exec_path = os.path.join(test_dir, exec_name)
+        
+        # Debug prints
+        print(f"test_dir: {test_dir}")
+        print(f"exec_name: {exec_name}")
+        print(f"exec_path: {exec_path}")
+        
+        # Check if paths exist
+        if not os.path.isdir(test_dir):
+            raise FileNotFoundError(f"Directory not found: {test_dir}")
+        if not os.path.isfile(exec_path):
+            raise FileNotFoundError(f"Executable not found: {exec_path}")
+
         self.test_header(test_name)
         result = 0
         try:
-            subprocess.check_call(exec_name, cwd=test_dir)
+            subprocess.check_call(exec_path, cwd=test_dir)
         except subprocess.CalledProcessError as e:
             print(f"Error building {test_name}!")
             result = e.returncode
