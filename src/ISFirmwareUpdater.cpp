@@ -2,10 +2,19 @@
 // Created by kylemallory on 8/18/23.
 //
 
+#include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
 
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBFirmwareUpdater.h"
+
+ISFirmwareUpdater::ISFirmwareUpdater(ISDevice* device) : FirmwareUpdateHost(), device(device) {
+    if (device) {
+        port = device->port;
+        devInfo = &device->devInfo;
+    }
+}
+
 
 /**
  * Specifies the target device that you wish to update. This will attempt an initial REQ_VERSION request of that device
@@ -177,7 +186,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     target_devInfo = &remoteDevInfo;
 
     if(pfnStatus_cb != nullptr) {
-        pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo, 0).c_str());
+        pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo, 0).c_str());
     }
 
     return true;
@@ -203,11 +212,11 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t 
     session_status = msg.data.update_resp.status;
     session_total_chunks = msg.data.update_resp.totl_chunks;
 
-    if (pfnInfoProgress_cb != nullptr) {
+    if (pfnStatus_cb != nullptr) {
         if (session_status == fwUpdate::READY)
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s; Expecting %d chunks.", fwUpdate_getStatusName(session_status), session_total_chunks);
+            pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s; Expecting %d chunks.", fwUpdate_getStatusName(session_status), session_total_chunks);
         else
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s", fwUpdate_getStatusName(session_status));
+            pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s", fwUpdate_getStatusName(session_status));
     }
 
     switch (session_status) {
@@ -254,7 +263,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
                     break;
             }
             if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "To many resends of the same chunk; giving up with error %s", fwUpdate_getNiceStatusName(session_status));
+                pfnStatus_cb(this, IS_LOG_LEVEL_ERROR, "To many resends of the same chunk; giving up with error %s", fwUpdate_getNiceStatusName(session_status));
             return false;
         }
     } else {
@@ -263,7 +272,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
     }
 
     if(pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
+        pfnStatus_cb(this, IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
     nextChunkSend = current_timeMs() + nextChunkDelay;
     return fwUpdate_sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
@@ -278,7 +287,7 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char* message = (msg.data.progress.msg_len > 0) ? (const char*)&msg.data.progress.message : "";
     if (pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, static_cast<ISBootloader::eLogLevel>(msg.data.progress.msg_level), message);
+        pfnStatus_cb(this, static_cast<eLogLevel>(msg.data.progress.msg_level), message);
 
     progress_mutex.unlock();
     return true;
@@ -297,13 +306,39 @@ bool ISFirmwareUpdater::fwUpdate_isDone()
     return is_done;
 }
 
+void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
+    // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
+    const int toHost_size = toHost.size();
+    uint8_t* toHostBuf = new uint8_t[toHost_size];
+    uint8_t* p = toHostBuf;
+    while (toHost.size()) {
+        *p++ = toHost.front();
+        toHost.pop_front();
+    }
+
+    for (p = toHostBuf; p < toHostBuf + toHost_size; ) {
+        fwUpdate::payload_t *msg;
+        void *aux_data = nullptr;
+        int msg_len = fwUpdate_mapBufferToPayload(p, &msg, &aux_data);
+        if (fwUpdate_processMessage(p, msg_len))
+            p += msg_len;
+    }
+    delete [] toHostBuf;
+    // return result;
+}
+
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed)
 {
     uint32_t lastMsgAge = 0;
     static fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
 
+    if (deviceUpdater) {
+        deviceUpdater->fwUpdate_step(msg_type, processed);
+        fwUpdate_handleLocalDevice();
+    }
+
     if ((pfnStatus_cb != nullptr) && (lastStatus != session_status)) {
-        pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
+        pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
         lastStatus = session_status;
     }
 
@@ -333,9 +368,9 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                             nextStartAttempt = current_timeMs() + attemptInterval;
                             if (fwUpdate_requestUpdate()) {
                                 startAttempts++;
-                                pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "[%s : %d] :: Requesting Firmware Update start (Attempt %d)", portName(port), devInfo->serialNumber, startAttempts);
+                                pfnStatus_cb(this, IS_LOG_LEVEL_DEBUG, "[%s : %d] :: Requesting Firmware Update start (Attempt %d)", portName(port), devInfo->serialNumber, startAttempts);
                             } else {
-                                pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Error attempting to initiate Firmware Update");
+                                pfnStatus_cb(this, IS_LOG_LEVEL_ERROR, "Error attempting to initiate Firmware Update");
                             }
                         }
                     }
@@ -406,26 +441,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     if (deviceUpdater != nullptr) {
         bool result = deviceUpdater->fwUpdate_processMessage(buffer, buff_len);
-
-        // check if we have data in deviceUpdater->toHost, and process any response
-
-        // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
-        const int toHost_size = toHost.size();
-        uint8_t* toHostBuf = new uint8_t[toHost_size];
-        uint8_t* p = toHostBuf;
-        while (toHost.size()) {
-            *p++ = toHost.front();
-            toHost.pop_front();
-        }
-
-        for (p = toHostBuf; p < toHostBuf + toHost_size; ) {
-            fwUpdate::payload_t *msg;
-            void *aux_data = nullptr;
-            int msg_len = fwUpdate_mapBufferToPayload(p, &msg, &aux_data);
-            if (fwUpdate_processMessage(p, msg_len))
-                p += msg_len;
-        }
-        delete [] toHostBuf;
+        fwUpdate_handleLocalDevice();
         return result;
     }
 
@@ -467,7 +483,7 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     stepErrors.emplace_back(activeStep, cmd, buffer);
 
     if (pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, buffer);
+        pfnStatus_cb(this, IS_LOG_LEVEL_ERROR, buffer);
 
     if (failLabel.empty()) {
         // if no label has been specified, clear all commands and reset
@@ -482,11 +498,11 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     }
 }
 
-void ISFirmwareUpdater::runCommand(std::string cmd) {
+void ISFirmwareUpdater::runCommand(const std::string& cmd) {
     if (pfnStatus_cb != nullptr) {
         static std::string priorCmd;
         if (priorCmd != cmd)
-            pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command \"%s\"", cmd.c_str());
+            pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command \"%s\"", cmd.c_str());
         priorCmd = cmd;
     }
 
@@ -575,7 +591,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             std::string msg;
             joinStrings(args, ',', msg);
             if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, msg.c_str());
+                pfnStatus_cb(this, IS_LOG_LEVEL_INFO, msg.c_str());
         } else if ((activeCommand == "slot") && (args.size() == 1)) {
             slotNum = strtol(args[0].c_str(), nullptr, 10);
         } else if ((activeCommand == "timeout") && (args.size() == 1)) {
@@ -588,7 +604,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             progressRate = strtol(args[0].c_str(), nullptr, 10);
         } else if ((activeCommand == "delay") && (args.size() == 1)) {
             if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_INFO, "Pausing for %0.2f seconds...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
+                pfnStatus_cb(this, IS_LOG_LEVEL_MORE_INFO, "Pausing for %0.2f seconds...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
             pauseUntil = current_timeMs() + strtol(args[0].c_str(), nullptr, 10);
         } else if ((activeCommand == "waitfor") && (args.size() >= 1) && (args.size() <= 3)) {
             if ((args.size() == 3) && (args[2] == "true")) {
@@ -608,7 +624,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                         pingInterval = strtol(args[1].c_str(), nullptr, 10);
                     }
                     if (pfnStatus_cb != nullptr)
-                        pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_INFO, "Requesting version info from target device (upto %0.2f seconds)...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
+                        pfnStatus_cb(this, IS_LOG_LEVEL_MORE_INFO, "Requesting version info from target device (upto %0.2f seconds)...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
                     return; // returning now will force this command to be re-executed (until the timeout expires).
                 }
                 if (pingTimeout < current_timeMs()) {
@@ -620,7 +636,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                     fwUpdate_requestVersionInfo(target);
 
                     if (pfnStatus_cb != nullptr)
-                        pfnStatus_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Re-requesting version info from target device...");
+                        pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Re-requesting version info from target device...");
                 }
                 return; // keep trying...
             }
@@ -635,7 +651,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             if (((target & fwUpdate::TARGET_SONY_CXD5610) == fwUpdate::TARGET_SONY_CXD5610) && (slotNum == 4 || (slotNum == 2 && filename.substr(filename.find_last_of(".") + 1) == "fpk")))
                 flags |= fwUpdate::IMG_FLAG_imageNotEncrypted;
 
-            if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (device.devInfo.hardwareType == IS_HARDWARE_TYPE_IMX))
+            if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
                 target = fwUpdate::TARGET_ISB_IMX5;
 
             // any target which doesn't report version info will also expect the old MD5 digest
@@ -646,9 +662,9 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                     // just copy in the current "main" device's dev info, since they are the same device as the target
                     remoteDevInfo = *devInfo;
                     target_devInfo = &remoteDevInfo;
-                } else if ((target & fwUpdate::TARGET_GPX1) && (device.devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)) {
+                } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) {
                     // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
-                    const char *gpxVInfo = strstr(device.devInfo.addInfo, "G2.");
+                    const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
                     if (gpxVInfo) {
                         int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
                         if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||

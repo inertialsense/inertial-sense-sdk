@@ -36,7 +36,7 @@ public:
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_ISB;
+        m_bootloader_type = IS_BL_TYPE_ISB;
     }
     
     ~cISBootloaderISB() 
@@ -105,6 +105,7 @@ private:
     int m_currentPage;
     int m_verifyCheckSum;
 
+    is_operation_result process_hex_record(const std::string& record, int* verifyCheckSum);
     is_operation_result process_hex_file(FILE* file);
 
     struct {
@@ -121,6 +122,13 @@ private:
 
     static std::vector<uint32_t> rst_serial_list;
     static std::mutex rst_serial_list_mutex;
+
+    int currentPage = -1;
+    int currentOffset = m_isb_props.app_offset;
+
+    static const int HEX_BUFFER_SIZE = 1024;
+    unsigned char output[HEX_BUFFER_SIZE * 2]; // big enough to store an entire extra line of buffer if needed
+
 };
 
 #endif	// __IS_BOOTLOADER_ISB_H

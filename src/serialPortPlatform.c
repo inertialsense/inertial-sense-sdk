@@ -66,11 +66,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
-#define error_message(...)
-#ifndef error_message
-    #define error_message printf
-#endif
-
 typedef struct
 {
     int blocking;
@@ -95,8 +90,8 @@ static int serialPortDrainPlatform(port_handle_t port);
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
-// #define DEBUG_COMMS
-// Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
+
+// #define DEBUG_COMMS   // Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
 #ifdef DEBUG_COMMS
 #define IS_PRINTABLE(n) ( ((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)) )
 static inline void debugDumpBuffer(const char* prefix, const unsigned char* buffer, int len) {
@@ -118,7 +113,11 @@ static inline void debugDumpBuffer(const char* prefix, const unsigned char* buff
     printf("\n");
 }
 #else
+    #define error_message(...)
     #define debugDumpBuffer(...)
+#endif
+#ifndef error_message
+    #define error_message printf
 #endif
 
 
@@ -841,7 +840,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // Other errors
             serialPort->errorCode = errno;
             serialPort->error = strerror(serialPort->errorCode);
-            error_message("[%s] serialPortWritePlatform():: Error writing: %s (%d)\n", serialPort->port, strerror(errno), errno);
+            error_message("[%s] serialPortWritePlatform():: Error writing: %s (%d)\n", serialPort->portName, strerror(errno), errno);
             return -1;
         }
         bytes_written += result;
@@ -942,8 +941,8 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     memcpy(serialPort->portName, tmpName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
 
     serialPort->base = tmp;
-    serialPort->base.portRead = serialPort->pfnRead = serialPortReadPlatform;
-    serialPort->base.portWrite = serialPort->pfnWrite = serialPortWritePlatform;
+    serialPort->base.portRead = serialPortReadPlatform;
+    serialPort->base.portWrite = serialPortWritePlatform;
     serialPort->base.portAvailable = serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
     serialPort->base.portFree = serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
 

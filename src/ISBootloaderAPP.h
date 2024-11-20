@@ -28,7 +28,7 @@ public:
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_APP;
+        m_bootloader_type = IS_BL_TYPE_APP;
     }
 
     ~cISBootloaderAPP() 

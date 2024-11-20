@@ -31,13 +31,13 @@ bool ISDevice::step() {
 is_operation_result ISDevice::updateFirmware(
         fwUpdate::target_t targetDevice,
         std::vector<std::string> cmds,
-        ISBootloader::pfnBootloadProgress uploadProgress,
-        ISBootloader::pfnBootloadProgress verifyProgress,
-        ISBootloader::pfnBootloadStatus infoProgress,
+        fwUpdate::pfnProgressCb uploadProgress,
+        fwUpdate::pfnProgressCb verifyProgress,
+        fwUpdate::pfnStatusCb infoProgress,
         void (*waitAction)()
 )
 {
-    fwUpdater = new ISFirmwareUpdater(*this);
+    fwUpdater = new ISFirmwareUpdater(this);
     fwUpdater->setTarget(targetDevice);
 
     // TODO: Implement maybe
@@ -212,34 +212,34 @@ bool ISDevice::validateDevice(uint32_t timeout) {
     unsigned int startTime = current_timeMs();
     int queryType = 0;  // we cycle through different types of queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
 
-    if (!isOpen())
+    if (!isConnected())
         return false;
 
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
     do {
-        if (serialPort.errorCode == ENOENT)
+        if (SERIAL_PORT(port)->errorCode == ENOENT)
             return false;
 
         switch (queryType) {
             case QUERYTYPE_NMEA:
-                comManagerSendRawInstance(cmInstance, portHandle, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
+                SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
                 break;
             case QUERYTYPE_ISB:
-                comManagerSendRawInstance(cmInstance, portHandle, (uint8_t *) DID_DEV_INFO, sizeof(dev_info_t));
+                SendRaw((uint8_t *) DID_DEV_INFO, sizeof(dev_info_t));
                 break;
-            case QUERYTYPE_IBbootloader:
-                queryDeviceInfo();
+            case QUERYTYPE_ISbootloader:
+                queryDeviceInfoISbl();
                 break;
             case QUERYTYPE_mcuBoot:
                 break;
 
         }
         // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
-        if (serialPort.errorCode != 0)
+        if (SERIAL_PORT(port)->errorCode != 0)
             return false;
 
         SLEEP_MS(100);
-        stepComms();
+        step();
 
         if ((current_timeMs() - startTime) > timeout)
             return false;
@@ -662,14 +662,7 @@ bool ISDevice::reset() {
     return false;
 }
 
-void ISDevice::stepComms() {
-    // TODO: This should be moved into the connection manager...
-    //   the device shouldn't have to do any stepping; it should already be done
-    comManagerStepRxInstance(&cmInstance, 0);
-    comManagerStepTxInstance(&cmInstance);
-
-}
-
+/*
 void ISDevice::processRxData(p_data_t* data)
 {
     if (data->hdr.size==0 || data->ptr==NULL) {
@@ -749,3 +742,4 @@ void ISDevice::processRxNmea(const uint8_t* msg, int msgSize) {
         break;
     }
 }
+*/

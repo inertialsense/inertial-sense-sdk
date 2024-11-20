@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iomanip>      // std::setw
 #include <algorithm>
 #include <string>
+#include <any>
 
 // change these includes to be the correct path for your system
 #include "InertialSense.h" // best to include this file first
@@ -87,7 +88,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	std::string nmeaMessage;				// A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent 
 	double replaySpeed;
 	int displayMode;
-    int verboseLevel = ISBootloader::eLogLevel::IS_LOG_LEVEL_INFO;
+    int verboseLevel = IS_LOG_LEVEL_INFO;
 	
 	uint64_t rmcPreset;
 	bool persistentMessages;
@@ -141,8 +142,8 @@ bool cltool_extractEventData();
 void cltool_outputUsage();
 void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
-void cltool_bootloadUpdateInfo(void* obj, int level, const char* str, ...);
-void cltool_firmwareUpdateInfo(void* obj, int level, const char* str, ...);
+void cltool_bootloadUpdateInfo(std::any obj, int level, const char* str, ...);
+void cltool_firmwareUpdateInfo(std::any obj, int level, const char* str, ...);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 
 #endif // __CLTOOL_H__

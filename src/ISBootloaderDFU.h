@@ -66,7 +66,7 @@ public:
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_dfu.handle_libusb = handle;
-        m_device_type = IS_DEV_TYPE_DFU;
+        m_bootloader_type = IS_BL_TYPE_DFU;
     }
 
     ~cISBootloaderDFU() 

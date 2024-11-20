@@ -330,7 +330,7 @@ void cISBootloaderThread::update_thread_libusb(void* context)
 
 bool cISBootloaderThread::true_if_cancelled(void)
 {
-    if(m_uploadProgress(NULL, 0.0f, "", 0, 0) == IS_OP_CANCELLED)
+    if(m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     {
         m_continue_update = false;
         return true;
@@ -343,10 +343,10 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     vector<string>&                         comPorts,
     int                                     baudRate,
     const ISBootloader::firmwares_t&        firmware,
-    fwUpdate::pfnProgressCb       uploadProgress,
-    fwUpdate::pfnProgressCb       verifyProgress,
-    fwUpdate::pfnStatusCb         infoProgress,
-    void						            (*waitAction)()
+    fwUpdate::pfnProgressCb                 uploadProgress,
+    fwUpdate::pfnProgressCb                 verifyProgress,
+    fwUpdate::pfnStatusCb                   infoProgress,
+    void                                    (*waitAction)()
 )
 {
     // Only allow one firmware update sequence to happen at a time
@@ -385,14 +385,14 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Initializing devices for update...");
+    m_infoProgress(std::any(), IS_LOG_LEVEL_INFO, "Initializing devices for update...");
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mode_thread_serial_app` to put all APP devices into IS-bootloader mode
     ////////////////////////////////////////////////////////////////////////////
 
     // Put all devices in the correct mode
-    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Waiting for devices to initialize...");
+    m_infoProgress(std::any(), IS_LOG_LEVEL_INFO, "Waiting for devices to initialize...");
     while(m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
@@ -441,7 +441,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                     m_serial_threads.push_back(new_thread);
                     m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[m_serial_threads.size() - 1]);
 
-                    m_infoProgress(NULL, IS_LOG_LEVEL_DEBUG, "mode_thread_serial_app found viable port: %s", port_name.c_str());
+                    m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "mode_thread_serial_app found viable port: %s", port_name.c_str());
                     m_serial_devicesActive++;
                 }
             }
@@ -497,7 +497,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_threads.clear();
     }
 
-    if(m_uploadProgress(NULL, 0.0f, "", 0, 0) == IS_OP_CANCELLED)
+    if(m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -558,7 +558,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             if (!found)
             {
-                m_infoProgress(NULL, IS_LOG_LEVEL_DEBUG, "get_device_isb_version_thread found viable port: %s", port_name.c_str());
+                m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "get_device_isb_version_thread found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(get_device_isb_version_thread, m_serial_threads[m_serial_threads.size() - 1]);
@@ -618,7 +618,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_threads.clear();
     }
 
-    if(m_uploadProgress(NULL, 0.0f, "", 0, 0) == IS_OP_CANCELLED)
+    if(m_uploadProgress(std::any(), 0.0f, "Waiting for device response.", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -691,7 +691,7 @@ is_operation_result cISBootloaderThread::update(
             comPorts.begin(), comPorts.end(),
             back_inserter(ports_user_ignore));
 
-    if(m_uploadProgress(NULL, 0.0f, "Writing Flash", 0, 0) == IS_OP_CANCELLED)
+    if(m_uploadProgress(std::any(), 0.0f, "Writing Flash", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -741,7 +741,7 @@ is_operation_result cISBootloaderThread::update(
 
             if (!found)
             {
-                m_infoProgress(NULL, IS_LOG_LEVEL_DEBUG, "mode_thread_serial_isb found viable port: %s", port_name.c_str());
+                m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "mode_thread_serial_isb found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name, force_isb_update); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_isb, m_serial_threads[m_serial_threads.size() - 1]);
@@ -794,7 +794,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
     }
 
-    if(m_uploadProgress(NULL, 0.0f, "Writing Flash", 0, 0) == IS_OP_CANCELLED)
+    if(m_uploadProgress(std::any(), 0.0f, "Writing Flash", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -802,7 +802,7 @@ is_operation_result cISBootloaderThread::update(
         if(m_waitAction) m_waitAction(); 
         return IS_OP_CANCELLED; 
     }
-    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Updating...");
+    m_infoProgress(std::any(), IS_LOG_LEVEL_INFO, "Updating...");
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mgmt_thread_libusb` to update DFU devices
@@ -881,7 +881,7 @@ is_operation_result cISBootloaderThread::update(
 
             if (!found)
             {
-                m_infoProgress(NULL, IS_LOG_LEVEL_DEBUG, "update_thread_serial found viable port: %s", port_name.c_str());
+                m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "update_thread_serial found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name, force_isb_update); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(update_thread_serial, m_serial_threads[m_serial_threads.size() - 1]);
@@ -915,7 +915,7 @@ is_operation_result cISBootloaderThread::update(
 
             tmp = "\nUpdate timeout... Timeout of " + to_string(((double)timeout) / 1000) + " Seconds reached.";
 
-            m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, tmp.c_str());
+            m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, tmp.c_str());
         }
     }
 
@@ -923,11 +923,11 @@ is_operation_result cISBootloaderThread::update(
 
     tmp = "\nUpdate run time: " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
 
-    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
+    m_infoProgress(std::any(), IS_LOG_LEVEL_INFO, tmp.c_str());
 
     threadJoinAndFree(libusb_thread);
 
-    if(m_uploadProgress(NULL, 0.0f, "", 0, 0) == IS_OP_CANCELLED)
+    if(m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 

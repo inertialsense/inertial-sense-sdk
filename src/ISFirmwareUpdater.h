@@ -81,38 +81,44 @@ private:
 
     std::vector<std::tuple<std::string, std::string, std::string>> stepErrors;
 
-    void runCommand(std::string cmd);
+    void runCommand(const std::string& cmd);
+
+    void fwUpdate_handleLocalDevice();
 
 public:
 
     enum pkg_error_e {
         PKG_SUCCESS = 0,
-        PKG_ERR_PACKAGE_FILE_ERROR = -1,            // the package file couldn't be opened/accessed (invalid, or not found)
-        PKG_ERR_INVALID_IMAGES = -2,                // the manifest doesn't define any images, or the images are incorrectly formatted
-        PKG_ERR_INVALID_STEPS = -3,                 // the manifest doesn't define any steps, or the steps are incorrectly formatted
-        PKG_ERR_INVALID_TARGET = -4,                // the active step target is invalid (yaml schema/syntax)
-        PKG_ERR_UNSUPPORTED_TARGET = -5,            // the step target specified is valid, but not supported
-        PKG_ERR_NO_ACTIONS = -6,                    // the step doesn't describe any actions to perform
-        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       // the step action 'image' references an image which doesn't exist in the manifest
-        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            // the referenced image doesn't include a filename
-        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          // the file for the referenced image doesn't exist
-        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,      // the image file's actual size doesn't match the manifest's reported size
-        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      // the image file's actual md5sum doesn't match the manifest's reported md5sum
+        PKG_ERR_PACKAGE_FILE_ERROR = -1,            //! the package file couldn't be opened/accessed (invalid, or not found)
+        PKG_ERR_INVALID_IMAGES = -2,                //! the manifest doesn't define any images, or the images are incorrectly formatted
+        PKG_ERR_INVALID_STEPS = -3,                 //! the manifest doesn't define any steps, or the steps are incorrectly formatted
+        PKG_ERR_INVALID_TARGET = -4,                //! the active step target is invalid (yaml schema/syntax)
+        PKG_ERR_UNSUPPORTED_TARGET = -5,            //! the step target specified is valid, but not supported
+        PKG_ERR_NO_ACTIONS = -6,                    //! the step doesn't describe any actions to perform
+        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       //! the step action 'image' references an image which doesn't exist in the manifest
+        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            //! the referenced image doesn't include a filename
+        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          //! the file for the referenced image doesn't exist
+        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,     //! the image file's actual size doesn't match the manifest's reported size
+        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      //! the image file's actual md5sum doesn't match the manifest's reported md5sum
     };
 
-    // const ISDevice& device;
-    port_handle_t port = 0;                 //! a handle to the comm port which we use to talk to the device
-    const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
-    dev_info_t *target_devInfo = nullptr;   //! the target's device info, if any
+    const ISDevice* device = nullptr;               //! a handle to the device which is being updated; maybe null in some cases
+    port_handle_t port = 0;                         //! a handle to the comm port which we use to talk to the device
+    const dev_info_t *devInfo = nullptr;            //! the root device info connected on this port
+    dev_info_t *target_devInfo = nullptr;           //! the target's device info, if any
 
     /**
      * Constructor to initiate and manage updating a firmware image of a device connected on the specified port
      * @param portHandle handle to the port (typically serial) to which the device is connected
      * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
-    ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo) { };
+    ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo) { }
 
-    ISFirmwareUpdater(ISDevice& device) : FirmwareUpdateHost(), port(device.port), devInfo(&device.devInfo) { };
+    ISFirmwareUpdater(ISDevice* device);
+
+    void setUploadProgressCb(fwUpdate::pfnProgressCb cb) { pfnUploadProgress_cb = cb; }
+    void setVerifyProgressCb(fwUpdate::pfnProgressCb cb) { pfnVerifyProgress_cb = cb; }
+    void setInfoProgressCb(fwUpdate::pfnStatusCb cb) { pfnStatus_cb = cb; }
 
     ~ISFirmwareUpdater() override {};
 

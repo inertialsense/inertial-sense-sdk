@@ -717,11 +717,11 @@ TEST(ISComm, BasicTxBufferRxByteTest)
 	}
 
 	// Test that data parsed from Tx port matches deque data
-	parseRingBufByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+	parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&TEST0_PORT->loopbackPortBuf) == 0);
+	EXPECT_TRUE(ringBufUsed(&TEST0_PORT->portRingBuf) == 0);
 	EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -759,11 +759,11 @@ TEST(ISComm, BasicTxPortRxByteTest)
 	}
 
 	// Test that data parsed from Tx port matches deque data
-	parseRingBufByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+	parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
 	EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -802,11 +802,11 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 	}
 
 	// Test that data parsed from Tx port matches deque data
-	parseRingBufMultiByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+	parseRingBufMultiByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
 	EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -887,8 +887,8 @@ TEST(ISComm, TxRxWithOffsetTest)
 	{
 		ins_1_t rxIns1 = {};
 
-		int n = ringBufUsed(&(TEST0_PORT->loopbackPortBuf));
-		ringBufRead(&(TEST0_PORT->loopbackPortBuf), g_comm.rxBuf.tail, n);
+		int n = ringBufUsed(&(TEST0_PORT->portRingBuf));
+		ringBufRead(&(TEST0_PORT->portRingBuf), g_comm.rxBuf.tail, n);
 		g_comm.rxBuf.tail += n;
 
 		// Read timeOfWeek
@@ -1252,8 +1252,8 @@ TEST(ISComm, TruncatedPackets)
 
 	while (g_testTxDeque.size()>0)
 	{
-		int n = _MIN(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)), is_comm_free(&comm));
-		ringBufRead(&(TEST0_PORT->loopbackPortBuf), comm.rxBuf.tail, n);
+		int n = _MIN(ringBufUsed(&(TEST0_PORT->portRingBuf)), is_comm_free(&comm));
+		ringBufRead(&(TEST0_PORT->portRingBuf), comm.rxBuf.tail, n);
 
         // Update comm buffer tail pointer
         comm.rxBuf.tail += n;
@@ -1305,7 +1305,7 @@ TEST(ISComm, TruncatedPackets)
 			found++;
 		}
 
-		if (ringBufUsed(&(TEST0_PORT->loopbackPortBuf))<=0)
+		if (ringBufUsed(&(TEST0_PORT->portRingBuf)) <= 0)
 		{
 			// No more data left in ring buffer.  Reset parser one byte ahead of head and try again until there's no more data iscomm buffer.
 			comm.rxBuf.head++;
@@ -1319,7 +1319,7 @@ TEST(ISComm, TruncatedPackets)
 	}
 
 	// Check that we got all data
-	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
 	EXPECT_TRUE(g_testTxDeque.empty());
 
 	// Check good and bad packet count

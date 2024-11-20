@@ -761,7 +761,7 @@ private:
     void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
     static void StepLogger(InertialSense* i, const p_data_t* data, port_handle_t port);
-    static void BootloadStatusUpdate(void* obj, const char* str);
+    static void BootloadStatusUpdate(std::any obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
     is_operation_result handshakeISB(serial_port_t& port);

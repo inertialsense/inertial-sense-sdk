@@ -646,6 +646,8 @@ typedef struct
 
 } is_comm_instance_t;
 
+static const uint8_t COMM_PORT_FLAG__EXPLICIT_READ  = 0x01;     //! When set, ISComm::is_comm_port_parse_messages() will not read/parse from this port; the operator must readPort() and then is_comm_buffer_parse_messages in separate, explicit steps.
+
 typedef struct {
     base_port_t base;
     port_monitor_set_t* stats;          //! stats associated with this port
@@ -655,6 +657,7 @@ typedef struct {
     uint8_t buffer[GPX_COM_BUFFER_SIZE];       //! Comm instance data buffer
 #else
     uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
+    uint8_t flags;                      //! COMM_PORT flags (ie, EXPLICIT, etc)
 #endif
 } comm_port_t;
 #define COMM_PORT(n)    ((comm_port_t*)(n))

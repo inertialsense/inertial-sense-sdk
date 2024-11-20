@@ -598,9 +598,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-verbose"))
         {
-            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
-            if (a[8] == '=')
+            g_commandLineOptions.verboseLevel = IS_LOG_LEVEL_INFO;
+            if (a[8] == '=') {
                 g_commandLineOptions.verboseLevel = atoi(&a[9]);
+            } else {
+                for (int i = 8; (a[i] == '+' || a[i] == '-'); i++) {
+                    if (a[i] == '+') g_commandLineOptions.verboseLevel++;
+                    else g_commandLineOptions.verboseLevel--;
+                }
+            }
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {

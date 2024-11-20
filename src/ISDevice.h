@@ -88,6 +88,8 @@ public:
      */
     bool isConnected() { return (port && serialPortIsOpen(port)); }
 
+    bool hasDeviceInfo() { return (hdwId != 0) && (hdwRunState != ISDevice::HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0); }
+
     bool step();
 
     std::string getIdAsString();
@@ -221,7 +223,7 @@ public:
     uint32_t nextResetTime = 0;                 //! used to throttle reset requests
 
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds,
-            ISBootloader::pfnBootloadProgress uploadProgress, ISBootloader::pfnBootloadProgress verifyProgress, ISBootloader::pfnBootloadStatus infoProgress, void (*waitAction)()
+            fwUpdate::pfnProgressCb uploadProgress, fwUpdate::pfnProgressCb verifyProgress, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()
     );
 
     bool fwUpdateInProgress();
@@ -231,6 +233,7 @@ public:
 
     bool handshakeISbl();
     bool queryDeviceInfoISbl();
+    bool validateDevice(uint32_t timeout);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
@@ -238,7 +241,7 @@ public:
     enum queryTypes {
         QUERYTYPE_NMEA = 0,
         QUERYTYPE_ISB,
-        QUERYTYPE_IBbootloader,
+        QUERYTYPE_ISbootloader,
         QUERYTYPE_mcuBoot,
         QUERYTYPE_MAX = QUERYTYPE_mcuBoot,
     };

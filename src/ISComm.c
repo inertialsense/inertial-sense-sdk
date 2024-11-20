@@ -1116,6 +1116,9 @@ void is_comm_port_parse_messages(port_handle_t port)
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
         return;
 
+    if (COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)
+        return;
+
     is_comm_instance_t* comm = &COMM_PORT(port)->comm;
 
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.

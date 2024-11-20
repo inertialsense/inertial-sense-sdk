@@ -13,40 +13,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __IS_BOOTLOADER_BASE_H_
 #define __IS_BOOTLOADER_BASE_H_
 
+#include <stdarg.h>
+#include <stdio.h>
+#include <string>
+#include <mutex>
+
+#include "core/types.h"
 #include "ISConstants.h"
 #include "ISSerialPort.h"
 #include "libusb.h"
 #include "ISUtilities.h"
 #include "protocol/FirmwareUpdate.h"
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string>
-#include <mutex>
-
 namespace ISBootloader {
 
 static constexpr int IS_DEVICE_LIST_LEN = 256;
 static constexpr int IS_FIRMWARE_PATH_LENGTH = 256;
-
-typedef enum {
-    IS_LOG_LEVEL_NONE  = 0,
-    IS_LOG_LEVEL_ERROR = 1,
-    IS_LOG_LEVEL_WARN  = 2,
-    IS_LOG_LEVEL_INFO  = 3,
-    IS_LOG_LEVEL_MORE_INFO = 4,
-    IS_LOG_LEVEL_DEBUG = 5,
-    IS_LOG_LEVEL_MORE_DEBUG = 6,
-    IS_LOG_LEVEL_SILLY = 7
-} eLogLevel;
-
-typedef enum {
-    IS_DEV_TYPE_NONE = 0,
-    IS_DEV_TYPE_SAMBA,
-    IS_DEV_TYPE_ISB,
-    IS_DEV_TYPE_APP,
-    IS_DEV_TYPE_DFU,
-} eDeviceType;
 
 typedef enum {
     IS_PROCESSOR_UNKNOWN = -1,
@@ -101,9 +83,9 @@ typedef struct
 // typedef is_operation_result (*fwUpdate::pfnProgressCb)(void* obj, float percent);
 // typedef void (*fwUpdate::pfnStatusCb)(void* obj, int level, const char* infoString, ...);
 
-is_operation_result dummy_update_callback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
-is_operation_result dummy_verify_callback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
-static inline void dummy_info_callback(void* obj, int level, const char* infoString, ...)
+is_operation_result dummy_update_callback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+is_operation_result dummy_verify_callback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+static inline void dummy_info_callback(std::any obj, int level, const char* infoString, ...)
 {
     (void)obj;
     (void)infoString;
@@ -209,7 +191,7 @@ public:
 
     void* m_thread;
     bool m_finished_flash;
-    int m_device_type;
+    int m_bootloader_type;
     bool m_use_progress;
     int m_start_time_ms;
 
@@ -286,7 +268,7 @@ public:
 protected:
     void status_update(const char* info, int level)
     { 
-        if(m_info_callback) m_info_callback((void*)this, level, info);
+        if(m_info_callback) m_info_callback(std::any_cast<cISBootloaderBase*>(this), level, info);
     }
 
     struct

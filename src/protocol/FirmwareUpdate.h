@@ -15,6 +15,7 @@
 
 #ifdef __cplusplus
 #include <string>
+#include <any>
 
 #include "util/md5.h"
 
@@ -101,8 +102,8 @@ namespace fwUpdate {
  *
  */
 
-    typedef is_operation_result (*pfnProgressCb)(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
-    typedef void (*pfnStatusCb)(void* obj, int level, const char* infoString, ...);
+    typedef is_operation_result (*pfnProgressCb)(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+    typedef void (*pfnStatusCb)(std::any obj, int level, const char* infoString, ...);
 
 
 #define FWUPDATE__MAX_CHUNK_SIZE   512
@@ -379,6 +380,20 @@ namespace fwUpdate {
          */
         target_t fwUpdate_getTargetType(target_t target) { return (target_t)((uint32_t)target & TARGET_TYPE_MASK); };
 
+        /**
+         * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
+         * Called with each messages that is received/processed.  Can optionally be called manually, typically at a regular interval. If you don't call
+         * fwUpdate_step() things should still generally work, but state advancement may stall if there is no received message (for example, after all
+         * messages have been sent by the remote).
+         * @param msg_type the last received msg_type that was received.  If you are calling this method manually (from a timer, etc) pass in MSG_UNKNOWN.
+         * @param processed indicates whether the received message was successfully processed after being received (this is usually the return value from
+         *  fwUpdate_handleXXXX() functions).
+         * @return false _suggests_ that the step couldn't complete in some way or another, perhaps because there was no processed messages, or that the
+         *  is in an invalid state, etc.  Otherwise, return true. This result is primarily informational, and should not effect any downstream functionality
+         *  or prevent (or indicate) a failure of the firmware update engine.
+         */
+        virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
+
     protected:
         uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
         uint32_t last_message = 0;                              //! the time (millis) since we last received a payload targeted for us.
@@ -408,20 +423,6 @@ namespace fwUpdate {
          * @return
          */
         bool fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data= nullptr);
-
-        /**
-         * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
-         * Called with each messages that is received/processed.  Can optionally be called manually, typically at a regular interval. If you don't call
-         * fwUpdate_step() things should still generally work, but state advancement may stall if there is no received message (for example, after all
-         * messages have been sent by the remote).
-         * @param msg_type the last received msg_type that was received.  If you are calling this method manually (from a timer, etc) pass in MSG_UNKNOWN.
-         * @param processed indicates whether the received message was successfully processed after being received (this is usually the return value from
-         *  fwUpdate_handleXXXX() functions).
-         * @return false _suggests_ that the step couldn't complete in some way or another, perhaps because there was no processed messages, or that the
-         *  is in an invalid state, etc.  Otherwise, return true. This result is primarily informational, and should not effect any downstream functionality
-         *  or prevent (or indicate) a failure of the firmware update engine.
-         */
-        virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
 
         /**
          * Virtual function that must be implemented in the concrete implementations, responsible for writing buffer out to the wire (serial, or otherwise).

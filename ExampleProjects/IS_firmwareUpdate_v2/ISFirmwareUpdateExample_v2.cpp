@@ -46,7 +46,7 @@ bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 }
 
 // print out upload progress
-static is_operation_result uploadProgress(void* obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
+static is_operation_result uploadProgress(std::any obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
     if (obj == NULL) return IS_OP_OK;
 
@@ -59,7 +59,7 @@ static is_operation_result uploadProgress(void* obj, float pct, const std::strin
 }
 
 // print out verify progress
-static is_operation_result verifyProgress(void* obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
+static is_operation_result verifyProgress(std::any obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
     if (obj == NULL) return IS_OP_OK;
 
@@ -71,7 +71,7 @@ static is_operation_result verifyProgress(void* obj, float pct, const std::strin
     return IS_OP_OK;
 }
 
-static void statusText(void* obj, int level, const char* info, ...)
+static void statusText(std::any obj, int level, const char* info, ...)
 {
     if (obj == NULL) return;
 
@@ -109,7 +109,7 @@ static void example_dataCallback(InertialSense* i, p_data_t* data, port_handle_t
 
 }
 
-static is_operation_result fwUpdateProgress(void* obj, float pct, const std::string& stepName, int step, int steps) {
+static is_operation_result fwUpdateProgress(std::any obj, float pct, const std::string& stepName, int step, int steps) {
     if (obj == NULL) return IS_OP_OK;
 
     // FIXME: Probably need to make "obj" and std::any so we can attempt to cast back to an original type
@@ -125,7 +125,7 @@ static is_operation_result fwUpdateProgress(void* obj, float pct, const std::str
     return IS_OP_OK;
 }
 
-static void fwUpdateStatus(void* obj, int level, const char* info, ...) {
+static void fwUpdateStatus(std::any obj, int level, const char* info, ...) {
     static char buffer[256];
 
     va_list ap;
