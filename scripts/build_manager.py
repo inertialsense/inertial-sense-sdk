@@ -4,7 +4,6 @@ import shutil
 import sys
 import subprocess
 import time
-from colorama import Fore, Style, init
 from pathlib import Path
 sdk_scripts_dir = Path(__file__).resolve().parent
 imx_scripts_dir = sdk_scripts_dir.parent.parent
@@ -66,9 +65,6 @@ class BuildTestManager:
         if 2 < len(no_dash_args):
             self.exec_name = no_dash_args[2]
 
-        # Initialize colorama
-        init(autoreset=True)
-
         self.print_release_info()
 
     def set_release_info(self, release_name=None, release_dir=None):
@@ -94,13 +90,17 @@ class BuildTestManager:
             print("")
             time.sleep(1)
 
-    def print_red(self, str): print(Fore.RED + str)
-    def print_grn(self, str): print(Fore.GREEN + str)
-    def print_blu(self, str): print(Fore.BLUE + str)
-    def print_cyn(self, str): print(Fore.CYAN + str)
-    def print_ylw(self, str): print(Fore.YELLOW + str)
-    # print(Style.BRIGHT + "This is bright text")
-    # print(Style.RESET_ALL + "Back to normal text")
+    def print_red(self, str): print(f"\033[31m{str}\033[0m")            # ANSI Red
+    def print_grn(self, str): print(f"\033[32m{str}\033[0m")            # ANSI Green
+    def print_blu(self, str): print(f"\033[34m{str}\033[0m")            # ANSI Blue
+    def print_cyn(self, str): print(f"\033[36m{str}\033[0m")            # ANSI Cyan
+    def print_ylw(self, str): print(f"\033[33m{str}\033[0m")            # ANSI Yellow
+
+    def print_bright_red(self, str): print(f"\033[1;31m{str}\033[0m")   # ANSI Bold Red
+    def print_bright_grn(self, str): print(f"\033[1;32m{str}\033[0m")   # ANSI Bold Green
+    def print_bright_blu(self, str): print(f"\033[1;34m{str}\033[0m")   # ANSI Bold Blue
+    def print_bright_cyn(self, str): print(f"\033[1;36m{str}\033[0m")   # ANSI Bold Cyan
+    def print_bright_ylw(self, str): print(f"\033[1;33m{str}\033[0m")   # ANSI Bold Yellow
 
     def build_header(self, name):
         self.project_name = name
