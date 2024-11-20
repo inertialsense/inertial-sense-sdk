@@ -12,7 +12,7 @@ endif()
 
 # Add InertialSenseSDK static library subdirectory
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
-include(${IS_SDK_DIR}/include_inertial_sense_sdk.cmake)
+include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 
 if(WIN32)
     # yamlcpp needs to know it's a static lib

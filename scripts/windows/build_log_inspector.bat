@@ -5,9 +5,10 @@ echo.
 
 :: Set SDK_DIR as  directory path
 for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
+call %SDK_DIR%\scripts\lib\activate_python_venv.bat
 
 :: Build SDK cpp needed by LogInspector
-@REM call %SDK_DIR%\scripts\windows\build_is_sdk.bat
+call %SDK_DIR%\scripts\windows\build_is_sdk.bat
 
 :: Build Log Inspector locally
 pushd %SDK_DIR%\python\logInspector

@@ -6,7 +6,7 @@ endif()
 project(IS-SDK_unit-tests)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
-include(${IS_SDK_DIR}/include_inertial_sense_sdk.cmake)
+include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 
 # Include InertialSenseSDK header files
 include_directories(
