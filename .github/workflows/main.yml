@@ -196,6 +196,13 @@ jobs:
         shell: bash
 
     steps:
+      - name: Install dependencies
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install ruamel.yaml gitpython semver requests colorama
+          ./install_compilers.sh
+
       - name: Install libboost
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
