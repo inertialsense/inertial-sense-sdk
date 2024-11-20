@@ -208,11 +208,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies
-        run: |
-          /ros_entrypoint.sh /bin/bash -e -c "
-          ../../inertial-sense-sdk/scripts/install_python_dependencies.sh
-          "
+      # - name: Install dependencies
+      #   run: |
+      #     /ros_entrypoint.sh /bin/bash -e -c "
+      #     ../../inertial-sense-sdk/scripts/install_python_dependencies.sh
+      #     "
 
       - name: Build IS SDK library
         run: |
