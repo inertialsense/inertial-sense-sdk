@@ -15,11 +15,6 @@
 .vscode
 .venv
 .idea
-cmake-build-debug
-Makefile
-CMakeCache.txt
-cmake_install.cmake
-libInertialSenseSDK.a
 
 # Ignore all directories anywhere in the repo
 cmake-build-*/
