@@ -48,17 +48,16 @@ jobs:
           ./install_gtest.sh
 
       - name: Clean All
-        run: |
-          rm -rf ../cltool/build ../ExampleProjects/build
+        run: ./clean_all.sh
 
       - name: Build SDK
         run: ./build_is_sdk.sh
   
       - name: Build Unit Tests
-        run: python3 build_manager.py IS-SDK_unit-tests ../tests
+        run: ./build_unit_tests.sh
 
       - name: Run Unit Tests
-        run: python3 build_manager.py IS-SDK_unit-tests ../tests --nobuild --test
+        run: ./build_unit_tests.sh --nobuild --test
 
       - name: Build cltool
         run: ./build_cltool.sh
@@ -67,7 +66,7 @@ jobs:
         run: ./build_log_inspector.sh
 
       - name: Build SDK Examples
-        run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
+        run: python3 build_manager.py SDK_Examples ../ExampleProjects
 
   ba_windows:
     name: "General Software Windows"
@@ -90,8 +89,11 @@ jobs:
       - name: Clean all
         run: ./clean_all.bat
 
+      - name: Build IS SDK library 
+        run: ./build_is_sdk.bat
+
       - name: Build Unit Tests
-        run: python build_manager.py IS-SDK_unit-tests ../tests
+        run: ./build_unit_tests.bat
 
       - name: Build CLTool
         run: ./build_cltool.bat
