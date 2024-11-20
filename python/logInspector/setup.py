@@ -26,14 +26,12 @@ ext_modules = [
             'include',
             '../src',
             '../../src',  # Include any necessary headers from the SDK
-            '/usr/include/libusb-1.0',  # Add this line
             get_pybind_include(),
-            get_pybind_include(user=True)
-        ],
-        extra_link_args=['-lusb-1.0'],
-        extra_objects=[
-            '../../build/libInertialSenseSDK.a',  # Link to the prebuilt static library
-        ],
+            get_pybind_include(user=True),
+        ] + (['../../src/libusb/libusb'] if platform.system() == 'Windows' else ['/usr/include/libusb-1.0']),
+        extra_link_args=[] if platform.system() == 'Windows' else ['-lusb-1.0'],
+        # Link to the prebuilt static library
+        extra_objects=['../../build/Release/InertialSenseSDK.lib'] if platform.system() == 'Windows' else ['../../build/libInertialSenseSDK.a'],
         language='c++',
     ),
 ]
