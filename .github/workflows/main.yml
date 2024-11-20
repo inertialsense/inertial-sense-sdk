@@ -209,10 +209,10 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        working-directory: scripts
         run: |
-          ./install_sdk_dependencies.sh
-          ./install_gtest.sh
+          /ros_entrypoint.sh /bin/bash -e -c "
+          ../../inertial-sense-sdk/scripts/install_sdk_dependencies.sh
+          "
 
       - name: Build ROS2 bridge
         run: |
