@@ -29,19 +29,19 @@ public:
     cDeviceLogJSON(const ISDevice* dev) : cDeviceLog(dev) {};
     cDeviceLogJSON(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {};
 
-	bool CloseAllFiles() OVERRIDE;
+    bool CloseAllFiles() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;
-	p_data_buf_t* ReadData() OVERRIDE;
-	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
-	std::string LogFileExtention() OVERRIDE { return std::string(".json"); }
+    p_data_buf_t* ReadData() OVERRIDE;
+    void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
+    std::string LogFileExtention() OVERRIDE { return std::string(".json"); }
 
 private:
-	bool GetNextItemForFile();
+    bool GetNextItemForFile();
 
-	p_data_buf_t* ReadDataFromFile();
-	std::string m_jsonString;
-	cDataJSON m_json;
-	p_data_buf_t m_data;
+    p_data_buf_t* ReadDataFromFile();
+    std::string m_jsonString;
+    cDataJSON m_json;
+    p_data_buf_t m_data;
 };
 
 #endif // DEVICE_LOG_CSV_H

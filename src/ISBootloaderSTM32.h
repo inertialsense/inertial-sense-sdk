@@ -24,7 +24,7 @@ public:
         fwUpdate::pfnProgressCb verify_cb,
         fwUpdate::pfnStatusCb info_cb,
         port_handle_t port
-    ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
+  ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
     }
@@ -80,4 +80,4 @@ private:
     uint8_t m_pid;
 };
 
-#endif	// __IS_BOOTLOADER_ISB_H
+#endif    // __IS_BOOTLOADER_ISB_H

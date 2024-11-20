@@ -368,15 +368,15 @@ class cObj:
         return
 
                      
-def vector3( _v, name ):
+def vector3(_v, name):
     return np.c_[ _v[name+'[0]'].T, _v[name+'[1]'].T, _v[name+'[2]'].T ]
    
-def vector4( _v, name ):
+def vector4(_v, name):
     return np.c_[ _v[name+'[0]'].T, _v[name+'[1]'].T, _v[name+'[2]'].T, _v[name+'[3]'].T ]
 
 
 class cDevice:
-    def __init__(self, index, directory, serialNumber, refIns=None ):        
+    def __init__(self, index, directory, serialNumber, refIns=None):        
         global refLla
         
         # Profiling
@@ -432,7 +432,7 @@ class cDevice:
         
 
     def appendRDat(self, rdat, name, obj):
-        dct = getdict( obj )
+        dct = getdict(obj)
 
 #         print "Adding: ", name, " ", dct.keys()
 #         print "Adding: ", name
@@ -531,7 +531,7 @@ class cDevice:
                         continue
 
                     # Add ctypes structures to data dictionary
-                    self.appendRDat(self.rdat, sName, (sType).from_buffer(cDat,n) )
+                    self.appendRDat(self.rdat, sName, (sType).from_buffer(cDat,n))
                     n += dHdr.size
 
 
@@ -554,7 +554,7 @@ class cDevice:
             # List of dictionaries (array or structs)
             if type(rdat[0]) is dict:
                 for obj in rdat:
-                    data.append( self.__toNumpy(obj, depth) )
+                    data.append(self.__toNumpy(obj, depth))
             # 1D or 2D List of numbers
             elif type(rdat[0]) is list or isinstance(rdat[0], Number):
                 # Convert list to numpy arrays
@@ -564,7 +564,7 @@ class cDevice:
 #                 if rdat[0] == 
                 
                 for obj in rdat:
-                    data.append( self.__toNumpy(obj.__dict__, depth) )
+                    data.append(self.__toNumpy(obj.__dict__, depth))
                 
         else:
             # Add specific value
@@ -762,7 +762,7 @@ class cINS:
 
     def course(self):
         if self.__course == None:
-            self.__course = np.arctan2( self.velNED[:,1], self.velNED[:,0] )
+            self.__course = np.arctan2(self.velNED[:,1], self.velNED[:,0])
         return self.__course        
 
     def ned(self):
@@ -775,13 +775,13 @@ class cINS:
         self.time = time
                 
     def speed2D(self):
-        return np.sqrt( np.square(self.v['uvw'][:,0]) +
-                        np.square(self.v['uvw'][:,1]) )
+        return np.sqrt(np.square(self.v['uvw'][:,0]) +
+                        np.square(self.v['uvw'][:,1]))
 
     def speed3D(self):
-        return np.sqrt( np.square(self.v['uvw'][:,0]) +
+        return np.sqrt(np.square(self.v['uvw'][:,0]) +
                         np.square(self.v['uvw'][:,1]) +
-                        np.square(self.v['uvw'][:,2]) )
+                        np.square(self.v['uvw'][:,2]))
 
 
 class cRIMU:
@@ -1043,8 +1043,8 @@ class cObsParams:
         self.lla.time       = gpsTimeToUTC(gpsWeek, (_v['lla.timeMs'] * 0.001))
         self.uvw.time       = gpsTimeToUTC(gpsWeek, (_v['uvw.timeMs'] * 0.001))
                         
-        self.accNed.refHdg = np.arctan2( self.v['accNed.ref'][:,1], self.v['accNed.ref'][:,0] ) 
-        self.accNed.insHdg = np.arctan2( self.v['accNed.ins'][:,1], self.v['accNed.ins'][:,0] )
+        self.accNed.refHdg = np.arctan2(self.v['accNed.ref'][:,1], self.v['accNed.ref'][:,0]) 
+        self.accNed.insHdg = np.arctan2(self.v['accNed.ins'][:,1], self.v['accNed.ins'][:,0])
 
         self.lla.refNed     = pose.lla2ned(refLla, _v['lla.ref'])
         self.lla.insNed     = pose.lla2ned(refLla, _v['lla.ins'])
@@ -1064,7 +1064,7 @@ class cInsParams:
 
 
 
-def lla2kml(time, lla, serialNumber, kmlFileName="log.kml", **kwargs ):
+def lla2kml(time, lla, serialNumber, kmlFileName="log.kml", **kwargs):
     kml = simplekml.Kml()
     
     color = kwargs.pop('color', simplekml.Color.yellow)
@@ -1074,8 +1074,8 @@ def lla2kml(time, lla, serialNumber, kmlFileName="log.kml", **kwargs ):
     latLon = []
     tNext = 0
     lNext = 0
-    for i in range( 0, np.shape(lla)[0]):
-        latLon.append( (lla[i,1], lla[i,0], lla[i,2]) )
+    for i in range(0, np.shape(lla)[0]):
+        latLon.append((lla[i,1], lla[i,0], lla[i,2]))
 
         # Add timestamp
         if timeStep:

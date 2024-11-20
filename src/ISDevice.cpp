@@ -139,7 +139,7 @@ bool ISDevice::handshakeISbl() {
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++) {
-        if(serialPortWrite(port, &handshakerChar, 1) != 1) {
+        if (serialPortWrite(port, &handshakerChar, 1) != 1) {
             return false;
         }
 
@@ -170,7 +170,7 @@ bool ISDevice::queryDeviceInfoISbl() {
         devInfo.firmwareVer[1] = buf[3];
         // m_isb_props.rom_available = buf[4];
 
-        if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
+        if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
         {
             switch ((ISBootloader::eProcessorType)buf[5]) {
                 case ISBootloader::IS_PROCESSOR_UNKNOWN:
@@ -459,11 +459,11 @@ void ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMa
     filter.eventMask.priorityLevel = priorityLevel;
     filter.eventMask.msgTypeIdMask = msgTypeIdMask;
 
-    if(target == 0)
+    if (target == 0)
         event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_FILTER;
-    else if(target == 1)
+    else if (target == 1)
         event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER;
-    else if(target == 2)
+    else if (target == 2)
         event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
     else
         return;
@@ -612,7 +612,7 @@ bool ISDevice::WaitForFlashSynced()
         return false;   // No device, no flash-sync
 
     unsigned int startMs = current_timeMs();
-    while(!FlashConfigSynced())
+    while (!FlashConfigSynced())
     {   // Request and wait for flash config
         comManagerStep(port);
 

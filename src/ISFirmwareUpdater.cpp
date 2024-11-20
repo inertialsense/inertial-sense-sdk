@@ -154,7 +154,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     int hashError = (flags & fwUpdate::IMG_FLAG_useAlternateMD5)
             ? altMD5_file_details(srcFile, fileSize, session_md5)
             : md5_file_details(srcFile, fileSize, session_md5);
-    if ( hashError != 0 )
+    if (hashError != 0)
         return fwUpdate::ERR_INVALID_IMAGE;
 
     updateStartTime = current_timeMs();
@@ -657,8 +657,8 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
             // any target which doesn't report version info will also expect the old MD5 digest
             if (!target_devInfo) {
                 // TODO: We should be able to remove most of this after 2.1.0 has been released
-                if ( ((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
-                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX)) ) {
+                if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
+                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
                     // just copy in the current "main" device's dev info, since they are the same device as the target
                     remoteDevInfo = *devInfo;
                     target_devInfo = &remoteDevInfo;
@@ -764,7 +764,7 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
                         if ((target_name != "IMX5") &&
                             (target_name != "GPX1") &&
                             (target_name != "GNSS1") &&
-                            (target_name != "GNSS2") )
+                            (target_name != "GNSS2"))
                             return PKG_ERR_UNSUPPORTED_TARGET; // target name is invalid/unsupported
                         commands.push_back("target=" + target_name);
                     } else if (cmd_name == "image") {

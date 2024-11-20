@@ -95,7 +95,7 @@ def lpf(data, cornerFreqHz, dt=None, time=None, initVal=None):
     
     # Find average dt in time
     if time is None and dt is None:
-        dt = np.mean( time[1:] - time[0:-1] )
+        dt = np.mean(time[1:] - time[0:-1])
 #         print "LPF mean dt: ", dt
     
     result  = np.copy(data)
@@ -120,7 +120,7 @@ def lpfNoDelay(data, cornerFreqHz, dt=None, time=None, initVal=None):
     
     # Find average dt in time
     if time is not None and dt is None:
-        dt = np.mean( time[1:] - time[0:-1] )
+        dt = np.mean(time[1:] - time[0:-1])
 #         print "LPF mean dt: ", dt
     
     result  = np.copy(data)
@@ -155,7 +155,7 @@ def o1lpf(data, cornerFreqHz, dt=None, time=None, initVal=None):
 
     # Find average dt in time
     if time is not None and dt is None:
-        dt = np.mean( time[1:] - time[0:-1] )
+        dt = np.mean(time[1:] - time[0:-1])
 #         print "LPF mean dt: ", dt
          
     if time is None:
@@ -190,7 +190,7 @@ def o1lpf(data, cornerFreqHz, dt=None, time=None, initVal=None):
 
         # Estimate next model coefficient
         # LPF filter this coefficient
-        c1 = beta*c1 + alph*( (data[i] - result[h])/dt )
+        c1 = beta*c1 + alph*((data[i] - result[h])/dt)
 
         # Current state estimate
         # LPF input into current state estimate
@@ -228,14 +228,14 @@ def rls_array(meas, k):
         err     = meas[i] - est[i]
         X       = est[i] + k*err
         Z[0,:]  = est[i]
-        A       = dot( X, dot( Z.T, np.linalg.inv( dot(Z,Z.T) ) ) )
+        A       = dot(X, dot(Z.T, np.linalg.inv(dot(Z,Z.T))))
 
 #         A[0] = 1
 #         print A
             
         # Next estimate
-#         print dot( A, Z ).T
-        est[i+1,:] = dot( A, Z ).T
+#         print dot(A, Z).T
+        est[i+1,:] = dot(A, Z).T
     
     return (est, A)
     

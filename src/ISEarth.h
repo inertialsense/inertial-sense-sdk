@@ -22,11 +22,11 @@ extern "C" {
 #include "ISPose.h"
 #include "data_sets.h"
 
-#define DEG2RAD_EARTH_RADIUS_F		111120.0f					// = DEG2RAD * earth_radius_in_meters
-#define INV_DEG2RAD_EARTH_RADIUS_F	8.99928005759539236861e-6f	// = 1 / ( DEG2RAD * earth_radius_in_meters )
+#define DEG2RAD_EARTH_RADIUS_F      111120.0f                    // = DEG2RAD * earth_radius_in_meters
+#define INV_DEG2RAD_EARTH_RADIUS_F  8.99928005759539236861e-6f    // = 1 / (DEG2RAD * earth_radius_in_meters)
 
-#define EARTH_RADIUS_F			6366707.01949371f				// = earth_radius_in_meters
-#define INV_EARTH_RADIUS_F		1.5706706731410E-07f				// = 1 / earth_radius_in_meters
+#define EARTH_RADIUS_F              6366707.01949371f                // = earth_radius_in_meters
+#define INV_EARTH_RADIUS_F          1.5706706731410E-07f                // = 1 / earth_radius_in_meters
 
 #ifndef MAX
 #define MAX(a,b)    (((a) > (b)) ? (a) : (b))
@@ -73,8 +73,8 @@ void lla2ecef(const double *LLA, double *Pe);
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void lla2ned( ixVector3 llaRef, ixVector3 lla, ixVector3 result );
-void lla2ned_d( double llaRef[3], double lla[3], ixVector3 result );     // double precision
+void lla2ned(ixVector3 llaRef, ixVector3 lla, ixVector3 result);
+void lla2ned_d(double llaRef[3], double lla[3], ixVector3 result);     // double precision
 
 /*
  *  Find NED (north, east, down) from LLAref to LLA
@@ -92,8 +92,8 @@ void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result);
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void ned2lla( ixVector3 ned, ixVector3 llaRef, ixVector3 result );
-void ned2lla_d( ixVector3 ned, double llaRef[3], double result[3] );     // double precision
+void ned2lla(ixVector3 ned, ixVector3 llaRef, ixVector3 result);
+void ned2lla_d(ixVector3 ned, double llaRef[3], double result[3]);     // double precision
 
 /*
 *  Find LLA of NED (north, east, down) from LLAref (WGS-84 standard)
@@ -137,22 +137,22 @@ void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt);
  *  baroKPa = (kPa) barometric pressure in kilopascals
  *  return = (m) MSL altitude in meters
  */
-f_t baro2msl( f_t pKPa );
+f_t baro2msl(f_t pKPa);
 
 /*
  *  Find linear distance between lat,lon,alt (rad,rad,m) coordinates.
  *
  *  return = (m) distance in meters
  */
-f_t llaRadDistance( double lla1[3], double lla2[3] );
-f_t llaDegDistance( double lla1[3], double lla2[3] );
+f_t llaRadDistance(double lla1[3], double lla2[3]);
+f_t llaDegDistance(double lla1[3], double lla2[3]);
 
 /*
  *  Check if lat,lon,alt (deg,deg,m) coordinates are valid.
  *
  *  return 0 on success, -1 on failure.
  */
-int llaDegValid( double lla[3] );
+int llaDegValid(double lla[3]);
 
 /* 
  * IGF-80 gravity model with WGS-84 ellipsoid refinement 

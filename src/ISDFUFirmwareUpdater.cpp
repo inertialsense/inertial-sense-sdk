@@ -556,7 +556,7 @@ dfu_error DFUDevice::open() {
 
         // Not entirely sure this is needed, but it doesn't seem to hurt either.
         int kernelActive = libusb_kernel_driver_active(usbHandle, 0);
-        if(kernelActive == 1) {
+        if (kernelActive == 1) {
             ret_libusb = libusb_detach_kernel_driver(usbHandle, 0);
         }
         libusb_reset_device(usbHandle);

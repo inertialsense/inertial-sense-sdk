@@ -21,17 +21,17 @@ extern "C" {
 #endif
 
 /**
- *	DEFINITIONS AND CONVENTIONS
- *	
- *	INS		= inertial navigation system
- *	AHRS	= attitude heading reference system
- *	IMU		= inertial measurement unit: gyros (rad/s), accelerometers (m/s^2)
- *	ECEF	= earth-centered earth fixed: x,y,z or vx,vy,vz (m or m/s)
- *	LLA		= latitude, longitude, altitude (degrees,m)
- *	NED		= north, east, down (m or m/s)
- *	QE2B	= quaternion rotation from ECEF frame to local frame.
- *	QN2B	= quaternion rotation from NED frame to local frame.
- *	UVW		= velocities in local frame.
+ *    DEFINITIONS AND CONVENTIONS
+ *    
+ *    INS   = inertial navigation system
+ *    AHRS  = attitude heading reference system
+ *    IMU   = inertial measurement unit: gyros (rad/s), accelerometers (m/s^2)
+ *    ECEF  = earth-centered earth fixed: x,y,z or vx,vy,vz (m or m/s)
+ *    LLA   = latitude, longitude, altitude (degrees,m)
+ *    NED   = north, east, down (m or m/s)
+ *    QE2B  = quaternion rotation from ECEF frame to local frame.
+ *    QN2B  = quaternion rotation from NED frame to local frame.
+ *    UVW   = velocities in local frame.
 */
 
 // -------------------------------------------------------------------------------------------------------------------------------
@@ -43,49 +43,49 @@ extern "C" {
 // *****************************************************************************
 
 /** INS/AHRS */
-#define _DID_INS_LLA_EULER_NED		DID_INS_1				/** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
-#define _DID_INS_LLA_QN2B			DID_INS_2				/** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
-#define _DID_INS_LLA_QN2B_MSL		DID_INS_3				/** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
-#define _DID_INS_ECEF_QE2B			DID_INS_4				/** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
+#define _DID_INS_LLA_EULER_NED  DID_INS_1                /** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
+#define _DID_INS_LLA_QN2B       DID_INS_2                /** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
+#define _DID_INS_LLA_QN2B_MSL   DID_INS_3                /** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
+#define _DID_INS_ECEF_QE2B      DID_INS_4                /** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
 
 /** IMU */
-#define _DID_IMU					DID_IMU					/** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
-#define _DID_PIMU					DID_PIMU				/** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */	
+#define _DID_IMU                DID_IMU                    /** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
+#define _DID_PIMU               DID_PIMU                /** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */    
 
 /** GPS */
-#define _DID_GPS1_POS				DID_GPS1_POS			/** (see gps_pos_t) GPS output */
+#define _DID_GPS1_POS           DID_GPS1_POS            /** (see gps_pos_t) GPS output */
 
 /** Magnetometer, Barometer, and other Sensor */
-#define _DID_MAG_CAL				DID_MAG_CAL				/** (see mag_cal_t) Magnetometer calibration */
-#define _DID_MAGNETOMETER			DID_MAGNETOMETER		/** (see magnetometer_t) Magnetometer sensor output */
-#define _DID_BAROMETER				DID_BAROMETER			/** (see barometer_t) Barometric pressure sensor data */
-#define _DID_WHEEL_ENCODER			DID_WHEEL_ENCODER		/** (see wheel_encoder_t) Wheel encoder sensor data */
-#define _DID_POS_MEASUREMENT		DID_POSITION_MEASUREMENT/** (see pos_measurement_t) Position Measurement data*/
+#define _DID_MAG_CAL            DID_MAG_CAL                /** (see mag_cal_t) Magnetometer calibration */
+#define _DID_MAGNETOMETER       DID_MAGNETOMETER        /** (see magnetometer_t) Magnetometer sensor output */
+#define _DID_BAROMETER          DID_BAROMETER            /** (see barometer_t) Barometric pressure sensor data */
+#define _DID_WHEEL_ENCODER      DID_WHEEL_ENCODER        /** (see wheel_encoder_t) Wheel encoder sensor data */
+#define _DID_POS_MEASUREMENT    DID_POSITION_MEASUREMENT/** (see pos_measurement_t) Position Measurement data*/
 
 /** Utilities */
-#define _DID_DEV_INFO				DID_DEV_INFO			/** (see dev_info_t) Device information */
-#define _DID_BIT					DID_BIT					/** (see bit_t) System built-in self-test */
-#define _DID_STROBE_IN_TIME			DID_STROBE_IN_TIME		/** (see strobe_in_time_t) Timestamp for input strobe */
+#define _DID_DEV_INFO           DID_DEV_INFO            /** (see dev_info_t) Device information */
+#define _DID_BIT                DID_BIT                    /** (see bit_t) System built-in self-test */
+#define _DID_STROBE_IN_TIME     DID_STROBE_IN_TIME        /** (see strobe_in_time_t) Timestamp for input strobe */
 
 /** Configuration */
-#define _DID_FLASH_CONFIG			DID_FLASH_CONFIG 		/** (see nvm_flash_cfg_t) Flash memory configuration */
-#define _DID_RMC					DID_RMC					/** (see rmc_t) Realtime message controller */
+#define _DID_FLASH_CONFIG       DID_FLASH_CONFIG         /** (see nvm_flash_cfg_t) Flash memory configuration */
+#define _DID_RMC                DID_RMC                    /** (see rmc_t) Realtime message controller */
 
-#define ZEPHYR_SUCCESS_CODE     	0
+#define ZEPHYR_SUCCESS_CODE     0
 
 /** Protocol Type */
 typedef enum
 {
-    _PTYPE_NONE                 = 0,						/** No complete valid data available yet */
-    _PTYPE_PARSE_ERROR          = 1,						/** Invalid data or checksum error */
-    _PTYPE_INERTIAL_SENSE_ACK   = 2,						/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
-    _PTYPE_INERTIAL_SENSE_CMD   = 3,						/** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
-    _PTYPE_INERTIAL_SENSE_DATA  = 4,						/** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
-    _PTYPE_NMEA                 = 5,						/** Protocol Type: NMEA (National Marine Electronics Association) */
-    _PTYPE_UBLOX                = 6,						/** Protocol Type: uBlox binary */
-    _PTYPE_RTCM3                = 7,						/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
-    _PTYPE_SPARTN               = 8,						/** Protocol Type: SPARTN binary */
-    _PTYPE_SONY                 = 9,						/** Protocol Type: Sony binary */
+    _PTYPE_NONE                 = 0,  /** No complete valid data available yet */
+    _PTYPE_PARSE_ERROR          = 1,  /** Invalid data or checksum error */
+    _PTYPE_INERTIAL_SENSE_ACK   = 2,  /** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
+    _PTYPE_INERTIAL_SENSE_CMD   = 3,  /** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
+    _PTYPE_INERTIAL_SENSE_DATA  = 4,  /** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
+    _PTYPE_NMEA                 = 5,  /** Protocol Type: NMEA (National Marine Electronics Association) */
+    _PTYPE_UBLOX                = 6,  /** Protocol Type: uBlox binary */
+    _PTYPE_RTCM3                = 7,  /** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+    _PTYPE_SPARTN               = 8,  /** Protocol Type: SPARTN binary */
+    _PTYPE_SONY                 = 9,  /** Protocol Type: Sony binary */
     _PTYPE_FIRST_DATA           = _PTYPE_INERTIAL_SENSE_DATA,
     _PTYPE_LAST_DATA            = _PTYPE_SONY
 } protocol_type_t;
@@ -122,16 +122,16 @@ typedef enum
 /** Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
 
 // Major (in com_manager.h)
-#define PROTOCOL_VERSION_CHAR0			(2)
-#define PROTOCOL_VERSION_CHAR1			(0)
+#define PROTOCOL_VERSION_CHAR0      (2)
+#define PROTOCOL_VERSION_CHAR1      (0)
 
 // Minor (in data_sets.h)
-// #define PROTOCOL_VERSION_CHAR2		0
-// #define PROTOCOL_VERSION_CHAR3		0
+// #define PROTOCOL_VERSION_CHAR2   0
+// #define PROTOCOL_VERSION_CHAR3   0
 
-#define UBLOX_HEADER_SIZE 6
-#define RTCM3_HEADER_SIZE 3
-#define MAX_MSG_LENGTH_NMEA					200
+#define UBLOX_HEADER_SIZE           6
+#define RTCM3_HEADER_SIZE           3
+#define MAX_MSG_LENGTH_NMEA         200
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
 typedef int(*pfnIsCommPortWrite)(port_handle_t port, const uint8_t* buf, int len);
@@ -153,7 +153,7 @@ typedef enum
     IS_BAUDRATE_230400          = 230400,       //   230547,  232700, 
     IS_BAUDRATE_460800          = 460800,       //   462428,  468600, 
     IS_BAUDRATE_921600          = 921600,       //   930233,  937734,
-    IS_BAUDRATE_10000000        = 10000000,     // 10000000  ( IMX-5 only)
+    IS_BAUDRATE_10000000        = 10000000,     // 10000000  (IMX-5 only)
     IS_BAUDRATE_COUNT           = 9,
     IS_BAUDRATE_DEFAULT         = IS_BAUDRATE_921600,
     IS_BAUDRATE_STANDARD_MIN    = IS_BAUDRATE_9600,
@@ -163,9 +163,9 @@ typedef enum
 
 typedef struct
 {
-    uint32_t 			   baudRate;
-    uint8_t 			   parity;
-    uint8_t 			   stopBits;
+    uint32_t    baudRate;
+    uint8_t     parity;
+    uint8_t     stopBits;
 } serial_options_t;
 
 /** List of valid baud rates */
@@ -175,23 +175,23 @@ extern const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT];
 Packet Overview
 
 Byte
-0			Packet start byte
-1			Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE)
-2			Packet counter (for ACK and retry)
-3			Packet flags
+0               Packet start byte
+1               Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE)
+2               Packet counter (for ACK and retry)
+3               Packet flags
 
 // packet body, may or may not exist depending on packet id - packet body is made up of 4 byte or 8 byte values.
-4-7			Data identifier
-8-11		Data length
-12-15		Data offset
-16-19		Data start
-(n-8)-(n-5)	Last piece of data
+4-7             Data identifier
+8-11            Data length
+12-15           Data offset
+16-19           Data start
+(n-8)-(n-5)     Last piece of data
 // end data
 
-n-4			Reserved
-n-3			Checksum high byte
-n-2			Checksum low byte
-n-1			Packet end byte
+n-4             Reserved
+n-3             Checksum high byte
+n-2             Checksum low byte
+n-1             Packet end byte
 */
 
 // Packet IDs
@@ -358,7 +358,7 @@ typedef struct
     uint16_t            offset;
 } p_data_hdr_t;
 
-#define MIN_PACKET_SIZE (sizeof(packet_hdr_t) + 2)		// Packet header + checksum, no payload
+#define MIN_PACKET_SIZE (sizeof(packet_hdr_t) + 2) // Packet header + checksum, no payload
 
 /** Represents a packet header and body */
 typedef struct
@@ -383,7 +383,7 @@ typedef struct
             uint8_t         flags;
 
             /** Data offset (optional) */
-            p_data_hdr_t 	dataHdr;
+            p_data_hdr_t     dataHdr;
         };
     };
 
@@ -447,7 +447,7 @@ typedef struct
     /** Byte offset into data */
     uint16_t            offset;
 
-    /**	The broadcast source period multiple.  0 for a one-time broadcast.  */
+    /**    The broadcast source period multiple.  0 for a one-time broadcast.  */
     uint16_t            period;
 } p_data_get_t;
 
@@ -471,8 +471,8 @@ typedef struct
     union 
     {
         uint8_t         buf[sizeof(p_data_hdr_t)];
-        p_data_hdr_t	dataHdr;
-    }					body;
+        p_data_hdr_t    dataHdr;
+    }                   body;
 } p_ack_t, p_nack_t;
 
 /** Ublox binary packet header */
@@ -537,7 +537,7 @@ typedef struct
 typedef enum
 {
     ENABLE_PROTOCOL_ISB         = 0x00000001,
-    ENABLE_PROTOCOL_NMEA  	    = 0x00000002,
+    ENABLE_PROTOCOL_NMEA        = 0x00000002,
     ENABLE_PROTOCOL_UBLOX       = 0x00000004,
     ENABLE_PROTOCOL_RTCM3       = 0x00000008,
     ENABLE_PROTOCOL_SPARTN      = 0x00000010,
@@ -568,7 +568,7 @@ typedef struct
 {
     int16_t     state;
     uint16_t    size;
-    uint32_t    timeMs;		// Time of last parse
+    uint32_t    timeMs;        // Time of last parse
 } is_comm_parser_t;
 
 typedef protocol_type_t (*pFnProcessPkt)(void*);
@@ -592,21 +592,21 @@ typedef struct
     pfnIsCommIsbDataHandler         isbData;
     pfnIsCommGenMsgHandler          generic[_PTYPE_LAST_DATA];
 
-//    pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message
-//    pfnIsCommGenMsgHandler          nmea;       // Message handler - NMEA
-//    pfnIsCommGenMsgHandler          ublox;      // Message handler - Ublox
-//    pfnIsCommGenMsgHandler          rtcm3;      // Message handler - RTCM3
-//    pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
-//    pfnIsCommGenMsgHandler          sprtn;      // Message handler - SPARTN
-//    pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
-//    pfnIsCommAsapMsg                rmc;        // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
+//    pfnIsCommIsbDataHandler         isbData;  // Message handler - Inertial Sense binary (ISB) data message
+//    pfnIsCommGenMsgHandler          nmea;     // Message handler - NMEA
+//    pfnIsCommGenMsgHandler          ublox;    // Message handler - Ublox
+//    pfnIsCommGenMsgHandler          rtcm3;    // Message handler - RTCM3
+//    pfnIsCommGenMsgHandler          sony;     // Message handler - Sony
+//    pfnIsCommGenMsgHandler          sprtn;    // Message handler - SPARTN
+//    pfnIsCommHandler                all;      // Message handler - Called for all messages in addition to any message handler including the error handler.
+//    pfnIsCommAsapMsg                rmc;      // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
 } is_comm_callbacks_t;
 
 
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct
 {
-    /** Receive data buffer. Data received is aggregate into this buffer until an entire packet is read. */		
+    /** Receive data buffer. Data received is aggregate into this buffer until an entire packet is read. */        
     is_comm_buffer_t rxBuf;
     
     /** Enable/disable protocol parsing */
@@ -988,7 +988,7 @@ char copyDataPToDataP(p_data_t *dst, const p_data_t *src, const unsigned int max
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
 /** Indicates whether there is overlap in the data received and the backing data structure */
-static inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
+static inline uint8_t dataOverlap(uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
 {
     return _MAX(dstOffset, (uint32_t)(src->hdr.offset)) < _MIN(dstOffset + dstSize, (uint32_t)(src->hdr.offset + src->hdr.size));
 }

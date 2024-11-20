@@ -38,147 +38,147 @@ ixVector3 random_vectors[25] = {
 
 #define REQUIRE_SORTA_CLOSE(x, y) EXPECT_TRUE(std::fabs(x - y) < 1e-3)
 
-#define VEC3_CLOSE(x, y)	REQUIRE_SUPER_CLOSE(x[0], y(0)); \
-							REQUIRE_SUPER_CLOSE(x[1], y(1)); \
-							REQUIRE_SUPER_CLOSE(x[2], y(2))
+#define VEC3_CLOSE(x, y)        REQUIRE_SUPER_CLOSE(x[0], y(0)); \
+                                REQUIRE_SUPER_CLOSE(x[1], y(1)); \
+                                REQUIRE_SUPER_CLOSE(x[2], y(2))
 
-#define MAT3_CLOSE(x, y)	REQUIRE_SUPER_CLOSE(x[0], y(0, 0));\
-							REQUIRE_SUPER_CLOSE(x[1], y(0, 1));\
-							REQUIRE_SUPER_CLOSE(x[2], y(0, 2));\
-							REQUIRE_SUPER_CLOSE(x[3], y(1, 0));\
-							REQUIRE_SUPER_CLOSE(x[4], y(1, 1));\
-							REQUIRE_SUPER_CLOSE(x[5], y(1, 2));\
-							REQUIRE_SUPER_CLOSE(x[6], y(2, 0));\
-							REQUIRE_SUPER_CLOSE(x[7], y(2, 1));\
-							REQUIRE_SUPER_CLOSE(x[8], y(2, 2))
+#define MAT3_CLOSE(x, y)        REQUIRE_SUPER_CLOSE(x[0], y(0, 0));\
+                                REQUIRE_SUPER_CLOSE(x[1], y(0, 1));\
+                                REQUIRE_SUPER_CLOSE(x[2], y(0, 2));\
+                                REQUIRE_SUPER_CLOSE(x[3], y(1, 0));\
+                                REQUIRE_SUPER_CLOSE(x[4], y(1, 1));\
+                                REQUIRE_SUPER_CLOSE(x[5], y(1, 2));\
+                                REQUIRE_SUPER_CLOSE(x[6], y(2, 0));\
+                                REQUIRE_SUPER_CLOSE(x[7], y(2, 1));\
+                                REQUIRE_SUPER_CLOSE(x[8], y(2, 2))
 
-#define MAT3_SORTA_CLOSE(x, y)	REQUIRE_SORTA_CLOSE(x[0], y(0, 0));\
-								REQUIRE_SORTA_CLOSE(x[1], y(0, 1));\
-								REQUIRE_SORTA_CLOSE(x[2], y(0, 2));\
-								REQUIRE_SORTA_CLOSE(x[3], y(1, 0));\
-								REQUIRE_SORTA_CLOSE(x[4], y(1, 1));\
-								REQUIRE_SORTA_CLOSE(x[5], y(1, 2));\
-								REQUIRE_SORTA_CLOSE(x[6], y(2, 0));\
-								REQUIRE_SORTA_CLOSE(x[7], y(2, 1));\
-								REQUIRE_SORTA_CLOSE(x[8], y(2, 2))
+#define MAT3_SORTA_CLOSE(x, y)  REQUIRE_SORTA_CLOSE(x[0], y(0, 0));\
+                                REQUIRE_SORTA_CLOSE(x[1], y(0, 1));\
+                                REQUIRE_SORTA_CLOSE(x[2], y(0, 2));\
+                                REQUIRE_SORTA_CLOSE(x[3], y(1, 0));\
+                                REQUIRE_SORTA_CLOSE(x[4], y(1, 1));\
+                                REQUIRE_SORTA_CLOSE(x[5], y(1, 2));\
+                                REQUIRE_SORTA_CLOSE(x[6], y(2, 0));\
+                                REQUIRE_SORTA_CLOSE(x[7], y(2, 1));\
+                                REQUIRE_SORTA_CLOSE(x[8], y(2, 2))
 
 
 bool testVectors()
 {
-	// First test dot product functions
-	for (int i = 0; i < 24; i++)
-	{
-		// 3D Vector operations
-		ixVector3 IS_v1 = { random_vectors[i][0], random_vectors[i][1], random_vectors[i][2] };
-		ixVector3 IS_v2 = { random_vectors[i + 1][0], random_vectors[i + 1][1], random_vectors[i + 1][2] };
+    // First test dot product functions
+    for (int i = 0; i < 24; i++)
+    {
+        // 3D Vector operations
+        ixVector3 IS_v1 = { random_vectors[i][0], random_vectors[i][1], random_vectors[i][2] };
+        ixVector3 IS_v2 = { random_vectors[i + 1][0], random_vectors[i + 1][1], random_vectors[i + 1][2] };
 
 #if 0
-		Eigen::Vector3f eig_v1, eig_v2;
-		eig_v1 << random_vectors[i][0], random_vectors[i][1], random_vectors[i][2];
-		eig_v2 << random_vectors[i + 1][0], random_vectors[i + 1][1], random_vectors[i + 1][2];
+        Eigen::Vector3f eig_v1, eig_v2;
+        eig_v1 << random_vectors[i][0], random_vectors[i][1], random_vectors[i][2];
+        eig_v2 << random_vectors[i + 1][0], random_vectors[i + 1][1], random_vectors[i + 1][2];
 
-		// Dot Product
-		REQUIRE_SUPER_CLOSE(dot_Vec3_Vec3(IS_v1, IS_v2), eig_v1.dot(eig_v2));
+        // Dot Product
+        REQUIRE_SUPER_CLOSE(dot_Vec3_Vec3(IS_v1, IS_v2), eig_v1.dot(eig_v2));
 
-		// Cross Product
-		Vector3 crossed;
-		Eigen::Vector3f eig_crossed = eig_v1.cross(eig_v2);
-		cross_Vec3(crossed, IS_v1, IS_v2);
-		VEC3_CLOSE(crossed, eig_crossed);
+        // Cross Product
+        Vector3 crossed;
+        Eigen::Vector3f eig_crossed = eig_v1.cross(eig_v2);
+        cross_Vec3(crossed, IS_v1, IS_v2);
+        VEC3_CLOSE(crossed, eig_crossed);
 
-		// Scalar Multiply
-		Vector3 multiplied;
-		mul_Vec3_X(multiplied, IS_v1, 3.287);
-		Eigen::Vector3f eig_multiplied = 3.287 * eig_v1;
-		VEC3_CLOSE(multiplied, eig_multiplied);
+        // Scalar Multiply
+        Vector3 multiplied;
+        mul_Vec3_X(multiplied, IS_v1, 3.287);
+        Eigen::Vector3f eig_multiplied = 3.287 * eig_v1;
+        VEC3_CLOSE(multiplied, eig_multiplied);
 
-		// Add and Subtract
-		Vector3 added;
-		Vector3 subtracted;
-		add_Vec3_Vec3(added, IS_v1, IS_v2);
-		sub_Vec3_Vec3(subtracted, IS_v1, IS_v2);
-		Eigen::Vector3f eig_added = eig_v1 + eig_v2;
-		Eigen::Vector3f eig_subtracted = eig_v1 - eig_v2;
-		VEC3_CLOSE(added, eig_added);
-		VEC3_CLOSE(subtracted, eig_subtracted);
+        // Add and Subtract
+        Vector3 added;
+        Vector3 subtracted;
+        add_Vec3_Vec3(added, IS_v1, IS_v2);
+        sub_Vec3_Vec3(subtracted, IS_v1, IS_v2);
+        Eigen::Vector3f eig_added = eig_v1 + eig_v2;
+        Eigen::Vector3f eig_subtracted = eig_v1 - eig_v2;
+        VEC3_CLOSE(added, eig_added);
+        VEC3_CLOSE(subtracted, eig_subtracted);
 
-		// Normalize
-		Vector3 IS_v1_normalized;
-		normalize_Vec3(IS_v1_normalized, IS_v1);
-		Eigen::Vector3f eig_v1_normalized = eig_v1;
-		eig_v1_normalized.normalize();
-		VEC3_CLOSE(IS_v1_normalized, eig_v1_normalized);
+        // Normalize
+        Vector3 IS_v1_normalized;
+        normalize_Vec3(IS_v1_normalized, IS_v1);
+        Eigen::Vector3f eig_v1_normalized = eig_v1;
+        eig_v1_normalized.normalize();
+        VEC3_CLOSE(IS_v1_normalized, eig_v1_normalized);
 
-		// Norm
-		f_t IS_v1_norm = mag_Vec3(IS_v1);
-		double eig_v1_norm = eig_v1.norm();
-		REQUIRE_SUPER_CLOSE(IS_v1_norm, eig_v1_norm);
+        // Norm
+        f_t IS_v1_norm = MAG_VEC3(IS_v1);
+        double eig_v1_norm = eig_v1.norm();
+        REQUIRE_SUPER_CLOSE(IS_v1_norm, eig_v1_norm);
 #endif
-	}
-	return true;
+    }
+    return true;
 }
 
 bool testMatrixOperations()
 {
-	for (int i = 0; i < 25; i++)
-	{
-		int j = (i + 3) % 25;
-		int k = (i + 6) % 25;
-		ixVector3 IS_vec1 = { random_vectors[i][0], random_vectors[i][1], random_vectors[i][2] };
-		ixMatrix3 IS_mat1 = { random_vectors[j][0], random_vectors[j][1], random_vectors[j][2],
-							random_vectors[(j + 1) % 25][0], random_vectors[(j + 1) % 25][1], random_vectors[(j + 1) % 25][2],
-							random_vectors[(j + 2) % 25][0], random_vectors[(j + 2) % 25][1], random_vectors[(j + 2) % 25][2] };
-		ixMatrix3 IS_mat2 = { random_vectors[k][0], random_vectors[k][1], random_vectors[k][2],
-							random_vectors[(k + 1) % 25][0], random_vectors[(k + 1) % 25][1], random_vectors[(k + 1) % 25][2],
-							random_vectors[(k + 2) % 25][0], random_vectors[(k + 2) % 25][1], random_vectors[(k + 2) % 25][2] };
+    for (int i = 0; i < 25; i++)
+    {
+        int j = (i + 3) % 25;
+        int k = (i + 6) % 25;
+        ixVector3 IS_vec1 = { random_vectors[i][0], random_vectors[i][1], random_vectors[i][2] };
+        ixMatrix3 IS_mat1 = { random_vectors[j][0], random_vectors[j][1], random_vectors[j][2],
+                            random_vectors[(j + 1) % 25][0], random_vectors[(j + 1) % 25][1], random_vectors[(j + 1) % 25][2],
+                            random_vectors[(j + 2) % 25][0], random_vectors[(j + 2) % 25][1], random_vectors[(j + 2) % 25][2] };
+        ixMatrix3 IS_mat2 = { random_vectors[k][0], random_vectors[k][1], random_vectors[k][2],
+                            random_vectors[(k + 1) % 25][0], random_vectors[(k + 1) % 25][1], random_vectors[(k + 1) % 25][2],
+                            random_vectors[(k + 2) % 25][0], random_vectors[(k + 2) % 25][1], random_vectors[(k + 2) % 25][2] };
 
 #if 0
-		Eigen::Vector3f eig_vec1;
-		eig_vec1 << random_vectors[i][0], random_vectors[i][1], random_vectors[i][2];
-		Eigen::Matrix3f eig_mat1;
-		eig_mat1 << random_vectors[j][0], random_vectors[j][1], random_vectors[j][2],
-			random_vectors[(j + 1) % 25][0], random_vectors[(j + 1) % 25][1], random_vectors[(j + 1) % 25][2],
-			random_vectors[(j + 2) % 25][0], random_vectors[(j + 2) % 25][1], random_vectors[(j + 2) % 25][2];
-		Eigen::Matrix3f eig_mat2;
-		eig_mat2 << random_vectors[k][0], random_vectors[k][1], random_vectors[k][2],
-			random_vectors[(k + 1) % 25][0], random_vectors[(k + 1) % 25][1], random_vectors[(k + 1) % 25][2],
-			random_vectors[(k + 2) % 25][0], random_vectors[(k + 2) % 25][1], random_vectors[(k + 2) % 25][2];
+        Eigen::Vector3f eig_vec1;
+        eig_vec1 << random_vectors[i][0], random_vectors[i][1], random_vectors[i][2];
+        Eigen::Matrix3f eig_mat1;
+        eig_mat1 << random_vectors[j][0], random_vectors[j][1], random_vectors[j][2],
+            random_vectors[(j + 1) % 25][0], random_vectors[(j + 1) % 25][1], random_vectors[(j + 1) % 25][2],
+            random_vectors[(j + 2) % 25][0], random_vectors[(j + 2) % 25][1], random_vectors[(j + 2) % 25][2];
+        Eigen::Matrix3f eig_mat2;
+        eig_mat2 << random_vectors[k][0], random_vectors[k][1], random_vectors[k][2],
+            random_vectors[(k + 1) % 25][0], random_vectors[(k + 1) % 25][1], random_vectors[(k + 1) % 25][2],
+            random_vectors[(k + 2) % 25][0], random_vectors[(k + 2) % 25][1], random_vectors[(k + 2) % 25][2];
 
-		// Transpose
-		ixMatrix3 IS_mat1_T;
-		transpose_Mat3(IS_mat1_T, IS_mat1);
-		Eigen::Matrix3f eig_mat1_T = eig_mat1.transpose();
-		MAT3_CLOSE(IS_mat1_T, eig_mat1_T);
+        // Transpose
+        ixMatrix3 IS_mat1_T;
+        transpose_Mat3(IS_mat1_T, IS_mat1);
+        Eigen::Matrix3f eig_mat1_T = eig_mat1.transpose();
+        MAT3_CLOSE(IS_mat1_T, eig_mat1_T);
 
-		// Matrix Multiply
-		ixMatrix3 IS_mat1_mat_mult;
-		mul_Mat3x3_Mat3x3(IS_mat1_mat_mult, IS_mat1, IS_mat2);
-		Eigen::Matrix3f eig_mat1_mat_mult = eig_mat1 * eig_mat2;
-		MAT3_CLOSE(IS_mat1_mat_mult, eig_mat1_mat_mult);
+        // Matrix Multiply
+        ixMatrix3 IS_mat1_mat_mult;
+        mul_Mat3x3_Mat3x3(IS_mat1_mat_mult, IS_mat1, IS_mat2);
+        Eigen::Matrix3f eig_mat1_mat_mult = eig_mat1 * eig_mat2;
+        MAT3_CLOSE(IS_mat1_mat_mult, eig_mat1_mat_mult);
 
-		// Vector/Matrix Multiply
-		Vector3 IS_vec_mat_mult;
-		mul_Mat3x3_Vec3x1(IS_vec_mat_mult, IS_mat1, IS_vec1);
-		Eigen::Vector3f eig_vec_mat_mult = eig_mat1 * eig_vec1;
-		VEC3_CLOSE(IS_vec_mat_mult, eig_vec_mat_mult);
+        // Vector/Matrix Multiply
+        Vector3 IS_vec_mat_mult;
+        mul_Mat3x3_Vec3x1(IS_vec_mat_mult, IS_mat1, IS_vec1);
+        Eigen::Vector3f eig_vec_mat_mult = eig_mat1 * eig_vec1;
+        VEC3_CLOSE(IS_vec_mat_mult, eig_vec_mat_mult);
 
-		// Inverse
-		ixMatrix3 IS_mat1_inv;
-		inv_Mat3(IS_mat1_inv, IS_mat1);
-		Eigen::Matrix3f eig_mat1_inv = eig_mat1.inverse();
-		MAT3_SORTA_CLOSE(IS_mat1_inv, eig_mat1_inv);
+        // Inverse
+        ixMatrix3 IS_mat1_inv;
+        inv_Mat3(IS_mat1_inv, IS_mat1);
+        Eigen::Matrix3f eig_mat1_inv = eig_mat1.inverse();
+        MAT3_SORTA_CLOSE(IS_mat1_inv, eig_mat1_inv);
 #endif
-	}
-	return true;
+    }
+    return true;
 }
 
 
 TEST(Math_Vector3_Operations, math_vector3_oper)
 {
-	testVectors();
+    testVectors();
 }
 
 TEST(Math_ixMatrix3_Operations, math_matrix3_oper)
 {
-	testMatrixOperations();
+    testMatrixOperations();
 }

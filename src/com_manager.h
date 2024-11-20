@@ -28,21 +28,21 @@ Since most messages use the RMC (real-time message controller) now, this can be 
 #define MAX_NUM_BCAST_MSGS 12
 
 // Convenience macros for creating Com Manager buffers
-#define COM_MANAGER_BUF_SIZE_BCAST_MSG(max_num_bcast_msgs)		((max_num_bcast_msgs)*sizeof(broadcast_msg_t))
+#define COM_MANAGER_BUF_SIZE_BCAST_MSG(max_num_bcast_msgs)      ((max_num_bcast_msgs)*sizeof(broadcast_msg_t))
 
 /* Contains data that determines what messages are being broadcast */
 typedef struct
 {
-	packet_t                pkt;
+    packet_t                pkt;
 
-	/* Broadcast period counter */
-	int32_t                 counter;
+    /* Broadcast period counter */
+    int32_t                 counter;
 
-	/* Millisecond broadcast period intervals.  -1 = send once.  0 = disabled/unused/don't send. */
-	int32_t                 period;
+    /* Millisecond broadcast period intervals.  -1 = send once.  0 = disabled/unused/don't send. */
+    int32_t                 period;
 
-	/* Port to broadcast on. */
-	port_handle_t           port;
+    /* Port to broadcast on. */
+    port_handle_t           port;
 } broadcast_msg_t;
 
 typedef std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> broadcast_msg_array_t;
@@ -50,17 +50,17 @@ typedef std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> broadcast_msg_array_t;
 /** Contains status for the com manager */
 typedef struct  
 {
-	/** 0 if no errors encountered, otherwise non-zero.  Used in conjunction with communicationErrorCount. */
-	uint32_t rxError;
+    /** 0 if no errors encountered, otherwise non-zero.  Used in conjunction with communicationErrorCount. */
+    uint32_t rxError;
 
-	/** number of communication errors - can be reset to 0 if desired */
-	uint32_t communicationErrorCount;
+    /** number of communication errors - can be reset to 0 if desired */
+    uint32_t communicationErrorCount;
 
-	/**
-	flags to send on each request - do not modify
-	valid data : flags & CM_PKT_FLAGS_RX_VALID_DATA
-	*/
-	// uint8_t flags;
+    /**
+    flags to send on each request - do not modify
+    valid data : flags & CM_PKT_FLAGS_RX_VALID_DATA
+    */
+    // uint8_t flags;
 } com_manager_status_t;
 
 enum eComManagerErrorType

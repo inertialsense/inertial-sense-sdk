@@ -35,8 +35,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define MIN_REQUEST_PERIOD_MS       1               // (ms) 1 KHz
 #define MAX_REQUEST_PERIOD_MS       65000           // (ms)
-#define MSG_PERIOD_SEND_ONCE		-1
-#define MSG_PERIOD_DISABLED			0
+#define MSG_PERIOD_SEND_ONCE        -1
+#define MSG_PERIOD_DISABLED         0
 
 ISComManager s_cm;
 
@@ -289,7 +289,7 @@ void ISComManager::stepSendMessages()
                 unsigned int id = bc.pkt.hdr.id;
                 int sendData = 1;
                 if (id<DID_COUNT && didRegistrationMap[id].preTxFnc)
-                {					
+                {                    
                     sendData = didRegistrationMap[id].preTxFnc(bc.port, &bc.pkt.dataHdr);
                 }
                 if (sendData)
@@ -329,12 +329,12 @@ is_comm_instance_t* ISComManager::getIsComm(port_handle_t port)
 *   This function requests the specified data w/ offset and length
 *   for partial reads.
 *
-*	@param[in] dataId       Data structure ID
-*	@param[in] offset   Byte offset into data structure.  0 = data start.
-*	@param[in] length   Byte length of data.  0 = entire structure.
-*	@param[in] periodMultiple Broadcast period of requested data.  0 = single request.
+*    @param[in] dataId       Data structure ID
+*    @param[in] offset   Byte offset into data structure.  0 = data start.
+*    @param[in] length   Byte length of data.  0 = entire structure.
+*    @param[in] periodMultiple Broadcast period of requested data.  0 = single request.
 *
-*	@return 0 on successful request.  -1 on failure.
+*    @return 0 on successful request.  -1 on failure.
 */
 void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period)
 {
@@ -453,7 +453,7 @@ int findAsciiMessage(const void * a, const void * b)
 /**
 *   @brief Process binary packet content:
 *
-*	@return 0 on success.  -1 on failure.
+*    @return 0 on success.  -1 on failure.
 */
 int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
@@ -547,8 +547,8 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         
 #else
     
-// 		unsigned char additionalDataAvailable // function parameter removed 
-// 		(void)additionalDataAvailable;
+//         unsigned char additionalDataAvailable // function parameter removed 
+//         (void)additionalDataAvailable;
 
 #endif
 
@@ -640,7 +640,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
     case PKT_TYPE_STOP_DID_BROADCAST:
         disableDidBroadcast(port, pkt->hdr.id);
 #ifdef IMX_5
-        if(DID_RTK_DEBUG)
+        if (DID_RTK_DEBUG)
             g_GpxRtkDebugReq &= ~(0x01 << portId(port));
 #endif
         break;
@@ -707,7 +707,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
     }
     
     if (req->size == 0)
-    {	// Don't respond if data size is zero. Return zero to prevent sending NACK.
+    {   // Don't respond if data size is zero. Return zero to prevent sending NACK.
         return 0;
     }
 

@@ -33,27 +33,27 @@ public:
 
 
     void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
-	bool CloseAllFiles() OVERRIDE;
-	bool FlushToFile() OVERRIDE;
-	bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;
-	p_data_buf_t* ReadData() OVERRIDE;
+    bool CloseAllFiles() OVERRIDE;
+    bool FlushToFile() OVERRIDE;
+    bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;
+    p_data_buf_t* ReadData() OVERRIDE;
     packet_t* ReadPacket(protocol_type_t& ptype) OVERRIDE;
 
     void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
     std::string LogFileExtention() OVERRIDE { return std::string(".raw"); }
-	void Flush() OVERRIDE;
-	is_comm_instance_t* IsCommInstance() { return &m_comm; }
+    void Flush() OVERRIDE;
+    is_comm_instance_t* IsCommInstance() { return &m_comm; }
 
-	cDataChunk m_chunk;
+    cDataChunk m_chunk;
 
 private:
     packet_t* ReadPacketFromChunk(protocol_type_t& ptype);
-	bool ReadChunkFromFile();
-	bool WriteChunkToFile();
+    bool ReadChunkFromFile();
+    bool WriteChunkToFile();
 
-	uint8_t m_commBuf[PKT_BUF_SIZE];
-	p_data_buf_t m_pData;
-	is_comm_instance_t m_comm;
+    uint8_t m_commBuf[PKT_BUF_SIZE];
+    p_data_buf_t m_pData;
+    is_comm_instance_t m_comm;
     protocol_type_t m_protocolType;
 };
 

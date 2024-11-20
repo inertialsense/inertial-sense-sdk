@@ -44,13 +44,13 @@ void ISSocketFrameworkInitialize()
 
 #if PLATFORM_IS_WINDOWS
 
-	lock_guard<mutex> locker(s_socketFrameworkMutex);
-	if (++s_socketInitialized != 1)
-	{
-		return;
-	}
-	WSADATA wsa_data;
-	WSAStartup(MAKEWORD(2, 2), &wsa_data);
+    lock_guard<mutex> locker(s_socketFrameworkMutex);
+    if (++s_socketInitialized != 1)
+    {
+        return;
+    }
+    WSADATA wsa_data;
+    WSAStartup(MAKEWORD(2, 2), &wsa_data);
 
 #endif
 
@@ -61,15 +61,15 @@ void ISSocketFrameworkShutdown()
 
 #if PLATFORM_IS_WINDOWS
 
-	lock_guard<mutex> locker(s_socketFrameworkMutex);
-	if (s_socketInitialized == 0)
-	{
-		return;
-	}
-	else if (--s_socketInitialized == 0)
-	{
-		WSACleanup();
-	}
+    lock_guard<mutex> locker(s_socketFrameworkMutex);
+    if (s_socketInitialized == 0)
+    {
+        return;
+    }
+    else if (--s_socketInitialized == 0)
+    {
+        WSACleanup();
+    }
 
 #endif
 
@@ -87,12 +87,12 @@ int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds)
 
 int ISSocketCanRead(socket_t socket, int timeoutMilliseconds)
 {
-	struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
-	fd_set rs;
-	FD_ZERO(&rs);
-	FD_SET(socket, &rs);
+    struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
+    fd_set rs;
+    FD_ZERO(&rs);
+    FD_SET(socket, &rs);
     int numberOfSocketsThatCanRead = select((int)(socket + 1), &rs, NULL, NULL, &tv);
-	return (numberOfSocketsThatCanRead > 0);
+    return (numberOfSocketsThatCanRead > 0);
 }
 
 int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
@@ -101,15 +101,15 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
     int writeCount;
 
     while (totalWriteCount < dataLength)
-	{
+    {
         if (!ISSocketCanWrite(socket))
         {
             break;
         }
 
-		int flags = 0;
+        int flags = 0;
 #if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
-		flags = MSG_NOSIGNAL;
+        flags = MSG_NOSIGNAL;
 #endif
         writeCount = send(socket, (const char*)data, dataLength, flags);
         if (writeCount < 0)
@@ -117,36 +117,36 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
             break;
         }
         totalWriteCount += writeCount;
-	}
+    }
 
     return totalWriteCount;
 }
 
 int ISSocketRead(socket_t socket, uint8_t* data, int dataLength)
 {
-	int count = recv(socket, (char*)data, dataLength, 0);
-	if (count < 0)
-	{
+    int count = recv(socket, (char*)data, dataLength, 0);
+    if (count < 0)
+    {
 
 #if PLATFORM_IS_WINDOWS
 
-		DWORD err = GetLastError();
-		if (err == SO_RCVTIMEO || err == WSAETIMEDOUT || err == WSAEWOULDBLOCK)
-		{
-			return 0;
-		}
+        DWORD err = GetLastError();
+        if (err == SO_RCVTIMEO || err == WSAETIMEDOUT || err == WSAEWOULDBLOCK)
+        {
+            return 0;
+        }
 
 #else
 
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-		{
-			return 0;
-		}
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            return 0;
+        }
 
 #endif
 
-	}
-	return count;
+    }
+    return count;
 }
 
 int ISSocketSetBlocking(socket_t socket, bool blocking)
@@ -154,18 +154,18 @@ int ISSocketSetBlocking(socket_t socket, bool blocking)
 
 #if PLATFORM_IS_WINDOWS
 
-	u_long blockingInt = (blocking ? 0 : 1);
-	return ioctlsocket(socket, FIONBIO, &blockingInt);
+    u_long blockingInt = (blocking ? 0 : 1);
+    return ioctlsocket(socket, FIONBIO, &blockingInt);
 
 #else
 
-	int opts = fcntl(socket, F_GETFL);
-	if (opts < 0)
-	{
-		return -1;
-	}
-	opts = (blocking ? opts & (~O_NONBLOCK) : opts | O_NONBLOCK);
-	return fcntl(socket, F_SETFL, opts);
+    int opts = fcntl(socket, F_GETFL);
+    if (opts < 0)
+    {
+        return -1;
+    }
+    opts = (blocking ? opts & (~O_NONBLOCK) : opts | O_NONBLOCK);
+    return fcntl(socket, F_SETFL, opts);
 
 #endif
 
@@ -176,15 +176,15 @@ int ISSocketSetReadTimeout(socket_t socket, int timeoutMilliseconds)
 
 #if PLATFORM_IS_WINDOWS
 
-	DWORD timeout = timeoutMilliseconds;
-	return setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+    DWORD timeout = timeoutMilliseconds;
+    return setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
 #else
 
-	struct timeval tv;
-	tv.tv_sec = timeoutMilliseconds / 1000;
-	tv.tv_usec = (timeoutMilliseconds % 1000) * 1000;
-	return setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+    struct timeval tv;
+    tv.tv_sec = timeoutMilliseconds / 1000;
+    tv.tv_usec = (timeoutMilliseconds % 1000) * 1000;
+    return setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 
 #endif
 
@@ -192,81 +192,81 @@ int ISSocketSetReadTimeout(socket_t socket, int timeoutMilliseconds)
 
 int ISSocketClose(socket_t& socket)
 {
-	int status = 0;
-	if (socket != 0)
-	{
+    int status = 0;
+    if (socket != 0)
+    {
 
 #if PLATFORM_IS_WINDOWS
 
-		status = shutdown(socket, SD_BOTH);
-		if (status == 0)
-		{
-			status = closesocket(socket);
-		}
+        status = shutdown(socket, SD_BOTH);
+        if (status == 0)
+        {
+            status = closesocket(socket);
+        }
 
 #else
 
-		status = shutdown(socket, SHUT_RDWR);
-		if (status == 0)
-		{
-			status = close(socket);
-		}
+        status = shutdown(socket, SHUT_RDWR);
+        if (status == 0)
+        {
+            status = close(socket);
+        }
 
 #endif
 
-	}
+    }
 
-	socket = 0;
+    socket = 0;
 
-	return status;
+    return status;
 }
 
 cISTcpClient::cISTcpClient()
 {
-	m_socket = 0;
-	m_port = 0;
-	m_blocking = true;
-	ISSocketFrameworkInitialize();
+    m_socket = 0;
+    m_port = 0;
+    m_blocking = true;
+    ISSocketFrameworkInitialize();
 }
 
 cISTcpClient::~cISTcpClient()
 {
-	Close();
-	ISSocketFrameworkShutdown();
+    Close();
+    ISSocketFrameworkShutdown();
 }
 
 int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
 {
-	Close();
-	int status;
-	this->m_host = host;
-	m_port = port;
-	char portString[64];
-	snprintf(portString, sizeof(portString), "%ld", (long)m_port);
-	addrinfo* result = NULL;
-	addrinfo hints = addrinfo();
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
+    Close();
+    int status;
+    this->m_host = host;
+    m_port = port;
+    char portString[64];
+    snprintf(portString, sizeof(portString), "%ld", (long)m_port);
+    addrinfo* result = NULL;
+    addrinfo hints = addrinfo();
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
     // attempt to get info about the host and port
-	status = getaddrinfo(m_host.c_str(), portString, &hints, &result);
-	if (status != 0)
-	{
+    status = getaddrinfo(m_host.c_str(), portString, &hints, &result);
+    if (status != 0)
+    {
         // no info, fail
-		Close();
-		return status;
-	}
+        Close();
+        return status;
+    }
 
     // create the socket
-	m_socket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	if (m_socket == 0)
-	{
+    m_socket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (m_socket == 0)
+    {
         // no socket, fail
-		freeaddrinfo(result);
-		Close();
-		return -1;
-	}
+        freeaddrinfo(result);
+        Close();
+        return -1;
+    }
 
     // make non-blocking socket
     SetBlocking(false);
@@ -306,49 +306,49 @@ int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
 
 int cISTcpClient::Close()
 {
-	return ISSocketClose(m_socket);
+    return ISSocketClose(m_socket);
 }
 
 int cISTcpClient::Read(void* data, int dataLength)
 {
-	int count = ISSocketRead(m_socket, (uint8_t*)data, dataLength);
-	if (count < 0)
-	{
-		Close();
-	}
-	return count;
+    int count = ISSocketRead(m_socket, (uint8_t*)data, dataLength);
+    if (count < 0)
+    {
+        Close();
+    }
+    return count;
 }
 
 int cISTcpClient::Write(const void* data, int dataLength)
 {
-	int count = ISSocketWrite(m_socket, (const uint8_t*)data, dataLength);
-	if (count < 0)
-	{
-		Close();
-	}
-	return count;
+    int count = ISSocketWrite(m_socket, (const uint8_t*)data, dataLength);
+    if (count < 0)
+    {
+        Close();
+    }
+    return count;
 }
 
 void cISTcpClient::HttpGet(const string& subUrl, const string& userAgent, const string& userName, const string& password)
 {
-	string msg = "GET /" + subUrl + " HTTP/1.1\r\n";
-	msg += "User-Agent: " + userAgent + "\r\n";
-	if (userName.size() != 0 && password.size() != 0)
-	{
-		string auth = userName + ":" + password;
-		msg += "Authorization: Basic " + base64Encode((const unsigned char*)auth.data(), (int)auth.size()) + "\r\n";
-	}
-	msg += "Accept: */*\r\nConnection: close\r\n\r\n";
-	Write((uint8_t*)msg.data(), (int)msg.size());
+    string msg = "GET /" + subUrl + " HTTP/1.1\r\n";
+    msg += "User-Agent: " + userAgent + "\r\n";
+    if (userName.size() != 0 && password.size() != 0)
+    {
+        string auth = userName + ":" + password;
+        msg += "Authorization: Basic " + base64Encode((const unsigned char*)auth.data(), (int)auth.size()) + "\r\n";
+    }
+    msg += "Accept: */*\r\nConnection: close\r\n\r\n";
+    Write((uint8_t*)msg.data(), (int)msg.size());
 }
 
 int cISTcpClient::SetBlocking(bool blocking)
 {
-	m_blocking = blocking;
-	return ISSocketSetBlocking(m_socket, blocking);
+    m_blocking = blocking;
+    return ISSocketSetBlocking(m_socket, blocking);
 }
 
 std::string cISTcpClient::ConnectionInfo()
 {
-	return m_host + ":" + to_string(m_port);
+    return m_host + ":" + to_string(m_port);
 }

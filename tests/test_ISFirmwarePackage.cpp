@@ -51,7 +51,7 @@ TEST(ISFirmwarePackage, packages__assemble_archive) {
     // Append a bunch of text files to the test archive
     for (i = (N - 1); i >= 0; --i) {
         sprintf(archive_filename, "%u.txt", i);
-        std::string content = LoremIpsum( 5, 35, 0, N - i, i);
+        std::string content = LoremIpsum(5, 35, 0, N - i, i);
         md5_hash(md5sum, content.length(), (uint8_t *)content.c_str());
         sprintf(hash_str, "%08x-%08x-%08x-%08x", md5sum.dwords[0], md5sum.dwords[1], md5sum.dwords[2], md5sum.dwords[3]);
 
@@ -138,7 +138,7 @@ TEST(ISFirmwarePackage, packages__extract_archive) {
     mz_zip_reader_end(&zip_archive);
 
     // Clean up test file(s)
-	ISFileManager::DeleteFile(s_Test_archive_filename);
+    ISFileManager::DeleteFile(s_Test_archive_filename);
 }
 
 #ifdef ZIP_PACKAGE_TEST

@@ -438,7 +438,7 @@ md5hash_t* altMD5_hash(size_t data_len, uint8_t* data) {
     // Process the message in successive 512-bit chunks:
     //for each 512-bit chunk of message:
     int offset;
-    for(offset=0; offset<new_len; offset += (512/8)) {
+    for (offset=0; offset<new_len; offset += (512/8)) {
 
         // break chunk into sixteen 32-bit words w[j], 0 ≤ j ≤ 15
         uint32_t *w = (uint32_t *) (msg + offset);
@@ -451,7 +451,7 @@ md5hash_t* altMD5_hash(size_t data_len, uint8_t* data) {
 
         // Main loop:
         uint32_t i;
-        for(i = 0; i<64; i++) {
+        for (i = 0; i<64; i++) {
             uint32_t f, g;
 
             if (i < 16) {

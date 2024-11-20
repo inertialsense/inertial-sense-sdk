@@ -18,55 +18,55 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static int msgHandlerIsb(InertialSense* i, p_data_t* data, port_handle_t port)
 {
-	static uint64_t dataCount;
-	printf("Data count: %" PRIu64 "          \r", ++dataCount);
+    static uint64_t dataCount;
+    printf("Data count: %" PRIu64 "          \r", ++dataCount);
     return 0;
 }
 
 int main(int argc, char* argv[])
 {
-	if (argc < 2)
-	{
-		printf("Provide the port and optionally log type (raw,dat	,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
-		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
-		return -1;
-	}
+    if (argc < 2)
+    {
+        printf("Provide the port and optionally log type (raw,dat    ,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
+        // In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
+        return -1;
+    }
 
-	// STEP 2: Instantiate InertialSense class
-	// InertialSense class wraps communications and logging in a convenient, easy to use class
-	InertialSense inertialSense(msgHandlerIsb);
-	if (!inertialSense.Open(argv[1]))
-	{
-		std::cout << "Failed to open com port at " << argv[1] << std::endl;
-	}
+    // STEP 2: Instantiate InertialSense class
+    // InertialSense class wraps communications and logging in a convenient, easy to use class
+    InertialSense inertialSense(msgHandlerIsb);
+    if (!inertialSense.Open(argv[1]))
+    {
+        std::cout << "Failed to open com port at " << argv[1] << std::endl;
+    }
 
-	// STEP 3: Enable data logger
-	// get log type from command line
-	cISLogger::sSaveOptions options;
-	options.logType = (argc < 3 ? cISLogger::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
-	inertialSense.EnableLogger(true, "", options);
+    // STEP 3: Enable data logger
+    // get log type from command line
+    cISLogger::sSaveOptions options;
+    options.logType = (argc < 3 ? cISLogger::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
+    inertialSense.EnableLogger(true, "", options);
 
-	// STEP 4: Enable data broadcasting
-	// stop current data streaming
-	inertialSense.StopBroadcasts();
+    // STEP 4: Enable data broadcasting
+    // stop current data streaming
+    inertialSense.StopBroadcasts();
 
-	// broadcast the standard set of post processing messages (ins, imu, etc.)
-	inertialSense.BroadcastBinaryDataRmcPreset(RMC_PRESET_INS);
+    // broadcast the standard set of post processing messages (ins, imu, etc.)
+    inertialSense.BroadcastBinaryDataRmcPreset(RMC_PRESET_INS);
 
-	// instead of the rmc preset (real-time message controller) you can request individual messages...
-	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
-// 	inertialSense.BroadcastBinaryData(DID_IMU, 10);
+    // instead of the rmc preset (real-time message controller) you can request individual messages...
+    // Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
+//     inertialSense.BroadcastBinaryData(DID_IMU, 10);
 
-	// utility class for display and ctrl-c handling
-	cInertialSenseDisplay display;
+    // utility class for display and ctrl-c handling
+    cInertialSenseDisplay display;
 
-	std::cout << "Started logger..." << std::endl;
+    std::cout << "Started logger..." << std::endl;
 
-	while (!display.ExitProgram())
-	{
-		inertialSense.Update();
-	}
+    while (!display.ExitProgram())
+    {
+        inertialSense.Update();
+    }
 
-	inertialSense.Close();
+    inertialSense.Close();
 }
 

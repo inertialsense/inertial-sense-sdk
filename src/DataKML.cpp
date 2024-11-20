@@ -34,69 +34,69 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 
 #ifdef USE_IS_INTERNAL
-#	include "../../cpp/libs/families/imx/IS_internal.h"
+#    include "../../cpp/libs/families/imx/IS_internal.h"
 #endif
 
 cDataKML::cDataKML()
 {
-// 	def[0].init( "devInfo", "Device information" );
-// 	def[5].init( "ins2", "Inertial navigation data with quaternion attitude" );
+//     def[0].init("devInfo", "Device information");
+//     def[5].init("ins2", "Inertial navigation data with quaternion attitude");
 }
 
 std::string cDataKML::GetDatasetName(int kid)
 {
-	switch (kid)
-	{
-	default:                    return "";
-	case KID_INS:               return "ins";
-	case KID_REF:               return "ref";
-	case KID_GPS:               return "gps";
-	case KID_GPS1:				return "gps1";
-	case KID_GPS2:				return "gps2";
-    case KID_RTK:               return "rtk";
-	}
+    switch (kid)
+    {
+        default:        return "";
+        case KID_INS:   return "ins";
+        case KID_REF:   return "ref";
+        case KID_GPS:   return "gps";
+        case KID_GPS1:  return "gps1";
+        case KID_GPS2:  return "gps2";
+        case KID_RTK:   return "rtk";
+    }
 }
 
 int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
-	uDatasets& d = (uDatasets&)(*dataBuf);
-	ixEuler theta;
+    uDatasets& d = (uDatasets&)(*dataBuf);
+    ixEuler theta;
     sKmlLogData data;
-	bool deadreckoning = false;
+    bool deadreckoning = false;
 
 #ifdef USE_IS_INTERNAL
-// 	uInternalDatasets &i = (uInternalDatasets&)(*dataBuf);
+//     uInternalDatasets &i = (uInternalDatasets&)(*dataBuf);
 #endif
 
-	// Write date to file
-	switch (dataHdr->id)
-	{
-	default:		// Unidentified dataset
-        return 0;
+    // Write date to file
+    switch (dataHdr->id)
+    {
+        default:        // Unidentified dataset
+            return 0;
 
-	case DID_INS_1:
-		deadreckoning = !(d.ins1.insStatus & INS_STATUS_GPS_AIDING_POS);
-        data = sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta, deadreckoning);
-		break;
-	case DID_INS_2:
-		quat2euler(d.ins2.qn2b, theta);
-		deadreckoning = !(d.ins2.insStatus & INS_STATUS_GPS_AIDING_POS);
-        data = sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta, deadreckoning);
-		break;
-	case DID_INS_3:
-		quat2euler(d.ins3.qn2b, theta);
-		deadreckoning = !(d.ins3.insStatus & INS_STATUS_GPS_AIDING_POS);
-        data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, deadreckoning);
-		break;
-	case DID_GPS1_POS:
-	case DID_GPS1_RCVR_POS:
-	case DID_GPS2_POS:
-        data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
-		break;
-    case DID_GPS1_RTK_POS:
-        data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
-        break;
-	}
+        case DID_INS_1:
+            deadreckoning = !(d.ins1.insStatus & INS_STATUS_GPS_AIDING_POS);
+            data = sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta, deadreckoning);
+            break;
+        case DID_INS_2:
+            quat2euler(d.ins2.qn2b, theta);
+            deadreckoning = !(d.ins2.insStatus & INS_STATUS_GPS_AIDING_POS);
+            data = sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta, deadreckoning);
+            break;
+        case DID_INS_3:
+            quat2euler(d.ins3.qn2b, theta);
+            deadreckoning = !(d.ins3.insStatus & INS_STATUS_GPS_AIDING_POS);
+            data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, deadreckoning);
+            break;
+        case DID_GPS1_POS:
+        case DID_GPS1_RCVR_POS:
+        case DID_GPS2_POS:
+            data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
+            break;
+        case DID_GPS1_RTK_POS:
+            data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
+            break;
+    }
 
     list.push_back(data);
 

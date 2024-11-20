@@ -25,4 +25,4 @@ setup(
     name = 'InertialSenseTools', 
     cmdclass = {'build_ext': build_ext}, 
     ext_modules = modules 
-    )
+  )

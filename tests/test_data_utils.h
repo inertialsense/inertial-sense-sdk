@@ -17,7 +17,7 @@
 
 typedef struct
 {
-    protocol_type_t         ptype;	    // Data start byte
+    protocol_type_t         ptype;      // Data start byte
     p_data_hdr_t            dataHdr;
     uDatasets               data;
     is_comm_instance_t      comm;

@@ -43,7 +43,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // default logging path if none specified
 #define DEFAULT_LOGS_DIRECTORY          "IS_logs"
-#define DEFAULT_LOGS_MAX_FILE_SIZE      (1024 * 1024 * 5)	// 5 MB
+#define DEFAULT_LOGS_MAX_FILE_SIZE      (1024 * 1024 * 5)    // 5 MB
 
 class cISLogger
 {
@@ -68,14 +68,14 @@ public:
         std::string timeStamp;                      // Used to name each log instance directory.  System date and time used if left empty.
         std::string subDirectory;                   // Write logs into sub-directory of this name inside log instance directory.
 
-        sSaveOptions(                               // Default Options:
+        sSaveOptions(// Default Options:
             eLogType type = LOGTYPE_RAW,            // Raw packetized serial.
             float limitPercent = 0.5,               // 50% of total drive
             float limitMb = 0,                      // Drive usage limit in MB.  0 disables this limit
             uint32_t fileSize = 5 * 1024 * 1024,    // 5 MB size of each individual file in log
             bool useTimestamp = true,               // A timestamped subdirectory is created for new log
             std::string subDir = ""                 // Logs will be written into a subdirector of this string name within the timestamped subdirectory this string is not empty
-        ) : logType(type),
+      ) : logType(type),
             driveUsageLimitPercent(limitPercent),
             driveUsageLimitMb(limitMb),
             maxFileSize(fileSize),
@@ -277,36 +277,36 @@ private:
 #endif
     }
 
-    eLogType				m_logType = LOGTYPE_DAT;
-    bool					m_useChunkHeader = true;
-    bool					m_enabled = false;
-    std::string				m_rootDirectory;
-    std::string				m_directory;
-    std::string				m_timeStamp;
+    eLogType        m_logType = LOGTYPE_DAT;
+    bool            m_useChunkHeader = true;
+    bool            m_enabled = false;
+    std::string     m_rootDirectory;
+    std::string     m_directory;
+    std::string     m_timeStamp;
     std::map<uint32_t, std::shared_ptr<cDeviceLog>> m_devices = { };
 
-    uint64_t				m_maxDiskSpace = 0;		// Limit for logging.  Zero to disable file culling drive management.
-    uint64_t				m_usedDiskSpace = 0;	// Size of all logs
-    uint32_t				m_maxFileSize = 0;
-    cLogStats				m_logStats;
+    uint64_t        m_maxDiskSpace = 0;        // Limit for logging.  Zero to disable file culling drive management.
+    uint64_t        m_usedDiskSpace = 0;    // Size of all logs
+    uint32_t        m_maxFileSize = 0;
+    cLogStats       m_logStats;
 #if PLATFORM_IS_EVB_2
-    cISLogFileFatFs         m_errorFile;
+    cISLogFileFatFs m_errorFile;
 #else
-    cISLogFile				m_errorFile;
+    cISLogFile      m_errorFile;
 #endif
 
-    bool					m_altClampToGround = false;
-    bool					m_gpsData = false;
-    bool					m_showSample = false;
-    bool					m_showPath = false;
-    bool					m_showTimeStamp = false;
-    double					m_iconUpdatePeriodSec = false;
-    time_t					m_lastCommTime = 0;
-    time_t					m_timeoutFlushSeconds = 0;
-    time_t					m_timeoutFileCullingSeconds = 10;
-    time_t					m_lastFileCullingTime = 0;
-    int						m_progress = 0;
-    bool					m_showParseErrors = true;
+    bool            m_altClampToGround = false;
+    bool            m_gpsData = false;
+    bool            m_showSample = false;
+    bool            m_showPath = false;
+    bool            m_showTimeStamp = false;
+    double          m_iconUpdatePeriodSec = false;
+    time_t          m_lastCommTime = 0;
+    time_t          m_timeoutFlushSeconds = 0;
+    time_t          m_timeoutFileCullingSeconds = 10;
+    time_t          m_lastFileCullingTime = 0;
+    int             m_progress = 0;
+    bool            m_showParseErrors = true;
 };
 
 #endif // IS_LOGGER_H

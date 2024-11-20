@@ -93,7 +93,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 
 // #define DEBUG_COMMS   // Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
 #ifdef DEBUG_COMMS
-#define IS_PRINTABLE(n) ( ((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)) )
+#define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)))
 static inline void debugDumpBuffer(const char* prefix, const unsigned char* buffer, int len) {
     if (len <= 0)
         return;
@@ -101,13 +101,13 @@ static inline void debugDumpBuffer(const char* prefix, const unsigned char* buff
     struct timeval start;
     gettimeofday(&start, NULL);
     printf("%ld.%03d: %s", start.tv_sec, (uint16_t)(start.tv_usec / 1000), prefix);
-    for ( int i = 0; i < len; i++)
+    for (int i = 0; i < len; i++)
         printf(" %02x", buffer[i]);
 
     int linePos = 16 + strlen(prefix) + (len * 3);
     printf("%*c", 80 - linePos, ' ');
 
-    for ( int i = 0; i < len; i++)
+    for (int i = 0; i < len; i++)
         printf("%c", IS_PRINTABLE(buffer[i]) ? buffer[i] : 0xB7);
 
     printf("\n");
@@ -433,7 +433,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
 #endif
 
-    return 1;	// success
+    return 1;    // success
 }
 
 static int serialPortIsOpenPlatform(port_handle_t port)
@@ -519,7 +519,7 @@ static int serialPortFlushPlatform(port_handle_t port)
 
 #if PLATFORM_IS_WINDOWS
 
-    if(!FlushFileBuffers(handle->platformHandle))
+    if (!FlushFileBuffers(handle->platformHandle))
     {
         return 0;
     }
@@ -548,7 +548,7 @@ static int serialPortDrainPlatform(port_handle_t port)
 
 #if PLATFORM_IS_WINDOWS
 
-    if(!FlushFileBuffers(handle->platformHandle))
+    if (!FlushFileBuffers(handle->platformHandle))
     {
         return 0;
     }
@@ -748,8 +748,8 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
 
 #if PLATFORM_IS_WINDOWS
 
-	readFileExCompletionStruct c;
-	c.externalCompletion = completion;
+    readFileExCompletionStruct c;
+    c.externalCompletion = completion;
     c.port = port;
     c.buffer = buffer;
     memset(&(c.ov), 0, sizeof(c.ov));
@@ -814,7 +814,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
 
     struct stat sb;
     errno = 0;
-    if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
+    if (fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
     {   // Serial port not open
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
@@ -846,7 +846,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         bytes_written += result;
     }
 
-    if(handle->blocking)
+    if (handle->blocking)
     {   // Block until output data has been physically transmitted 
         int error = tcdrain(handle->fd);
         if (error != 0)
