@@ -1,6 +1,7 @@
 @echo off
 
 echo Build Log Inspector
+echo Build Log Inspector
 echo.
 
 :: Set SDK_DIR as directory path
@@ -25,6 +26,9 @@ if %errorlevel% neq 0 ( echo Error building SDK python package! & exit /b %error
 :: Build Log Inspector locally
 pushd %SDK_DIR%\python
 python setup.py build_ext --inplace
+popd
+if %errorlevel% neq 0 ( echo Error building Log Inspector locally! & exit /b %errorlevel% )
+
 popd
 if %errorlevel% neq 0 ( echo Error building Log Inspector locally! & exit /b %errorlevel% )
 

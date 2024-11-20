@@ -1,0 +1,266 @@
+import os
+import platform
+import shutil
+import sys
+import subprocess
+import time
+from colorama import Fore, Style, init
+from pathlib import Path
+sdk_scripts_dir = Path(__file__).resolve().parent
+sys.path.append(sdk_scripts_dir)
+from lib import python_venv
+
+class BuildTestManager:
+    def __init__(self, release_name=None, release_dir=None):
+        python_venv.activate_virtualenv()
+        self.is_windows = os.name == 'nt' or platform.system() == 'Windows'
+
+        self.generate_release = False
+        self.release_name = release_name
+        self.release_dir = release_dir
+        self.project_name = ""
+        self.project_dir = None
+        self.build_success = []
+        self.build_failure = []
+        self.test_name = ""
+        self.test_success = []
+        self.test_failure = []
+        self.build_type = "Release"
+        self.run_build = True
+        self.run_clean = False
+        self.run_test = False
+
+        # Parse command-line arguments
+        self.args = sys.argv[1:]
+        for arg in self.args:
+            if arg in ("-b", "--build"):
+                self.run_build = True
+            elif arg in ("-c", "--clean"):
+                self.run_clean = True
+                self.run_test = False
+            elif arg in ("-d", "--debug"):
+                self.build_type = "Debug"
+            elif arg in ("-t", "--test"):
+                self.run_test = True
+            elif arg in ("-r", "--release"):
+                self.generate_release = True
+        if 0 < len(self.args):
+            self.project_name = self.args[0]
+        if 1 < len(self.args):
+            self.project_dir = self.args[1]
+
+        # Initialize colorama
+        init(autoreset=True)
+
+        self.print_release_info()
+
+    def print_release_info(self):
+        if self.generate_release:
+            self.print_ylw(f"==========================================")
+            self.print_ylw(f" Generating: RELEASE {self.release_name}")
+            self.print_ylw(f" Directory:  {self.release_dir} ")
+            self.print_ylw(f"==========================================")
+            print("")
+            time.sleep(1)
+
+    def print_red(self, str): print(Fore.RED + str)
+    def print_grn(self, str): print(Fore.GREEN + str)
+    def print_blu(self, str): print(Fore.BLUE + str)
+    def print_cyn(self, str): print(Fore.CYAN + str)
+    def print_ylw(self, str): print(Fore.YELLOW + str)
+    # print(Style.BRIGHT + "This is bright text")
+    # print(Style.RESET_ALL + "Back to normal text")
+
+    def build_header(self, name):
+        self.project_name = name
+        if self.run_clean:
+            action = "CLEAN"
+        else:
+            action = "BUILD"
+
+        self.print_blu(f"==========================================")
+        self.print_blu(f" {action}:  {self.project_name}")
+        self.print_blu(f"==========================================")
+
+    def build_footer(self, exit_code):  
+        if exit_code:
+            self.print_red(f"[***** BUILD: {self.project_name} - FAILED *****]")
+            self.build_failure.append(self.project_name)
+        else:
+            self.print_grn(f"[BUILD: {self.project_name} - Passed]")
+            self.build_success.append(self.project_name)
+        print("")
+
+    def test_header(self, name):
+        self.test_name = name
+        self.print_cyn(f"==========================================")
+        self.print_cyn(f" TEST:  {self.test_name}")
+        self.print_cyn(f"==========================================")
+
+    def test_footer(self, exit_code):  
+        if exit_code:
+            self.print_red(f"[***** BUILD: {self.test_name} - FAILED *****]")
+            self.test_failure.append(self.test_name)
+        else:
+            self.print_grn(f"[BUILD: {self.test_name} - Passed]")
+            self.test_success.append(self.test_name)
+        print("")
+
+    def print_summary(self):
+        if self.run_clean:
+            action = "CLEAN"
+        else:
+            action = "BUILD"
+        self.print_blu(f"==========================================")
+        self.print_blu(f" {action} SUMMARY:")
+        self.print_blu(f"==========================================")
+        if self.build_success:
+            self.print_grn(f"[PASSED]: " + ", ".join(self.build_success))
+        if self.build_failure:
+            self.print_red(f"[FAILED]: " + ", ".join(self.build_failure))
+        print("")
+        if self.run_test:
+            self.print_cyn(f"==========================================")
+            self.print_cyn(f" TEST SUMMARY:")
+            self.print_cyn(f"==========================================")
+            if self.test_success:
+                self.print_grn(f"[PASSED]: " + ", ".join(self.test_success))
+            if self.test_failure:
+                self.print_red(f"[FAILED]: " + ", ".join(self.test_failure))
+            print("")
+        self.print_release_info()
+
+    def build_callback(self, project_name, callback):
+        result = 0
+        if self.run_build:
+            self.build_header(project_name)
+            result = callback(self.args)
+            self.build_footer(result)
+        return result
+    
+    def test_callback(self, project_name, callback):
+        result = 0
+        if self.run_test:
+            self.test_header(project_name)
+            result = callback()
+            self.test_footer(result)
+        return result
+
+    def build_script(self, project_name, script_path, args):
+        if self.is_windows:
+            app = "cmd"
+        else:
+            app = "bash"
+        command = [app, str(script_path)]
+        if args:
+            command.extend(args)
+        if self.args:
+            command.extend(self.args)
+        self.build_header(project_name)
+        result = 0
+        try:
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error building {project_name}!")
+            result = e.returncode
+            
+        self.build_footer(result)
+        return result
+
+    def build_cmake(self, project_name, project_dir):
+        project_dir = Path(project_dir)
+
+        self.build_header(project_name)
+        result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean)
+        self.build_footer(result)
+        return result
+    
+    @staticmethod
+    def static_build_cmake(project_name, project_dir, build_type, clean):
+        result = 0
+        if clean:
+            build_dir = project_dir / "build"
+            if os.path.exists(build_dir):
+                shutil.rmtree(build_dir)
+
+        else:   # Build process
+            print(f"=== Running make... ({build_type}) ===")
+            try:
+                subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
+                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{os.cpu_count()-4}"], cwd=str(project_dir))
+            except subprocess.CalledProcessError as e:
+                print(f"Error building {project_name}!")
+                result = e.returncode
+        return result
+
+    def test_exec(self, test_name, test_dir, exec_name=""):
+        if not self.run_test:
+            return
+        test_dir = test_dir / "build"
+        if exec_name == "":
+            exec_name = test_name
+        if not self.is_windows:
+            exec_name = "./" + exec_name
+        self.test_header(test_name)
+        result = 0
+        try:
+            subprocess.check_call(exec_name, cwd=str(test_dir))
+        except subprocess.CalledProcessError as e:
+            print(f"Error building {test_name}!")
+            result = e.returncode
+        self.test_footer(result)
+        return result
+    
+    def clean_rm(self, path):
+        if self.run_clean:  # Only clean if clean option was specified
+            if os.path.exists(path):
+                if os.path.isdir(path):
+                    shutil.rmtree(path)  # Remove the directory and its contents
+                    print(f"Directory removed: {path}")
+                elif os.path.isfile(path):
+                    os.remove(path)  # Remove the file
+                    print(f"File removed: {path}")
+                else:
+                    raise FileNotFoundError(f"Path does not exist: {path}")
+
+    @staticmethod
+    def source_bash_script(script_path):
+        """
+        Sources a bash script and returns the resulting environment variables.
+
+        :param script_path: Path to the bash script.
+        :return: A dictionary of the environment variables after sourcing the script.
+        """
+        # Command to source the script and print the environment
+        command = f"bash -c 'source {script_path} && env'"
+        
+        # Run the command and capture the output
+        result = subprocess.run(command, shell=True, text=True, capture_output=True, check=True)
+        
+        # Parse the environment variables from the output
+        env_vars = {}
+        for line in result.stdout.splitlines():
+            key, _, value = line.partition("=")
+            env_vars[key] = value
+
+        return env_vars
+
+    def run(self):
+
+        # Execute build and/or test based on flags
+        success = True
+        if self.run_build:
+            success = self.build_cmake(self.project_name, self.project_dir)
+            if not success:
+                sys.exit(1)
+
+        if self.run_test and success:
+            success = self.test_cmake()
+            if not success:
+                sys.exit(1)
+
+        sys.exit(0 if success else 1)
+
+if __name__ == "__main__":
+    bm = BuildTestManager()
+    bm.run()
