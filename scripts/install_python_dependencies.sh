@@ -1,3 +1,3 @@
 #!/bin/bash
 
-pip3 install gitpython requests ruamel.yaml semver 
+python3 -m pip install gitpython requests ruamel.yaml semver 
