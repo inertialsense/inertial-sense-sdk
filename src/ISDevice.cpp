@@ -31,13 +31,13 @@ bool ISDevice::step() {
 is_operation_result ISDevice::updateFirmware(
         fwUpdate::target_t targetDevice,
         std::vector<std::string> cmds,
-        ISBootloader::pfnBootloadProgress uploadProgress,
-        ISBootloader::pfnBootloadProgress verifyProgress,
-        ISBootloader::pfnBootloadStatus infoProgress,
+        fwUpdate::pfnProgressCb uploadProgress,
+        fwUpdate::pfnProgressCb verifyProgress,
+        fwUpdate::pfnStatusCb infoProgress,
         void (*waitAction)()
 )
 {
-    fwUpdater = new ISFirmwareUpdater(*this);
+    fwUpdater = new ISFirmwareUpdater(this);
     fwUpdater->setTarget(targetDevice);
 
     // TODO: Implement maybe
@@ -205,6 +205,57 @@ bool ISDevice::queryDeviceInfoISbl() {
     hdwId = IS_HARDWARE_TYPE_UNKNOWN;
     hdwRunState = ISDevice::HDW_STATE_UNKNOWN;
     return false;
+}
+
+
+bool ISDevice::validateDevice(uint32_t timeout) {
+    unsigned int startTime = current_timeMs();
+    int queryType = 0;  // we cycle through different types of queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
+
+    if (!isConnected())
+        return false;
+
+    // check for Inertial-Sense App by making an NMEA request (which it should respond to)
+    do {
+        if (SERIAL_PORT(port)->errorCode == ENOENT)
+            return false;
+
+        switch (queryType) {
+            case QUERYTYPE_NMEA:
+                SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
+                break;
+            case QUERYTYPE_ISB:
+                SendRaw((uint8_t *) DID_DEV_INFO, sizeof(dev_info_t));
+                break;
+            case QUERYTYPE_ISbootloader:
+                queryDeviceInfoISbl();
+                break;
+            case QUERYTYPE_mcuBoot:
+                break;
+
+        }
+        // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+        if (SERIAL_PORT(port)->errorCode != 0)
+            return false;
+
+        SLEEP_MS(100);
+        step();
+
+        if ((current_timeMs() - startTime) > timeout)
+            return false;
+
+        queryType = static_cast<queryTypes>((int)queryType + 1 % (int)QUERYTYPE_MAX);
+    } while ((hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (devInfo.serialNumber != 0));
+
+    if ((hdwId != IS_HARDWARE_TYPE_UNKNOWN) &&
+        (hdwRunState != ISDevice::HDW_STATE_UNKNOWN) &&
+        (devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0)) {
+        comManagerGetData(this, DID_SYS_CMD, 0, 0, 0);
+        comManagerGetData(this, DID_FLASH_CONFIG, 0, 0, 0);
+        comManagerGetData(this, DID_EVB_FLASH_CFG, 0, 0, 0);
+    }
+
+    return true;
 }
 
 /**
@@ -610,3 +661,85 @@ bool ISDevice::reset() {
     }
     return false;
 }
+
+/*
+void ISDevice::processRxData(p_data_t* data)
+{
+    if (data->hdr.size==0 || data->ptr==NULL) {
+        return;
+    }
+
+    if (devLogger) {
+        // FIXME:  devLogger->SaveData(data, 0);
+        // stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
+    }
+
+    hdwRunState = ISDevice::HDW_STATE_APP;  // It's basically impossible for us to receive ISB protocol, and NOT be in APP state
+    switch (data->hdr.id) {
+        case DID_DEV_INFO:
+            devInfo = *(dev_info_t*)data->ptr;
+            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+            break;
+        case DID_SYS_CMD:
+            sysCmd = *(system_command_t*)data->ptr;
+            break;
+        case DID_SYS_PARAMS:
+            copyDataPToStructP(&sysParams, data, sizeof(sys_params_t));
+            DEBUG_PRINT("Received DID_SYS_PARAMS\n");
+            break;
+        case DID_FLASH_CONFIG:
+            copyDataPToStructP(&flashCfg, data, sizeof(nvm_flash_cfg_t));
+            if ( dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data)) {
+                sysParams.flashCfgChecksum = flashCfg.checksum;
+            }
+            DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
+            break;
+        case DID_FIRMWARE_UPDATE:
+            // we don't respond to messages if we don't already have an active Updater
+            if (fwUpdater) {
+                fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
+                fwUpdate();
+            }
+            break;
+
+    // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
+        case DID_GPS1_POS:
+            static time_t lastTime;
+            time_t currentTime = time(NULLPTR);
+            if (abs(currentTime - lastTime) > 5) {	// Update every 5 seconds
+                lastTime = currentTime;
+                gps_pos_t &gps = *((gps_pos_t*)data->ptr);
+                if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D) {
+                    // *s_cm_state->clientBytesToSend = nmea_gga(s_cm_state->clientBuffer, s_cm_state->clientBufferSize, gps);
+                }
+            }
+            break;
+    }
+
+    // Now that we've done our own processing, we can call others...
+    if (binaryCallbacks[data->hdr.id].callback != NULLPTR) {
+        binaryCallbacks[data->hdr.id].callback(this, data);
+    }
+
+    if (binaryCallbackGlobal != NULLPTR) {
+        // Called for all DID's
+        binaryCallbackGlobal(this, data);
+    }
+}
+
+// return 0 on success, -1 on failure
+void ISDevice::processRxNmea(const uint8_t* msg, int msgSize) {
+    if (m_handlerNmea) {
+        m_handlerNmea(this, msg, msgSize);
+    }
+
+    switch (getNmeaMsgId(msg, msgSize))
+    {
+        case NMEA_MSG_ID_INFO:
+            nmea_parse_info(devInfo, (const char*)msg, msgSize);
+            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+            hdwRunState = ISDevice::HDW_STATE_APP;
+        break;
+    }
+}
+*/

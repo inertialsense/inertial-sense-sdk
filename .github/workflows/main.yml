@@ -104,9 +104,10 @@ jobs:
       - name: Build SDK Examples
         run: ./build_sdk_examples.bat
 
-  ros-bridge-tests:
+  ros1-bridge-tests:
     name: "ROS1 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker, focal]
+    timeout-minutes: 5
     # if: false  # disable this job
 
     env:
@@ -115,7 +116,6 @@ jobs:
 
     container:
       image: ros:noetic
-      #options: --privileged -v /dev:/dev
       options: --device-cgroup-rule="c 166:* rmw"
       volumes:
         - "/dev:/dev"
@@ -191,10 +191,18 @@ jobs:
           catkin_make run_tests_inertial_sense_ros_gtest_test_ros_bridge
           catkin_test_results
 
+      - name: Cleanup build folder to prevent future errors
+        run: |
+          rm -rf ./* || true
+          rm -rf ./.??* || true
+
   ros2-bridge-tests:
     name: "ROS2 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker, focal]
+    timeout-minutes: 5
     # if: false  # disable this job
+    if: ${{ always() }} # Makes sure job runs regardless of imx5-integration job outcome
+    needs: [imx5-integration]
 
     container:
       image: osrf/ros:jazzy-desktop
@@ -242,7 +250,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
-      - name: Install dependencies
+      - name: Install post-checkout dependencies
         working-directory: scripts
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
@@ -252,9 +260,11 @@ jobs:
           chown -R 1003:1003 ../../
           "
 
-      - name: Build ROS2 bridge
+      - name: Build ROS2 Bridge
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
+          find . -name "libInertialSenseSDK*" -delete
+          rm log/ build/ install/ src/inertial-sense-sdk/CMakeCache.txt &>/dev/null || true
           git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
           colcon build
           "
@@ -265,3 +275,8 @@ jobs:
           source install/setup.bash
           ros2 run inertial_sense_ros2 test_inertial_sense_ros2
           "
+
+      - name: Cleanup build folder to prevent future errors
+        run: |
+          rm -rf ./* || true
+          rm -rf ./.??* || true

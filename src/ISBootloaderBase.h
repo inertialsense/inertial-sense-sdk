@@ -13,39 +13,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __IS_BOOTLOADER_BASE_H_
 #define __IS_BOOTLOADER_BASE_H_
 
-#include "ISConstants.h"
-#include "ISSerialPort.h"
-#include "libusb.h"
-#include "ISUtilities.h"
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
 #include <mutex>
 
+#include "core/types.h"
+#include "ISConstants.h"
+#include "ISSerialPort.h"
+#include "libusb.h"
+#include "ISUtilities.h"
+#include "protocol/FirmwareUpdate.h"
+
 namespace ISBootloader {
 
 static constexpr int IS_DEVICE_LIST_LEN = 256;
 static constexpr int IS_FIRMWARE_PATH_LENGTH = 256;
-
-typedef enum {
-    IS_LOG_LEVEL_NONE  = 0,
-    IS_LOG_LEVEL_ERROR = 1,
-    IS_LOG_LEVEL_WARN  = 2,
-    IS_LOG_LEVEL_INFO  = 3,
-    IS_LOG_LEVEL_MORE_INFO = 4,
-    IS_LOG_LEVEL_DEBUG = 5,
-    IS_LOG_LEVEL_MORE_DEBUG = 6,
-    IS_LOG_LEVEL_SILLY = 7
-} eLogLevel;
-
-typedef enum {
-    IS_DEV_TYPE_NONE = 0,
-    IS_DEV_TYPE_SAMBA,
-    IS_DEV_TYPE_ISB,
-    IS_DEV_TYPE_APP,
-    IS_DEV_TYPE_DFU,
-} eDeviceType;
 
 typedef enum {
     IS_PROCESSOR_UNKNOWN = -1,
@@ -97,12 +80,12 @@ typedef struct
     firmware_t bl_EVB_2;
 } firmwares_t;
 
-typedef is_operation_result (*pfnBootloadProgress)(void* obj, float percent);
-typedef void (*pfnBootloadStatus)(void* obj, eLogLevel level, const char* infoString, ...);
+// typedef is_operation_result (*fwUpdate::pfnProgressCb)(void* obj, float percent);
+// typedef void (*fwUpdate::pfnStatusCb)(void* obj, int level, const char* infoString, ...);
 
-is_operation_result dummy_update_callback(void* obj, float percent);
-is_operation_result dummy_verify_callback(void* obj, float percent);
-static inline void dummy_info_callback(void* obj, eLogLevel level, const char* infoString, ...)
+is_operation_result dummy_update_callback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+is_operation_result dummy_verify_callback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+static inline void dummy_info_callback(std::any obj, int level, const char* infoString, ...)
 {
     (void)obj;
     (void)infoString;
@@ -113,10 +96,10 @@ class cISBootloaderBase
 {
 public:
     cISBootloaderBase(
-        pfnBootloadProgress upload_cb,
-        pfnBootloadProgress verify_cb,
-        pfnBootloadStatus info_cb
-  ) : 
+        fwUpdate::pfnProgressCb upload_cb,
+        fwUpdate::pfnProgressCb verify_cb,
+        fwUpdate::pfnStatusCb info_cb
+  ) :
         m_update_callback{upload_cb}, 
         m_verify_callback{verify_cb}, 
         m_info_callback{info_cb}
@@ -202,13 +185,13 @@ public:
     bool m_success;
 
     // Callbacks
-    pfnBootloadProgress m_update_callback;
-    pfnBootloadProgress m_verify_callback;
-    pfnBootloadStatus m_info_callback; 
+    fwUpdate::pfnProgressCb m_update_callback;
+    fwUpdate::pfnProgressCb m_verify_callback;
+    fwUpdate::pfnStatusCb m_info_callback;
 
     void* m_thread;
     bool m_finished_flash;
-    int m_device_type;
+    int m_bootloader_type;
     bool m_use_progress;
     int m_start_time_ms;
 
@@ -225,9 +208,9 @@ public:
     static is_operation_result mode_device_app(
         firmwares_t filenames,
         port_handle_t port,
-        pfnBootloadStatus statusfn,
-        pfnBootloadProgress updateProgress,
-        pfnBootloadProgress verifyProgress,
+        fwUpdate::pfnStatusCb statusfn,
+        fwUpdate::pfnProgressCb updateProgress,
+        fwUpdate::pfnProgressCb verifyProgress,
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context
@@ -236,9 +219,10 @@ public:
     static is_operation_result get_device_isb_version(
         firmwares_t filenames,
         port_handle_t port,
-        pfnBootloadStatus statusfn,
-        pfnBootloadProgress updateProgress,
-        pfnBootloadProgress verifyProgress,
+
+        fwUpdate::pfnStatusCb statusfn,
+        fwUpdate::pfnProgressCb updateProgress,
+        fwUpdate::pfnProgressCb verifyProgress,
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context
@@ -248,9 +232,9 @@ public:
         firmwares_t filenames,
         bool force,
         port_handle_t port,
-        pfnBootloadStatus statusfn,
-        pfnBootloadProgress updateProgress,
-        pfnBootloadProgress verifyProgress,
+        fwUpdate::pfnStatusCb statusfn,
+        fwUpdate::pfnProgressCb updateProgress,
+        fwUpdate::pfnProgressCb verifyProgress,
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context
@@ -259,9 +243,9 @@ public:
     static is_operation_result update_device(
         firmwares_t filenames,
         port_handle_t port,
-        pfnBootloadStatus statusfn,
-        pfnBootloadProgress updateprogress,
-        pfnBootloadProgress verifyProgress,
+        fwUpdate::pfnStatusCb statusfn,
+        fwUpdate::pfnProgressCb updateprogress,
+        fwUpdate::pfnProgressCb verifyProgress,
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context,
@@ -270,9 +254,9 @@ public:
     static is_operation_result update_device(
         firmwares_t filenames,
         libusb_device_handle* handle,
-        pfnBootloadStatus statusfn,
-        pfnBootloadProgress updateprogress,
-        pfnBootloadProgress verifyProgress,
+        fwUpdate::pfnStatusCb statusfn,
+        fwUpdate::pfnProgressCb updateprogress,
+        fwUpdate::pfnProgressCb verifyProgress,
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
         cISBootloaderBase** new_context
@@ -282,9 +266,9 @@ public:
     bool m_isISB;
 
 protected:
-    void status_update(const char* info, eLogLevel level) 
+    void status_update(const char* info, int level)
     { 
-        if (m_info_callback) m_info_callback((void*)this, level, info);
+        if(m_info_callback) m_info_callback(std::any_cast<cISBootloaderBase*>(this), level, info);
     }
 
     struct

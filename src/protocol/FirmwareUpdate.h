@@ -15,6 +15,7 @@
 
 #ifdef __cplusplus
 #include <string>
+#include <any>
 
 #include "util/md5.h"
 
@@ -101,12 +102,17 @@ namespace fwUpdate {
  *
  */
 
+    typedef is_operation_result (*pfnProgressCb)(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+    typedef void (*pfnStatusCb)(std::any obj, int level, const char* infoString, ...);
+
+
 #define FWUPDATE__MAX_CHUNK_SIZE   512
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
-    static constexpr uint32_t TARGET_TYPE_MASK = 0xFFF0;
-    static constexpr uint32_t TARGET_DFU_FLAG = 0x80000000;
-    static constexpr uint32_t TARGET_ISB_FLAG = 0x40000000;
+    static constexpr uint32_t TARGET_TYPE_MASK = 0x0000FFF0;
+    static constexpr uint32_t TARGET_DFU_FLAG  = 0x80000000;
+    static constexpr uint32_t TARGET_ISB_FLAG  = 0x40000000;
+    static constexpr uint32_t TARGET_SMP_FLAG  = 0x20000000;
 
     enum target_t : uint32_t {
         TARGET_HOST = 0x00,
@@ -115,6 +121,7 @@ namespace fwUpdate {
         TARGET_ISB_IMX5 = (TARGET_ISB_FLAG | TARGET_IMX5), // note that the IMX5 ONLY support ISB mode (it doesn't directly support ISv2)
         TARGET_GPX1 = 0x20,
         TARGET_DFU_GPX1 = (TARGET_DFU_FLAG | TARGET_GPX1),
+        TARGET_SMP_GPX1 = (TARGET_SMP_FLAG | TARGET_GPX1),
         TARGET_VPX = 0x30, // RESERVED FOR VPX
         TARGET_UBLOX_F9P = 0x110,
         TARGET_UBLOX_F9P__1 = 0x111,
@@ -373,6 +380,20 @@ namespace fwUpdate {
          */
         target_t fwUpdate_getTargetType(target_t target) { return (target_t)((uint32_t)target & TARGET_TYPE_MASK); };
 
+        /**
+         * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
+         * Called with each messages that is received/processed.  Can optionally be called manually, typically at a regular interval. If you don't call
+         * fwUpdate_step() things should still generally work, but state advancement may stall if there is no received message (for example, after all
+         * messages have been sent by the remote).
+         * @param msg_type the last received msg_type that was received.  If you are calling this method manually (from a timer, etc) pass in MSG_UNKNOWN.
+         * @param processed indicates whether the received message was successfully processed after being received (this is usually the return value from
+         *  fwUpdate_handleXXXX() functions).
+         * @return false _suggests_ that the step couldn't complete in some way or another, perhaps because there was no processed messages, or that the
+         *  is in an invalid state, etc.  Otherwise, return true. This result is primarily informational, and should not effect any downstream functionality
+         *  or prevent (or indicate) a failure of the firmware update engine.
+         */
+        virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
+
     protected:
         uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
         uint32_t last_message = 0;                              //! the time (millis) since we last received a payload targeted for us.
@@ -402,20 +423,6 @@ namespace fwUpdate {
          * @return
          */
         bool fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data= nullptr);
-
-        /**
-         * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
-         * Called with each messages that is received/processed.  Can optionally be called manually, typically at a regular interval. If you don't call
-         * fwUpdate_step() things should still generally work, but state advancement may stall if there is no received message (for example, after all
-         * messages have been sent by the remote).
-         * @param msg_type the last received msg_type that was received.  If you are calling this method manually (from a timer, etc) pass in MSG_UNKNOWN.
-         * @param processed indicates whether the received message was successfully processed after being received (this is usually the return value from
-         *  fwUpdate_handleXXXX() functions).
-         * @return false _suggests_ that the step couldn't complete in some way or another, perhaps because there was no processed messages, or that the
-         *  is in an invalid state, etc.  Otherwise, return true. This result is primarily informational, and should not effect any downstream functionality
-         *  or prevent (or indicate) a failure of the firmware update engine.
-         */
-        virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
 
         /**
          * Virtual function that must be implemented in the concrete implementations, responsible for writing buffer out to the wire (serial, or otherwise).
@@ -565,7 +572,7 @@ namespace fwUpdate {
          * This message only include the number of chunks sent, and the total expected (sufficient for a percentage) and the
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgress();
+        virtual bool fwUpdate_sendProgress();
 
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -573,7 +580,7 @@ namespace fwUpdate {
          * @param message the actual message to be sent to the host
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgress(int level, const std::string message);
+        virtual bool fwUpdate_sendProgress(int level, const std::string message);
 
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -583,7 +590,7 @@ namespace fwUpdate {
          * @
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgressFormatted(int level, const char *message, ...);
+        virtual bool fwUpdate_sendProgressFormatted(int level, const char *message, ...);
 
         /**
          * @return true if we have an active session and are updating.

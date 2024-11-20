@@ -10,11 +10,13 @@
 #define INERTIALSENSESDK_ISDEVICE_H
 
 #include <memory>
+#include <functional>
 
 #include "DeviceLog.h"
 #include "ISBootloaderBase.h"
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
+#include "ISFirmwareUpdater.h"
 
 extern "C"
 {
@@ -26,6 +28,13 @@ extern "C"
 
 #define BOOTLOADER_RETRIES          10
 #define BOOTLOADER_RESPONSE_DELAY   100
+
+#define PRINT_DEBUG 0
+#if PRINT_DEBUG
+#define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...)
+#endif
 
 class ISFirmwareUpdater;
 class cISLogger;
@@ -78,6 +87,8 @@ public:
      * @return true is this ISDevice has a valid, and open port
      */
     bool isConnected() { return (port && serialPortIsOpen(port)); }
+
+    bool hasDeviceInfo() { return (hdwId != 0) && (hdwRunState != ISDevice::HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0); }
 
     bool step();
 
@@ -212,7 +223,7 @@ public:
     uint32_t nextResetTime = 0;                 //! used to throttle reset requests
 
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds,
-            ISBootloader::pfnBootloadProgress uploadProgress, ISBootloader::pfnBootloadProgress verifyProgress, ISBootloader::pfnBootloadStatus infoProgress, void (*waitAction)()
+            fwUpdate::pfnProgressCb uploadProgress, fwUpdate::pfnProgressCb verifyProgress, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()
 );
 
     bool fwUpdateInProgress();
@@ -222,9 +233,18 @@ public:
 
     bool handshakeISbl();
     bool queryDeviceInfoISbl();
+    bool validateDevice(uint32_t timeout);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
+
+    enum queryTypes {
+        QUERYTYPE_NMEA = 0,
+        QUERYTYPE_ISB,
+        QUERYTYPE_ISbootloader,
+        QUERYTYPE_mcuBoot,
+        QUERYTYPE_MAX = QUERYTYPE_mcuBoot,
+    };
 };
 
 

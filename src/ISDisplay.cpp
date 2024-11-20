@@ -438,32 +438,32 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
             isTowMode = true;
             break;
 
-        case DID_GPS1_RTK_POS_MISC:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
-            gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
-            isTowMode = false;
-            break;
-        
-        // Time since boot - double
-        case DID_MAGNETOMETER:
-        case DID_BAROMETER:
-        case DID_SYS_SENSORS:
-        case DID_PIMU:
-        case DID_IMU:
-        case DID_INL2_STATES:
-        case DID_GPS_BASE_RAW:
-            if (isTowMode)
-                msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
-            else
-                msgTimeMs = (unsigned int)(1000.0 * d.imu.time);
-            break;
+		case DID_GPS1_RTK_POS_MISC:
+			msgTimeMs = d.gpsPos.timeOfWeekMs;
+			gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
+			isTowMode = false;
+			break;
+
+		// Time since boot - double
+		case DID_MAGNETOMETER:
+		case DID_BAROMETER:
+		case DID_SYS_SENSORS:
+		case DID_PIMU:
+		case DID_IMU:
+		case DID_INL2_STATES:
+		case DID_GPS_BASE_RAW:
+			if (isTowMode)
+				msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
+			else
+				msgTimeMs = (unsigned int)(1000.0 * d.imu.time);
+			break;
 
         case DID_EVENT:
 
             break;
 
             // Unidentified data type
-//         default: printf("Unknown DID %d\t", data->hdr.id);    return;            
+//         default: printf("Unknown DID %d\t", data->hdr.id);    return;
         }
 
 
@@ -586,7 +586,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
         PrintStats();
         return true;
 
-    case DMODE_SCROLL:    // Scroll display 
+    case DMODE_SCROLL:    // Scroll display
         break;
     }
 
@@ -1274,13 +1274,13 @@ string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, c
         ver.hwVersion);
 
     for (int i=0; i<GPS_VER_NUM_EXTENSIONS; i++)
-    {    
+    {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s", (char*)&(ver.extension[i]));
     }
 
     if (m_displayMode != DMODE_SCROLL)
     {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
     }
 
     return buf;
@@ -1327,7 +1327,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status: 0x%08x (", gps.status);
         switch (gps.status&GPS_STATUS_FIX_MASK)
         {
-            default: 
+            default:
             case GPS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);    break;
             case GPS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
             case GPS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
@@ -1343,7 +1343,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
             gps.lla[2]);    // GPS Ellipsoid altitude (meters)
         bool comma = false;
         if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED)
-        {    
+        {
             if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR)    { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error"); }
             switch (gps.status&GPS_STATUS_FLAGS_ERROR_MASK)
             {
@@ -1357,7 +1357,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
             if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED)       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing"); }
         }
 
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
     }
 
     return buf;
@@ -1394,7 +1394,7 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
             rel.baseToRoverVector[0],           // Vector to base in ECEF
             rel.baseToRoverVector[1],           // Vector to base in ECEF
             rel.baseToRoverVector[2]);          // Vector to base in ECEF
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge:%5.1fs  arRatio: %4.1f  dist:%7.2fm  bear:%6.1f\n", 
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge:%5.1fs  arRatio: %4.1f  dist:%7.2fm  bear:%6.1f\n",
             rel.differentialAge, rel.arRatio, rel.baseToRoverDistance, rel.baseToRoverHeading*C_RAD2DEG_F);
     }
 
@@ -1581,79 +1581,6 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
     char buf[BUF_SIZE];
     sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
     return string(buf);
-
-/*
-    // Single line format
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d",
-        info.serialNumber
-);
-
-    switch (info.hardwareType)
-    {
-        default:                        ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?");     break;
-        case IS_HARDWARE_TYPE_UINS:     ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS");    break;
-        case IS_HARDWARE_TYPE_EVB:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");     break;
-        case IS_HARDWARE_TYPE_IMX:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");     break;
-        case IS_HARDWARE_TYPE_GPX:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");     break;
-    }
-
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d",
-        info.hardwareVer[0],
-        info.hardwareVer[1],
-        info.hardwareVer[2]
-);
-
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, " Fw-%d.%d.%d",
-        info.firmwareVer[0],
-        info.firmwareVer[1],
-        info.firmwareVer[2]
-);
-
-    switch(info.buildType) {
-        case 'a': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-alpha");     break;
-        case 'b': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-beta");      break;
-        case 'c': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-rc");        break;
-        case 'd': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-devel");     break;
-        case 's': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
-        case '*': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
-        default : break;
-    }
-
-    if (info.firmwareVer[3] > 0) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, ".%d", info.firmwareVer[3]);
-    }
-
-    char dirty = 0;
-    if (info.buildType == '*') {
-        dirty = '*';
-    }
-
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %08x%c (%05X.%d)",
-        info.repoRevision,
-        dirty,
-        ((info.buildNumber >> 12) & 0xFFFFF),
-        (info.buildNumber & 0xFFF)
-);
-
-    if (full)
-    {   // Spacious format
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %04d-%02d-%02d %02d:%02d:%02d Proto-%d.%d.%d.%d (%s)",
-            info.buildYear + 2000,
-            info.buildMonth,
-            info.buildDay,
-            info.buildHour,
-            info.buildMinute,
-            info.buildSecond,
-            info.protocolVer[0],
-            info.protocolVer[1],
-            info.protocolVer[2],
-            info.protocolVer[3],
-            info.addInfo
-    );
-    }
-
-    return buf;
-*/
 }
 
 string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {
@@ -1667,18 +1594,10 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
     ss << "barTemp " << setprecision(2) << sensorsADC.barTemp << ", ";
     ss << "humidity " << setprecision(2) << sensorsADC.humidity << ", ";
 
-//     ss << " ana[" << setprecision(2);
-//     for (size_t i = 0; i < NUM_ANA_CHANNELS; ++i)
-//     {
-//         if (i != 0) { ss << ", "; }
-//         ss << sensorsADC.ana[i];
-//     }
-//     ss << "]";
-
     if (m_displayMode != DMODE_SCROLL)
     {   // Spacious format
         ss << "\n";
-#define SADC_WIDTH      5  
+#define SADC_WIDTH      5
         for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
         {
             auto &imu = sensorsADC.imu[i];
@@ -1739,7 +1658,7 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
         wheel.wrap_count_l,     // Left wheel angle wrap
         wheel.wrap_count_r      // Right wheel angle wrap
 );
-    
+
     return buf;
 }
 
@@ -1767,11 +1686,11 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
 #endif
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, ",  status 0x%08x,  hdwStatus 0x%08x\n", gpxStatus.status, gpxStatus.hdwStatus);
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "    gnss1/2:  runState %d/%d,  FwUpState %d/%d,  initState %d/%d\n", 
-        gpxStatus.gnssStatus[0].runState,       gpxStatus.gnssStatus[1].runState,
-        gpxStatus.gnssStatus[0].fwUpdateState,  gpxStatus.gnssStatus[1].fwUpdateState,
-        gpxStatus.gnssStatus[0].initState,      gpxStatus.gnssStatus[1].initState);
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "    mcuTemp %0.2lf,  upTime %0.3lf\n", gpxStatus.mcuTemp, gpxStatus.upTime);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    gnss1/2:  runState %d/%d,  FwUpState %d/%d,  initState %d/%d\n",
+		gpxStatus.gnssStatus[0].runState,       gpxStatus.gnssStatus[1].runState,
+		gpxStatus.gnssStatus[0].fwUpdateState,  gpxStatus.gnssStatus[1].fwUpdateState,
+		gpxStatus.gnssStatus[0].initState,      gpxStatus.gnssStatus[1].initState);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    mcuTemp %0.2lf,  upTime %0.3lf\n", gpxStatus.mcuTemp, gpxStatus.upTime);
 
     return buf;
 }
@@ -2108,7 +2027,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
     // printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
     // return;
 
-    if ((c >= '0' && c <= '9') || 
+    if ((c >= '0' && c <= '9') ||
         (c >= 'a' && c <= 'f') || c == '.' || c == '-')
     {   // Number
         if (!m_editData.readOnlyMode)
@@ -2149,7 +2068,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 
         case 'w': VarSelectDecrement(); m_editData.field.clear(); break;    // up
         case 's': VarSelectIncrement(); m_editData.field.clear(); break;    // down
-            
+
         case 3:     // Ctrl-C
         case 'q':
             SetExitProgram();
@@ -2204,32 +2123,32 @@ void cInertialSenseDisplay::VarSelectIncrement()
         return;
     }
 
-    const data_info_t& info = m_editData.mapInfoSelection->second;
-    if (info.arraySize)
-    {   // Array
-        if (m_editData.selectionArrayIdx < (info.arraySize-1))
-        {
-            m_editData.selectionArrayIdx++;
-            return;
-        }        
-    }
-    
-    map_name_to_info_t::const_iterator mapInfoEnd = m_editData.mapInfoEnd;
-    if (m_editData.mapInfoSelection != --(mapInfoEnd))
-    {
-        m_editData.mapInfoSelection++;
-        m_editData.selectionArrayIdx = 0;
-    }
-    else if (m_editData.mapInfoEnd != m_editData.mapInfo->end())
-    {
-        m_editData.mapInfoBegin++;
-        m_editData.mapInfoEnd++;
-        m_editData.mapInfoSelection++;
-        m_editData.selectionArrayIdx = 0;
-        Clear();
-    }
+	const data_info_t& info = m_editData.mapInfoSelection->second;
+	if (info.arraySize)
+	{	// Array
+		if (m_editData.selectionArrayIdx < (info.arraySize-1))
+		{
+			m_editData.selectionArrayIdx++;
+			return;
+		}
+	}
 
-    m_editData.editEnabled = false; 
+	map_name_to_info_t::const_iterator mapInfoEnd = m_editData.mapInfoEnd;
+	if (m_editData.mapInfoSelection != --(mapInfoEnd))
+	{
+		m_editData.mapInfoSelection++;
+		m_editData.selectionArrayIdx = 0;
+	}
+	else if (m_editData.mapInfoEnd != m_editData.mapInfo->end())
+	{
+		m_editData.mapInfoBegin++;
+		m_editData.mapInfoEnd++;
+		m_editData.mapInfoSelection++;
+		m_editData.selectionArrayIdx = 0;
+		Clear();
+	}
+
+    m_editData.editEnabled = false;
 }
 
 
@@ -2240,15 +2159,15 @@ void cInertialSenseDisplay::VarSelectDecrement()
         return;
     }
 
-    const data_info_t& info = m_editData.mapInfoSelection->second;
-    if (info.arraySize)
-    {   // Array
-        if (m_editData.selectionArrayIdx > 0)
-        {
-            m_editData.selectionArrayIdx--;
-            return;
-        }        
-    }
+	const data_info_t& info = m_editData.mapInfoSelection->second;
+	if (info.arraySize)
+	{	// Array
+		if (m_editData.selectionArrayIdx > 0)
+		{
+			m_editData.selectionArrayIdx--;
+			return;
+		}
+	}
 
     if (m_editData.mapInfoSelection != m_editData.mapInfoBegin)
     {
@@ -2264,7 +2183,7 @@ void cInertialSenseDisplay::VarSelectDecrement()
         Clear();
     }
 
-    m_editData.editEnabled = false; 
+    m_editData.editEnabled = false;
 }
 
 

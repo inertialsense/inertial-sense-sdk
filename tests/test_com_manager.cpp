@@ -28,7 +28,7 @@ extern "C"
 #if 1
 #define DEBUG_PRINTF        printf
 #else
-#define DEBUG_PRINTF    
+#define DEBUG_PRINTF
 #endif
 
 #define PORT_BUFFER_SIZE    8192
@@ -40,7 +40,7 @@ typedef struct
     ISComManager            cm;
     com_manager_status_t    cmBufStatus[NUM_COM_PORTS] = { 0 };
     broadcast_msg_t         cmBufBcastMsg[MAX_NUM_BCAST_MSGS] = { 0 };
-    struct  
+    struct
     {
         dev_info_t          devInfo;
         nvm_flash_cfg_t     nvmFlashCfg;
@@ -343,7 +343,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 
         int j = i % 17;
         switch (j)
-        {    
+        {
             case 0:
             case 1:
             case 2:
@@ -604,7 +604,7 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
         switch (td.ptype)
         {
         case _PTYPE_INERTIAL_SENSE_DATA:
-            // Packetize data 
+            // Packetize data
             n = is_comm_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
             td.pktSize = n;
             EXPECT_FALSE(ringBufWrite(rbuf, buf, n));
@@ -658,10 +658,10 @@ void parseDequeFromPort(std::deque<data_holder_t> &testDeque, port_handle_t port
                     EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
                     break;
 
-                case _PTYPE_UBLOX:    
+                case _PTYPE_UBLOX:
                     DEBUG_PRINTF("Found data: UBLOX\n");
                     break;
-                case _PTYPE_RTCM3:    
+                case _PTYPE_RTCM3:
                     DEBUG_PRINTF("Found data: RTCM3\n");
                     break;
 
@@ -793,7 +793,7 @@ TEST(ComManager, BasicRxTest)
         tcm.cm.step(); // 2048 byte limit each step
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
 }
@@ -828,7 +828,7 @@ TEST(ComManager, SegmentedRxTest)
     while (!ringBufEmpty(&tmpRBuf) && !g_testRxDeque.empty())
     {
         // Partial write of data -- we're bypassing the port handler and directly copying data between ring-buffers
-        ringBuftoRingBufWrite(&(TEST0_PORT->loopbackPortBuf), &tmpRBuf, bytesToWrite);
+		ringBuftoRingBufWrite(&(TEST0_PORT->portRingBuf), &tmpRBuf, bytesToWrite);
 
         while (portAvailable(TEST0_PORT))
         {
@@ -837,9 +837,9 @@ TEST(ComManager, SegmentedRxTest)
         }
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
-    EXPECT_TRUE(ringBufEmpty(&(TEST0_PORT->loopbackPortBuf)));
+	EXPECT_TRUE(ringBufEmpty(&(TEST0_PORT->portRingBuf)));
 }
 #endif
 
@@ -885,7 +885,7 @@ TEST(ComManager, RxWithGarbageTest)
         tcm.cm.step(); // 2048 byte limit each step
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
 }
@@ -976,7 +976,7 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufUsed(&portRxBuf) == 0);
 }
@@ -1147,7 +1147,7 @@ TEST(ComManager, Evb2DataForwardTest)
         }
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufUsed(&portRxBuf) == 0);
 }

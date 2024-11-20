@@ -19,21 +19,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../hw-libs/bootloader/bootloaderShared.h"
 #include "libusb.h"
 #include "ISUtilities.h"
+#include "protocol/FirmwareUpdate.h"
 
 using namespace ISBootloader;
 
 // const char* is_samx70_bootloader_needle = "bootloader-SAMx70";
 
-is_operation_result ISBootloader::dummy_update_callback(void* obj, float percent) 
+is_operation_result ISBootloader::dummy_update_callback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
+    auto ctx = std::any_cast<cISBootloaderBase*>(obj);
     ctx->m_update_progress = percent;
     return IS_OP_OK;
 }
 
-is_operation_result ISBootloader::dummy_verify_callback(void* obj, float percent) 
+is_operation_result ISBootloader::dummy_verify_callback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
+    auto ctx = std::any_cast<cISBootloaderBase*>(obj);
     ctx->m_verify_progress = percent;
     return IS_OP_OK;
 }
@@ -171,9 +172,9 @@ is_operation_result cISBootloaderBase::mode_device_app
 (
     firmwares_t filenames,
     port_handle_t port,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -235,9 +236,9 @@ is_operation_result cISBootloaderBase::mode_device_app
 is_operation_result cISBootloaderBase::get_device_isb_version(
     firmwares_t filenames,
     port_handle_t port,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -312,9 +313,9 @@ is_operation_result cISBootloaderBase::mode_device_isb
     firmwares_t filenames,
     bool force,
     port_handle_t port,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -418,9 +419,9 @@ is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
     libusb_device_handle* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -479,9 +480,9 @@ is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
     port_handle_t port,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context,
@@ -580,10 +581,10 @@ is_operation_result cISBootloaderBase::update_device
     device = (obj)->check_is_compatible(); 
     if (device == IS_IMAGE_SIGN_NONE)
     {
-        delete obj;
         char msg[120] = { 0 };
         SNPRINTF(msg, sizeof(msg), "    | (%s) Device response missing.", portName(port));
-        statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
+        statusfn(obj, IS_LOG_LEVEL_ERROR, msg);
+        delete obj;
         return IS_OP_ERROR;
     }
     else if (device == IS_IMAGE_SIGN_ERROR)
