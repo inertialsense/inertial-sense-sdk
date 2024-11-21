@@ -30,9 +30,7 @@ if [ "${CLEAN}" == "true" ]; then
     build_result=$?
 else
     echo -e "\n\n=== Running make... (${BUILD_TYPE} ==="
-    # cmake -B build -S . -DCMAKE_BUILD_TYPE=${BUILD_TYPE} && make -j`nproc` -l`nproc`
     cmake -B build -S . -DCMAKE_BUILD_TYPE=${BUILD_TYPE} && cmake --build build --config ${BUILD_TYPE} -j `nproc`
-
     build_result=$?
 fi
 
