@@ -5,35 +5,15 @@ import os.path
 import sys
 import glob
 
-import setuptools
-from setuptools import setup, Extension, find_packages
-from setuptools.command.build_ext import build_ext
-
-import pybind11
-from pybind11.setup_helpers import Pybind11Extension
-
-import distutils.command.build
-
-__version__ = '2.1.10'
-# os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
+__version__ = '2.2.1'
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 class get_pybind_include(object):
-    """Helper class to determine the pybind11 include path
-
-    The purpose of this class is to postpone importing pybind11
-    until it is actually installed, so that the ``get_include()``
-    method can be invoked. """
+    """Helper class to determine the pybind11 include path."""
 
     def __init__(self, user=False):
-        # try:
-        #     import pybind11
-        # except ImportError:
-        #     if subprocess.call([sys.executable, '-m', 'pip', 'install', 'pybind11']):
-        #         raise RuntimeError('pybind11 install failed.')
-
         self.user = user
 
     def __str__(self):
@@ -68,27 +48,28 @@ include_dirs = [
 ]
 
 ext_modules = [
-    # Extension('logs',
-    #     language='c++',
-    #     sources = source_files,
-    #     include_dirs = include_dirs,
-    #     extra_objects=extra_objects
-    #),
-    Pybind11Extension(
-        "inertialsense.logs.log_reader",
-        sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
-        include_dirs = include_dirs,
-        extra_objects=extra_objects
-  ),
+    Extension(
+        'log_reader',
+        sources=[
+            'src/log_reader.cpp',  # Only include the specific source file
+        ],
+        include_dirs=[
+            'include',
+            '../src',
+            '../../src',  # Include any necessary headers from the SDK
+            get_pybind_include(),
+            get_pybind_include(user=True),
+        ] + (['../../src/libusb/libusb'] if platform.system() == 'Windows' else ['/usr/include/libusb-1.0']),
+        extra_link_args=[] if platform.system() == 'Windows' else ['-lusb-1.0'],
+        # Link to the prebuilt static library
+        extra_objects=['../../build/Release/InertialSenseSDK.lib'] if platform.system() == 'Windows' else ['../../build/libInertialSenseSDK.a'],
+        language='c++',
+    ),
 ]
 
-
-# As of Python 3.6, CCompiler has a `has_flag` method.
-# cf http://bugs.python.org/issue26689
 def has_flag(compiler, flagname):
     """Return a boolean indicating whether a flag name is supported on
-    the specified compiler.
-    """
+    the specified compiler."""
     import tempfile
     with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f:
         f.write('int main (int argc, char **argv) { return 0; }')
@@ -98,12 +79,8 @@ def has_flag(compiler, flagname):
             return False
     return True
 
-
 def cpp_flag(compiler):
-    """Return the -std=c++[11/17] compiler flag.
-
-    The c++17 is prefered over c++11 (when it is available).
-    """
+    """Return the -std=c++[11/17] compiler flag."""
     if has_flag(compiler, '-std=c++17'):
         return '-std=c++17'
     elif has_flag(compiler, '-std=c++11'):
@@ -111,14 +88,6 @@ def cpp_flag(compiler):
     else:
         raise RuntimeError('Unsupported compiler -- at least C++11 support '
                            'is needed!')
-
-
-# Override build command
-class BuildCommand(distutils.command.build.build):
-    def initialize_options(self):
-        distutils.command.build.build.initialize_options(self)
-        self.build_base = '/tmp/log_inspector-build'
-
 
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
@@ -136,8 +105,6 @@ class BuildExt(build_ext):
         if ct == 'unix':
             opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
             opts.append(cpp_flag(self.compiler))
-#            if has_flag(self.compiler, '-fvisibility=hidden'):
-#                opts.append('-fvisibility=hidden ')
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
         for ext in self.extensions:
@@ -162,25 +129,18 @@ setup(
 
     install_requires=[
         'allantools<=2019.9',
-        'matplotlib', 
-        'numpy', 
+        'matplotlib',
+        'numpy',
         'pandas',
-        'pybind11>=2.12',
+        'pybind11>=2.2',
         'pyqt5',
         'pyserial',
+        'pyyaml',
         'scipy',
         'simplekml',
-        'tqdm',
-        'pyyaml'],
-
-    ext_modules=ext_modules,
-    extras_require={
-        "dev": [ "pytest>=7.0", "twine>=4.0.2"],
-    },
-
-    setup_requires=['pybind11>=2.12', 'setuptools', 'wheel'],
-
-    # cmdclass={'build': BuildCommand, 'build_ext': BuildExt},
+        'tqdm'
+    ],
+    setup_requires=['pybind11>=2.2'],
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )

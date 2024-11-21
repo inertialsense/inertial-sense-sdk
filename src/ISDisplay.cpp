@@ -765,7 +765,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
             else
             {
                 std::ostringstream oss;
-                oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id));
+                oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id)) << std::endl;
                 str = oss.str();
             }
             break;
@@ -1833,7 +1833,8 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%3d) %s:\n", hdr.id, cISDataMappings::DataName(hdr.id));
+	ptr += SNPRINTF_ID_NAME(hdr.id);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 
 #if DISPLAY_DELTA_TIME==1
     static double lastTime[2] = { 0 };

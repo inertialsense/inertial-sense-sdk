@@ -79,7 +79,7 @@ class SuperNPP():
             thread.join()
 
         # Record list of logs to be processed
-        logListFilename = self.directory+"/test_summary.txt"
+        logListFilename = self.directory+"/test_summary.txt"        
         try:
             os.remove(logListFilename)      # Remove old file
         except OSError:
@@ -132,10 +132,9 @@ class SuperNPP():
                     elif ".raw" in file:
                         logType = "RAW"
 
-                    serNum = int(re.sub('[^0-9]','', file.split("_")[1]));
+                    serNum = int(re.sub('[^0-9]','', file.split("_")[1]))
                     if serNum and (serNum not in serials):
                         serials.append(serNum)
-
         else:
             serials = config_serials
 
