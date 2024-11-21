@@ -5,7 +5,8 @@ import sys
 import subprocess
 import shutil
 from pathlib import Path
-from lib import python_venv
+from build_manager import BuildTestManager
+
 
 sdk_dir = Path(__file__).resolve().parent.parent
 log_inspector_dir = sdk_dir / "python"/ "logInspector/"
@@ -84,6 +85,11 @@ def run_build(args=[]):
     if clean:
         return run_clean()
     else:
+        print("Building IS-SDK")
+        result = BuildTestManager.static_build_cmake("IS_SDK_lib", sdk_dir)
+        if result: 
+            sys.exit(result)
+
         print(f"=== Running make... ({build_type}) ===")
 
         os.chdir(log_inspector_dir.parent)
