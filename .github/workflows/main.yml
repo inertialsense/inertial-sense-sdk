@@ -48,14 +48,16 @@ jobs:
           ./install_gtest.sh
 
       - name: Clean All
-        run: |
-          rm -rf ../cltool/build ../ExampleProjects/build
+        run: ./clean_all.sh
 
       - name: Build SDK
         run: ./build_is_sdk.sh
   
-      - name: Build/Run Unit Tests
-        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests IS-SDK_unit-tests
+      - name: Build Unit Tests
+        run: ./build_unit_tests.sh
+
+      - name: Run Unit Tests
+        run: ./build_unit_tests.sh --nobuild --test
 
       - name: Build cltool
         run: ./build_cltool.sh
@@ -64,7 +66,7 @@ jobs:
         run: ./build_log_inspector.sh
 
       - name: Build SDK Examples
-        run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
+        run: python3 build_manager.py SDK_Examples ../ExampleProjects
 
   ba_windows:
     name: "General Software Windows"
@@ -87,8 +89,11 @@ jobs:
       - name: Clean all
         run: ./clean_all.bat
 
-#      - name: SDK Unit Tests
-#        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
+      - name: Build IS SDK library 
+        run: ./build_is_sdk.bat
+
+      - name: Build Unit Tests
+        run: ./build_unit_tests.bat
 
       - name: Build CLTool
         run: ./build_cltool.bat
@@ -190,7 +195,7 @@ jobs:
         working-directory: ../ROS/ros2_ws # This is outside the scope of git
         shell: bash
 
-    steps:
+    steps:          
       - name: Install libboost
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
@@ -202,6 +207,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      # - name: Install dependencies
+      #   run: |
+      #     /ros_entrypoint.sh /bin/bash -e -c "
+      #     ../../inertial-sense-sdk/scripts/install_python_dependencies.sh
+      #     "
+
+      - name: Build IS SDK library
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          ../../inertial-sense-sdk/scripts/build_is_sdk.sh
+          "
 
       - name: Build ROS2 bridge
         run: |

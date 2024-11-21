@@ -1,44 +1,48 @@
 import os
-import sys
-import subprocess
+import venv
 
-def activate_virtualenv():
+def is_virtual_environment(path):
+    # Check for standard virtual environment files and directories
+    if os.name == 'nt':  # Windows
+        scripts_path = os.path.join(path, 'Scripts')
+        return os.path.isdir(scripts_path) and os.path.isfile(os.path.join(scripts_path, 'activate.bat'))
+    else:  # Unix-like systems
+        bin_path = os.path.join(path, 'bin')
+        return os.path.isdir(bin_path) and os.path.isfile(os.path.join(bin_path, 'activate'))
+
+def create_virtual_environment(path):
+    if os.path.exists(path):
+        print(f"Virtual environment already exists: '{path}'.")
+    else:
+        venv.create(path, with_pip=True)
+        print(f"New virtual environment created: '{path}'.")
+        return path
+
+def find_virtualenv():
     # Determine script directory
-    script_dir = os.path.dirname(os.path.realpath(__file__))
+    script_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
     # Directory search list used to select virtual environment.
     dir_search_list = [
         os.getcwd(),
         script_dir,
-        os.path.join(script_dir, "../../../scripts"),
-        os.path.join(script_dir, "../../scripts"),
-        os.path.join(script_dir, "../scripts"),
-        os.path.join(script_dir, "../is-common/scripts"),
-        os.path.join(script_dir, "../is-common/SDK/scripts"),
-        os.path.join(script_dir, "../SDK/scripts"),
+        os.path.join(script_dir, "../../../scripts"),           # find is-gpx/scripts        from is-gpx/is-common/SDK/scripts
+        os.path.join(script_dir, "../../scripts"),              # find is-gpx/scripts        from is-gpx/is-common/scripts
+        os.path.join(script_dir, "../scripts"),                 # find is-gpx/scripts        from is-gpx/scripts
+        os.path.join(script_dir, "../is-common/scripts"),       # find is-common/scripts     from is-gpx/scripts 
+        os.path.join(script_dir, "../is-common/SDK/scripts"),   # find is-common/SDK/scripts from is-gpx/scripts 
+        os.path.join(script_dir, "../SDK/scripts"),             # find is-common/SDK/scripts from is-gpx/is-common/scripts 
     ]
 
-    # Check if a virtual environment is already activated
-    if os.environ.get("VIRTUAL_ENV"):
-        print("Virtual Environment already activated")
-        print(f"VENV: {os.environ['VIRTUAL_ENV']}")
-        return
-
-    # Search for existing .venv directories and activate the first one found
+    # Search for existing .venv directory and return first one found
     for directory in dir_search_list:
-        venv_activate_path = os.path.join(directory, ".venv", "bin", "activate")
-        if os.path.isfile(venv_activate_path):
-            subprocess.run(f"source {venv_activate_path}", shell=True, executable="/bin/bash")
-            print(f"Activated Virtual Environment at {os.path.realpath(os.path.join(directory, '.venv'))}")
-            return
+        directory = os.path.realpath(os.path.join(directory, ".venv"))
+        if is_virtual_environment(directory):
+            print(f"Found virtual environment: {directory}")
+            return directory
 
-    # If no virtual environment is found, create one in the script directory
-    print(f"No Virtual Environment found, creating one at {os.path.join(script_dir, '.venv')}")
-    venv_dir = os.path.join(script_dir, ".venv")
-    subprocess.run([sys.executable, "-m", "venv", venv_dir])
-    venv_activate_path = os.path.join(venv_dir, "bin", "activate")
-    subprocess.run(f"source {venv_activate_path}", shell=True, executable="/bin/bash")
-    print(f"Activated Virtual Environment at {venv_dir}")
+    # Virtual environment not found.  Create one.
+    return create_virtual_environment(os.path.realpath(os.path.join(script_dir, ".venv")))
 
 if __name__ == "__main__":
-    activate_virtualenv()
+    print(find_virtualenv())

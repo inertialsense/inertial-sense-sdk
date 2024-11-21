@@ -4,23 +4,12 @@ from setuptools.command.build_ext import build_ext
 import sys
 import setuptools
 
-__version__ = '0.0.1'
-# os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
+__version__ = '2.2.1'
 
 class get_pybind_include(object):
-    """Helper class to determine the pybind11 include path
-
-    The purpose of this class is to postpone importing pybind11
-    until it is actually installed, so that the ``get_include()``
-    method can be invoked. """
+    """Helper class to determine the pybind11 include path."""
 
     def __init__(self, user=False):
-        # try:
-        #     import pybind11
-        # except ImportError:
-        #     if subprocess.call([sys.executable, '-m', 'pip', 'install', 'pybind11']):
-        #         raise RuntimeError('pybind11 install failed.')
-
         self.user = user
 
     def __str__(self):
@@ -28,67 +17,28 @@ class get_pybind_include(object):
         return pybind11.get_include(self.user)
 
 ext_modules = [
-    Extension('log_reader',
-        ['src/log_reader.cpp',
-         '../../src/convert_ins.cpp',
-         '../../src/com_manager.c',
-         '../../src/data_sets.c',
-         '../../src/DataChunk.cpp',
-         '../../src/DataCSV.cpp',
-         '../../src/DataJSON.cpp',
-         '../../src/DataKML.cpp',
-         '../../src/DeviceLog.cpp',
-         '../../src/DeviceLogCSV.cpp',
-         '../../src/DeviceLogJSON.cpp',
-         '../../src/DeviceLogKML.cpp',
-         '../../src/DeviceLogRaw.cpp',
-         '../../src/DeviceLogSerial.cpp',
-         '../../src/ihex.c',
-         '../../src/ISComm.c',
-         '../../src/ISDataMappings.cpp',
-         '../../src/ISDisplay.cpp',
-         '../../src/ISEarth.c',
-         '../../src/ISFileManager.cpp',
-         '../../src/ISLogFile.cpp',
-         '../../src/ISLogger.cpp',
-         '../../src/ISLogStats.cpp',
-         '../../src/ISMatrix.c',
-         '../../src/ISPose.c',
-         '../../src/ISSerialPort.cpp',
-         '../../src/ISStream.cpp',
-         '../../src/ISUtilities.cpp',
-         '../../src/linked_list.c',
-         '../../src/message_stats.cpp',
-         '../../src/protocol_nmea.cpp',
-         '../../src/serialPort.c',
-         '../../src/serialPortPlatform.c',
-         '../../src/time_conversion.cpp',
-         '../../src/tinystr.cpp',
-         '../../src/tinyxml.cpp',
-         '../../src/tinyxmlerror.cpp',
-         '../../src/tinyxmlparser.cpp',
-         '../../src/util/md5.cpp',
-         ],
+    Extension(
+        'log_reader',
+        sources=[
+            'src/log_reader.cpp',  # Only include the specific source file
+        ],
         include_dirs=[
-            # Path to pybind11 headers
             'include',
             '../src',
-            '../../src',
-            '../../src/libusb/libusb',
+            '../../src',  # Include any necessary headers from the SDK
             get_pybind_include(),
-            get_pybind_include(user=True)
-        ],
+            get_pybind_include(user=True),
+        ] + (['../../src/libusb/libusb'] if platform.system() == 'Windows' else ['/usr/include/libusb-1.0']),
+        extra_link_args=[] if platform.system() == 'Windows' else ['-lusb-1.0'],
+        # Link to the prebuilt static library
+        extra_objects=['../../build/Release/InertialSenseSDK.lib'] if platform.system() == 'Windows' else ['../../build/libInertialSenseSDK.a'],
         language='c++',
     ),
 ]
 
-
-# As of Python 3.6, CCompiler has a `has_flag` method.
-# cf http://bugs.python.org/issue26689
 def has_flag(compiler, flagname):
     """Return a boolean indicating whether a flag name is supported on
-    the specified compiler.
-    """
+    the specified compiler."""
     import tempfile
     with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f:
         f.write('int main (int argc, char **argv) { return 0; }')
@@ -98,12 +48,8 @@ def has_flag(compiler, flagname):
             return False
     return True
 
-
 def cpp_flag(compiler):
-    """Return the -std=c++[11/17] compiler flag.
-
-    The c++17 is prefered over c++11 (when it is available).
-    """
+    """Return the -std=c++[11/17] compiler flag."""
     if has_flag(compiler, '-std=c++17'):
         return '-std=c++17'
     elif has_flag(compiler, '-std=c++11'):
@@ -111,7 +57,6 @@ def cpp_flag(compiler):
     else:
         raise RuntimeError('Unsupported compiler -- at least C++11 support '
                            'is needed!')
-
 
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
@@ -129,8 +74,6 @@ class BuildExt(build_ext):
         if ct == 'unix':
             opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
             opts.append(cpp_flag(self.compiler))
-#            if has_flag(self.compiler, '-fvisibility=hidden'):
-#                opts.append('-fvisibility=hidden ')
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
         for ext in self.extensions:
@@ -147,16 +90,17 @@ setup(
     ext_modules=ext_modules,
     install_requires=[
         'allantools<=2019.9',
-        'matplotlib', 
-        'numpy', 
+        'matplotlib',
+        'numpy',
         'pandas',
-        'pybind11>=2.2', 
-        'pyqt5', 
-        'pyserial', 
-        'pyyaml', 
-        'scipy', 
+        'pybind11>=2.2',
+        'pyqt5',
+        'pyserial',
+        'pyyaml',
+        'scipy',
         'simplekml',
-        'tqdm'],
+        'tqdm'
+    ],
     setup_requires=['pybind11>=2.2'],
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,

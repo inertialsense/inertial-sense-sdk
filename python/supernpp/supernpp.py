@@ -110,7 +110,7 @@ class SuperNPP():
             ### Compute RMS ##################################################
         with open(logListFilename, "w") as f:
             f.write("\n".join(results))
-            f.close()
+
         print('-------------------------------------------------------------')
         print(os.path.basename(logListFilename))
         self.print_file_contents(logListFilename)

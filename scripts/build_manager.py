@@ -4,25 +4,23 @@ import shutil
 import sys
 import subprocess
 import time
-from colorama import Fore, Style, init
 from pathlib import Path
 sdk_scripts_dir = Path(__file__).resolve().parent
+imx_scripts_dir = sdk_scripts_dir.parent.parent
 sys.path.append(sdk_scripts_dir)
-from lib import python_venv
 
 class BuildTestManager:
-    def __init__(self, release_name=None, release_dir=None):
-        python_venv.activate_virtualenv()
+    def __init__(self):
         self.is_windows = os.name == 'nt' or platform.system() == 'Windows'
-
         self.generate_release = False
-        self.release_name = release_name
-        self.release_dir = release_dir
-        self.project_name = ""
+        self.release_name = None
+        self.release_dir = None
+        self.project_name = None
         self.project_dir = None
         self.build_success = []
         self.build_failure = []
-        self.test_name = ""
+        self.test_name = None
+        self.exec_name = None
         self.test_success = []
         self.test_failure = []
         self.build_type = "Release"
@@ -32,27 +30,56 @@ class BuildTestManager:
 
         # Parse command-line arguments
         self.args = sys.argv[1:]
+        no_dash_args = []
         for arg in self.args:
-            if arg in ("-b", "--build"):
+            if   arg in ("-b", "--build"):
                 self.run_build = True
             elif arg in ("-c", "--clean"):
                 self.run_clean = True
                 self.run_test = False
             elif arg in ("-d", "--debug"):
                 self.build_type = "Debug"
-            elif arg in ("-t", "--test"):
+            elif arg in ("-h", "--help"):
+                self.print_help_menu()
+                sys.exit(0)
+            elif arg in ("-n", "--nobuild"):
+                self.run_build = False
+            elif arg in ("-t", "--test", "--tests"):
                 self.run_test = True
             elif arg in ("-r", "--release"):
                 self.generate_release = True
-        if 0 < len(self.args):
-            self.project_name = self.args[0]
-        if 1 < len(self.args):
-            self.project_dir = self.args[1]
+            else:
+                no_dash_args.append(arg)
 
-        # Initialize colorama
-        init(autoreset=True)
+        # Parse project name and directory
+        if 0 < len(no_dash_args):
+            self.project_name = no_dash_args[0]
+        if 1 < len(no_dash_args):
+            self.project_dir = os.path.abspath(no_dash_args[1])
+            if not os.path.exists(self.project_dir):
+                self.project_dir = sdk_scripts_dir / no_dash_args[1]
+                if not os.path.exists(self.project_dir):
+                    self.project_dir = imx_scripts_dir / no_dash_args[1]
+                    if not os.path.exists(self.project_dir):
+                        raise TypeError(f"Project directory not found: {type(self.project_dir).__name__}.")
+        if 2 < len(no_dash_args):
+            self.exec_name = no_dash_args[2]
 
         self.print_release_info()
+
+    def set_release_info(self, release_name=None, release_dir=None):
+        self.release_name = release_name
+        self.release_dir = release_dir
+
+    def print_help_menu(self):
+        print("Help Menu:")
+        print(" -b --build     Enable build (default on)")
+        print(" -c --clean     Clean build")
+        print(" -d --debug     Enable debug build")
+        print(" -h --help      Show this menu")
+        print(" -n --nobuild   Disable build")
+        print(" -t --test      Run tests")
+        print(" -r --release   Generate software release")
 
     def print_release_info(self):
         if self.generate_release:
@@ -63,13 +90,17 @@ class BuildTestManager:
             print("")
             time.sleep(1)
 
-    def print_red(self, str): print(Fore.RED + str)
-    def print_grn(self, str): print(Fore.GREEN + str)
-    def print_blu(self, str): print(Fore.BLUE + str)
-    def print_cyn(self, str): print(Fore.CYAN + str)
-    def print_ylw(self, str): print(Fore.YELLOW + str)
-    # print(Style.BRIGHT + "This is bright text")
-    # print(Style.RESET_ALL + "Back to normal text")
+    def print_red(self, str): print(f"\033[31m{str}\033[0m")            # ANSI Red
+    def print_grn(self, str): print(f"\033[32m{str}\033[0m")            # ANSI Green
+    def print_blu(self, str): print(f"\033[34m{str}\033[0m")            # ANSI Blue
+    def print_cyn(self, str): print(f"\033[36m{str}\033[0m")            # ANSI Cyan
+    def print_ylw(self, str): print(f"\033[33m{str}\033[0m")            # ANSI Yellow
+
+    def print_bright_red(self, str): print(f"\033[1;31m{str}\033[0m")   # ANSI Bold Red
+    def print_bright_grn(self, str): print(f"\033[1;32m{str}\033[0m")   # ANSI Bold Green
+    def print_bright_blu(self, str): print(f"\033[1;34m{str}\033[0m")   # ANSI Bold Blue
+    def print_bright_cyn(self, str): print(f"\033[1;36m{str}\033[0m")   # ANSI Bold Cyan
+    def print_bright_ylw(self, str): print(f"\033[1;33m{str}\033[0m")   # ANSI Bold Yellow
 
     def build_header(self, name):
         self.project_name = name
@@ -132,10 +163,9 @@ class BuildTestManager:
 
     def build_callback(self, project_name, callback):
         result = 0
-        if self.run_build:
-            self.build_header(project_name)
-            result = callback(self.args)
-            self.build_footer(result)
+        self.build_header(project_name)
+        result = callback(self.args)
+        self.build_footer(result)
         return result
     
     def test_callback(self, project_name, callback):
@@ -176,18 +206,21 @@ class BuildTestManager:
         return result
     
     @staticmethod
-    def static_build_cmake(project_name, project_dir, build_type, clean):
+    def static_build_cmake(project_name, project_dir, build_type="Release", clean=False):
         result = 0
         if clean:
             build_dir = project_dir / "build"
+            print(f"=== Running make clean... ===")
             if os.path.exists(build_dir):
                 shutil.rmtree(build_dir)
 
         else:   # Build process
             print(f"=== Running make... ({build_type}) ===")
             try:
+                num_proc = os.cpu_count()
+                num_proc = int(max(num_proc - num_proc/10, 6))
                 subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
-                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{os.cpu_count()-4}"], cwd=str(project_dir))
+                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
             except subprocess.CalledProcessError as e:
                 print(f"Error building {project_name}!")
                 result = e.returncode
@@ -196,15 +229,34 @@ class BuildTestManager:
     def test_exec(self, test_name, test_dir, exec_name=""):
         if not self.run_test:
             return
-        test_dir = test_dir / "build"
-        if exec_name == "":
+        test_dir = str(test_dir) + "/build"
+        if not exec_name:
             exec_name = test_name
-        if not self.is_windows:
+        if self.is_windows:
+            test_dir = test_dir + "/Release"
+            exec_name = exec_name + ".exe"
+        else:
             exec_name = "./" + exec_name
+
+        # Normalize paths
+        test_dir = os.path.normpath(test_dir)
+        exec_path = os.path.join(test_dir, exec_name)
+        
+        # Debug prints
+        print(f"test_dir: {test_dir}")
+        print(f"exec_name: {exec_name}")
+        print(f"exec_path: {exec_path}")
+        
+        # Check if paths exist
+        if not os.path.isdir(test_dir):
+            raise FileNotFoundError(f"Directory not found: {test_dir}")
+        if not os.path.isfile(exec_path):
+            raise FileNotFoundError(f"Executable not found: {exec_path}")
+
         self.test_header(test_name)
         result = 0
         try:
-            subprocess.check_call(exec_name, cwd=str(test_dir))
+            subprocess.check_call(exec_path, cwd=test_dir)
         except subprocess.CalledProcessError as e:
             print(f"Error building {test_name}!")
             result = e.returncode
@@ -248,18 +300,18 @@ class BuildTestManager:
     def run(self):
 
         # Execute build and/or test based on flags
-        success = True
+        result = 0
         if self.run_build:
-            success = self.build_cmake(self.project_name, self.project_dir)
-            if not success:
-                sys.exit(1)
+            result = self.build_cmake(self.project_name, self.project_dir)
+            if result:
+                sys.exit(result)
 
-        if self.run_test and success:
-            success = self.test_cmake()
-            if not success:
-                sys.exit(1)
+        if self.run_test:
+            result = self.test_exec(self.project_name, self.project_dir, self.exec_name)
+            if result:
+                sys.exit(result)
 
-        sys.exit(0 if success else 1)
+        sys.exit(0)
 
 if __name__ == "__main__":
     bm = BuildTestManager()
