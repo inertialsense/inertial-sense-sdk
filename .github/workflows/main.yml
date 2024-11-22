@@ -163,9 +163,9 @@ jobs:
           ./install_python_dependencies.sh
           ./install_gtest.sh
 
-      - name: Build IS-SDK library
-        working-directory: scripts
-        run: ./build_is_sdk.sh
+      # - name: Build IS-SDK library
+      #   working-directory: scripts
+      #   run: ./build_is_sdk.sh
             
       - name: Setup ROS environment
         run: |
@@ -260,11 +260,11 @@ jobs:
           chown -R 1003:1003 ../../
           "
 
-      - name: Build IS SDK library
-        run: |
-          /ros_entrypoint.sh /bin/bash -e -c "
-          ../../inertial-sense-sdk/scripts/build_is_sdk.sh
-          "
+      # - name: Build IS SDK library
+      #   run: |
+      #     /ros_entrypoint.sh /bin/bash -e -c "
+      #     ../../inertial-sense-sdk/scripts/build_is_sdk.sh
+      #     "
 
       - name: Build ROS2 bridge
         run: |
