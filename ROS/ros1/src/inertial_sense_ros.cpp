@@ -2273,21 +2273,24 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
-    port_handle_t port = IS_.SerialPort();
+    std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
 
-    while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
+    for (const port_handle_t& port : ports) 
     {
-        // Search comm buffer for valid packets
-        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
+        while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
         {
-            ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
-            if (msg->insStatus & 0x00400000)
+            // Search comm buffer for valid packets
+            if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
             {
-                res.success = true;
-                res.message = "Successfully initiated mag recalibration.";
-                return true;
+                ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
+                if (msg->insStatus & 0x00400000)
+                {
+                    res.success = true;
+                    res.message = "Successfully initiated mag recalibration.";
+                    return true;
+                }
             }
         }
     }
@@ -2304,21 +2307,24 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Req
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
-    port_handle_t port = IS_.SerialPort();
+    std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
 
-    while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
+    for (const port_handle_t& port : ports) 
     {
-        // Search comm buffer for valid packets
-        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
+        while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
         {
-            ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
-            if (msg->insStatus & 0x00400000)
+            // Search comm buffer for valid packets
+            if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
             {
-                res.success = true;
-                res.message = "Successfully initiated mag recalibration.";
-                return true;
+                ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
+                if (msg->insStatus & 0x00400000)
+                {
+                    res.success = true;
+                    res.message = "Successfully initiated mag recalibration.";
+                    return true;
+                }
             }
         }
     }
