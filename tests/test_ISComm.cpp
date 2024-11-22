@@ -51,7 +51,7 @@ typedef struct
         dev_info_t      devInfo;
         nvm_flash_cfg_t nvmFlashCfg;
         nmea_msgs_t     nmeaMsgs;
-    }                   msgs = { 0 };
+    }                   msgs;
 
     // Used to simulate serial ports
     ring_buf_t          portRxBuf;
