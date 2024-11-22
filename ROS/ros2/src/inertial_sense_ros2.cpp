@@ -2347,7 +2347,7 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Requ
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
     std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
@@ -2381,7 +2381,7 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
     std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;

@@ -2272,7 +2272,7 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &
     // FIXME: Not sure what is happening here, but its incorrect post-port_handle_t refactor
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
     std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
@@ -2306,7 +2306,7 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Req
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
     std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
