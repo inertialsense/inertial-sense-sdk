@@ -2388,7 +2388,7 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger
 
     for (const port_handle_t& port : ports) 
     {
-        while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
+        while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
         {
             // Search comm buffer for valid packets
             if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
