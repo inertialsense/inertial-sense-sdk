@@ -48,14 +48,16 @@ jobs:
           ./install_gtest.sh
 
       - name: Clean All
-        run: |
-          rm -rf ../cltool/build ../ExampleProjects/build
+        run: ./clean_all.sh
 
       - name: Build SDK
         run: ./build_is_sdk.sh
   
-      - name: Build/Run Unit Tests
-        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests IS-SDK_unit-tests
+      - name: Build Unit Tests
+        run: ./build_unit_tests.sh
+
+      - name: Run Unit Tests
+        run: ./build_unit_tests.sh --nobuild --test
 
       - name: Build cltool
         run: ./build_cltool.sh
@@ -66,7 +68,7 @@ jobs:
           ./build_log_inspector.sh
 
       - name: Build SDK Examples
-        run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
+        run: python3 build_manager.py SDK_Examples ../ExampleProjects
 
   ba_windows:
     name: "General Software Windows"
@@ -89,11 +91,11 @@ jobs:
       - name: Clean all
         run: ./clean_all.bat
 
-      - name: Build SDK
+      - name: Build IS SDK library 
         run: ./build_is_sdk.bat
 
-      # - name: SDK Unit Tests
-      #   run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
+      - name: Build Unit Tests
+        run: ./build_unit_tests.bat
 
       - name: Build CLTool
         run: ./build_cltool.bat
@@ -104,7 +106,7 @@ jobs:
       - name: Build SDK Examples
         run: ./build_sdk_examples.bat
 
-  ros-bridge-tests:
+  ros1-bridge-tests:
     name: "ROS1 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker, focal]
     # if: false  # disable this job
@@ -158,8 +160,9 @@ jobs:
         run: |
           apt-get update && apt-get -y install python3-pip python3-venv python3-git python3-semver
           ./install_sdk_dependencies.sh
+          ./install_python_dependencies.sh
           ./install_gtest.sh
-  
+            
       - name: Setup ROS environment
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
@@ -248,6 +251,7 @@ jobs:
           /ros_entrypoint.sh /bin/bash -e -c "
           cd ../../inertial-sense-sdk/scripts
           ./install_sdk_dependencies.sh
+          ./install_python_dependencies.sh
           ./install_gtest.sh
           chown -R 1003:1003 ../../
           "

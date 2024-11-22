@@ -2095,36 +2095,39 @@ enum GRMC_BIT_POS{
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
 #define GRMC_PRESET_GPX_DEV_INFO_PERIOD_MS      1000
+#define GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS  1000
+#define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS  1000
 #define GRMC_PRESET_GPX_RTOS_INFO_PERIOD_MS     500
 #define GRMC_PRESET_GPX_STATUS_PERIOD_MS        500
 #define GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS   500
-#define GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS  1000
-#define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS  1000
 #define GRMC_PRESET_GPX_PORT_MON_PERIOD_MS      500
 
-#define GRMC_PRESET_GPX_IMX             (GRMC_BITS_PRESET \
+#define GRMC_PRESET_GPX_BASE            (GRMC_BITS_PRESET \
                                         /*| GRMC_BITS_DEV_INFO*/ \
                                         /*| GRMC_BITS_RTOS_INFO*/ \
                                         | GRMC_BITS_STATUS \
-                                        /*| GRMC_BITS_DEBUG_ARRAY*/ \
-                                        | GRMC_BITS_GPS1_POS \
-                                        | GRMC_BITS_GPS2_POS \
+                                        /*| GRMC_BITS_DEBUG_ARRAY*/)
+
+#define GRMC_PRESET_GPX_GPS1            (GRMC_BITS_GPS1_POS \
                                         | GRMC_BITS_GPS1_VEL \
-                                        | GRMC_BITS_GPS2_VEL \
                                         | GRMC_BITS_GPS1_SAT \
-                                        | GRMC_BITS_GPS2_SAT \
                                         | GRMC_BITS_GPS1_SIG \
-                                        | GRMC_BITS_GPS2_SIG \
                                         | GRMC_BITS_GPS1_VERSION \
+                                        /*| GRMC_BITS_GPS1_RTK_POS*/ \
+                                        | GRMC_BITS_GPS1_RAW)
+
+#define GRMC_PRESET_GPX_GPS2            (GRMC_BITS_GPS2_POS \
+                                        | GRMC_BITS_GPS2_VEL \
+                                        | GRMC_BITS_GPS2_SAT \
+                                        | GRMC_BITS_GPS2_SIG \
                                         | GRMC_BITS_GPS2_VERSION \
-                                        | GRMC_BITS_GPS1_RTK_POS \
-                                        | GRMC_BITS_GPS1_RTK_POS_REL\
-                                        | GRMC_BIT_POS_GPS1_RTK_POS_MISC \
+                                        | GRMC_BITS_GPS2_RAW)
+
+#define GRMC_PRESET_GPX_IMX		        ( GRMC_PRESET_GPX_BASE\
+                                        | GRMC_PRESET_GPX_GPS1 \
+                                        | GRMC_PRESET_GPX_GPS2 \
                                         | GRMC_BITS_GPS2_RTK_CMP_REL \
-                                        | GRMC_BITS_GPS2_RTK_CMP_MISC \
-                                        | GRMC_BITS_GPS1_RAW \
-                                        | GRMC_BITS_GPS2_RAW \
-                                        | GRMC_BITS_GPS_BASE_RAW)
+                                        | GRMC_BITS_GPS2_RTK_CMP_MISC)
 
 #define GRMC_PRESET_GPX_IMX_RTK_DBG     (GRMC_PRESET_GPX_IMX | GRMC_BITS_DID_RTK_DEBUG)
 

@@ -65,7 +65,7 @@ class InertialSense;
 
 typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port);
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, port_handle_t port);
-typedef std::function<int(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+typedef std::function<void(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 
 /**
 * Inertial Sense C++ interface

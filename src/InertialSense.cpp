@@ -975,8 +975,10 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
                 flashCfg.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
             }
 
+#if PRINT_DEBUG
             const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(DID_FLASH_CONFIG, offset);
             DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d (%s)\n", size, offset, (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>"));
+#endif
             int fail = comManagerSendData(device->port, head, DID_FLASH_CONFIG, size, offset);
             failure = failure || fail;
             device->flashCfgUploadTimeMs = current_timeMs();                // non-zero indicates upload in progress

@@ -1,10 +1,7 @@
 import platform
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
 import os.path
 import sys
 import glob
-
 import setuptools
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
@@ -14,7 +11,7 @@ from pybind11.setup_helpers import Pybind11Extension
 
 import distutils.command.build
 
-__version__ = '2.1.10'
+__version__ = '2.2.1'
 # os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
 
 with open("README.md", "r") as fh:
@@ -53,7 +50,7 @@ library_dirs = []
 if sys.platform == 'win32':
     extra_objects = ['..\\build\\Release\\InertialSenseSDK.lib']
 else: # POSIX
-    extra_objects = ['{}/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
+    extra_objects = ['{}/build/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
 
 sdk_path = os.path.abspath(os.path.curdir + '/..')
 
@@ -63,8 +60,6 @@ include_dirs = [
     'inertialsense/logs/include',
     sdk_path + '/src',
     sdk_path + '/src/libusb/libusb',
-    # get_pybind_include(),
-    # get_pybind_include(user=True)
 ]
 
 ext_modules = [
@@ -79,7 +74,7 @@ ext_modules = [
         sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
         include_dirs = include_dirs,
         extra_objects=extra_objects
-  ),
+    ),
 ]
 
 
@@ -162,8 +157,8 @@ setup(
 
     install_requires=[
         'allantools<=2019.9',
-        'matplotlib', 
-        'numpy', 
+        'matplotlib',
+        'numpy',
         'pandas',
         'pybind11>=2.12',
         'pyqt5',
