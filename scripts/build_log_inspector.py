@@ -89,7 +89,6 @@ def run_build(args=[]):
             sys.exit(result)
 
         print(f"=== Running make... ({build_type}) ===")
-        # os.chdir(python_dir.parent)
         print(pip_install_command)
         build_process = subprocess.run(pip_install_command, shell=True)
         if build_process.returncode:
