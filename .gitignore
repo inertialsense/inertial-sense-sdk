@@ -16,6 +16,11 @@
 .venv
 .idea
 
+/CMakeCache.txt
+/Makefile
+/cmake_install.cmake
+/libInertialSenseSDK.a
+
 # Ignore all directories anywhere in the repo
 cmake-build-*/
 .cmake/
