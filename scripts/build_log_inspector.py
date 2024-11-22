@@ -5,10 +5,11 @@ import sys
 import subprocess
 import shutil
 from pathlib import Path
-from lib import python_venv
+from build_manager import BuildTestManager
+
 
 sdk_dir = Path(__file__).resolve().parent.parent
-log_inspector_dir = sdk_dir / "python"
+python_dir = sdk_dir / "python"
 is_windows = os.name == 'nt' or platform.system() == 'Windows'
 if is_windows:
     python_exec = "python"
@@ -34,8 +35,7 @@ def run_setup_command(command):
         return e.returncode
 
 def run_clean():
-    global log_inspector_dir
-    os.chdir(log_inspector_dir)
+    os.chdir(python_dir)
 
     print("=== Running make clean... ===")
     result = run_setup_command("clean")
@@ -75,8 +75,7 @@ def run_build(args=[]):
         elif arg in ("-d", "--debug"):
             build_type = "Debug"
 
-    global log_inspector_dir
-    pip_install_command = f"pip3 install {log_inspector_dir}"
+    pip_install_command = f"pip3 install {python_dir}"
     version_info = sys.version_info
     if version_info.major > 3 or (version_info.major == 3 and version_info.minor >= 11):
         pip_install_command += " --break-system-packages"
@@ -84,35 +83,33 @@ def run_build(args=[]):
     if clean:
         return run_clean()
     else:
-        print(f"=== Running make... ({build_type}) ===")
+        print("Building IS-SDK")
+        result = BuildTestManager.static_build_cmake("IS_SDK_lib", sdk_dir)
+        if result: 
+            sys.exit(result)
 
-        os.chdir(log_inspector_dir.parent)
+        print(f"=== Running make... ({build_type}) ===")
+        # os.chdir(python_dir.parent)
         print(pip_install_command)
         build_process = subprocess.run(pip_install_command, shell=True)
         if build_process.returncode:
             print("pip install failed!")
             return build_process.returncode
 
-        os.chdir(log_inspector_dir)
-        # return run_setup_command("build_ext --inplace")
-        return run_setup_command("bdist_wheel")
+        os.chdir(python_dir)
+        return run_setup_command("build_ext --inplace")
+        # return run_setup_command("bdist_wheel")
 
 def main():
     clean = False
     debug = False
     build_type = "Release"
-
-    for arg in sys.argv[1:]:
-        if arg in ("-c", "--clean"):
-            clean = True
-        elif arg in ("-d", "--debug"):
-            debug = True
-            build_type = "Debug"
+    args = sys.argv[1:]
 
     if clean:
         run_clean()
     else:
-        run_build(build_type)
+        run_build(args)
 
 if __name__ == "__main__":
     main()

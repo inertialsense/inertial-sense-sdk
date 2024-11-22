@@ -206,7 +206,7 @@ class BuildTestManager:
         return result
     
     @staticmethod
-    def static_build_cmake(project_name, project_dir, build_type, clean):
+    def static_build_cmake(project_name, project_dir, build_type="Release", clean=False):
         result = 0
         if clean:
             build_dir = project_dir / "build"
