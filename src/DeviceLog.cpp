@@ -88,6 +88,21 @@ bool cDeviceLog::CloseAllFiles()
     return true;
 }
 
+void cDeviceLog::ResetToStart()
+{
+    CloseAllFiles();
+
+    if (m_writeMode)
+    {
+        InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
+    }
+    else
+    {
+        InitDeviceForReading();
+    }
+    return;
+}
+
 bool cDeviceLog::OpenWithSystemApp()
 {
 

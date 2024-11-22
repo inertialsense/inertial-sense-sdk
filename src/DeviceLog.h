@@ -48,6 +48,8 @@ public:
 
     virtual void InitDeviceForReading();
 
+    virtual void ResetToStart();
+
     virtual bool CloseAllFiles();
 
     virtual bool FlushToFile() { return true; };

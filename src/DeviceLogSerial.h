@@ -22,39 +22,30 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 
 
-class cDeviceLogSerial : public cDeviceLog {
+class cDeviceLogSerial : public cDeviceLog 
+{
 public:
     cDeviceLogSerial();
-
     cDeviceLogSerial(const ISDevice *dev);
-
     cDeviceLogSerial(uint16_t hdwId, uint32_t serialNo);
-
     cDeviceLogSerial(port_handle_t port);
 
     void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
-
+    void InitDeviceForReading() OVERRIDE;
     bool CloseAllFiles() OVERRIDE;
-
     bool FlushToFile() OVERRIDE;
-
     bool SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, protocol_type_t ptype = _PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;
-
     p_data_buf_t *ReadData() OVERRIDE;
 
     void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
-
     std::string LogFileExtention() OVERRIDE { return std::string(".dat"); }
-
     void Flush() OVERRIDE;
 
     cDataChunk m_chunk;
 
 private:
     p_data_buf_t *ReadDataFromChunk();
-
     bool ReadChunkFromFile();
-
     bool WriteChunkToFile();
 };
 

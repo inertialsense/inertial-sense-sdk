@@ -43,7 +43,6 @@ void cDeviceLogKML::InitDeviceForWriting(const std::string& timestamp, const std
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
-
 bool cDeviceLogKML::CloseAllFiles()
 {
     cDeviceLog::CloseAllFiles();

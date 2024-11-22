@@ -56,6 +56,11 @@ void cDeviceLogSerial::InitDeviceForWriting(const std::string& timestamp, const 
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
+void cDeviceLogSerial::InitDeviceForReading()
+{
+    m_chunk.Clear();
+    cDeviceLog::InitDeviceForReading();
+}
 
 bool cDeviceLogSerial::CloseAllFiles() {
     cDeviceLog::CloseAllFiles();
@@ -68,7 +73,6 @@ bool cDeviceLogSerial::CloseAllFiles() {
 
     return true;
 }
-
 
 bool cDeviceLogSerial::FlushToFile() {
     cDeviceLog::FlushToFile();

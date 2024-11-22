@@ -31,8 +31,8 @@ public:
     cDeviceLogRaw(const ISDevice* dev);
     cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo);
 
-
     void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
+    void InitDeviceForReading() OVERRIDE;
     bool CloseAllFiles() OVERRIDE;
     bool FlushToFile() OVERRIDE;
     bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;

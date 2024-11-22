@@ -3334,7 +3334,7 @@ typedef struct PACKED
     uint32_t                lastLlaWeek;
 
     /** Distance between current and last LLA that triggers an update of lastLla  */
-    float                    lastLlaUpdateDistance;
+    float                   lastLlaUpdateDistance;
 
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t                ioConfig;
