@@ -160,6 +160,7 @@ jobs:
         run: |
           apt-get update && apt-get -y install python3-pip python3-venv python3-git python3-semver
           ./install_sdk_dependencies.sh
+          ./install_python_dependencies.sh
           ./install_gtest.sh
 
       - name: Build IS-SDK library
@@ -254,6 +255,7 @@ jobs:
           /ros_entrypoint.sh /bin/bash -e -c "
           cd ../../inertial-sense-sdk/scripts
           ./install_sdk_dependencies.sh
+          ./install_python_dependencies.sh
           ./install_gtest.sh
           chown -R 1003:1003 ../../
           "
