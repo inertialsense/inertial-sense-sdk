@@ -23,44 +23,44 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-cISSerialPort::cISSerialPort(serial_port_t* serial) : cISStream()
+cISSerialPort::cISSerialPort(port_handle_t port_) : cISStream()
 {
-	if (serial != NULLPTR)
-	{
-		m_serial = *serial;
-	}
-	else
-	{
-		serialPortPlatformInit(&m_serial);
-	}
-	Close();
+    if (port_ != NULLPTR)
+    {
+        port = port_;
+    }
+    else
+    {
+        serialPortPlatformInit(port);
+    }
+    Close();
 }
 
 cISSerialPort::~cISSerialPort()
 {
-	Close();
+    Close();
 }
 
 bool cISSerialPort::Open(const std::string& portName, int baudRate, int timeout, bool blocking)
 {
-	m_timeout = timeout;
-	m_blocking = blocking;
-    return (serialPortOpen(&m_serial, portName.c_str(), baudRate, (int)m_blocking) != 0);
+    m_timeout = timeout;
+    m_blocking = blocking;
+    return (serialPortOpen(port, portName.c_str(), baudRate, (int)m_blocking) != 0);
 }
 
 int cISSerialPort::Close()
 {
-	return serialPortClose(&m_serial);
+    return serialPortClose(port);
 }
 
 int cISSerialPort::Read(void* data, int dataLength)
 {
-	return serialPortReadTimeout(&m_serial, (unsigned char*)data, dataLength, m_timeout);
+    return serialPortReadTimeout(port, (unsigned char*)data, dataLength, m_timeout);
 }
 
 int cISSerialPort::Write(const void* data, int dataLength)
 {
-	return serialPortWrite(&m_serial, (const unsigned char*)data, dataLength);
+    return serialPortWrite(port, (const unsigned char*)data, dataLength);
 }
 
 
@@ -75,7 +75,7 @@ static string get_driver(const string& tty)
     devicedir += "/device";
     
     if (lstat(devicedir.c_str(), &st)==0 && S_ISLNK(st.st_mode)) 
-	{	// Stat the devicedir and handle it if it is a symlink
+    {   // Stat the devicedir and handle it if it is a symlink
         char buffer[1024];
         memset(buffer, 0, sizeof(buffer));
 
@@ -83,30 +83,30 @@ static string get_driver(const string& tty)
         devicedir += "/driver";
 
         if (readlink(devicedir.c_str(), buffer, sizeof(buffer)) > 0)
-		{
+        {
             return basename(buffer);
-		}
+        }
     }
     return "";
 }
 
-static void register_comport( vector<string>& comList, vector<string>& comList8250, const string& dir) 
+static void register_comport(vector<string>& comList, vector<string>& comList8250, const string& dir) 
 {
     // Get the driver the device is using
     string driver = get_driver(dir);
     
     if (driver.size() > 0) 
-	{	// Skip devices without a driver
+    {   // Skip devices without a driver
         string devfile = string("/dev/") + basename(dir.c_str());
 
         if (driver == "serial8250") 
-		{	// Put serial8250-devices in a seperate list
+        {   // Put serial8250-devices in a seperate list
             comList8250.push_back(devfile);
         }
         else if (driver != "port")
         {
             comList.push_back(devfile);
-		}
+        }
     }
 }
 
@@ -117,17 +117,17 @@ static void probe_serial8250_comports(vector<string>& comList, vector<string> co
 
     // Iterate over all serial8250-devices
     while (it != comList8250.end()) 
-	{   // Try to open the device
+    {   // Try to open the device
         int fd = open((*it).c_str(), O_RDWR | O_NONBLOCK | O_NOCTTY);
 
         if (fd >= 0) 
-		{   // Get serial_info
+        {   // Get serial_info
             if (ioctl(fd, TIOCGSERIAL, &serinfo)==0) 
-			{   
+            {   
                 if (serinfo.type != PORT_UNKNOWN)
-				{	// device type is no PORT_UNKNOWN we accept the port
+                {   // device type is no PORT_UNKNOWN we accept the port
                     comList.push_back(*it);
-				}
+                }
             }
             close(fd);
         }
@@ -145,23 +145,23 @@ static void probe_serial8250_comports(vector<string>& comList, vector<string> co
  */
 void cISSerialPort::GetComPorts(vector<string>& ports)
 {
-	ports.clear();
+    ports.clear();
 
 #if PLATFORM_IS_WINDOWS
 
-	char comPort[64];
-	char targetPath[256];
+    char comPort[64];
+    char targetPath[256];
 
     for (int i = 0; i < 256; i++) // checking ports from COM0 to COM255
-	{
-		snprintf(comPort, sizeof(comPort), "COM%d", i);
-		if (QueryDosDeviceA(comPort, targetPath, 256))
-		{
-			ports.push_back(comPort);
-		}
-	}
+    {
+        snprintf(comPort, sizeof(comPort), "COM%d", i);
+        if (QueryDosDeviceA(comPort, targetPath, 256))
+        {
+            ports.push_back(comPort);
+        }
+    }
 
-#else	// Linux
+#else   // Linux
 
     struct dirent **namelist;
     vector<string> comList8250;
@@ -170,15 +170,15 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
     // Scan through /sys/class/tty - it contains all tty-devices in the system
     int n = scandir(sysdir, &namelist, NULL, NULL);
     if (n < 0)
-	{
+    {
         perror("scandir");
-	}
+    }
     else 
-	{
+    {
         while (n--) 
-		{
+        {
             if (strcmp(namelist[n]->d_name,"..") && strcmp(namelist[n]->d_name,".")) 
-			{   // Construct full absolute file path
+            {   // Construct full absolute file path
                 string devicedir = sysdir;
                 devicedir += namelist[n]->d_name;
 
@@ -197,9 +197,9 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 #endif
 
 #if 0
-	cout << "Available ports: " << endl;
+    cout << "Available ports: " << endl;
     for (int i = 0; i < ports.size(); i++)
-	{
+    {
         cout << ports[i] << endl;
     }
 #endif
@@ -207,5 +207,5 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 
 std::string cISSerialPort::ConnectionInfo()
 {
-	return string(m_serial.port);
+    return string(((serial_port_t*)port)->portName);
 }

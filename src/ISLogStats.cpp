@@ -69,10 +69,8 @@ cLogStats::cLogStats()
 
 void cLogStats::Clear()
 {
-    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it)
+    for (auto& [ptype, msg] : msgs)
     {
-        protocol_type_t ptype = it->first;
-        sLogStatPType& msg = it->second;
         msg.count = 0;
         msg.errors = 0;
         for (uint32_t id=0; id < DID_COUNT; id++)

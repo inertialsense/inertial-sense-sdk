@@ -65,6 +65,156 @@ namespace ISFileManager {
     #endif
     }
 
+    /**
+     * Populates a vector of file_info_t for all files matching regexPattern in the named directory, optionally searching recursively.
+     * @param directory
+     * @param recursive
+     * @param regexPattern
+     * @param files
+     * @return
+     */
+    bool GetAllFilesInDirectory(const std::string& directory, bool recursive, const std::string& regexPattern, std::vector<file_info_t>& files)
+    {
+        size_t startSize = files.size();
+        std::regex* rePtr = NULL;
+        std::regex re;
+        if (regexPattern.length() != 0)
+        {
+            re = std::regex(regexPattern, std::regex::icase);
+            rePtr = &re;
+        }
+        #if PLATFORM_IS_EVB_2
+
+        {
+            FRESULT result;
+            FILINFO info;
+            DIR dir;
+            char *file_name;
+    #if _USE_LFN
+            static char longFileName[_MAX_LFN + 1];
+            info.lfname = longFileName;
+            info.lfsize = sizeof(longFileName);
+    #endif
+
+
+            result = f_opendir(&dir, directory.c_str());
+            if (result == FR_OK) {
+                while (true) {
+                    result = f_readdir(&dir, &info);
+                    if (result != FR_OK || info.fname[0] == 0)
+                    {
+                        break;
+                    }
+    #if _USE_LFN
+                    file_name = *info.lfname ? info.lfname : info.fname;
+    #else
+                    file_name = info.fname;
+    #endif
+                    std::string full_file_name = directory + "/" + file_name;
+
+
+                    if (file_name[0] == '.' || (rePtr != NULL && !regex_search(full_file_name, re)))
+                    {
+                        continue;
+                    }
+                    else if (info.fattrib & AM_DIR) {
+                        if (recursive)
+                        {
+                            GetAllFilesInDirectory(full_file_name, true, files);
+                        }
+                        continue;
+                    }
+
+                    file_info_t fileInfo;
+                    fileInfo.name = full_file_name;
+                    fileInfo.size = info.fsize;
+                    fileInfo.lastModificationDate = static_cast<time_t>(info.ftime);
+                    fileInfo.lastModificationDate |= static_cast<time_t>(info.fdate) << (sizeof(info.ftime) * 8);
+                    files.push_back(full_file_name);
+                }
+            }
+
+        }
+
+        #elif PLATFORM_IS_WINDOWS
+
+        HANDLE dir;
+        WIN32_FIND_DATAA file_data;
+        if ((dir = FindFirstFileA((directory + "/*").c_str(), &file_data)) == INVALID_HANDLE_VALUE)
+        {
+            return false;
+        }
+        do
+        {
+            std::string file_name = file_data.cFileName;
+            std::string full_file_name = directory + "/" + file_name;
+            if (file_name[0] == '.' || (rePtr != NULL && !regex_search(full_file_name, re)))
+            {
+                continue;
+            }
+            else if ((file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+            {
+                if (recursive)
+                {
+                    GetAllFilesInDirectory(full_file_name, true, files);
+                }
+                continue;
+            }
+
+            struct stat st;
+            stat(full_file_name.c_str(), &st);
+
+            file_info_t fileInfo;
+            fileInfo.name = full_file_name;
+            fileInfo.size = st.st_size;
+            fileInfo.lastModificationDate = st.st_mtime;
+            files.push_back(fileInfo);
+        } while (FindNextFileA(dir, &file_data));
+        FindClose(dir);
+
+        #else // Linux
+
+        class dirent* ent;
+        class stat st;
+        DIR* dir = opendir(directory.c_str());
+
+        if (dir == NULL) {
+            return false;
+        }
+
+        while ((ent = readdir(dir)) != NULL) {
+            const std::string file_name = ent->d_name;
+            const std::string full_file_name = directory + "/" + file_name;
+
+            // if file is current path or does not exist (-1) then continue
+            if (file_name[0] == '.' || stat(full_file_name.c_str(), &st) == -1 ||
+                (rePtr != NULL && !regex_search(full_file_name, re))) {
+                continue;
+            }
+            else if ((st.st_mode & S_IFDIR) != 0) {
+                if (recursive) {
+                    GetAllFilesInDirectory(full_file_name, true, files);
+                }
+                continue;
+            }
+
+            struct stat st;
+            stat(full_file_name.c_str(), &st);
+
+            file_info_t fileInfo;
+            fileInfo.name = full_file_name;
+            fileInfo.size = st.st_size;
+            fileInfo.lastModificationDate = st.st_mtime;
+            files.push_back(fileInfo);
+        }
+        closedir(dir);
+
+        #endif
+
+        return (files.size() != startSize);
+    }
+
+    // TODO: This is highly redundant to the above function; just call it, and extra the filenames from the file_info_t...
     bool GetAllFilesInDirectory(const std::string& directory, bool recursive, const std::string& regexPattern, std::vector<std::string>& files)
     {
         size_t startSize = files.size();
@@ -184,6 +334,11 @@ namespace ISFileManager {
     #endif
 
         return (files.size() != startSize);
+    }
+
+    bool GetAllFilesInDirectory(const std::string& directory, bool recursive, std::vector<file_info_t>& files)
+    {
+        return GetAllFilesInDirectory(directory, recursive, "", files);
     }
 
     bool GetAllFilesInDirectory(const std::string& directory, bool recursive, std::vector<std::string>& files)
@@ -378,7 +533,7 @@ namespace ISFileManager {
         char fullPath[PATH_MAX];
         bool created = (_MKDIR(directory.c_str()) == 0);
 
-        if(!created)
+        if (!created)
             CreateDirectory(directory.c_str());
 
         if (realpath(directory.c_str(), fullPath) == NULL)
@@ -445,7 +600,7 @@ namespace ISFileManager {
         char fullPath[PATH_MAX];
         bool created = (_MKDIR(directory.c_str()) == 0);
 
-        if(!created)
+        if (!created)
             CreateDirectory(directory.c_str());
 
         if (realpath(directory.c_str(), fullPath) == NULL)
@@ -495,7 +650,7 @@ namespace ISFileManager {
                 if (pos == std::string::npos)
     #endif
                     return false;
-                if (!CreateDirectory( path.substr(0, pos) ))
+                if (!CreateDirectory(path.substr(0, pos)))
                     return false;
             }
             // now, try to create again

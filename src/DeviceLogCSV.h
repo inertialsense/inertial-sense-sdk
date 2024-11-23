@@ -25,16 +25,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cCsvLog
 {
 public:
-	cCsvLog() : pFile(NULL), fileCount(0), fileSize(0), dataId(0), orderId(0) { }
+    cCsvLog() : pFile(NULL), fileCount(0), fileSize(0), dataId(0), orderId(0) { }
 
-	FILE* pFile;
-	uint32_t fileCount;
-	uint64_t fileSize;
-	uint32_t dataId;
-	uint32_t dataSize;
-	uint64_t orderId;
-	std::string nextLine;
-	std::vector<data_info_t> columnHeaders;
+    FILE* pFile;
+    uint32_t fileCount;
+    uint64_t fileSize;
+    uint32_t dataId;
+    uint32_t dataSize;
+    uint64_t orderId;
+    std::string nextLine;
+    std::vector<data_info_t> columnHeaders;
 };
 
 
@@ -45,25 +45,25 @@ public:
     cDeviceLogCSV(const ISDevice* dev) : cDeviceLog(dev) {};
     cDeviceLogCSV(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {};
 
-    void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
-	void InitDeviceForReading() OVERRIDE;
-	bool CloseAllFiles() OVERRIDE;
+    void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
+    void InitDeviceForReading() OVERRIDE;
+    bool CloseAllFiles() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;
-	p_data_buf_t* ReadData() OVERRIDE;
-	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
-	std::string LogFileExtention() OVERRIDE { return std::string(".csv"); }
+    p_data_buf_t* ReadData() OVERRIDE;
+    void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
+    std::string LogFileExtention() OVERRIDE { return std::string(".csv"); }
 
 private:
-	bool OpenNewFile(cCsvLog& log, bool readOnly);
-	bool GetNextLineForFile(cCsvLog& log);
+    bool OpenNewFile(cCsvLog& log, bool readOnly);
+    bool GetNextLineForFile(cCsvLog& log);
 
-	p_data_buf_t* ReadDataFromFile(cCsvLog& log);
-	std::map<uint32_t, cCsvLog> m_logs;
-	cDataCSV m_csv;
-	std::map<uint32_t, std::vector<std::string> > m_currentFiles; // all files for each data set
-	std::map<uint32_t, uint32_t> m_currentFileIndex; // contains the current csv file index for each data set
-	p_data_buf_t m_data;
-	uint64_t m_nextId; // for writing the log, column 0 of csv is an incrementing id. This lets us read the log back in order.
+    p_data_buf_t* ReadDataFromFile(cCsvLog& log);
+    std::map<uint32_t, cCsvLog> m_logs;
+    cDataCSV m_csv;
+    std::map<uint32_t, std::vector<std::string> > m_currentFiles; // all files for each data set
+    std::map<uint32_t, uint32_t> m_currentFileIndex; // contains the current csv file index for each data set
+    p_data_buf_t m_data;
+    uint64_t m_nextId; // for writing the log, column 0 of csv is an incrementing id. This lets us read the log back in order.
 };
 
 #endif // DEVICE_LOG_CSV_H

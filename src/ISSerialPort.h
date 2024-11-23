@@ -24,73 +24,73 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cISSerialPort : public cISStream
 {
 private:
-	cISSerialPort(const cISSerialPort& copy); // disable copy constructor
+    cISSerialPort(const cISSerialPort& copy); // disable copy constructor
 
-	serial_port_t m_serial;
-	int m_timeout;
-	bool m_blocking;
+    port_handle_t port;
+    int m_timeout;
+    bool m_blocking;
 
 public:
-	/**
-	* Constructor
-	* @param serial inner serial port implementation or NULL for default, if not NULL, it will be copied
-	*/
-	cISSerialPort(serial_port_t* serial = NULL);
+    /**
+    * Constructor
+    * @param serial inner serial port implementation or NULL for default, if not NULL, it will be copied
+    */
+    cISSerialPort(port_handle_t port = NULL);
 
-	/**
-	* Destructor - closes the serial port
-	*/
-	virtual ~cISSerialPort();
+    /**
+    * Destructor - closes the serial port
+    */
+    virtual ~cISSerialPort();
 
-	/**
-	* Open the serial port
-	* @param portName the port name to open
-	* @param baudRate the baud rate to open at
-	* @param timeout read timeout, 0 for none
-	* @param blocking whether the serial port blocks until data is read or written
-	* @return true if success, false if failure
-	*/
-	bool Open(const std::string& portName, int baudRate = BAUDRATE_921600, int timeout = 0, bool blocking = false);
+    /**
+    * Open the serial port
+    * @param portName the port name to open
+    * @param baudRate the baud rate to open at
+    * @param timeout read timeout, 0 for none
+    * @param blocking whether the serial port blocks until data is read or written
+    * @return true if success, false if failure
+    */
+    bool Open(const std::string& portName, int baudRate = BAUDRATE_921600, int timeout = 0, bool blocking = false);
 
-	/**
-	* Checks if the serial port is open
-	* @return true if open, false otherwise
-	*/
-	bool IsOpen() { return (serialPortIsOpen(&m_serial) != 0); }
+    /**
+    * Checks if the serial port is open
+    * @return true if open, false otherwise
+    */
+    bool IsOpen() { return (serialPortIsOpen(port) != 0); }
 
-	/**
-	* Close the serial port
-	* @return 0 if success, otherwise an error code
-	*/
-	int Close() OVERRIDE;
+    /**
+    * Close the serial port
+    * @return 0 if success, otherwise an error code
+    */
+    int Close() OVERRIDE;
 
-	/**
-	* Read data from the serial port
-	* @param data the buffer to read data into
-	* @param dataLength the number of bytes available in data
-	* @return the number of bytes read or less than 0 if error
-	*/
-	int Read(void* data, int dataLength) OVERRIDE;
+    /**
+    * Read data from the serial port
+    * @param data the buffer to read data into
+    * @param dataLength the number of bytes available in data
+    * @return the number of bytes read or less than 0 if error
+    */
+    int Read(void* data, int dataLength) OVERRIDE;
 
-	/**
-	* Write data to the serial port
-	* @param data the data to write
-	* @param dataLength the number of bytes to write
-	* @return the number of bytes written or less than 0 if error
-	*/
-	int Write(const void* data, int dataLength) OVERRIDE;
+    /**
+    * Write data to the serial port
+    * @param data the data to write
+    * @param dataLength the number of bytes to write
+    * @return the number of bytes written or less than 0 if error
+    */
+    int Write(const void* data, int dataLength) OVERRIDE;
 
-	/**
-	* Gets a list of com names of all connected usb ports
-	* @param ports cleared and then receives the name of each connected usb port
-	*/
-	static void GetComPorts(std::vector<std::string>& ports);
+    /**
+    * Gets a list of com names of all connected usb ports
+    * @param ports cleared and then receives the name of each connected usb port
+    */
+    static void GetComPorts(std::vector<std::string>& ports);
 
-	/**
-	* Gets information about the current connection (i.e. TCP ip address and port number or serial port name)
-	* @return connection info
-	*/
-	std::string ConnectionInfo() OVERRIDE;
+    /**
+    * Gets information about the current connection (i.e. TCP ip address and port number or serial port name)
+    * @return connection info
+    */
+    std::string ConnectionInfo() OVERRIDE;
 
 };
 

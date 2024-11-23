@@ -26,43 +26,43 @@ typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timestamp);
 class cLogStatMsgId
 {
 public:
-	unsigned int count;         // count for this data id
-	unsigned int errors;        // error count for this data id
-	double averageTimeDelta;    // average time delta for the data id
-	double totalTimeDelta;      // sum of all time deltas
-	double lastTimestamp;
-	double lastTimestampDelta;
-	double minTimestampDelta;
-	double maxTimestampDelta;
-	unsigned int timestampDeltaCount;
-	unsigned int timestampIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
+    unsigned int count;                 // count for this data id
+    unsigned int errors;                // error count for this data id
+    double averageTimeDelta;            // average time delta for the data id
+    double totalTimeDelta;              // sum of all time deltas
+    double lastTimestamp;
+    double lastTimestampDelta;
+    double minTimestampDelta;
+    double maxTimestampDelta;
+    unsigned int timestampDeltaCount;
+    unsigned int timestampIrregCount;   // count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
 
-	cLogStatMsgId();
-	void LogTimestamp(double timestamp);
+    cLogStatMsgId();
+    void LogTimestamp(double timestamp);
 };
 
 struct sLogStatPType
 {
-	std::map<int, cLogStatMsgId> stats;     // ID, cLogStatMsgId
-	unsigned int count;                     // count of all message ids
-	unsigned int errors;                    // total error count
+    std::map<int, cLogStatMsgId> stats;     // ID, cLogStatMsgId
+    unsigned int count;                     // count of all message ids
+    unsigned int errors;                    // total error count
 };
 
 class cLogStats
 {
 public:
-	std::map<protocol_type_t, sLogStatPType> msgs;
-	cISLogFileBase* statsFile;
+    std::map<protocol_type_t, sLogStatPType> msgs;
+    cISLogFileBase* statsFile;
 
-	cLogStats();
-	void Clear();
-	void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
-	unsigned int Count();
-	unsigned int Errors();
-	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
-	std::string Stats();
-	void WriteToFile(const std::string& fileName);
+    cLogStats();
+    void Clear();
+    void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+    void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
+    unsigned int Count();
+    unsigned int Errors();
+    std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
+    std::string Stats();
+    void WriteToFile(const std::string& fileName);
 };
 
 

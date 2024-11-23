@@ -36,101 +36,102 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define EXAMPLE_SPACE_1         "    "
 #define EXAMPLE_SPACE_2         "   "
 #else
-#define APP_EXT	                ""
+#define APP_EXT                 ""
 #define EXAMPLE_PORT            "/dev/ttyS2"
 #define EXAMPLE_LOG_DIR         "logs/20170117_222549                "
 #define EXAMPLE_FIRMWARE_FILE   "fw/IS_IMX-5.hex"
 #define EXAMPLE_BOOTLOADER_FILE "fw/IS_bootloader-STM32L4.hex"
 #define EXAMPLE_SPACE_1         "    "
-#define EXAMPLE_SPACE_2			"         "
+#define EXAMPLE_SPACE_2         "         "
 #endif
 
 typedef struct
 {
-	eDataIDs	did;
-	int			periodMultiple;
+    eDataIDs        did;
+    int             periodMultiple;
     struct {
         uint64_t    lastRxTime;
         double      rxCount;
-    }           rxStats;
+    }rxStats;
 } stream_did_t;
 
 typedef struct
 {
-	did_event_filter_t evFilter;
-	uint16_t dest;
-	bool sendEVF;
+    did_event_filter_t evFilter;
+    uint16_t dest;
+    bool sendEVF;
 } EVFContainer_t;
 
 typedef struct
 {
-	std::string inFile;
-	std::string outFile;
-	std::string logType;
-	bool extractEv;
+    std::string inFile;
+    std::string outFile;
+    std::string logType;
+    bool extractEv;
 } EVOContainer_t;
 
 typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
-	std::string comPort; 					// -c com_port
-	std::string updateAppFirmwareFilename; 	// -uf file_name
-	std::string updateBootloaderFilename; 	// -ub file_name
+    std::string comPort;                    // -c com_port
+    std::string updateAppFirmwareFilename;  // -uf file_name
+    std::string updateBootloaderFilename;   // -ub file_name
     std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
-	bool forceBootloaderUpdate;				// -fb
-	bool bootloaderVerify; 					// -bv
-	bool replayDataLog;
-	bool softwareReset;
-	bool magRecal;
-	uint32_t magRecalMode;
-	survey_in_t surveyIn;
-	bool nmeaRx;
-	std::string nmeaMessage;				// A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent 
-	double replaySpeed;
-	int displayMode;
+    bool forceBootloaderUpdate;             // -fb
+    bool bootloaderVerify;                  // -bv
+    bool replayDataLog;
+    bool softwareReset;
+    bool magRecal;
+    uint32_t magRecalMode;
+    survey_in_t surveyIn;
+    bool nmeaRx;
+    std::string nmeaMessage;                // A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent 
+    double replaySpeed;
+    int displayMode;
     int verboseLevel = ISBootloader::eLogLevel::IS_LOG_LEVEL_INFO;
-	
-	uint64_t rmcPreset;
-	bool persistentMessages;
-	stream_did_t datasetEdit;				// -edit DID#=periodMultiple
-	std::vector<stream_did_t> datasets;		// -did DID#=periodMultiple	
-	
-	bool enableLogging;
-	std::string logType; 					// -lt=dat
-	std::string logPath; 					// -lp path
-	float logDriveUsageLimitPercent; 		// -lms=max_drive_percent, 0 for disabled
-	float logDriveUsageLimitMb;				// -lmb=max_drive_limit_mb, 0 for disabled
-	uint32_t maxLogFileSize; 				// -lmf=max_file_size
-	std::string logSubFolder; 				// -lts=1
-	int baudRate; 							// -baud=3000000
-	bool disableBroadcastsOnClose;	
-	
-	std::string roverConnection; 			// -rover=type:IP/URL:port:mountpoint:user:password   (server)
-	std::string baseConnection; 			// -base=IP:port    (client)	
-	
-	std::string flashCfg;
-	uint32_t timeoutFlushLoggerSeconds;
-	uint32_t outputOnceDid;	
-	
-	uint32_t sysCommand;
-	int32_t platformType;
+    
+    uint64_t rmcPreset;
+    bool persistentMessages;
+    stream_did_t datasetEdit;               // -edit DID#=periodMultiple
+    std::vector<stream_did_t> datasets;     // -did DID#=periodMultiple    
+    
+    bool enableLogging;
+    std::string logType;                    // -lt=dat
+    std::string logPath;                    // -lp path
+    float logDriveUsageLimitPercent;        // -lms=max_drive_percent, 0 for disabled
+    float logDriveUsageLimitMb;             // -lmb=max_drive_limit_mb, 0 for disabled
+    uint32_t maxLogFileSize;                // -lmf=max_file_size
+    std::string logSubFolder;               // -lts=1
+    int baudRate;                           // -baud=3000000
+    bool disableBroadcastsOnClose;    
+    
+    std::string roverConnection;            // -rover=type:IP/URL:port:mountpoint:user:password   (server)
+    std::string baseConnection;             // -base=IP:port    (client)    
+    
+    std::string flashCfg;
+    uint32_t timeoutFlushLoggerSeconds;
+    uint32_t outputOnceDid;    
+    
+    uint32_t sysCommand;
+    int32_t platformType;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
-	uint32_t runDurationMs = 0;				// Run for this many millis before exiting (0 = indefinitely)
-	bool list_devices = false;				// if true, dumps results of findDevices() including port name.
-	EVFContainer_t evFCont = {0};
-	EVOContainer_t evOCont;
+    uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
+    bool list_devices = false;              // if true, dumps results of findDevices() including port name.
+    int verbose = 0;                        // incremented for each -verbose argument found
+    EVFContainer_t evFCont = {0};
+    EVOContainer_t evOCont;
 
-	bool disableDeviceValidation = false;	// Keep port(s) open even if no devices response is received.
-	bool listenMode = false;				// Disable device verification and don't send stop-broadcast command on start.
+    bool disableDeviceValidation = false;   // Keep port(s) open even if no devices response is received.
+    bool listenMode = false;                // Disable device verification and don't send stop-broadcast command on start.
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;
-extern serial_port_t g_serialPort;
+extern port_handle_t g_serialPort;
 extern cInertialSenseDisplay g_inertialSenseDisplay;
 extern bool g_ctrlCPressed;
 
 int cltool_main(int argc, char* argv[]);
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend);
+int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend);
 
 // returns false if failure
 bool cltool_setupLogger(InertialSense& inertialSenseInterface);

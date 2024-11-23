@@ -6,8 +6,10 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "serialPort.h"
+
 #ifdef IMX_5
-#include "drivers/d_flash.h"	// Contains overrides for macros below
+#include "drivers/d_flash.h"    // Contains overrides for macros below
 #endif
 
 // uINS-3 flash layout - uINS Flash Memory Map
@@ -149,29 +151,45 @@ extern "C" {
 #define BOOTLOADER_HEADER_INITIAL_FILL_UINT_32 ((uint32_t)0xFEFEFEFE)
 
 // Serial port selection key
-#define PORT_SEL_KEY_SYS_GPBR_3		0x09ea4f06
-#define PORT_SEL_KEY_SYS_GPBR_4		0x13d6007e
-#define PORT_SEL_KEY_SYS_GPBR_5		0x93f035fe
-#define PORT_SEL_KEY_SYS_GPBR_6		0xd096ae0f
+#define PORT_SEL_KEY_SYS_GPBR_3   0x09ea4f06
+#define PORT_SEL_KEY_SYS_GPBR_4   0x13d6007e
+#define PORT_SEL_KEY_SYS_GPBR_5   0x93f035fe
+#define PORT_SEL_KEY_SYS_GPBR_6   0xd096ae0f
 
-#define PORT_SEL_SER0	0
-#define PORT_SEL_SER1	1
-#define PORT_SEL_SER2	2
-#define PORT_SEL_USB	3
+#define PORT_SEL_SER0             0
+#define PORT_SEL_SER1             1
+#define PORT_SEL_SER2             2
+#define PORT_SEL_USB              3
 
 #define BOOTLOADER_UINS_RESET_GPS 0   // LEGACY.  NOT needed now that we use a sync char pattern for bootloader handshake.
 
 typedef union
 {
-	struct  
-	{
-		char jumpSignature[BOOTLOADER_JUMP_SIGNATURE_SIZE]; // indicates whether to stay in bootloader or user application
-		uint32_t signatureFound; // was a signature found, must be exactly BOOTLOADER_SIGNATURE_FOUND_MARKER to be true, no other value is true
-		uint32_t hashCode; // hash code for user application
-		char version[4]; // bootloader version
-	} data;
-	uint8_t bytes[BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE]; // any additional bytes are reserved space
+    struct  
+    {
+        char jumpSignature[BOOTLOADER_JUMP_SIGNATURE_SIZE]; // indicates whether to stay in bootloader or user application
+        uint32_t signatureFound; // was a signature found, must be exactly BOOTLOADER_SIGNATURE_FOUND_MARKER to be true, no other value is true
+        uint32_t hashCode; // hash code for user application
+        char version[4]; // bootloader version
+    } data;
+    uint8_t bytes[BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE]; // any additional bytes are reserved space
 } bootloader_header_t;
+
+// #define NUM_COM_PORTS   4
+typedef struct {
+    base_port_t base;
+} bl_port_t;
+typedef bl_port_t* bl_port_handle;
+extern port_handle_t    g_ports[NUM_COM_PORTS];
+
+#define PORT(n)         (g_ports[n])
+#define COM0_PORT       PORT(COM0_PORT_NUM)
+#define COM1_PORT       PORT(COM1_PORT_NUM)
+#define COM2_PORT       PORT(COM2_PORT_NUM)
+#define COM3_PORT       PORT(COM3_PORT_NUM)
+#define USB_PORT        PORT(USB_PORT_NUM)
+#define SPI_PORT        PORT(SPI_PORT_NUM)
+
 
 extern uint8_t bootloaderRequiredSignature_EVB_2_16K[BOOTLOADER_SIGNATURE_SIZE];
 extern uint8_t bootloaderRequiredSignature_uINS_3_16K[BOOTLOADER_SIGNATURE_SIZE];

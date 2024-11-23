@@ -66,6 +66,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
+#define error_message(...)
 #ifndef error_message
     #define error_message printf
 #endif
@@ -89,27 +90,53 @@ typedef struct
 } serialPortHandle;
 
 static int serialPortSleepPlatform(int sleepMilliseconds);
-static int serialPortFlushPlatform(serial_port_t* serialPort);
-static int serialPortDrainPlatform(serial_port_t* serialPort);
-static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds);
+static int serialPortFlushPlatform(port_handle_t port);
+static int serialPortDrainPlatform(port_handle_t port);
+static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
+
+// #define DEBUG_COMMS
+// Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
+#ifdef DEBUG_COMMS
+#define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)))
+static inline void debugDumpBuffer(const char* prefix, const unsigned char* buffer, int len) {
+    if (len <= 0)
+        return;
+
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s", start.tv_sec, (uint16_t)(start.tv_usec / 1000), prefix);
+    for (int i = 0; i < len; i++)
+        printf(" %02x", buffer[i]);
+
+    int linePos = 16 + strlen(prefix) + (len * 3);
+    printf("%*c", 80 - linePos, ' ');
+
+    for (int i = 0; i < len; i++)
+        printf("%c", IS_PRINTABLE(buffer[i]) ? buffer[i] : 0xB7);
+
+    printf("\n");
+}
+#else
+    #define debugDumpBuffer(...)
+#endif
+
 
 #if PLATFORM_IS_WINDOWS
 
 #define WINDOWS_OVERLAPPED_BUFFER_SIZE 8192
 
-typedef struct
-{
+typedef struct {
     OVERLAPPED ov;
     pfnSerialPortAsyncReadCompletion externalCompletion;
-    serial_port_t* serialPort;
+    port_handle_t port;
     unsigned char* buffer;
 } readFileExCompletionStruct;
 
 static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED ov)
 {
     readFileExCompletionStruct* c = (readFileExCompletionStruct*)ov;
-    c->externalCompletion(c->serialPort, c->buffer, bytesTransferred, errorCode);
+    c->externalCompletion(c->port, c->buffer, bytesTransferred, errorCode);
     free(c);
 }
 
@@ -146,7 +173,7 @@ static int configure_serial_port(int fd, int baudRate)
 
     if (tcgetattr(fd, &tty) != 0) 
     {
-        error_message("error getting tty settings: tcgetattr");
+        error_message("error getting tty settings: tcgetattr\n");
         return -1;
     }
 
@@ -154,7 +181,7 @@ static int configure_serial_port(int fd, int baudRate)
     baudRate = validate_baud_rate(baudRate);    
     if (baudRate == 0)
     {
-        error_message("error invalid baudrate");
+        error_message("error invalid baudrate\n");
         return -1;
     }
 
@@ -167,7 +194,7 @@ static int configure_serial_port(int fd, int baudRate)
     // Now baud rate can be set higher than 230400
     if (ioctl(fd, IOSSIOSPEED, &baudRate) == -1)
     {
-        error_message("error %d from ioctl IOSSIOSPEED", errno);
+        error_message("error %d from ioctl IOSSIOSPEED\n", errno);
     }
 
 #else
@@ -222,7 +249,7 @@ static int configure_serial_port(int fd, int baudRate)
     // Save tty settings, also checking for error
     if (tcsetattr(fd, TCSANOW, &tty) != 0) 
     {
-        error_message("error saving tty settings: tcsetattr");
+        error_message("error saving tty settings: tcsetattr\n");
         return -1;
     }
 
@@ -236,14 +263,14 @@ int set_nonblocking(int fd)
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) 
     {
-        error_message("error fcntl F_GETFL");
+        error_message("error fcntl F_GETFL\n");
         return -1;
     }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) == -1) 
     {
-        error_message("error setting O_NONBLOCK");
+        error_message("error setting O_NONBLOCK\n");
         return -1;
     }
 
@@ -253,8 +280,9 @@ int set_nonblocking(int fd)
 #endif
 
 // Return 1 on success, 0 on failure
-static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
+static int serialPortOpenPlatform(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     if (serialPort->handle != 0)
     {
         // FIXME: Should we be closing the port and then reopen??
@@ -263,17 +291,17 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         return 0;
     }
 
-    serialPortSetPort(serialPort, port);
+    serialPortSetPort(port, portName);
 
 #if PLATFORM_IS_WINDOWS
 
     void* platformHandle = 0;
-    platformHandle = CreateFileA(serialPort->port, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
+    platformHandle = CreateFileA(portName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
     if (platformHandle == INVALID_HANDLE_VALUE)
     {
         // don't modify the originally requested port value, just create a new value that Windows needs for COM10 and above
         char tmpPort[MAX_SERIAL_PORT_NAME_LENGTH];
-        sprintf_s(tmpPort, sizeof(tmpPort), "\\\\.\\%s", port);
+        sprintf_s(tmpPort, sizeof(tmpPort), "\\\\.\\%s", portName);
         platformHandle = CreateFileA(tmpPort, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
         if (platformHandle == INVALID_HANDLE_VALUE)
         {
@@ -313,19 +341,19 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         serialParams.fRtsControl = RTS_CONTROL_ENABLE;
         if (!SetCommState(platformHandle, &serialParams))
         {
-            serialPortClose(serialPort);
+            serialPortClose(port);
             return 0;
         }
     }
     else
     {
-        serialPortClose(serialPort);
+        serialPortClose(port);
         return 0;
     }
     COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 10 : 0) };
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
-        serialPortClose(serialPort);
+        serialPortClose(port);
         return 0;
     }
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
@@ -340,18 +368,20 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
 #else
 
-    int fd = open(port, O_RDWR | O_NOCTTY);     // enable read/write and disable flow control
+    int fd = open(portName, O_RDWR | O_NOCTTY);     // enable read/write and disable flow control
     if (fd < 0)
     {
-        error_message("[%s] open():: Error opening port: %d\n", port, errno);
+        error_message("[%s] open():: Error opening port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
     if (configure_serial_port(fd, baudRate) != 0) 
     {
-        error_message("[%s] open():: Error configuring port: %d\n", port, errno);
+        error_message("[%s] open():: Error configuring port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
@@ -372,20 +402,21 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
     // we're doing a quick and dirty check to make sure we can even attempt to read data successfully.  Some bad devices will fail here if they aren't initialized correctly
     uint8_t tmp;
-    if (serialPortReadTimeoutPlatform(serialPort, &tmp, 1, 10) < 0) {
+    if (serialPortReadTimeoutPlatform(port, &tmp, 1, 10) < 0) {
         if (serialPort->errorCode == ENOENT) {
-            serialPortClose(serialPort);
+            serialPortClose(port);
             return 0;
         }
     }
 
 #endif
 
-    return 1;	// success
+    return 1;    // success
 }
 
-static int serialPortIsOpenPlatform(serial_port_t* serialPort)
+static int serialPortIsOpenPlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     if (!serialPort->handle)
         return 0;
 
@@ -399,8 +430,9 @@ static int serialPortIsOpenPlatform(serial_port_t* serialPort)
 #else
 
     struct stat sb;
-    if (fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0) {
+    if (fstat(((serialPortHandle*)(serialPort->handle))->fd, &sb) != 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
     return 1; // return success
@@ -408,8 +440,9 @@ static int serialPortIsOpenPlatform(serial_port_t* serialPort)
 
 }
 
-static int serialPortClosePlatform(serial_port_t* serialPort)
+static int serialPortClosePlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
     {
@@ -418,7 +451,7 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
     }
 
     // When closing, let's flush any pending data, as this could potentially hang the close()
-    serialPortFlushPlatform(serialPort);
+    serialPortFlushPlatform(port);
 
 #if PLATFORM_IS_WINDOWS
 
@@ -442,7 +475,7 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
 #else
 
     close(handle->fd);
-    handle->fd = 0;
+    handle->fd = -1;
 
 #endif
 
@@ -452,34 +485,48 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
     return 1;
 }
 
-static int serialPortFlushPlatform(serial_port_t* serialPort)
+static int serialPortFlushPlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+    if (handle == 0)
+    {
+        // not open, no close needed
+        return 0;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
-    if(!FlushFileBuffers(handle->platformHandle))
+    if (!FlushFileBuffers(handle->platformHandle))
     {
         return 0;
     }
 
 #else
 
-    if (tcflush(handle->fd, TCIOFLUSH) < 0)
+    if (tcflush(handle->fd, TCIOFLUSH) < 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+    }
 
 #endif
 
     return 1;
 }
 
-static int serialPortDrainPlatform(serial_port_t* serialPort)
+static int serialPortDrainPlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+    if (handle == 0)
+    {
+        // not open, no close needed
+        return 0;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
-    if(!FlushFileBuffers(handle->platformHandle))
+    if (!FlushFileBuffers(handle->platformHandle))
     {
         return 0;
     }
@@ -618,16 +665,19 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             break;
         }
     }
+    debugDumpBuffer("<< ", buffer, totalRead);
     return totalRead;
 }
 
 #endif
 
-static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
+static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
-        serialPort->errorCode = ENODEV;
+        serialPort->errorCode = ENOENT;
+        serialPort->error = "Internal port handle is NULL; Port is closed.";
         return -1;
     }
 
@@ -643,26 +693,42 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        error_message("Error reading from %s : %s (%d)\n", serialPort->port, strerror(errno), errno);
+        error_message("[%s] read():: Error reading from port: %s (%d)\n", portName(portName), strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
-    } else
+        serialPort->error = strerror(serialPort->errorCode);
+    } else {
         serialPort->errorCode = 0; // clear any previous errorcode
+        serialPort->error = NULL;
+    }
+
+    if ((portType(port) & PORT_TYPE__COMM) && (COMM_PORT(port)->stats)) {
+        COMM_PORT(port)->stats->rxBytes += result;
+    }
+
+    debugDumpBuffer("{{ ", buffer, result);
     return result;
 }
 
-static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion completion)
+static int serialPortReadPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount) {
+    return serialPortReadTimeoutPlatform(port, buffer, readCount, 0);
+}
+
+
+static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, pfnSerialPortAsyncReadCompletion completion)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENODEV;
+        serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
 
 #if PLATFORM_IS_WINDOWS
 
-	readFileExCompletionStruct c;
-	c.externalCompletion = completion;
-    c.serialPort = serialPort;
+    readFileExCompletionStruct c;
+    c.externalCompletion = completion;
+    c.port = port;
     c.buffer = buffer;
     memset(&(c.ov), 0, sizeof(c.ov));
 
@@ -675,10 +741,12 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
 
     // no support for async, just call the completion right away
     int n = read(handle->fd, buffer, readCount);
-    if (n < 0)
+    if (n < 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+    }
 
-    completion(serialPort, buffer, (n < 0 ? 0 : n), (n >= 0 ? 0 : n));
+    completion(port, buffer, (n < 0 ? 0 : n), (n >= 0 ? 0 : n));
 
 #endif
 
@@ -686,11 +754,13 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
 }
 
 
-static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned char* buffer, int writeCount)
+static int serialPortWritePlatform(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENODEV;
+        serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
 
@@ -722,16 +792,17 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
     struct stat sb;
     errno = 0;
-    if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
+    if (fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
     {   // Serial port not open
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
     // Ensure all data is queued by OS for sending.  This step is necessary because of O_NONBLOCK non-blocking mode. 
     // Note that this only blocks for partial writes until the OS accepts all input data.  This does NOT block until 
     // the data is physically transmitted.
-    int bytes_written = 0, retry = 0;
+    uint32_t bytes_written = 0, retry = 0;
     while ((bytes_written < writeCount) && (retry < 10))
     {
         ssize_t result = write(handle->fd, buffer + bytes_written, writeCount - bytes_written);
@@ -745,13 +816,15 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
                 continue;
             }
             // Other errors
-            // error_message("serialPortWritePlatform() write error. ");
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
+            error_message("[%s] write():: Error writing to port: %s (%d)\n", serialPort->portName, strerror(errno), errno);
             return -1;
         }
         bytes_written += result;
     }
 
-    if(handle->blocking)
+    if (handle->blocking)
     {   // Block until output data has been physically transmitted 
         int error = tcdrain(handle->fd);
         if (error != 0)
@@ -760,14 +833,20 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
         }
     }
 
+    if ((portType(port) & PORT_TYPE__COMM) && (COMM_PORT(port)->stats)) {
+        COMM_PORT(port)->stats->txBytes += bytes_written;
+    }
+
+    debugDumpBuffer(">> ", buffer, bytes_written);
     return bytes_written;
 
 #endif
 
 }
 
-static int serialPortGetByteCountAvailableToReadPlatform(serial_port_t* serialPort)
+static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
 
 
@@ -783,8 +862,10 @@ static int serialPortGetByteCountAvailableToReadPlatform(serial_port_t* serialPo
 #else
 
     int bytesAvailable;
-    if (ioctl(handle->fd, FIONREAD, &bytesAvailable) < 0)
+    if (ioctl(handle->fd, FIONREAD, &bytesAvailable) < 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+    }
 
     return bytesAvailable;
 
@@ -792,8 +873,9 @@ static int serialPortGetByteCountAvailableToReadPlatform(serial_port_t* serialPo
 
 }
 
-static int serialPortGetByteCountAvailableToWritePlatform(serial_port_t* serialPort)
+static int serialPortGetByteCountAvailableToWritePlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     // serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     (void)serialPort;
 
@@ -824,21 +906,35 @@ static int serialPortSleepPlatform(int sleepMilliseconds)
     return 1;
 }
 
-int serialPortPlatformInit(serial_port_t* serialPort)
+int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
 {
-	// very important - the serial port must be initialized to zeros
-	memset(serialPort, 0, sizeof(serial_port_t));
+    serial_port_t* serialPort = (serial_port_t*)port;
+    // very important - the serial port must be initialized to zeros
+    base_port_t tmp = { .pnum = portId(port), .ptype = portType(port) };
+
+    // FIXME:  I really don't like this having to copy and clean, and copy back.  It shouldn't be necessary.
+    char tmpName[64];
+    memcpy(tmpName, serialPort->portName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
+    memset(serialPort, 0, sizeof(serial_port_t));
+    memcpy(serialPort->portName, tmpName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
+
+    serialPort->base = tmp;
+    serialPort->base.portRead = serialPort->pfnRead = serialPortReadPlatform;
+    serialPort->base.portWrite = serialPort->pfnWrite = serialPortWritePlatform;
+    serialPort->base.portAvailable = serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
+    serialPort->base.portFree = serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
+
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_init(COMM_PORT(port), NULL);
 
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;
     serialPort->pfnDrain = serialPortDrainPlatform;
     serialPort->pfnOpen = serialPortOpenPlatform;
     serialPort->pfnIsOpen = serialPortIsOpenPlatform;
-    serialPort->pfnRead = serialPortReadTimeoutPlatform;
+    serialPort->pfnReadTimeout = serialPortReadTimeoutPlatform;
     serialPort->pfnAsyncRead = serialPortAsyncReadPlatform;
-    serialPort->pfnWrite = serialPortWritePlatform;
-    serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
-    serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
+    serialPort->base.portName = serialPortName;
     serialPort->pfnSleep = serialPortSleepPlatform;
     return 0;
 }

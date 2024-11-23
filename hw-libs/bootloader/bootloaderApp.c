@@ -40,8 +40,8 @@ void unlockUserFlash(void)
 
 static void soft_reset_internal(void)
 {
-	__disable_irq();
-	__DMB();
+    __disable_irq();
+    __DMB();
 
 
 
@@ -59,7 +59,7 @@ static void soft_reset_internal(void)
     __NVIC_SystemReset();
 #endif
 
-    while(1);
+    while (1);
 }
 
 void soft_reset_no_backup_register(void)
@@ -105,7 +105,7 @@ void set_reset_pin_enabled(int enabled)
 }
 
 void write_bootloader_signature_stay_in_bootloader_mode(void)
-{	
+{    
     // update the bootloader header jump signature to indicate we want to go to bootloader
     bootloader_header_t header;
     memcpy(&header, (void*)BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE);
@@ -113,35 +113,35 @@ void write_bootloader_signature_stay_in_bootloader_mode(void)
 
 #ifndef IMX_5
     // unlock bootloader header 
-	flash_unlock(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS + BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE - 1, 0, 0);
+    flash_unlock(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS + BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE - 1, 0, 0);
 
-	// this flash write is allowed to erase and write a 512 byte page because it is in the small sector, last param of 1 does this
-	flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 1);
+    // this flash write is allowed to erase and write a 512 byte page because it is in the small sector, last param of 1 does this
+    flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 1);
 
-	// unlock flash in case of firmware downgrade
-	unlockUserFlash();
+    // unlock flash in case of firmware downgrade
+    unlockUserFlash();
 #else
-	flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 0);
+    flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 0);
 #endif
 }
 
-void enable_bootloader(int pHandle)
-{	
+void enable_bootloader(port_handle_t port)
+{    
     write_bootloader_signature_stay_in_bootloader_mode();
 
-	// Let the bootloader know which port to use for the firmware update.  Set key and port number.
+    // Let the bootloader know which port to use for the firmware update.  Set key and port number.
 #ifndef IMX_5
     GPBR->SYS_GPBR[3] = PORT_SEL_KEY_SYS_GPBR_3;
-	GPBR->SYS_GPBR[4] = PORT_SEL_KEY_SYS_GPBR_4;
-	GPBR->SYS_GPBR[5] = PORT_SEL_KEY_SYS_GPBR_5;
-	GPBR->SYS_GPBR[6] = PORT_SEL_KEY_SYS_GPBR_6;
-	GPBR->SYS_GPBR[7] = pHandle;
+    GPBR->SYS_GPBR[4] = PORT_SEL_KEY_SYS_GPBR_4;
+    GPBR->SYS_GPBR[5] = PORT_SEL_KEY_SYS_GPBR_5;
+    GPBR->SYS_GPBR[6] = PORT_SEL_KEY_SYS_GPBR_6;
+    GPBR->SYS_GPBR[7] = portId(port);
 #else
     RTC->BKP3R = PORT_SEL_KEY_SYS_GPBR_3;
     RTC->BKP4R = PORT_SEL_KEY_SYS_GPBR_4;
     RTC->BKP5R = PORT_SEL_KEY_SYS_GPBR_5;
     RTC->BKP6R = PORT_SEL_KEY_SYS_GPBR_6;
-    RTC->BKP7R = pHandle;
+    RTC->BKP7R = portId(port);
 #endif
 
     // reset processor

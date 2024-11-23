@@ -28,11 +28,11 @@ unsigned char* ringfindChar2(unsigned char* bufPtr, unsigned char* endPtr, unsig
  */
 void ringBufInit(ring_buf_t *rbuf, unsigned char* buf, int bufSize, int wordByteSize)
 {
-	rbuf->startPtr = buf;
-	rbuf->endPtr = buf + bufSize;
-	rbuf->rdPtr = buf;
-	rbuf->wrPtr = buf;
-	rbuf->bufSize = bufSize;
+    rbuf->startPtr = buf;
+    rbuf->endPtr = buf + bufSize;
+    rbuf->rdPtr = buf;
+    rbuf->wrPtr = buf;
+    rbuf->bufSize = bufSize;
     rbuf->wordByteSize = wordByteSize;
 }
 
@@ -42,15 +42,13 @@ void ringBufInit(ring_buf_t *rbuf, unsigned char* buf, int bufSize, int wordByte
  */
 int ringBufUsed(const ring_buf_t *rbuf)
 {
-	int bytesUsed;
+    int bytesUsed = (int)(rbuf->wrPtr - rbuf->rdPtr);
 
-	bytesUsed = (int)(rbuf->wrPtr - rbuf->rdPtr);
+    // Handle wrapping
+    if (bytesUsed < 0)
+        bytesUsed += rbuf->bufSize;
 
-	// Handle wrapping
-	if (bytesUsed < 0)
-		bytesUsed += rbuf->bufSize;
-
-	return bytesUsed;
+    return bytesUsed;
 }
 
 
@@ -75,52 +73,52 @@ int ringBufFree(const ring_buf_t *rbuf)
  */
 int ringBufWrite(ring_buf_t *rb, unsigned char *buf, int numBytes)
 {
-	if (numBytes <= 0)
-		return 0;
+    if (numBytes <= 0)
+        return 0;
 
-	int overflow = numBytes > ringBufFree(rb);
+    int overflow = numBytes > ringBufFree(rb);
 
-	// Copy data into buffer
-	while (numBytes>0)
-	{
-		// Bytes before wrap is needed
-		int bytesToEnd = (int)(rb->endPtr - rb->wrPtr);
+    // Copy data into buffer
+    while (numBytes>0)
+    {
+        // Bytes before wrap is needed
+        int bytesToEnd = (int)(rb->endPtr - rb->wrPtr);
 
-		if (numBytes >= bytesToEnd)
-		{   // Wrap needed
+        if (numBytes >= bytesToEnd)
+        {   // Wrap needed
 
-			// Copy data to end of buffer
-			memcpy((void *)rb->wrPtr, (void *)buf, bytesToEnd);
+            // Copy data to end of buffer
+            memcpy((void *)rb->wrPtr, (void *)buf, bytesToEnd);
 
-			// Update pointer
-			rb->wrPtr = rb->startPtr;
+            // Update pointer
+            rb->wrPtr = rb->startPtr;
 
-			numBytes -= bytesToEnd;
-		}
-		else
-		{   // No wrap
+            numBytes -= bytesToEnd;
+        }
+        else
+        {   // No wrap
 
-			// Copy data
-			memcpy((void *)rb->wrPtr, (void *)buf, numBytes);
+            // Copy data
+            memcpy((void *)rb->wrPtr, (void *)buf, numBytes);
 
-			// Update pointer
-			rb->wrPtr += numBytes;
+            // Update pointer
+            rb->wrPtr += numBytes;
 
-			numBytes = 0;
-		}
-	}
+            numBytes = 0;
+        }
+    }
 
-	if (overflow)
-	{	// Move read pointer for overflow
+    if (overflow)
+    {   // Move read pointer for overflow
         rb->rdPtr = rb->wrPtr + rb->wordByteSize;
 
-		if (rb->rdPtr >= rb->endPtr)
-		{	// Handle wrap
-			rb->rdPtr = rb->startPtr;
-		}
-	}
+        if (rb->rdPtr >= rb->endPtr)
+        {   // Handle wrap
+            rb->rdPtr = rb->startPtr;
+        }
+    }
 
-	return overflow;
+    return overflow;
 }
 
 
@@ -135,43 +133,43 @@ int ringBufWrite(ring_buf_t *rb, unsigned char *buf, int numBytes)
  */
 int ringBufRead(ring_buf_t *rbuf, unsigned char *buf, int len)
 {
-	int bytesToRead, bytesRead1, bytesRead2;
+    int bytesToRead, bytesRead1, bytesRead2;
 
-	if ((bytesToRead = ringBufUsed(rbuf)) <= 0)
-		return 0;   // Buffer empty
+    if ((bytesToRead = ringBufUsed(rbuf)) <= 0)
+        return 0;   // Buffer empty
 
-	if (len < bytesToRead)
-		bytesToRead = len;
+    if (len < bytesToRead)
+        bytesToRead = len;
 
-	// Will Data Read Need to Wrap?
-	// If ( used part of Rx buffer wraps  &&  data to be read is more than to buffer's end )
-	if (rbuf->rdPtr > rbuf->wrPtr && bytesToRead > rbuf->endPtr - rbuf->rdPtr)
-	{   // Yes Wrapping
-		// Bytes until end of buffer
-		bytesRead1 = (int)(rbuf->endPtr - rbuf->rdPtr);
-		bytesRead2 = (int)(bytesToRead - bytesRead1);
+    // Will Data Read Need to Wrap?
+    // If (used part of Rx buffer wraps  &&  data to be read is more than to buffer's end)
+    if (rbuf->rdPtr > rbuf->wrPtr && bytesToRead > rbuf->endPtr - rbuf->rdPtr)
+    {   // Yes Wrapping
+        // Bytes until end of buffer
+        bytesRead1 = (int)(rbuf->endPtr - rbuf->rdPtr);
+        bytesRead2 = (int)(bytesToRead - bytesRead1);
 
-		// Copy Data into Rx buffer
-		memcpy((void *)buf, (void *)rbuf->rdPtr, bytesRead1);						// Read to end
-		memcpy((void *)&buf[bytesRead1], (void *)rbuf->startPtr, bytesRead2);	// Read starting at beginning
+        // Copy Data into Rx buffer
+        memcpy((void *)buf, (void *)rbuf->rdPtr, bytesRead1);                   // Read to end
+        memcpy((void *)&buf[bytesRead1], (void *)rbuf->startPtr, bytesRead2);   // Read starting at beginning
 
-		// Update pointer
-		rbuf->rdPtr = rbuf->startPtr + bytesRead2;
-	}
-	else
-	{   // No Wrapping
-		// Read data out of Rx buffer
-		memcpy(buf, (void *)rbuf->rdPtr, bytesToRead);
+        // Update pointer
+        rbuf->rdPtr = rbuf->startPtr + bytesRead2;
+    }
+    else
+    {   // No Wrapping
+        // Read data out of Rx buffer
+        memcpy(buf, (void *)rbuf->rdPtr, bytesToRead);
 
-		// Update pointer
-		rbuf->rdPtr += bytesToRead;
+        // Update pointer
+        rbuf->rdPtr += bytesToRead;
 
-		// Reset read pointer to buffer start (in case it reached end)
-		if (rbuf->rdPtr >= rbuf->endPtr)
-			rbuf->rdPtr = rbuf->startPtr;
-	}
+        // Reset read pointer to buffer start (in case it reached end)
+        if (rbuf->rdPtr >= rbuf->endPtr)
+            rbuf->rdPtr = rbuf->startPtr;
+    }
 
-	return bytesToRead;
+    return bytesToRead;
 }
 
 
@@ -187,44 +185,44 @@ int ringBufRead(ring_buf_t *rbuf, unsigned char *buf, int len)
  */
 int ringBufPeek(const ring_buf_t *rbuf, unsigned char *buf, int len, int offset)
 {
-	int bytesToRead, bytesRead1, bytesRead2;
-	int bytesUsed = ringBufUsed(rbuf);
+    int bytesToRead, bytesRead1, bytesRead2;
+    int bytesUsed = ringBufUsed(rbuf);
 
-	if ((bytesToRead = bytesUsed) <= 0)
-		return 0;   // Buffer empty
+    if ((bytesToRead = bytesUsed) <= 0)
+        return 0;   // Buffer empty
 
-	// Validate byte offset
-	if (offset >= bytesUsed)
-		return 0;
+    // Validate byte offset
+    if (offset >= bytesUsed)
+        return 0;
 
-	if (len < bytesToRead)
-		bytesToRead = len;
+    if (len < bytesToRead)
+        bytesToRead = len;
 
-	unsigned char *rdPtr = rbuf->rdPtr + offset;
+    unsigned char *rdPtr = rbuf->rdPtr + offset;
     // Handle read pointer wrapping
     if (rdPtr >= rbuf->endPtr) {
         rdPtr -= rbuf->bufSize;
     }
 
-	// Will Data Read Need to Wrap?
-	// If ( used part of Rx buffer wraps  &&  data to be read is more than to buffer's end )
-	if (rdPtr > rbuf->wrPtr && bytesToRead > rbuf->endPtr - rdPtr)
-	{   // Yes Wrapping
-		// Bytes until end of buffer
-		bytesRead1 = (int)(rbuf->endPtr - rdPtr);
-		bytesRead2 = (int)(bytesToRead - bytesRead1);
+    // Will Data Read Need to Wrap?
+    // If (used part of Rx buffer wraps  &&  data to be read is more than to buffer's end)
+    if (rdPtr > rbuf->wrPtr && bytesToRead > rbuf->endPtr - rdPtr)
+    {   // Yes Wrapping
+        // Bytes until end of buffer
+        bytesRead1 = (int)(rbuf->endPtr - rdPtr);
+        bytesRead2 = (int)(bytesToRead - bytesRead1);
 
-		// Copy Data into Rx buffer
-		memcpy((void *)buf, (void *)rdPtr, bytesRead1);							// Read to end
-		memcpy((void *)&buf[bytesRead1], (void *)rbuf->startPtr, bytesRead2);	// Read starting at beginning
-	}
-	else
-	{   // No Wrapping
-		// Read data out of Rx buffer
-		memcpy(buf, (void *)rdPtr, bytesToRead);
-	}
+        // Copy Data into Rx buffer
+        memcpy((void *)buf, (void *)rdPtr, bytesRead1);                         // Read to end
+        memcpy((void *)&buf[bytesRead1], (void *)rbuf->startPtr, bytesRead2);   // Read starting at beginning
+    }
+    else
+    {   // No Wrapping
+        // Read data out of Rx buffer
+        memcpy(buf, (void *)rdPtr, bytesToRead);
+    }
 
-	return bytesToRead;
+    return bytesToRead;
 }
 
 
@@ -239,15 +237,15 @@ int ringBufPeek(const ring_buf_t *rbuf, unsigned char *buf, int len, int offset)
  */
 unsigned char* ringfindChar(unsigned char* bufPtr, unsigned char* endPtr, unsigned char character)
 {
-	// Search for character
-	for (; bufPtr < endPtr; bufPtr++)
-	{
-		// Check for match
-		if (*bufPtr == character)
-			return bufPtr + 1;
-	}
+    // Search for character
+    for (; bufPtr < endPtr; bufPtr++)
+    {
+        // Check for match
+        if (*bufPtr == character)
+            return bufPtr + 1;
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -262,15 +260,15 @@ unsigned char* ringfindChar(unsigned char* bufPtr, unsigned char* endPtr, unsign
  */
 unsigned char* ringfindChar2(unsigned char* bufPtr, unsigned char* endPtr, unsigned char character1, unsigned char character2)
 {
-	// Search for character
-	for (; bufPtr < endPtr; bufPtr++)
-	{
-		// Check for match
-		if (*bufPtr == character1 || *bufPtr == character2)
-			return bufPtr + 1;
-	}
+    // Search for character
+    for (; bufPtr < endPtr; bufPtr++)
+    {
+        // Check for match
+        if (*bufPtr == character1 || *bufPtr == character2)
+            return bufPtr + 1;
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -287,7 +285,7 @@ unsigned char* ringfindChar2(unsigned char* bufPtr, unsigned char* endPtr, unsig
  */
 int ringBufReadToChar(ring_buf_t *rbuf, unsigned char *buf, int len, unsigned char character)
 {
-	return ringBufReadToChar2(rbuf, buf, len, character, character);
+    return ringBufReadToChar2(rbuf, buf, len, character, character);
 }
 
 
@@ -305,72 +303,72 @@ int ringBufReadToChar(ring_buf_t *rbuf, unsigned char *buf, int len, unsigned ch
  */
 int ringBufReadToChar2(ring_buf_t *rbuf, unsigned char *buf, int len, unsigned char character1, unsigned char character2)
 {
-	int bytesToRead, bytesRead1, bytesRead2;
-	unsigned char* fndPtr;
+    int bytesToRead, bytesRead1, bytesRead2;
+    unsigned char* fndPtr;
 
-	if ((bytesToRead = ringBufUsed(rbuf)) <= 0)
-		return 0;   // Buffer empty
+    if ((bytesToRead = ringBufUsed(rbuf)) <= 0)
+        return 0;   // Buffer empty
 
-	if (len < bytesToRead)
-		bytesToRead = len;
+    if (len < bytesToRead)
+        bytesToRead = len;
 
-	// Will Data Search and Read Need to Wrap?
-	// If ( used part of Rx buffer wraps  &&  data to be read is more than to buffer's end )
-	if (rbuf->rdPtr > rbuf->wrPtr && bytesToRead > rbuf->endPtr - rbuf->rdPtr)
-	{
-		// Yes, Wrapping in Search
+    // Will Data Search and Read Need to Wrap?
+    // If (used part of Rx buffer wraps  &&  data to be read is more than to buffer's end)
+    if (rbuf->rdPtr > rbuf->wrPtr && bytesToRead > rbuf->endPtr - rbuf->rdPtr)
+    {
+        // Yes, Wrapping in Search
 
-		// Search up to buffer end (before wrapping)
-		if ((fndPtr = ringfindChar2(rbuf->rdPtr, rbuf->endPtr, character1, character2)) <= (unsigned char*)0)
-		{
-			// Not found - Search from start
-			// Bytes until end of buffer
-			bytesRead1 = (int)(rbuf->endPtr - rbuf->rdPtr);
-			bytesRead2 = (int)(bytesToRead - bytesRead1);
+        // Search up to buffer end (before wrapping)
+        if ((fndPtr = ringfindChar2(rbuf->rdPtr, rbuf->endPtr, character1, character2)) <= (unsigned char*)0)
+        {
+            // Not found - Search from start
+            // Bytes until end of buffer
+            bytesRead1 = (int)(rbuf->endPtr - rbuf->rdPtr);
+            bytesRead2 = (int)(bytesToRead - bytesRead1);
 
-			if ((fndPtr = ringfindChar2(rbuf->startPtr, rbuf->startPtr + bytesRead2, character1, character2)) <= (unsigned char*)0)
-			{
-				// Character NOT found
-				return 0;
-			}
-			else
-			{
-				// Found character - Wrapping Needed
-				bytesRead2 = (int)(fndPtr - rbuf->startPtr);
+            if ((fndPtr = ringfindChar2(rbuf->startPtr, rbuf->startPtr + bytesRead2, character1, character2)) <= (unsigned char*)0)
+            {
+                // Character NOT found
+                return 0;
+            }
+            else
+            {
+                // Found character - Wrapping Needed
+                bytesRead2 = (int)(fndPtr - rbuf->startPtr);
 
-				// Copy Data into Rx buffer
-				memcpy((void *)buf, (void *)rbuf->rdPtr, bytesRead1);                   // Read to end
-				memcpy((void *)&buf[bytesRead1], (void *)rbuf->startPtr, bytesRead2);  // Read starting at beginning
+                // Copy Data into Rx buffer
+                memcpy((void *)buf, (void *)rbuf->rdPtr, bytesRead1);                   // Read to end
+                memcpy((void *)&buf[bytesRead1], (void *)rbuf->startPtr, bytesRead2);  // Read starting at beginning
 
-				// Update pointer
-				rbuf->rdPtr = rbuf->startPtr + bytesRead2;
+                // Update pointer
+                rbuf->rdPtr = rbuf->startPtr + bytesRead2;
 
-				return bytesRead1 + bytesRead2;
-			}
-		}
-	}
-	else
-	{   // No Wrapping in Search
-		if ((fndPtr = ringfindChar2(rbuf->rdPtr, rbuf->rdPtr + bytesToRead, character1, character2)) <= (unsigned char*)0)
-		{   // Character NOT found
-			return 0;
-		}
-	}
+                return bytesRead1 + bytesRead2;
+            }
+        }
+    }
+    else
+    {   // No Wrapping in Search
+        if ((fndPtr = ringfindChar2(rbuf->rdPtr, rbuf->rdPtr + bytesToRead, character1, character2)) <= (unsigned char*)0)
+        {   // Character NOT found
+            return 0;
+        }
+    }
 
-	// Found character - No Wrapping
-	bytesToRead = (int)(fndPtr - rbuf->rdPtr);
+    // Found character - No Wrapping
+    bytesToRead = (int)(fndPtr - rbuf->rdPtr);
 
-	// Read data out of Rx buffer
-	memcpy(buf, rbuf->rdPtr, bytesToRead);
+    // Read data out of Rx buffer
+    memcpy(buf, rbuf->rdPtr, bytesToRead);
 
-	// Update pointer
-	rbuf->rdPtr += bytesToRead;
+    // Update pointer
+    rbuf->rdPtr += bytesToRead;
 
-	// Reset read pointer to buffer start (in case it reached end)
-	if (rbuf->rdPtr >= rbuf->endPtr)
-		rbuf->rdPtr = rbuf->startPtr;
+    // Reset read pointer to buffer start (in case it reached end)
+    if (rbuf->rdPtr >= rbuf->endPtr)
+        rbuf->rdPtr = rbuf->startPtr;
 
-	return bytesToRead;
+    return bytesToRead;
 }
 
 
@@ -380,44 +378,44 @@ int ringBufReadToChar2(ring_buf_t *rbuf, unsigned char *buf, int len, unsigned c
  *
  * \param rbuf  Ring buffer struct pointer.
  * \param len   Length of data to attempt reading.
- * \param str	Character string to search for.
+ * \param str    Character string to search for.
  *
  * \return Index of the first matching string.  -1 if not found.
  */
 int ringBufFind(const ring_buf_t *rbuf, const unsigned char *str, int len)
 {
-	int i;
-	int used = ringBufUsed(rbuf);
-	// 	int bytesToEnd = rbuf->endPtr - rbuf->rdPtr;
+    int i;
+    int used = ringBufUsed(rbuf);
+    //     int bytesToEnd = rbuf->endPtr - rbuf->rdPtr;
 
-	unsigned char *buf = (unsigned char*)(rbuf->rdPtr);
+    unsigned char *buf = (unsigned char*)(rbuf->rdPtr);
 
-	for (i = 0; i < used; i++)
-	{
-		if (buf + len >= rbuf->endPtr)
-		{
-			// Handle wrapping
-			int len1 = (int)(buf + len - rbuf->endPtr);
-			int len2 = len - len1;
+    for (i = 0; i < used; i++)
+    {
+        if (buf + len >= rbuf->endPtr)
+        {
+            // Handle wrapping
+            int len1 = (int)(buf + len - rbuf->endPtr);
+            int len2 = len - len1;
 
-			if (!strncmp((const char*)buf, (const char*)str, len1) && !strncmp((const char*)buf, (const char*)rbuf->startPtr, len2))
-				return i;
-		}
-		else
-		{
-			// Not Wrapping
-			if (!strncmp((const char*)buf, (const char*)str, len))
-				return i;
-		}
+            if (!strncmp((const char*)buf, (const char*)str, len1) && !strncmp((const char*)buf, (const char*)rbuf->startPtr, len2))
+                return i;
+        }
+        else
+        {
+            // Not Wrapping
+            if (!strncmp((const char*)buf, (const char*)str, len))
+                return i;
+        }
 
-		buf++;
+        buf++;
 
-		// Handling wrapping
-		if (buf >= rbuf->endPtr)
-			buf = rbuf->startPtr;
-	}
+        // Handling wrapping
+        if (buf >= rbuf->endPtr)
+            buf = rbuf->startPtr;
+    }
 
-	return -1;
+    return -1;
 }
 
 
@@ -431,31 +429,31 @@ int ringBufFind(const ring_buf_t *rbuf, const unsigned char *str, int len)
  */
 int ringBufRemove(ring_buf_t *rbuf, int len)
 {
-	int bytesToRemove;
+    int bytesToRemove;
 
-	if ((bytesToRemove = ringBufUsed(rbuf)) <= 0)
-	{
-		return 0;   // Buffer empty
-	}
+    if ((bytesToRemove = ringBufUsed(rbuf)) <= 0)
+    {
+        return 0;   // Buffer empty
+    }
 
-	if (len >= bytesToRemove)
-	{   // Empty buffer
-		rbuf->rdPtr = rbuf->wrPtr;
+    if (len >= bytesToRemove)
+    {   // Empty buffer
+        rbuf->rdPtr = rbuf->wrPtr;
 
-		// Return number bytes removed
-		return bytesToRemove;
-	}
-	else
-	{   // Leave some data in buffer
-		rbuf->rdPtr += len;
+        // Return number bytes removed
+        return bytesToRemove;
+    }
+    else
+    {   // Leave some data in buffer
+        rbuf->rdPtr += len;
 
-		// Handle wrapping
-		if (rbuf->rdPtr >= rbuf->endPtr)
-			rbuf->rdPtr -= rbuf->bufSize;
+        // Handle wrapping
+        if (rbuf->rdPtr >= rbuf->endPtr)
+            rbuf->rdPtr -= rbuf->bufSize;
 
-		// Return number bytes removed
-		return len;
-	}
+        // Return number bytes removed
+        return len;
+    }
 }
 
 
@@ -466,12 +464,12 @@ int ringBufRemove(ring_buf_t *rbuf, int len)
  */
 int ringBufClear(ring_buf_t *rbuf)
 {
-	int used = ringBufUsed(rbuf);
+    int used = ringBufUsed(rbuf);
 
-	// Clear all
-	rbuf->rdPtr = rbuf->wrPtr = rbuf->startPtr;
+    // Clear all
+    rbuf->rdPtr = rbuf->wrPtr = rbuf->startPtr;
 
-	return used;
+    return used;
 }
 
 
@@ -480,5 +478,5 @@ int ringBufClear(ring_buf_t *rbuf)
  */
 int ringBufEmpty(const ring_buf_t *rbuf)
 {
-	return ringBufUsed(rbuf) == 0;
+    return ringBufUsed(rbuf) == 0;
 }

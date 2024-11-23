@@ -64,28 +64,28 @@ void joinStrings(const std::vector<std::string>& v, const char c, std::string& r
 class cMutex
 {
 public:
-	/**
-	* Constructor - creates the mutex
-	*/
-	cMutex();
+    /**
+    * Constructor - creates the mutex
+    */
+    cMutex();
 
-	/**
-	* Destructor - frees the mutex
-	*/
-	virtual ~cMutex();
+    /**
+    * Destructor - frees the mutex
+    */
+    virtual ~cMutex();
 
-	/**
-	* Lock the mutex
-	*/
-	void Lock();
+    /**
+    * Lock the mutex
+    */
+    void Lock();
 
-	/**
-	* Unlock the mutex
-	*/
-	void Unlock();
+    /**
+    * Unlock the mutex
+    */
+    void Unlock();
 
 private:
-	void* m_handle;
+    void* m_handle;
 };
 
 /**
@@ -94,19 +94,19 @@ private:
 class cMutexLocker
 {
 public:
-	/**
-	* Constructor
-	* @param mutex the mutex to lock
-	*/
-	cMutexLocker(cMutex* mutex);
+    /**
+    * Constructor
+    * @param mutex the mutex to lock
+    */
+    cMutexLocker(cMutex* mutex);
 
-	/**
-	* Destructor - unlocks the mutex
-	*/
-	virtual ~cMutexLocker();
+    /**
+    * Destructor - unlocks the mutex
+    */
+    virtual ~cMutexLocker();
 
 private:
-	cMutex* m_mutex;
+    cMutex* m_mutex;
 };
 
 #endif
@@ -144,9 +144,9 @@ extern "C" {
 
     // 0 for no output, 1 for verbose, 2 for spinning cursor
     #if PLATFORM_IS_EMBEDDED
-        #define LOG_DEBUG_GEN			0
+        #define LOG_DEBUG_GEN            0
     #elif !defined(LOG_DEBUG_GEN)
-        #define LOG_DEBUG_GEN			2
+        #define LOG_DEBUG_GEN            2
     #else
         // Nothing to do here...
     #endif
@@ -156,6 +156,8 @@ double current_timeSecD();
 unsigned int current_timeSec();
 unsigned int current_timeMs();
 uint64_t current_timeUs();
+
+uint32_t current_uptimeMs();
 
 uint64_t timerUsStart();
 uint64_t timerUsEnd(uint64_t start);

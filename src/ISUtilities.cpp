@@ -10,11 +10,12 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <stdio.h>
+#include <cstdio>
 #include <sstream>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include <string>
+#include <ctime>
 
 #include "ISUtilities.h"
 #include "ISPose.h"
@@ -41,137 +42,137 @@ using namespace std;
 static const string s_base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static inline bool is_base64(unsigned char c)
 {
-	return (isalnum(c) || (c == '+') || (c == '/'));
+    return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
 string base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len)
 {
-	string ret;
-	int i = 0;
-	int j = 0;
-	unsigned char char_array_3[3];
-	unsigned char char_array_4[4];
+    string ret;
+    int i = 0;
+    int j = 0;
+    unsigned char char_array_3[3];
+    unsigned char char_array_4[4];
 
-	while (in_len--)
-	{
-		char_array_3[i++] = *(bytes_to_encode++);
-		if (i == 3)
-		{
-			char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-			char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-			char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-			char_array_4[3] = char_array_3[2] & 0x3f;
-			for (i = 0; (i < 4); i++)
-			{
-				ret += s_base64_chars[char_array_4[i]];
-			}
-			i = 0;
-		}
-	}
+    while (in_len--)
+    {
+        char_array_3[i++] = *(bytes_to_encode++);
+        if (i == 3)
+        {
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+            for (i = 0; (i < 4); i++)
+            {
+                ret += s_base64_chars[char_array_4[i]];
+            }
+            i = 0;
+        }
+    }
 
-	if (i)
-	{
-		for (j = i; j < 3; j++)
-		{
-			char_array_3[j] = '\0';
-		}
+    if (i)
+    {
+        for (j = i; j < 3; j++)
+        {
+            char_array_3[j] = '\0';
+        }
 
-		char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-		char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-		char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-		char_array_4[3] = char_array_3[2] & 0x3f;
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
 
-		for (j = 0; (j < i + 1); j++)
-		{
-			ret += s_base64_chars[char_array_4[j]];
-		}
+        for (j = 0; (j < i + 1); j++)
+        {
+            ret += s_base64_chars[char_array_4[j]];
+        }
 
-		while ((i++ < 3))
-		{
-			ret += '=';
-		}
-	}
+        while ((i++ < 3))
+        {
+            ret += '=';
+        }
+    }
 
-	return ret;
+    return ret;
 
 }
 
 string base64Decode(const string& encoded_string)
 {
-	int in_len = (int)encoded_string.size();
-	int i = 0;
-	int j = 0;
-	int in_ = 0;
-	unsigned char char_array_4[4], char_array_3[3];
-	string ret;
+    int in_len = (int)encoded_string.size();
+    int i = 0;
+    int j = 0;
+    int in_ = 0;
+    unsigned char char_array_4[4], char_array_3[3];
+    string ret;
 
-	while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
-	{
-		char_array_4[i++] = encoded_string[in_];
-		in_++;
-		if (i == 4)
-		{
-			for (i = 0; i < 4; i++)
-			{
-				char_array_4[i] = (unsigned char)s_base64_chars.find(char_array_4[i]);
-			}
-			char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-			for (i = 0; (i < 3); i++)
-			{
-				ret += char_array_3[i];
-			}
-			i = 0;
-		}
-	}
+    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
+    {
+        char_array_4[i++] = encoded_string[in_];
+        in_++;
+        if (i == 4)
+        {
+            for (i = 0; i < 4; i++)
+            {
+                char_array_4[i] = (unsigned char)s_base64_chars.find(char_array_4[i]);
+            }
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+            for (i = 0; (i < 3); i++)
+            {
+                ret += char_array_3[i];
+            }
+            i = 0;
+        }
+    }
 
-	if (i)
-	{
-		for (j = i; j < 4; j++)
-		{
-			char_array_4[j] = 0;
-		}
-		for (j = 0; j < 4; j++)
-		{
-			char_array_4[j] = (unsigned char)s_base64_chars.find(char_array_4[j]);
-		}
-		char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-		char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-		char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-		for (j = 0; (j < i - 1); j++)
-		{
-			ret += char_array_3[j];
-		}
-	}
+    if (i)
+    {
+        for (j = i; j < 4; j++)
+        {
+            char_array_4[j] = 0;
+        }
+        for (j = 0; j < 4; j++)
+        {
+            char_array_4[j] = (unsigned char)s_base64_chars.find(char_array_4[j]);
+        }
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+        for (j = 0; (j < i - 1); j++)
+        {
+            ret += char_array_3[j];
+        }
+    }
 
-	return ret;
+    return ret;
 }
 
 size_t splitString(const string str, const char delimiter, vector<string>& result)
 {
-	result.clear();
-	istringstream f(str);
-	string s;
-	while (getline(f, s, delimiter))
-	{
-		result.push_back(s);
-	}
-	return result.size();
+    result.clear();
+    istringstream f(str);
+    string s;
+    while (getline(f, s, delimiter))
+    {
+        result.push_back(s);
+    }
+    return result.size();
 }
 
 void joinStrings(const vector<string>& v, const char c, string& result) 
 {
-	result.clear();
+    result.clear();
 
-	for (vector<string>::const_iterator p = v.begin(); p != v.end(); ++p) 
-	{
-		result += *p;
-		if (p != v.end() - 1)
-		{
-			result += c;
-		}
-	}
+    for (vector<string>::const_iterator p = v.begin(); p != v.end(); ++p) 
+    {
+        result += *p;
+        if (p != v.end() - 1)
+        {
+            result += c;
+        }
+    }
 }
 
 #ifdef __cplusplus
@@ -180,18 +181,18 @@ extern "C" {
 
 #if PLATFORM_IS_WINDOWS
 
-	void usleep(__int64 usec)
-	{
-		HANDLE timer;
-		LARGE_INTEGER ft;
+    void usleep(__int64 usec)
+    {
+        HANDLE timer;
+        LARGE_INTEGER ft;
 
-		ft.QuadPart = -(10 * usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+        ft.QuadPart = -(10 * usec); // Convert to 100 nanosecond interval, negative value indicates relative time
 
-		timer = CreateWaitableTimer(NULL, true, NULL);
-		SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
-		WaitForSingleObject(timer, INFINITE);
-		CloseHandle(timer);
-	}
+        timer = CreateWaitableTimer(NULL, true, NULL);
+        SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+        WaitForSingleObject(timer, INFINITE);
+        CloseHandle(timer);
+    }
 
 #else
 
@@ -221,65 +222,117 @@ double current_timeSecD() {
 
 unsigned int current_timeSec() {
 #if PLATFORM_IS_WINDOWS
-	SYSTEMTIME st;
-	GetLocalTime(&st);
-	return st.wSecond;
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    return st.wSecond;
 #else
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_sec;
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec;
 #endif
 }
 
 /** System time in milliseconds */
 unsigned int current_timeMs() {
 #if PLATFORM_IS_WINDOWS
-	// Time since week start (Sunday morning) in milliseconds, GMT
-	SYSTEMTIME st;
-	GetSystemTime(&st);
-	return	st.wMilliseconds + 1000 * (st.wSecond + 60 * (st.wMinute + 60 * (st.wHour + 24 * st.wDayOfWeek)));
+    // Time since week start (Sunday morning) in milliseconds, GMT
+    SYSTEMTIME st;
+    GetSystemTime(&st);
+    return    st.wMilliseconds + 1000 * (st.wSecond + 60 * (st.wMinute + 60 * (st.wHour + 24 * st.wDayOfWeek)));
 #elif PLATFORM_IS_EMBEDDED
     return time_msec();
 #else
-	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_usec / 1000 + 1000 * tv.tv_sec;
+    // Time since epoch, January 1, 1970 (midnight UTC/GMT)
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_usec / 1000 + 1000 * tv.tv_sec;
 #endif
 }
 
 /** System time in milliseconds */
 uint64_t current_timeUs() {
 #if PLATFORM_IS_WINDOWS
-	// Time since week start (Sunday morning) in milliseconds, GMT
-	LARGE_INTEGER StartingTime;
-	LARGE_INTEGER Frequency;
+    // Time since week start (Sunday morning) in milliseconds, GMT
+    LARGE_INTEGER StartingTime;
+    LARGE_INTEGER Frequency;
 
-	QueryPerformanceCounter(&StartingTime);
-	QueryPerformanceFrequency(&Frequency);
+    QueryPerformanceCounter(&StartingTime);
+    QueryPerformanceFrequency(&Frequency);
 
-	StartingTime.QuadPart *= 1000000;
-	StartingTime.QuadPart /= Frequency.QuadPart;
+    StartingTime.QuadPart *= 1000000;
+    StartingTime.QuadPart /= Frequency.QuadPart;
 
-	return StartingTime.QuadPart;
+    return StartingTime.QuadPart;
 #else
-	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_usec + 1000000 * tv.tv_sec;
+    // Time since epoch, January 1, 1970 (midnight UTC/GMT)
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_usec + 1000000 * tv.tv_sec;
 #endif
+}
+
+/**
+ * Returns the number of milliseconds since the host processor was started (most commonly).
+ * This is uses the monotonic clock, which is guaranteed NOT to go back in time (such as if setting the system clock after startup)
+ * @return number of milliseconds
+ */
+uint32_t current_uptimeMs() {
+    uint32_t upTimeMs = UINT32_MAX;
+#if defined(IMX_5)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
+#elif defined(GPX_1)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
+#elif defined(PLATFORM_IS_WINDOWS)
+    #define MS_PER_SEC      1000ULL     // MS = milliseconds
+    #define US_PER_MS       1000ULL     // US = microseconds
+    #define HNS_PER_US      10ULL       // HNS = hundred-nanoseconds (e.g., 1 hns = 100 ns)
+    #define NS_PER_US       1000ULL
+
+    #define HNS_PER_SEC     (MS_PER_SEC * US_PER_MS * HNS_PER_US)
+    #define NS_PER_HNS      (100ULL)    // NS = nanoseconds
+    #define NS_PER_SEC      (MS_PER_SEC * US_PER_MS * NS_PER_US)
+
+    long tv_sec; long tv_nsec;
+    static LARGE_INTEGER ticksPerSec;
+    LARGE_INTEGER ticks;
+
+    if (!ticksPerSec.QuadPart) {
+        QueryPerformanceFrequency(&ticksPerSec);
+        if (!ticksPerSec.QuadPart) {
+            errno = ENOTSUP;
+            return -1;
+        }
+    }
+
+    QueryPerformanceCounter(&ticks);
+
+    tv_sec = (long)(ticks.QuadPart / ticksPerSec.QuadPart);
+    tv_nsec = (long)(((ticks.QuadPart % ticksPerSec.QuadPart) * NS_PER_SEC) / ticksPerSec.QuadPart);
+
+    upTimeMs = (uint32_t)(tv_nsec / 1000000 + 1000 * tv_sec);
+#else
+    // Posix systems?
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    upTimeMs = (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
+#endif
+    return upTimeMs;
 }
 
 uint64_t timerUsStart() {
 #if PLATFORM_IS_WINDOWS
-	LARGE_INTEGER StartingTime;
-	QueryPerformanceCounter(&StartingTime);
-	return StartingTime.QuadPart;
+    LARGE_INTEGER StartingTime;
+    QueryPerformanceCounter(&StartingTime);
+    return StartingTime.QuadPart;
 #else
-	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_usec + 1000000 * tv.tv_sec;
+    // Time since epoch, January 1, 1970 (midnight UTC/GMT)
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_usec + 1000000 * tv.tv_sec;
 #endif
 }
 
@@ -288,25 +341,25 @@ uint64_t timerUsEnd(uint64_t start)
 
 #if PLATFORM_IS_WINDOWS
 
-	LARGE_INTEGER EndingTime, ElapsedTimeUs;
-	LARGE_INTEGER Frequency;
+    LARGE_INTEGER EndingTime, ElapsedTimeUs;
+    LARGE_INTEGER Frequency;
 
-	QueryPerformanceCounter(&EndingTime);
-	QueryPerformanceFrequency(&Frequency);
+    QueryPerformanceCounter(&EndingTime);
+    QueryPerformanceFrequency(&Frequency);
 
-	ElapsedTimeUs.QuadPart = EndingTime.QuadPart - start;
+    ElapsedTimeUs.QuadPart = EndingTime.QuadPart - start;
 
-	ElapsedTimeUs.QuadPart *= 1000000;
-	ElapsedTimeUs.QuadPart /= Frequency.QuadPart;
+    ElapsedTimeUs.QuadPart *= 1000000;
+    ElapsedTimeUs.QuadPart /= Frequency.QuadPart;
 
-	return ElapsedTimeUs.QuadPart;
+    return ElapsedTimeUs.QuadPart;
 
 #else
 
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-	uint64_t stopTimeUs = tv.tv_usec + 1000000 * tv.tv_sec;
-	return stopTimeUs - start;
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    uint64_t stopTimeUs = tv.tv_usec + 1000000 * tv.tv_sec;
+    return stopTimeUs - start;
 
 #endif
 
@@ -317,15 +370,15 @@ uint64_t timerRawStart()
 
 #if PLATFORM_IS_WINDOWS
 
-	LARGE_INTEGER StartingTime;
-	QueryPerformanceCounter(&StartingTime);
-	return StartingTime.QuadPart;
+    LARGE_INTEGER StartingTime;
+    QueryPerformanceCounter(&StartingTime);
+    return StartingTime.QuadPart;
 
 #else
 
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_usec + 1000000 * tv.tv_sec;
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_usec + 1000000 * tv.tv_sec;
 
 #endif
 
@@ -336,17 +389,17 @@ uint64_t timerRawEnd(uint64_t start)
 
 #if PLATFORM_IS_WINDOWS
 
-	LARGE_INTEGER EndingTime, ElapsedTimeUs;
-	QueryPerformanceCounter(&EndingTime);
-	ElapsedTimeUs.QuadPart = EndingTime.QuadPart - start;
-	return ElapsedTimeUs.QuadPart;
+    LARGE_INTEGER EndingTime, ElapsedTimeUs;
+    QueryPerformanceCounter(&EndingTime);
+    ElapsedTimeUs.QuadPart = EndingTime.QuadPart - start;
+    return ElapsedTimeUs.QuadPart;
 
 #else
 
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-	uint64_t stopTimeUs = tv.tv_usec + 1000000 * tv.tv_sec;
-	return stopTimeUs - start;
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    uint64_t stopTimeUs = tv.tv_usec + 1000000 * tv.tv_sec;
+    return stopTimeUs - start;
 
 #endif
 
@@ -356,33 +409,33 @@ uint64_t getTickCount(void)
 {
 
 #if PLATFORM_IS_WINDOWS
-	return GetTickCount64();
+    return GetTickCount64();
 #elif PLATFORM_IS_EVB_2
     return time_ticks_u64();
 #elif PLATFORM_IS_EMBEDDED
     return time_ticks_u64();
 #else
-	struct timespec now;
-	if (clock_gettime(CLOCK_MONOTONIC, &now))
-	{
-		return 0;
-	}
-	return (uint64_t)(now.tv_sec * 1000.0 + now.tv_nsec / 1000000.0);
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now))
+    {
+        return 0;
+    }
+    return (uint64_t)(now.tv_sec * 1000.0 + now.tv_nsec / 1000000.0);
 #endif
 
 }
 
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec)
 {
-	*sig_gen += freqHz * periodSec * C_TWOPI_F;
+    *sig_gen += freqHz * periodSec * C_TWOPI_F;
 
-	// Unwrap Angle
-	if (*sig_gen > C_PI_F)
-	{
-		*sig_gen -= C_TWOPI_F;
-	}
+    // Unwrap Angle
+    if (*sig_gen > C_PI_F)
+    {
+        *sig_gen -= C_TWOPI_F;
+    }
 
-	return amplitude * sinf(*sig_gen);
+    return amplitude * sinf(*sig_gen);
 }
 
 FILE* openFile(const char* path, const char* mode)
@@ -425,13 +478,13 @@ const char* tempPath()
 
 const unsigned char* getHexLookupTable()
 {
-	static const unsigned char s_hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-	return s_hexLookupTable;
+    static const unsigned char s_hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+    return s_hexLookupTable;
 }
 
 uint8_t getHexValue(unsigned char hex)
 {
-	return 9 * (hex >> 6) + (hex & 017);
+    return 9 * (hex >> 6) + (hex & 017);
 }
 
 void* threadCreateAndStart(void(*function)(void* info), void* info)
@@ -442,17 +495,17 @@ void* threadCreateAndStart(void(*function)(void* info), void* info)
 
 #elif CPP11_IS_ENABLED
 
-	return new thread(function, info);
+    return new thread(function, info);
 
 #elif PLATFORM_IS_WINDOWS
 
-	return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)function, info, 0, NULL);
+    return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)function, info, 0, NULL);
 
 #else
 
-	pthread_t* t = (pthread_t*)MALLOC(sizeof(pthread_t));
-	pthread_create(t, NULL, function, info);
-	return t;
+    pthread_t* t = (pthread_t*)MALLOC(sizeof(pthread_t));
+    pthread_create(t, NULL, function, info);
+    return t;
 
 #endif
 
@@ -460,10 +513,10 @@ void* threadCreateAndStart(void(*function)(void* info), void* info)
 
 void threadJoinAndFree(void* handle)
 {
-	if (handle == NULL)
-	{
-		return;
-	}
+    if (handle == NULL)
+    {
+        return;
+    }
 
 #if PLATFORM_IS_EMBEDDED
 
@@ -471,21 +524,21 @@ void threadJoinAndFree(void* handle)
 
 #elif CPP11_IS_ENABLED
 
-	if (((thread*)handle)->joinable()) 
-	{
-		((thread*)handle)->join();
-		delete (thread*)handle;
-	}
+    if (((thread*)handle)->joinable()) 
+    {
+        ((thread*)handle)->join();
+        delete (thread*)handle;
+    }
 
 #elif PLATFORM_IS_WINDOWS
 
-	WaitForSingleObject(handle, 0);
-	CloseHandle(handle);
+    WaitForSingleObject(handle, 0);
+    CloseHandle(handle);
 
 #else
 
-	pthread_join((pthread_t*)handle);
-	FREE(handle);
+    pthread_join((pthread_t*)handle);
+    FREE(handle);
 
 #endif
 
@@ -500,19 +553,19 @@ void* mutexCreate(void)
 
 #elif CPP11_IS_ENABLED
 
-	return new mutex();
+    return new mutex();
 
 #elif PLATFORM_IS_WINDOWS
 
-	CRITICAL_SECTION* c = (CRITICAL_SECTION*)MALLOC(sizeof(CRITICAL_SECTION));
-	InitializeCriticalSection(c);
-	return c;	
+    CRITICAL_SECTION* c = (CRITICAL_SECTION*)MALLOC(sizeof(CRITICAL_SECTION));
+    InitializeCriticalSection(c);
+    return c;    
 
 #else
 
-	pthread_mutex_t* m = (pthread_mutex_t*)MALLOC(sizeof(pthread_mutex_t));
-	pthread_mutex_init(m, NULL);
-	return m;
+    pthread_mutex_t* m = (pthread_mutex_t*)MALLOC(sizeof(pthread_mutex_t));
+    pthread_mutex_init(m, NULL);
+    return m;
 
 #endif
 
@@ -527,15 +580,15 @@ void mutexLock(void* handle)
 
 #elif CPP11_IS_ENABLED
 
-	((mutex*)handle)->lock();
+    ((mutex*)handle)->lock();
 
 #elif PLATFORM_IS_WINDOWS
 
-	EnterCriticalSection((CRITICAL_SECTION*)handle);
+    EnterCriticalSection((CRITICAL_SECTION*)handle);
 
 #else
 
-	pthread_mutex_lock((pthread_mutex_t*)handle);
+    pthread_mutex_lock((pthread_mutex_t*)handle);
 
 #endif
 
@@ -550,15 +603,15 @@ void mutexUnlock(void* handle)
 
 #elif CPP11_IS_ENABLED
 
-	((mutex*)handle)->unlock();
+    ((mutex*)handle)->unlock();
 
 #elif PLATFORM_IS_WINDOWS
 
-	LeaveCriticalSection((CRITICAL_SECTION*)handle);
+    LeaveCriticalSection((CRITICAL_SECTION*)handle);
 
 #else
 
-	pthread_mutex_unlock((pthread_mutex_t*)handle);
+    pthread_mutex_unlock((pthread_mutex_t*)handle);
 
 #endif
 
@@ -566,10 +619,10 @@ void mutexUnlock(void* handle)
 
 void mutexFree(void* handle)
 {
-	if (handle == NULL)
-	{
-		return;
-	}
+    if (handle == NULL)
+    {
+        return;
+    }
 
 #if PLATFORM_IS_EMBEDDED
 
@@ -577,17 +630,17 @@ void mutexFree(void* handle)
 
 #elif CPP11_IS_ENABLED
 
-	delete (mutex*)handle;
+    delete (mutex*)handle;
 
 #elif PLATFORM_IS_WINDOWS
 
-	DeleteCriticalSection((CRITICAL_SECTION*)handle);
-	FREE(handle);
+    DeleteCriticalSection((CRITICAL_SECTION*)handle);
+    FREE(handle);
 
 #else
 
-	pthread_mutex_destroy((pthread_mutex_t*)handle);
-	FREE(handle);
+    pthread_mutex_destroy((pthread_mutex_t*)handle);
+    FREE(handle);
 
 #endif
 
@@ -661,44 +714,44 @@ uint32_t dateToWeekDay(uint32_t ul_year, uint32_t ul_month, uint32_t ul_day)
 
 cMutex::cMutex()
 {
-	m_handle = mutexCreate();
+    m_handle = mutexCreate();
 }
 
 cMutex::~cMutex()
 {
-	mutexFree(m_handle);
+    mutexFree(m_handle);
 }
 
 void cMutex::Lock()
 {
-	mutexLock(m_handle);
+    mutexLock(m_handle);
 }
 
 void cMutex::Unlock()
 {
-	mutexUnlock(m_handle);
+    mutexUnlock(m_handle);
 }
 
 cMutexLocker::cMutexLocker(cMutex* mutex)
 {
-	assert(mutex != NULLPTR);
-	m_mutex = mutex;
-	m_mutex->Lock();
+    assert(mutex != NULLPTR);
+    m_mutex = mutex;
+    m_mutex->Lock();
 }
 
 cMutexLocker::~cMutexLocker()
 {
-	m_mutex->Unlock();
+    m_mutex->Unlock();
 }
 
 void advance_cursor(void) 
 {
-	static unsigned int timeLast = current_timeMs();
-	if(current_timeMs() - timeLast < 50U) return; 
-	timeLast = current_timeMs();
-	static int pos=0;
-	char cursor[4]={'/','-','\\','|'};
-	printf("%c\b", cursor[pos]);
-	fflush(stdout);
-	pos = (pos+1) % 4;
+    static unsigned int timeLast = current_timeMs();
+    if (current_timeMs() - timeLast < 50U) return; 
+    timeLast = current_timeMs();
+    static int pos=0;
+    char cursor[4]={'/','-','\\','|'};
+    printf("%c\b", cursor[pos]);
+    fflush(stdout);
+    pos = (pos+1) % 4;
 }

@@ -36,8 +36,8 @@ public:
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
-        serial_port_t* port
-    ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
+        port_handle_t port
+  ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
     }
@@ -76,8 +76,8 @@ private:
     int read_bytes(FILE* file, uint8_t line[4086], int *bytesLeft);
 
     uint16_t m_oplen;
-	uint8_t m_opcode;
-	uint8_t m_data[4086];
+    uint8_t m_opcode;
+    uint8_t m_data[4086];
 };
 
-#endif	// __IS_BOOTLOADER_ISB_H
+#endif    // __IS_BOOTLOADER_ISB_H

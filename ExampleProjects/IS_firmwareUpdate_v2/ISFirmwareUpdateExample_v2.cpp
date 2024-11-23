@@ -30,14 +30,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace ISBootloader;
 using namespace std;
 
-#define MAX_FILE_SIZE_DISK_PERCENT_50	.5
-#define MAX_FILE_SIZE_100k				100000
+#define MAX_FILE_SIZE_DISK_PERCENT_50   .5
+#define MAX_FILE_SIZE_100k              100000
 
 bool g_showProgress = true;
 
 bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 {
-    inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
+    inertialSenseInterface.StopBroadcasts();    // Stop streaming any prior messages
 
     // ask for device info every 2 seconds
     inertialSenseInterface.BroadcastBinaryData(DID_DEV_INFO, 2000);
@@ -81,7 +81,7 @@ static void statusText(void* obj, eLogLevel level, const char* info, ...)
     {
         printf("%s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
     }
-    else if(ctx->m_sn != 0)
+    else if (ctx->m_sn != 0)
     {
         printf("(SN%d):\r", ctx->m_sn);
     }
@@ -98,11 +98,11 @@ static void statusText(void* obj, eLogLevel level, const char* info, ...)
 }
 
 // [C++ COMM INSTRUCTION] Handle received data 
-static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
+static void example_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
 {
 
     (void)i;
-    (void)pHandle;
+    (void)port;
 
     // Print data to terminal
     printf("HDR_ID: %d\r\n", data->hdr.id);
@@ -184,7 +184,7 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
             bool finalization_needed = false; // true if we actually did something that needs finalizing
 
             if (!imx_firmware.empty()) {
-                fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 24576);
+                fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 0x6000);
                 if (fw_result != dfu::DFU_ERROR_NONE)
                     fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
                 finalization_needed = true;
@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
     if (!inertialSenseInterface.Open(COMNum.c_str(), baudRate, true))
     {
         cout << "Failed to open serial port at " << COMNum.c_str() << endl;
-        return -1;	// Failed to open serial port
+        return -1;    // Failed to open serial port
     }
     else
         cout << "COM port open!\r\n";
@@ -293,48 +293,37 @@ int main(int argc, char* argv[])
                 commands.push_back("upload=" + fileName); // upload image to device
                 commands.push_back("reset"); // reset device
 
-                if (inertialSenseInterface.updateFirmware(
-                        COMNum, // COM port
-                        baudRate, // baud rate
-                        fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
-                        commands, // vector of strings, commands to run when performing the update
-                        uploadProgress,
-                        verifyProgress,
-                        statusText,
-                        NULL) != IS_OP_OK)
-                {
-                    inertialSenseInterface.Close();
-                    inertialSenseInterface.CloseServerConnection();
-                    return -1;
-                }
-                else
-                    cout << "Logger set!\r\n";
+                for (auto device : inertialSenseInterface.getDevices()) {
+                    if (device->updateFirmware(
+                            fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
+                            commands, // vector of strings, commands to run when performing the update
+                            uploadProgress,
+                            verifyProgress,
+                            statusText,
+                            NULL) != IS_OP_OK)
+                    {
+                        inertialSenseInterface.Close();
+                        inertialSenseInterface.CloseServerConnection();
+                        return -1;
+                    }
+                    else
+                        cout << "Logger set!\r\n";
 
-
-                // get device index assignment for our com number
-                deviceIndex = inertialSenseInterface.getUpdateDeviceIndex(COMNum.c_str());
-
-                // check if we got a valid index
-                if (deviceIndex >= 0)
-                {
-                    // Main loop. Could be in separate thread if desired.
                     do
                     {
                         // [C++ COMM INSTRUCTION] STEP 4: Read data
                         if (!inertialSenseInterface.Update())
-                        {	// device disconnected, exit
+                        {   // device disconnected, exit
                             cout << "Device disconnected!\r\n";
                             break;
                         }
 
-                        status = inertialSenseInterface.getUpdateStatus(deviceIndex);
+                        status = device->getUpdateStatus();
 
                     } while (status >= fwUpdate::NOT_STARTED && status < fwUpdate::FINISHED);
 
                     cout << "Finished!\r\n";
                 }
-                else
-                    cout << "Bad device index!\r\n";
             }
             else
                 cout << "No file provided!!";

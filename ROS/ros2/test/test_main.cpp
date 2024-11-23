@@ -29,10 +29,10 @@ TEST(test_main, basic)
 
     bool success = false;
     unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
-	while((nowTimeMs = current_timeMs()) - startTimeMs < 5000)
-	{
+    while ((nowTimeMs = current_timeMs()) - startTimeMs < 5000)
+    {
             isROS.update();
-	    rclcpp::spin_some(testNode);
+        rclcpp::spin_some(testNode);
         if (testNode->did_rx_pimu_) {
             success = true;
             break;
@@ -46,7 +46,7 @@ TEST(test_main, basic)
         }
     }
 
-    ASSERT_TRUE( success );
+    ASSERT_TRUE(success);
     isROS.terminate();
 }
 
@@ -107,7 +107,7 @@ TEST(test_main, gps_ins_time_sync)
 
     bool success = false;
     unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
-    while( ((nowTimeMs = current_timeMs()) - startTimeMs < 10000) && !testNode->got_gps_tow )
+    while (((nowTimeMs = current_timeMs()) - startTimeMs < 10000) && !testNode->got_gps_tow)
     {
         isROS.update();
         rclcpp::spin_some(testNode);
@@ -123,7 +123,7 @@ TEST(test_main, gps_ins_time_sync)
     TEST_COUT << "Got TimeOfWeek/GPS Fix.  Collecting 10 seconds of data..." << std::endl;
 
     startTimeMs = current_timeMs(), prevTimeMs = 0;
-    while((nowTimeMs = current_timeMs()) - startTimeMs < 10000)
+    while ((nowTimeMs = current_timeMs()) - startTimeMs < 10000)
     {
         isROS.update();
         rclcpp::spin_some(testNode);
@@ -140,10 +140,10 @@ TEST(test_main, gps_ins_time_sync)
     TEST_COUT << "Timestamp Deviation (GPS <> INS):   [" << testNode->get_min_deviation(testNode->gps_ts, testNode->ins_ts)  << " <= " <<  testNode->get_avg_deviation(testNode->gps_ts, testNode->ins_ts) << " <= "  << testNode->get_max_deviation(testNode->gps_ts, testNode->ins_ts) << "]" << :: std::endl;
     TEST_COUT << "Timestamp Deviation (INS <> IMU):   [" << testNode->get_min_deviation(testNode->ins_ts, testNode->imu_ts)  << " <= " <<  testNode->get_avg_deviation(testNode->ins_ts, testNode->imu_ts) << " <= "  << testNode->get_max_deviation(testNode->ins_ts, testNode->imu_ts) << "]" << :: std::endl;
 
-    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->pimu_ts));
-    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->imu_ts));
-    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->ins_ts));
-    EXPECT_GE( 0.005, testNode->get_avg_deviation(testNode->ins_ts, testNode->imu_ts));
+    EXPECT_GE(0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->pimu_ts));
+    EXPECT_GE(0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->imu_ts));
+    EXPECT_GE(0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->ins_ts));
+    EXPECT_GE(0.005, testNode->get_avg_deviation(testNode->ins_ts, testNode->imu_ts));
     isROS.terminate();
 }
 
@@ -164,7 +164,7 @@ void cTestNode::init()
 bool cTestNode::step()
 {
     // static double last_time = 0;
-    // if( ros::ok() )
+    // if (ros::ok())
     // {
     //     double current_time = ros::Time::now().toSec();
     //     double dt = current_time - last_time;

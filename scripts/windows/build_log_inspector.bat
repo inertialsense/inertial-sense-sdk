@@ -1,25 +1,17 @@
 @echo off
 
-echo Building Log Inspector
+echo Build Log Inspector
 echo.
 
-:: Set SDK_DIR as  directory path
+:: Set SDK_DIR as directory path
 for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
-cd %SDK_DIR%\python\
+call %SDK_DIR%\scripts\lib\activate_python_venv.bat
 
-@REM python -m pip install logInspector/
+:: Build SDK cpp needed by LogInspector
+call %SDK_DIR%\scripts\windows\build_is_sdk.bat
 
-cd logInspector
-pip3 install setuptools pybind11
-::pip3 install logInspector/
-python setup.py build_ext --inplace
+:: Build Log Inspector locally
+python %SDK_DIR%\scripts\build_log_inspector.py %*
 
-set ERROR_LVL=%errorlevel%
-
-@REM timeout 10 /nobreak
-
-@REM Set ERRORLEVEL now
-@REM cmd /c exit %ERROR_LVL%
-
-@REM Set ERRORLEVEL on exit
-exit /b %ERROR_LVL%
+:: Check the exit code and exit with the same code if an error occurred
+IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%

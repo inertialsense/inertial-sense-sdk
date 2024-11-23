@@ -40,6 +40,7 @@ cDeviceLog::cDeviceLog(const ISDevice* dev) : device(dev)  {
         throw std::invalid_argument("cDeviceLog() must be passed a valid ISDevice instance.");
     m_devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
     m_devSerialNo = dev->devInfo.serialNumber;
+    m_deviceId = ((ISDevice*)dev)->getIdAsString();
     m_logStats.Clear();
 }
 
@@ -54,26 +55,28 @@ cDeviceLog::~cDeviceLog()
     CloseAllFiles();
 }
 
-void cDeviceLog::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+void cDeviceLog::InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
-	m_timeStamp = timestamp;
-	m_directory = directory;
-	m_fileCount = 0;
-	m_maxDiskSpace = maxDiskSpace;
-	m_maxFileSize = maxFileSize;
-	m_logSize = 0;
-	m_writeMode = true;
-	m_logStats.Clear();
+    m_timeStamp = timestamp;
+    m_directory = directory;
+    m_fileCount = 0;
+    m_maxDiskSpace = maxDiskSpace;
+    m_maxFileSize = maxFileSize;
+    m_logSize = 0;
+    m_writeMode = true;
+    m_logStats.Clear();
+    m_indexChunks.clear();
+    m_logStartUpTime = current_uptimeMs();
 }
 
 
 void cDeviceLog::InitDeviceForReading()
 {
-	m_fileSize = 0;
-	m_logSize = 0;
-	m_fileCount = 0;
-	m_writeMode = false;
-	m_logStats.Clear();
+    m_fileSize = 0;
+    m_logSize = 0;
+    m_fileCount = 0;
+    m_writeMode = false;
+    m_logStats.Clear();
 }
 
 bool cDeviceLog::CloseAllFiles()
@@ -90,160 +93,174 @@ bool cDeviceLog::OpenWithSystemApp()
 
 #if PLATFORM_IS_WINDOWS
 
-	std::wstring stemp = std::wstring(m_fileName.begin(), m_fileName.end());
-	LPCWSTR filename = stemp.c_str();
-	ShellExecuteW(0, 0, filename, 0, 0, SW_SHOW);
+    std::wstring stemp = std::wstring(m_fileName.begin(), m_fileName.end());
+    LPCWSTR filename = stemp.c_str();
+    ShellExecuteW(0, 0, filename, 0, 0, SW_SHOW);
 
 #endif
 
-	return true;
+    return true;
 }
 
 bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
-	// Update log statistics
-	if (dataHdr != NULL)
+    // Update log statistics
+    if (dataHdr != NULL)
     {
-		double timestamp = (ptype == _PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf) : current_timeSecD());
+        double timestamp = (ptype == _PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf) : current_timeSecD());
         m_logStats.LogData(ptype, dataHdr->id, timestamp);
-	}
+
+        addIndexRecord();
+        m_lastIndexOffset += dataHdr->size;
+    }
 
     return true;
 }
 
 bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
-	// Update log statistics done in cDeviceLogRaw::SaveData()
-	return true;
+    // Update log statistics done in cDeviceLogRaw::SaveData()
+    addIndexRecord();
+    m_lastIndexOffset += dataSize;
+
+    return true;
 }
 
 bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum, const string& timeStamp)
 {
-	m_directory = directory;
-	m_fileCount = 0;
-	m_timeStamp = timeStamp;
-	m_fileNames.clear();
-	vector<ISFileManager::file_info_t> fileInfos;
-	SetSerialNumber((uint32_t)strtoul(serialNum.c_str(), NULL, 10));
+    m_directory = directory;
+    m_fileCount = 0;
+    m_timeStamp = timeStamp;
+    m_fileNames.clear();
+    vector<ISFileManager::file_info_t> fileInfos;
+    SetSerialNumber((uint32_t)strtoul(serialNum.c_str(), NULL, 10));
 
-	string regExp;
-	if (serialNum == "0" && timeStamp == "")
-	{	// Simple filename regular expression: [\/\\][0-9]+\.dat
-		regExp = string("[\\/\\\\][0-9]+\\") + LogFileExtention();
-	}
-	else
-	{	// Default filename regular expression: [\/\\]LOG_SN60339_.*\.dat
-		regExp = string("[\\/\\\\]" IS_LOG_FILE_PREFIX) + serialNum + "_.*\\" + LogFileExtention();
-	}
-	// Search is case insensitive, finds both upper and lower case file extensions.
+    string regExp;
+    if (serialNum == "0" && timeStamp == "")
+    {   // Simple filename regular expression: [\/\\][0-9]+\.dat
+        regExp = string("[\\/\\\\][0-9]+\\") + LogFileExtention();
+    }
+    else
+    {   // Default filename regular expression: [\/\\]LOG_SN60339_.*\.dat
+        regExp = string("[\\/\\\\]" IS_LOG_FILE_PREFIX) + serialNum + "_.*\\" + LogFileExtention();
+    }
+    // Search is case insensitive, finds both upper and lower case file extensions.
 
-	ISFileManager::GetDirectorySpaceUsed(directory, regExp, fileInfos, false, false);
+    ISFileManager::GetDirectorySpaceUsed(directory, regExp, fileInfos, false, false);
 
-	if (fileInfos.size() != 0)
-	{
-		m_fileName = fileInfos[0].name;
-		for (size_t i = 0; i < fileInfos.size(); i++)
-		{
-			m_fileNames.push_back(fileInfos[i].name);
-		}
-	}
-	return true;
+    if (fileInfos.size() != 0)
+    {
+        m_fileName = fileInfos[0].name;
+        for (size_t i = 0; i < fileInfos.size(); i++)
+        {
+            m_fileNames.push_back(fileInfos[i].name);
+        }
+    }
+    return true;
 }
 
 
 bool cDeviceLog::OpenNewSaveFile()
 {
-	// Close existing file
-	CloseISLogFile(m_pFile);
+    // Close existing file
+    CloseISLogFile(m_pFile);
 
-	// Ensure directory exists
-	if (m_directory.empty())
-	{
-		return false;
-	}
+    // Ensure directory exists
+    if (m_directory.empty())
+    {
+        return false;
+    }
 
-	// create directory
-	_MKDIR(m_directory.c_str());
+    // create directory
+    _MKDIR(m_directory.c_str());
 
-	// Open new file
-	m_fileCount++;
-	uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
-	if (!serNum)
-		return false;
+    // Open new file
+    m_lastIndexOffset = 0;
+    m_fileCount++;
+    uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
+    if (!serNum)
+        return false;
 
-	string fileName = GetNewFileName(serNum, m_fileCount, NULL);
-	m_pFile = CreateISLogFile(fileName, "wb");
-	m_fileSize = 0;
+    m_fileName = GetNewBaseFileName(serNum, m_fileCount, NULL);
+    m_pFile = CreateISLogFile(m_fileName + LogFileExtention(), "wb");
+    m_fileSize = 0;
 
-	if (m_pFile && m_pFile->isOpened())
-	{
+    if (m_pFile && m_pFile->isOpened())
+    {
 #if LOG_DEBUG_FILE_WRITE
-		printf("cDeviceLog::OpenNewSaveFile %s\n", fileName.c_str());
+        printf("cDeviceLog::OpenNewSaveFile %s\n", fileName.c_str());
 #endif
-		return true;
-	}
-	else
-	{
+        return true;
+    }
+    else
+    {
 #if LOG_DEBUG_FILE_WRITE
-		printf("cDeviceLog::OpenNewSaveFile FAILED %s\n", fileName.c_str());
+        printf("cDeviceLog::OpenNewSaveFile FAILED %s\n", fileName.c_str());
 #endif
-		return false;
-	}
+        return false;
+    }
 }
 
 
 bool cDeviceLog::OpenNextReadFile()
 {
-	// Close file if open
-	CloseISLogFile(m_pFile);
+    // Close file if open
+    CloseISLogFile(m_pFile);
 
-	if (m_fileCount == m_fileNames.size())
-	{
-		return false;
-	}
-	
-	m_fileName = m_fileNames[m_fileCount++];
-	m_pFile = CreateISLogFile(m_fileName, "rb");
+    if (m_fileCount == m_fileNames.size())
+    {
+        return false;
+    }
+    
+    m_fileName = m_fileNames[m_fileCount++];
+    m_pFile = CreateISLogFile(m_fileName, "rb");
 
-	if (m_pFile)
-	{
+    if (m_pFile)
+    {
 
 #if LOG_DEBUG_FILE_READ
-		printf("cDeviceLog::OpenNextReadFile %s\n", m_fileName.c_str());
+        printf("cDeviceLog::OpenNextReadFile %s\n", m_fileName.c_str());
 #endif
-		return true;
-	}
-	else
-	{
+        return true;
+    }
+    else
+    {
 #if LOG_DEBUG_FILE_READ
-		printf("cDeviceLog::OpenNextReadFile FAILED %s\n", m_fileName.c_str());
+        printf("cDeviceLog::OpenNextReadFile FAILED %s\n", m_fileName.c_str());
 #endif
-		return false;
-	}
+        return false;
+    }
 }
 
-string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix)
+std::string cDeviceLog::GetNewBaseFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix)
 {
-    return utils::string_format("%s/%s%d_%s_%04d%s%s",
-        m_directory.c_str(),
-        IS_LOG_FILE_PREFIX, 
-        (int)serialNumber, 
-        m_timeStamp.c_str(), 
-        (int)(fileCount % 10000), 
-        (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str()), 
+    return utils::string_format("%s/%s%d_%s_%04d%s",
+                                m_directory.c_str(),
+                                IS_LOG_FILE_PREFIX,
+                                (int)serialNumber,
+                                m_timeStamp.c_str(),
+                                (int)(fileCount % 10000),
+                                (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str())
+);
+}
+
+std::string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix)
+{
+    return utils::string_format("%s%s",
+        GetNewBaseFileName(serialNumber, fileCount, suffix).c_str(),
         LogFileExtention().c_str()
-    );
+);
 }
 
 void cDeviceLog::UpdateStatsFromFile(p_data_buf_t *data)
-{ 
-	double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-	m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);  
+{
+    double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
+    m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);
 }
 
 void cDeviceLog::UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp)
-{ 
-	m_logStats.LogData(ptype, id, timestamp);  
+{
+    m_logStats.LogData(ptype, id, timestamp);
 }
 
 ISDevice* cDeviceLog::Device() {
@@ -253,3 +270,48 @@ const dev_info_t* cDeviceLog::DeviceInfo() {
     return (dev_info_t*)&(device->devInfo);
 }
 
+void cDeviceLog::OnReadPacket(packet_t* pkt, protocol_type_t ptype) {
+    if (pkt != NULL)
+    {
+        double timestamp = cISDataMappings::Timestamp(&pkt->dataHdr, pkt->data.ptr);
+        m_logStats.LogData(ptype, pkt->dataHdr.id, timestamp);
+    }
+}
+
+void cDeviceLog::OnReadData(p_data_buf_t* data)
+{
+    if (data != NULL)
+    {
+        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);
+    }
+}
+
+void cDeviceLog::addIndexRecord() {
+
+    uint32_t timeSinceStart = current_uptimeMs() - m_logStartUpTime;
+    if (m_indexChunks.empty() || (timeSinceStart > m_indexChunks.back().time)) {
+        index_record_t newRec;
+        newRec.time = timeSinceStart;
+        newRec.offset = m_lastIndexOffset;
+        newRec.msg_id = m_logStats.Count();
+        newRec.reserved = 0;
+        m_indexChunks.push_back(newRec);
+    } else {
+        // m_indexChunks.emplace_back()
+    }
+
+    m_lastIndexTime = current_uptimeMs();
+}
+
+bool cDeviceLog::writeIndexChunk() {
+    std::string fileName = m_fileName + ".idx";
+    m_indexFile = CreateISLogFile(fileName, "ab");
+    for (index_record_t& rec : m_indexChunks) {
+        if (m_indexFile->write(&rec, sizeof(index_record_s)) != sizeof(index_record_s))
+            return false; // writing error; we have to assume this entire file is now bad.
+    }
+    m_indexChunks.clear();
+    m_indexFile->close();
+    return true;
+}

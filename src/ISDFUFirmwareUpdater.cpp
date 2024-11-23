@@ -39,7 +39,7 @@ namespace dfu {
         libusb_device **device_list;
         libusb_device *dev;
 
-        if(dfuMutex.try_lock())
+        if (dfuMutex.try_lock())
         {
             libusb_init(NULL);
 
@@ -68,7 +68,7 @@ namespace dfu {
      * @return the number of devices remaining in the vector (devices.size())
      */
     size_t ISDFUFirmwareUpdater::filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint) {
-        auto removed = std::remove_if(std::begin(devices), std::end(devices), [&fingerprint](DFUDevice *d) { return !md5_matches(d->getFingerprint(), fingerprint); });
+        auto removed = std::remove_if (std::begin(devices), std::end(devices), [&fingerprint](DFUDevice *d) { return !md5_matches(d->getFingerprint(), fingerprint); });
         devices.erase(removed, devices.end());
         return devices.size();
     }
@@ -80,7 +80,7 @@ namespace dfu {
      * @return the number of devices remaining in the vector (devices.size())
      */
     size_t ISDFUFirmwareUpdater::filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target) {
-        auto removed = std::remove_if(std::begin(devices), std::end(devices), [&target](DFUDevice *d) { return d->getTargetType() != target; });
+        auto removed = std::remove_if (std::begin(devices), std::end(devices), [&target](DFUDevice *d) { return d->getTargetType() != target; });
         devices.erase(removed, devices.end());
         return devices.size();
     }
@@ -341,7 +341,7 @@ namespace dfu {
         index--;
         if (index < 0) return nullptr;
 
-        otp_info_t *otp = (otp_info_t * )((index * OTP_SECTION_SIZE) + raw);
+        otp_info_t *otp = (otp_info_t *)((index * OTP_SECTION_SIZE) + raw);
 
         uint64_t key = OTP_KEY;
         if (memcmp(otp_mem - 8, &key, 8) == 0 && foundSn) {
@@ -361,6 +361,13 @@ namespace dfu {
 
         if (libusb_open(usbDevice, &usbHandle) < LIBUSB_SUCCESS)
             return DFU_ERROR_DEVICE_NOTFOUND;
+
+        // Not entirely sure this is needed, but it doesn't seem to hurt either.
+        int kernelActive = libusb_kernel_driver_active(usbHandle, 0);
+        if (kernelActive == 1) {
+            ret_libusb = libusb_detach_kernel_driver(usbHandle, 0);
+        }
+        libusb_reset_device(usbHandle);
 
         ret_libusb = libusb_claim_interface(usbHandle, 0);
         if (ret_libusb < LIBUSB_SUCCESS) {
@@ -434,9 +441,9 @@ namespace dfu {
 
             image[0].address = (baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
             auto fsize = file.tellg();
-            file.seekg( 0, std::ios::end );
+            file.seekg(0, std::ios::end);
             image[0].len = file.tellg() - fsize;
-            file.seekg( 0, std::ios::beg );
+            file.seekg(0, std::ios::beg);
 
             image[0].image = static_cast<uint8_t *>(malloc(image[0].len));
             file.read((char *)image[0].image, image[0].len);
@@ -521,9 +528,9 @@ namespace dfu {
 
             image[0].address = (baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
             auto fsize = stream.tellg();
-            stream.seekg( 0, std::ios::end );
+            stream.seekg(0, std::ios::end);
             image[0].len = stream.tellg() - fsize;
-            stream.seekg( 0, std::ios::beg );
+            stream.seekg(0, std::ios::beg);
 
             image[0].image = static_cast<uint8_t *>(malloc(image[0].len));
             stream.read((char *)image[0].image, image[0].len);
@@ -836,6 +843,7 @@ namespace dfu {
         }
 
         libusb_release_interface(usbHandle, 0);
+        usbHandle = nullptr;
 
         return DFU_ERROR_NONE;
     }

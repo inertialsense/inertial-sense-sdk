@@ -27,10 +27,10 @@ void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time)
         towMsMinusLeapMs += C_MILLISECONDS_PER_WEEK;
     }
     int todayMs = (towMsMinusLeapMs) % C_MILLISECONDS_PER_DAY;
-	time->hour   = (todayMs / C_MILLISECONDS_PER_HOUR);
-	time->minute = (todayMs / 60000) % 60;
-	time->second = (todayMs / 1000) % 60;
-	time->millisecond = todayMs % 1000;
+    time->hour   = (todayMs / C_MILLISECONDS_PER_HOUR);
+    time->minute = (todayMs / 60000) % 60;
+    time->second = (todayMs / 1000) % 60;
+    time->millisecond = todayMs % 1000;
 }
 
 void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeekMs, int gpsLeapS)
@@ -165,7 +165,7 @@ gtime_t epochToTime(const double *ep)
     return time;
 }
 
-static const gtime_t gpsRefT0 = { 315964800, 0 };	// (gtime) gps reference time = epochToTime(gpst0) at 1980
+static const gtime_t gpsRefT0 = { 315964800, 0 };    // (gtime) gps reference time = epochToTime(gpst0) at 1980
 
 /* time to gps time ------------------------------------------------------------
 * convert gtime_t struct to week and tow in gps time
@@ -175,11 +175,11 @@ static const gtime_t gpsRefT0 = { 315964800, 0 };	// (gtime) gps reference time 
 *-----------------------------------------------------------------------------*/
 double timeToGpst(gtime_t t, int *week)
 {
-	time_t sec = t.time - gpsRefT0.time;
-	time_t w = (time_t)(sec / (86400*7));
-	
-	if (week){ *week = (int)w; }
-	return (double)(sec - (double)w*86400*7) + t.sec;
+    time_t sec = t.time - gpsRefT0.time;
+    time_t w = (time_t)(sec / (86400*7));
+    
+    if (week){ *week = (int)w; }
+    return (double)(sec - (double)w*86400*7) + t.sec;
 }
 
 void UtcDateTimeToGpsTime(const double *datetime, int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek)
@@ -193,114 +193,114 @@ void UtcDateTimeToGpsTime(const double *datetime, int leapSeconds, uint32_t &gps
 
 void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond)
 {
-	double j1, j2, j3, j4, j5;
-	double intgr = floor(julian);
-	double frac = julian - intgr;
-	double gregjd = 2299161.0;
-	if (intgr >= gregjd)
-	{
-		//Gregorian calendar correction
-		double tmp = floor(((intgr - 1867216.0) - 0.25) / 36524.25);
-		j1 = intgr + 1.0 + tmp - floor(0.25 * tmp);
-	}
-	else
-	{
-		j1 = intgr;
-	}
+    double j1, j2, j3, j4, j5;
+    double intgr = floor(julian);
+    double frac = julian - intgr;
+    double gregjd = 2299161.0;
+    if (intgr >= gregjd)
+    {
+        //Gregorian calendar correction
+        double tmp = floor(((intgr - 1867216.0) - 0.25) / 36524.25);
+        j1 = intgr + 1.0 + tmp - floor(0.25 * tmp);
+    }
+    else
+    {
+        j1 = intgr;
+    }
 
-	//correction for half day offset
-	double dayfrac = frac + 0.5;
-	if (dayfrac >= 1.0)
-	{
-		dayfrac -= 1.0;
-		++j1;
-	}
+    //correction for half day offset
+    double dayfrac = frac + 0.5;
+    if (dayfrac >= 1.0)
+    {
+        dayfrac -= 1.0;
+        ++j1;
+    }
 
-	j2 = j1 + 1524.0;
-	j3 = floor(6680.0 + ((j2 - 2439870.0) - 122.1) / 365.25);
-	j4 = floor(j3 * 365.25);
-	j5 = floor((j2 - j4) / 30.6001);
+    j2 = j1 + 1524.0;
+    j3 = floor(6680.0 + ((j2 - 2439870.0) - 122.1) / 365.25);
+    j4 = floor(j3 * 365.25);
+    j5 = floor((j2 - j4) / 30.6001);
 
-	double d = floor(j2 - j4 - floor(j5 * 30.6001));
-	double m = floor(j5 - 1);
-	if (m > 12)
-	{
-		m -= 12;
-	}
-	double y = floor(j3 - 4715.0);
-	if (m > 2)
-	{
-		--y;
-	}
-	if (y <= 0)
-	{
-		--y;
-	}
+    double d = floor(j2 - j4 - floor(j5 * 30.6001));
+    double m = floor(j5 - 1);
+    if (m > 12)
+    {
+        m -= 12;
+    }
+    double y = floor(j3 - 4715.0);
+    if (m > 2)
+    {
+        --y;
+    }
+    if (y <= 0)
+    {
+        --y;
+    }
 
-	//
-	// get time of day from day fraction
-	//
-	double hr = floor(dayfrac * 24.0);
-	double mn = floor((dayfrac * 24.0 - hr) * 60.0);
-	double f = ((dayfrac * 24.0 - hr) * 60.0 - mn) * 60.0;
-	double sc = f;
-	if (f - sc > 0.5)
-	{
-		++sc;
-	}
+    //
+    // get time of day from day fraction
+    //
+    double hr = floor(dayfrac * 24.0);
+    double mn = floor((dayfrac * 24.0 - hr) * 60.0);
+    double f = ((dayfrac * 24.0 - hr) * 60.0 - mn) * 60.0;
+    double sc = f;
+    if (f - sc > 0.5)
+    {
+        ++sc;
+    }
 
-	if (y < 0)
-	{
-		y = -y;
-	}
-	if (year)
-	{
-		*year = (uint32_t)y;
-	}
-	if (month)
-	{
-		*month = (uint32_t)m;
-	}
-	if (day)
-	{
-		*day = (uint32_t)d;
-	}
-	if (hour)
-	{
-		*hour = (uint32_t)hr;
-	}
-	if (minute)
-	{
-		*minute = (uint32_t)mn;
-	}
-	if (second)
-	{
-		*second = (uint32_t)sc;
-	}
-	if (millisecond)
-	{
-		*millisecond = (uint32_t)((sc - floor(sc)) * 1000.0);
-	}
+    if (y < 0)
+    {
+        y = -y;
+    }
+    if (year)
+    {
+        *year = (uint32_t)y;
+    }
+    if (month)
+    {
+        *month = (uint32_t)m;
+    }
+    if (day)
+    {
+        *day = (uint32_t)d;
+    }
+    if (hour)
+    {
+        *hour = (uint32_t)hr;
+    }
+    if (minute)
+    {
+        *minute = (uint32_t)mn;
+    }
+    if (second)
+    {
+        *second = (uint32_t)sc;
+    }
+    if (millisecond)
+    {
+        *millisecond = (uint32_t)((sc - floor(sc)) * 1000.0);
+    }
 }
 
 double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMs, uint8_t leapSeconds)
 {
     uint32_t gpsTow = gpsTimeofWeekMs / 1000;
-	uint32_t gpsTime = gpsWeek * C_SECONDS_PER_WEEK + gpsTow;
-	double unixSeconds = (double)(gpsTime + C_GPS_TO_UNIX_OFFSET_S - leapSeconds);
+    uint32_t gpsTime = gpsWeek * C_SECONDS_PER_WEEK + gpsTow;
+    double unixSeconds = (double)(gpsTime + C_GPS_TO_UNIX_OFFSET_S - leapSeconds);
 #if 1   // Include fractional seconds
     double gpsFracS = (gpsTimeofWeekMs - gpsTow) * 0.001;
     unixSeconds += gpsFracS;
 #endif
 
-	return unixSeconds;
+    return unixSeconds;
 }
 
 double gpsToJulian(uint32_t gpsWeek, uint32_t gpsMilliseconds, uint32_t leapSeconds)
 {
-	double gpsDays = (double)(gpsWeek * 7);
-	gpsDays += ((((double)gpsMilliseconds) * 0.001) - (double)leapSeconds) * C_DAYS_PER_SECOND;
-	return TIMECONV_JULIAN_DATE_START_OF_GPS_TIME + gpsDays; // 2444244.500000 Julian date for Jan 6, 1980 midnight - start of gps time
+    double gpsDays = (double)(gpsWeek * 7);
+    gpsDays += ((((double)gpsMilliseconds) * 0.001) - (double)leapSeconds) * C_DAYS_PER_SECOND;
+    return TIMECONV_JULIAN_DATE_START_OF_GPS_TIME + gpsDays; // 2444244.500000 Julian date for Jan 6, 1980 midnight - start of gps time
 }
 
 #if 0
@@ -314,56 +314,56 @@ double gpsToJulian(uint32_t gpsWeek, uint32_t gpsMilliseconds, uint32_t leapSeco
 
 // A static function to check if the utc input values are valid.
 // \return 1 if valid, 0 otherwise.
-static int TIMECONV_IsUTCTimeValid( 
+static int TIMECONV_IsUTCTimeValid(
     const unsigned short     utc_year,      //!< Universal Time Coordinated  [year]
     const unsigned char      utc_month,     //!< Universal Time Coordinated  [1-12 months] 
     const unsigned char      utc_day,       //!< Universal Time Coordinated  [1-31 days]
     const unsigned char      utc_hour,      //!< Universal Time Coordinated  [hours]
     const unsigned char      utc_minute,    //!< Universal Time Coordinated  [minutes]
     const float              utc_seconds    //!< Universal Time Coordinated  [s]
- );
+);
  
 
-int TIMECONV_IsUTCTimeValid( 
+int TIMECONV_IsUTCTimeValid(
     const unsigned short     utc_year,      //!< Universal Time Coordinated  [year]
     const unsigned char      utc_month,     //!< Universal Time Coordinated  [1-12 months] 
     const unsigned char      utc_day,       //!< Universal Time Coordinated  [1-31 days]
     const unsigned char      utc_hour,      //!< Universal Time Coordinated  [hours]
     const unsigned char      utc_minute,    //!< Universal Time Coordinated  [minutes]
     const float              utc_seconds    //!< Universal Time Coordinated  [s]
- )
+)
 {
     unsigned char daysInMonth;
     int result;
-    if( utc_month == 0 || utc_month > 12 )
+    if (utc_month == 0 || utc_month > 12)
     {
-        GNSS_ERROR_MSG( "if( utc_month == 0 || utc_month > 12 )" );
+        GNSS_ERROR_MSG("if (utc_month == 0 || utc_month > 12)");
         return 0;
     }
-    result = TIMECONV_GetNumberOfDaysInMonth( utc_year, utc_month, &daysInMonth );
-    if( result == 0 )
+    result = TIMECONV_GetNumberOfDaysInMonth(utc_year, utc_month, &daysInMonth);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetNumberOfDaysInMonth returned 0." );       
+        GNSS_ERROR_MSG("TIMECONV_GetNumberOfDaysInMonth returned 0.");       
         return 0;
     }
-    if( utc_day == 0 || utc_day > daysInMonth )
+    if (utc_day == 0 || utc_day > daysInMonth)
     {
-        GNSS_ERROR_MSG( "if( utc_day == 0 || utc_day > daysInMonth )" );
+        GNSS_ERROR_MSG("if (utc_day == 0 || utc_day > daysInMonth)");
         return 0;
     }
-    if( utc_hour > 23 )
+    if (utc_hour > 23)
     {
-        GNSS_ERROR_MSG( "if( utc_hour > 23 )" );
+        GNSS_ERROR_MSG("if (utc_hour > 23)");
         return 0;
     }
-    if( utc_minute > 59 )
+    if (utc_minute > 59)
     {
-        GNSS_ERROR_MSG( "if( utc_minute > 59 )" );
+        GNSS_ERROR_MSG("if (utc_minute > 59)");
         return 0;
     }
-    if( utc_seconds > 60 )
+    if (utc_seconds > 60)
     {
-        GNSS_ERROR_MSG( "if( utc_seconds > 60 )" );
+        GNSS_ERROR_MSG("if (utc_seconds > 60)");
         return 0;
     }
 
@@ -382,7 +382,7 @@ int TIMECONV_GetSystemTime(
     double*             julian_date,  //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
     unsigned short*     gps_week,     //!< GPS week (0-1024+)            [week]
     double*             gps_tow       //!< GPS time of week (0-604800.0) [s]
-    )
+  )
 {
     int result;
     double timebuffer_time_in_days;
@@ -392,7 +392,7 @@ int TIMECONV_GetSystemTime(
 #ifdef _WIN32
 
     struct _timeb timebuffer; // found in <sys/timeb.h>   
-    _ftime( &timebuffer );
+    _ftime(&timebuffer);
     timebuffer_time_in_seconds = timebuffer.time + timebuffer.millitm * 1.0e-3; // [s] with ms resolution
 
 #else
@@ -413,10 +413,10 @@ int TIMECONV_GetSystemTime(
     // convert to julian date
     *julian_date = TIMECONV_JULIAN_DATE_START_OF_PC_TIME + timebuffer_time_in_days;
 
-    result = TIMECONV_DetermineUTCOffset( *julian_date, utc_offset );
-    if( result == 0 )
+    result = TIMECONV_DetermineUTCOffset(*julian_date, utc_offset);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_DetermineUTCOffset returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_DetermineUTCOffset returned 0.");
         return 0;
     }
 
@@ -424,10 +424,10 @@ int TIMECONV_GetSystemTime(
         *julian_date,
         *utc_offset,
         gps_week,
-        gps_tow );
-    if( result == 0 )
+        gps_tow);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetGPSTimeFromJulianDate returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetGPSTimeFromJulianDate returned 0.");
         return 0;
     }
 
@@ -438,10 +438,10 @@ int TIMECONV_GetSystemTime(
         utc_day,
         utc_hour,
         utc_minute,
-        utc_seconds );
-    if( result == 0 )
+        utc_seconds);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetUTCTimeFromJulianDate" );
+        GNSS_ERROR_MSG("TIMECONV_GetUTCTimeFromJulianDate");
         return 0;
     }
 
@@ -457,7 +457,7 @@ int TIMECONV_SetSystemTime(
     const unsigned char   utc_hour,     //!< Universal Time Coordinated    [hours]
     const unsigned char   utc_minute,   //!< Universal Time Coordinated    [minutes]
     const float           utc_seconds   //!< Universal Time Coordinated    [s]
-    )
+  )
 {
     int result;
     SYSTEMTIME t;
@@ -472,17 +472,17 @@ int TIMECONV_SetSystemTime(
         utc_minute,
         utc_seconds,
         &julian_date
-        );
-    if( !result )
+    );
+    if (!result)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetJulianDateFromUTCTime returned 0.");
+        GNSS_ERROR_MSG("TIMECONV_GetJulianDateFromUTCTime returned 0.");
         return 0;
     }
 
-    result = TIMECONV_GetDayOfWeekFromJulianDate( julian_date, &day_of_week );
-    if( !result )
+    result = TIMECONV_GetDayOfWeekFromJulianDate(julian_date, &day_of_week);
+    if (!result)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetDayOfWeekFromJulianDate returned 0.");
+        GNSS_ERROR_MSG("TIMECONV_GetDayOfWeekFromJulianDate returned 0.");
         return 0;
     }
     
@@ -496,7 +496,7 @@ int TIMECONV_SetSystemTime(
     t.wMilliseconds = (WORD)((utc_seconds - t.wSecond)*1000);
 
     // Set the PC system time.
-    result = SetSystemTime( &t );
+    result = SetSystemTime(&t);
     
     return result;
 }
@@ -506,7 +506,7 @@ int TIMECONV_SetSystemTime(
 int TIMECONV_GetDayOfWeekFromJulianDate(
     const double julian_date,   //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
     unsigned char *day_of_week  //!< 0-Sunday, 1-Monday, 2-Tuesday, 3-Wednesday, 4-Thursday, 5-Friday, 6-Saturday [].
-    )
+  )
 {
     // "If the Julian date of noon is applied to the entire midnight-to-midnight civil 
     // day centered on that noon,[5] rounding Julian dates (fractional days) for the 
@@ -517,7 +517,7 @@ int TIMECONV_GetDayOfWeekFromJulianDate(
     int dow = 0;
     int jd = 0;
 
-    if( julian_date - floor(julian_date) > 0.5 )
+    if (julian_date - floor(julian_date) > 0.5)
     {
         jd = (int)floor(julian_date+0.5);
     }
@@ -527,7 +527,7 @@ int TIMECONV_GetDayOfWeekFromJulianDate(
     }
     dow = jd%7; // 0 is monday, 1 is tuesday, etc
 
-    switch( dow )
+    switch(dow)
     {
         case 0: *day_of_week = 1; break;
         case 1: *day_of_week = 2; break;
@@ -548,11 +548,11 @@ int TIMECONV_GetJulianDateFromGPSTime(
     const double            gps_tow,       //!< GPS time of week (0-604800.0)  [s]
     const unsigned char     utc_offset,    //!< Integer seconds that GPS is ahead of UTC time, always positive [s]
     double*                 julian_date    //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-    )
+  )
 {   
-    if( gps_tow < 0.0  || gps_tow > 604800.0 )
+    if (gps_tow < 0.0  || gps_tow > 604800.0)
     {
-        GNSS_ERROR_MSG( "if( gps_tow < 0.0  || gps_tow > 604800.0 )" );
+        GNSS_ERROR_MSG("if (gps_tow < 0.0  || gps_tow > 604800.0)");
         return 0;  
     }
 
@@ -570,21 +570,21 @@ int TIMECONV_GetJulianDateFromUTCTime(
     const unsigned char      utc_minute,    //!< Universal Time Coordinated  [minutes]
     const float              utc_seconds,   //!< Universal Time Coordinated  [s]
     double*                  julian_date    //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-    )
+  )
 {   
     double y; // temp for year
     double m; // temp for month
     int result;
 
     // Check the input.
-    result = TIMECONV_IsUTCTimeValid( utc_year, utc_month, utc_day, utc_hour, utc_minute, utc_seconds );
-    if( result == 0 )
+    result = TIMECONV_IsUTCTimeValid(utc_year, utc_month, utc_day, utc_hour, utc_minute, utc_seconds);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_IsUTCTimeValid returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_IsUTCTimeValid returned 0.");
         return 0;
     }
 
-    if( utc_month <= 2 )
+    if (utc_month <= 2)
     {
         y = utc_year - 1;
         m = utc_month + 12;
@@ -606,12 +606,12 @@ int TIMECONV_GetGPSTimeFromJulianDate(
     const unsigned char     utc_offset,  //!< Integer seconds that GPS is ahead of UTC time, always positive [s]
     unsigned short*         gps_week,    //!< GPS week (0-1024+)            [week]
     double*                 gps_tow      //!< GPS time of week [s]
-    )
+  )
 {
     // Check the input.
-    if( julian_date < 0.0 )
+    if (julian_date < 0.0)
     {
-        GNSS_ERROR_MSG( "if( julian_date < 0.0 )" );
+        GNSS_ERROR_MSG("if (julian_date < 0.0)");
         return 0;
     }
 
@@ -622,7 +622,7 @@ int TIMECONV_GetGPSTimeFromJulianDate(
 
     // however, GPS time is ahead of utc time by the UTC offset (and thus the Julian date as well)
     *gps_tow += utc_offset;
-    if( *gps_tow > C_SECONDS_PER_WEEK )
+    if (*gps_tow > C_SECONDS_PER_WEEK)
     {
         *gps_tow  -= C_SECONDS_PER_WEEK;
         *gps_week += 1;
@@ -639,7 +639,7 @@ int TIMECONV_GetUTCTimeFromJulianDate(
     unsigned char*      utc_hour,     //!< Universal Time Coordinated    [hours]
     unsigned char*      utc_minute,   //!< Universal Time Coordinated    [minutes]
     float*              utc_seconds   //!< Universal Time Coordinated    [s]
-    )
+  )
 {
     int a, b, c, d, e; // temporary values
     
@@ -654,19 +654,19 @@ int TIMECONV_GetUTCTimeFromJulianDate(
     int result;
 
     // Check the input.
-    if( julian_date < 0.0 )
+    if (julian_date < 0.0)
     {
-        GNSS_ERROR_MSG( "if( julian_date < 0.0 )" );
+        GNSS_ERROR_MSG("if (julian_date < 0.0)");
         return 0;
     }
     
     a = (int)(julian_date+0.5);
     b = a + 1537;
-    c = (int)( ((double)b-122.1)/365.25 );
+    c = (int)(((double)b-122.1)/365.25);
     d = (int)(365.25*c);
-    e = (int)( ((double)(b-d))/30.6001 );
+    e = (int)(((double)(b-d))/30.6001);
     
-    td      = b - d - (int)(30.6001*e) + fmod( julian_date+0.5, 1.0 );   // [days]
+    td      = b - d - (int)(30.6001*e) + fmod(julian_date+0.5, 1.0);   // [days]
     day     = (unsigned char)td;   
     td     -= day;
     td     *= 24.0;        // [hours]
@@ -678,34 +678,34 @@ int TIMECONV_GetUTCTimeFromJulianDate(
     td     *= 60.0;        // [s]
     seconds = td;
     month   = (unsigned char)(e - 1 - 12*(int)(e/14));
-    year    = (unsigned short)(c - 4715 - (int)( (7.0+(double)month) / 10.0 ));
+    year    = (unsigned short)(c - 4715 - (int)((7.0+(double)month) / 10.0));
     
     // check for rollover issues
-    if( seconds >= 60.0 )
+    if (seconds >= 60.0)
     {
         seconds -= 60.0;
         minute++;
-        if( minute >= 60 )
+        if (minute >= 60)
         {
             minute -= 60;
             hour++;
-            if( hour >= 24 )
+            if (hour >= 24)
             {
                 hour -= 24;
                 day++;
                 
-                result = TIMECONV_GetNumberOfDaysInMonth( year, month, &days_in_month );
-                if( result == 0 )
+                result = TIMECONV_GetNumberOfDaysInMonth(year, month, &days_in_month);
+                if (result == 0)
                 {
-                    GNSS_ERROR_MSG( "TIMECONV_GetNumberOfDaysInMonth returned 0." );
+                    GNSS_ERROR_MSG("TIMECONV_GetNumberOfDaysInMonth returned 0.");
                     return 0;
                 }
                 
-                if( day > days_in_month )
+                if (day > days_in_month)
                 {
                     day = 1;
                     month++;
-                    if( month > 12 )
+                    if (month > 12)
                     {
                         month = 1;
                         year++;
@@ -734,17 +734,17 @@ int TIMECONV_GetGPSTimeFromUTCTime(
     float              utc_seconds,  //!< Universal Time Coordinated    [s]
     unsigned short*    gps_week,     //!< GPS week (0-1024+)            [week]
     double*            gps_tow       //!< GPS time of week (0-604800.0) [s]
-    )
+  )
 {
     double julian_date=0.0;
     unsigned char utc_offset=0;
     int result;
 
     // Check the input.
-    result = TIMECONV_IsUTCTimeValid( utc_year, utc_month, utc_day, utc_hour, utc_minute, utc_seconds );
-    if( result == 0 )
+    result = TIMECONV_IsUTCTimeValid(utc_year, utc_month, utc_day, utc_hour, utc_minute, utc_seconds);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_IsUTCTimeValid returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_IsUTCTimeValid returned 0.");
         return 0;
     }
 
@@ -755,17 +755,17 @@ int TIMECONV_GetGPSTimeFromUTCTime(
         utc_hour,
         utc_minute,
         utc_seconds,
-        &julian_date );
-    if( result == 0 )
+        &julian_date);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetJulianDateFromUTCTime returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetJulianDateFromUTCTime returned 0.");
         return 0;
     }
 
-    result = TIMECONV_DetermineUTCOffset( julian_date, &utc_offset );
-    if( result == 0 )
+    result = TIMECONV_DetermineUTCOffset(julian_date, &utc_offset);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_DetermineUTCOffset returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_DetermineUTCOffset returned 0.");
         return 0;
     }
 
@@ -773,10 +773,10 @@ int TIMECONV_GetGPSTimeFromUTCTime(
         julian_date,
         utc_offset,
         gps_week,
-        gps_tow );
-    if( result == 0 )
+        gps_tow);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetGPSTimeFromJulianDate returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetGPSTimeFromJulianDate returned 0.");
         return 0;
     }
 
@@ -794,17 +794,17 @@ int TIMECONV_GetGPSTimeFromRinexTime(
     float              utc_seconds,  //!< Universal Time Coordinated    [s]
     unsigned short*    gps_week,     //!< GPS week (0-1024+)            [week]
     double*            gps_tow       //!< GPS time of week (0-604800.0) [s]
-    )
+  )
 {
     double julian_date=0.0;
     unsigned char utc_offset=0;
     int result;
 
     // Check the input.
-    result = TIMECONV_IsUTCTimeValid( utc_year, utc_month, utc_day, utc_hour, utc_minute, utc_seconds );
-    if( result == 0 )
+    result = TIMECONV_IsUTCTimeValid(utc_year, utc_month, utc_day, utc_hour, utc_minute, utc_seconds);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_IsUTCTimeValid returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_IsUTCTimeValid returned 0.");
         return 0;
     }
 
@@ -815,10 +815,10 @@ int TIMECONV_GetGPSTimeFromRinexTime(
         utc_hour,
         utc_minute,
         utc_seconds,
-        &julian_date );
-    if( result == 0 )
+        &julian_date);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetJulianDateFromUTCTime returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetJulianDateFromUTCTime returned 0.");
         return 0;
     }
 
@@ -826,10 +826,10 @@ int TIMECONV_GetGPSTimeFromRinexTime(
         julian_date,
         utc_offset,
         gps_week,
-        gps_tow );
-    if( result == 0 )
+        gps_tow);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetGPSTimeFromJulianDate returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetGPSTimeFromJulianDate returned 0.");
         return 0;
     }
 
@@ -845,37 +845,37 @@ int TIMECONV_UTCTimeFromGPSTime(
     unsigned char*     utc_hour,     //!< Universal Time Coordinated    [hours]
     unsigned char*     utc_minute,   //!< Universal Time Coordinated    [minutes]
     float*             utc_seconds   //!< Universal Time Coordinated    [s]
-    )
+  )
 {
     double julian_date = 0.0; 
     unsigned char utc_offset = 0;
     int i;
     int result;
 
-    if( gps_tow < 0.0 || gps_tow > 604800.0 )
+    if (gps_tow < 0.0 || gps_tow > 604800.0)
     {
-        GNSS_ERROR_MSG( "if( gps_tow < 0.0 || gps_tow > 604800.0 )" );
+        GNSS_ERROR_MSG("if (gps_tow < 0.0 || gps_tow > 604800.0)");
         return 0;  
     }
 
     // iterate to get the right utc offset
-    for( i = 0; i < 4; i++ )
+    for (i = 0; i < 4; i++)
     {
         result = TIMECONV_GetJulianDateFromGPSTime(
             gps_week,
             gps_tow,
             utc_offset,
-            &julian_date );
-        if( result == 0 )
+            &julian_date);
+        if (result == 0)
         {
-            GNSS_ERROR_MSG( "TIMECONV_GetJulianDateFromGPSTime returned 0." );
+            GNSS_ERROR_MSG("TIMECONV_GetJulianDateFromGPSTime returned 0.");
             return 0;
         }
 
-        result = TIMECONV_DetermineUTCOffset( julian_date, &utc_offset );
-        if( result == 0 )
+        result = TIMECONV_DetermineUTCOffset(julian_date, &utc_offset);
+        if (result == 0)
         {
-            GNSS_ERROR_MSG( "TIMECONV_DetermineUTCOffset returned 0." );
+            GNSS_ERROR_MSG("TIMECONV_DetermineUTCOffset returned 0.");
             return 0;
         }
     }
@@ -887,10 +887,10 @@ int TIMECONV_UTCTimeFromGPSTime(
         utc_day,
         utc_hour,
         utc_minute,
-        utc_seconds );
-    if( result == 0 )
+        utc_seconds);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetUTCTimeFromJulianDate returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetUTCTimeFromJulianDate returned 0.");
         return 0;
     }
 
@@ -900,28 +900,28 @@ int TIMECONV_UTCTimeFromGPSTime(
 int TIMECONV_DetermineUTCOffset(
     double julian_date,       //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
     unsigned char* utc_offset //!< Integer seconds that GPS is ahead of UTC time, always positive             [s], obtained from a look up table
-    )
+  )
 {
-    if( julian_date < 0.0 )
+    if (julian_date < 0.0)
     {
-        GNSS_ERROR_MSG( "if( julian_date < 0.0 )" );
+        GNSS_ERROR_MSG("if (julian_date < 0.0)");
         return 0;
     }
 
-    if(      julian_date < 2444786.5000 ) *utc_offset = 0;
-    else if( julian_date < 2445151.5000 ) *utc_offset = 1;
-    else if( julian_date < 2445516.5000 ) *utc_offset = 2;
-    else if( julian_date < 2446247.5000 ) *utc_offset = 3;
-    else if( julian_date < 2447161.5000 ) *utc_offset = 4;
-    else if( julian_date < 2447892.5000 ) *utc_offset = 5;
-    else if( julian_date < 2448257.5000 ) *utc_offset = 6;
-    else if( julian_date < 2448804.5000 ) *utc_offset = 7;
-    else if( julian_date < 2449169.5000 ) *utc_offset = 8;
-    else if( julian_date < 2449534.5000 ) *utc_offset = 9;
-    else if( julian_date < 2450083.5000 ) *utc_offset = 10;
-    else if( julian_date < 2450630.5000 ) *utc_offset = 11;
-    else if( julian_date < 2451179.5000 ) *utc_offset = 12;  
-    else if( julian_date < 2453736.5000 ) *utc_offset = 13;  
+    if (julian_date < 2444786.5000) *utc_offset = 0;
+    else if (julian_date < 2445151.5000) *utc_offset = 1;
+    else if (julian_date < 2445516.5000) *utc_offset = 2;
+    else if (julian_date < 2446247.5000) *utc_offset = 3;
+    else if (julian_date < 2447161.5000) *utc_offset = 4;
+    else if (julian_date < 2447892.5000) *utc_offset = 5;
+    else if (julian_date < 2448257.5000) *utc_offset = 6;
+    else if (julian_date < 2448804.5000) *utc_offset = 7;
+    else if (julian_date < 2449169.5000) *utc_offset = 8;
+    else if (julian_date < 2449534.5000) *utc_offset = 9;
+    else if (julian_date < 2450083.5000) *utc_offset = 10;
+    else if (julian_date < 2450630.5000) *utc_offset = 11;
+    else if (julian_date < 2451179.5000) *utc_offset = 12;  
+    else if (julian_date < 2453736.5000) *utc_offset = 13;  
     else                                  *utc_offset = 14;
 
     return 1;
@@ -934,33 +934,33 @@ int TIMECONV_GetNumberOfDaysInMonth(
     const unsigned short year,        //!< Universal Time Coordinated    [year]
     const unsigned char month,        //!< Universal Time Coordinated    [1-12 months] 
     unsigned char* days_in_month      //!< Days in the specified month   [1-28|29|30|31 days]
-    )
+  )
 {
     int is_a_leapyear;
     unsigned char utmp = 0;
     
-    is_a_leapyear = TIMECONV_IsALeapYear( year );
+    is_a_leapyear = TIMECONV_IsALeapYear(year);
     
     switch(month)
     {
-    case  1: utmp = TIMECONV_DAYS_IN_JAN; break;
-    case  2: if( is_a_leapyear ){ utmp = 29; }else{ utmp = 28; }break;    
-    case  3: utmp = TIMECONV_DAYS_IN_MAR; break;
-    case  4: utmp = TIMECONV_DAYS_IN_APR; break;
-    case  5: utmp = TIMECONV_DAYS_IN_MAY; break;
-    case  6: utmp = TIMECONV_DAYS_IN_JUN; break;
-    case  7: utmp = TIMECONV_DAYS_IN_JUL; break;
-    case  8: utmp = TIMECONV_DAYS_IN_AUG; break;
-    case  9: utmp = TIMECONV_DAYS_IN_SEP; break;
-    case 10: utmp = TIMECONV_DAYS_IN_OCT; break;
-    case 11: utmp = TIMECONV_DAYS_IN_NOV; break;
-    case 12: utmp = TIMECONV_DAYS_IN_DEC; break;
-    default: 
-        { 
-            GNSS_ERROR_MSG( "unexpected default case." ); 
-            return 0; 
-            break;    
-        }
+        case  1: utmp = TIMECONV_DAYS_IN_JAN; break;
+        case  2: if (is_a_leapyear){ utmp = 29; }else{ utmp = 28; }break;    
+        case  3: utmp = TIMECONV_DAYS_IN_MAR; break;
+        case  4: utmp = TIMECONV_DAYS_IN_APR; break;
+        case  5: utmp = TIMECONV_DAYS_IN_MAY; break;
+        case  6: utmp = TIMECONV_DAYS_IN_JUN; break;
+        case  7: utmp = TIMECONV_DAYS_IN_JUL; break;
+        case  8: utmp = TIMECONV_DAYS_IN_AUG; break;
+        case  9: utmp = TIMECONV_DAYS_IN_SEP; break;
+        case 10: utmp = TIMECONV_DAYS_IN_OCT; break;
+        case 11: utmp = TIMECONV_DAYS_IN_NOV; break;
+        case 12: utmp = TIMECONV_DAYS_IN_DEC; break;
+        default: 
+            { 
+                GNSS_ERROR_MSG("unexpected default case."); 
+                return 0; 
+                break;    
+            }
     }
     
     *days_in_month = utmp;
@@ -971,16 +971,16 @@ int TIMECONV_GetNumberOfDaysInMonth(
     
 
 
-int TIMECONV_IsALeapYear( const unsigned short year )
+int TIMECONV_IsALeapYear(const unsigned short year)
 {
     int is_a_leap_year = 0;
 
-    if( (year%4) == 0 )
+    if ((year%4) == 0)
     {
         is_a_leap_year = 1;
-        if( (year%100) == 0 )
+        if ((year%100) == 0)
         {
-            if( (year%400) == 0 )
+            if ((year%400) == 0)
             {
                 is_a_leap_year = 1;
             }
@@ -990,7 +990,7 @@ int TIMECONV_IsALeapYear( const unsigned short year )
             }
         }
     }
-    if( is_a_leap_year )
+    if (is_a_leap_year)
     {
         return 1;
     }
@@ -1009,18 +1009,18 @@ int TIMECONV_GetDayOfYear(
     const unsigned char  utc_month,   // Universal Time Coordinated           [1-12 months] 
     const unsigned char  utc_day,     // Universal Time Coordinated           [1-31 days]
     unsigned short*      dayofyear    // number of days into the year (1-366) [days]
-    )
+  )
 {
     unsigned char days_in_feb = 0;
     int result;
-    result = TIMECONV_GetNumberOfDaysInMonth( utc_year, 2, &days_in_feb );
-    if( result == 0 )
+    result = TIMECONV_GetNumberOfDaysInMonth(utc_year, 2, &days_in_feb);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetNumberOfDaysInMonth returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetNumberOfDaysInMonth returned 0.");
         return 0;
     }
 
-    switch( utc_month )
+    switch(utc_month)
     {
     case  1: *dayofyear = utc_day; break;
     case  2: *dayofyear = (unsigned short)(TIMECONV_DAYS_IN_JAN               + utc_day); break;
@@ -1036,7 +1036,7 @@ int TIMECONV_GetDayOfYear(
     case 12: *dayofyear = (unsigned short)(306         + days_in_feb + utc_day); break;
     default: 
         {
-            GNSS_ERROR_MSG( "unexpected default case." );
+            GNSS_ERROR_MSG("unexpected default case.");
             return 0; 
             break;
         }
@@ -1051,24 +1051,24 @@ int TIMECONV_GetGPSTimeFromYearAndDayOfYear(
     const unsigned short dayofyear, // The number of days into the year (1-366) [days]
     unsigned short*      gps_week,  //!< GPS week (0-1024+)            [week]
     double*              gps_tow    //!< GPS time of week (0-604800.0) [s]
-    )
+  )
 {
     int result;
     double julian_date = 0;
 
-    if( gps_week == NULL )
+    if (gps_week == NULL)
     {
-        GNSS_ERROR_MSG( "if( gps_week == NULL )" );
+        GNSS_ERROR_MSG("if (gps_week == NULL)");
         return 0;
     }
-    if( gps_tow == NULL )
+    if (gps_tow == NULL)
     {
-        GNSS_ERROR_MSG( "if( gps_tow == NULL )" );
+        GNSS_ERROR_MSG("if (gps_tow == NULL)");
         return 0;
     }
-    if( dayofyear > 366 )
+    if (dayofyear > 366)
     {
-        GNSS_ERROR_MSG( "if( dayofyear > 366 )" );
+        GNSS_ERROR_MSG("if (dayofyear > 366)");
         return 0;
     }
 
@@ -1080,10 +1080,10 @@ int TIMECONV_GetGPSTimeFromYearAndDayOfYear(
         0,
         0,
         &julian_date 
-        );
-    if( result == 0 )
+    );
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetJulianDateFromUTCTime returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetJulianDateFromUTCTime returned 0.");
         return 0;
     }
 
@@ -1093,10 +1093,10 @@ int TIMECONV_GetGPSTimeFromYearAndDayOfYear(
         julian_date,
         0,
         gps_week,
-        gps_tow );
-    if( result == 0 )
+        gps_tow);
+    if (result == 0)
     {
-        GNSS_ERROR_MSG( "TIMECONV_GetGPSTimeFromJulianDate returned 0." );
+        GNSS_ERROR_MSG("TIMECONV_GetGPSTimeFromJulianDate returned 0.");
         return 0;
     }
 

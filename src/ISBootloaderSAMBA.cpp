@@ -47,12 +47,12 @@ using namespace ISBootloader;
 #define SAMBA_BOOTLOADER_SIZE_24K 0x6000
 
 #define SAMBA_STATUS(x, level) m_info_callback(this, level, x)
-#define SAMBA_ERROR_CHECK(x, error) if(x != IS_OP_OK) \
+#define SAMBA_ERROR_CHECK(x, error) if (x != IS_OP_OK) \
     { /* serialPortClose(port); */ \
         SAMBA_STATUS(error, IS_LOG_LEVEL_ERROR); \
         return IS_OP_ERROR; \
     }
-#define SAMBA_ERROR_CHECK_SN(x, error) if(x != IS_OP_OK) \
+#define SAMBA_ERROR_CHECK_SN(x, error) if (x != IS_OP_OK) \
     { /* serialPortClose(port); */ \
         SAMBA_STATUS(error, IS_LOG_LEVEL_ERROR); \
         return 0; \
@@ -73,7 +73,7 @@ is_operation_result cISBootloaderSAMBA::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port->port, 100) == 0)
+    if (strnlen(serial_name, 100) != 0 && strncmp(serial_name, portName(m_port), 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -128,8 +128,6 @@ is_operation_result cISBootloaderSAMBA::reboot_up()
 
 is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
 {
-    serial_port_t* port = m_port;
-
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
     uint8_t buf[SAMBA_PAGE_SIZE];
@@ -137,14 +135,14 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
     SAMBA_ERROR_CHECK(erase_flash(), "(SAM-BA) Failed to erase flash memory");
 
     // try non-USB and then USB mode (0 and 1)
-    for(int isUSB = 0; isUSB < 2; isUSB++)
+    for (int isUSB = 0; isUSB < 2; isUSB++)
     {
-        serialPortSleep(port, 250);
-        serialPortFlush(port);
+        serialPortSleep(m_port, 250);
+        serialPortFlush(m_port);
 
         // flush
-        serialPortWrite(port, (const uint8_t*)"#", 2);
-        serialPortReadTimeout(port, buf, sizeof(buf), 100);
+        serialPortWrite(m_port, (const uint8_t*)"#", 2);
+        serialPortReadTimeout(m_port, buf, sizeof(buf), 100);
 
         FILE* file;
 #ifdef _MSC_VER
@@ -172,7 +170,7 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
             return IS_OP_ERROR;
         }
 
-        if(isUSB == 0) SAMBA_STATUS("(SAM-BA) Writing ISB bootloader...", IS_LOG_LEVEL_INFO);
+        if (isUSB == 0) SAMBA_STATUS("(SAM-BA) Writing ISB bootloader...", IS_LOG_LEVEL_INFO);
 
         uint32_t offset = 0;
         size_t len;
@@ -230,15 +228,14 @@ is_operation_result cISBootloaderSAMBA::erase_flash()
 
 uint32_t cISBootloaderSAMBA::get_device_info()
 {
-    serial_port_t* port = m_port;
     uint8_t buf[SAMBA_PAGE_SIZE];
 
     // Flush the bootloader command buffer
-    serialPortWrite(port, (const uint8_t*)"#", 2);
-    int count = serialPortReadTimeout(port, buf, sizeof(buf), 100);
+    serialPortWrite(m_port, (const uint8_t*)"#", 2);
+    int count = serialPortReadTimeout(m_port, buf, sizeof(buf), 100);
 
     // Set non-interactive mode and wait for response
-    count = serialPortWriteAndWaitFor(port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2);
+    count = serialPortWriteAndWaitFor(m_port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2);
     if (!count)
     {   // Failed to handshake with bootloader
         // serialPortClose(port);
@@ -280,7 +277,7 @@ is_operation_result cISBootloaderSAMBA::write_word(uint32_t address, uint32_t wo
 {
     unsigned char buf[32];
     int count = SNPRINTF((char*)buf, sizeof(buf), "W%08x,%08x#", address, word);
-    if(serialPortWrite(m_port, buf, count) != count) return IS_OP_ERROR;
+    if (serialPortWrite(m_port, buf, count) != count) return IS_OP_ERROR;
     return IS_OP_OK;
 }
 
@@ -290,9 +287,9 @@ is_operation_result cISBootloaderSAMBA::wait_eefc_ready(bool waitReady)
     for (int i = 0; i < 10; i++)
     {
         // EEFC.FSR.FRDY - Flash ready status
-        if(read_word(0x400e0c08, &status) == IS_OP_ERROR) continue; 
-        if( waitReady &&  (status & 0x01)) return IS_OP_OK;   // status is ready and we are waiting for ready
-        if(!waitReady && !(status & 0x01)) return IS_OP_OK;   // status is not ready and we are waiting for not ready
+        if (read_word(0x400e0c08, &status) == IS_OP_ERROR)  continue; 
+        if (waitReady &&  (status & 0x01))                  return IS_OP_OK;   // status is ready and we are waiting for ready
+        if (!waitReady && !(status & 0x01))                 return IS_OP_OK;   // status is not ready and we are waiting for not ready
         serialPortSleep(m_port, 20);
     }
     return IS_OP_ERROR;
@@ -419,7 +416,7 @@ is_operation_result cISBootloaderSAMBA::verify_image(std::string filename)
 
     while (serialPortRead(m_port, buf, 1));
 
-    for (uint32_t address = SAMBA_FLASH_START_ADDRESS; address < (SAMBA_FLASH_START_ADDRESS + SAMBA_BOOTLOADER_SIZE_24K); )
+    for (uint32_t address = SAMBA_FLASH_START_ADDRESS; address < (SAMBA_FLASH_START_ADDRESS + SAMBA_BOOTLOADER_SIZE_24K);)
     {
         int index = 0;
         nextAddress = address + SAMBA_PAGE_SIZE;

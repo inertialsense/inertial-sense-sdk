@@ -24,8 +24,8 @@ public:
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
-        serial_port_t* port
-    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+        port_handle_t port
+  ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
         m_device_type = ISBootloader::IS_DEV_TYPE_APP;
@@ -57,4 +57,4 @@ private:
     static std::mutex serial_list_mutex;
 };
 
-#endif	// __IS_BOOTLOADER_APP_H
+#endif    // __IS_BOOTLOADER_APP_H

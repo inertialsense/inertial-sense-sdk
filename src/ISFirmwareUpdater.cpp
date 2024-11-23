@@ -96,7 +96,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     int hashError = (flags & fwUpdate::IMG_FLAG_useAlternateMD5)
             ? altMD5_file_details(srcFile, fileSize, session_md5)
             : md5_file_details(srcFile, fileSize, session_md5);
-    if ( hashError != 0 )
+    if (hashError != 0)
         return fwUpdate::ERR_INVALID_IMAGE;
 
     updateStartTime = current_timeMs();
@@ -128,15 +128,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     target_devInfo = &remoteDevInfo;
 
     if (pfnInfoProgress_cb != nullptr) {
-        if ((remoteDevInfo.hardwareType >= IS_HARDWARE_TYPE_UINS) && (remoteDevInfo.hardwareType <= IS_HARDWARE_TYPE_GPX)) {
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", g_isHardwareTypeNames[remoteDevInfo.hardwareType],
-                               remoteDevInfo.hardwareVer[0], remoteDevInfo.hardwareVer[1], remoteDevInfo.hardwareVer[2], (remoteDevInfo.serialNumber != 0xFFFFFFFF ? remoteDevInfo.serialNumber : 0),
-                               remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3],
-                               remoteDevInfo.buildNumber);
-        } else {
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s, Fw %d.%d.%d.%d", fwUpdate_getTargetName(msg.data.version_resp.resTarget),
-                               remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3]);
-        }
+        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo, 0).c_str());
     }
 
     return true;
@@ -238,10 +230,10 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     const char* message = msg.data.progress.msg_len ? (const char*)&msg.data.progress.message : "";
 
     if (pfnUploadProgress_cb != nullptr)
-        pfnUploadProgress_cb(this, percent);
+        pfnUploadProgress_cb(NULL, percent);
 
     if (pfnVerifyProgress_cb != nullptr)
-        pfnVerifyProgress_cb(this, percent);
+        pfnVerifyProgress_cb(NULL, percent);
 
     if (pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, static_cast<ISBootloader::eLogLevel>(msg.data.progress.msg_level), message);
@@ -299,7 +291,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                             nextStartAttempt = current_timeMs() + attemptInterval;
                             if (fwUpdate_requestUpdate()) {
                                 startAttempts++;
-                                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "[%s : %d] :: Requesting Firmware Update start (Attempt %d)", portName, devInfo->serialNumber, startAttempts);
+                                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "[%s : %d] :: Requesting Firmware Update start (Attempt %d)", portName(port), devInfo->serialNumber, startAttempts);
                             } else {
                                 pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Error attempting to initiate Firmware Update");
                             }
@@ -384,7 +376,7 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
     // TODO: end
 
     nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
-    int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
+    int result = comManagerSendData(port, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
 }
 
@@ -583,8 +575,8 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             // any target which doesn't report version info will also expect the old MD5 digest
             if (!target_devInfo) {
                 // TODO: We should be able to remove most of this after 2.1.0 has been released
-                if ( ((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
-                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX)) ) {
+                if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
+                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
                     // just copy in the current "main" device's dev info, since they are the same device as the target
                     remoteDevInfo = *devInfo;
                     target_devInfo = &remoteDevInfo;
@@ -685,7 +677,7 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
                         if ((target_name != "IMX5") &&
                             (target_name != "GPX1") &&
                             (target_name != "GNSS1") &&
-                            (target_name != "GNSS2") )
+                            (target_name != "GNSS2"))
                             return PKG_ERR_UNSUPPORTED_TARGET; // target name is invalid/unsupported
                         commands.push_back("target=" + target_name);
                     } else if (cmd_name == "image") {

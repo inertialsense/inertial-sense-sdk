@@ -20,8 +20,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "com_manager.h"
 #include "data_sets.h"
+
 #include "ISConstants.h"
 #include "ISDataMappings.h"
+#include "ISDevice.h"
+
 #include "serialPortPlatform.h"
 
 #if !PLATFORM_IS_WINDOWS
@@ -37,147 +40,149 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cInertialSenseDisplay
 {
 public:
-	typedef struct edit_data_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (pData)
-	{
-		const map_name_to_info_t 			*mapInfo;
-		map_name_to_info_t::const_iterator 	mapInfoSelection;
-		map_name_to_info_t::const_iterator 	mapInfoBegin;
-		map_name_to_info_t::const_iterator 	mapInfoEnd;
-		uint32_t		selectionArrayIdx;
+    typedef struct edit_data_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (pData)
+    {
+        const map_name_to_info_t            *mapInfo;
+        map_name_to_info_t::const_iterator  mapInfoSelection;
+        map_name_to_info_t::const_iterator  mapInfoBegin;
+        map_name_to_info_t::const_iterator  mapInfoEnd;
+        uint32_t                            selectionArrayIdx;
 
-		bool            readOnlyMode;
-		bool            editEnabled;
-		std::string     field;
-		uint32_t        did;
-		bool            uploadNeeded;
-		uint8_t 		data[MAX_DATASET_SIZE];
-		data_info_t 	info;
-		uint8_t			pDataBuf[MAX_DATASET_SIZE];
-		p_data_t		pData = {{}, pDataBuf};
-	} edit_data_t;
+        bool                                readOnlyMode;
+        bool                                editEnabled;
+        std::string                         field;
+        uint32_t                            did;
+        bool                                uploadNeeded;
+        uint8_t                             data[MAX_DATASET_SIZE];
+        data_info_t                         info;
+        uint8_t                             pDataBuf[MAX_DATASET_SIZE];
+        p_data_t                            pData = {{}, pDataBuf};
+    } edit_data_t;
 
-	enum eDisplayMode
-	{
-		DMODE_QUIET = 0,
-		DMODE_PRETTY,
-		DMODE_SCROLL,
-		DMODE_EDIT,
-		DMODE_STATS,
+    enum eDisplayMode
+    {
+        DMODE_QUIET = 0,
+        DMODE_PRETTY,
+        DMODE_SCROLL,
+        DMODE_EDIT,
+        DMODE_STATS,
         DMODE_RAW_PARSE,
-	};
+    };
 
-	cInertialSenseDisplay(eDisplayMode displayMode = DMODE_QUIET);
-	~cInertialSenseDisplay();
+    cInertialSenseDisplay(eDisplayMode displayMode = DMODE_QUIET);
+    ~cInertialSenseDisplay();
 
-	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
-	eDisplayMode GetDisplayMode() { return m_displayMode; };
+    void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
+    eDisplayMode GetDisplayMode() { return m_displayMode; };
     void showRawData(bool enable) { m_showRawHex = enable; };
-	void ShowCursor(bool visible);
-	void ShutDown();
-	void Clear(void);
-	void Home(void);
-	void GoToRow(int y);
-	void GoToColumnAndRow(int x, int y);
-	std::string Header();
-	std::string Hello();
-	std::string Connected();
-	std::string Replay(double speed=1.0);
-	std::string Goodbye();
+    void ShowCursor(bool visible);
+    void ShutDown();
+    void Clear(void);
+    void Home(void);
+    void GoToRow(int y);
+    void GoToColumnAndRow(int x, int y);
+    std::string Header();
+    std::string Hello();
+    std::string Connected();
+    std::string Replay(double speed=1.0);
+    std::string Goodbye();
 
-	void SetKeyboardNonBlocking();
-	void ResetTerminalMode();
-	int KeyboardHit();
-	int GetChar();
-	bool ExitProgram();
-	void SetExitProgram();
+    void SetKeyboardNonBlocking();
+    void ResetTerminalMode();
+    int KeyboardHit();
+    int GetChar();
+    bool ExitProgram();
+    void SetExitProgram();
 
-	// for the binary protocol, this processes a packet of data
-	void ProcessData(p_data_buf_t* data, bool enableReplay = false, double replaySpeedX = 1.0);
-	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
-	bool PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
-	static std::string PrintIsCommStatus(is_comm_instance_t *comm);
-	void DataToStats(const p_data_t* data);
-	void PrintStats();
-	std::string DataToString(const p_data_t* data);
-	char* StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus);
-	char* InsStatusToSolStatusString(char* ptr, char* ptrEnd, const uint32_t insStatus);
-	std::string DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr);
-	std::string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
- 	std::string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
-	std::string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
-	std::string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
-	static std::string DataToStringIMU(const imu_t &imu, bool full=false);
-	std::string DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr);
-	std::string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
-	std::string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
-	std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
-	std::string DataToStringGpsVersion(const gps_version_t &ver, const p_data_hdr_t& hdr);
-	std::string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr);
-	static std::string DataToStringGpsPos(const gps_pos_t &gps, bool full=false);
-	std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
-	std::string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
-	std::string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
+    // for the binary protocol, this processes a packet of data
+    void ProcessData(p_data_buf_t* data, bool enableReplay = false, double replaySpeedX = 1.0);
+    void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
+    bool PrintData(unsigned int refreshPeriodMs = 100); // 100ms = 10Hz
+    static std::string PrintIsCommStatus(is_comm_instance_t *comm);
+    void DataToStats(const p_data_t* data);
+    void PrintStats();
+    std::string DataToString(const p_data_t* data);
+    char* StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus);
+    char* InsStatusToSolStatusString(char* ptr, char* ptrEnd, const uint32_t insStatus);
+    std::string DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr);
+    std::string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
+     std::string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
+    std::string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
+    std::string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
+    static std::string DataToStringIMU(const imu_t &imu, bool full=false);
+    std::string DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr);
+    std::string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
+    std::string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
+    std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
+    std::string DataToStringGpsVersion(const gps_version_t &ver, const p_data_hdr_t& hdr);
+    std::string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr);
+    static std::string DataToStringGpsPos(const gps_pos_t &gps, bool full=false);
+    std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
+    std::string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
+    std::string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
     std::string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
-	std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
-	std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
-	std::string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
-	std::string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
-	static std::string DataToStringDevInfo(const dev_info_t &info, bool full=false);
-	std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
-	std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
+    std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
+    std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
+    std::string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
+    std::string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
+    static std::string DataToStringDevInfo(const dev_info_t &info, bool full=false);
+    std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
+    std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
     std::string DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr);
     std::string DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr);
     std::string DataToStringPortMonitor(const port_monitor_t &portMon, const p_data_hdr_t& hdr);
     std::string DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
     std::string DataToStringPacket(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine, bool colorize);
-	std::string DataToStringGeneric(const p_data_t* data);
-	static void AddCommaToString(bool &comma, char* &ptr, char* &ptrEnd){ if (comma) { ptr += SNPRINTF(ptr, ptrEnd - ptr, ", "); } comma = true; };
+    std::string DataToStringGeneric(const p_data_t* data);
+    static void AddCommaToString(bool &comma, char* &ptr, char* &ptrEnd){ if (comma) { ptr += SNPRINTF(ptr, ptrEnd - ptr, ", "); } comma = true; };
 
-	std::string DatasetToString(const p_data_t* data);
+    std::string DatasetToString(const p_data_t* data);
 
-	void GetKeyboardInput();
-	void SelectEditDataset(int did, bool readOnlyMode=false);
-	void VarSelectIncrement();
-	void VarSelectDecrement();
-	void StopEditing();
-	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
-	edit_data_t *EditData() { return &m_editData; }
-	void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
-	void SetSerialPort(serial_port_t* port) { m_port = port; }
-	void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
+    void GetKeyboardInput();
+    void SelectEditDataset(int did, bool readOnlyMode=false);
+    void VarSelectIncrement();
+    void VarSelectDecrement();
+    void StopEditing();
+    bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
+    edit_data_t *EditData() { return &m_editData; }
+    void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
+    void setDevice(ISDevice* device) { m_device = device; }
+    // void SetSerialPort(serial_port_t* port) { m_port = port; }
+    // void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
 
 private:
-	std::string VectorToString();
-	void DataToVector(const p_data_t* data);
+    std::string VectorToString();
+    void DataToVector(const p_data_t* data);
 
-	bool m_nonblockingkeyboard = false;
-	std::vector<std::string> m_didMsgs;
-	eDisplayMode m_displayMode = DMODE_QUIET;
-	uint32_t m_startMs = 0;
-	serial_port_t* m_port = NULL;
-	is_comm_instance_t* m_comm = NULL;
+    bool m_nonblockingkeyboard = false;
+    std::vector<std::string> m_didMsgs;
+    eDisplayMode m_displayMode = DMODE_QUIET;
+    uint32_t m_startMs = 0;
+    ISDevice* m_device = NULL;
+    // serial_port_t* m_port = NULL;
+    // is_comm_instance_t* m_comm = NULL;
 
-	bool m_enableReplay = false;
-	double m_replaySpeedX = 1.0;
+    bool m_enableReplay = false;
+    double m_replaySpeedX = 1.0;
 
-	edit_data_t m_editData = {};
-	uint32_t m_outputOnceDid = 0;			// Set to DID to display then exit cltool.  0 = disabled
-	bool m_interactiveMode = true;
+    edit_data_t m_editData = {};
+    uint32_t m_outputOnceDid = 0;   // Set to DID to display then exit cltool.  0 = disabled
+    bool m_interactiveMode = true;
     bool m_showRawHex = false;
 
-	struct sDidStats
-	{
-		int lastTimeMs;
-		int dtMs;
-		int count;
-	};
+    struct sDidStats
+    {
+        int lastTimeMs;
+        int dtMs;
+        int count;
+    };
 
-	std::vector<sDidStats> m_didStats;
+    std::vector<sDidStats> m_didStats;
 
 #if PLATFORM_IS_WINDOWS
 
-	HANDLE m_windowsConsoleIn;
-	HANDLE m_windowsConsoleOut;
+    HANDLE m_windowsConsoleIn;
+    HANDLE m_windowsConsoleOut;
 
 #else
 

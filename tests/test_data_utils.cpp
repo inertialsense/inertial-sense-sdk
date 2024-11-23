@@ -9,14 +9,16 @@
 #include <chrono>
 #include <iostream>
 #include <random>
+#include <vector>
+#include <list>
 
 #include "ISFileManager.h"
 #include "protocol_nmea.h"
 #include "test_data_utils.h"
 #include "time_conversion.h"
 
-#define MIN_VALUE 		-1000
-#define MAX_VALUE 		 1000
+#define MIN_VALUE   -1000
+#define MAX_VALUE   1000
 
 #if defined(_WIN32)
 #define DATA_DIR ""
@@ -33,23 +35,23 @@
 
 using namespace std;
 
-static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
-//static const int s_maxFileSize = 100000;	// Make many small files
-static const float s_logDiskUsageLimitPercent = 0.5f;
-static const bool s_useTimestampSubFolder = false;
-static uint32_t s_timeMs = 0;
-static uint32_t s_gpsTowOffsetMs = 0;
-static uint32_t s_gpsWeek = 0;
-static double s_towOffset = 0;
-static const uint32_t s_timePeriodMs = 10;
-static const uint32_t s_pimuPeriodMs = 10;
-static const uint32_t s_navPeriodMs = 100;
-static const uint32_t s_gpsPeriodMs = 200;
+static const int s_maxFileSize                  = DEFAULT_LOGS_MAX_FILE_SIZE;
+//static const int s_maxFileSize                = 100000;    // Make many small files
+static const float s_logDiskUsageLimitPercent   = 0.5f;
+static const bool s_useTimestampSubFolder       = false;
+static uint32_t s_timeMs                        = 0;
+static uint32_t s_gpsTowOffsetMs                = 0;
+static uint32_t s_gpsWeek                       = 0;
+static double s_towOffset                       = 0;
+static const uint32_t s_timePeriodMs            = 10;
+static const uint32_t s_pimuPeriodMs            = 10;
+static const uint32_t s_navPeriodMs             = 100;
+static const uint32_t s_gpsPeriodMs             = 200;
 
-static pimu_t       s_pimu = {};
-static ins_1_t      s_ins1 = {};
-static gps_pos_t    s_gpsPos = {};
-static gps_vel_t    s_gpsVel = {};
+static pimu_t s_pimu                            = {};
+static ins_1_t s_ins1                           = {};
+static gps_pos_t s_gpsPos                       = {};
+static gps_vel_t s_gpsVel                       = {};
 
 struct sTimeMs
 {
@@ -88,14 +90,14 @@ void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek)
 
 void PrintUtcTime(std::tm &utcTime, uint32_t milliseconds)
 {
-    printf( "UTC Time: %04d-%02d-%02d %02d:%02d:%02d.%03d\n", 
+    printf("UTC Time: %04d-%02d-%02d %02d:%02d:%02d.%03d\n", 
         utcTime.tm_year + 1900,   // tm_year is year since 1900
         utcTime.tm_mon + 1,       // tm_mon is months since January (0-11)
         utcTime.tm_mday,
         utcTime.tm_hour,
         utcTime.tm_min,
         utcTime.tm_sec,
-        milliseconds );
+        milliseconds);
 }
 
 bool periodCheck(uint32_t &msgTimeMs, uint32_t periodMs)
@@ -206,21 +208,21 @@ bool GenerateGpsPos(test_message_t &msg, gps_pos_t &gps, int i, float f, bool in
         return false;
     }
 
-    gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
-    gps.week = s_gpsWeek;
-    gps.status = i;
-    gps.ecef[0] = f*1.234;
-    gps.ecef[1] = f*2.345;
-    gps.ecef[2] = f*3.456;
-    gps.lla[0] += f*0.001f;
-    gps.lla[1] += f*0.001f;
-    gps.lla[2] += f*0.001f;
-    gps.hAcc = fabsf(f);
-    gps.cnoMean = fabsf(f);
-    gps.hMSL = fabsf(f);
-    gps.pDop = fabsf(f);
-    gps.towOffset = f;
-    gps.leapS = C_GPS_LEAP_SECONDS;
+    gps.timeOfWeekMs    = s_timeMs + s_gpsTowOffsetMs;
+gps.week                = s_gpsWeek;
+gps.status              = i;
+gps.ecef[0]             = f*1.234;
+gps.ecef[1]             = f*2.345;
+gps.ecef[2]             = f*3.456;
+gps.lla[0]              += f*0.001f;
+gps.lla[1]              += f*0.001f;
+gps.lla[2]              += f*0.001f;
+gps.hAcc                = fabsf(f);
+gps.cnoMean             = fabsf(f);
+gps.hMSL                = fabsf(f);
+gps.pDop                = fabsf(f);
+gps.towOffset           = f;
+gps.leapS               = C_GPS_LEAP_SECONDS;
 
     msg.data.gpsPos = gps;
     msg.dataHdr.id = DID_GPS1_POS;
@@ -268,14 +270,14 @@ bool GenerateISB(test_message_t &msg, int i, float f)
         
         CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
         s_timeMs = 0;
-        GeneratePimu(  msg, s_pimu,   i, f, true);
-        GenerateIns1(  msg, s_ins1,   i, f, true);
+        GeneratePimu(msg, s_pimu,   i, f, true);
+        GenerateIns1(msg, s_ins1,   i, f, true);
         GenerateGpsPos(msg, s_gpsPos, i, f, true);
         GenerateGpsVel(msg, s_gpsVel, i, f, true);
     }
 
-    if (GeneratePimu(  msg, s_pimu,   i, f)) { return true; }
-    if (GenerateIns1(  msg, s_ins1,   i, f)) { return true; }
+    if (GeneratePimu(msg, s_pimu,   i, f))  { return true; }
+    if (GenerateIns1(msg, s_ins1,   i, f))  { return true; }
     if (GenerateGpsPos(msg, s_gpsPos, i, f)) { return true; }
     if (GenerateGpsVel(msg, s_gpsVel, i, f)) { return true; }
 
@@ -493,10 +495,10 @@ bool GenerateMessage(test_message_t &msg, protocol_type_t ptype)
     return false;
 }
 
-void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType logType, float logSizeMB, eTestGenDataOptions options)
+void GenerateDataLogFiles(int numDevices, const std::string& directory, cISLogger::eLogType logType, float logSizeMB, eTestGenDataOptions options)
 {
     // Remove old files
-	ISFileManager::DeleteDirectory(directory);
+    ISFileManager::DeleteDirectory(directory);
 
     cISLogger logger;
     cISLogger::sSaveOptions logOptions;
@@ -506,29 +508,25 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
     logOptions.useSubFolderTimestamp   = s_useTimestampSubFolder;
     logger.InitSave(directory, logOptions); 
 
-    auto devices = new ISDevice[numDevices]();
     for (int d=0; d<numDevices; d++)
-    {   // Assign serial number
-        devices[d].devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
-        devices[d].devInfo.hardwareVer[0] = 5;
-        devices[d].devInfo.hardwareVer[1] = 0;
-        devices[d].devInfo.serialNumber = rand() % 999999;
-        logger.registerDevice(devices[d]);
+    {
+        logger.registerDevice(ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), rand() % 999999);
     }
+
     logger.EnableLogging(true);
     logger.ShowParseErrors(options != GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
 
     test_message_t msg = {};
     uint8_t comBuf[PKT_BUF_SIZE];
-    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
+    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks??
 
     CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
     for (s_timeMs=0; logger.LogSizeAllMB() < logSizeMB; s_timeMs += s_timePeriodMs)
     {
-        for (auto& d : logger.DeviceLogs())
+        for (auto d : logger.DeviceLogs())
         {
-            while(GenerateMessage(msg))
+            while (GenerateMessage(msg))
             {
                 // Write data to file
                 if (logType == cISLogger::eLogType::LOGTYPE_RAW)
@@ -560,8 +558,59 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
     }
 
     logger.CloseAllFiles();
-    delete [] devices;
 }
+
+/**
+ * Generates simulated data, populating a list of msgs with the generated data, not exceeding ligSizeMB, and using the options specified.
+ * @param msgs
+ * @param logSizeMB
+ * @param options
+ * @return the number of size, in bytes, of the total generated stream
+ */
+uint32_t GenerateRawLogData(std::list<std::vector<uint8_t>*>& msgs, float logSizeMB, eTestGenDataOptions options)
+{
+    uint32_t runningSize = 0;
+    test_message_t msg = {};
+    uint8_t comBuf[PKT_BUF_SIZE];
+    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks??
+
+    CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
+
+    for (s_timeMs=0; runningSize < (logSizeMB * 1024 * 1024); s_timeMs += s_timePeriodMs)
+    {
+        while (GenerateMessage(msg))
+        {
+            static int pktCount = 0;
+
+            // Write data to file
+            std::vector<uint8_t>* msgData = new std::vector<uint8_t>();// (msg.pktSize);
+            uint8_t* data = msg.comm.rxBuf.start;
+            msgData->insert(msgData->end(), reinterpret_cast<char*>(data), reinterpret_cast<char*>(data + msg.pktSize));
+            msgs.push_back(msgData);
+            runningSize += msg.pktSize;
+
+            // Insert garbage data
+            if (options == GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS && pktCount++ > 10)
+            {
+                pktCount = 0;
+                uint8_t garbage[100] = {};
+
+                for (int i=0; i<sizeof(garbage); i++)
+                {   // Generate garbage
+                    garbage[i] = rand();
+                }
+                int garbageSize = garbage[0]%100;
+
+                std::vector<uint8_t>* garbageData = new std::vector<uint8_t>();// (msg.pktSize);
+                garbageData->insert(garbageData->end(), reinterpret_cast<char*>(garbage), reinterpret_cast<char*>(garbage + garbageSize));
+                msgs.push_back(garbageData);
+                runningSize += garbageSize;
+            }
+        }
+    }
+    return runningSize;
+}
+
 
 bool AddDataToStream(uint8_t *buffer, int bufferSize, int &streamSize, uint8_t *data, int dataSize)
 {
@@ -579,7 +628,7 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
 {
     test_message_t msg = {};
     uint8_t comBuf[PKT_BUF_SIZE];
-    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
+    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks?
     int streamSize = 0;
     static int pktCount = 0;
 
@@ -587,7 +636,7 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
 
     for (s_timeMs=0;; s_timeMs += s_timePeriodMs)
     {
-        while(GenerateMessage(msg))
+        while (GenerateMessage(msg))
         {
             if (msg.pktSize == 0)
             {   // Ignore empty data

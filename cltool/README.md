@@ -74,7 +74,7 @@ while (!g_inertialSenseDisplay.ControlCWasPressed())
 New data is available in the data callback function.
 
 ``` C++
-static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
+static void cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
 {
 	// Print data to terminal
 	g_inertialSenseDisplay.ProcessData(data);

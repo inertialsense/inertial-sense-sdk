@@ -21,17 +21,17 @@ extern "C" {
 #endif
 
 /**
- *	DEFINITIONS AND CONVENTIONS
- *	
- *	INS		= inertial navigation system
- *	AHRS	= attitude heading reference system
- *	IMU		= inertial measurement unit: gyros (rad/s), accelerometers (m/s^2)
- *	ECEF	= earth-centered earth fixed: x,y,z or vx,vy,vz (m or m/s)
- *	LLA		= latitude, longitude, altitude (degrees,m)
- *	NED		= north, east, down (m or m/s)
- *	QE2B	= quaternion rotation from ECEF frame to local frame.
- *	QN2B	= quaternion rotation from NED frame to local frame.
- *	UVW		= velocities in local frame.
+ *    DEFINITIONS AND CONVENTIONS
+ *    
+ *    INS   = inertial navigation system
+ *    AHRS  = attitude heading reference system
+ *    IMU   = inertial measurement unit: gyros (rad/s), accelerometers (m/s^2)
+ *    ECEF  = earth-centered earth fixed: x,y,z or vx,vy,vz (m or m/s)
+ *    LLA   = latitude, longitude, altitude (degrees,m)
+ *    NED   = north, east, down (m or m/s)
+ *    QE2B  = quaternion rotation from ECEF frame to local frame.
+ *    QN2B  = quaternion rotation from NED frame to local frame.
+ *    UVW   = velocities in local frame.
 */
 
 // -------------------------------------------------------------------------------------------------------------------------------
@@ -43,49 +43,49 @@ extern "C" {
 // *****************************************************************************
 
 /** INS/AHRS */
-#define _DID_INS_LLA_EULER_NED		DID_INS_1				/** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
-#define _DID_INS_LLA_QN2B			DID_INS_2				/** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
-#define _DID_INS_LLA_QN2B_MSL		DID_INS_3				/** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
-#define _DID_INS_ECEF_QE2B			DID_INS_4				/** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
+#define _DID_INS_LLA_EULER_NED  DID_INS_1                /** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
+#define _DID_INS_LLA_QN2B       DID_INS_2                /** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
+#define _DID_INS_LLA_QN2B_MSL   DID_INS_3                /** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
+#define _DID_INS_ECEF_QE2B      DID_INS_4                /** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
 
 /** IMU */
-#define _DID_IMU					DID_IMU					/** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
-#define _DID_PIMU					DID_PIMU				/** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */	
+#define _DID_IMU                DID_IMU                    /** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
+#define _DID_PIMU               DID_PIMU                /** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */    
 
 /** GPS */
-#define _DID_GPS1_POS				DID_GPS1_POS			/** (see gps_pos_t) GPS output */
+#define _DID_GPS1_POS           DID_GPS1_POS            /** (see gps_pos_t) GPS output */
 
 /** Magnetometer, Barometer, and other Sensor */
-#define _DID_MAG_CAL				DID_MAG_CAL				/** (see mag_cal_t) Magnetometer calibration */
-#define _DID_MAGNETOMETER			DID_MAGNETOMETER		/** (see magnetometer_t) Magnetometer sensor output */
-#define _DID_BAROMETER				DID_BAROMETER			/** (see barometer_t) Barometric pressure sensor data */
-#define _DID_WHEEL_ENCODER			DID_WHEEL_ENCODER		/** (see wheel_encoder_t) Wheel encoder sensor data */
-#define _DID_POS_MEASUREMENT		DID_POSITION_MEASUREMENT/** (see pos_measurement_t) Position Measurement data*/
+#define _DID_MAG_CAL            DID_MAG_CAL                /** (see mag_cal_t) Magnetometer calibration */
+#define _DID_MAGNETOMETER       DID_MAGNETOMETER        /** (see magnetometer_t) Magnetometer sensor output */
+#define _DID_BAROMETER          DID_BAROMETER            /** (see barometer_t) Barometric pressure sensor data */
+#define _DID_WHEEL_ENCODER      DID_WHEEL_ENCODER        /** (see wheel_encoder_t) Wheel encoder sensor data */
+#define _DID_POS_MEASUREMENT    DID_POSITION_MEASUREMENT/** (see pos_measurement_t) Position Measurement data*/
 
 /** Utilities */
-#define _DID_DEV_INFO				DID_DEV_INFO			/** (see dev_info_t) Device information */
-#define _DID_BIT					DID_BIT					/** (see bit_t) System built-in self-test */
-#define _DID_STROBE_IN_TIME			DID_STROBE_IN_TIME		/** (see strobe_in_time_t) Timestamp for input strobe */
+#define _DID_DEV_INFO           DID_DEV_INFO            /** (see dev_info_t) Device information */
+#define _DID_BIT                DID_BIT                    /** (see bit_t) System built-in self-test */
+#define _DID_STROBE_IN_TIME     DID_STROBE_IN_TIME        /** (see strobe_in_time_t) Timestamp for input strobe */
 
 /** Configuration */
-#define _DID_FLASH_CONFIG			DID_FLASH_CONFIG 		/** (see nvm_flash_cfg_t) Flash memory configuration */
-#define _DID_RMC					DID_RMC					/** (see rmc_t) Realtime message controller */
+#define _DID_FLASH_CONFIG       DID_FLASH_CONFIG         /** (see nvm_flash_cfg_t) Flash memory configuration */
+#define _DID_RMC                DID_RMC                    /** (see rmc_t) Realtime message controller */
 
-#define ZEPHYR_SUCCESS_CODE     	0
+#define ZEPHYR_SUCCESS_CODE     0
 
 /** Protocol Type */
 typedef enum
 {
-    _PTYPE_NONE                 = 0,						/** No complete valid data available yet */
-    _PTYPE_PARSE_ERROR          = 1,						/** Invalid data or checksum error */
-    _PTYPE_INERTIAL_SENSE_ACK   = 2,						/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
-    _PTYPE_INERTIAL_SENSE_CMD   = 3,						/** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
-    _PTYPE_INERTIAL_SENSE_DATA  = 4,						/** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
-    _PTYPE_NMEA                 = 5,						/** Protocol Type: NMEA (National Marine Electronics Association) */
-    _PTYPE_UBLOX                = 6,						/** Protocol Type: uBlox binary */
-    _PTYPE_RTCM3                = 7,						/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
-    _PTYPE_SPARTN               = 8,						/** Protocol Type: SPARTN binary */
-    _PTYPE_SONY                 = 9,						/** Protocol Type: Sony binary */
+    _PTYPE_NONE                 = 0,  /** No complete valid data available yet */
+    _PTYPE_PARSE_ERROR          = 1,  /** Invalid data or checksum error */
+    _PTYPE_INERTIAL_SENSE_ACK   = 2,  /** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
+    _PTYPE_INERTIAL_SENSE_CMD   = 3,  /** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
+    _PTYPE_INERTIAL_SENSE_DATA  = 4,  /** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
+    _PTYPE_NMEA                 = 5,  /** Protocol Type: NMEA (National Marine Electronics Association) */
+    _PTYPE_UBLOX                = 6,  /** Protocol Type: uBlox binary */
+    _PTYPE_RTCM3                = 7,  /** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+    _PTYPE_SPARTN               = 8,  /** Protocol Type: SPARTN binary */
+    _PTYPE_SONY                 = 9,  /** Protocol Type: Sony binary */
     _PTYPE_FIRST_DATA           = _PTYPE_INERTIAL_SENSE_DATA,
     _PTYPE_LAST_DATA            = _PTYPE_SONY
 } protocol_type_t;
@@ -122,22 +122,22 @@ typedef enum
 /** Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
 
 // Major (in com_manager.h)
-#define PROTOCOL_VERSION_CHAR0			(2)
-#define PROTOCOL_VERSION_CHAR1			(0)
+#define PROTOCOL_VERSION_CHAR0      (2)
+#define PROTOCOL_VERSION_CHAR1      (0)
 
 // Minor (in data_sets.h)
-// #define PROTOCOL_VERSION_CHAR2		0
-// #define PROTOCOL_VERSION_CHAR3		0
+// #define PROTOCOL_VERSION_CHAR2   0
+// #define PROTOCOL_VERSION_CHAR3   0
 
-#define UBLOX_HEADER_SIZE 6
-#define RTCM3_HEADER_SIZE 3
-#define MAX_MSG_LENGTH_NMEA					200
+#define UBLOX_HEADER_SIZE           6
+#define RTCM3_HEADER_SIZE           3
+#define MAX_MSG_LENGTH_NMEA         200
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
-typedef int(*pfnIsCommPortWrite)(unsigned int port, const uint8_t* buf, int len);
+typedef int(*pfnIsCommPortWrite)(port_handle_t port, const uint8_t* buf, int len);
 
 /** Read data from the serial port.  Returns number of bytes read. */ 
-typedef int(*pfnIsCommPortRead)(unsigned int port, uint8_t* buf, int bufLen);
+typedef int(*pfnIsCommPortRead)(port_handle_t port, uint8_t* buf, int bufLen);
 
 /** We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
 PUSH_PACK_1
@@ -153,7 +153,7 @@ typedef enum
     IS_BAUDRATE_230400          = 230400,       //   230547,  232700, 
     IS_BAUDRATE_460800          = 460800,       //   462428,  468600, 
     IS_BAUDRATE_921600          = 921600,       //   930233,  937734,
-    IS_BAUDRATE_10000000        = 10000000,     // 10000000  ( IMX-5 only)
+    IS_BAUDRATE_10000000        = 10000000,     // 10000000  (IMX-5 only)
     IS_BAUDRATE_COUNT           = 9,
     IS_BAUDRATE_DEFAULT         = IS_BAUDRATE_921600,
     IS_BAUDRATE_STANDARD_MIN    = IS_BAUDRATE_9600,
@@ -163,9 +163,9 @@ typedef enum
 
 typedef struct
 {
-    uint32_t 			   baudRate;
-    uint8_t 			   parity;
-    uint8_t 			   stopBits;
+    uint32_t    baudRate;
+    uint8_t     parity;
+    uint8_t     stopBits;
 } serial_options_t;
 
 /** List of valid baud rates */
@@ -175,23 +175,23 @@ extern const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT];
 Packet Overview
 
 Byte
-0			Packet start byte
-1			Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE)
-2			Packet counter (for ACK and retry)
-3			Packet flags
+0               Packet start byte
+1               Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE)
+2               Packet counter (for ACK and retry)
+3               Packet flags
 
 // packet body, may or may not exist depending on packet id - packet body is made up of 4 byte or 8 byte values.
-4-7			Data identifier
-8-11		Data length
-12-15		Data offset
-16-19		Data start
-(n-8)-(n-5)	Last piece of data
+4-7             Data identifier
+8-11            Data length
+12-15           Data offset
+16-19           Data start
+(n-8)-(n-5)     Last piece of data
 // end data
 
-n-4			Reserved
-n-3			Checksum high byte
-n-2			Checksum low byte
-n-1			Packet end byte
+n-4             Reserved
+n-3             Checksum high byte
+n-2             Checksum low byte
+n-1             Packet end byte
 */
 
 // Packet IDs
@@ -358,7 +358,7 @@ typedef struct
     uint16_t            offset;
 } p_data_hdr_t;
 
-#define MIN_PACKET_SIZE (sizeof(packet_hdr_t) + 2)		// Packet header + checksum, no payload
+#define MIN_PACKET_SIZE (sizeof(packet_hdr_t) + 2) // Packet header + checksum, no payload
 
 /** Represents a packet header and body */
 typedef struct
@@ -383,7 +383,7 @@ typedef struct
             uint8_t         flags;
 
             /** Data offset (optional) */
-            p_data_hdr_t 	dataHdr;
+            p_data_hdr_t     dataHdr;
         };
     };
 
@@ -447,7 +447,7 @@ typedef struct
     /** Byte offset into data */
     uint16_t            offset;
 
-    /**	The broadcast source period multiple.  0 for a one-time broadcast.  */
+    /**    The broadcast source period multiple.  0 for a one-time broadcast.  */
     uint16_t            period;
 } p_data_get_t;
 
@@ -471,8 +471,8 @@ typedef struct
     union 
     {
         uint8_t         buf[sizeof(p_data_hdr_t)];
-        p_data_hdr_t	dataHdr;
-    }					body;
+        p_data_hdr_t    dataHdr;
+    }                   body;
 } p_ack_t, p_nack_t;
 
 /** Ublox binary packet header */
@@ -537,7 +537,7 @@ typedef struct
 typedef enum
 {
     ENABLE_PROTOCOL_ISB         = 0x00000001,
-    ENABLE_PROTOCOL_NMEA  	    = 0x00000002,
+    ENABLE_PROTOCOL_NMEA        = 0x00000002,
     ENABLE_PROTOCOL_UBLOX       = 0x00000004,
     ENABLE_PROTOCOL_RTCM3       = 0x00000008,
     ENABLE_PROTOCOL_SPARTN      = 0x00000010,
@@ -568,15 +568,45 @@ typedef struct
 {
     int16_t     state;
     uint16_t    size;
-    uint32_t    timeMs;		// Time of last parse
+    uint32_t    timeMs;        // Time of last parse
 } is_comm_parser_t;
 
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
+// Generic message handler function with is_comm_instance_t
+typedef int(*pfnIsCommHandler)(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+
+// InertialSense binary (ISB) data message handler function
+typedef int(*pfnIsCommIsbDataHandler)(p_data_t* data, port_handle_t port);
+
+// broadcast message handler
+// typedef int(*pfnIsCommAsapMsg)(p_data_get_t* req, port_handle_t port);
+
+// Generic message handler function with message pointer and size
+typedef int(*pfnIsCommGenMsgHandler)(const unsigned char* msg, int msgSize, port_handle_t port);
+
+// Callback functions are called when the specific message is received and callback pointer is not null:
+typedef struct
+{
+    pfnIsCommHandler                all;
+    pfnIsCommIsbDataHandler         isbData;
+    pfnIsCommGenMsgHandler          generic[_PTYPE_LAST_DATA];
+
+//    pfnIsCommIsbDataHandler         isbData;  // Message handler - Inertial Sense binary (ISB) data message
+//    pfnIsCommGenMsgHandler          nmea;     // Message handler - NMEA
+//    pfnIsCommGenMsgHandler          ublox;    // Message handler - Ublox
+//    pfnIsCommGenMsgHandler          rtcm3;    // Message handler - RTCM3
+//    pfnIsCommGenMsgHandler          sony;     // Message handler - Sony
+//    pfnIsCommGenMsgHandler          sprtn;    // Message handler - SPARTN
+//    pfnIsCommHandler                all;      // Message handler - Called for all messages in addition to any message handler including the error handler.
+//    pfnIsCommAsapMsg                rmc;      // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
+} is_comm_callbacks_t;
+
+
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct
 {
-    /** Receive data buffer. Data received is aggregate into this buffer until an entire packet is read. */		
+    /** Receive data buffer. Data received is aggregate into this buffer until an entire packet is read. */        
     is_comm_buffer_t rxBuf;
     
     /** Enable/disable protocol parsing */
@@ -612,7 +642,23 @@ typedef struct
     /** Used to prevent counting more than one error count between valid packets */
     uint8_t rxErrorState;
 
+    is_comm_callbacks_t cb;
+
 } is_comm_instance_t;
+
+typedef struct {
+    base_port_t base;
+    port_monitor_set_t* stats;          //! stats associated with this port
+    is_comm_instance_t comm;            //! Comm instance
+#if defined(GPX_1)
+    #define GPX_COM_BUFFER_SIZE 2800
+    uint8_t buffer[GPX_COM_BUFFER_SIZE];       //! Comm instance data buffer
+#else
+    uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
+#endif
+} comm_port_t;
+#define COMM_PORT(n)    ((comm_port_t*)(n))
+
 
 /** Pop off the packing argument, we can safely allow packing and shifting in memory at this point */
 POP_PACK
@@ -621,45 +667,28 @@ POP_PACK
 // typedef void(*pfnIsCommParseMsgHandler)(com_manager_t* cmInstance, com_manager_port_t* cmPort, is_comm_instance_t* comm, int32_t port, protocol_type_t ptype)
 // typedef protocol_type_t(*pfnIsCommParseMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
 
-// InertialSense binary (ISB) data message handler function
-typedef int(*pfnIsCommIsbDataHandler)(unsigned int port, p_data_t* data);
-
-// broadcast message handler
-typedef int(*pfnIsCommAsapMsg)(unsigned int port, p_data_get_t* req);
-
-// Generic message handler function with message pointer and size 
-typedef int(*pfnIsCommGenMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
-
-// Generic message handler function with is_comm_instance_t
-typedef int(*pfnIsCommHandler)(unsigned int port, is_comm_instance_t *comm);
-
-// Parse error handler function
-typedef int(*pfnIsCommParseErrorHandler)(unsigned int port, is_comm_instance_t* comm);
-
-// Callback functions are called when the specific message is received and callback pointer is not null:
-typedef struct
-{
-    pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message 
-    pfnIsCommHandler                isb;        // Message handler - Inertial Sense binary (ISB) general message 
-    pfnIsCommGenMsgHandler          nmea;       // Message handler - NMEA
-    pfnIsCommGenMsgHandler          ublox;      // Message handler - Ublox
-    pfnIsCommGenMsgHandler          rtcm3;      // Message handler - RTCM3
-    pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
-    pfnIsCommGenMsgHandler          sprtn;      // Message handler - SPARTN
-    pfnIsCommParseErrorHandler      error;      // Error handler 
-    pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
-    pfnIsCommAsapMsg                rmc;        // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
-} is_comm_callbacks_t;
 
 /**
 * Init simple communications interface - call this before doing anything else
 * @param instance communications instance, please ensure that you have set the buffer and bufferSize
 */
-void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize);
+void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler);
+
+void is_comm_port_init(comm_port_t* port, pfnIsCommHandler pktHandler);
+
+is_comm_instance_t* is_comm_get_port_instance(port_handle_t port);
+
+pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler);
+
+pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler);
+
+void is_comm_register_callbacks(is_comm_instance_t* instance, is_comm_callbacks_t *callbacks);
+
+void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *callbacks);
 
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
-void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks);
-void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t *comm, is_comm_callbacks_t *callbacks);
+void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);
+void is_comm_port_parse_messages(port_handle_t port);
 
 /**
 * Check that simple communications interface is valid and if not re-initializes.
@@ -684,7 +713,7 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 * @param byte the byte to decode
 * @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
 * @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
-  For example usage, see comManagerStepRxInstance() in com_manager.c.
+  For example usage, see comManagerStepRxInstance() in com_manager.cpp.
 
     // Read one byte (simple method)
     uint8_t c;
@@ -729,7 +758,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
 * @param instance the comm instance passed to is_comm_init
 * @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
 * @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
-  For example usage, see comManagerStepRxInstance() in com_manager.c.
+  For example usage, see comManagerStepRxInstance() in com_manager.cpp.
 
     // Read a set of bytes (fast method)
     protocol_type_t ptype;
@@ -779,20 +808,20 @@ static inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
  * @param data Pointer to payload data.
  * @return int Number of bytes written on success or -1 on failure
  */
-int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
  * @brief Same as is_comm_write_to_buf() except for writing packet to serial port.
  * @param portWrite Serial port callback function used send packet.
  * @param port Serial port number packet will be written to.
  */
-int is_comm_write(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
  * @brief Same as is_comm_write() except passing in pointer to Tx packet structure.  
  * @param txPkt Pointer to packet_t structure used to organize message sent.
  */
-int is_comm_write_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
  * Removed old data and shift unparsed data to the the buffer start if running out of space at the buffer end.  Returns number of bytes available in the bufer.
@@ -818,7 +847,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
  */
-int is_comm_get_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
+int is_comm_get_data(port_handle_t port,uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
 
 /**
  * @brief Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
@@ -842,9 +871,9 @@ static inline int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_co
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
  */
-static inline int is_comm_set_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_set_data(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_SET_DATA, did, size, offset, data);
+    return is_comm_write(port, PKT_TYPE_SET_DATA, did, size, offset, data);
 }    
 
 /**
@@ -858,18 +887,18 @@ static inline int is_comm_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_i
 /**
  * Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
  */
-static inline int is_comm_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_data(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_DATA, did, size, offset, data);
+    return is_comm_write(port, PKT_TYPE_DATA, did, size, offset, data);
 }    
 
 /**
  * @brief Same as is_comm_data() except passing in pointer to Tx packet structure.  
  * @param txPkt Pointer to packet_t structure used to organize message sent.
  */
-static inline int is_comm_data_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *txPkt, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_data_pkt(port_handle_t port, packet_t *txPkt, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write_pkt(portWrite, port, comm, txPkt, PKT_TYPE_DATA, did, size, offset, data);
+    return is_comm_write_pkt(port, txPkt, PKT_TYPE_DATA, did, size, offset, data);
 }    
 
 /**
@@ -877,9 +906,9 @@ static inline int is_comm_data_pkt(pfnIsCommPortWrite portWrite, unsigned int po
  * @param comm the comm instance passed to is_comm_init
  * @return 0 if success, otherwise an error code
  */
-static inline int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm)
+static inline int is_comm_stop_broadcasts_all_ports(port_handle_t port)
 {
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
+    return is_comm_write(port, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
 }
 
 /**
@@ -887,9 +916,9 @@ static inline int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite
  * @param comm the comm instance passed to is_comm_init
  * @return 0 if success, otherwise an error code
  */
-static inline int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm)
+static inline int is_comm_stop_broadcasts_current_port(port_handle_t port)
 {
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
+    return is_comm_write(port, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
 }
 
 /**
@@ -926,7 +955,7 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
  * @param offset Offset of the payload data into the data set structure.
  * @param data Pointer to payload data.
  */
-void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
  * @brief Updates the checksum for a precomputed InertialSense binary (ISB) packet and writes it to the specified serial port.
@@ -936,9 +965,9 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
  * @param pkt Pointer to precomputed ISB packet
  * @return int Number of bytes written on success or -1 on failure
  */
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *pkt);
+int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt);
 
-unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
+unsigned int calculate24BitCRCQ(const unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
 
 int validateBaudRate(unsigned int baudRate);
@@ -956,7 +985,7 @@ char copyDataPToDataP(p_data_t *dst, const p_data_t *src, const unsigned int max
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
 /** Indicates whether there is overlap in the data received and the backing data structure */
-static inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
+static inline uint8_t dataOverlap(uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
 {
     return _MAX(dstOffset, (uint32_t)(src->hdr.offset)) < _MIN(dstOffset + dstSize, (uint32_t)(src->hdr.offset + src->hdr.size));
 }
