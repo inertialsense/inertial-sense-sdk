@@ -353,6 +353,7 @@ def write_files():
 
 
 def main():  # Main function for if used not as a library
+    do_git()
     set_default_file_paths(sys.argv[1])
     collect_system_data()
     generate_build_data()
