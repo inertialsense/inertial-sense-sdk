@@ -2,5 +2,4 @@
 cd "$(dirname "$(realpath $0)")" > /dev/null
 source lib/activate_python_venv.sh
 
-# Return if non-zero error code
-python3 build_manager.py cltool ../cltool "$@" || exit $?
+python3 -m pip install gitpython requests ruamel.yaml semver 
