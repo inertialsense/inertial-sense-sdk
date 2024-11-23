@@ -120,4 +120,7 @@ target_link_libraries(test_${PROJECT_NAME} InertialSenseSDK ${YAML_CPP_LIBRARIES
 install(TARGETS test_${PROJECT_NAME}
         DESTINATION lib/${PROJECT_NAME})
 
+install(TARGETS ${PROJECT_NAME}_node
+        DESTINATION lib/${PROJECT_NAME})
+
 ament_package()
