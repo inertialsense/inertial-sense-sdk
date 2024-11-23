@@ -348,11 +348,11 @@ def generate_build_data():
 def write_files():
     write_build_info_file()
     write_repo_info_file()
-    write_zephyr_version_file()
+    # disabled because of "VERSION" file and "version" directory conflict in Windows (WHJ)
+    # write_zephyr_version_file()
 
 
 def main():  # Main function for if used not as a library
-    return  # disable because of "VERSION" file and "version" directory conflict in Windows (WHJ)
     set_default_file_paths(sys.argv[1])
     collect_system_data()
     generate_build_data()
