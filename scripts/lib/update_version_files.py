@@ -352,7 +352,7 @@ def write_files():
 
 
 def main():  # Main function for if used not as a library
-    do_git()
+    return  # disable because of "VERSION" file and "version" directory conflict in Windows (WHJ)
     set_default_file_paths(sys.argv[1])
     collect_system_data()
     generate_build_data()
