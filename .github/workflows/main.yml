@@ -265,6 +265,7 @@ jobs:
       - name: Build IS SDK library
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
+          git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
           ../../inertial-sense-sdk/scripts/build_is_sdk.sh
           "
 
