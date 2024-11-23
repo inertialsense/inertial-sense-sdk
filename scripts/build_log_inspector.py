@@ -35,7 +35,6 @@ def run_setup_command(command):
         return e.returncode
 
 def run_clean():
-    global log_inspector_dir
     os.chdir(log_inspector_dir)
 
     print("=== Running make clean... ===")
@@ -76,7 +75,6 @@ def run_build(args=[]):
         elif arg in ("-d", "--debug"):
             build_type = "Debug"
 
-    global log_inspector_dir
     pip_install_command = f"pip3 install {log_inspector_dir}"
     version_info = sys.version_info
     if version_info.major > 3 or (version_info.major == 3 and version_info.minor >= 11):
@@ -91,8 +89,6 @@ def run_build(args=[]):
             sys.exit(result)
 
         print(f"=== Running make... ({build_type}) ===")
-
-        os.chdir(log_inspector_dir.parent)
         print(pip_install_command)
         build_process = subprocess.run(pip_install_command, shell=True)
         if build_process.returncode:
@@ -107,18 +103,12 @@ def main():
     clean = False
     debug = False
     build_type = "Release"
-
-    for arg in sys.argv[1:]:
-        if arg in ("-c", "--clean"):
-            clean = True
-        elif arg in ("-d", "--debug"):
-            debug = True
-            build_type = "Debug"
+    args = sys.argv[1:]
 
     if clean:
         run_clean()
     else:
-        run_build(build_type)
+        run_build(args)
 
 if __name__ == "__main__":
     main()
