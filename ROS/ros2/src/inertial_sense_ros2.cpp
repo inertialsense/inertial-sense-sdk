@@ -116,7 +116,7 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
 
         if (configFlashParameters)
         {   // Set IMX flash parameters (flash write) after everything else so processor stall doesn't interfere with communications.
-            //configure_flash_parameters();
+            configure_flash_parameters();
         }
     }
 }
