@@ -673,27 +673,41 @@ void InertialSenseROS::configure_ascii_output()
  */
 bool InertialSenseROS::connect(float timeout)
 {
-    uint32_t end_time = nh_->now().seconds() + timeout;
+    uint32_t end_time = ros::Time::now().toSec() + timeout;
     auto ports_iterator = ports_.begin();
+    auto serialNum = 0;
 
     do {
         std::string cur_port = *ports_iterator;
         /// Connect to the IMX
-        RCLCPP_INFO(rclcpp::get_logger("connect_to_serial"),"InertialSenseROS: Connecting to serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+        RCLCPP_INFO("InertialSenseROS: Connecting to serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
         sdk_connected_ = IS_.Open(cur_port.c_str(), baudrate_);
-        if (!sdk_connected_) {
-            RCLCPP_ERROR(rclcpp::get_logger("open_port_error"),"InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
-            sleep(1); // is this a good idea?
-        } else {
-            RCLCPP_INFO(rclcpp::get_logger("serial_port_connected_info"),"InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.DeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+        if (sdk_connected_)
+        {
+            serialNum = IS_.DeviceInfo().serialNumber;
+        }
+        
+        if (!sdk_connected_) 
+        {
+            RCLCPP_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+            usleep(500000); // is this a good idea?
+        }
+        else if (serialNum == 0)
+        {
+            RCLCPP_ERROR("InertialSenseROS: False connection \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+            sdk_connected_ = false;
+        }
+        else 
+        {
+            RCLCPP_INFO("InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.DeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
             port_ = cur_port;
             break;
         }
-        if ((ports_.size() > 1) && (ports_iterator != ports_.end()))
+        if ((ports_.size() > 1) && (*ports_iterator != ports_.back()))
             ports_iterator++;
         else
             ports_iterator = ports_.begin(); // just keep looping until we timeout below
-    } while (nh_->now().seconds() < end_time);
+    } while (ros::Time::now().toSec() < end_time);
 
     return sdk_connected_;
 }
@@ -789,6 +803,7 @@ void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg;
+    IS_.WaitForFlashSynced();
     IS_.FlashConfig(current_flash_cfg);
     //RCLCPP_INFO(rclcpp::get_logger("E"),"InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
