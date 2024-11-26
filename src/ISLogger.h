@@ -52,7 +52,6 @@ public:
     {
         LOGTYPE_DAT = 0,    // serial
         LOGTYPE_RAW,        // packetized serial.  Supports multiple packet types
-        LOGTYPE_SDAT,       // sorted -- unsupported/deprecated, DO NOT USE!
         LOGTYPE_CSV,
         LOGTYPE_KML,
         LOGTYPE_JSON
