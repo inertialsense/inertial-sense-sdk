@@ -46,7 +46,7 @@ class BuildTestManager:
                 self.run_build = False
             elif arg in ("-t", "--test", "--tests"):
                 self.run_test = True
-            elif arg in ("-r", "--release"):
+            elif arg in ("-g", "--generate-release"):
                 self.generate_release = True
             else:
                 no_dash_args.append(arg)
@@ -65,21 +65,20 @@ class BuildTestManager:
         if 2 < len(no_dash_args):
             self.exec_name = no_dash_args[2]
 
-        self.print_release_info()
-
     def set_release_info(self, release_name=None, release_dir=None):
         self.release_name = release_name
         self.release_dir = release_dir
+        self.print_release_info()
 
     def print_help_menu(self):
         print("Help Menu:")
-        print(" -b --build     Enable build (default on)")
-        print(" -c --clean     Clean build")
-        print(" -d --debug     Enable debug build")
-        print(" -h --help      Show this menu")
-        print(" -n --nobuild   Disable build")
-        print(" -t --test      Run tests")
-        print(" -r --release   Generate software release")
+        print(" -b --build              Enable build (default on)")
+        print(" -c --clean              Clean build")
+        print(" -d --debug              Enable debug build")
+        print(" -h --help               Show this menu")
+        print(" -n --nobuild            Disable build")
+        print(" -t --test               Run tests")
+        print(" -g --generate-release   Generate software release")
 
     def print_release_info(self):
         if self.generate_release:
