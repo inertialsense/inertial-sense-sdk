@@ -574,7 +574,7 @@ typedef struct
 
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
-// Generic message handler function with is_comm_instance_t
+// raw packet handler function with is_comm_instance_t
 typedef int(*pfnIsCommHandler)(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 // InertialSense binary (ISB) data message handler function
@@ -602,7 +602,7 @@ typedef struct
     is_comm_buffer_t rxBuf;
     
     /** Enable/disable protocol parsing */
-    is_comm_config_t config;
+    // is_comm_config_t config;
 
     /** Number of packets sent */
     uint32_t txPktCount;
