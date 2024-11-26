@@ -87,7 +87,8 @@ typedef enum
     _PTYPE_SPARTN               = 8,  /** Protocol Type: SPARTN binary */
     _PTYPE_SONY                 = 9,  /** Protocol Type: Sony binary */
     _PTYPE_FIRST_DATA           = _PTYPE_INERTIAL_SENSE_DATA,
-    _PTYPE_LAST_DATA            = _PTYPE_SONY
+    _PTYPE_LAST_DATA            = _PTYPE_SONY,
+    _PTYPE_SIZE                 = _PTYPE_LAST_DATA + 1,
 } protocol_type_t;
 
 /** The maximum allowable dataset size */
@@ -590,16 +591,7 @@ typedef struct
 {
     pfnIsCommHandler                all;
     pfnIsCommIsbDataHandler         isbData;
-    pfnIsCommGenMsgHandler          generic[_PTYPE_LAST_DATA];
-
-//    pfnIsCommIsbDataHandler         isbData;  // Message handler - Inertial Sense binary (ISB) data message
-//    pfnIsCommGenMsgHandler          nmea;     // Message handler - NMEA
-//    pfnIsCommGenMsgHandler          ublox;    // Message handler - Ublox
-//    pfnIsCommGenMsgHandler          rtcm3;    // Message handler - RTCM3
-//    pfnIsCommGenMsgHandler          sony;     // Message handler - Sony
-//    pfnIsCommGenMsgHandler          sprtn;    // Message handler - SPARTN
-//    pfnIsCommHandler                all;      // Message handler - Called for all messages in addition to any message handler including the error handler.
-//    pfnIsCommAsapMsg                rmc;      // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
+    pfnIsCommGenMsgHandler          generic[_PTYPE_SIZE];
 } is_comm_callbacks_t;
 
 
