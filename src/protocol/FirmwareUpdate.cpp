@@ -529,6 +529,10 @@ namespace fwUpdate {
         // if the session id doesn't match our current session id, then ignore this message.
         if (payload.data.chunk.session_id != session_id)
             return false;
+            
+        if (payload.data.chunk.chunk_id <= last_chunk_id) 
+            return true;
+
 
         // if the chunk id does match the next expected chunk id, then send an resend for the correct/missing chunk
         if (payload.data.chunk.chunk_id != (uint16_t)(last_chunk_id + 1)) {
