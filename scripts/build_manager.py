@@ -175,9 +175,9 @@ class BuildTestManager:
             self.test_footer(result)
         return result
 
-    def build_script(self, project_name, script_path, args):
+    def build_script(self, project_name, script_path, args=[]):
         if self.is_windows:
-            command = ["cmd", '/c', str(script_path)]
+            command = ["cmd", "/c", str(script_path)]
         else:
             command = ["bash", str(script_path)]
         if args:
@@ -188,9 +188,8 @@ class BuildTestManager:
         result = 0
         try:
             # Redirect input from os.devnull to suppress 'pause' commands
-            # with open(os.devnull, 'r') as devnull:
-                # subprocess.run(command, check=True, stdin=devnull)
-            subprocess.run(command, check=True)
+            with open(os.devnull, 'r') as devnull:
+                subprocess.run(command, check=True, stdin=devnull, cwd=os.path.dirname(script_path))            
         except subprocess.CalledProcessError as e:
             print(f"Error building {project_name}!")
             result = e.returncode
