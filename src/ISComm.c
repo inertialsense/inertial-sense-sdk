@@ -1076,15 +1076,6 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
             case _PTYPE_INERTIAL_SENSE_ACK:
             case _PTYPE_INERTIAL_SENSE_CMD:
                 break;
-
-    //        case _PTYPE_NMEA:
-    //            if (comm->cb.nmea)    {
-    //                comm->cb.nmea(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
-    //            } break;
-    //        case _PTYPE_RTCM3:          if (comm->cb.rtcm3)   { comm->cb.rtcm3(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-    //        case _PTYPE_SPARTN:         if (comm->cb.sprtn)   { comm->cb.sprtn(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-    //        case _PTYPE_UBLOX:          if (comm->cb.ublox)   { comm->cb.ublox(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-    //        case _PTYPE_SONY:           if (comm->cb.sony)    { comm->cb.sony(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
             default:
                 if (comm->cb.generic[ptype]) {
                     notConsumed = comm->cb.generic[ptype](comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
