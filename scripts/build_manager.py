@@ -188,8 +188,9 @@ class BuildTestManager:
         result = 0
         try:
             # Redirect input from os.devnull to suppress 'pause' commands
-            with open(os.devnull, 'r') as devnull:
-                subprocess.run(command, check=True, stdin=devnull)
+            # with open(os.devnull, 'r') as devnull:
+                # subprocess.run(command, check=True, stdin=devnull)
+            subprocess.run(command, check=True)
         except subprocess.CalledProcessError as e:
             print(f"Error building {project_name}!")
             result = e.returncode
