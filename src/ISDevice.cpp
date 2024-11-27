@@ -423,41 +423,65 @@ void ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMa
     SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
 }
 
-// This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
-void ISDevice::SyncFlashConfig(unsigned int timeMs) {
 
-    if (timeMs - flashSyncCheckTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS) {
-        return;
+/**
+ * This is a non-blocking call (intended to be called repeatedly) that checks to see if we have confirmation
+ * that the FlashCfg.checksum == sysParams.flashCfgChecksum, which validates that our checksum is the same
+ * in local memory as it is on the device.
+ * @param timeMs a timestamp provided by the caller
+ * @return true if the checksum has been verified, otherwise false.  This can be misleading, as false
+ *  does not indicate a lack of communications, or a timeout, only that it has not yet been able to validate.
+ *  It is the callers responsibility to handle timeout checking to determine it should give up looking for
+ *  a valid sync.
+ */
+bool ISDevice::SyncFlashConfig() {
+    unsigned int timeMs = current_timeMs();
+    if (flashCfgUploadTimeMs)
+    {   // if flashCfgUploadTimeMs != 0, then a UPLOAD is still in progress (we have sent a new Cfg, but waiting for it to sync back via the DID_SYS_PARAMS
+        if (timeMs - flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+        {   // if its been fewer than SYNC_FLASH_CFG_CHECK_PERIOD_MS since we started the upload, clear the sysParams.flashCfgChecksum; We want to receive a new one to ensure its changed
+            sysParams.flashCfgChecksum = 0;
+            return false;
+        }
     }
+
+    if (timeMs - flashSyncCheckTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+    {   // throttle checks; if it has been less than 200ms, since the last check return false (sync still in progress)
+        return false;
+    }
+
+    if (!sysParams.flashCfgChecksum)
+    {   // since we cleared this, above, if flashCfgChecksum == 0, we're still waiting to receive a SYS_PARAMS
+        return false;
+    }
+
     flashSyncCheckTimeMs = timeMs;
 
-    if (flashCfgUploadTimeMs) {
-        // Upload in progress
-        if (timeMs - flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS) {
-            // Wait for upload to process.  Pause sync.
-            sysParams.flashCfgChecksum = 0;
-        }
-    }
-
     // Require valid sysParams checksum
-    if (sysParams.flashCfgChecksum) {
-        if (sysParams.flashCfgChecksum == flashCfg.checksum) {
-            if (flashCfgUploadTimeMs) {
-                // Upload complete.  Allow sync.
-                flashCfgUploadTimeMs = 0;
-
-                if (flashCfgUploadChecksum == sysParams.flashCfgChecksum) {
-                    printf("DID_FLASH_CONFIG upload complete.\n");
-                } else {
-                    printf("DID_FLASH_CONFIG upload rejected.\n");
-                }
-            }
-        } else {
-            // Out of sync.  Request flash config.
-            printf("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
-            comManagerGetData(port, DID_FLASH_CONFIG, 0, 0, 0);
-        }
+    if (sysParams.flashCfgChecksum != flashCfg.checksum)
+    {   // we have a sysParams.flashCfgChecksum, but IT DOES NOT SYNC with our local copy of the flashCfg, so we need to request a new copy
+        GetData(DID_FLASH_CONFIG);
+        return false;
     }
+
+    // at this point, we have CONFIRMED the device's flashCfg
+    if (flashCfgUploadChecksum != sysParams.flashCfgChecksum)
+    { // sysParams.flashCfgChecksum DOES NOT MATCH uploaded, sync failed!
+        flashCfgUploadTimeMs = 0;
+        flashSyncCheckTimeMs = 0;
+        flashCfgUploadChecksum = 0;
+        flashCfgUpload = { };
+        // printf("DID_FLASH_CONFIG upload rejected.\n");
+        return false;
+    }
+
+    // we have a sysParams.flashCfgChecksum and it matches the received (from the device), AND the uploaded, so SUCCESS!!
+    flashCfgUploadTimeMs = 0;
+    flashSyncCheckTimeMs = 0;
+    flashSyncCheckTimeMs = 0;
+    flashCfgUpload = { };
+    // printf("DID_FLASH_CONFIG upload complete.\n");
+    return true;
 }
 
 void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
@@ -473,7 +497,7 @@ void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
     }
 
     // Update checksum
-    flashCfg_.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+    flashCfg_.checksum = flashChecksum32(&flashCfg_, sizeof(nvm_flash_cfg_t));
 }
 
 /**
@@ -491,6 +515,16 @@ bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_)
     return (port && serialPortIsOpen(port) && (sysParams.flashCfgChecksum == flashCfg.checksum));
 }
 
+/**
+ * This uploads the provided flashCfg to the remove device, but makes no checks that it was successfully synchronized.
+ * This method attempt to "intelligently" upload only the portions of the flashCfg that has actually changed, reducing
+ * traffic and minimizing the risk of a sync-failure due to elements which maybe programmatically changed, however it
+ * may make multiple sends, if the new and previous configurations have non-contiguous modifications.
+ * Use WaitForFlashSynced() or SetFlashConfigAndConfirm() to actually confirm that the new config was applied to the
+ * device correctly.
+ * @param flashCfg_ the new flash_config to upload
+ * @return true if the ANY of the changes failed to send to the remove device.
+ */
 bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
     static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
     uint32_t *newCfg = (uint32_t*)&flashCfg_;
@@ -498,12 +532,8 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
     int iSize = sizeof(nvm_flash_cfg_t) / 4;
     bool failure = false;
 
-    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
-
-    // Exclude updateIoConfig bit from flash config and keep track of it separately so it does not affect whether the platform config gets uploaded
-    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
-
-    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+    bool platformCfgUpdateIoConfig = flashCfg_.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+    UpdateFlashConfigChecksum(flashCfg_);
 
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
     for (int i = 2; i < iSize; i++) {
@@ -528,7 +558,7 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
             }
 
             const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(DID_FLASH_CONFIG, offset);
-            printf("%s :: Sending DID_FLASH_CONFIG.%s (offset %d, size %d)\n", getIdAsString().c_str(), (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>"), offset, size);
+            // printf("%s :: Sending DID_FLASH_CONFIG.%s (offset %d, size %d)\n", getIdAsString().c_str(), (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>"), offset, size);
             int fail = comManagerSendData(port, head, DID_FLASH_CONFIG, size, offset);
             failure = failure || fail;
             flashCfgUploadTimeMs = current_timeMs();        // non-zero indicates upload in progress
@@ -555,17 +585,51 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
     return !failure;
 }
 
-bool ISDevice::WaitForFlashSynced()
+/**
+ * A blocking function calls which waits until both a DID_FLASH_CFG and DID_SYS_PARAMS have
+ * been received which have a matching flashCfg checksum; ensuring that we have a valid copy
+ * of the devices' flash configuration.
+ * @param timeout
+ * @return true if both the flashCfg.checksum and sysParams.flashCfgChecksum match (and neither are zero)
+ */
+bool ISDevice::WaitForFlashSynced(uint32_t timeout)
 {
     if (!port)
         return false;   // No device, no flash-sync
 
-    unsigned int startMs = current_timeMs();
+    // If there are no upload pending, then just go ahead and check...
+    unsigned int now = current_timeMs();
+    unsigned int startMs = now;
+
+    static unsigned int lastRequest = now;
+    if ((flashCfgUploadTimeMs == 0) && (flashCfgUploadChecksum == 0))
+    {   // no upload is in progress; we don't need to verify with our uploaded flashCfg
+        while (flashCfg.checksum != sysParams.flashCfgChecksum)
+        {
+            if ((now - startMs) > timeout)
+            {   // timeout reached
+                return false;
+            }
+
+            if ((current_timeMs() - lastRequest) > 50)
+            {   // request both SYS_PARAMS and FLASH_CONFIG every 50ms until we get a response
+                lastRequest = current_timeMs();
+                GetData(DID_SYS_PARAMS);
+                GetData(DID_FLASH_CONFIG);
+                step();
+            }
+            SLEEP_MS(5);
+        }
+        return true;
+    }
+
+    // If we are here, then we've uploaded a new flash cfg, and we are waiting to see if the device accepted or rejected it.
     while (!FlashConfigSynced())
     {   // Request and wait for flash config
-        comManagerStep(port);
+        step();
+        SyncFlashConfig();
 
-        if ((current_timeMs() - startMs) > SYNC_FLASH_CFG_TIMEOUT_MS)
+        if ((now - startMs) > timeout)
         {   // Timeout waiting for flash config
             #if PRINT_DEBUG
             printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
@@ -576,14 +640,22 @@ bool ISDevice::WaitForFlashSynced()
             printf("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
             printf("device.flashCfgUploadChecksum:     %u\n", device.flashCfgUploadChecksum);
             #endif
-            return false;
+            break; // we'll give it one last change to succeed between now and the return at the bottom
         }
         else
         {   // Query DID_SYS_PARAMS
             GetData(DID_SYS_PARAMS);
-            // printf("Waiting for flash sync...\n");
+            SLEEP_MS(5);
+
+            if (((now - startMs) % 500) == 0)
+                SetFlashConfig(flashCfgUpload); // try and upload again.
+
+            step();
+            if (SyncFlashConfig())
+                return true; // we don't need to do any additional validation
         }
-        SLEEP_MS(20);  // give some time for the device to respond.
+        SLEEP_MS(5);  // give some time for the device to respond.
+        now = current_timeMs();
     }
 
     return FlashConfigSynced();
@@ -598,6 +670,30 @@ bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
 
     return ((sysParams.hdwStatus & HDW_STATUS_FLASH_WRITE_PENDING) || (sysParams.hdwStatus == 0));
 }
+
+/**
+ * Sets the provided FlashCfg and then blocks for timeout, waiting for the uploaded FlashCfg to be
+ * then downloaded, before finally confirming that the new values have been set.
+ * @param flashCfg the flash config to upload
+ * @return
+ */
+bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout)
+{
+    if (!SetFlashConfig(flashCfg))  // Upload and verify upload
+        return false;   // we failed to even upload the new config
+
+    // save the uploaded config, with correct checksum calculated in SetFlashConfig()
+    nvm_flash_cfg_t tmpFlash = flashCfg;
+
+    if (!WaitForFlashSynced(timeout))
+        return false;   // Re-download flash config
+
+    if ((flashCfgUploadTimeMs != 0) && (flashSyncCheckTimeMs != 0))
+        return false;   // timed-out,
+
+    return (memcmp(&flashCfg, &tmpFlash, sizeof(nvm_flash_cfg_t)) == 0);
+}
+
 
 bool ISDevice::reset() {
     if (current_timeMs() > nextResetTime) {

@@ -130,22 +130,43 @@ public:
 
     /**
      * A fancy function that attempts to synchronize flashcfg between host and device - Honestly, I'm not sure its use case
-     * @param timeMs
+     * This function DOES NOT BLOCK, it is a (not-so-)simple state check as to whether the flash is currently synced or not.
+     * @param timeMs the current time...
+     * @return true if the config is synchronized, otherwise false.
      */
-    void SyncFlashConfig(unsigned int timeMs);
+    bool SyncFlashConfig();
 
     /**
-    * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
-    * @param port the port to get flash config for
-    * @return true if the flash config is valid, currently synchronized, otherwise false.
-    */
-    bool FlashConfigSynced() { return  (flashCfg.checksum == sysParams.flashCfgChecksum) && (flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(); }
+     * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
+     * @param port the port to get flash config for
+     * @return true if the flash config is valid, currently synchronized, otherwise false.
+     */
+    bool FlashConfigSynced() {
+        step();   // let's give it a very, very brief chance to processing any pendind data before we check our status...
+        if (flashCfgUploadChecksum && (flashCfgUploadChecksum == sysParams.flashCfgChecksum) && (flashCfg.checksum == sysParams.flashCfgChecksum))
+            return true;    // a 3-way match between upload, device, and sysParams
+        if (flashCfg.checksum == sysParams.flashCfgChecksum)
+            return true;    // a 2-way check between just the device and the sysParams
+
+        return false;
+    }
 
     /**
      * Another fancy function that blocks until a flash sync has actually occurred, returning true if successful or false if it couldn't (timeout?  validation?  bad connection?  -- who knows?)
      * @return
      */
-    bool WaitForFlashSynced();
+    bool WaitForFlashSynced(uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+
+    /**
+     * This is kind of like the previous one, but it actually downloads the newest FlashCfg from the device and does a byte-for-byte comparison
+     * to ensure it was uploaded/downlaoded correctly.  This could fail where the previous might pass, because some parts of the flashCfg are programatically set to reflect state.
+     * For example, if you send a rtkConfig = 0x08, it may return a rtkConfig of 0x00400008 because the 0x4 reflects that its persisted (or something like that).
+     * @param flashCfg the config to upload (and later match against the downloaded firmware)
+     * @param timeout a timeout value for how long to wait for the new flash to sync/download before failing
+     * @return true if the new config was uploaded, synced, downloaded and matched with the original flashCfg, otherwise false
+     */
+    bool SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+
 
     bool waitForFlashWrite();
 
@@ -160,7 +181,10 @@ public:
      * @param port the port to get flash config for
      * @return true Flash config upload was either not received or rejected.
      */
-    bool FlashConfigUploadFailure() { return flashCfgUploadChecksum && (flashCfgUploadChecksum != sysParams.flashCfgChecksum); }
+    bool FlashConfigUploadFailure() {
+        // a failed flash upload is considered when flashCfgUploadChecksum is non-zero, and DOES NOT match sysParams.flashCfgChecksum
+        return flashCfgUploadChecksum && (flashCfgUploadChecksum != sysParams.flashCfgChecksum);
+    }
 
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
 

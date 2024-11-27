@@ -1061,6 +1061,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
     protocol_type_t ptype;
     while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
     {
+        int notConsumed = -1;  // if 0, this message was successfully processed by a protocol-specific handler; Do not process it again with the ALL callback
         // Found valid packet
         switch (ptype)
         {
@@ -1069,7 +1070,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 {
                     p_data_t data;
                     is_comm_to_isb_p_data(comm, &data);
-                    comm->cb.isbData(&data, port);
+                    notConsumed = comm->cb.isbData(&data, port);
                 }
                 break;
             case _PTYPE_INERTIAL_SENSE_ACK:
@@ -1086,12 +1087,12 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
     //        case _PTYPE_SONY:           if (comm->cb.sony)    { comm->cb.sony(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
             default:
                 if (comm->cb.generic[ptype]) {
-                    comm->cb.generic[ptype](comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
+                    notConsumed = comm->cb.generic[ptype](comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
                 }
                 break;
         }
 
-        if (comm->cb.all)
+        if (comm->cb.all && notConsumed)
         {
             comm->cb.all(ptype, &(comm->rxPkt), port);
         }
