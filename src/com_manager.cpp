@@ -63,6 +63,7 @@ int ISComManager::init(
 
     defaultCbs = {};
     defaultCbs.all = comManagerProcessBinaryRxPacket;
+    defaultCbs.isbData = pstRxFncCb;
 
     if (!portSet) portSet = new std::unordered_set<port_handle_t>();
     ports = portSet;
@@ -950,7 +951,7 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
         defaultCbs.generic[ptype] = cbHandler; // TODO: range check this
         for (auto port : *ports) {
             if (port && portType(port) & PORT_TYPE__COMM) {
-                is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+                return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
             }
         }
     }
