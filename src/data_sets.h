@@ -136,7 +136,7 @@ typedef uint32_t eDataIDs;
 
 #define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (did_event_t)*/
 
-#define DID_GPX_FIRST                             120 /** First of GPX DIDs */
+#define DID_GPX_FIRST                   (eDataIDs)120 /** First of GPX DIDs */
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
 #define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gpx_rtos_info_t) GPX RTOs info */
@@ -1465,6 +1465,8 @@ enum eGenFaultCodes
     GFC_INIT_I2C						= 0x00800000,
     /*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
     GFC_CHIP_ERASE_INVALID				= 0x01000000,
+    /*! Fault: GPS time fault */
+    GFC_GNSS_TIME_FAULT                     = 0x02000000,
 };
 
 
