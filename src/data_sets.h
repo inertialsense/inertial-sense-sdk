@@ -1466,7 +1466,7 @@ enum eGenFaultCodes
     /*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
     GFC_CHIP_ERASE_INVALID				= 0x01000000,
     /*! Fault: GPS time fault */
-    GFC_GNSS_TIME_FAULT                     = 0x02000000,
+    GFC_GNSS_TIME_FAULT                 = 0x02000000,
 };
 
 
