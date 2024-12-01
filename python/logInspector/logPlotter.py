@@ -1192,6 +1192,109 @@ class logPlot:
         except:
             print(RED + "problem plotting hdwStatus: " + sys.exc_info()[0] + RESET)
 
+    def genFaultCodes(self, fig=None):
+        try:
+            if fig is None:
+                fig = plt.figure()
+            ax = fig.subplots(1, 1, sharex=True)
+            fig.suptitle('INS Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+            for d in self.active_devs:
+                r = d == self.active_devs[0]    # plot text w/ first device
+                cnt = 0
+                faultTime = getTimeFromTowMs(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'), True)
+                genFaultCode = self.getData(d, DID_SYS_PARAMS, 'genFaultCode')
+
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000001) != 0))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'Overrun UWV')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000002) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Overrun Latitude')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000004) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Overrun Altitude')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000010) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Unhandled Interrupt')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000020) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS Sys Fault')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000040) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS Tx Limited')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000080) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS Rx Overrun')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000100) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Init Sensors')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000200) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Init SPI')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000400) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Config SPI')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000800) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Init')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00001000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Init')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00002000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Flash Invalid Values')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00004000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Flash Checksum Failure')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00008000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Flash Write Failure')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00010000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Sys Fault General')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00020000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Sys Fault Critical')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00040000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Sensor Saturation')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00100000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Init IMU')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00200000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Init Barometer')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00400000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Init Magnetometer')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00800000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Init I2C')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x01000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Chip Erase Invalid')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS Time Fault')
+                cnt += 1
+                cnt += 1
+
+            ax.grid(True)
+
+            self.setup_and_wire_legend()
+            self.saveFig(fig, 'genFaultCode')
+        except:
+            print(RED + "problem plotting insStatus: " + sys.exc_info()[0] + RESET)
+
     def gpxStatus(self, fig=None):
         try:
             if fig is None:
