@@ -348,8 +348,7 @@ def generate_build_data():
 def write_files():
     write_build_info_file()
     write_repo_info_file()
-    # disabled because of "VERSION" file and "version" directory conflict in Windows (WHJ)
-    # write_zephyr_version_file()
+    write_zephyr_version_file()
 
 
 def main():  # Main function for if used not as a library
