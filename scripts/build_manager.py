@@ -211,9 +211,12 @@ class BuildTestManager:
         if clean:
             build_dir = project_dir / "build"
             print(f"=== Running make clean... ===")
-            if os.path.exists(build_dir):
-                shutil.rmtree(build_dir)
-
+            try:
+                if os.path.exists(build_dir):
+                    shutil.rmtree(build_dir)
+            except subprocess.CalledProcessError as e:
+                print(f"Error cleaning: {project_name}!")
+                result = e.returncode
         else:   # Build process
             print(f"=== Running make... ({build_type}) ===")
             try:
