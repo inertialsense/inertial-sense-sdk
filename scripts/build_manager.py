@@ -204,6 +204,11 @@ class BuildTestManager:
         result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean)
         self.build_footer(result)
         return result
+
+    @staticmethod
+    def is_directory_empty(directory):
+        if os.path.exists(directory) and os.path.isdir(directory):
+            return len(os.listdir(directory)) == 0    
     
     @staticmethod
     def static_build_cmake(project_name, project_dir, build_type="Release", clean=False):
@@ -214,9 +219,10 @@ class BuildTestManager:
             try:
                 if os.path.exists(build_dir):
                     shutil.rmtree(build_dir)
-            except subprocess.CalledProcessError as e:
-                print(f"Error cleaning: {project_name}!")
-                result = e.returncode
+            except Exception as e:
+                print(f"Error cleaning: {project_name}.  Directory `{build_dir}` cannot be removed.")
+                if not BuildTestManager.is_directory_empty(build_dir):
+                    result = -1
         else:   # Build process
             print(f"=== Running make... ({build_type}) ===")
             try:
