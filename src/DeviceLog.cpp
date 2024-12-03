@@ -88,6 +88,9 @@ bool cDeviceLog::CloseAllFiles()
     return true;
 }
 
+/**
+* Resets the log to the beginning
+*/
 void cDeviceLog::ResetToStart()
 {
     CloseAllFiles();
