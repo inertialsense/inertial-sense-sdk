@@ -415,7 +415,7 @@ int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMas
     else if (target == 2)
         event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
     else
-        return;
+        return 0;
 
     memcpy(data, &event, DID_EVENT_HEADER_SIZE);
     memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
