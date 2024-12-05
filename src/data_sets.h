@@ -1428,51 +1428,53 @@ typedef struct PACKED
 enum eGenFaultCodes
 {
     /*! INS state limit overrun - UVW */
-    GFC_INS_STATE_ORUN_UVW                = 0x00000001,
+    GFC_INS_STATE_ORUN_UVW                  = 0x00000001,
     /*! INS state limit overrun - Latitude */
-    GFC_INS_STATE_ORUN_LAT                = 0x00000002,
+    GFC_INS_STATE_ORUN_LAT                  = 0x00000002,
     /*! INS state limit overrun - Altitude */
-    GFC_INS_STATE_ORUN_ALT                = 0x00000004,
+    GFC_INS_STATE_ORUN_ALT                  = 0x00000004,
     /*! Unhandled interrupt */
-    GFC_UNHANDLED_INTERRUPT                = 0x00000010,
+    GFC_UNHANDLED_INTERRUPT                 = 0x00000010,
     /*! GNSS system runtime fault */
-    GFC_GNSS_SYS_FAULT                    = 0x00000020,
+    GFC_GNSS_SYS_FAULT                      = 0x00000020,
     /*! GNSS Tx limited */
-    GFC_GNSS_TX_LIMITED                    = 0x00000040,
+    GFC_GNSS_TX_LIMITED                     = 0x00000040,
     /*! GNSS Rx overrun */
-    GFC_GNSS_RX_OVERRUN                    = 0x00000080,
+    GFC_GNSS_RX_OVERRUN                     = 0x00000080,
     /*! Fault: sensor initialization  */
-    GFC_INIT_SENSORS                    = 0x00000100,
+    GFC_INIT_SENSORS                        = 0x00000100,
     /*! Fault: SPI bus initialization  */
-    GFC_INIT_SPI                        = 0x00000200,
+    GFC_INIT_SPI                            = 0x00000200,
     /*! Fault: SPI configuration  */
-    GFC_CONFIG_SPI                        = 0x00000400,
+    GFC_CONFIG_SPI                          = 0x00000400,
     /*! Fault: GNSS1 init  */
-    GFC_GNSS1_INIT                        = 0x00000800,
+    GFC_GNSS1_INIT                          = 0x00000800,
     /*! Fault: GNSS2 init  */
-    GFC_GNSS2_INIT                        = 0x00001000,
+    GFC_GNSS2_INIT                          = 0x00001000,
     /*! Flash failed to load valid values */
-    GFC_FLASH_INVALID_VALUES            = 0x00002000,
+    GFC_FLASH_INVALID_VALUES                = 0x00002000,
     /*! Flash checksum failure */
-    GFC_FLASH_CHECKSUM_FAILURE            = 0x00004000,
+    GFC_FLASH_CHECKSUM_FAILURE              = 0x00004000,
     /*! Flash write failure */
-    GFC_FLASH_WRITE_FAILURE                = 0x00008000,
+    GFC_FLASH_WRITE_FAILURE                 = 0x00008000,
     /*! System Fault: general */
-    GFC_SYS_FAULT_GENERAL                = 0x00010000,
+    GFC_SYS_FAULT_GENERAL                   = 0x00010000,
     /*! System Fault: CRITICAL system fault (see DID_SYS_FAULT) */
-    GFC_SYS_FAULT_CRITICAL                = 0x00020000,
+    GFC_SYS_FAULT_CRITICAL                  = 0x00020000,
     /*! Sensor(s) saturated */
-    GFC_SENSOR_SATURATION                 = 0x00040000,
+    GFC_SENSOR_SATURATION                   = 0x00040000,
     /*! Fault: IMU initialization */
-    GFC_INIT_IMU                        = 0x00100000,
+    GFC_INIT_IMU                            = 0x00100000,
     /*! Fault: Barometer initialization */
-    GFC_INIT_BAROMETER                    = 0x00200000,
+    GFC_INIT_BAROMETER                      = 0x00200000,
     /*! Fault: Magnetometer initialization */
-    GFC_INIT_MAGNETOMETER                = 0x00400000,
+    GFC_INIT_MAGNETOMETER                   = 0x00400000,
     /*! Fault: I2C initialization */
-    GFC_INIT_I2C                        = 0x00800000,
+    GFC_INIT_I2C                            = 0x00800000,
     /*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
-    GFC_CHIP_ERASE_INVALID                = 0x01000000,
+    GFC_CHIP_ERASE_INVALID                  = 0x01000000,
+    /*! Fault: GPS time fault */
+    GFC_GNSS_TIME_FAULT                     = 0x02000000,
 };
 
 
@@ -3337,7 +3339,7 @@ typedef struct PACKED
     uint32_t                lastLlaWeek;
 
     /** Distance between current and last LLA that triggers an update of lastLla  */
-    float                    lastLlaUpdateDistance;
+    float                   lastLlaUpdateDistance;
 
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t                ioConfig;

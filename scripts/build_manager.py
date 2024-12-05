@@ -175,9 +175,9 @@ class BuildTestManager:
             self.test_footer(result)
         return result
 
-    def build_script(self, project_name, script_path, args):
+    def build_script(self, project_name, script_path, args=[]):
         if self.is_windows:
-            command = ["cmd", '/c', str(script_path)]
+            command = ["cmd", "/c", str(script_path)]
         else:
             command = ["bash", str(script_path)]
         if args:
@@ -189,7 +189,7 @@ class BuildTestManager:
         try:
             # Redirect input from os.devnull to suppress 'pause' commands
             with open(os.devnull, 'r') as devnull:
-                subprocess.run(command, check=True, stdin=devnull)
+                subprocess.run(command, check=True, stdin=devnull, cwd=os.path.dirname(script_path))            
         except subprocess.CalledProcessError as e:
             print(f"Error building {project_name}!")
             result = e.returncode
@@ -204,6 +204,11 @@ class BuildTestManager:
         result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean)
         self.build_footer(result)
         return result
+
+    @staticmethod
+    def is_directory_empty(directory):
+        if os.path.exists(directory) and os.path.isdir(directory):
+            return len(os.listdir(directory)) == 0    
     
     @staticmethod
     def static_build_cmake(project_name, project_dir, build_type="Release", clean=False):
@@ -211,9 +216,13 @@ class BuildTestManager:
         if clean:
             build_dir = project_dir / "build"
             print(f"=== Running make clean... ===")
-            if os.path.exists(build_dir):
-                shutil.rmtree(build_dir)
-
+            try:
+                if os.path.exists(build_dir):
+                    shutil.rmtree(build_dir)
+            except Exception as e:
+                print(f"Error cleaning: {project_name}.  Directory `{build_dir}` cannot be removed.")
+                if not BuildTestManager.is_directory_empty(build_dir):
+                    result = -1
         else:   # Build process
             print(f"=== Running make... ({build_type}) ===")
             try:
