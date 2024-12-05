@@ -41,10 +41,6 @@ void cDeviceLogRaw::initCommInstance() {
     // is_comm_register_msg_handler(&m_comm, _PTYPE_SONY, dummyGenericProtocolHandler);
 }
 
-cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
-};
-
 void cDeviceLogRaw::InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
 //     m_chunk.Init(chunkSize);
