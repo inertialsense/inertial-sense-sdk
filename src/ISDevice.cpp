@@ -361,14 +361,14 @@ bool ISDevice::verifyFlashConfigUpload() {
     return success;
 }
 
-void ISDevice::SetSysCmd(const uint32_t command) {
+int ISDevice::SetSysCmd(const uint32_t command) {
     sysCmd.command = command;
     sysCmd.invCommand = ~command;
     // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
-    comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
+    return comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 }
 
-void ISDevice::SendNmea(const std::string& nmeaMsg)
+int ISDevice::SendNmea(const std::string& nmeaMsg)
 {
     uint8_t buf[1024] = {0};
     int n = 0;
@@ -376,7 +376,7 @@ void ISDevice::SendNmea(const std::string& nmeaMsg)
     memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
     n += nmeaMsg.size();
     nmea_sprint_footer((char*)buf, sizeof(buf), n);
-    SendRaw(buf, n);
+    return SendRaw(buf, n);
 }
 
 
@@ -389,7 +389,7 @@ void ISDevice::SendNmea(const std::string& nmeaMsg)
  *       port: Send in target COM port.
  *                If arg is < 0 default port will be used
 */
-void ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel)
+int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel)
 {
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
@@ -415,12 +415,12 @@ void ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMa
     else if (target == 2)
         event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
     else
-        return;
+        return 0;
 
     memcpy(data, &event, DID_EVENT_HEADER_SIZE);
     memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
 
-    SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+    return SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
 }
 
 
@@ -532,8 +532,13 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
     int iSize = sizeof(nvm_flash_cfg_t) / 4;
     bool failure = false;
 
-    bool platformCfgUpdateIoConfig = flashCfg_.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
-    UpdateFlashConfigChecksum(flashCfg_);
+    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    // Exclude updateIoConfig bit from flash config and keep track of it separately so it does not affect whether the platform config gets uploaded
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+    flashCfg.RTKCfgBits &= ~RTK_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER;
+
+    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
 
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
     for (int i = 2; i < iSize; i++) {
@@ -558,8 +563,10 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
             }
 
             const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(DID_FLASH_CONFIG, offset);
-            // printf("%s :: Sending DID_FLASH_CONFIG.%s (offset %d, size %d)\n", getIdAsString().c_str(), (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>"), offset, size);
-            int fail = comManagerSendData(port, head, DID_FLASH_CONFIG, size, offset);
+            std::string fieldName = (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>");
+            std::string fieldValue = "??"; // (fieldInfo ? cISDataMappings::DataToString(fieldInfo, )->);
+            printf("%s :: Sending DID_FLASH_CONFIG.%s = %s (offset %d, size %d)\n", getIdAsString().c_str(), fieldName.c_str(), fieldValue.c_str(), offset, size);
+            int fail = SendData(DID_FLASH_CONFIG, head, size, offset);
             failure = failure || fail;
             flashCfgUploadTimeMs = current_timeMs();        // non-zero indicates upload in progress
         }

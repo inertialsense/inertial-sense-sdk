@@ -479,7 +479,7 @@ static int serialPortClosePlatform(port_handle_t port)
 
 #endif
 
-    free(handle);
+    free(serialPort->handle);
     serialPort->handle = 0;
 
     return 1;
