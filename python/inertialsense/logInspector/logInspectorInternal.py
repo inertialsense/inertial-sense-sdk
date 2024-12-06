@@ -70,6 +70,10 @@ class logInspectorInternal(LogInspectorWindow):
         self.page = 0
         self.exePath = __file__
 
+    def createListSystem(self):
+        super(logInspectorInternal, self).createListSystem()
+        self.addListItem('General Fault', 'genFaultCodes')
+
     def createListIns(self):
         super(logInspectorInternal, self).createListIns()
         self.addListItem('EKF Biases', 'ekfBiases')

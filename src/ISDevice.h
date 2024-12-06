@@ -92,15 +92,17 @@ public:
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
     void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
     void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { comManagerGetData(port, dataId, length, offset, period); }
-    void QueryDeviceInfo() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
-    void SavePersistent() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
-    void SoftwareReset() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
-    void SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) { comManagerSendData(port, data, dataId, length, offset); }
-    void SendRaw(const uint8_t* data, uint32_t length) { comManagerSendRaw(port, data, length); }
-    void SendNmea(const std::string& nmeaMsg);
-    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
-    void SetSysCmd(const uint32_t command);
-    void StopBroadcasts(bool allPorts = false) { comManagerSendRaw(port, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
+    int SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) { return comManagerSendData(port, data, dataId, length, offset); }
+    int SendRaw(const uint8_t* data, uint32_t length) { return comManagerSendRaw(port, data, length); }
+
+    int SendNmea(const std::string& nmeaMsg);
+    int QueryDeviceInfo() { return SendRaw((uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
+    int SavePersistent() { return SendRaw((uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
+    int SoftwareReset() { return SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
+
+    int SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
+    int SetSysCmd(const uint32_t command);
+    int StopBroadcasts(bool allPorts = false) { return SendRaw((uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
     /**
      * @returns true is the device is indicated that a reset is required; this state SHOULD be acted on by resetting the device to ensure that it is operating as expected
