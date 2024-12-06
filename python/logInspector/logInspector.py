@@ -370,6 +370,13 @@ class LogInspectorWindow(QMainWindow):
         self.resize(1450, 1000)
         self.setAcceptDrops(True)
 
+    def createListSystem(self):
+        self.addListSection('SYSTEM')
+        self.addListItem('Flash Config', lambda: self.showFlashConfig())
+        self.addListItem('Device Info', lambda: self.showDeviceInfo())
+        self.addListItem('INS Status', 'insStatus')
+        self.addListItem('HDW Status', 'hdwStatus')
+
     def createListIns(self):
         self.addListSection('INS/AHRS')
         self.addListItem('Pos NED Map', 'posNEDMap')
@@ -381,8 +388,6 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Altitude', 'altitude')
         self.addListItem('Climb Rate', 'climbRate')
         self.addListItem('Heading', 'heading')
-        self.addListItem('INS Status', 'insStatus')
-        self.addListItem('HDW Status', 'hdwStatus')
 
     def createListSensors(self):
         self.addListSection('SENSORS')
@@ -410,11 +415,6 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GPS Position NED Map', 'gpsPosNEDMap')
         self.addListItem('GPS Position NED', 'gpsPosNED')
         self.addListItem('GPS Velocity NED', 'gpsVelNED')
-
-    def createListSystem(self):
-        self.addListSection('SYSTEM')
-        self.addListItem('Flash Config', lambda: self.showFlashConfig())
-        self.addListItem('Device Info', lambda: self.showDeviceInfo())
 
     def createListGeneral(self):
         self.addListSection('GENERAL')
@@ -451,10 +451,10 @@ class LogInspectorWindow(QMainWindow):
         groupBox.setLayout(LayoutList)
         self.controlLayout.addWidget(groupBox)        
 
+        self.createListSystem()
         self.createListIns()
         self.createListSensors()
         self.createListGps()
-        self.createListSystem()
         self.createListGeneral()
         self.checkboxResidual = QCheckBox("Residual", self)
         self.checkboxResidual.stateChanged.connect(self.changeResidualCheckbox)
@@ -512,7 +512,7 @@ class LogInspectorWindow(QMainWindow):
         # self.buttonLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.addButton('load', self.choose_directory)
 
-        self.setCurrentListRow(1)   # Default to NED Map
+        self.setCurrentListRow(self.funcNameList.index('posNEDMap'))   # Default to NED Map
 
     def createStatus(self):
         self.statusLabel = QLabel()
