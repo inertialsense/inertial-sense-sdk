@@ -136,7 +136,7 @@ setup(
     packages=find_packages(where='../inertialsense'),
 
     install_requires=[
-        'allantools<=2019.9',
+        'allantools',
         'matplotlib',
         'numpy',
         'pandas',
