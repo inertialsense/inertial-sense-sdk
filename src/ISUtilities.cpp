@@ -497,8 +497,10 @@ void* threadCreateAndStart(void(*function)(void* info), void* info, const char* 
 
     auto new_thread = new thread(function, info);
     if (threadName) {
+    #if PLATFORM_IS_LINUX
         auto thandle = new_thread->native_handle();
         pthread_setname_np(thandle, threadName);
+    #endif
     }
     return new_thread;
 
