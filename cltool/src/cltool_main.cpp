@@ -586,8 +586,11 @@ is_operation_result bootloadVerifyCallback(void* obj, float percent)
 
 void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...)
 {
-    print_mutex.lock();
+    if (level > g_commandLineOptions.verboseLevel)
+        return;
+
     static char buffer[256];
+    print_mutex.lock();
 
     va_list ap;
     va_start(ap, str);
@@ -623,8 +626,7 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
     if (buffer[0])
         printf(" %s", buffer);
 
-    printf("\r\n");
-
+    cout << std::endl;
     print_mutex.unlock();
 }
 

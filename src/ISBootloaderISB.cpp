@@ -32,7 +32,7 @@ std::mutex cISBootloaderISB::serial_list_mutex;
 std::mutex cISBootloaderISB::rst_serial_list_mutex;
 
 // Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-#define SUPPORT_BOOTLOADER_V5A
+// #define SUPPORT_BOOTLOADER_V5A
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
@@ -68,6 +68,8 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
     handshake_sync(m_port);
 
+    logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Querying device bootloader version.");
+
     SLEEP_MS(100);
 
     for (int retry=0;; retry++)
@@ -88,7 +90,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
         if (retry*READ_DELAY_MS > 4000)
         {   // No response
-            m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", portName(m_port));
+            logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Error: check_is_compatible response missing.");    // FIXME: This is an error (kind of), but it actually happens all the time; let's hide it for now
             return IS_IMAGE_SIGN_NONE;
         }
     }
@@ -111,7 +113,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     else
     {   // Error parsing
         char msg[200] = { 0 };
-        int n = SNPRINTF(msg, sizeof(msg), "    | (ISB Error) (%s) check_is_compatible parse error:\n 0x ", ((serial_port_t*)m_port)->portName);
+        int n = 0;
         for (int i=0; i<count; i++)
         {
             if (i%2 == 0)
@@ -120,7 +122,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
             }
             n += SNPRINTF(&msg[n], sizeof(msg)-n, "%02x", buf[i]);
         }
-        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, msg);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: check_is_compatible parse error:\n      0x %s", msg);
         return (eImageSignature)valid_signatures;
     }
 
@@ -145,7 +147,9 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     if (valid_signatures == 0)
     {
-        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", ((serial_port_t*)m_port)->portName);
+        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | %s: (ISB) Error: Device has no valid ISB signature.", portName(m_port));
+    } else {
+        m_info_callback(NULL, IS_LOG_LEVEL_DEBUG, "    | %s: (ISB) Device is ISB compatible.", portName(m_port));
     }
 
     return (eImageSignature)valid_signatures;
@@ -204,7 +208,7 @@ is_operation_result cISBootloaderISB::reboot_force()
     // restart bootloader command
     if (serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) != 15)
     {
-        status_update("(ISB) Error in reboot force", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error in reboot force");
         return IS_OP_ERROR;
     }
    
@@ -216,12 +220,12 @@ is_operation_result cISBootloaderISB::reboot()
     rst_serial_list_mutex.lock();
     if (find(rst_serial_list.begin(), rst_serial_list.end(), m_sn) != rst_serial_list.end())
     {
-        status_update("(ISB) Could not find serial port", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Could not find serial port");
         rst_serial_list_mutex.unlock();
         return IS_OP_ERROR;
     }
 
-    status_update("(ISB) Resetting before App update...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(ISB) Resetting before App update...");
 
     // restart bootloader command
     if (reboot_force() == IS_OP_OK)
@@ -259,7 +263,7 @@ uint32_t cISBootloaderISB::get_device_info()
         m_isb_props.is_evb = false;
         m_sn = 0;
 
-        status_update("(ISB) get_device_info bad read.", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) get_device_info bad read.");
         return 0;
     }
 
@@ -321,7 +325,7 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
 
         if (serialPortWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {   // Success
-            // FIXME: status_update("(ISB) Handshake", IS_LOG_LEVEL_INFO);
+            // FIXME: logStatus(IS_LOG_LEVEL_DEBUG_MORE, "(ISB) Handshake");
             return IS_OP_OK;
         }
     }
@@ -334,13 +338,13 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
     {
         if (serialPortWriteAndWaitForTimeout(port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {   // Success
-            // FIXME: status_update("(ISB) Handshake v5a", IS_LOG_LEVEL_INFO);
+            // FIXME: logStatus(IS_LOG_LEVEL_DEBUG_MORE, "(ISB) Handshake v5a");
             return IS_OP_OK;
         }
     }
 #endif
 
-    // FIXME: status_update("(ISB) Handshake w/o response", IS_LOG_LEVEL_INFO);
+    // FIXME: logStatus(IS_LOG_LEVEL_DEBUG_MORE, "(ISB) Handshake w/o response");
     return IS_OP_ERROR;
 }
 
@@ -401,7 +405,7 @@ is_operation_result cISBootloaderISB::erase_flash()
         }
     } 
 
-    //status_update("(ISB) Error in erase flash", IS_LOG_LEVEL_ERROR);
+    // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Unexpected response from device while erasing flash");
     return IS_OP_ERROR;
 }
 
@@ -415,7 +419,7 @@ is_operation_result cISBootloaderISB::select_page(int page)
     checksum(0, changePage, 1, 17, 17, 1);
     if (serialPortWriteAndWaitForTimeout(m_port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
-        //status_update("(ISB) Failed to select page", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to select page");
         return IS_OP_ERROR;
     }
 
@@ -435,7 +439,7 @@ is_operation_result cISBootloaderISB::begin_program_for_current_page(int startOf
     checksum(0, programPage, 1, 19, 19, 1);
     if (serialPortWriteAndWaitForTimeout(m_port, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
-        //status_update("(ISB) Failed to start programming page", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to start programming page");
         return IS_OP_ERROR;
     }
 
@@ -479,7 +483,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
     SNPRINTF((char*)programLine, 12, ":%.2X%.4X00", byteCount, *currentOffset);
     if (serialPortWrite(m_port, programLine, 9) != 9)
     {
-        status_update("(ISB) Failed to write start page", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to write start page");
         return IS_OP_ERROR;
     }
 
@@ -490,7 +494,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
     int charsForThisPage = byteCount * 2;
     if (serialPortWrite(m_port, hexData, charsForThisPage) != charsForThisPage)
     {
-        status_update("(ISB) Failed to write data to device", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to write data to device");
         return IS_OP_ERROR;
     }
 
@@ -512,7 +516,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
     {
         if (serialPortWrite(m_port, checkSumHex, 2) != 2)
         {
-            status_update("(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
+            logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to write checksum to device");
             return IS_OP_ERROR;
         }
 
@@ -543,7 +547,7 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
 
     if (charCount > MAX_SEND_COUNT)
     {
-        status_update("(ISB) Unexpected char count", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Unexpected char count");
         return IS_OP_ERROR;
     }
     else if (charCount == 0)
@@ -560,7 +564,7 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
          
         if (upload_hex_page(hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
         {
-            status_update("(ISB) Upload hex page error", IS_LOG_LEVEL_ERROR);
+            logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Upload hex page error");
             return IS_OP_ERROR;
         }
 
@@ -570,6 +574,7 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
 
     if (charCount != 0 && upload_hex_page(hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
     {
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Upload hex page error");
         return IS_OP_ERROR;
     }
 
@@ -599,7 +604,7 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
 
             if (upload_hex_page(hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
             {
-                status_update("(ISB) Failed to fill page with bytes", IS_LOG_LEVEL_ERROR);
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to fill page with bytes");
                 return IS_OP_OK; // FIXME - this should actually be an error
             }
         }
@@ -618,7 +623,7 @@ is_operation_result cISBootloaderISB::download_data(int startOffset, int endOffs
     checksum(0, programLine, 1, 19, 19, 1);
     if (serialPortWrite(m_port, programLine, 21) != 21)
     {
-        status_update("(ISB) Failed to attempt download", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to attempt download");
         return IS_OP_ERROR;
     }
 
@@ -650,7 +655,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
     {
         if (select_page(i) != IS_OP_OK)
         {
-            status_update("(ISB) Failure issuing select page command for verify", IS_LOG_LEVEL_ERROR);
+            logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failure issuing select page command for verify");
             return IS_OP_ERROR;
         }
         pageOffset = (i == 0 ? m_isb_props.app_offset : 0);
@@ -661,7 +666,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
             // range is inclusive on the uINS, so subtract one
             if (download_data(pageOffset, pageOffset + readCount - 1) != IS_OP_OK)
             {
-                status_update("(ISB) Failure issuing download data command", IS_LOG_LEVEL_ERROR);
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failure issuing download data command");
                 return IS_OP_ERROR;
             }
 
@@ -674,25 +679,25 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
             {
                 if (chunkIndex > readCount - 5)
                 {
-                    status_update("(ISB) Unexpected start line during verify (1)", IS_LOG_LEVEL_ERROR);
+                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Unexpected start line during verify (1)");
                     return IS_OP_ERROR;
                 }
                 // skip the first 5 chars, they are simply ####=
                 if (chunkBuffer[chunkIndex] == 'X')
                 {
-                    status_update("(ISB) Invalid checksum during verify", IS_LOG_LEVEL_ERROR);
+                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Invalid checksum during verify");
                     return IS_OP_ERROR;
                 }
                 else if (chunkBuffer[chunkIndex += 4] != '=')
                 {
-                    status_update("(ISB) Unexpected start line during verify (2)", IS_LOG_LEVEL_ERROR);
+                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Unexpected start line during verify (2)");
                     return IS_OP_ERROR;
                 }
                 chunkBuffer[chunkIndex] = '\0';
                 actualPageOffset = strtol((char*)(chunkBuffer + chunkIndex - 4), 0, 16);
                 if (actualPageOffset != pageOffset)
                 {
-                    status_update("(ISB) Unexpected offset during verify", IS_LOG_LEVEL_ERROR);
+                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Unexpected offset during verify");
                     return IS_OP_ERROR;
                 }
                 pageChars = 0;
@@ -730,14 +735,14 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
                     }
                     else
                     {
-                        status_update("(ISB) Unexpected hex data during verify", IS_LOG_LEVEL_ERROR);
+                        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Unexpected hex data during verify");
                         return IS_OP_ERROR;
                     }
                 }
 
                 if (c != '\n')
                 {
-                    status_update("(ISB) Unexpected end of line char during verify", IS_LOG_LEVEL_ERROR);
+                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Unexpected end of line char during verify");
                     return IS_OP_ERROR;
                 }
 
@@ -749,7 +754,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
                     m_verify_progress = (float)totalCharCount / (float)grandTotalCharCount;
                     if (m_verify_callback(this, m_verify_progress) != IS_OP_OK)
                     {
-                        status_update("(ISB) Firmware validate cancelled", IS_LOG_LEVEL_ERROR);
+                        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Firmware validate cancelled");
                         return IS_OP_CANCELLED;
                     }
                 }
@@ -764,7 +769,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
 
     if (realCheckSum != m_verifyCheckSum)
     {
-        status_update("(ISB) Checksum mismatch during verify", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Checksum mismatch during verify");
         return IS_OP_ERROR;
     }
 
@@ -806,7 +811,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             if (lineLength > HEX_BUFFER_SIZE * 4)
             {
                 printf("\n");
-                status_update("(ISB) hex file line length too long", IS_LOG_LEVEL_ERROR);
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: hex file line length too long");
                 return IS_OP_ERROR;
             }
 
@@ -824,7 +829,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
                 if (outputPtr + pad >= outputPtrEnd)
                 {
                     printf("\n");
-                    status_update("(ISB) FF padding overflowed buffer", IS_LOG_LEVEL_ERROR);
+                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: FF padding overflowed buffer");
                     return IS_OP_ERROR;
                 }
 
@@ -841,7 +846,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             if (outputPtr + pad >= outputPtrEnd)
             {
                 printf("\n");
-                status_update("(ISB) Line data overflowed output buffer", IS_LOG_LEVEL_ERROR);
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Line data overflowed output buffer");
                 return IS_OP_ERROR;
             }
 
@@ -863,8 +868,8 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // upload this chunk
             if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
-                printf("\n");
-                status_update("(ISB) Error in upload chunk", IS_LOG_LEVEL_ERROR);
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload chunk");
                 return IS_OP_ERROR;
             }
 
@@ -873,7 +878,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
             {
                 printf("\n");
-                status_update("(ISB) Output size was too large (1)", IS_LOG_LEVEL_ERROR);
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Output size was too large (1)");
                 return IS_OP_ERROR;
             }
             if (outputSize > 0)
@@ -906,21 +911,21 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
             {
                 printf("\n");
-                status_update("(ISB) Output size was too large (2)", IS_LOG_LEVEL_ERROR);
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Output size was too large (2)");
                 return IS_OP_ERROR;
             }
             // flush the remainder of data to the page
             if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
-                printf("\n");
-                status_update("(ISB) Error in upload hex", IS_LOG_LEVEL_ERROR);
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload hex");
                 return IS_OP_ERROR;
             }
             // // fill the remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
             if (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
                 printf("\n");
-                status_update("(ISB) Error in fill page", IS_LOG_LEVEL_ERROR);
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in fill page");
                 return IS_OP_ERROR;
             }
 
@@ -928,16 +933,16 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             currentOffset = 0;
             if (select_page(currentPage) != IS_OP_OK)
             {
-                printf("\n");
-                status_update("(ISB) Failed to issue select page for programming", IS_LOG_LEVEL_ERROR);
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to issue select page for programming");
                 return IS_OP_ERROR;
             }
 
             // start programming
             if (begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
             {
-                printf("\n");
-                status_update("(ISB) Failed to start programming of selected page", IS_LOG_LEVEL_ERROR);
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to start programming of selected page");
                 return IS_OP_ERROR;
             }
 
@@ -951,14 +956,14 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // flush the remainder of data to the page
             if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
-                printf("\n");
-                status_update("(ISB) Error in upload hex (last)", IS_LOG_LEVEL_ERROR);
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload hex (last)");
                 return IS_OP_ERROR;
             }
-            if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            if (currentOffset != 0 && (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK))
             {
-                printf("\n");
-                status_update("(ISB) Error in fill page (last)", IS_LOG_LEVEL_ERROR);
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in fill page (last)");
                 return IS_OP_ERROR;
             }
 
@@ -975,14 +980,13 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             {
                 if (m_update_callback(this, m_update_progress) != IS_OP_OK)
                 {
-                    status_update("(ISB) Firmware update cancelled", IS_LOG_LEVEL_ERROR);
+                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Firmware update cancelled");
                     return IS_OP_CANCELLED;
                 }
             }
             catch(int e)
             {
-                string tmp = "(ISB) Firmware update cancelled. Error number: " + to_string(e);
-                status_update(tmp.c_str(), IS_LOG_LEVEL_ERROR);
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Firmware update cancelled. Error number: %d", e);
                 return IS_OP_CANCELLED;
             }
         }
@@ -1014,18 +1018,18 @@ is_operation_result cISBootloaderISB::download_image(std::string filename)
 
     if (!firmware_file)
     {
-        status_update("(ISB) Error in opening file", IS_LOG_LEVEL_ERROR);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Unable to open firmware file");
         return IS_OP_INCOMPATIBLE;
     }
 
-    status_update("(ISB) Erasing flash...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(ISB) Erasing flash...");
 
     result = erase_flash();
     if (result != IS_OP_OK) { fclose(firmware_file); return result; }
     result = select_page(0);
     if (result != IS_OP_OK) { fclose(firmware_file); return result; }
 
-    status_update("(ISB) Programming flash...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(ISB) Programming flash...");
     
     result = begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1);
     if (result != IS_OP_OK) { fclose(firmware_file); return result; }
