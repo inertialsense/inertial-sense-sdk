@@ -7,15 +7,12 @@
 
 using namespace std;
 
-
 static is_comm_instance_t s_comm;
 static uint8_t s_comBuf[PKT_BUF_SIZE];
 
 void run_realtime_test(DeviceRuntimeTests &RuntimeTest, uint8_t *stream, int streamSize)
 {
-    // printf("%.*s\n", streamSize, stream);
-
-    is_comm_init(&s_comm, s_comBuf, PKT_BUF_SIZE, NULL); // TOOD: Use callbacks?
+    init_test_comm_instance(&s_comm, s_comBuf, PKT_BUF_SIZE);
 
     const int chunkSize = 100;
     for (int i=0; i<streamSize;)

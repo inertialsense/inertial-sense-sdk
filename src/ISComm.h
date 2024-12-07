@@ -574,7 +574,7 @@ typedef struct
 
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
-// Generic message handler function with is_comm_instance_t
+// raw packet handler function with is_comm_instance_t
 typedef int(*pfnIsCommHandler)(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 // InertialSense binary (ISB) data message handler function
@@ -602,7 +602,7 @@ typedef struct
     is_comm_buffer_t rxBuf;
     
     /** Enable/disable protocol parsing */
-    is_comm_config_t config;
+    // is_comm_config_t config;
 
     /** Number of packets sent */
     uint32_t txPktCount;
@@ -634,7 +634,11 @@ typedef struct
     /** Used to prevent counting more than one error count between valid packets */
     uint8_t rxErrorState;
 
+    /** a set of callbacks that will be called each time a protocol of the corresponding type is parsed */
     is_comm_callbacks_t cb;
+
+    /** A bitmask (each bit position corresponding to the _PTYPE_* protocol value) which forces parsing of that protocol (alternative to callbacks) */
+    uint32_t protocolMask;
 
 } is_comm_instance_t;
 
@@ -677,6 +681,15 @@ pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, in
 void is_comm_register_callbacks(is_comm_instance_t* instance, is_comm_callbacks_t *callbacks);
 
 void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *callbacks);
+
+void is_comm_enable_protocol(is_comm_instance_t* instance, protocol_type_t ptype);
+
+void is_comm_disable_protocol(is_comm_instance_t* instance, protocol_type_t ptype);
+
+void is_comm_set_protocol_mask(is_comm_instance_t* instance, uint32_t protocolMask);
+
+uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance);
+
 
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);

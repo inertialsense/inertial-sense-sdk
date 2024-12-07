@@ -11,7 +11,6 @@
 
 #include "test_utils.h"
 
-
 std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
 {
     std::vector<std::string> words= {"lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat"};

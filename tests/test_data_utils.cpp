@@ -703,3 +703,16 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
 
     return streamSize;
 }
+
+static int dummyIsbProtocolHandler(p_data_t* data, port_handle_t port) { return 0; }
+static int dummyGenericProtocolHandler(const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
+
+void init_test_comm_instance(is_comm_instance_t* c, uint8_t *buffer, int bufferSize) {
+    is_comm_init(c, buffer, bufferSize, NULL); // TOOD: Use callbacks?
+    is_comm_register_isb_handler(c, dummyIsbProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_NMEA, dummyGenericProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_RTCM3, dummyGenericProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_SONY, dummyGenericProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_SPARTN, dummyGenericProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_UBLOX, dummyGenericProtocolHandler);
+}

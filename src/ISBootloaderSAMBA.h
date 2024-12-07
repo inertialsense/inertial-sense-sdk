@@ -34,6 +34,7 @@ public:
     {
         m_port = (port_handle_t)port;
         m_device_type = ISBootloader::IS_DEV_TYPE_SAMBA;
+        m_port_name = std::string(portName(port));
     }
     
     ~cISBootloaderSAMBA() 

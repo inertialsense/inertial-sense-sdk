@@ -33,6 +33,8 @@ enum eTestGenDataOptions
     GEN_LOG_OPTIONS_TIMESTAMP_REVERSE                   = 0x00000010,
 };
 
+void init_test_comm_instance(is_comm_instance_t* c, uint8_t *buffer, int bufferSize);
+
 void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek);
 void PrintUtcTime(std::tm &utcTime, uint32_t milliseconds=0);
 bool GenerateMessage(test_message_t &msg, protocol_type_t ptype=_PTYPE_NONE);

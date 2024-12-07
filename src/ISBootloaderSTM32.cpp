@@ -130,7 +130,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
         totalLen += image[i].len;
     }
 
-    status_update("(STM) Erasing flash...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(STM) Erasing flash...");
     
     // Perform the erase operation
     if (mass_erase() != STM32_ACK)
@@ -139,7 +139,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
         return IS_OP_ERROR;
     }
 
-    status_update("(STM) Programming flash...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(STM) Programming flash...");
 
     uint8_t dataBuf[256];
     stm32_data_t payload; payload.data = dataBuf;

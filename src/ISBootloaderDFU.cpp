@@ -325,7 +325,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
 
     uint32_t bytes_written_total = 0;
 
-    status_update("(DFU) Erasing flash...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(DFU) Erasing flash...");
 
     // Erase memory (only erase pages where firmware lives)
     for (size_t i = 0; i < image_sections; i++)
@@ -367,7 +367,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
 
     bytes_written_total = 0;
 
-    status_update("(DFU) Programming flash...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(DFU) Programming flash...");
 
     // Write memory
     for (size_t i = 0; i < image_sections; i++)
