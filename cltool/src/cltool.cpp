@@ -159,6 +159,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.nmeaMessage = "";
     g_commandLineOptions.updateBootloaderFilename = "";
     g_commandLineOptions.forceBootloaderUpdate = false;
+    g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
 
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
@@ -598,9 +599,26 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-verbose"))
         {
-            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
+            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_INFO;
             if (a[8] == '=')
-                g_commandLineOptions.verboseLevel = atoi(&a[9]);
+            {
+                switch (a[9])
+                {
+                    case 'e': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_ERROR; break;
+                    case 'w': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_WARN; break;
+                    case 'i': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO; break;
+                    case 'I': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_INFO; break;
+                    case 'd': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_DEBUG; break;
+                    case 'D': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_DEBUG; break;
+                    default: g_commandLineOptions.verboseLevel = atoi(&a[9]); break;
+                }
+            } else {
+                const char* p = &a[8];
+                while (*p == '+' || *p == '-' ) {
+                    g_commandLineOptions.verboseLevel += (*p == '+' ? 1 : -1);
+                    p++;
+                }
+            }
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {

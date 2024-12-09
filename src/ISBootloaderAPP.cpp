@@ -64,17 +64,23 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
 {
     serialPortFlush(m_port);
 
+    logStatus(IS_LOG_LEVEL_MORE_INFO, "(APP) Checking device compatibility...");
+
     // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer), NULL);   // TODO: Should we be using callbacks??  Probably
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+
     int messageSize, n, i;
 
     // clear the Rx serial buffer. is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.start.
     n = is_comm_free(&comm);
 
+    // FLUSH all pending incoming data, and way for things to fall quiet.
     // In testing it was found that @ 330kb/s The buffer would take 10-11
-    // reads to clear after the stop broad casting message was sent.
+    // reads to clear after the stop broadcasting message was sent.
     // 20 time represents double the imperical
     for (uint8_t i = 0; i < 20; i++)
     {
@@ -161,7 +167,7 @@ is_operation_result cISBootloaderAPP::reboot()
     // TODO: Implement
     // SYS_CMD_SOFTWARE_RESET
 
-    m_info_callback(this, IS_LOG_LEVEL_INFO, "(APP) Rebooting...");
+    logStatus(IS_LOG_LEVEL_INFO, "(APP) Rebooting...");
 
     return IS_OP_OK;
 }
@@ -172,7 +178,7 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
     (void)minor;
     (void)major;
 
-    m_info_callback(this, IS_LOG_LEVEL_INFO, "(APP) Rebooting to IS-bootloader mode...");
+    logStatus(IS_LOG_LEVEL_INFO, "(APP) Rebooting to IS-bootloader mode...");
 
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;
@@ -200,6 +206,8 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
 uint32_t cISBootloaderAPP::get_device_info()
 {
     serialPortFlush(m_port);
+
+    logStatus(IS_LOG_LEVEL_INFO, "(APP) Requesting device info...");
 
     // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;

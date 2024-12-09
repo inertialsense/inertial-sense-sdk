@@ -63,7 +63,9 @@ There must be data streaming out of the IMX in order to log data.  The Post Proc
    {
       is_comm_instance_t comm = {};
       uint8_t buf[64];
-      is_comm_init(&comm, buf, sizeof(buf), NULL);  // TODO: Consider using callbacks
+      is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+      is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+      is_comm_enable_protocol(&comm, _PTYPE_NMEA);
 
       rmc_t rmc;
       rmc.bits = bits;

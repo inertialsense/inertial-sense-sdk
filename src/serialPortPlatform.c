@@ -100,22 +100,21 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #ifdef DEBUG_COMMS
 #define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)))
 static inline void debugDumpBuffer(const char* prefix, const unsigned char* buffer, int len) {
-    if (len <= 0)
-        return;
+    if (len > 0) {
+        struct timeval start;
+        gettimeofday(&start, NULL);
+        printf("%ld.%03d: %s", start.tv_sec, (uint16_t) (start.tv_usec / 1000), prefix);
+        for (int i = 0; i < len; i++)
+            printf(" %02x", buffer[i]);
 
-    struct timeval start;
-    gettimeofday(&start, NULL);
-    printf("%ld.%03d: %s", start.tv_sec, (uint16_t)(start.tv_usec / 1000), prefix);
-    for (int i = 0; i < len; i++)
-        printf(" %02x", buffer[i]);
+        int linePos = 16 + strlen(prefix) + (len * 3);
+        printf("%*c", 80 - linePos, ' ');
 
-    int linePos = 16 + strlen(prefix) + (len * 3);
-    printf("%*c", 80 - linePos, ' ');
+        for (int i = 0; i < len; i++)
+            printf("%c", IS_PRINTABLE(buffer[i]) ? buffer[i] : 0xB7);
 
-    for (int i = 0; i < len; i++)
-        printf("%c", IS_PRINTABLE(buffer[i]) ? buffer[i] : 0xB7);
-
-    printf("\n");
+        printf("\n");
+    }
 }
 #else
     #define debugDumpBuffer(...)

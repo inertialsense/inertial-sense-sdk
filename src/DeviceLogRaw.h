@@ -47,6 +47,7 @@ public:
     cDataChunk m_chunk;
 
 private:
+    void initCommInstance();
     packet_t* ReadPacketFromChunk(protocol_type_t& ptype);
     bool ReadChunkFromFile();
     bool WriteChunkToFile();
