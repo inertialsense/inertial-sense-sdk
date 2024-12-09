@@ -158,10 +158,6 @@ bool comManagerRemovePort(port_handle_t port) {
 }
 
 bool ISComManager::removeAllPorts() {
-//    for (auto port : ports) {
-//        removePort(port);
-//        // TODO delete (serial_port_s*)port;
-//    }
     ports->clear();
     return true;
 }
@@ -169,7 +165,6 @@ bool ISComManager::removeAllPorts() {
 bool comManagerReleaseAllPorts() {
     return s_cm.removeAllPorts();
 }
-
 
 int asciiMessageCompare(const void* elem1, const void* elem2)
 {
