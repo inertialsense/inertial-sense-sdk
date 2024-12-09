@@ -946,9 +946,9 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
         return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
     }
 
-    if (ports && !port) {
-        // if port is null, set this for all available ports
-        defaultCbs.generic[ptype] = cbHandler; // TODO: range check this
+    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA))
+    {   // if port is null, set this as the default handler, and also set it for all available ports
+        defaultCbs.generic[ptype] = cbHandler;
         for (auto port : *ports) {
             if (port && portType(port) & PORT_TYPE__COMM) {
                 return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);

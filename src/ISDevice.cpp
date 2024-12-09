@@ -608,7 +608,7 @@ bool ISDevice::WaitForFlashSynced(uint32_t timeout)
     unsigned int now = current_timeMs();
     unsigned int startMs = now;
 
-    static unsigned int lastRequest = now;
+    static unsigned int lastRequest = startMs;
     if ((flashCfgUploadTimeMs == 0) && (flashCfgUploadChecksum == 0))
     {   // no upload is in progress; we don't need to verify with our uploaded flashCfg
         while (flashCfg.checksum != sysParams.flashCfgChecksum)
@@ -626,6 +626,7 @@ bool ISDevice::WaitForFlashSynced(uint32_t timeout)
                 step();
             }
             SLEEP_MS(5);
+            now = current_timeMs();
         }
         return true;
     }
