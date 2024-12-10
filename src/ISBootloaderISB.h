@@ -37,6 +37,7 @@ public:
     {
         m_port = port;
         m_device_type = ISBootloader::IS_DEV_TYPE_ISB;
+        m_port_name = std::string(portName(port));
     }
     
     ~cISBootloaderISB() 

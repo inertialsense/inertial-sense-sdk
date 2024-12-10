@@ -487,7 +487,7 @@ uint8_t getHexValue(unsigned char hex)
     return 9 * (hex >> 6) + (hex & 017);
 }
 
-void* threadCreateAndStart(void(*function)(void* info), void* info)
+void* threadCreateAndStart(void(*function)(void* info), void* info, const char* threadName)
 {
 #if PLATFORM_IS_EMBEDDED
 
@@ -495,7 +495,14 @@ void* threadCreateAndStart(void(*function)(void* info), void* info)
 
 #elif CPP11_IS_ENABLED
 
-    return new thread(function, info);
+    auto new_thread = new thread(function, info);
+    if (threadName) {
+    #if PLATFORM_IS_LINUX
+        auto thandle = new_thread->native_handle();
+        pthread_setname_np(thandle, threadName);
+    #endif
+    }
+    return new_thread;
 
 #elif PLATFORM_IS_WINDOWS
 

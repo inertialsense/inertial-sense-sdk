@@ -35,6 +35,22 @@ using namespace std;
 static InertialSense *s_is = NULL;
 static InertialSense::com_manager_cpp_state_t *s_cm_state = NULL;
 
+/**
+ * General Purpose IS-binary protocol handler for the InertialSense class.
+ * This is called anytime ISB packets are received by any of the underlying ports
+ * which are managed by the InertialSense and CommManager classes.  Eventually
+ * this should be moved into the ISDevice class, where devices of different types
+ * can handle their data independently. There could be a hybrid approach here
+ * where this function would (should?) locate the ISDevice by its port, and then
+ * redirect to the ISDevice specific callback.
+ * @param data The data which was parsed and is ready to be consumed
+ * @param port The port which the data was received from
+ * @return 0 if this data packet WILL NOT BE processed again by other handlers
+ *   any other value indicates that the packet MAY BE processed by other handlers.
+ *   No guarantee is given that other handlers will process this packet if the
+ *   return value is non-zero, but is guaranteed that it will no reprocess this
+ *   packet if a zero-value is returned.
+ */
 static int staticProcessRxData(p_data_t* data, port_handle_t port)
 {
     if ((port == NULLPTR) || (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData))))
@@ -207,8 +223,6 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     newDevice->devInfo = devInfo;
     newDevice->hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
     newDevice->hdwRunState = ISDevice::HDW_STATE_APP; // this is probably a safe assumption, assuming we have dev good info
-    newDevice->flashCfgUploadChecksum = 0;
-    newDevice->sysParams.flashCfgChecksum = 0;
     m_comManagerState.devices.push_back(newDevice);
     return m_comManagerState.devices.empty() ? NULL : (ISDevice*)m_comManagerState.devices.back();
 }
@@ -855,7 +869,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
                 {   // Upload complete.  Allow sync.
                     device->flashCfgUploadTimeMs = 0;
 
-                    if (device->flashCfgUploadChecksum == device->sysParams.flashCfgChecksum)
+                    if (device->flashCfgUpload.checksum == device->sysParams.flashCfgChecksum)
                     {
                         printf("DID_FLASH_CONFIG upload complete.\n");
                     }

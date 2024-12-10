@@ -530,7 +530,8 @@ namespace fwUpdate {
         if (payload.data.chunk.session_id != session_id)
             return false;
 
-        if (payload.data.chunk.chunk_id <= last_chunk_id) 
+        // safely ignore receipt of previously received chunks
+        if (payload.data.chunk.chunk_id <= last_chunk_id)
             return true;
 
         // if the chunk id does match the next expected chunk id, then send an resend for the correct/missing chunk
