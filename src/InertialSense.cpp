@@ -223,8 +223,6 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     newDevice->devInfo = devInfo;
     newDevice->hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
     newDevice->hdwRunState = ISDevice::HDW_STATE_APP; // this is probably a safe assumption, assuming we have dev good info
-    newDevice->flashCfgUploadChecksum = 0;
-    newDevice->sysParams.flashCfgChecksum = 0;
     m_comManagerState.devices.push_back(newDevice);
     return m_comManagerState.devices.empty() ? NULL : (ISDevice*)m_comManagerState.devices.back();
 }
@@ -871,7 +869,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
                 {   // Upload complete.  Allow sync.
                     device->flashCfgUploadTimeMs = 0;
 
-                    if (device->flashCfgUploadChecksum == device->sysParams.flashCfgChecksum)
+                    if (device->flashCfgUpload.checksum == device->sysParams.flashCfgChecksum)
                     {
                         printf("DID_FLASH_CONFIG upload complete.\n");
                     }

@@ -59,7 +59,7 @@ public:
         devInfo = src.devInfo;
         flashCfg = src.flashCfg;
         flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
-        flashCfgUploadChecksum = src.flashCfgUploadChecksum;
+        flashCfgUpload = src.flashCfgUpload;
         evbFlashCfg = src.evbFlashCfg;
         sysCmd = src.sysCmd;
         // devLogger = src.devLogger.get();
@@ -79,6 +79,7 @@ public:
      */
     bool isConnected() { return (port && serialPortIsOpen(port)); }
 
+    bool Update();
     bool step();
 
     std::string getIdAsString();
@@ -145,10 +146,14 @@ public:
      */
     bool FlashConfigSynced() {
         step();   // let's give it a very, very brief chance to processing any pendind data before we check our status...
-        if (flashCfgUploadChecksum && (flashCfgUploadChecksum == sysParams.flashCfgChecksum) && (flashCfg.checksum == sysParams.flashCfgChecksum))
+        if (flashCfgUpload.checksum && (flashCfgUpload.checksum == sysParams.flashCfgChecksum) && (flashCfg.checksum == sysParams.flashCfgChecksum)) {
+            flashCfgUpload = {};
+            flashCfgUploadTimeMs = 0;
             return true;    // a 3-way match between upload, device, and sysParams
-        if (flashCfg.checksum == sysParams.flashCfgChecksum)
+        }
+        if (flashCfg.checksum == sysParams.flashCfgChecksum) {
             return true;    // a 2-way check between just the device and the sysParams
+        }
 
         return false;
     }
@@ -185,7 +190,7 @@ public:
      */
     bool FlashConfigUploadFailure() {
         // a failed flash upload is considered when flashCfgUploadChecksum is non-zero, and DOES NOT match sysParams.flashCfgChecksum
-        return flashCfgUploadChecksum && (flashCfgUploadChecksum != sysParams.flashCfgChecksum);
+        return flashCfgUpload.checksum && (flashCfgUpload.checksum != sysParams.flashCfgChecksum);
     }
 
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
@@ -207,10 +212,9 @@ public:
     sys_params_t                sysParams = { };
     gpx_status_t                gpxStatus = { };
     nvm_flash_cfg_t             flashCfg = { };
-    nvm_flash_cfg_t             flashCfgUpload = { };                //! This is the flashConfig that was most recently sent to the device
-    unsigned int                flashCfgUploadTimeMs = 0;            //! (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
-    unsigned int                flashSyncCheckTimeMs = 0;
-    uint32_t                    flashCfgUploadChecksum = 0;
+    nvm_flash_cfg_t             flashCfgUpload = { };                //!< This is the flashConfig that was most recently sent to the device
+    unsigned int                flashCfgUploadTimeMs = 0;            //!< (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+    unsigned int                flashSyncCheckTimeMs = 0;            //!< (ms) indicates that last time when the host confirmed synchronization of the remote and local flashCfg
     evb_flash_cfg_t             evbFlashCfg = { };
     system_command_t            sysCmd = { };
     manufacturing_info_t        manfInfo = {};

@@ -15,6 +15,11 @@
 
 ISDevice ISDevice::invalidRef;
 
+
+bool ISDevice::Update() {
+    return step();
+}
+
 /**
  * Steps the communications for this device, sending any scheduled requests and parsing any received data on the device's associated port (if connected).
  * @return
@@ -23,6 +28,7 @@ bool ISDevice::step() {
     if (!port) return false;
 
     comManagerStep(port);
+    SyncFlashConfig();
     if (fwUpdater)
         fwUpdate();
     return true;
@@ -465,11 +471,9 @@ bool ISDevice::SyncFlashConfig() {
     }
 
     // at this point, we have CONFIRMED the device's flashCfg
-    if (flashCfgUploadChecksum != sysParams.flashCfgChecksum)
+    if (flashCfgUpload.checksum != sysParams.flashCfgChecksum)
     { // sysParams.flashCfgChecksum DOES NOT MATCH uploaded, sync failed!
         flashCfgUploadTimeMs = 0;
-        flashSyncCheckTimeMs = 0;
-        flashCfgUploadChecksum = 0;
         flashCfgUpload = { };
         // printf("DID_FLASH_CONFIG upload rejected.\n");
         return false;
@@ -477,7 +481,6 @@ bool ISDevice::SyncFlashConfig() {
 
     // we have a sysParams.flashCfgChecksum and it matches the received (from the device), AND the uploaded, so SUCCESS!!
     flashCfgUploadTimeMs = 0;
-    flashSyncCheckTimeMs = 0;
     flashSyncCheckTimeMs = 0;
     flashCfgUpload = { };
     // printf("DID_FLASH_CONFIG upload complete.\n");
@@ -565,7 +568,7 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
             const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(DID_FLASH_CONFIG, offset);
             std::string fieldName = (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>");
             std::string fieldValue = "??"; // (fieldInfo ? cISDataMappings::DataToString(fieldInfo, )->);
-            printf("%s :: Sending DID_FLASH_CONFIG.%s = %s (offset %d, size %d)\n", getIdAsString().c_str(), fieldName.c_str(), fieldValue.c_str(), offset, size);
+            // printf("%s :: Sending DID_FLASH_CONFIG.%s = %s (offset %d, size %d)\n", getIdAsString().c_str(), fieldName.c_str(), fieldValue.c_str(), offset, size);
             int fail = SendData(DID_FLASH_CONFIG, head, size, offset);
             failure = failure || fail;
             flashCfgUploadTimeMs = current_timeMs();        // non-zero indicates upload in progress
@@ -576,11 +579,7 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
     if (flashCfgUploadTimeMs != 0) {
         // Update checksum
         UpdateFlashConfigChecksum(flashCfg_);
-
-        // Save checksum to ensure upload happened correctly
-        if (flashCfgUploadTimeMs) {
-            flashCfgUploadChecksum = flashCfg_.checksum;
-        }
+        flashCfgUpload.checksum = flashCfg.checksum;    // update the upload checksum in case it changed
     } else {
         // printf("DID_FLASH_CONFIG in sync.  No upload.\n");
     }
@@ -609,7 +608,7 @@ bool ISDevice::WaitForFlashSynced(uint32_t timeout)
     unsigned int startMs = now;
 
     static unsigned int lastRequest = startMs;
-    if ((flashCfgUploadTimeMs == 0) && (flashCfgUploadChecksum == 0))
+    if ((flashCfgUploadTimeMs == 0) && (flashCfgUpload.checksum == 0))
     {   // no upload is in progress; we don't need to verify with our uploaded flashCfg
         while (flashCfg.checksum != sysParams.flashCfgChecksum)
         {
