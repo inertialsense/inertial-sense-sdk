@@ -1219,7 +1219,6 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 
     return pkt->size;
 }
-
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
