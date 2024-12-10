@@ -37,8 +37,9 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 	uint8_t buffer[2048];
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Consider using callbacks
-```
+	is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
 
 ### Step 3: Initialize and open serial port
 

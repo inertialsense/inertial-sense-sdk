@@ -28,6 +28,8 @@ namespace ISBootloader {
 static constexpr int IS_DEVICE_LIST_LEN = 256;
 static constexpr int IS_FIRMWARE_PATH_LENGTH = 256;
 
+static constexpr int IS_REBOOT_DELAY_MS = 3000;
+
 typedef enum {
     IS_LOG_LEVEL_NONE  = 0,
     IS_LOG_LEVEL_ERROR = 1,
@@ -194,7 +196,13 @@ public:
     virtual is_operation_result verify_image(std::string image) = 0;
 
     virtual bool is_serial_device() { return true; }
-    
+
+    template<typename... Args> void logStatus(eLogLevel level, const char* infoString, Args... args) {
+        if (m_info_callback)
+            m_info_callback(this, level, infoString, args...);
+    }
+
+
     int m_retries_left;
     float m_update_progress;
     float m_verify_progress;

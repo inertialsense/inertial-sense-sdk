@@ -454,7 +454,7 @@ public:
         if (!device)
             return true;
 
-        return device->flashCfgUploadChecksum && (device->flashCfgUploadChecksum != device->sysParams.flashCfgChecksum);
+        return device->flashCfgUpload.checksum && (device->flashCfgUpload.checksum != device->sysParams.flashCfgChecksum);
     }
 
     /**

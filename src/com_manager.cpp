@@ -63,6 +63,7 @@ int ISComManager::init(
 
     defaultCbs = {};
     defaultCbs.all = comManagerProcessBinaryRxPacket;
+    defaultCbs.isbData = pstRxFncCb;
 
     if (!portSet) portSet = new std::unordered_set<port_handle_t>();
     ports = portSet;
@@ -157,10 +158,6 @@ bool comManagerRemovePort(port_handle_t port) {
 }
 
 bool ISComManager::removeAllPorts() {
-//    for (auto port : ports) {
-//        removePort(port);
-//        // TODO delete (serial_port_s*)port;
-//    }
     ports->clear();
     return true;
 }
@@ -168,7 +165,6 @@ bool ISComManager::removeAllPorts() {
 bool comManagerReleaseAllPorts() {
     return s_cm.removeAllPorts();
 }
-
 
 int asciiMessageCompare(const void* elem1, const void* elem2)
 {
@@ -945,12 +941,12 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
         return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
     }
 
-    if (ports && !port) {
-        // if port is null, set this for all available ports
-        defaultCbs.generic[ptype] = cbHandler; // TODO: range check this
+    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA))
+    {   // if port is null, set this as the default handler, and also set it for all available ports
+        defaultCbs.generic[ptype] = cbHandler;
         for (auto port : *ports) {
             if (port && portType(port) & PORT_TYPE__COMM) {
-                is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+                return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
             }
         }
     }

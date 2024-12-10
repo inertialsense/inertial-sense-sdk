@@ -35,21 +35,22 @@ using namespace std;
 static InertialSense *s_is = NULL;
 static InertialSense::com_manager_cpp_state_t *s_cm_state = NULL;
 
-static int staticSendData(port_handle_t port, const uint8_t* buf, int len)
-{
-    return serialPortWrite(port, buf, len);
-}
-
-static int staticReadData(port_handle_t port, uint8_t* buf, int len)
-{
-    int bytesRead = serialPortReadTimeout(port, buf, len, 1);
-
-    if (s_is) {   // Save raw data to ISlogger
-        s_is->LogRawData(s_is->DeviceByPort(port), bytesRead, buf);
-    }
-    return bytesRead;
-}
-
+/**
+ * General Purpose IS-binary protocol handler for the InertialSense class.
+ * This is called anytime ISB packets are received by any of the underlying ports
+ * which are managed by the InertialSense and CommManager classes.  Eventually
+ * this should be moved into the ISDevice class, where devices of different types
+ * can handle their data independently. There could be a hybrid approach here
+ * where this function would (should?) locate the ISDevice by its port, and then
+ * redirect to the ISDevice specific callback.
+ * @param data The data which was parsed and is ready to be consumed
+ * @param port The port which the data was received from
+ * @return 0 if this data packet WILL NOT BE processed again by other handlers
+ *   any other value indicates that the packet MAY BE processed by other handlers.
+ *   No guarantee is given that other handlers will process this packet if the
+ *   return value is non-zero, but is guaranteed that it will no reprocess this
+ *   packet if a zero-value is returned.
+ */
 static int staticProcessRxData(p_data_t* data, port_handle_t port)
 {
     if ((port == NULLPTR) || (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData))))
@@ -188,12 +189,6 @@ void InertialSense::DisableLogging()
     }
 }
 
-void InertialSense::LogRawData(ISDevice* device, int dataSize, const uint8_t* data)
-{
-    if (device && device->devLogger)
-        m_logger.LogData(device->devLogger, dataSize, data);
-}
-
 bool InertialSense::registerDevice(ISDevice* device) {
     if (!device)
         return NULL;
@@ -228,8 +223,6 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     newDevice->devInfo = devInfo;
     newDevice->hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
     newDevice->hdwRunState = ISDevice::HDW_STATE_APP; // this is probably a safe assumption, assuming we have dev good info
-    newDevice->flashCfgUploadChecksum = 0;
-    newDevice->sysParams.flashCfgChecksum = 0;
     m_comManagerState.devices.push_back(newDevice);
     return m_comManagerState.devices.empty() ? NULL : (ISDevice*)m_comManagerState.devices.back();
 }
@@ -876,7 +869,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
                 {   // Upload complete.  Allow sync.
                     device->flashCfgUploadTimeMs = 0;
 
-                    if (device->flashCfgUploadChecksum == device->sysParams.flashCfgChecksum)
+                    if (device->flashCfgUpload.checksum == device->sysParams.flashCfgChecksum)
                     {
                         printf("DID_FLASH_CONFIG upload complete.\n");
                     }
@@ -920,14 +913,7 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
         device = DeviceByPort(port);
     }
 
-    if (!device)
-        return false;
-
-    // Copy flash config
-    flashCfg = device->flashCfg;
-
-    // Indicate whether flash config is synchronized
-    return device->sysParams.flashCfgChecksum == device->flashCfg.checksum;
+    return (device ? device->FlashConfig(flashCfg) : false);
 }
 
 bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
@@ -939,71 +925,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
         device = DeviceByPort(port);
     }
 
-    if (device == NULL)
-        return false;   // no device, no setting of flash-config
-
-    device->flashCfg.checksum = flashChecksum32(&device->flashCfg, sizeof(nvm_flash_cfg_t));
-
-    // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
-    static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
-    uint32_t *newCfg = (uint32_t*)&flashCfg;
-    uint32_t *curCfg = (uint32_t*)&(device->flashCfg);
-    int iSize = sizeof(nvm_flash_cfg_t) / 4;
-    bool failure = false;
-    // Exclude updateIoConfig bit from flash config and keep track of it separately so it does not affect whether the platform config gets uploaded
-    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
-    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
-
-    for (int i = 2; i < iSize; i++)     // Start with index 2 to exclude size and checksum
-    {
-        if (newCfg[i] != curCfg[i])
-        {   // Found start
-            uint8_t *head = (uint8_t*)&(newCfg[i]);
-
-            // Search for end
-            for (; i < iSize && newCfg[i] != curCfg[i]; i++);
-
-            // Found end
-            uint8_t *tail = (uint8_t*)&(newCfg[i]);
-            int size = tail-head;
-            int offset = head-((uint8_t*)newCfg);
-
-            if (platformCfgUpdateIoConfig &&
-                head <= (uint8_t*)&(flashCfg.platformConfig) &&
-                tail >  (uint8_t*)&(flashCfg.platformConfig))
-            {   // Re-apply updateIoConfig bit prior to upload
-                flashCfg.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
-            }
-
-#if PRINT_DEBUG
-            const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(DID_FLASH_CONFIG, offset);
-            DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d (%s)\n", size, offset, (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>"));
-#endif
-            int fail = comManagerSendData(device->port, head, DID_FLASH_CONFIG, size, offset);
-            failure = failure || fail;
-            device->flashCfgUploadTimeMs = current_timeMs();                // non-zero indicates upload in progress
-        }
-    }
-
-    if (device->flashCfgUploadTimeMs == 0)
-    {
-        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
-    }
-
-    // Update checksum
-    UpdateFlashConfigChecksum(flashCfg);
-
-    // Save checksum to ensure upload happened correctly
-    if (device->flashCfgUploadTimeMs)
-    {
-        device->flashCfgUploadChecksum = flashCfg.checksum;
-    }
-
-    // Update local copy of flash config
-    device->flashCfg = flashCfg;
-
-    // Success
-    return !failure;
+    return (device ? device->SetFlashConfig(flashCfg) : false);
 }
 
 bool InertialSense::WaitForFlashSynced(port_handle_t port)
@@ -1015,36 +937,7 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
         device = DeviceByPort(port);
     }
 
-    if (!device)
-        return false;   // No device, no flash-sync
-
-    unsigned int startMs = current_timeMs();
-    while (!FlashConfigSynced(device->port))
-    {   // Request and wait for flash config
-        Update();
-
-        if ((current_timeMs() - startMs) > SYNC_FLASH_CFG_TIMEOUT_MS)
-        {   // Timeout waiting for flash config
-            printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
-
-            #if PRINT_DEBUG
-            ISDevice& device = m_comManagerState.devices[pHandle];
-            DEBUG_PRINT("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
-            DEBUG_PRINT("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum); 
-            DEBUG_PRINT("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
-            DEBUG_PRINT("device.flashCfgUploadChecksum:     %u\n", device.flashCfgUploadChecksum);
-            #endif
-            return false;
-        }
-        else
-        {   // Query DID_SYS_PARAMS
-            GetData(DID_SYS_PARAMS);
-            DEBUG_PRINT("Waiting for flash sync...\n");
-        }
-        SLEEP_MS(20);  // give some time for the device to respond.
-    }
-
-    return FlashConfigSynced(device->port);
+    return (device ? device->WaitForFlashSynced() : false);
 }
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
