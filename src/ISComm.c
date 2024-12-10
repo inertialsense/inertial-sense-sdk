@@ -1210,10 +1210,6 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 
     return pkt->size;
 }
-
-uint32_t asdfasdf_WRT = 0;
-uint32_t asdfasdf_WRT_G = 0;
-
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
@@ -1223,16 +1219,6 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
-
-    if (pkt->hdr.id == DID_FIRMWARE_UPDATE)
-    {
-        if(portId(port) == 3)
-            asdfasdf_WRT_G++;
-        else if(portId(port) == 0)
-            asdfasdf_WRT++;
-    }
-    
-
 
     // Write packet to port
     int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
