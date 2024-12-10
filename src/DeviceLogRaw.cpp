@@ -25,19 +25,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-static int dummyIsbProtocolHandler(p_data_t* data, port_handle_t port) { return 0; }
-static int dummyGenericProtocolHandler(const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
-
 cDeviceLogRaw::cDeviceLogRaw() : cDeviceLog() { initCommInstance(); }
 cDeviceLogRaw::cDeviceLogRaw(const ISDevice *dev) : cDeviceLog(dev) { initCommInstance(); }
 cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) { initCommInstance(); };
 
 void cDeviceLogRaw::initCommInstance() {
     is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
-    is_comm_register_isb_handler(&m_comm, dummyIsbProtocolHandler);
-    is_comm_register_msg_handler(&m_comm, _PTYPE_NMEA, dummyGenericProtocolHandler);
-    is_comm_register_msg_handler(&m_comm, _PTYPE_RTCM3, dummyGenericProtocolHandler);
-    is_comm_register_msg_handler(&m_comm, _PTYPE_UBLOX, dummyGenericProtocolHandler);
+    is_comm_enable_protocol(&m_comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&m_comm, _PTYPE_NMEA);
+    is_comm_enable_protocol(&m_comm, _PTYPE_RTCM3);
+    is_comm_enable_protocol(&m_comm, _PTYPE_UBLOX);
     // is_comm_register_msg_handler(&m_comm, _PTYPE_SONY, dummyGenericProtocolHandler);
 }
 
