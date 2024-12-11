@@ -25,6 +25,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define C_NEG_MG_DIV_KT0_F			-1.18558314779367E-04f		// - (M * g)  / (K * T0)
 #define C_NEG_KT0_DIV_MG_F			-8.43466779922578000E+03f	// - (K * T0) / (M * g)
 
+#ifndef C_ECEF_EPSILON
+#define C_ECEF_EPSILON (1.0E-10f)
+#endif
+
+
 //_____ G L O B A L S ______________________________________________________
 
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
@@ -170,13 +175,13 @@ void ecef2lla(const double *Pe, double *LLA)
     val = p - E_SQ * r0;
     U = sqrt(MAX(0.0, val * val + z2));
     V = sqrt(MAX(0.0, val * val + ONE_MINUS_E_SQ * z2));
-    z0 = POWB2 * Pe[2] / MAX(REQ * V, EPS);
+    z0 = POWB2 * Pe[2] / MAX(REQ * V, C_ECEF_EPSILON);
     // Latitude
     LLA[0] = atan2(Pe[2] + E_PRIME_SQ * z0, p);
     // Altitude above planetary ellipsoid :
-    LLA[2] = U * (1.0 - POWB2 / MAX(REQ * V, EPS));
+    LLA[2] = U * (1.0 - POWB2 / MAX(REQ * V, C_ECEF_EPSILON));
     // Avoid numerical issues at poles
-    if (V < EPS) {
+    if (V < C_ECEF_EPSILON) {
         LLA[0] = LLA[0] < 0.0 ? -C_PIDIV2 : C_PIDIV2;
         LLA[2] = fabs(Pe[2]) - REP;
     }
@@ -327,13 +332,13 @@ void ecef2lla_f(const float *Pe, float *LLA)
     val = p - E_SQ * r0;
     U = sqrtf(MAX(0.0f, val * val + z2));
     V = sqrtf(MAX(0.0f, val * val + ONE_MINUS_E_SQ * z2));
-    z0 = POWB2 * Pe[2] / MAX(REQ * V, EPS);
+    z0 = POWB2 * Pe[2] / MAX(REQ * V, C_ECEF_EPSILON);
     // Latitude
     LLA[0] = atan2f(Pe[2] + E_PRIME_SQ * z0, p);
     // Altitude above planetary ellipsoid :
-    LLA[2] = U * (1.0f - POWB2 / MAX(REQ * V, EPS));
+    LLA[2] = U * (1.0f - POWB2 / MAX(REQ * V, C_ECEF_EPSILON));
     // Avoid numerical issues at poles
-    if (V < EPS) {
+    if (V < C_ECEF_EPSILON) {
         LLA[0] = LLA[0] < 0.0f ? -C_PIDIV2_F : C_PIDIV2_F;
         LLA[2] = fabsf(Pe[2]) - REP;
     }
