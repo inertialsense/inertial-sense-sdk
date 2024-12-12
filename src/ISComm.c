@@ -187,6 +187,12 @@ is_comm_instance_t* is_comm_get_port_instance(port_handle_t port) {
     return NULL;
 }
 
+/**
+ * Registering ISB handler for given comm instance
+ * 
+ * @return handler on success
+ * @return NULL if port invalid 
+ */
 pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler) {
     if (!comm)
         return NULL;
@@ -196,6 +202,26 @@ pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, p
     return priorCb;
 }
 
+/**
+ * Registering ISB handler for given port
+ * 
+ * @return handler on success
+ * @return NULL if port invalid 
+ */
+pfnIsCommIsbDataHandler is_comm_register_port_isb_handler(port_handle_t port, pfnIsCommIsbDataHandler cbHandler)
+{
+    if (port)
+        return is_comm_register_isb_handler(&COMM_PORT(port)->comm,  cbHandler);
+
+    return NULL;
+}
+
+/**
+ * Registers msg handler for specific comm instance and protocol type
+ * 
+ * @return handler on success
+ * @return NULL if port invalid 
+ */
 pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler) {
     if (!comm || (ptype < _PTYPE_FIRST_DATA) || (ptype > _PTYPE_LAST_DATA))
         return NULL;
@@ -204,6 +230,20 @@ pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, in
     comm->cb.generic[ptype] = cbHandler;
     return priorCb;
 }
+
+/**
+ * Registers msg handler for specific port and protocol type
+ * 
+ * @return handler on success
+ * @return NULL if port invalid 
+ */
+pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int ptype, pfnIsCommGenMsgHandler cbHandler) {
+    if (port)
+        return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+
+    return NULL;
+}
+
 
 void is_comm_register_callbacks(is_comm_instance_t* c, is_comm_callbacks_t *callbacks) {
     if (callbacks)
@@ -1024,12 +1064,12 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         {   // Scan for packet start
             switch (*(buf->scan))
             {
-                case PSC_ISB_PREAMBLE_BYTE1:    if (((c->protocolMask >> _PTYPE_INERTIAL_SENSE_DATA) & 0x01) || c->cb.isbData)   { setParserStart(c, processIsbPkt); }      break;
-                case PSC_NMEA_START_BYTE:       if (((c->protocolMask >> _PTYPE_NMEA) & 0x01) || c->cb.generic[_PTYPE_NMEA])     { setParserStart(c, processNmeaPkt); }     break;
-                case UBLOX_START_BYTE1:         if (((c->protocolMask >> _PTYPE_UBLOX) & 0x01) || c->cb.generic[_PTYPE_UBLOX])   { setParserStart(c, processUbloxPkt); }    break;
-                case RTCM3_START_BYTE:          if (((c->protocolMask >> _PTYPE_RTCM3) & 0x01) || c->cb.generic[_PTYPE_RTCM3])   { setParserStart(c, processRtcm3Pkt); }    break;
-                case SPARTN_START_BYTE:         if (((c->protocolMask >> _PTYPE_SPARTN) & 0x01) || c->cb.generic[_PTYPE_SPARTN]) { setParserStart(c, processSpartnByte); }  break;
-                case SONY_START_BYTE:           if (((c->protocolMask >> _PTYPE_SONY) & 0x01) || c->cb.generic[_PTYPE_SONY])     { setParserStart(c, processSonyByte); }    break;
+                case PSC_ISB_PREAMBLE_BYTE1:    if (((c->protocolMask >> _PTYPE_INERTIAL_SENSE_DATA) & 0x01) || c->cb.isbData)                  { setParserStart(c, processIsbPkt); }      break;
+                case PSC_NMEA_START_BYTE:       if (((c->protocolMask >> _PTYPE_NMEA) & 0x01) ||                c->cb.generic[_PTYPE_NMEA])     { setParserStart(c, processNmeaPkt); }     break;
+                case UBLOX_START_BYTE1:         if (((c->protocolMask >> _PTYPE_UBLOX) & 0x01) ||               c->cb.generic[_PTYPE_UBLOX])    { setParserStart(c, processUbloxPkt); }    break;
+                case RTCM3_START_BYTE:          if (((c->protocolMask >> _PTYPE_RTCM3) & 0x01) ||               c->cb.generic[_PTYPE_RTCM3])    { setParserStart(c, processRtcm3Pkt); }    break;
+                case SPARTN_START_BYTE:         if (((c->protocolMask >> _PTYPE_SPARTN) & 0x01) ||              c->cb.generic[_PTYPE_SPARTN])   { setParserStart(c, processSpartnByte); }  break;
+                case SONY_START_BYTE:           if (((c->protocolMask >> _PTYPE_SONY) & 0x01) ||                c->cb.generic[_PTYPE_SONY])     { setParserStart(c, processSonyByte); }    break;
                 default:                        
                     if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                     { 
