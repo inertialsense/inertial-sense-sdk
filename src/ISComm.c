@@ -228,6 +228,7 @@ pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, in
 
     pfnIsCommGenMsgHandler priorCb = comm->cb.generic[ptype];
     comm->cb.generic[ptype] = cbHandler;
+    comm->cb.protocolMask |= (int)(0x01) << ptype;
     return priorCb;
 }
 
@@ -282,8 +283,6 @@ uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance) {
 
     return protocols;
 }
-
-
 
 int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
@@ -1064,12 +1063,12 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         {   // Scan for packet start
             switch (*(buf->scan))
             {
-                case PSC_ISB_PREAMBLE_BYTE1:    if ((c->cb.protocolMask >> _PTYPE_INERTIAL_SENSE_DATA) & 0x01)  { setParserStart(c, processIsbPkt); }      break;
-                case PSC_NMEA_START_BYTE:       if ((c->cb.protocolMask >> _PTYPE_NMEA) & 0x01)                 { setParserStart(c, processNmeaPkt); }     break;
-                case UBLOX_START_BYTE1:         if ((c->cb.protocolMask >> _PTYPE_UBLOX) & 0x01)                { setParserStart(c, processUbloxPkt); }    break;
-                case RTCM3_START_BYTE:          if ((c->cb.protocolMask >> _PTYPE_RTCM3) & 0x01)                { setParserStart(c, processRtcm3Pkt); }    break;
-                case SPARTN_START_BYTE:         if ((c->cb.protocolMask >> _PTYPE_SPARTN) & 0x01)               { setParserStart(c, processSpartnByte); }  break;
-                case SONY_START_BYTE:           if ((c->cb.protocolMask >> _PTYPE_SONY) & 0x01)                 { setParserStart(c, processSonyByte); }    break;
+                case PSC_ISB_PREAMBLE_BYTE1:    if (c->cb.protocolMask & ENABLE_PROTOCOL_ISB)       { setParserStart(c, processIsbPkt); }      break;
+                case PSC_NMEA_START_BYTE:       if (c->cb.protocolMask & ENABLE_PROTOCOL_NMEA)      { setParserStart(c, processNmeaPkt); }     break;
+                case UBLOX_START_BYTE1:         if (c->cb.protocolMask & ENABLE_PROTOCOL_UBLOX)     { setParserStart(c, processUbloxPkt); }    break;
+                case RTCM3_START_BYTE:          if (c->cb.protocolMask & ENABLE_PROTOCOL_RTCM3)     { setParserStart(c, processRtcm3Pkt); }    break;
+                case SPARTN_START_BYTE:         if (c->cb.protocolMask & ENABLE_PROTOCOL_SPARTN)    { setParserStart(c, processSpartnByte); }  break;
+                case SONY_START_BYTE:           if (c->cb.protocolMask & ENABLE_PROTOCOL_SONY)      { setParserStart(c, processSonyByte); }    break;
                 default:                        
                     if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                     { 
