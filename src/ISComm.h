@@ -676,7 +676,11 @@ is_comm_instance_t* is_comm_get_port_instance(port_handle_t port);
 
 pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler);
 
+pfnIsCommIsbDataHandler is_comm_register_port_isb_handler(port_handle_t port, pfnIsCommIsbDataHandler cbHandler);
+
 pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler);
+
+pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int ptype, pfnIsCommGenMsgHandler cbHandler);
 
 void is_comm_register_callbacks(is_comm_instance_t* instance, is_comm_callbacks_t *callbacks);
 
