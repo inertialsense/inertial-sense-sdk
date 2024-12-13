@@ -695,9 +695,9 @@ public:
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
     void OnClientConnecting(cISTcpServer* server) OVERRIDE;
-    void OnClientConnected(cISTcpServer* server, socket_t socket) OVERRIDE;
+    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
     void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
-    void OnClientDisconnected(cISTcpServer* server, socket_t socket) OVERRIDE;
+    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
 
     static int OnSerialPortError(port_handle_t port, int errCode, const char *errMsg);
 
