@@ -1359,7 +1359,7 @@ void InertialSense::OnClientConnecting(cISTcpServer* server)
     // cout << endl << "Client connecting..." << endl;
 }
 
-void InertialSense::OnClientConnected(cISTcpServer* server, socket_t socket)
+void InertialSense::OnClientConnected(cISTcpServer* server, is_socket_t socket)
 {
     // cout << endl << "Client connected: " << (int)socket << endl;
     m_clientConnectionsCurrent++;
@@ -1371,7 +1371,7 @@ void InertialSense::OnClientConnectFailed(cISTcpServer* server)
     // cout << endl << "Client connection failed!" << endl;
 }
 
-void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
+void InertialSense::OnClientDisconnected(cISTcpServer* server, is_socket_t socket)
 {
     // cout << endl << "Client disconnected: " << (int)socket << endl;
     m_clientConnectionsCurrent--;

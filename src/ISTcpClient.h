@@ -101,7 +101,7 @@ public:
 private:
 	cISTcpClient(const cISTcpClient& copy); // Disable copy constructor
 
-	socket_t m_socket;
+	is_socket_t m_socket;
 	std::string m_host;
 	int m_port;
 	bool m_blocking;
@@ -123,7 +123,7 @@ void ISSocketFrameworkShutdown();
 * @param timeoutMilliseconds the number of milliseconds to wait before aborting
 * @return non-zero if the socket can be written to, otherwise zero
 */
-int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
+int ISSocketCanWrite(is_socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
 
 /**
 * Determines if a socket can be read from
@@ -131,7 +131,7 @@ int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAUL
 * @param timeoutMilliseconds the number of milliseconds to wait before aborting
 * @return non-zero if the socket can be read from, otherwise zero
 */
-int ISSocketCanRead(socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
+int ISSocketCanRead(is_socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
 
 /**
 * Write data to a socket
@@ -140,7 +140,7 @@ int ISSocketCanRead(socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAULT
 * @param dataLength the number of bytes in data
 * @return the number of bytes written or less than 0 if error, in which case the socket is probably disconnected
 */
-int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength);
+int ISSocketWrite(is_socket_t socket, const uint8_t* data, int dataLength);
 
 /**
 * Read data from a socket
@@ -149,7 +149,7 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength);
 * @param dataLength the number of bytes available in data
 * @return the number of bytes read or less than 0 if error, in which case the socket is probably disconnected
 */
-int ISSocketRead(socket_t socket, uint8_t* data, int dataLength);
+int ISSocketRead(is_socket_t socket, uint8_t* data, int dataLength);
 
 /**
 * Sets whether a socket is blocking. When reading, a blocking socket waits for the specified amount of data until the timeout is reached, a non-blocking socket returns immediately with the number of bytes read.
@@ -157,7 +157,7 @@ int ISSocketRead(socket_t socket, uint8_t* data, int dataLength);
 * @param blocking whether the socket is blocking
 * @return 0 if success otherwise an error code
 */
-int ISSocketSetBlocking(socket_t socket, bool blocking);
+int ISSocketSetBlocking(is_socket_t socket, bool blocking);
 
 /**
 * Set a read timeout on a socket. This function is only useful for blocking sockets, where it is highly recommended.
@@ -165,13 +165,13 @@ int ISSocketSetBlocking(socket_t socket, bool blocking);
 * @param timeoutMilliseconds the timeout in milliseconds
 * @return 0 if success otherwise an error code
 */
-int ISSocketSetReadTimeout(socket_t socket, int timeoutMilliseconds);
+int ISSocketSetReadTimeout(is_socket_t socket, int timeoutMilliseconds);
 
 /**
 * Close a socket and zero it out
 * @param socket the socket to close, this will be zeroed out
 * @return 0 if success otherwise an error code
 */
-int ISSocketClose(socket_t& socket);
+int ISSocketClose(is_socket_t& socket);
 
 #endif // __ISTCPCLIENT__H__
