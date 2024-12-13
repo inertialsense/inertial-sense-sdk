@@ -135,7 +135,8 @@ class logInspectorInternal(LogInspectorWindow):
 
     def chooseDevs(self):
         try:
-            dlg = ChooseDevsDialog(self.plotter, self)
+            for plotter in self.plotter:
+                dlg = ChooseDevsDialog(plotter, self)
             dlg.show()
             dlg.exec_()
         except Exception as e:

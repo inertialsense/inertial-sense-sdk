@@ -216,13 +216,20 @@ class FlashConfigDialog(QDialog):
         self.setLayout(self.mainlayout)
         self.resize(1280, 900)
 
-
-
+class Plotter():
+    def __init__(self, parent=None):
+        self.figure = plt.figure()
+        self.canvas = FigureCanvas(self.figure)
+        if parent:
+            self.toolbar = NavigationToolbar(self.canvas, parent)
+        self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
+        self.plotter = logPlot(False, False, 'svg', None)
 
 class LogInspectorWindow(QMainWindow):
     def __init__(self, configFilePath):
         super(LogInspectorWindow, self).__init__()
-        self.initMatPlotLib()
+        self.mplot = [Plotter(self)]
+        # self.initMatPlotLib()
         self.configFilePath = configFilePath
         self.exePath = __file__
 
@@ -249,13 +256,12 @@ class LogInspectorWindow(QMainWindow):
         self.downsample = 5
         self.plotargs = None
         self.log = None
-        self.plotter = logPlot(False, False, 'svg', None)
 
-    def initMatPlotLib(self):
-        self.figure = plt.figure()
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
+    # def initMatPlotLib(self):
+    #     self.figure = plt.figure()
+    #     self.canvas = FigureCanvas(self.figure)
+    #     self.toolbar = NavigationToolbar(self.canvas, self)
+    #     self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
 
     def addButton(self, name, function, layout=None):
         setattr(self, name + "button", QPushButton(name))
@@ -332,8 +338,9 @@ class LogInspectorWindow(QMainWindow):
         self.log = Log()
         self.log.load(directory)
         print("done loading")
-        self.plotter.setLog(self.log)
-        self.plotter.setDownSample(self.downsample)
+        for mplot in self.mplot:
+            mplot.plotter.setLog(self.log)
+            mplot.plotter.setDownSample(self.downsample)
         self.updatePlot()
         self.setStatus("")
         self.expandAndSelectDirectory(directory)
@@ -356,9 +363,9 @@ class LogInspectorWindow(QMainWindow):
         self.createBottomToolbar()
 
         self.figureLayout = QVBoxLayout()
-        self.figureLayout.addWidget(self.canvas)
+        self.figureLayout.addWidget(self.mplot[0].canvas)
         self.figureLayout.addLayout(self.toolLayout)
-        self.figureLayout.setStretchFactor(self.canvas, 1)
+        self.figureLayout.setStretchFactor(self.mplot[0].canvas, 1)
 
 
         layout = QHBoxLayout()
@@ -528,8 +535,8 @@ class LogInspectorWindow(QMainWindow):
         # self.buttonLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.addButton('load', self.choose_directory)
 
-        # self.setCurrentListRow(self.nameList.index('Pos NED Map'))   # Default to NED Map
-        self.setCurrentListRow(self.nameList.index('Delta Time'))   # Default to NED Map
+        self.setCurrentListRow(self.nameList.index('Pos NED Map'))   # Default to NED Map
+        # self.setCurrentListRow(self.nameList.index('Delta Time'))   # Default to NED Map
         
 
     def createStatus(self):
@@ -549,6 +556,7 @@ class LogInspectorWindow(QMainWindow):
         #     self.hideControlButton.setText("Hide Panel")
         # else:
         #     self.hideControlButton.setText("Show Panel")
+        # self.plotter = [self.addPlotter()]
 
     def hideControl(self):
         self.controlWidget.setVisible(not self.controlWidget.isVisible())
@@ -562,7 +570,7 @@ class LogInspectorWindow(QMainWindow):
 
     def createBottomToolbar(self):
         self.toolLayout = QHBoxLayout()
-        self.toolLayout.addWidget(self.toolbar)
+        self.toolLayout.addWidget(self.mplot[0].toolbar)
 
         self.popPlotButton = QPushButton("Pop Plot")
         self.popPlotButton.clicked.connect(self.popPlot)
@@ -602,40 +610,47 @@ class LogInspectorWindow(QMainWindow):
         self.downSampleInput.valueChanged.connect(self.changeDownSample)
 
     def changeResidualCheckbox(self, state):
-        if self.plotter:
-            self.plotter.enableResidualPlot(state)
-            self.updatePlot()
+        for mplot in self.mplot:
+            if mplot.plotter:
+                mplot.plotter.enableResidualPlot(state)
+                self.updatePlot()
 
     def changeTimeCheckbox(self, state):
-        if self.plotter:
-            self.plotter.enableTimestamp(state)
-            self.updatePlot()
+        for mplot in self.mplot:
+            if mplot.plotter:
+                mplot.plotter.enableTimestamp(state)
+                self.updatePlot()
 
     def changeXAxisSampleCheckbox(self, state):
-        if self.plotter:
-            self.plotter.enableXAxisSample(state)
-            self.updatePlot()
+        for mplot in self.mplot:
+            if mplot.plotter:
+                mplot.plotter.enableXAxisSample(state)
+                self.updatePlot()
 
     def changeUtcCheckbox(self, state):
-        if self.plotter:
-            self.plotter.enableUtcTime(state)
-            self.updatePlot()
+        for mplot in self.mplot:
+            if mplot.plotter:
+                mplot.plotter.enableUtcTime(state)
+                self.updatePlot()
 
     def saveAllPlotsToFile(self):
         if self.log == None:
             print("Log not opened.  Please select a log directory.")
             return
         print("Saving all plots file")
-        self.plotter.save = True
+        for mplot in self.mplot:
+            mplot.plotter.save = True
         for i in range(len(self.funcNameList)):
             if self.setCurrentListRow(i) and self.funcNameList[i] != None:
                 self.plot(self.selectedPlot(), self.plotargs)
             QtCore.QCoreApplication.processEvents()
-        self.plotter.save = False
+        for mplot in self.mplot:
+            mplot.plotter.save = False
 
     def changeDownSample(self, val):
         self.downsample = max(val, 1)
-        self.plotter.setDownSample(self.downsample)
+        for mplot in self.mplot:
+            mplot.plotter.setDownSample(self.downsample)
         if self.log != None:
             self.updatePlot()
 
@@ -643,7 +658,7 @@ class LogInspectorWindow(QMainWindow):
         self.downSampleInput.setValue(1)
 
     def copyPlotToClipboard(self):
-        # pixmap = QPixmap.grabWidget(self.canvas)
+        # pixmap = QPixmap.grabWidget(self.mplot.canvas)
         # QApplication.clipboard().setPixmap(pixmap)
         # pixmap.save('test.png')
 
@@ -652,7 +667,7 @@ class LogInspectorWindow(QMainWindow):
         # such as background color; those would be ignored if you simply
         # grab the canvas using Qt
         buf = io.BytesIO()
-        self.figure.savefig(buf)
+        self.mplot.figure.savefig(buf)
 
         QApplication.clipboard().setImage(QImage.fromData(buf.getvalue()))
         buf.close()
@@ -826,15 +841,15 @@ class LogInspectorWindow(QMainWindow):
         self.selectedPlotFunc = func
         self.plotargs = args
 
-        self.figure.clear()
+        for mplot in self.mplot:
+            mplot.figure.clear()
+            if hasattr(mplot, 'plotter'):
+                if args is not None:
+                    getattr(mplot.plotter, func)(*args, mplot.figure)
+                else:
+                    getattr(mplot.plotter, func)(mplot.figure)
+            mplot.canvas.draw()
 
-        if hasattr(self, 'plotter'):
-            if args is not None:
-                getattr(self.plotter, func)(*args, self.figure)
-            else:
-                getattr(self.plotter, func)(self.figure)
-
-        self.canvas.draw()
         print("done plotting")
 
 def kill_handler(*args):
