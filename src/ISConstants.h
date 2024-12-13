@@ -53,7 +53,7 @@ extern "C" {
     #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
     #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #elif defined(__APPLE__)
-    typedef is_socket_t     int
+    typedef int is_socket_t
 
     #define PLATFORM_IS_APPLE 1
     #define PLATFORM_IS_EMBEDDED 0
@@ -74,7 +74,7 @@ extern "C" {
 
     #define PLATFORM_IS_LINUX 1
     #define PLATFORM_IS_EMBEDDED 0
-    typedef is_socket_t     int
+    typedef int is_socket_t
     #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
 #elif defined(__INERTIAL_SENSE_EVB_2__)
