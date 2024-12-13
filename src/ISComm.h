@@ -589,6 +589,8 @@ typedef int(*pfnIsCommGenMsgHandler)(const unsigned char* msg, int msgSize, port
 // Callback functions are called when the specific message is received and callback pointer is not null:
 typedef struct
 {
+    /** A bitmask (each bit position corresponding to the _PTYPE_* protocol value) which forces parsing of that protocol (alternative to callbacks) */
+    uint32_t                        protocolMask;
     pfnIsCommHandler                all;
     pfnIsCommIsbDataHandler         isbData;
     pfnIsCommGenMsgHandler          generic[_PTYPE_SIZE];
@@ -636,10 +638,6 @@ typedef struct
 
     /** a set of callbacks that will be called each time a protocol of the corresponding type is parsed */
     is_comm_callbacks_t cb;
-
-    /** A bitmask (each bit position corresponding to the _PTYPE_* protocol value) which forces parsing of that protocol (alternative to callbacks) */
-    uint32_t protocolMask;
-
 } is_comm_instance_t;
 
 typedef struct {

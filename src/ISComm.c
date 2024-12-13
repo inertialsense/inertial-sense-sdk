@@ -257,23 +257,23 @@ void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *ca
 
 void is_comm_enable_protocol(is_comm_instance_t* instance, protocol_type_t ptype) {
     if (instance)
-        instance->protocolMask |= (0x01 << ptype);
+        instance->cb.protocolMask |= (0x01 << ptype);
 }
 
 void is_comm_disable_protocol(is_comm_instance_t* instance, protocol_type_t ptype) {
     if (instance)
-        instance->protocolMask &= ~(0x01 << ptype);
+        instance->cb.protocolMask &= ~(0x01 << ptype);
 }
 
 void is_comm_set_protocol_mask(is_comm_instance_t* instance, uint32_t protocolMask) {
     if (instance)
-        instance->protocolMask = protocolMask;
+        instance->cb.protocolMask = protocolMask;
 }
 
 uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance) {
     uint32_t protocols = 0;
-    if (instance->protocolMask)
-        return instance->protocolMask;
+    if (instance->cb.protocolMask)
+        return instance->cb.protocolMask;
 
     if (instance->cb.isbData) protocols |= _PTYPE_INERTIAL_SENSE_DATA;
     for (int i = _PTYPE_FIRST_DATA ; i < _PTYPE_LAST_DATA; i++) {
@@ -1064,12 +1064,12 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         {   // Scan for packet start
             switch (*(buf->scan))
             {
-                case PSC_ISB_PREAMBLE_BYTE1:    if (((c->protocolMask >> _PTYPE_INERTIAL_SENSE_DATA) & 0x01) || c->cb.isbData)                  { setParserStart(c, processIsbPkt); }      break;
-                case PSC_NMEA_START_BYTE:       if (((c->protocolMask >> _PTYPE_NMEA) & 0x01) ||                c->cb.generic[_PTYPE_NMEA])     { setParserStart(c, processNmeaPkt); }     break;
-                case UBLOX_START_BYTE1:         if (((c->protocolMask >> _PTYPE_UBLOX) & 0x01) ||               c->cb.generic[_PTYPE_UBLOX])    { setParserStart(c, processUbloxPkt); }    break;
-                case RTCM3_START_BYTE:          if (((c->protocolMask >> _PTYPE_RTCM3) & 0x01) ||               c->cb.generic[_PTYPE_RTCM3])    { setParserStart(c, processRtcm3Pkt); }    break;
-                case SPARTN_START_BYTE:         if (((c->protocolMask >> _PTYPE_SPARTN) & 0x01) ||              c->cb.generic[_PTYPE_SPARTN])   { setParserStart(c, processSpartnByte); }  break;
-                case SONY_START_BYTE:           if (((c->protocolMask >> _PTYPE_SONY) & 0x01) ||                c->cb.generic[_PTYPE_SONY])     { setParserStart(c, processSonyByte); }    break;
+                case PSC_ISB_PREAMBLE_BYTE1:    if ((c->cb.protocolMask >> _PTYPE_INERTIAL_SENSE_DATA) & 0x01)  { setParserStart(c, processIsbPkt); }      break;
+                case PSC_NMEA_START_BYTE:       if ((c->cb.protocolMask >> _PTYPE_NMEA) & 0x01)                 { setParserStart(c, processNmeaPkt); }     break;
+                case UBLOX_START_BYTE1:         if ((c->cb.protocolMask >> _PTYPE_UBLOX) & 0x01)                { setParserStart(c, processUbloxPkt); }    break;
+                case RTCM3_START_BYTE:          if ((c->cb.protocolMask >> _PTYPE_RTCM3) & 0x01)                { setParserStart(c, processRtcm3Pkt); }    break;
+                case SPARTN_START_BYTE:         if ((c->cb.protocolMask >> _PTYPE_SPARTN) & 0x01)               { setParserStart(c, processSpartnByte); }  break;
+                case SONY_START_BYTE:           if ((c->cb.protocolMask >> _PTYPE_SONY) & 0x01)                 { setParserStart(c, processSonyByte); }    break;
                 default:                        
                     if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                     { 
