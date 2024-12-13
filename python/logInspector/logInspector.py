@@ -282,6 +282,7 @@ class LogInspectorWindow(QMainWindow):
             funcName = function
             function = lambda: self.plot(funcName)
         self.modelList.appendRow(QStandardItem(name))
+        self.nameList.append(name)
         self.funcNameList.append(funcName)
         self.functionList.append(function)
 
@@ -385,9 +386,9 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Vel NED', 'velNED')
         self.addListItem('Vel UVW', 'velUVW')
         self.addListItem('Attitude', 'attitude')
+        self.addListItem('Heading', 'heading')
         self.addListItem('Altitude', 'altitude')
         self.addListItem('Climb Rate', 'climbRate')
-        self.addListItem('Heading', 'heading')
 
     def createListSensors(self):
         self.addListSection('SENSORS')
@@ -442,8 +443,9 @@ class LogInspectorWindow(QMainWindow):
         groupBox = QGroupBox("Select Plot")
         self.listView = QListView()
         self.modelList = QStandardItemModel()
-        self.functionList = []
+        self.nameList = []
         self.funcNameList = []
+        self.functionList = []
         self.listView.setModel(self.modelList)
         self.listView.clicked.connect(self.onSelectListItem)
         LayoutList = QHBoxLayout()
@@ -456,25 +458,39 @@ class LogInspectorWindow(QMainWindow):
         self.createListSensors()
         self.createListGps()
         self.createListGeneral()
+
         self.checkboxResidual = QCheckBox("Residual", self)
         self.checkboxResidual.stateChanged.connect(self.changeResidualCheckbox)
         self.checkboxTime = QCheckBox("Timestamp", self)
         self.checkboxTime.stateChanged.connect(self.changeTimeCheckbox)
-        self.xAxisSample = QCheckBox("XAxis Msg Index", self)
+        self.xAxisSample = QCheckBox("XAxis Index", self)
         self.xAxisSample.stateChanged.connect(self.changeXAxisSampleCheckbox)
-        self.LayoutOptions = QVBoxLayout()
-        self.LayoutOptions.addWidget(self.checkboxResidual)
-        self.LayoutOptions.addWidget(self.checkboxTime)
-        self.LayoutOptions.addWidget(self.xAxisSample)
-        self.LayoutOptions.setSpacing(0)
-        self.LayoutBelowPlotSelection = QHBoxLayout()
-        self.LayoutBelowPlotSelection.addLayout(self.LayoutOptions)
+        self.checkboxUtc = QCheckBox("UTC", self)
+        self.checkboxUtc.stateChanged.connect(self.changeUtcCheckbox)
 
-        self.saveAllPushButton = QPushButton(" Save All Plots ")
+        self.VLayoutOptions1 = QVBoxLayout()
+        self.VLayoutOptions1.addWidget(self.checkboxResidual)
+        self.VLayoutOptions1.addWidget(self.checkboxTime)
+        self.VLayoutOptions1.setSpacing(0)
+        self.VLayoutOptions1.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.VLayoutOptions2 = QVBoxLayout()
+        self.VLayoutOptions2.addWidget(self.xAxisSample)
+        self.VLayoutOptions2.addWidget(self.checkboxUtc)
+        self.VLayoutOptions2.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.VLayoutOptions2.setSpacing(0)
+
+        self.LayoutBelowPlotSelection = QHBoxLayout()
+        self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions1)
+        self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2)
+
+        self.saveAllPushButton = QPushButton("Save All Plots")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
-        hSpacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum) 
-        self.LayoutBelowPlotSelection.addItem(hSpacer)
-        self.LayoutBelowPlotSelection.addWidget(self.saveAllPushButton)
+        self.LayoutBelowPlotSelection.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        self.LayoutVButtons = QVBoxLayout()
+        self.LayoutVButtons.addWidget(self.saveAllPushButton)
+        self.LayoutVButtons.setSpacing(0)
+        self.LayoutBelowPlotSelection.addLayout(self.LayoutVButtons)
 
         self.controlLayout.addLayout(self.LayoutBelowPlotSelection)
 
@@ -512,7 +528,9 @@ class LogInspectorWindow(QMainWindow):
         # self.buttonLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.addButton('load', self.choose_directory)
 
-        self.setCurrentListRow(self.funcNameList.index('posNEDMap'))   # Default to NED Map
+        # self.setCurrentListRow(self.nameList.index('Pos NED Map'))   # Default to NED Map
+        self.setCurrentListRow(self.nameList.index('Delta Time'))   # Default to NED Map
+        
 
     def createStatus(self):
         self.statusLabel = QLabel()
@@ -523,7 +541,15 @@ class LogInspectorWindow(QMainWindow):
         # self.statusLabel.setVisible(str != "")     # Hide status if string is empty
         self.statusLabel.setText(str)
         QtCore.QCoreApplication.processEvents() # refresh UI
-        
+
+    def popPlot(self):
+        print("Pop Plot")
+        # self.controlWidget.setVisible(not self.controlWidget.isVisible())
+        # if self.controlWidget.isVisible():
+        #     self.hideControlButton.setText("Hide Panel")
+        # else:
+        #     self.hideControlButton.setText("Show Panel")
+
     def hideControl(self):
         self.controlWidget.setVisible(not self.controlWidget.isVisible())
         if self.controlWidget.isVisible():
@@ -538,12 +564,15 @@ class LogInspectorWindow(QMainWindow):
         self.toolLayout = QHBoxLayout()
         self.toolLayout.addWidget(self.toolbar)
 
+        self.popPlotButton = QPushButton("Pop Plot")
+        self.popPlotButton.clicked.connect(self.popPlot)
+        self.toolLayout.addWidget(self.popPlotButton)
         self.hideControlButton = QPushButton("Hide Panel")
         self.hideControlButton.clicked.connect(self.hideControl)
         self.toolLayout.addWidget(self.hideControlButton)
-        self.newWindowButton = QPushButton("New Window")
-        self.newWindowButton.clicked.connect(self.newWindow)
-        self.toolLayout.addWidget(self.newWindowButton)
+        self.newAppButton = QPushButton("New App")
+        self.newAppButton.clicked.connect(self.newWindow)
+        self.toolLayout.addWidget(self.newAppButton)
 
         self.toolLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.toolLayout.addWidget(QSpacerItem(150, 10, QSizePolicy.Expanding))
@@ -585,6 +614,11 @@ class LogInspectorWindow(QMainWindow):
     def changeXAxisSampleCheckbox(self, state):
         if self.plotter:
             self.plotter.enableXAxisSample(state)
+            self.updatePlot()
+
+    def changeUtcCheckbox(self, state):
+        if self.plotter:
+            self.plotter.enableUtcTime(state)
             self.updatePlot()
 
     def saveAllPlotsToFile(self):
