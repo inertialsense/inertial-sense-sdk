@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
     QTableWidget,QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
 from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
-from PyQt5.QtCore import QItemSelectionModel
+from PyQt5.QtCore import pyqtSignal, QItemSelectionModel, Qt
 
 import matplotlib
 matplotlib.use('Agg')
@@ -216,20 +216,44 @@ class FlashConfigDialog(QDialog):
         self.setLayout(self.mainlayout)
         self.resize(1280, 900)
 
-class Plotter():
-    def __init__(self, parent=None):
+class MPlotter(QDialog):
+    # Define a signal that will be emitted when the dialog is closed
+    dialogClosed = pyqtSignal(int)
+    
+    def __init__(self, index=0, parent=None, popup=False, title=None):
+        self.index = index
         self.figure = plt.figure()
         self.canvas = FigureCanvas(self.figure)
-        if parent:
-            self.toolbar = NavigationToolbar(self.canvas, parent)
+        self.toolbar = NavigationToolbar(self.canvas, parent)
+        self.func = None
+        if popup:
+            super(MPlotter, self).__init__(parent)
+            layout = QVBoxLayout()
+            layout.addWidget(self.canvas)
+            layout.addWidget(self.toolbar)
+            layout.setStretchFactor(self.canvas, 1)
+
+            self.setLayout(layout)
+            if title:
+                self.setWindowTitle(title)
+            self.setParent(parent)
+            self.resize(1110, 900)
+            self.setWindowFlags(Qt.Window)  # Allow this window to go on top or behind main dialog
+
         self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
-        self.plotter = logPlot(False, False, 'svg', None)
+        self.plotter = logPlot()
+
+    def closeEvent(self, event):
+        # Emit the dialogClosed signal when the dialog is closed
+        self.dialogClosed.emit(self.index)
+        print("MPlotter is closing")
+        # Call the base class implementation
+        super(MPlotter, self).closeEvent(event)
 
 class LogInspectorWindow(QMainWindow):
     def __init__(self, configFilePath):
         super(LogInspectorWindow, self).__init__()
-        self.mplot = [Plotter(self)]
-        # self.initMatPlotLib()
+        self.mplots = [MPlotter(self)]
         self.configFilePath = configFilePath
         self.exePath = __file__
 
@@ -257,11 +281,23 @@ class LogInspectorWindow(QMainWindow):
         self.plotargs = None
         self.log = None
 
-    # def initMatPlotLib(self):
-    #     self.figure = plt.figure()
-    #     self.canvas = FigureCanvas(self.figure)
-    #     self.toolbar = NavigationToolbar(self.canvas, self)
-    #     self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
+    def closeEvent(self, event):
+        # Perform any cleanup if needed
+        super().closeEvent(event)  
+
+    def popPlot(self):
+        print("Pop Plot")
+        mp = MPlotter(len(self.mplots), self, True, self.nameList[self.selectedIndex] + " - " + self.deviceInfo())
+        mp.dialogClosed.connect(self.on_mplotter_closed)  # Connect the custom signal to a slot
+        mp.show()
+        mp.plotter.setLog(self.log)
+        mp.plotter.setDownSample(self.downsample)
+        self.mplots.append(mp)
+        self.updatePlot()
+
+    def on_mplotter_closed(self, index):
+        if index < len(self.mplots):
+            del self.mplots[index]      # Remove element
 
     def addButton(self, name, function, layout=None):
         setattr(self, name + "button", QPushButton(name))
@@ -302,13 +338,16 @@ class LogInspectorWindow(QMainWindow):
         self.plot(self.selectedPlot(), self.plotargs)
         self.updateWindowTitle()
 
+    def deviceInfo(self):
+        info = self.log.data[0,DID_DEV_INFO][0]
+        return 'SN' + str(info['serialNumber']) + ', H:' + verArrayToString(info['hardwareVer']) + ', F:' + verArrayToString(info['firmwareVer']) + ' build ' + str(info['buildNumber']) + ', ' + dateTimeArrayToString(info) + ', ' + info['addInfo'].decode('UTF-8')
+
     def updateWindowTitle(self):
         try:
             size = self.log.numDev
             if  size != 0:
-                info = self.log.data[0,DID_DEV_INFO][0]
                 if size == 1:
-                    infoStr = 'SN' + str(info['serialNumber']) + ', H:' + verArrayToString(info['hardwareVer']) + ', F:' + verArrayToString(info['firmwareVer']) + ' build ' + str(info['buildNumber']) + ', ' + dateTimeArrayToString(info) + ', ' + info['addInfo'].decode('UTF-8')
+                    infoStr = self.deviceInfo()
                 else:
                     infoStr = 'Devices: [' + " ".join([str(x) for x in self.log.serials]) + "]"
                 if self.log.using_mounting_bias:
@@ -338,7 +377,7 @@ class LogInspectorWindow(QMainWindow):
         self.log = Log()
         self.log.load(directory)
         print("done loading")
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             mplot.plotter.setLog(self.log)
             mplot.plotter.setDownSample(self.downsample)
         self.updatePlot()
@@ -363,10 +402,9 @@ class LogInspectorWindow(QMainWindow):
         self.createBottomToolbar()
 
         self.figureLayout = QVBoxLayout()
-        self.figureLayout.addWidget(self.mplot[0].canvas)
+        self.figureLayout.addWidget(self.mplots[0].canvas)
         self.figureLayout.addLayout(self.toolLayout)
-        self.figureLayout.setStretchFactor(self.mplot[0].canvas, 1)
-
+        self.figureLayout.setStretchFactor(self.mplots[0].canvas, 1)
 
         layout = QHBoxLayout()
         layout.addWidget(self.controlWidget)
@@ -549,15 +587,6 @@ class LogInspectorWindow(QMainWindow):
         self.statusLabel.setText(str)
         QtCore.QCoreApplication.processEvents() # refresh UI
 
-    def popPlot(self):
-        print("Pop Plot")
-        # self.controlWidget.setVisible(not self.controlWidget.isVisible())
-        # if self.controlWidget.isVisible():
-        #     self.hideControlButton.setText("Hide Panel")
-        # else:
-        #     self.hideControlButton.setText("Show Panel")
-        # self.plotter = [self.addPlotter()]
-
     def hideControl(self):
         self.controlWidget.setVisible(not self.controlWidget.isVisible())
         if self.controlWidget.isVisible():
@@ -570,7 +599,7 @@ class LogInspectorWindow(QMainWindow):
 
     def createBottomToolbar(self):
         self.toolLayout = QHBoxLayout()
-        self.toolLayout.addWidget(self.mplot[0].toolbar)
+        self.toolLayout.addWidget(self.mplots[0].toolbar)
 
         self.popPlotButton = QPushButton("Pop Plot")
         self.popPlotButton.clicked.connect(self.popPlot)
@@ -610,25 +639,25 @@ class LogInspectorWindow(QMainWindow):
         self.downSampleInput.valueChanged.connect(self.changeDownSample)
 
     def changeResidualCheckbox(self, state):
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             if mplot.plotter:
                 mplot.plotter.enableResidualPlot(state)
                 self.updatePlot()
 
     def changeTimeCheckbox(self, state):
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             if mplot.plotter:
                 mplot.plotter.enableTimestamp(state)
                 self.updatePlot()
 
     def changeXAxisSampleCheckbox(self, state):
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             if mplot.plotter:
                 mplot.plotter.enableXAxisSample(state)
                 self.updatePlot()
 
     def changeUtcCheckbox(self, state):
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             if mplot.plotter:
                 mplot.plotter.enableUtcTime(state)
                 self.updatePlot()
@@ -638,18 +667,18 @@ class LogInspectorWindow(QMainWindow):
             print("Log not opened.  Please select a log directory.")
             return
         print("Saving all plots file")
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             mplot.plotter.save = True
         for i in range(len(self.funcNameList)):
             if self.setCurrentListRow(i) and self.funcNameList[i] != None:
                 self.plot(self.selectedPlot(), self.plotargs)
             QtCore.QCoreApplication.processEvents()
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             mplot.plotter.save = False
 
     def changeDownSample(self, val):
         self.downsample = max(val, 1)
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             mplot.plotter.setDownSample(self.downsample)
         if self.log != None:
             self.updatePlot()
@@ -667,7 +696,7 @@ class LogInspectorWindow(QMainWindow):
         # such as background color; those would be ignored if you simply
         # grab the canvas using Qt
         buf = io.BytesIO()
-        self.mplot.figure.savefig(buf)
+        self.mplots.figure.savefig(buf)
 
         QApplication.clipboard().setImage(QImage.fromData(buf.getvalue()))
         buf.close()
@@ -835,19 +864,33 @@ class LogInspectorWindow(QMainWindow):
         dlg.show()
         dlg.exec_()
 
+    def plotMPlot(self, mplot, func, args):
+        mplot.figure.clear()
+        if hasattr(mplot, 'plotter'):
+            if args is not None:
+                getattr(mplot.plotter, func)(*args, mplot.figure)
+            else:
+                getattr(mplot.plotter, func)(mplot.figure)
+        mplot.canvas.draw()
 
     def plot(self, func, args=None):
         print("plotting " + func)
         self.selectedPlotFunc = func
         self.plotargs = args
+        ax = None
 
-        for mplot in self.mplot:
+        for mplot in self.mplots:
             mplot.figure.clear()
+
+            if mplot == self.mplots[0] or mplot.func is None:
+                # Set plot function if first in list or if not defined.  This keeps the popup plots from changing
+                mplot.func = func
+
             if hasattr(mplot, 'plotter'):
                 if args is not None:
-                    getattr(mplot.plotter, func)(*args, mplot.figure)
+                    ax = getattr(mplot.plotter, mplot.func)(*args, mplot.figure, axs=ax)
                 else:
-                    getattr(mplot.plotter, func)(mplot.figure)
+                    ax = getattr(mplot.plotter, mplot.func)(mplot.figure, axs=ax)
             mplot.canvas.draw()
 
         print("done plotting")

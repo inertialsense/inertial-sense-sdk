@@ -41,8 +41,8 @@ from pylib.data_sets import *
 from inertialsense_math.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
 import datetime
 
-class logPlot:
-    def __init__(self, show, save, format, log):
+class logPlot: 
+    def __init__(self, show=False, save=False, format='svg', log=None):
         self.show = show
         self.save = save
         self.format = format
@@ -104,6 +104,11 @@ class logPlot:
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
 
+    def saveFigJoinAxes(self, ax, axs, fig, name, sizeInches=[]):
+        self.saveFig(fig, name, sizeInches)
+        self.joinFigXAxes(ax,axs)
+        return ax
+
     def saveFig(self, fig, name, sizeInches=[]):
         if self.save:
             restoreSize = fig.get_size_inches()
@@ -139,7 +144,36 @@ class logPlot:
         ylim = (np.mean(ylim)-yspn/2, np.mean(ylim)+yspn/2)
         ax.set_ylim(ylim)
 
-    def posNED(self, fig=None):
+    def isEmpty(self, data):
+        if isinstance(data, np.ndarray):
+            return data.size == 0
+        elif isinstance(data, list):
+            return len(data) == 0
+        else:
+            return False  # Or raise an error if unexpected types are unacceptable
+
+    def joinFigXAxes(self, ax1, ax2):
+        if ax2 is None:
+            return
+
+        # Ensure ax1 and ax2 are at least 1-dimensional numpy arrays
+        ax1 = np.atleast_1d(ax1)
+        ax2 = np.atleast_1d(ax2)
+
+        # Flatten the arrays to handle all axes in one loop
+        ax1_flat = ax1.flatten()
+        ax2_flat = ax2.flatten()
+
+        # Access the shared x-axis GrouperView
+        shared_x_axes = ax1_flat[0].get_shared_x_axes()
+
+        # Explicitly share the x-axis across all axes
+        for a in ax1_flat:
+            for b in ax2_flat:
+                if b not in shared_x_axes.get_siblings(a):
+                    a.sharex(b)
+
+    def posNED(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
@@ -194,17 +228,19 @@ class logPlot:
 
             if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
-                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
-                ax[0,0].plot(timeGPS, nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
-                ax[1,0].plot(timeGPS, nedGps[:, 1])
-                ax[2,0].plot(timeGPS, nedGps[:, 2])
+                if not self.isEmpty(timeGPS):
+                    nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
+                    ax[0,0].plot(timeGPS, nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
+                    ax[1,0].plot(timeGPS, nedGps[:, 1])
+                    ax[2,0].plot(timeGPS, nedGps[:, 2])
 
             if(np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs', True))
-                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla', True))
-                ax[0,0].plot(timeGPS, nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
-                ax[1,0].plot(timeGPS, nedGps[:, 1])
-                ax[2,0].plot(timeGPS, nedGps[:, 2])
+                if not self.isEmpty(timeGPS):
+                    nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla', True))
+                    ax[0,0].plot(timeGPS, nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
+                    ax[1,0].plot(timeGPS, nedGps[:, 1])
+                    ax[2,0].plot(timeGPS, nedGps[:, 2])
 
             if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 intNed = np.empty_like(refNed)
@@ -225,7 +261,9 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'posNED')
+        return self.saveFigJoinAxes(ax, axs, fig, 'posNED')
+        self.joinFigXAxes(ax,axs)
+        return ax
 
     def nedAnnotateTimestamp(self, ax, time, east, north, textOffset=(0.0, 0.0)):
         ax.annotate('%.1f' % time, xy=(east, north), xycoords='data', xytext=textOffset, textcoords='offset points')
@@ -248,7 +286,7 @@ class logPlot:
             if self.timestamp:
                 self.nedAnnotateTimestamp(ax, time[i], east, north, textOffset=(3.5, 3.5))
 
-    def posNEDMap(self, fig=None):
+    def posNEDMap(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         
@@ -284,9 +322,9 @@ class logPlot:
         ax.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'posNEDMap')
+        return self.saveFigJoinAxes(ax, None, fig, 'posNEDMap')
 
-    def gpsPosNEDMap(self, fig=None):
+    def gpsPosNEDMap(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(1,1)
@@ -323,9 +361,9 @@ class logPlot:
         ax.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'gpsPosNEDMap')
+        return self.saveFigJoinAxes(ax, None, fig, 'gpsPosNEDMap')
 
-    def posLLA(self, fig=None):
+    def posLLA(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3,1, sharex=True)
@@ -362,9 +400,9 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'insLLA')
+        return self.saveFigJoinAxes(ax, axs, fig, 'insLLA')
 
-    def gpsLLA(self, fig=None):
+    def gpsLLA(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3,1, sharex=True)
@@ -392,14 +430,14 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'gpsLLA')
+        return self.saveFigJoinAxes(ax, axs, fig, 'gpsLLA')
 
     def getGpsPosNED(self, device, did, refLla):
         gpsTime = getTimeFromGpsTowMs(self.getData(device, did, 'timeOfWeekMs'))
         gpsNed = lla2ned(refLla, self.getData(device, did, 'lla'))
         return [gpsTime, gpsNed]
 
-    def gpsPosNED(self, fig=None):
+    def gpsPosNED(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(4,1, sharex=True)
@@ -433,7 +471,7 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'gpsPosNED')
+        return self.saveFigJoinAxes(ax, axs, fig, 'gpsPosNED')
 
     def getGpsVelNed(self, device, did, refLla):
         gpsTime = getTimeFromGpsTowMs(self.getData(device, did, 'timeOfWeekMs'))
@@ -449,7 +487,7 @@ class logPlot:
                 # gpsVelNed = np.copy(gpsVelEcef)   # Override to ECEF
         return [gpsTime, gpsVelNed]
 
-    def gpsVelNED(self, fig=None):
+    def gpsVelNED(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(4, (2 if self.residual else 1), sharex=True, squeeze=False)
@@ -535,7 +573,7 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'gpsVelNED')
+        return self.saveFigJoinAxes(ax, axs, fig, 'gpsVelNED')
         
     def getGpsNedVel(self, d):
         velNed = None
@@ -557,7 +595,7 @@ class logPlot:
             #velNed = R.dot(velEcef.T).T
         return velNed
 
-    def velNED(self, fig=None):
+    def velNED(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(4, (2 if self.residual else 1), sharex=True, squeeze=False)
@@ -636,7 +674,7 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'velNED')
+        return self.saveFigJoinAxes(ax, axs, fig, 'velNED')
 
     def angle_wrap(self, angle):
         result = np.copy(angle)
@@ -677,7 +715,7 @@ class logPlot:
             result[:,i] = self.angle_unwrap(vec[:,i])
         return result
 
-    def velUVW(self, fig=None):
+    def velUVW(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -754,9 +792,9 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'velUVW')
+        return self.saveFigJoinAxes(ax, axs, fig, 'velUVW')
 
-    def attitude(self, fig=None):
+    def attitude(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -836,7 +874,7 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'attINS')
+        return self.saveFigJoinAxes(ax, axs, fig, 'attINS')
 
     def gpx1Heading(self):
         filepath = self.log.directory + "/enu.out"
@@ -866,7 +904,7 @@ class logPlot:
         return gpxTime, baselineNED, gpxHeading, 
 
 
-    def heading(self, fig=None):
+    def heading(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
@@ -989,9 +1027,9 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'heading')
+        return self.saveFigJoinAxes(ax, axs, fig, 'heading')
 
-    def insStatus(self, fig=None):
+    def insStatus(self, fig=None, axs=None):
         try:
             if fig is None:
                 fig = plt.figure()
@@ -1092,11 +1130,13 @@ class logPlot:
             ax.grid(True)
 
             self.setup_and_wire_legend()
-            self.saveFig(fig, 'iStatus')
+            return self.saveFigJoinAxes(ax, axs, fig, 'iStatus')
         except:
             print(RED + "problem plotting insStatus: " + sys.exc_info()[0] + RESET)
+        self.joinFigXAxes(ax,axs)
+        return ax
 
-    def hdwStatus(self, fig=None):
+    def hdwStatus(self, fig=None, axs=None):
         try:
             if fig is None:
                 fig = plt.figure()
@@ -1193,11 +1233,11 @@ class logPlot:
             ax.grid(True)
 
             self.setup_and_wire_legend()
-            self.saveFig(fig, 'Hardware Status')
+            return self.saveFigJoinAxes(ax, axs, fig, 'Hardware Status')
         except:
             print(RED + "problem plotting hdwStatus: " + sys.exc_info()[0] + RESET)
 
-    def genFaultCodes(self, fig=None):
+    def genFaultCodes(self, fig=None, axs=None):
         try:
             if fig is None:
                 fig = plt.figure()
@@ -1296,11 +1336,11 @@ class logPlot:
             ax.grid(True)
 
             self.setup_and_wire_legend()
-            self.saveFig(fig, 'genFaultCode')
+            return self.saveFigJoinAxes(ax, axs, fig, 'genFaultCode')
         except:
             print(RED + "problem plotting insStatus: " + sys.exc_info()[0] + RESET)
 
-    def gpxStatus(self, fig=None):
+    def gpxStatus(self, fig=None, axs=None):
         try:
             if fig is None:
                 fig = plt.figure()
@@ -1325,11 +1365,11 @@ class logPlot:
             ax.grid(True)
 
             self.setup_and_wire_legend()
-            self.saveFig(fig, 'GPX Status')
+            return self.saveFigJoinAxes(ax, axs, fig, 'GPX Status')
         except:
             print(RED + "problem plotting GPX status: " + sys.exc_info()[0] + RESET)
 
-    def gpxHdwStatus(self, fig=None):
+    def gpxHdwStatus(self, fig=None, axs=None):
         try:
             if fig is None:
                 fig = plt.figure()
@@ -1441,12 +1481,12 @@ class logPlot:
             ax.grid(True)
 
             self.setup_and_wire_legend()
-            self.saveFig(fig, 'GPX Hardware Status')
+            return self.saveFigJoinAxes(ax, axs, fig, 'GPX Hardware Status')
         except:
             print(RED + "problem plotting GPX hdwStatus: " + sys.exc_info()[0] + RESET)
 
 
-    def gpsStats(self, fig=None, did_gps_pos=DID_GPS1_POS):
+    def gpsStats(self, fig=None, axs=None, did_gps_pos=DID_GPS1_POS):
         # try:
         if fig is None:
             fig = plt.figure()
@@ -1510,20 +1550,18 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'Gps Stats')
-        # except:
-        #     print(RED + "problem plotting gpsStats: " + sys.exc_info()[0] + RESET)
+        return self.saveFigJoinAxes(ax, axs, fig, 'Gps Stats')
 
-    def gps2Stats(self, fig=None):
-        self.gpsStats(fig=fig, did_gps_pos=DID_GPS2_POS)
+    def gps2Stats(self, fig=None, axs=None):
+        self.gpsStats(fig=fig, axs=axs, did_gps_pos=DID_GPS2_POS)
 
-    def rtkPosStats(self, fig=None):
-        self.rtkStats("Position", DID_GPS1_RTK_POS_REL, fig=fig)
+    def rtkPosStats(self, fig=None, axs=None):
+        self.rtkStats("Position", DID_GPS1_RTK_POS_REL, fig=fig, axs=axs)
 
-    def rtkCmpStats(self, fig=None):
-        self.rtkStats("Compassing", DID_GPS1_RTK_CMP_REL, fig=fig)
+    def rtkCmpStats(self, fig=None, axs=None):
+        self.rtkStats("Compassing", DID_GPS1_RTK_CMP_REL, fig=fig, axs=axs)
 
-    def rtkStats(self, name, relDid, fig=None):
+    def rtkStats(self, name, relDid, fig=None, axs=None):
         # try:
         n_plots = 6
         if fig is None:
@@ -1571,11 +1609,9 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'rtk'+name+'Stats')
-        # except:
-            # print(RED + "problem plotting rtkStats: " + sys.exc_info()[0] + RESET)
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'Stats')
 
-    def rtkBaselineVector(self, fig=None):
+    def rtkBaselineVector(self, fig=None, axs=None):
         name = "Compassing"
         relDid = DID_GPS1_RTK_CMP_REL
 
@@ -1617,15 +1653,15 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'rtk'+name+'BaseToRoverVector')
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'BaseToRoverVector')
 
-    def rtkObsGPS1(self, fig=None):
-        self.rtkObs("Compassing", DID_GPS1_RAW, fig=fig)
+    def rtkObsGPS1(self, fig=None, axs=None):
+        self.rtkObs("Compassing", DID_GPS1_RAW, fig=fig, axs=axs)
 
-    def rtkObsGPS2(self, fig=None):
-        self.rtkObs("Compassing", DID_GPS2_RAW, fig=fig)
+    def rtkObsGPS2(self, fig=None, axs=None):
+        self.rtkObs("Compassing", DID_GPS2_RAW, fig=fig, axs=axs)
 
-    def rtkObs(self, name, relDid, fig=None):
+    def rtkObs(self, name, relDid, fig=None, axs=None):
         Nf = 2
         n_plots = 8
         if fig is None:
@@ -1717,9 +1753,9 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'rtk'+name+'obs_sd')
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_sd')
 
-    def rtkObsSingleDiff(self, fig=None):
+    def rtkObsSingleDiff(self, fig=None, axs=None):
         name = "Compassing"
         Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
         n_plots = 4
@@ -1877,15 +1913,15 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'rtk'+name+'obs_sd')
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_sd')
 
-    def rtkPosMisc(self, fig=None):
-        self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig)
+    def rtkPosMisc(self, fig=None, axs=None):
+        self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig, axs=axs)
 
-    def rtkCmpMisc(self, fig=None):
-        self.rtkMisc("Position", DID_GPS1_RTK_CMP_MISC, fig=fig)
+    def rtkCmpMisc(self, fig=None, axs=None):
+        self.rtkMisc("Position", DID_GPS1_RTK_CMP_MISC, fig=fig, axs=axs)
 
-    def rtkMisc(self, name, miscDid, fig=None):
+    def rtkMisc(self, name, miscDid, fig=None, axs=None):
         # try:
         n_plots = 10
         if fig is None:
@@ -1933,11 +1969,9 @@ class logPlot:
 
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'rtk'+name+'Misc')
-        # except:
-            # print(RED + "problem plotting rtkStats: " + sys.exc_info()[0] + RESET)
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'Misc')
 
-    def rtkRel(self, fig=None):
+    def rtkRel(self, fig=None, axs=None):
         # try:
         n_plots = 3
         if fig is None:
@@ -1958,9 +1992,9 @@ class logPlot:
 
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'rtkRel')
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtkRel')
 
-    def gnssEphemeris(self, fig=None):
+    def gnssEphemeris(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2129,7 +2163,7 @@ class logPlot:
 
         return (time, dt, imu1, imu2, imu3, imuCount)
 
-    def imuPQR(self, fig=None):
+    def imuPQR(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2204,9 +2238,9 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'pqrIMU')
+        return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
 
-    def imuAcc(self, fig=None):
+    def imuAcc(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2279,9 +2313,9 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'accIMU')
+        return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
-    def allanVariancePQR(self, fig=None):
+    def allanVariancePQR(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2357,7 +2391,6 @@ class logPlot:
                 self.legends_add(ax[d][i].legend(ncol=2))
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'pqrIMU')
 
         with open(self.log.directory + '/allan_variance_pqr.csv', 'w') as f:
             f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R,BI-X\n')
@@ -2374,7 +2407,9 @@ class logPlot:
                             f.write('%f,' % (sumARW[i][n][d]))
                 f.write('\n')
 
-    def allanVarianceAcc(self, fig=None):
+        return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
+
+    def allanVarianceAcc(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2437,7 +2472,6 @@ class logPlot:
                 self.legends_add(ax[d][i].legend(ncol=2))
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'accIMU')
 
         with open(self.log.directory + '/allan_variance_acc.csv', 'w') as f:
             f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,ARW-X,ARW-Y,ARW-Z\n')
@@ -2454,7 +2488,9 @@ class logPlot:
                             f.write('%f,' % (sumRW[i][n][d]))
                 f.write('\n')
 
-    def accelPSD(self, fig=None):
+        return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
+
+    def accelPSD(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2504,9 +2540,9 @@ class logPlot:
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'accelPSD')
+        return self.saveFigJoinAxes(ax, axs, fig, 'accelPSD')
 
-    def gyroPSD(self, fig=None):
+    def gyroPSD(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2557,9 +2593,9 @@ class logPlot:
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'gyroPSD')
+        return self.saveFigJoinAxes(ax, None, fig, 'gyroPSD')
 
-    def altitude(self, fig=None):
+    def altitude(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(4, 1, sharex=True)
@@ -2606,9 +2642,9 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'altitude')
+        return self.saveFigJoinAxes(ax, axs, fig, 'altitude')
 
-    def climbRate(self, fig=None):
+    def climbRate(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 1, sharex=True)
@@ -2648,9 +2684,9 @@ class logPlot:
         ax[0].legend(ncol=2)
         for a in ax:
             a.grid(True)
-        self.saveFig(fig, 'climbrate')
+        return self.saveFigJoinAxes(ax, axs, fig, 'climbrate')
 
-    def barometer(self, fig=None):
+    def barometer(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 1, sharex=True)
@@ -2675,9 +2711,9 @@ class logPlot:
         ax[0].legend(ncol=2)
         for a in ax:
             a.grid(True)
-        self.saveFig(fig, 'barometer')
+        return self.saveFigJoinAxes(ax, axs, fig, 'barometer')
 
-    def magnetometer(self, fig=None):
+    def magnetometer(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 1, sharex=True)
@@ -2718,10 +2754,10 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'magnetometer')
+        return self.saveFigJoinAxes(ax, axs, fig, 'magnetometer')
 
 
-    def temp(self, fig=None):
+    def temp(self, fig=None, axs=None):
         try:
             if fig is None:
                 fig = plt.figure()
@@ -2745,11 +2781,11 @@ class logPlot:
                 a.grid(True)
 
             self.setup_and_wire_legend()
-            self.saveFig(fig, 'Temp')
+            return self.saveFigJoinAxes(ax, axs, fig, 'Temp')
         except:
             print(RED + "problem plotting temp: " + sys.exc_info()[0] + RESET)
 
-    def debugfArr(self, fig=None):
+    def debugfArr(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(5,2, sharex=True)
@@ -2764,7 +2800,7 @@ class logPlot:
             for a in b:
                 a.grid(True)
 
-    def debugiArr(self, fig=None):
+    def debugiArr(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(5,2, sharex=True)
@@ -2779,7 +2815,7 @@ class logPlot:
             for a in b:
                 a.grid(True)
 
-    def debuglfArr(self, fig=None):
+    def debuglfArr(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3,1, sharex=True)
@@ -2793,7 +2829,7 @@ class logPlot:
         for a in ax:
             a.grid(True)
 
-    def gpxDebugfArray(self, fig=None):
+    def gpxDebugfArray(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(5,2, sharex=True)
@@ -2808,7 +2844,7 @@ class logPlot:
             for a in b:
                 a.grid(True)
 
-    def gpxDebugiArray(self, fig=None):
+    def gpxDebugiArray(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(5,2, sharex=True)
@@ -2823,7 +2859,7 @@ class logPlot:
             for a in b:
                 a.grid(True)
 
-    def magDec(self, fig=None):
+    def magDec(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2844,9 +2880,9 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'magDec')
+        return self.saveFigJoinAxes(ax, axs, fig, 'magDec')
 
-    def deltatime(self, fig=None):
+    def deltatime(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2950,9 +2986,9 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'deltatime')
+        return self.saveFigJoinAxes(ax, axs, fig, 'deltatime')
 
-    def gpsRawTime(self, fig=None):
+    def gpsRawTime(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3042,9 +3078,9 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'gpsRawTime')
+        return self.saveFigJoinAxes(ax, axs, fig, 'gpsRawTime')
 
-    def ekfBiases(self, fig=None):
+    def ekfBiases(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(4, 2, sharex=True)
@@ -3074,7 +3110,7 @@ class logPlot:
                 b.grid(True)
 
         self.setup_and_wire_legend()
-        self.saveFig(fig, 'ekfBiases')
+        return self.saveFigJoinAxes(ax, axs, fig, 'ekfBiases')
 
     def rtkResiduals(self, type, page, fig=None):
         if fig is None:
@@ -3104,7 +3140,7 @@ class logPlot:
                 ax[i].plot(time, residuals, label=self.log.serials[d])
         self.legends_add(ax[0].legend(ncol=2))
 
-    def rtkDebugP1(self, fig=None):
+    def rtkDebugP1(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3158,7 +3194,7 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def rtkDebugP2(self, fig=None):
+    def rtkDebugP2(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3212,7 +3248,7 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def rtkDebug2(self, fig=None):
+    def rtkDebug2(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3245,7 +3281,7 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def rtkDebug2Sat(self, fig=None):
+    def rtkDebug2Sat(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3278,7 +3314,7 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def rtkDebug2Std(self, fig=None):
+    def rtkDebug2Std(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3311,7 +3347,7 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def rtkDebug2Lock(self, fig=None):
+    def rtkDebug2Lock(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3344,7 +3380,7 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def wheelEncoder(self, fig=None):
+    def wheelEncoder(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3368,7 +3404,7 @@ class logPlot:
             a.set_title(titles[i])
             a.grid(True)
 
-    def groundVehicleStatus(self, fig=None):
+    def groundVehicleStatus(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3403,7 +3439,7 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def groundVehicle(self, fig=None):
+    def groundVehicle(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3447,7 +3483,7 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def wheelControllerTime(self, fig=None):
+    def wheelControllerTime(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3477,7 +3513,7 @@ class logPlot:
         for a in ax:
             a.grid(True)
 
-    def wheelControllerVel(self, fig=None):
+    def wheelControllerVel(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3553,32 +3589,32 @@ class logPlot:
 
             return c
 
-    def sensorCompGyrTemp(self, fig=None):
+    def sensorCompGyrTemp(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         self.sensorCompGen(fig, 'pqr', useTemp=True)
 
-    def sensorCompAccTemp(self, fig=None):
+    def sensorCompAccTemp(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc', useTemp=True)
 
-    def sensorCompMagTemp(self, fig=None):
+    def sensorCompMagTemp(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         self.sensorCompGen(fig, 'mag', useTemp=True)
 
-    def sensorCompGyr(self, fig=None):
+    def sensorCompGyr(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         self.sensorCompGen(fig, 'pqr')
 
-    def sensorCompAcc(self, fig=None):
+    def sensorCompAcc(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc')
 
-    def sensorCompMag(self, fig=None):
+    def sensorCompMag(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
         self.sensorCompGen(fig, 'mag')
@@ -3701,7 +3737,7 @@ class logPlot:
                 span = max(span, yspan)
                 b.set_ylim([mid-span/2, mid+span/2])
 
-    def linearityAcc(self, fig=None):
+    def linearityAcc(self, fig=None, axs=None):
         fig.suptitle('Accelerometer Linearity - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(3, 3)
 
@@ -3764,7 +3800,7 @@ class logPlot:
                 # span = max(span, yspan)
                 # b.set_ylim([mid-span/2, mid+span/2])
 
-    def linearityGyr(self, fig=None):
+    def linearityGyr(self, fig=None, axs=None):
         fig.suptitle('Gyro Linearity - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(3, 3)
 
