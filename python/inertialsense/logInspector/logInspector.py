@@ -292,12 +292,15 @@ class LogInspectorWindow(QMainWindow):
         for index, mplot in enumerate(self.mplots):
             mplot.index = index
 
-    def addButton(self, name, function, layout=None):
-        setattr(self, name + "button", QPushButton(name))
-        getattr(self, name + "button").clicked.connect(function)
-        # getattr(self, name + "button").setMinimumWidth(220)
+    def addButton(self, name, function, layout=None, tooltip=None):
+        buttonName = name + "button"
+        setattr(self, buttonName, QPushButton(name))
+        getattr(self, buttonName).clicked.connect(function)
+        # getattr(self, buttonName).setMinimumWidth(220)
         if layout is None:
             layout = self.buttonLayoutColIns
+        if tooltip:
+            getattr(self, buttonName).setToolTip(tooltip)
 
         if type(layout) is list:
             for i in range(len(layout)):
@@ -501,12 +504,15 @@ class LogInspectorWindow(QMainWindow):
         self.createListGeneral()
 
         self.checkboxResidual = QCheckBox("Residual", self)
+        self.checkboxResidual.setToolTip("Show residual plots")
         self.checkboxResidual.stateChanged.connect(self.changeResidualCheckbox)
         self.checkboxTime = QCheckBox("Timestamp", self)
+        self.checkboxTime.setToolTip("Display timestamps in Pos NED Map plot")
         self.checkboxTime.stateChanged.connect(self.changeTimeCheckbox)
         self.xAxisSample = QCheckBox("XAxis Index", self)
         self.xAxisSample.stateChanged.connect(self.changeXAxisSampleCheckbox)
         self.checkboxUtc = QCheckBox("UTC", self)
+        self.checkboxUtc.setToolTip("Display UTC time")
         self.checkboxUtc.stateChanged.connect(self.changeUtcCheckbox)
 
         self.VLayoutOptions1 = QVBoxLayout()
@@ -525,6 +531,7 @@ class LogInspectorWindow(QMainWindow):
         self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2)
 
         self.saveAllPushButton = QPushButton("Save All Plots")
+        self.saveAllPushButton.setToolTip("Save all plots to file")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
         self.LayoutBelowPlotSelection.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
@@ -598,12 +605,15 @@ class LogInspectorWindow(QMainWindow):
         self.toolLayout.addWidget(self.mplots[0].toolbar)
 
         self.popPlotButton = QPushButton("Pop Plot")
+        self.popPlotButton.setToolTip("Open current plot in separate dialog window.")
         self.popPlotButton.clicked.connect(self.popPlot)
         self.toolLayout.addWidget(self.popPlotButton)
         self.hideControlButton = QPushButton("Hide Panel")
+        self.hideControlButton.setToolTip("Hide/show left side control panel of the LogInspector.")
         self.hideControlButton.clicked.connect(self.hideControl)
         self.toolLayout.addWidget(self.hideControlButton)
         self.newAppButton = QPushButton("New App")
+        self.newAppButton.setToolTip("Open a new instance of the LogInspector.")
         self.newAppButton.clicked.connect(self.newWindow)
         self.toolLayout.addWidget(self.newAppButton)
 
@@ -611,9 +621,7 @@ class LogInspectorWindow(QMainWindow):
         # self.toolLayout.addWidget(QSpacerItem(150, 10, QSizePolicy.Expanding))
 
         self.copyImagePushButton = QPushButton()
-        # self.copyImagePushButton.setText("Copy")
-        # self.copyImagePushButton.setMinimumWidth(1)
-        # self.copyImagePushButton.style().standardIcon(QStyle.SP_DialogOpenButton)
+        self.copyImagePushButton.setToolTip("Copy the current plot to the system clipboard.")
         self.copyImagePushButton.setIcon(self.style().standardIcon(QStyle.SP_DialogSaveButton))
         self.toolLayout.addWidget(self.copyImagePushButton)
         self.copyImagePushButton.clicked.connect(self.copyPlotToClipboard)
@@ -621,11 +629,13 @@ class LogInspectorWindow(QMainWindow):
         downsampleLabel = QLabel()
         downsampleLabel.setText("DS")
         self.downSampleInput = QSpinBox()
+        self.downSampleInput.setToolTip("Adjust downsample rate, reducing the number of the displayed data samples to increase plotting speed.")
         self.downSampleInput.setMinimum(1)
         self.downSampleInput.setValue(self.downsample)
         self.toolLayout.addWidget(downsampleLabel)
         self.toolLayout.addWidget(self.downSampleInput)
         self.downSampleToOne = QPushButton()
+        self.downSampleToOne.setToolTip("Set data downsample rate to 1.")
         self.downSampleToOne.setMinimumWidth(1)
         self.downSampleToOne.setMaximumWidth(20)
         self.downSampleToOne.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
