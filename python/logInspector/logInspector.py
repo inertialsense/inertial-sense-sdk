@@ -219,14 +219,14 @@ class MPlotter(QDialog):
     # Define a signal that will be emitted when the dialog is closed
     dialogClosed = pyqtSignal(int)
     
-    def __init__(self, index=0, parent=None, popup=False, title=None):
+    def __init__(self, index=0, parentDialog=None, popup=False, title=None):
         self.index = index
         self.figure = plt.figure()
         self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, parent)
+        self.toolbar = NavigationToolbar(self.canvas, parentDialog)
         self.func = None
         if popup:
-            super(MPlotter, self).__init__(parent)
+            super(MPlotter, self).__init__(parentDialog)
             layout = QVBoxLayout()
             layout.addWidget(self.canvas)
             layout.addWidget(self.toolbar)
@@ -235,7 +235,7 @@ class MPlotter(QDialog):
             self.setLayout(layout)
             if title:
                 self.setWindowTitle(title)
-            self.setParent(parent)
+            self.setParent(parentDialog)
             self.resize(1110, 900)
             self.setWindowFlags(Qt.Window)  # Allow this window to go on top or behind main dialog
 
@@ -298,6 +298,8 @@ class LogInspectorWindow(QMainWindow):
     def on_mplotter_closed(self, index):
         if index < len(self.mplots):
             del self.mplots[index]      # Remove element
+        for index, mplot in enumerate(self.mplots):
+            mplot.index = index
 
     def addButton(self, name, function, layout=None):
         setattr(self, name + "button", QPushButton(name))
@@ -700,7 +702,7 @@ class LogInspectorWindow(QMainWindow):
         # such as background color; those would be ignored if you simply
         # grab the canvas using Qt
         buf = io.BytesIO()
-        self.mplots.figure.savefig(buf)
+        self.mplots[0].figure.savefig(buf)
 
         QApplication.clipboard().setImage(QImage.fromData(buf.getvalue()))
         buf.close()
