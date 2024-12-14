@@ -153,8 +153,8 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createPlotSelection(self):
         super(logInspectorInternal, self).createPlotSelection()
-        self.addButton('RMS', self.RMS, layout=self.LayoutVButtons)
-        self.addButton('Devices', self.chooseDevs, layout=self.LayoutVButtons)
+        self.addButton('RMS', self.RMS, layout=self.LayoutVButtons, tooltip="Compute RMS Test")
+        self.addButton('Devices', self.chooseDevs, layout=self.LayoutVButtons, tooltip="Show/Hide devices")
 
     def createListGps(self):
         super(logInspectorInternal, self).createListGps()

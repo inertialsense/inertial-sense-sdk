@@ -2153,7 +2153,7 @@ class logPlot:
         if self.log.serials[device] != 'Ref INS':
             towOffset = self.getData(device, DID_GPS1_POS, 'towOffset')
             if towOffset.size:
-                time = time + np.mean(towOffset)
+                time = getTimeFromGpsTow(time + np.mean(towOffset))
         # else: # HACK: to correct for improper SPAN INS direction and gyro scalar
         #     tmp = np.copy(imu1)   
         #     tmp *= 125.0 
@@ -2700,7 +2700,7 @@ class logPlot:
                 time = self.getData(d, DID_BAROMETER, 'time')
                 towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
                 if np.shape(towOffset)[0] != 0:
-                    time = time + towOffset[-1]
+                    time = getTimeFromGpsTow(time + np.mean(towOffset))
                 mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
                 barTemp = self.getData(d, DID_BAROMETER, 'barTemp')
                 humidity = self.getData(d, DID_BAROMETER, 'humidity')
@@ -2727,7 +2727,7 @@ class logPlot:
                 time = self.getData(d, DID_MAGNETOMETER, 'time')
                 towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
                 if np.shape(towOffset)[0] != 0:
-                    time = time + towOffset[-1]
+                    time = getTimeFromGpsTow(time + np.mean(towOffset))
                 mag = self.getData(d, DID_MAGNETOMETER, 'mag')
                 magX = mag[:,0]
                 magY = mag[:,1]
@@ -2773,6 +2773,11 @@ class logPlot:
                 tempImu = self.getData(d, DID_SYS_PARAMS, 'imuTemp')
                 tempBar = self.getData(d, DID_SYS_PARAMS, 'baroTemp')
                 tempMcu = self.getData(d, DID_SYS_PARAMS, 'mcuTemp')
+                towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+                if np.shape(towOffset)[0] != 0:
+                    tempImu = getTimeFromGpsTow(tempImu + np.mean(towOffset))
+                    tempBar = getTimeFromGpsTow(tempBar + np.mean(towOffset))
+                    tempMcu = getTimeFromGpsTow(tempMcu + np.mean(towOffset))
                 
                 ax[0].plot(time, tempImu, label=self.log.serials[d])
                 ax[1].plot(time, tempBar)
