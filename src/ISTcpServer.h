@@ -31,7 +31,7 @@ protected:
 	* @param data the data received
 	* @param dataLength the number of bytes received
 	*/
-    virtual void OnClientDataReceived(cISTcpServer* server, socket_t socket, uint8_t* data, int dataLength)
+    virtual void OnClientDataReceived(cISTcpServer* server, is_socket_t socket, uint8_t* data, int dataLength)
     {
 		(void)server;
         (void)socket;
@@ -53,7 +53,7 @@ protected:
 	* @param server the server the client connected to
 	* @param socket the connected socket
 	*/
-	virtual void OnClientConnected(cISTcpServer* server, socket_t socket)
+	virtual void OnClientConnected(cISTcpServer* server, is_socket_t socket)
 	{
 		(void)server;
 		(void)socket;
@@ -73,7 +73,7 @@ protected:
 	* @param server the server the client disconnected from
 	* @param socket the socket that disconnected
 	*/
-    virtual void OnClientDisconnected(cISTcpServer* server, socket_t socket)
+    virtual void OnClientDisconnected(cISTcpServer* server, is_socket_t socket)
     {
 		(void)server;
         (void)socket;
@@ -143,8 +143,8 @@ public:
 private:
 	cISTcpServer(const cISTcpServer& copy); // Disable copy constructor
 
-	socket_t m_socket;
-	std::vector<socket_t> m_clients;
+	is_socket_t m_socket;
+	std::vector<is_socket_t> m_clients;
 	std::string m_ipAddress;
 	int32_t m_port;
 	iISTcpServerDelegate* m_delegate;

@@ -75,7 +75,7 @@ void ISSocketFrameworkShutdown()
 
 }
 
-int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds)
+int ISSocketCanWrite(is_socket_t socket, int timeoutMilliseconds)
 {
     struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
     fd_set ws;
@@ -85,7 +85,7 @@ int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds)
     return (numberOfSocketsThatCanWrite > 0);
 }
 
-int ISSocketCanRead(socket_t socket, int timeoutMilliseconds)
+int ISSocketCanRead(is_socket_t socket, int timeoutMilliseconds)
 {
 	struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
 	fd_set rs;
@@ -95,7 +95,7 @@ int ISSocketCanRead(socket_t socket, int timeoutMilliseconds)
 	return (numberOfSocketsThatCanRead > 0);
 }
 
-int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
+int ISSocketWrite(is_socket_t socket, const uint8_t* data, int dataLength)
 {
     int totalWriteCount = 0;
     int writeCount;
@@ -122,7 +122,7 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
     return totalWriteCount;
 }
 
-int ISSocketRead(socket_t socket, uint8_t* data, int dataLength)
+int ISSocketRead(is_socket_t socket, uint8_t* data, int dataLength)
 {
 	int count = recv(socket, (char*)data, dataLength, 0);
 	if (count < 0)
@@ -149,7 +149,7 @@ int ISSocketRead(socket_t socket, uint8_t* data, int dataLength)
 	return count;
 }
 
-int ISSocketSetBlocking(socket_t socket, bool blocking)
+int ISSocketSetBlocking(is_socket_t socket, bool blocking)
 {
 
 #if PLATFORM_IS_WINDOWS
@@ -171,7 +171,7 @@ int ISSocketSetBlocking(socket_t socket, bool blocking)
 
 }
 
-int ISSocketSetReadTimeout(socket_t socket, int timeoutMilliseconds)
+int ISSocketSetReadTimeout(is_socket_t socket, int timeoutMilliseconds)
 {
 
 #if PLATFORM_IS_WINDOWS
@@ -190,7 +190,7 @@ int ISSocketSetReadTimeout(socket_t socket, int timeoutMilliseconds)
 
 }
 
-int ISSocketClose(socket_t& socket)
+int ISSocketClose(is_socket_t& socket)
 {
 	int status = 0;
 	if (socket != 0)

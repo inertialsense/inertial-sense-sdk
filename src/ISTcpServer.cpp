@@ -134,7 +134,7 @@ void cISTcpServer::Update()
 		{
 			m_delegate->OnClientConnecting(this);
 		}
-		socket_t socket = accept(m_socket, NULLPTR, NULLPTR);
+		is_socket_t socket = accept(m_socket, NULLPTR, NULLPTR);
 		if (socket != 0)
 		{
 			ISSocketSetBlocking(socket, false);
