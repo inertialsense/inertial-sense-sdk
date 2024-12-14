@@ -1,8 +1,6 @@
 import numpy as np
 import os
-# import sys
 import simplekml
-# import pdb
 
 import inertialsense_math.pose as pose
 import pylib.ISToolsDataSorted as itd
@@ -13,7 +11,8 @@ import matplotlib
 import datetime
 
 import time as systime
-from pylib.ISToolsDataSorted import cObj, refLla, getTimeFromGpsTowMs, getTimeFromGpsTow
+from pylib.ISToolsDataSorted import cObj
+from pylib.ISToolsGNSS import getTimeFromGpsTow, getTimeFromGpsTowMs
 
 RAD2DEG = 180/np.pi
 DEG2RAD = np.pi/180

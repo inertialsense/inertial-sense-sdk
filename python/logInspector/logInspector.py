@@ -127,7 +127,6 @@ def dateTimeArrayToString(info):
     return str(int(year)+2000) + '-' + f'{month:02}' + '-' + f'{day:02}' + ' ' + f'{hour:02}' + ':' + f'{minute:02}' + ':' + f'{second:02}'
 
 class DeviceInfoDialog(QDialog):
-
     def __init__(self, log, parent=None):
         super(DeviceInfoDialog, self).__init__(parent)
         self.setWindowTitle("Device Info")
@@ -256,6 +255,7 @@ class LogInspectorWindow(QMainWindow):
         self.mplots = [MPlotter(self)]
         self.configFilePath = configFilePath
         self.exePath = __file__
+        self.directory = None
 
         folder = os.path.dirname(self.configFilePath)
         if not os.path.exists(folder):
@@ -370,7 +370,12 @@ class LogInspectorWindow(QMainWindow):
                 msg.setDetailedText(traceback.format_exc())
                 msg.exec()
 
+    def reload(self):
+        if 'directory' in self.config:
+            self.load(self.config['directory'])
+
     def load(self, directory):
+        self.config['directory'] = directory
         print("\nLoading files from " + directory)
         self.setStatus("Loading...")
         # if self.log is None:
@@ -680,8 +685,7 @@ class LogInspectorWindow(QMainWindow):
         self.downsample = max(val, 1)
         for mplot in self.mplots:
             mplot.plotter.setDownSample(self.downsample)
-        if self.log != None:
-            self.updatePlot()
+        self.reload()
 
     def setDownSampleToOne(self):
         self.downSampleInput.setValue(1)

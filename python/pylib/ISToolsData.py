@@ -12,38 +12,10 @@ import simplekml
 import ctypes as ct
 import inertialsense_math.pose as pose
 import pylib.filterTools as ft
+from pylib.ISToolsGNSS import refLla, gpsWeek, gpsTowToUtc
 
 # Profiling code 
 import time as systime
-
-
-# Set Reference LLA (deg, deg, m) used for NED - Salem, UT   
-refLla = np.r_[ 40.0557114, -111.6585476, 1426.77 ]
-gpsWeek = 0
-
-# Set Reference latitude, longitude, height above ellipsoid (deg, deg, m) used for NED calculations
-def setRefLla(lla):
-    global refLla
-    refLla = lla
-
-def setGpsWeek(week): 
-    global gpsWeek
-    # Search for a valid GPS week
-    size = np.shape(week)
-    if size and size[0] > 1:
-#         if week[0]:
-#             week = week[0]
-#         else:
-#             week = week[-1]
-        week = np.max(week)   
-
-    if week > gpsWeek:
-        gpsWeek = week
-
-# import time
-
-# Default run behavior
-# execfile("..\INS_logger\IsParseLoggerDat.py")
 
 
 class sChuckHdr(ct.Structure):
@@ -660,32 +632,9 @@ class cDevices:
         self.loadTime = systime.time() - timeLoadStart
         print "Total load time: %.2fs" % (self.loadTime)
 
-
-def gpsTimeToUTC(gpsWeek, gpsSOW, leapSecs = 14):
-    # Search for a valid GPS week
-    size = np.shape(gpsWeek)
-    if size and size[0] > 1:
-#         if gpsWeek[0] == 0:
-#             gpsWeek = gpsWeek[-1]
-        # Use the largest value for the week
-        gpsWeek = np.max(gpsWeek)   
-    
-    secsInWeek = 604800 
-#     secsInDay = 86400 
-    gpsEpoch = (1980, 1, 6, 0, 0, 0)  # (year, month, day, hh, mm, ss)     
-#     secFract = gpsSOW % 1 
-    
-    epochTuple = gpsEpoch + (-1, -1, 0)  
-    t0 = systime.mktime(epochTuple) - systime.timezone  #mktime is localtime, correct for UTC 
-    tdiff = (gpsWeek * secsInWeek) + gpsSOW - leapSecs 
-    t = t0 + tdiff
-    return t
-
-
 class cSIMPLE:
     def __init__(self, _v):
         self.v = _v
-
         
 class cIMU:
     def __init__(self, _v):
@@ -701,7 +650,7 @@ class cIMU:
 #         self.cornerFreqHz = 30
 #         self.cornerFreqHz = 15
         
-        self.time = gpsTimeToUTC(gpsWeek, self.v['time'])
+        self.time = gpsTowToUtc(gpsWeek, self.v['time'])
 
     def fltAcc(self):    
         if self.__flt.acc == None:
@@ -739,7 +688,7 @@ class cINS:
         self.__course   = None
         self.__ned      = None
         self.__size     = np.shape(self.v['time'])[0]
-        self.time       = gpsTimeToUTC(self.v['week'], self.v['time'])
+        self.time       = gpsTowToUtc(self.v['week'], self.v['time'])
         
         if not 'euler' in self.v.dtype.names and 'q' in self.v.dtype.names:
             self.v['euler'] = pose.quat2eulerArray(self.v['q'])
@@ -894,7 +843,7 @@ class cGpsVel:
     def __init__(self, _v):
         self.v = _v
 #         self.time = _v['timeMs'] * 0.001
-        self.time       = gpsTimeToUTC(self.v['week'], (_v['timeMs'] * 0.001))
+        self.time       = gpsTowToUtc(self.v['week'], (_v['timeMs'] * 0.001))
         self.__acc = None
         self.v['course'] = pose.unwrapAngle(self.v['course'])
         
@@ -910,14 +859,14 @@ class cGpsAcc:
     def __init__(self, _v):
         self.v = _v
 #         self.time = _v['timeMs'] * 0.001
-        self.time       = gpsTimeToUTC(self.v['week'], (_v['timeMs'] * 0.001))
+        self.time       = gpsTowToUtc(self.v['week'], (_v['timeMs'] * 0.001))
 
 class cGpsPos:
     def __init__(self, _v):
         global refLla
         self.v = _v
 #         self.time = _v['timeMs'] * 0.001
-        self.time       = gpsTimeToUTC(self.v['week'], (_v['timeMs'] * 0.001))
+        self.time       = gpsTowToUtc(self.v['week'], (_v['timeMs'] * 0.001))
         self.ned = pose.lla2ned(refLla, _v['lla'])
                    
 
@@ -926,13 +875,13 @@ class cBias:
         global gpsWeek
         self.v = _v
 #         self.time = _v['timeMs'] * 0.001
-        self.time       = gpsTimeToUTC(gpsWeek, (_v['timeMs'] * 0.001))
+        self.time       = gpsTowToUtc(gpsWeek, (_v['timeMs'] * 0.001))
 
 class cInsRes:
     def __init__(self, _v):
         global gpsWeek
         self.v = _v
-        self.time       = gpsTimeToUTC(gpsWeek, (_v['timeMs'] * 0.001))
+        self.time       = gpsTowToUtc(gpsWeek, (_v['timeMs'] * 0.001))
 
 class cDevInfo:
     def __init__(self, _v):
@@ -945,10 +894,10 @@ class cSysParams:
 
         if 'time' in _v:
 #             self.time               = _v['time']
-            self.time       = gpsTimeToUTC(gpsWeek, _v['time'])
+            self.time       = gpsTowToUtc(gpsWeek, _v['time'])
         if 'timeMs' in _v:
 #             self.time               = (_v['timeMs']) * 0.001
-            self.time       = gpsTimeToUTC(gpsWeek, (_v['timeMs'] * 0.001))
+            self.time       = gpsTowToUtc(gpsWeek, (_v['timeMs'] * 0.001))
 
         #####   INS Status   #####
         self.aligning = cObj()
@@ -1037,11 +986,11 @@ class cObsParams:
 #         self.velNed.time    = _v['velNed.timeMs'] * 0.001
 #         self.lla.time       = _v['lla.timeMs'] * 0.001
 #         self.uvw.time       = _v['uvw.timeMs'] * 0.001
-        self.time           = gpsTimeToUTC(gpsWeek, (_v['timeMs'] * 0.001))
-        self.accNed.time    = gpsTimeToUTC(gpsWeek, (_v['accNed.timeMs'] * 0.001))
-        self.velNed.time    = gpsTimeToUTC(gpsWeek, (_v['velNed.timeMs'] * 0.001))
-        self.lla.time       = gpsTimeToUTC(gpsWeek, (_v['lla.timeMs'] * 0.001))
-        self.uvw.time       = gpsTimeToUTC(gpsWeek, (_v['uvw.timeMs'] * 0.001))
+        self.time           = gpsTowToUtc(gpsWeek, (_v['timeMs'] * 0.001))
+        self.accNed.time    = gpsTowToUtc(gpsWeek, (_v['accNed.timeMs'] * 0.001))
+        self.velNed.time    = gpsTowToUtc(gpsWeek, (_v['velNed.timeMs'] * 0.001))
+        self.lla.time       = gpsTowToUtc(gpsWeek, (_v['lla.timeMs'] * 0.001))
+        self.uvw.time       = gpsTowToUtc(gpsWeek, (_v['uvw.timeMs'] * 0.001))
                         
         self.accNed.refHdg = np.arctan2( self.v['accNed.ref'][:,1], self.v['accNed.ref'][:,0] ) 
         self.accNed.insHdg = np.arctan2( self.v['accNed.ins'][:,1], self.v['accNed.ins'][:,0] )
@@ -1057,10 +1006,10 @@ class cInsParams:
         self.v = _v
 
 #         self.time           = _v['timeMs'] * 0.001
-        self.time           = gpsTimeToUTC(gpsWeek, (_v['timeMs'] * 0.001))
+        self.time           = gpsTowToUtc(gpsWeek, (_v['timeMs'] * 0.001))
         if 'magTimeMs' in _v:
 #             self.magTime          = (_v['magTimeMs']) * 0.001
-            self.magTime    = gpsTimeToUTC(gpsWeek, (_v['magTimeMs'] * 0.001))
+            self.magTime    = gpsTowToUtc(gpsWeek, (_v['magTimeMs'] * 0.001))
 
 
 
