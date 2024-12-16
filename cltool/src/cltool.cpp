@@ -10,8 +10,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+
 #include "cltool.h"
 #include <string.h>
+
+#include "version/version.h"
 #include "ISDataMappings.h"
 
 using namespace std;
@@ -110,9 +113,9 @@ bool read_did_argument(stream_did_t *dataset, string s)
 
 string cltool_version()
 {
-    string info;
-#if defined(IS_SDK_DESCRIBE_TAG)
-    info += string("") + IS_SDK_DESCRIBE_TAG;
+    string info("Version ");
+#if defined(IS_SDK_REPO_VERSION)
+    info += string("") + IS_SDK_REPO_VERSION;
 #endif
 #if defined(IS_SDK_BUILD_DATE) && defined(IS_SDK_BUILD_TIME)
     info += string(" ") + IS_SDK_BUILD_DATE + " " + IS_SDK_BUILD_TIME;
