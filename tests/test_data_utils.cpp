@@ -715,4 +715,7 @@ void init_test_comm_instance(is_comm_instance_t* c, uint8_t *buffer, int bufferS
     is_comm_register_msg_handler(c, _PTYPE_SONY, dummyGenericProtocolHandler);
     is_comm_register_msg_handler(c, _PTYPE_SPARTN, dummyGenericProtocolHandler);
     is_comm_register_msg_handler(c, _PTYPE_UBLOX, dummyGenericProtocolHandler);
+
+
+    c->cb.protocolMask = DEFAULT_PORT_PROTO_CFG;
 }

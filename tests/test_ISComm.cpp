@@ -201,6 +201,9 @@ static bool init(test_data_t &t)
     ringBufInit(&(t.portRxBuf), t.portRxBuffer, sizeof(t.portRxBuffer), 1);
 
     init_test_comm_instance(&COMM_PORT(TEST0_PORT)->comm, COMM_PORT(TEST0_PORT)->buffer, sizeof(COMM_PORT(TEST0_PORT)->buffer));
+    
+    COMM_PORT(TEST0_PORT)->comm.cb.protocolMask = DEFAULT_PORT_PROTO_CFG;
+    
     return true;
 }
 
