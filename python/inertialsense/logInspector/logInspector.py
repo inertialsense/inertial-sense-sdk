@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
     QTableWidget,QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
 from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
-from PyQt5.QtCore import QItemSelectionModel
+from PyQt5.QtCore import pyqtSignal, QItemSelectionModel, Qt
 
 import matplotlib
 matplotlib.use('Agg')
@@ -118,7 +118,6 @@ def dateTimeArrayToString(info):
     return str(int(year)+2000) + '-' + f'{month:02}' + '-' + f'{day:02}' + ' ' + f'{hour:02}' + ':' + f'{minute:02}' + ':' + f'{second:02}'
 
 class DeviceInfoDialog(QDialog):
-
     def __init__(self, log, parent=None):
         super(DeviceInfoDialog, self).__init__(parent)
         self.setWindowTitle("Device Info")
@@ -207,15 +206,47 @@ class FlashConfigDialog(QDialog):
         self.setLayout(self.mainlayout)
         self.resize(1280, 900)
 
+class MPlotter(QDialog):
+    # Define a signal that will be emitted when the dialog is closed
+    dialogClosed = pyqtSignal(int)
+    
+    def __init__(self, index=0, parentDialog=None, popup=False, title=None):
+        self.index = index
+        self.figure = plt.figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavigationToolbar(self.canvas, parentDialog)
+        self.func = None
+        if popup:
+            super(MPlotter, self).__init__(parentDialog)
+            layout = QVBoxLayout()
+            layout.addWidget(self.canvas)
+            layout.addWidget(self.toolbar)
+            layout.setStretchFactor(self.canvas, 1)
 
+            self.setLayout(layout)
+            if title:
+                self.setWindowTitle(title)
+            self.setParent(parentDialog)
+            self.resize(1110, 900)
+            self.setWindowFlags(Qt.Window)  # Allow this window to go on top or behind main dialog
 
+        self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
+        self.plotter = logPlot()
+
+    def closeEvent(self, event):
+        # Emit the dialogClosed signal when the dialog is closed
+        self.dialogClosed.emit(self.index)
+        print("MPlotter is closing")
+        # Call the base class implementation
+        super(MPlotter, self).closeEvent(event)
 
 class LogInspectorWindow(QMainWindow):
     def __init__(self, configFilePath):
         super(LogInspectorWindow, self).__init__()
-        self.initMatPlotLib()
+        self.mplots = [MPlotter(self)]
         self.configFilePath = configFilePath
         self.exePath = __file__
+        self.directory = None
 
         folder = os.path.dirname(self.configFilePath)
         if not os.path.exists(folder):
@@ -240,20 +271,36 @@ class LogInspectorWindow(QMainWindow):
         self.downsample = 5
         self.plotargs = None
         self.log = None
-        self.plotter = logPlot(False, False, 'svg', None)
 
-    def initMatPlotLib(self):
-        self.figure = plt.figure()
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
+    def closeEvent(self, event):
+        # Perform any cleanup if needed
+        super().closeEvent(event)  
 
-    def addButton(self, name, function, layout=None):
-        setattr(self, name + "button", QPushButton(name))
-        getattr(self, name + "button").clicked.connect(function)
-        # getattr(self, name + "button").setMinimumWidth(220)
+    def popPlot(self):
+        print("Pop Plot")
+        mp = MPlotter(len(self.mplots), self, True, self.nameList[self.selectedIndex] + " - " + self.deviceInfo())
+        mp.dialogClosed.connect(self.on_mplotter_closed)  # Connect the custom signal to a slot
+        mp.show()
+        mp.plotter.setLog(self.log)
+        mp.plotter.setDownSample(self.downsample)
+        self.mplots.append(mp)
+        self.updatePlot()
+
+    def on_mplotter_closed(self, index):
+        if index < len(self.mplots):
+            del self.mplots[index]      # Remove element
+        for index, mplot in enumerate(self.mplots):
+            mplot.index = index
+
+    def addButton(self, name, function, layout=None, tooltip=None):
+        buttonName = name + "button"
+        setattr(self, buttonName, QPushButton(name))
+        getattr(self, buttonName).clicked.connect(function)
+        # getattr(self, buttonName).setMinimumWidth(220)
         if layout is None:
             layout = self.buttonLayoutColIns
+        if tooltip:
+            getattr(self, buttonName).setToolTip(tooltip)
 
         if type(layout) is list:
             for i in range(len(layout)):
@@ -273,6 +320,7 @@ class LogInspectorWindow(QMainWindow):
             funcName = function
             function = lambda: self.plot(funcName)
         self.modelList.appendRow(QStandardItem(name))
+        self.nameList.append(name)
         self.funcNameList.append(funcName)
         self.functionList.append(function)
 
@@ -286,13 +334,16 @@ class LogInspectorWindow(QMainWindow):
         self.plot(self.selectedPlot(), self.plotargs)
         self.updateWindowTitle()
 
+    def deviceInfo(self):
+        info = self.log.data[0,DID_DEV_INFO][0]
+        return 'SN' + str(info['serialNumber']) + ', H:' + verArrayToString(info['hardwareVer']) + ', F:' + verArrayToString(info['firmwareVer']) + ' build ' + str(info['buildNumber']) + ', ' + dateTimeArrayToString(info) + ', ' + info['addInfo'].decode('UTF-8')
+
     def updateWindowTitle(self):
         try:
             size = self.log.numDev
             if  size != 0:
-                info = self.log.data[0,DID_DEV_INFO][0]
                 if size == 1:
-                    infoStr = 'SN' + str(info['serialNumber']) + ', H:' + verArrayToString(info['hardwareVer']) + ', F:' + verArrayToString(info['firmwareVer']) + ' build ' + str(info['buildNumber']) + ', ' + dateTimeArrayToString(info) + ', ' + info['addInfo'].decode('UTF-8')
+                    infoStr = self.deviceInfo()
                 else:
                     infoStr = 'Devices: [' + " ".join([str(x) for x in self.log.serials]) + "]"
                 if self.log.using_mounting_bias:
@@ -315,15 +366,21 @@ class LogInspectorWindow(QMainWindow):
                 msg.setDetailedText(traceback.format_exc())
                 msg.exec()
 
+    def reload(self):
+        if 'directory' in self.config:
+            self.load(self.config['directory'])
+
     def load(self, directory):
+        self.config['directory'] = directory
         print("\nLoading files from " + directory)
         self.setStatus("Loading...")
         # if self.log is None:
         self.log = Log()
         self.log.load(directory)
         print("done loading")
-        self.plotter.setLog(self.log)
-        self.plotter.setDownSample(self.downsample)
+        for mplot in self.mplots:
+            mplot.plotter.setLog(self.log)
+            mplot.plotter.setDownSample(self.downsample)
         self.updatePlot()
         self.setStatus("")
         self.expandAndSelectDirectory(directory)
@@ -346,10 +403,9 @@ class LogInspectorWindow(QMainWindow):
         self.createBottomToolbar()
 
         self.figureLayout = QVBoxLayout()
-        self.figureLayout.addWidget(self.canvas)
+        self.figureLayout.addWidget(self.mplots[0].canvas)
         self.figureLayout.addLayout(self.toolLayout)
-        self.figureLayout.setStretchFactor(self.canvas, 1)
-
+        self.figureLayout.setStretchFactor(self.mplots[0].canvas, 1)
 
         layout = QHBoxLayout()
         layout.addWidget(self.controlWidget)
@@ -376,9 +432,9 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Vel NED', 'velNED')
         self.addListItem('Vel UVW', 'velUVW')
         self.addListItem('Attitude', 'attitude')
+        self.addListItem('Heading', 'heading')
         self.addListItem('Altitude', 'altitude')
         self.addListItem('Climb Rate', 'climbRate')
-        self.addListItem('Heading', 'heading')
 
     def createListSensors(self):
         self.addListSection('SENSORS')
@@ -431,8 +487,9 @@ class LogInspectorWindow(QMainWindow):
         groupBox = QGroupBox("Select Plot")
         self.listView = QListView()
         self.modelList = QStandardItemModel()
-        self.functionList = []
+        self.nameList = []
         self.funcNameList = []
+        self.functionList = []
         self.listView.setModel(self.modelList)
         self.listView.clicked.connect(self.onSelectListItem)
         LayoutList = QHBoxLayout()
@@ -445,22 +502,43 @@ class LogInspectorWindow(QMainWindow):
         self.createListSensors()
         self.createListGps()
         self.createListGeneral()
+
         self.checkboxResidual = QCheckBox("Residual", self)
+        self.checkboxResidual.setToolTip("Show residual plots")
         self.checkboxResidual.stateChanged.connect(self.changeResidualCheckbox)
         self.checkboxTime = QCheckBox("Timestamp", self)
+        self.checkboxTime.setToolTip("Display timestamps in Pos NED Map plot")
         self.checkboxTime.stateChanged.connect(self.changeTimeCheckbox)
-        self.LayoutOptions = QVBoxLayout()
-        self.LayoutOptions.addWidget(self.checkboxResidual)
-        self.LayoutOptions.addWidget(self.checkboxTime)
-        self.LayoutOptions.setSpacing(0)
-        self.LayoutBelowPlotSelection = QHBoxLayout()
-        self.LayoutBelowPlotSelection.addLayout(self.LayoutOptions)
+        self.xAxisSample = QCheckBox("XAxis Index", self)
+        self.xAxisSample.stateChanged.connect(self.changeXAxisSampleCheckbox)
+        self.checkboxUtc = QCheckBox("UTC", self)
+        self.checkboxUtc.setToolTip("Display UTC time")
+        self.checkboxUtc.stateChanged.connect(self.changeUtcCheckbox)
 
-        self.saveAllPushButton = QPushButton(" Save All Plots ")
+        self.VLayoutOptions1 = QVBoxLayout()
+        self.VLayoutOptions1.addWidget(self.checkboxResidual)
+        self.VLayoutOptions1.addWidget(self.checkboxTime)
+        self.VLayoutOptions1.setSpacing(0)
+        self.VLayoutOptions1.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.VLayoutOptions2 = QVBoxLayout()
+        self.VLayoutOptions2.addWidget(self.xAxisSample)
+        self.VLayoutOptions2.addWidget(self.checkboxUtc)
+        self.VLayoutOptions2.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.VLayoutOptions2.setSpacing(0)
+
+        self.LayoutBelowPlotSelection = QHBoxLayout()
+        self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions1)
+        self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2)
+
+        self.saveAllPushButton = QPushButton("Save All Plots")
+        self.saveAllPushButton.setToolTip("Save all plots to file")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
-        hSpacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum) 
-        self.LayoutBelowPlotSelection.addItem(hSpacer)
-        self.LayoutBelowPlotSelection.addWidget(self.saveAllPushButton)
+        self.LayoutBelowPlotSelection.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        self.LayoutVButtons = QVBoxLayout()
+        self.LayoutVButtons.addWidget(self.saveAllPushButton)
+        self.LayoutVButtons.setSpacing(0)
+        self.LayoutBelowPlotSelection.addLayout(self.LayoutVButtons)
 
         self.controlLayout.addLayout(self.LayoutBelowPlotSelection)
 
@@ -498,7 +576,9 @@ class LogInspectorWindow(QMainWindow):
         # self.buttonLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.addButton('load', self.choose_directory)
 
-        self.setCurrentListRow(self.funcNameList.index('posNEDMap'))   # Default to NED Map
+        self.setCurrentListRow(self.nameList.index('Pos NED Map'))   # Default to NED Map
+        # self.setCurrentListRow(self.nameList.index('Delta Time'))   # Default to NED Map
+        
 
     def createStatus(self):
         self.statusLabel = QLabel()
@@ -509,7 +589,7 @@ class LogInspectorWindow(QMainWindow):
         # self.statusLabel.setVisible(str != "")     # Hide status if string is empty
         self.statusLabel.setText(str)
         QtCore.QCoreApplication.processEvents() # refresh UI
-        
+
     def hideControl(self):
         self.controlWidget.setVisible(not self.controlWidget.isVisible())
         if self.controlWidget.isVisible():
@@ -522,22 +602,26 @@ class LogInspectorWindow(QMainWindow):
 
     def createBottomToolbar(self):
         self.toolLayout = QHBoxLayout()
-        self.toolLayout.addWidget(self.toolbar)
+        self.toolLayout.addWidget(self.mplots[0].toolbar)
 
+        self.popPlotButton = QPushButton("Pop Plot")
+        self.popPlotButton.setToolTip("Open current plot in separate dialog window.")
+        self.popPlotButton.clicked.connect(self.popPlot)
+        self.toolLayout.addWidget(self.popPlotButton)
         self.hideControlButton = QPushButton("Hide Panel")
+        self.hideControlButton.setToolTip("Hide/show left side control panel of the LogInspector.")
         self.hideControlButton.clicked.connect(self.hideControl)
         self.toolLayout.addWidget(self.hideControlButton)
-        self.newWindowButton = QPushButton("New Window")
-        self.newWindowButton.clicked.connect(self.newWindow)
-        self.toolLayout.addWidget(self.newWindowButton)
+        self.newAppButton = QPushButton("New App")
+        self.newAppButton.setToolTip("Open a new instance of the LogInspector.")
+        self.newAppButton.clicked.connect(self.newWindow)
+        self.toolLayout.addWidget(self.newAppButton)
 
         self.toolLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.toolLayout.addWidget(QSpacerItem(150, 10, QSizePolicy.Expanding))
 
         self.copyImagePushButton = QPushButton()
-        # self.copyImagePushButton.setText("Copy")
-        # self.copyImagePushButton.setMinimumWidth(1)
-        # self.copyImagePushButton.style().standardIcon(QStyle.SP_DialogOpenButton)
+        self.copyImagePushButton.setToolTip("Copy the current plot to the system clipboard.")
         self.copyImagePushButton.setIcon(self.style().standardIcon(QStyle.SP_DialogSaveButton))
         self.toolLayout.addWidget(self.copyImagePushButton)
         self.copyImagePushButton.clicked.connect(self.copyPlotToClipboard)
@@ -545,11 +629,13 @@ class LogInspectorWindow(QMainWindow):
         downsampleLabel = QLabel()
         downsampleLabel.setText("DS")
         self.downSampleInput = QSpinBox()
+        self.downSampleInput.setToolTip("Adjust downsample rate, reducing the number of the displayed data samples to increase plotting speed.")
         self.downSampleInput.setMinimum(1)
         self.downSampleInput.setValue(self.downsample)
         self.toolLayout.addWidget(downsampleLabel)
         self.toolLayout.addWidget(self.downSampleInput)
         self.downSampleToOne = QPushButton()
+        self.downSampleToOne.setToolTip("Set data downsample rate to 1.")
         self.downSampleToOne.setMinimumWidth(1)
         self.downSampleToOne.setMaximumWidth(20)
         self.downSampleToOne.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
@@ -559,38 +645,54 @@ class LogInspectorWindow(QMainWindow):
         self.downSampleInput.valueChanged.connect(self.changeDownSample)
 
     def changeResidualCheckbox(self, state):
-        if self.plotter:
-            self.plotter.enableResidualPlot(state)
-            self.updatePlot()
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableResidualPlot(state)
+                self.updatePlot()
 
     def changeTimeCheckbox(self, state):
-        if self.plotter:
-            self.plotter.enableTimestamp(state)
-            self.updatePlot()
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableTimestamp(state)
+                self.updatePlot()
+
+    def changeXAxisSampleCheckbox(self, state):
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableXAxisSample(state)
+                self.updatePlot()
+
+    def changeUtcCheckbox(self, state):
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableUtcTime(state)
+                self.updatePlot()
 
     def saveAllPlotsToFile(self):
         if self.log == None:
             print("Log not opened.  Please select a log directory.")
             return
         print("Saving all plots file")
-        self.plotter.save = True
+        for mplot in self.mplots:
+            mplot.plotter.save = True
         for i in range(len(self.funcNameList)):
             if self.setCurrentListRow(i) and self.funcNameList[i] != None:
                 self.plot(self.selectedPlot(), self.plotargs)
             QtCore.QCoreApplication.processEvents()
-        self.plotter.save = False
+        for mplot in self.mplots:
+            mplot.plotter.save = False
 
     def changeDownSample(self, val):
         self.downsample = max(val, 1)
-        self.plotter.setDownSample(self.downsample)
-        if self.log != None:
-            self.updatePlot()
+        for mplot in self.mplots:
+            mplot.plotter.setDownSample(self.downsample)
+        self.reload()
 
     def setDownSampleToOne(self):
         self.downSampleInput.setValue(1)
 
     def copyPlotToClipboard(self):
-        # pixmap = QPixmap.grabWidget(self.canvas)
+        # pixmap = QPixmap.grabWidget(self.mplot.canvas)
         # QApplication.clipboard().setPixmap(pixmap)
         # pixmap.save('test.png')
 
@@ -599,7 +701,7 @@ class LogInspectorWindow(QMainWindow):
         # such as background color; those would be ignored if you simply
         # grab the canvas using Qt
         buf = io.BytesIO()
-        self.figure.savefig(buf)
+        self.mplots[0].figure.savefig(buf)
 
         QApplication.clipboard().setImage(QImage.fromData(buf.getvalue()))
         buf.close()
@@ -766,21 +868,35 @@ class LogInspectorWindow(QMainWindow):
         dlg.show()
         dlg.exec_()
 
+    def plotMPlot(self, mplot, func, args):
+        mplot.figure.clear()
+        if hasattr(mplot, 'plotter'):
+            if args is not None:
+                getattr(mplot.plotter, func)(*args, mplot.figure)
+            else:
+                getattr(mplot.plotter, func)(mplot.figure)
+        mplot.canvas.draw()
 
     def plot(self, func, args=None):
         print("plotting " + func)
         self.selectedPlotFunc = func
         self.plotargs = args
+        ax = None
 
-        self.figure.clear()
+        for mplot in self.mplots:
+            mplot.figure.clear()
 
-        if hasattr(self, 'plotter'):
-            if args is not None:
-                getattr(self.plotter, func)(*args, self.figure)
-            else:
-                getattr(self.plotter, func)(self.figure)
+            if mplot == self.mplots[0] or mplot.func is None:
+                # Set plot function if first in list or if not defined.  This keeps the popup plots from changing
+                mplot.func = func
 
-        self.canvas.draw()
+            if hasattr(mplot, 'plotter'):
+                if args is not None:
+                    ax = getattr(mplot.plotter, mplot.func)(*args, mplot.figure, axs=ax)
+                else:
+                    ax = getattr(mplot.plotter, mplot.func)(mplot.figure, axs=ax)
+            mplot.canvas.draw()
+
         print("done plotting")
 
 def kill_handler(*args):

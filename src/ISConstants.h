@@ -46,14 +46,14 @@ extern "C" {
     #include <winsock2.h>
     #include <WS2tcpip.h>
     #include <windows.h>
-    #define socket_t SOCKET
+    #define is_socket_t SOCKET
 
     #define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
     #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
     #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #elif defined(__APPLE__)
-    #define socket_t int
+    typedef int is_socket_t;
 
     #define PLATFORM_IS_APPLE 1
     #define PLATFORM_IS_EMBEDDED 0
@@ -74,7 +74,7 @@ extern "C" {
 
     #define PLATFORM_IS_LINUX 1
     #define PLATFORM_IS_EMBEDDED 0
-    #define socket_t int
+    typedef int is_socket_t;
     #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
 #elif defined(__INERTIAL_SENSE_EVB_2__)
@@ -364,9 +364,6 @@ extern "C" {
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846f)
-#endif
-#ifndef EPS
-#define EPS (1.0E-10f)
 #endif
 
 #ifndef RAD2DEG

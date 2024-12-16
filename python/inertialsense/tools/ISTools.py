@@ -128,3 +128,4 @@ def plotlog(log, directory, serialNumbers, opt, pe):
 def end():
     plt.show()  # Do this last
  
+ 
