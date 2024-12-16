@@ -2,4 +2,4 @@
 cd "$(dirname "$(realpath $0)")" > /dev/null
 source lib/activate_python_venv.sh
 
-python3 -m pip install gitpython requests ruamel.yaml semver 
+python3 -m pip install gitpython pybind11 requests ruamel.yaml semver setuptools
