@@ -1833,7 +1833,7 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
 
-	ptr += SNPRINTF_ID_NAME(hdr.id);
+    ptr += SNPRINTF_ID_NAME(hdr.id);
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 
 #if DISPLAY_DELTA_TIME==1
