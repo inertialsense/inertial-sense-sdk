@@ -522,19 +522,19 @@ class BuildInfo:
             file = "STDOUT"
 
         with writer(file) as f:
-            f.write(f"#define {prefix}BUILD_NUMBER {self.build_number:d}\n")
-            f.write(f"#define {prefix}BUILD_TYPE {self.repo_info.release_type}\n")
-            f.write(f"#define {prefix}BUILD_HOSTNAME \"{self.hostname}\"\n")
-            f.write(f"#define {prefix}BUILD_HOST_KEY 0x{self.hostkey}\n")
-            f.write(f"#define {prefix}BUILD_DATE_YEAR {self.timestamp.year}\n")
-            f.write(f"#define {prefix}BUILD_DATE_MONTH {self.timestamp.month}\n")
-            f.write(f"#define {prefix}BUILD_DATE_DAY {self.timestamp.day}\n")
-            f.write(f"#define {prefix}BUILD_DATE \"{self.timestamp.date()}\"\n")
-            f.write(f"#define {prefix}BUILD_TIME_HOUR {self.timestamp.hour}\n")
-            f.write(f"#define {prefix}BUILD_TIME_MINUTE {self.timestamp.minute}\n")
-            f.write(f"#define {prefix}BUILD_TIME_SECOND {self.timestamp.second}\n")
-            f.write(f"#define {prefix}BUILD_TIME_MILLISECOND {int(self.timestamp.microsecond / 10000):d}\n")
-            f.write(f"#define {prefix}BUILD_TIME \"{self.timestamp.strftime("%H%M%S")}\"\n")
+            f.write(f'#define {prefix}BUILD_NUMBER {self.build_number:d}\n')
+            f.write(f'#define {prefix}BUILD_TYPE {self.repo_info.release_type}\n')
+            f.write(f'#define {prefix}BUILD_HOSTNAME \"{self.hostname}\"\n')
+            f.write(f'#define {prefix}BUILD_HOST_KEY 0x{self.hostkey}\n')
+            f.write(f'#define {prefix}BUILD_DATE_YEAR {self.timestamp.year}\n')
+            f.write(f'#define {prefix}BUILD_DATE_MONTH {self.timestamp.month}\n')
+            f.write(f'#define {prefix}BUILD_DATE_DAY {self.timestamp.day}\n')
+            f.write(f'#define {prefix}BUILD_DATE \"{self.timestamp.date()}\"\n')
+            f.write(f'#define {prefix}BUILD_TIME_HOUR {self.timestamp.hour}\n')
+            f.write(f'#define {prefix}BUILD_TIME_MINUTE {self.timestamp.minute}\n')
+            f.write(f'#define {prefix}BUILD_TIME_SECOND {self.timestamp.second}\n')
+            f.write(f'#define {prefix}BUILD_TIME_MILLISECOND {int(self.timestamp.microsecond / 10000):d}\n')
+            f.write(f'#define {prefix}BUILD_TIME \"{self.timestamp.strftime("%H%M%S")}\"\n')
         if file != "STDOUT":
             with open(file, "r", encoding="utf-8") as f:
                 print(f.read())
