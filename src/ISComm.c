@@ -199,6 +199,7 @@ pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, p
 
     pfnIsCommIsbDataHandler priorCb = comm->cb.isbData;
     comm->cb.isbData = cbHandler;
+    comm->cb.protocolMask |= ENABLE_PROTOCOL_ISB;
     return priorCb;
 }
 

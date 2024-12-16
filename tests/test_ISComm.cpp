@@ -202,8 +202,6 @@ static bool init(test_data_t &t)
 
     init_test_comm_instance(&COMM_PORT(TEST0_PORT)->comm, COMM_PORT(TEST0_PORT)->buffer, sizeof(COMM_PORT(TEST0_PORT)->buffer));
     
-    COMM_PORT(TEST0_PORT)->comm.cb.protocolMask = DEFAULT_PORT_PROTO_CFG;
-    
     return true;
 }
 
