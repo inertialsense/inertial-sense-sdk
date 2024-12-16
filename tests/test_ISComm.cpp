@@ -1166,7 +1166,8 @@ TEST(ISComm, TruncatedPackets)
     is_comm_instance_t &g_comm = COMM_PORT(TEST0_PORT)->comm;
 
     init(tcm);
-    is_comm_register_msg_handler(&COMM_PORT(TEST0_PORT)->comm, _PTYPE_SPARTN, NULL);     // we don't do any SPARTN data in this test
+    is_comm_register_msg_handler(&COMM_PORT(TEST0_PORT)->comm, _PTYPE_SPARTN, NULL);    // we don't do any SPARTN data in this test
+    is_comm_disable_protocol(&COMM_PORT(TEST0_PORT)->comm, _PTYPE_SPARTN);              // we don't do any SPARTN data in this test disable mask
 
     g_comm.rxErrorState = 0;    // is_comm_init() sets this to -1 to prevent initial stray data from registering as a parse error.
 
