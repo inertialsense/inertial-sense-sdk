@@ -43,35 +43,37 @@ extern "C" {
 // *****************************************************************************
 
 /** INS/AHRS */
-#define _DID_INS_LLA_EULER_NED  DID_INS_1                /** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
-#define _DID_INS_LLA_QN2B       DID_INS_2                /** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
-#define _DID_INS_LLA_QN2B_MSL   DID_INS_3                /** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
-#define _DID_INS_ECEF_QE2B      DID_INS_4                /** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
+#define _DID_INS_LLA_EULER_NED  DID_INS_1                   /** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
+#define _DID_INS_LLA_QN2B       DID_INS_2                   /** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
+#define _DID_INS_LLA_QN2B_MSL   DID_INS_3                   /** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
+#define _DID_INS_ECEF_QE2B      DID_INS_4                   /** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
 
 /** IMU */
-#define _DID_IMU                DID_IMU                    /** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
-#define _DID_PIMU               DID_PIMU                /** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */    
+#define _DID_IMU                DID_IMU                     /** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
+#define _DID_PIMU               DID_PIMU                    /** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */    
 
 /** GPS */
-#define _DID_GPS1_POS           DID_GPS1_POS            /** (see gps_pos_t) GPS output */
+#define _DID_GPS1_POS           DID_GPS1_POS                /** (see gps_pos_t) GPS output */
 
 /** Magnetometer, Barometer, and other Sensor */
-#define _DID_MAG_CAL            DID_MAG_CAL                /** (see mag_cal_t) Magnetometer calibration */
-#define _DID_MAGNETOMETER       DID_MAGNETOMETER        /** (see magnetometer_t) Magnetometer sensor output */
-#define _DID_BAROMETER          DID_BAROMETER            /** (see barometer_t) Barometric pressure sensor data */
-#define _DID_WHEEL_ENCODER      DID_WHEEL_ENCODER        /** (see wheel_encoder_t) Wheel encoder sensor data */
-#define _DID_POS_MEASUREMENT    DID_POSITION_MEASUREMENT/** (see pos_measurement_t) Position Measurement data*/
+#define _DID_MAG_CAL            DID_MAG_CAL                 /** (see mag_cal_t) Magnetometer calibration */
+#define _DID_MAGNETOMETER       DID_MAGNETOMETER            /** (see magnetometer_t) Magnetometer sensor output */
+#define _DID_BAROMETER          DID_BAROMETER               /** (see barometer_t) Barometric pressure sensor data */
+#define _DID_WHEEL_ENCODER      DID_WHEEL_ENCODER           /** (see wheel_encoder_t) Wheel encoder sensor data */
+#define _DID_POS_MEASUREMENT    DID_POSITION_MEASUREMENT    /** (see pos_measurement_t) Position Measurement data*/
 
 /** Utilities */
-#define _DID_DEV_INFO           DID_DEV_INFO            /** (see dev_info_t) Device information */
-#define _DID_BIT                DID_BIT                    /** (see bit_t) System built-in self-test */
-#define _DID_STROBE_IN_TIME     DID_STROBE_IN_TIME        /** (see strobe_in_time_t) Timestamp for input strobe */
+#define _DID_DEV_INFO           DID_DEV_INFO                /** (see dev_info_t) Device information */
+#define _DID_BIT                DID_BIT                     /** (see bit_t) System built-in self-test */
+#define _DID_STROBE_IN_TIME     DID_STROBE_IN_TIME          /** (see strobe_in_time_t) Timestamp for input strobe */
 
 /** Configuration */
-#define _DID_FLASH_CONFIG       DID_FLASH_CONFIG         /** (see nvm_flash_cfg_t) Flash memory configuration */
+#define _DID_FLASH_CONFIG       DID_FLASH_CONFIG            /** (see nvm_flash_cfg_t) Flash memory configuration */
 #define _DID_RMC                DID_RMC                    /** (see rmc_t) Realtime message controller */
 
 #define ZEPHYR_SUCCESS_CODE     0
+
+#define DEFAULT_PORT_PROTO_CFG  (ENABLE_PROTOCOL_ISB | ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_UBLOX | ENABLE_PROTOCOL_RTCM3)
 
 /** Protocol Type */
 typedef enum
@@ -537,12 +539,12 @@ typedef struct
 
 typedef enum
 {
-    ENABLE_PROTOCOL_ISB         = 0x00000001,
-    ENABLE_PROTOCOL_NMEA        = 0x00000002,
-    ENABLE_PROTOCOL_UBLOX       = 0x00000004,
-    ENABLE_PROTOCOL_RTCM3       = 0x00000008,
-    ENABLE_PROTOCOL_SPARTN      = 0x00000010,
-    ENABLE_PROTOCOL_SONY        = 0x00000020,
+    ENABLE_PROTOCOL_ISB         = (0x00000001 << _PTYPE_INERTIAL_SENSE_DATA),
+    ENABLE_PROTOCOL_NMEA        = (0x00000001 << _PTYPE_NMEA),
+    ENABLE_PROTOCOL_UBLOX       = (0x00000001 << _PTYPE_UBLOX),
+    ENABLE_PROTOCOL_RTCM3       = (0x00000001 << _PTYPE_RTCM3),
+    ENABLE_PROTOCOL_SPARTN      = (0x00000001 << _PTYPE_SPARTN),
+    ENABLE_PROTOCOL_SONY        = (0x00000001 << _PTYPE_SONY),
 } eProtocolMask;
 
 typedef enum {
@@ -589,6 +591,8 @@ typedef int(*pfnIsCommGenMsgHandler)(const unsigned char* msg, int msgSize, port
 // Callback functions are called when the specific message is received and callback pointer is not null:
 typedef struct
 {
+    /** A bitmask (each bit position corresponding to the _PTYPE_* protocol value) which forces parsing of that protocol (alternative to callbacks) */
+    uint32_t                        protocolMask;
     pfnIsCommHandler                all;
     pfnIsCommIsbDataHandler         isbData;
     pfnIsCommGenMsgHandler          generic[_PTYPE_SIZE];
@@ -636,10 +640,6 @@ typedef struct
 
     /** a set of callbacks that will be called each time a protocol of the corresponding type is parsed */
     is_comm_callbacks_t cb;
-
-    /** A bitmask (each bit position corresponding to the _PTYPE_* protocol value) which forces parsing of that protocol (alternative to callbacks) */
-    uint32_t protocolMask;
-
 } is_comm_instance_t;
 
 typedef struct {

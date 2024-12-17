@@ -2125,7 +2125,7 @@ enum GRMC_BIT_POS{
                                         | GRMC_BITS_GPS2_VERSION \
                                         | GRMC_BITS_GPS2_RAW)
 
-#define GRMC_PRESET_GPX_IMX		        ( GRMC_PRESET_GPX_BASE\
+#define GRMC_PRESET_GPX_IMX             ( GRMC_PRESET_GPX_BASE\
                                         | GRMC_PRESET_GPX_GPS1 \
                                         | GRMC_PRESET_GPX_GPS2 \
                                         | GRMC_BITS_GPS2_RTK_CMP_REL \
