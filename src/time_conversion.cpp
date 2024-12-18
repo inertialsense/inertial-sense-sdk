@@ -176,111 +176,109 @@ static const gtime_t gpsRefT0 = { 315964800, 0 };	// (gtime) gps reference time 
 double timeToGpst(gtime_t t, int *week)
 {
 	time_t sec = t.time - gpsRefT0.time;
-	time_t w = (time_t)(sec / (86400*7));
+	time_t w = (time_t)(sec / C_SECONDS_PER_WEEK);
 	
 	if (week){ *week = (int)w; }
-	return (double)(sec - (double)w*86400*7) + t.sec;
+	return (double)(sec - (double)w * C_SECONDS_PER_WEEK) + t.sec;
 }
 
-void UtcDateTimeToGpsTime(const double *datetime, int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek)
+void UtcDateTimeToGpsTime(const double datetime[6], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek)
 {
     gtime_t gtm = epochToTime(datetime);
     int week;
+    gtm.time += leapSeconds;
     double iTOWd = timeToGpst(gtm, &week);
-    gpsTowMs = ((uint32_t)((iTOWd + 0.00001) * 1000.0)) + (leapSeconds*1000);
+    gpsTowMs = (uint32_t)((iTOWd + 0.00001) * 1000.0);
     gpsWeek = week;
 }
 
-void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond)
-{
-	double j1, j2, j3, j4, j5;
-	double intgr = floor(julian);
-	double frac = julian - intgr;
-	double gregjd = 2299161.0;
-	if (intgr >= gregjd)
-	{
-		//Gregorian calendar correction
-		double tmp = floor(((intgr - 1867216.0) - 0.25) / 36524.25);
-		j1 = intgr + 1.0 + tmp - floor(0.25 * tmp);
-	}
-	else
-	{
-		j1 = intgr;
-	}
+void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond) {
+    // Adjust from Julian date to a more computationally-friendly epoch
+    double jd = julian + 0.5;
+    uint32_t Z = (uint32_t)jd;
+    double F = jd - Z;
 
-	//correction for half day offset
-	double dayfrac = frac + 0.5;
-	if (dayfrac >= 1.0)
-	{
-		dayfrac -= 1.0;
-		++j1;
-	}
+    uint32_t A;
+    if (Z < 2299161) {
+        A = Z;
+    } else {
+        uint32_t alpha = (uint32_t)((Z - 1867216.25) / 36524.25);
+        A = Z + 1 + alpha - (alpha / 4);
+    }
 
-	j2 = j1 + 1524.0;
-	j3 = floor(6680.0 + ((j2 - 2439870.0) - 122.1) / 365.25);
-	j4 = floor(j3 * 365.25);
-	j5 = floor((j2 - j4) / 30.6001);
+    uint32_t B = A + 1524;
+    uint32_t C = (uint32_t)((B - 122.1) / 365.25);
+    uint32_t D = (uint32_t)(365.25 * C);
+    uint32_t E = (uint32_t)((B - D) / 30.6001);
 
-	double d = floor(j2 - j4 - floor(j5 * 30.6001));
-	double m = floor(j5 - 1);
-	if (m > 12)
-	{
-		m -= 12;
-	}
-	double y = floor(j3 - 4715.0);
-	if (m > 2)
-	{
-		--y;
-	}
-	if (y <= 0)
-	{
-		--y;
-	}
+    double fractionalDay = B - D - (uint32_t)(30.6001 * E) + F;
 
-	//
-	// get time of day from day fraction
-	//
-	double hr = floor(dayfrac * 24.0);
-	double mn = floor((dayfrac * 24.0 - hr) * 60.0);
-	double f = ((dayfrac * 24.0 - hr) * 60.0 - mn) * 60.0;
-	double sc = f;
-	if (f - sc > 0.5)
-	{
-		++sc;
-	}
+    *day = (uint32_t)fractionalDay;
 
-	if (y < 0)
-	{
-		y = -y;
-	}
-	if (year)
-	{
-		*year = (uint32_t)y;
-	}
-	if (month)
-	{
-		*month = (uint32_t)m;
-	}
-	if (day)
-	{
-		*day = (uint32_t)d;
-	}
-	if (hour)
-	{
-		*hour = (uint32_t)hr;
-	}
-	if (minute)
-	{
-		*minute = (uint32_t)mn;
-	}
-	if (second)
-	{
-		*second = (uint32_t)sc;
-	}
-	if (millisecond)
-	{
-		*millisecond = (uint32_t)((sc - floor(sc)) * 1000.0);
-	}
+    // Calculate the month and year
+    if (E < 14) {
+        *month = E - 1;
+    } else {
+        *month = E - 13;
+    }
+
+    if (*month > 2) {
+        *year = C - 4716;
+    } else {
+        *year = C - 4715;
+    }
+
+    // Calculate the time components
+    double fractionalDayPart = fractionalDay - *day;
+    double totalSeconds = fractionalDayPart * 86400.0; // 86400 seconds in a day
+
+    *hour = (uint32_t)(totalSeconds / 3600);
+    totalSeconds -= *hour * 3600;
+
+    *minute = (uint32_t)(totalSeconds / 60);
+    totalSeconds -= *minute * 60;
+
+    *second = (uint32_t)totalSeconds;
+    *millisecond = (uint32_t)(round((totalSeconds - *second) * 1000.0)); // Use rounding
+
+    // Ensure millisecond rollover correctness
+    if (*millisecond == 1000) {
+        *millisecond = 0;
+        *second += 1;
+
+        if (*second == 60) {
+            *second = 0;
+            *minute += 1;
+
+            if (*minute == 60) {
+                *minute = 0;
+                *hour += 1;
+
+                if (*hour == 24) {
+                    *hour = 0;
+                    *day += 1;
+
+                    // Handle month and year increment for the day overflow
+                    static const uint32_t daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+                    uint32_t daysThisMonth = daysInMonth[*month - 1];
+                    if (*month == 2 && ((*year % 4 == 0 && *year % 100 != 0) || *year % 400 == 0)) {
+                        daysThisMonth = 29; // Leap year for February
+                    }
+
+                    if (*day > daysThisMonth) {
+                        *day = 1;
+                        *month += 1;
+
+                        if (*month > 12) {
+                            *month = 1;
+                            *year += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMs, uint8_t leapSeconds)

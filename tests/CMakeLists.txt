@@ -5,6 +5,8 @@ endif()
 
 project(IS-SDK_unit-tests)
 
+add_definitions(-DSDK_UNIT_TEST)
+
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 

@@ -61,6 +61,69 @@ void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
     EXPECT_EQ(g1.status, g2.status);
 }
 
+sys_params_t g_sysParams = {};
+uint32_t g_time_msec = {};
+debug_array_t g_debug = {};
+
+bool timeWithin(uint32_t timeSec, uint32_t startSec, uint32_t durationSec)
+{
+    return (timeSec >= startSec) && (timeSec < (startSec + durationSec));
+}
+
+#if 0
+TEST(protocol_nmea, zda_gps_time_skip)
+{
+    char buf[1024]; 
+    gps_pos_t pos = {};
+    pos.leapS = 18;
+    pos.week = 2345;
+    bool faultLast = false;
+
+    for (int timeSec=0; timeSec<C_SECONDS_PER_WEEK-1; timeSec++)
+    {
+        pos.timeOfWeekMs = timeSec*1000;
+        g_time_msec = timeSec*1000;
+        bool fault = 
+            timeWithin(timeSec, C_SECONDS_PER_WEEK/4, 200) || 
+            timeWithin(timeSec, C_SECONDS_PER_WEEK/2, 10);
+
+        if (timeSec == 151200)
+        {
+            int j = 0;
+        }
+
+        if (fault)
+        {
+            pos.timeOfWeekMs += 1000;
+        }
+        bool toggle = fault != faultLast;
+        faultLast = fault;
+
+        int n = nmea_zda(buf, sizeof(buf), pos);
+
+        uint32_t gpsTowMs;
+        uint32_t gpsWeek;
+        utc_date_t utcDate;
+        utc_time_t utcTime;
+        nmea_parse_zda(buf, n, gpsTowMs, gpsWeek, utcDate, utcTime, pos.leapS);
+
+#if 1
+        printf("timeSec: %d ", timeSec);
+        PrintUtcDateTime(utcDate, utcTime);
+
+#endif
+
+        ASSERT_EQ((g_sysParams.genFaultCode&GFC_GNSS_TIME_FAULT) != 0, toggle) << "Failed at timeSec: " << timeSec;
+        ASSERT_EQ((g_debug.i[6]) != 0, toggle) << "Failed at timeSec: " << timeSec;
+        ASSERT_EQ(pos.timeOfWeekMs - (fault?1000:0), gpsTowMs) << "Failed at timeSec: " << timeSec;
+        ASSERT_EQ(pos.week, gpsWeek) << "Failed at timeSec: " << timeSec;
+
+        g_debug.i[6] = 0;
+        g_sysParams.genFaultCode = 0;
+    }
+}
+#endif
+
 TEST(protocol_nmea, nmea_parse_asce)
 {
 	PRINT_TEST_DESCRIPTION("Tests the $ASCE parser function nmea_parse_asce().");
@@ -1554,3 +1617,5 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     ASSERT_TRUE(gpsSat->numSats <= MAX_NUM_SATELLITES);
     ASSERT_TRUE(gpsSig->numSigs <= MAX_NUM_SAT_SIGNALS);
 }
+
+
