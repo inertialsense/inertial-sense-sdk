@@ -2014,9 +2014,7 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     uint8_t period;
 
     if (!port)
-    {
         return 0;
-    }
     
     char *ptr = (char*)&a[6];                // $ASCE
     char *end = (char*)&a[aSize];
@@ -2092,12 +2090,25 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     return options;
 }
 
-inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint32_t id, uint8_t period, uint32_t options) {
-    nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
-    grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint32_t id, uint8_t period, uint32_t options) 
+{
+    if (i < GPX_EXTERNAL_PORT_CNT)
+    {
+        nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
+        grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+    }
 }
 
-//uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
+/**
+ * Parses ASCE and sets give GRMC vector
+ * @param port port_handle_t the msg was Rxd on
+ * @param a const char[] incoming msg
+ * @param aSize int size of msg a
+ * @param grmci std::vector<grmci_t*> of GPX GRMC bits 
+ * 
+ * @return 0 on NULL port error
+ * @return options if any (can be 0 if no options exist)
+ */
 uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci)
 {
     (void)aSize;
@@ -2164,7 +2175,7 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
             break;
         
         case RMC_OPTIONS_PORT_ALL:        
-            for (int i=0; i<NUM_COM_PORTS; i++) 
+            for (int i=0; i<GPX_EXTERNAL_PORT_CNT; i++) 
             {
                 nmea_configure_grmci(grmci, i, id, period, options);
             }
