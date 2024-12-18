@@ -769,7 +769,7 @@ static void PopulateMapEvbFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapDebugArray(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<debug_array_t> mapper(data_set, did);
-    mapper.AddArray("i", &debug_array_t::i, DATA_TYPE_UINT32, DEBUG_I_ARRAY_SIZE);
+    mapper.AddArray("i", &debug_array_t::i, DATA_TYPE_INT32, DEBUG_I_ARRAY_SIZE);
     mapper.AddArray("f", &debug_array_t::f, DATA_TYPE_F32, DEBUG_F_ARRAY_SIZE, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("lf", &debug_array_t::lf, DATA_TYPE_F64, DEBUG_LF_ARRAY_SIZE, "", "", DATA_FLAGS_FIXED_DECIMAL_9);
 }
