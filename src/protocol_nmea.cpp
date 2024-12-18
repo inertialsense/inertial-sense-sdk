@@ -2094,11 +2094,11 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
 
 inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint32_t id, uint8_t period, uint32_t options) 
 {
-    if (i > 3)//USB_PORT_NUM)
-        return;
-
-    nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
-    grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+    if (i < GPX_NUM_NON_GNSS_PORTS)
+    {
+        nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
+        grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+    }
 }
 
 /**
@@ -2177,7 +2177,7 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
             break;
         
         case RMC_OPTIONS_PORT_ALL:        
-            for (int i=0; i<4; i++) 
+            for (int i=0; i<GPX_NUM_NON_GNSS_PORTS; i++) 
             {
                 nmea_configure_grmci(grmci, i, id, period, options);
             }
