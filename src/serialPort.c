@@ -107,6 +107,23 @@ int serialPortIsOpen(port_handle_t port)
     return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
 }
 
+int serialPortIsOpenQuick(port_handle_t port)
+{
+    serial_port_t* serialPort = (serial_port_t*)port;
+    if ((serialPort == 0) || (serialPort->pfnIsOpen == 0))
+    {
+        if (serialPort && serialPort->pfnError) {
+            serialPort->pfnError(port, -1, "port::IsOpen is not supported on this port.");
+        }
+        return 0;
+    }
+
+    if ((serialPort->handle != NULL) && (serialPort->errorCode == 0))
+        return 1;
+
+    return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
+}
+
 int serialPortClose(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;

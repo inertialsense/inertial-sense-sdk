@@ -202,6 +202,19 @@ int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, 
 int serialPortIsOpen(port_handle_t port);
 
 /**
+ * check if the port is open, but avoids an expensive OS/kernel call is possible.
+ * If the internal handle is NOT null, and there are recent errors on the port
+ * this function will return true, indicating that the port is open.  However,
+ * it should be noted that the port may still be closed by the OS or another
+ * mechanism which may not be reflected in the local state, which could cause
+ * this to report incorrectly and then leading to a future error state when
+ * operating on the closed port.
+ * @param port
+ * @return 1 if open, 0 if not open
+ */
+int serialPortIsOpenQuick(port_handle_t port);
+
+/**
  * close the serial port - this object can be re-used by calling open again
  * @param port
  * @return 1 if closed, 0 if the port was not closed
