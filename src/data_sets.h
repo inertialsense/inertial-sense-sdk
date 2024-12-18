@@ -1715,7 +1715,7 @@ typedef struct PACKED
 #define NUM_SERIAL_PORTS        NUM_COM_PORTS
 #endif
 
-#define GPX_NUM_NON_GNSS_PORTS  4
+#define GPX_EXTERNAL_PORT_CNT  4
 
 /** Realtime Message Controller (used in rmc_t). 
     The data sets available through RMC are broadcast at the availability of the data.  A goal of RMC is 
