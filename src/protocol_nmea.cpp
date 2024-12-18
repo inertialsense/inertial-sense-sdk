@@ -2014,9 +2014,7 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     uint8_t period;
 
     if (!port)
-    {
         return 0;
-    }
     
     char *ptr = (char*)&a[6];                // $ASCE
     char *end = (char*)&a[aSize];
