@@ -5,7 +5,7 @@
 #include "protocol_nmea.h"
 
 
-
+#if 1
 TEST(time_conversion, UTC_to_GPS_to_UTC_time)
 {
     int gpsTowMs = 111072800;
@@ -22,7 +22,7 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
 
 #if 0   // Enable print for debugging
         printf("tow: %d ms %d week   ", gpsTowMs, gpsWeek);
-        PrintUtcTime(utcTime, msec);
+        PrintUtcStdTm(utcTime, msec);
 #endif
         uint32_t gpsTowMs2, gpsWeek2;
         stdUtcDateTimeToGpsTime(utcTime, leapS, gpsTowMs2, gpsWeek2);
@@ -53,6 +53,42 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
     }
 
     RevertUtcTimeZone();
+}
+#endif
+
+TEST(time_conversion, GPS_to_UTC_to_GPS_time)
+{
+    uint32_t gpsWeek = 2345;
+    int leapS = C_GPS_LEAP_SECONDS;
+
+    // Cycle through entire range of time of week
+    for (uint32_t gpsTowMs = 0; gpsTowMs < C_MILLISECONDS_PER_WEEK; gpsTowMs += 200)
+    {
+#if 0   // Enable print for debugging
+        printf("tow: %d ms %d week   ", gpsTowMs, gpsWeek);
+        // PrintUtcStdTm(utcTime, msec);
+        printf("\n");
+#endif
+
+        // Convert GPS time and week to UTC date and time
+        utc_time_t t;
+        gpsTowMsToUtcTime(gpsTowMs, leapS, &t);
+
+        double julian = gpsToJulian(gpsWeek, gpsTowMs, leapS);
+        utc_date_t d;
+        uint32_t year, month, day, hours, minutes, seconds, milliseconds;
+        julianToDate(julian, &year, &month, &day, &hours, &minutes, &seconds, &milliseconds);
+
+        // Convert UTC date and time to GPS time and week 		
+        double datetime[6] = { (double)year, (double)month, (double)day, (double)t.hour, (double)t.minute, (double)t.second };		// year,month,day,hour,min,sec
+        uint32_t gpsTowMs2, gpsWeek2;
+        UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs2, gpsWeek2);
+        gpsTowMs2 += milliseconds;
+        // int weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
+
+        ASSERT_EQ(gpsTowMs, gpsTowMs2);
+        ASSERT_EQ(gpsWeek, gpsWeek2);
+    }
 }
 
 TEST(time_conversion, GPS_to_UTC)

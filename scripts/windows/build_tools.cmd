@@ -27,8 +27,10 @@
 	pause
 
 :found_msbuild_executable
-
 	:: Locate nmake.exe
+	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.42.34433\bin\Hostx64\x64\nmake.exe"
+    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+
 	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\bin\Hostx64\x64\nmake.exe"
     if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
 
@@ -48,6 +50,9 @@
     if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
 
 	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\bin\Hostx64\x64\nmake.exe"
+    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+
+	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.42.34433\bin\Hostx64\x64\nmake.exe"
     if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
 
 	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.41.34120\bin\Hostx64\x64\nmake.exe"
@@ -77,7 +82,7 @@
 :found_nmake_executable
 
     REM set MSBUILD_OPTIONS=/maxcpucount:7 /p:MP=7 /t:Build /p:Configuration=Release /p:Platform=x64
-    set MSBUILD_OPTIONS=/maxcpucount:7 /p:MP=7 /t:Build /p:Configuration=Release
+    set MSBUILD_OPTIONS=/maxcpucount:7 /p:MP=7 /t:Build /p:Configuration=Release /p:std=c++17
 
 	:: Setup terminal for multi-colored text
 	for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (

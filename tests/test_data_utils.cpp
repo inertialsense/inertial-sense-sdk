@@ -13,7 +13,6 @@
 #include "ISFileManager.h"
 #include "protocol_nmea.h"
 #include "test_data_utils.h"
-#include "time_conversion.h"
 
 #define MIN_VALUE 		-1000
 #define MAX_VALUE 		 1000
@@ -86,7 +85,19 @@ void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek)
     gpsTimeOfWeekMs *= 1000;
 }
 
-void PrintUtcTime(std::tm &utcTime, uint32_t milliseconds)
+void PrintUtcDateTime(utc_date_t &utcDate, utc_time_t &utcTime)
+{
+    printf( "UTC Time: %04d-%02d-%02d %02d:%02d:%02d.%03d\n", 
+        utcDate.year + 1900,    // year is since 1900
+        utcDate.month,          // month is since January (0-11)
+        utcDate.day,
+        utcTime.hour,
+        utcTime.minute,
+        utcTime.second,
+        utcTime.millisecond );
+}
+
+void PrintUtcStdTm(std::tm &utcTime, uint32_t milliseconds)
 {
     printf( "UTC Time: %04d-%02d-%02d %02d:%02d:%02d.%03d\n", 
         utcTime.tm_year + 1900,   // tm_year is year since 1900
