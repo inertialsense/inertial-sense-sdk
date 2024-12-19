@@ -12,6 +12,7 @@
 #include "data_sets.h"
 #include "ISComm.h"
 #include "ISLogger.h"
+#include "time_conversion.h"
 
 typedef struct
 {

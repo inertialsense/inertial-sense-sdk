@@ -13,7 +13,6 @@
 #include "ISFileManager.h"
 #include "protocol_nmea.h"
 #include "test_data_utils.h"
-#include "time_conversion.h"
 
 #define MIN_VALUE 		-1000
 #define MAX_VALUE 		 1000
