@@ -710,7 +710,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
 }
 
 // TODO: Remove after ZDA issue is resolved.
-#if defined(SDK_UNIT_TEST)
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
 extern uint32_t g_time_msec;
 extern sys_params_t g_sysParams;
 extern debug_array_t g_debug;
@@ -723,11 +723,13 @@ int millisecondsToSeconds(int milliseconds)
 
 void nmea_report_fault(int fault_code)
 {
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
     g_sysParams.genFaultCode |= GFC_GNSS_TIME_FAULT;
 #if PLATFORM_IS_EMBEDDED
     g_gnssTimeFaultTimeMs = g_timeMs;
 #endif
     g_debug.i[6] |= 1<<fault_code;
+#endif
 }
 
 // TODO: Remove after ZDA issue is resolved.
@@ -742,10 +744,10 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     ///////////////////////////////////////////////////////////////////////
     // TODO: (WHJ) ZDA debug.  Remove after ZDA time skip issue is resolved. (SN-6066)
 
-#if defined(SDK_UNIT_TEST)
-    int32_t cpuMs = (int32_t)g_time_msec;
-#else
+#if defined(IMX_5)
     int32_t cpuMs = (int32_t)time_msec();
+#else
+    int32_t cpuMs = (int32_t)g_time_msec;
 #endif
     int32_t utcMs = 
         t.hour*C_MILLISECONDS_PER_HOUR + 
