@@ -1,6 +1,7 @@
 from pathlib import Path
 import build_manager
 import build_log_inspector
+import sys
 
 sdk_dir = Path(__file__).resolve().parent.parent
 bm = build_manager.BuildTestManager()
@@ -30,4 +31,5 @@ bm.test_exec("IS-SDK Unit Tests",    sdk_dir / "tests", "IS-SDK_unit-tests")
 
 bm.print_summary()
 
-
+# Return error code
+sys.exit(bm.result)

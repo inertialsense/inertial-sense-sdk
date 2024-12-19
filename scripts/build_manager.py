@@ -27,6 +27,7 @@ class BuildTestManager:
         self.run_build = True
         self.run_clean = False
         self.run_test = False
+        self.result = 0
 
         # Parse command-line arguments
         self.args = sys.argv[1:]
@@ -165,6 +166,8 @@ class BuildTestManager:
         self.build_header(project_name)
         result = callback(self.args)
         self.build_footer(result)
+        if result:
+            self.result = result
         return result
     
     def test_callback(self, project_name, callback):
@@ -173,6 +176,8 @@ class BuildTestManager:
             self.test_header(project_name)
             result = callback()
             self.test_footer(result)
+        if result:
+            self.result = result
         return result
 
     def build_script(self, project_name, script_path, args=[]):
@@ -195,6 +200,8 @@ class BuildTestManager:
             result = e.returncode
             
         self.build_footer(result)
+        if result:
+            self.result = result
         return result
 
     def build_cmake(self, project_name, project_dir):
@@ -203,6 +210,8 @@ class BuildTestManager:
         self.build_header(project_name)
         result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean)
         self.build_footer(result)
+        if result:
+            self.result = result
         return result
 
     @staticmethod
@@ -270,6 +279,8 @@ class BuildTestManager:
             print(f"Error building {test_name}!")
             result = e.returncode
         self.test_footer(result)
+        if result:
+            self.result = result
         return result
     
     def clean_rm(self, path):
