@@ -769,56 +769,59 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
 
     // Check for irregular update timing
     int32_t cpuDtMs = cpuMs - lastCpuMs;
-    g_debug.f[5] += (float)cpuDtMs;
     if (cpuDtMs < C_MILLISECONDS_PER_WEEK/2)
     {   // No time wrap
         if (cpuDtMs < 750)
         {   // Less than 1s
             nmea_report_fault(1);
+            g_debug.f[5] = (float)cpuDtMs;
         }
         if (cpuDtMs > 1250)
         {   // More than 1s
             nmea_report_fault(-1);
+            g_debug.f[5] = (float)cpuDtMs;
         }
     }
 
     // Check for skip in ZDA time
     int32_t utcDtMs = utcMs - lastUtcMs;
-    g_debug.f[6] += utcDtMs;
     if (t.hour >= lastUtcHour)
     {   // No time wrap
         if (utcDtMs > 1000)
         {   // Skip forward
             nmea_report_fault(2);
+            g_debug.f[6] = utcDtMs;
         }
         if (utcDtMs < 1000)
         {   // Skip backward
             nmea_report_fault(-2);
+            g_debug.f[6] = utcDtMs;
         }
     }
 
     // Check for skip in GPS time of week
     int32_t gpsDtMs = gpsMs - lastGpsMs;
-    g_debug.f[7] += (float)gpsDtMs;
     if (lastWeek == pos.week)
     {   // No time wrap
         if (gpsDtMs > 1000)
         {   // Skip forward
             nmea_report_fault(3);
+            g_debug.f[7] = (float)gpsDtMs;
         }
         if (gpsDtMs < 1000)
         {   // Skip backward
             nmea_report_fault(-3);
+            g_debug.f[7] = (float)gpsDtMs;
         }
     }
 
     // Ensure time increments linearly
     int32_t ddtMs = utcDtMs - cpuDtMs;
-    g_debug.i[3] += ddtMs;
     if ((cpuDtMs < C_MILLISECONDS_PER_WEEK/2) &&
         (t.hour >= lastUtcHour))
     {   // No time wrap
         utcOffsetSec = millisecondsToSeconds(ddtMs);
+        g_debug.i[3] = ddtMs;
         g_debug.i[4] = utcOffsetSec;
         if (_ABS(utcOffsetSec) > 2)
         {   // Offset exceeded limit
