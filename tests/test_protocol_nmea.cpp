@@ -114,13 +114,17 @@ TEST(protocol_nmea, zda_gps_time_skip)
 
         int n = nmea_zda(buf, sizeof(buf), pos);
 
+        ASSERT_EQ((g_sysParams.genFaultCode&GFC_GNSS_TIME_FAULT) != 0, toggle) << "genFaultCode failed at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.i[6] != 0, fault) << "Correction offset failed at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.i[5], (fault?simulatedOffsetMs/1000:0)) << "Correction offset failed at timeSec: " << timeSec;
+
         uint32_t gpsTowMs;
         uint32_t gpsWeek;
         utc_date_t utcDate;
         utc_time_t utcTime;
         nmea_parse_zda(buf, n, gpsTowMs, gpsWeek, utcDate, utcTime, pos.leapS);
 #if 0
-        if (toggle)
+        // if (toggle)
         {
             printf("timeSec: %d  ", timeSec);
             printf("gpsTowMs: %d  ", pos.timeOfWeekMs);
@@ -129,11 +133,8 @@ TEST(protocol_nmea, zda_gps_time_skip)
             PrintUtcDateTime(utcDate, utcTime);
         }
 #endif
-        ASSERT_EQ((g_sysParams.genFaultCode&GFC_GNSS_TIME_FAULT) != 0, toggle) << "genFaultCode failed at timeSec: " << timeSec;
-        ASSERT_EQ((g_debug.i[6]) != 0, toggle) << "Fault toggle failed at timeSec: " << timeSec;
-        ASSERT_EQ(pos.timeOfWeekMs - (fault?simulatedOffsetMs:0), gpsTowMs) << "GPS tow failed at timeSec: " << timeSec;
-        ASSERT_EQ(pos.week, gpsWeek) << "Week failed at timeSec: " << timeSec;
-        ASSERT_EQ(g_debug.i[5], (fault?simulatedOffsetMs/1000:0)) << "Time offset failed at timeSec: " << timeSec;
+        ASSERT_EQ(gpsTowMs, timeSec*1000) << "Continuous at timeSec: " << timeSec;
+        ASSERT_EQ(gpsTowMs, pos.timeOfWeekMs - (fault?simulatedOffsetMs:0)) << "GPS tow failed at timeSec: " << timeSec;
 
         g_debug.i[6] = 0;
         g_sysParams.genFaultCode = 0;
