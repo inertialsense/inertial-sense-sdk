@@ -79,7 +79,7 @@ void stdUtcDateTimeToGpsTime(const std::tm &utcTime, int leapSeconds, uint32_t &
  * @param gpsTowMs output GPS time of week in milliseconds 
  * @param gpsWeek output GPS week number
  */
-void UtcDateTimeToGpsTime(const double *datetime, int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek);
+void UtcDateTimeToGpsTime(const double datetime[6], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek);
 
 /** Convert Julian Date to calendar date. */
 void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond);

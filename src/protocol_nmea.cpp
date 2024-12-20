@@ -9,6 +9,11 @@
 #include "data_sets.h"
 #include "util/md5.h"
 
+#if defined(IMX_5)
+#include "drivers/d_time.h"
+#include "globals.h"
+#endif
+
 static int s_protocol_version = 0;
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
@@ -736,6 +741,170 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
     offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", t.hour, t.minute, t.second, t.millisecond);
 }
 
+// TODO: Remove after ZDA issue is resolved.
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
+extern uint32_t g_time_msec;
+extern sys_params_t g_sysParams;
+extern debug_array_t g_debug;
+#endif
+
+int millisecondsToSeconds(int milliseconds) 
+{
+    return (milliseconds + 500) / 1000;
+}
+
+void nmea_report_fault(int fault_code)
+{
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
+    g_sysParams.genFaultCode |= GFC_GNSS_TIME_FAULT;
+#if PLATFORM_IS_EMBEDDED
+    g_gnssTimeFaultTimeMs = g_timeMs;
+#endif
+    g_debug.i[6] |= 1<<fault_code;
+#endif
+}
+
+void check_dt_skip(int32_t dtMs, int32_t minMs, int32_t maxMs, int fault_code, float &debug)
+{
+#if 1
+    if (dtMs < minMs || dtMs > maxMs)
+    {
+        nmea_report_fault(fault_code);
+        debug = (float)dtMs;
+    }
+#else
+    if (dtMs < minMs)
+    {   // Less than 1s
+        nmea_report_fault(-fault_code);
+        debug = (float)dtMs;
+    }
+    if (dtMs > maxMs)
+    {   // More than 1s
+        nmea_report_fault(fault_code);
+        debug = (float)dtMs;
+    }
+#endif
+}
+
+// TODO: Remove after ZDA issue is resolved.
+void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset, gps_pos_t &pos)
+{
+    aSize -= offset;
+    a += offset;
+    utc_time_t t;
+    gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &t);
+
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
+    ///////////////////////////////////////////////////////////////////////
+    // TODO: (WHJ) ZDA debug.  Remove after ZDA time skip issue is resolved. (SN-6066)
+
+#if defined(IMX_5)
+    int32_t cpuMs = (int32_t)time_msec();
+#else
+    int32_t cpuMs = (int32_t)g_time_msec;
+#endif
+    int32_t utcMs = 
+        t.hour*C_MILLISECONDS_PER_HOUR + 
+        t.minute*C_MILLISECONDS_PER_MINUTE + 
+        t.second*C_MILLISECONDS_PER_SECOND + 
+        t.millisecond;
+    int32_t gpsMs = (int32_t)pos.timeOfWeekMs;
+
+    g_debug.i[0] = cpuMs;
+    g_debug.i[1] = utcMs;
+    g_debug.i[2] = gpsMs;
+
+    static int32_t lastCpuMs = cpuMs - 1000;
+    static int32_t lastUtcMs = utcMs - 1000;
+    static int lastUtcHour = t.hour;
+    // static int lastGpsMs = gpsMs - 1000;
+    // static uint32_t lastWeek = pos.week;
+    static int32_t utcOffsetSec = 0;
+
+    // Check for irregular update timing
+    int32_t cpuDtMs = cpuMs - lastCpuMs;
+    bool cpuDtMsGood = cpuDtMs < C_MILLISECONDS_PER_WEEK/2;
+    if (cpuDtMsGood)
+    {   // No time wrap
+        check_dt_skip(cpuDtMs, 750, 1250, 1, g_debug.f[5]);
+    }
+
+    // Check for skip in ZDA time
+    int32_t utcDtMs = utcMs - lastUtcMs;
+    bool utcDtMsGood = t.hour >= lastUtcHour; 
+    if (utcDtMsGood)
+    {   // No time wrap
+        check_dt_skip(utcDtMs, 1000, 1000, 2, g_debug.f[6]);
+    }
+
+    // Check for skip in GPS time of week
+    // int32_t gpsDtMs = gpsMs - lastGpsMs;
+    // bool gpsDtMsGood = lastWeek == pos.week; 
+    // if (gpsDtMsGood)
+    // {   // No time wrap
+    //     check_dt_skip(gpsDtMs, 1000, 1000, 3, g_debug.f[7]);
+    // }
+
+    // Ensure time increments linearly
+    int32_t ddtMs = utcDtMs - cpuDtMs;
+    if (cpuDtMsGood && utcDtMsGood)
+    {   // No time wrap
+        utcOffsetSec = millisecondsToSeconds(ddtMs);
+        g_debug.i[3] = ddtMs;
+        // g_debug.i[4] = utcOffsetSec;
+        if (_ABS(utcOffsetSec) > 2)
+        {   // Offset exceeded limit
+            utcOffsetSec = 0;
+            nmea_report_fault(5);
+        }
+        g_debug.i[5] = utcOffsetSec;
+    }
+
+#if 1
+
+    // Update history
+    lastCpuMs = cpuMs;
+    lastUtcMs = utcMs;
+    lastUtcHour = t.hour;
+    // lastGpsMs = gpsMs;            
+    // lastWeek = pos.week;
+
+    // Apply correction offset
+    if (utcOffsetSec)
+    {
+        // nmea_report_fault(4);
+
+        t.second += utcOffsetSec;
+        if (t.second >= 60)
+        {   // Wrap 
+            t.second -= 60;
+            t.minute++;
+            if (t.minute >= 60)
+            {   // Wrap
+                t.minute -= 60;
+                t.hour++;
+            }
+        }
+        if (t.second < 0)
+        {   // Wrap 
+            t.second += 60;
+            t.minute--;
+            if (t.minute < 0)
+            {   // Wrap
+                t.minute += 60;
+                t.hour--;
+            }
+        }
+    }
+
+    // TODO: (WHJ) End of debug section
+    ///////////////////////////////////////////////////////////////////////
+#endif
+#endif
+
+    offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", t.hour, t.minute, t.second, t.millisecond);
+}
+
 static void nmea_GPSDateOfLastFix(char* a, int aSize, int &offset, gps_pos_t &pos)
 {
     aSize -= offset;
@@ -972,9 +1141,9 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "ZDA");
-    nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos); // 1
-    nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);         // 2,3,4
-    nmea_sprint(a, aSize, n, ",00,00");                 // 5,6
+    nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(a, aSize, n, pos);								// 1
+    nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
+    nmea_sprint(a, aSize, n, ",00,00");												// 5,6
     
     return nmea_sprint_footer(a, aSize, n);
 }
