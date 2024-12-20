@@ -61,9 +61,10 @@ void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
     EXPECT_EQ(g1.status, g2.status);
 }
 
-sys_params_t g_sysParams = {};
-uint32_t g_cpu_msec = 0;
-debug_array_t g_debug = {};
+uint32_t g_cpu_msec;
+sys_params_t g_sysParams;
+debug_array_t g_debug;
+
 void initGlobals()
 {
     memset(&g_sysParams, 0, sizeof(g_sysParams));
@@ -78,7 +79,9 @@ bool timeWithin(uint32_t timeSec, uint32_t startSec, uint32_t durationSec)
 
 TEST(protocol_nmea, zda_gps_time_skip)
 {
-    // GTEST_SKIP();
+#ifdef _WIN32
+    GTEST_SKIP() << "Skipping test on Windows.";
+#endif
     printf("DESCRIPTION: Test that ZDA time skip detect code works correctly for 1-2 second jumps in the ZDA UTC time due to jumps in GPS time of week.\n");
     initGlobals();
     char buf[1024]; 
@@ -143,7 +146,9 @@ TEST(protocol_nmea, zda_gps_time_skip)
 
 TEST(protocol_nmea, zda_cpu_time_skip)
 {
-    // GTEST_SKIP();
+#ifdef _WIN32
+    GTEST_SKIP() << "Skipping test on Windows.";
+#endif
     printf("DESCRIPTION: Test that ZDA work around will pregress linearly and not apply incorrectly apply offset when GPS update is missing.\n");
     initGlobals();
     char buf[1024]; 
