@@ -2346,7 +2346,7 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
         case RMC_OPTIONS_PORT_ALL:        
             for (int i=0; i<grmci.size(); i++) 
             {
-                nmea_configure_grmci(grmci[1], i, id, period, options);
+                nmea_configure_grmci(grmci, i, id, period, options);
             }
 
             if (id == NMEA_MSG_ID_GNGSV && period == 0)
