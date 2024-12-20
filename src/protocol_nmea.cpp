@@ -2261,7 +2261,7 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
 
 inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint32_t id, uint8_t period, uint32_t options) 
 {
-    if (i < grmci.size())
+    if (i < ((int)grmci.size()))
     {
         nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
         grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
@@ -2344,7 +2344,7 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
             break;
         
         case RMC_OPTIONS_PORT_ALL:        
-            for (int i=0; i<grmci.size(); i++) 
+            for (int i=0; i<((int)grmci.size()); i++) 
             {
                 nmea_configure_grmci(grmci, i, id, period, options);
             }
