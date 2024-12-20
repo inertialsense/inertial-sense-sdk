@@ -591,13 +591,6 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
                 (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || (gdata->id == DID_RTK_DEBUG))) 
             {
                 comManagerGetData(COM0_PORT, gdata->id, gdata->size, gdata->offset, gdata->period);
-
-                if (gdata->id == DID_RTK_DEBUG) {
-                    if (gdata->period != 0)
-                        g_GpxRtkDebugReq |= 0x01 << portId(port);
-                    else
-                        g_GpxRtkDebugReq |= 0x01 << (portId(port) + 4);
-                }
             }
         }
 #endif
@@ -615,9 +608,6 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             disableBcastFnc(NULL);  // all ports
 
         sendAck(port, pkt, PKT_TYPE_ACK);
-#ifdef IMX_5
-        g_GpxRtkDebugReq = 0;
-#endif
         break;
 
     case PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT:
@@ -628,18 +618,10 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             disableBcastFnc(port);
 
         sendAck(port, pkt, PKT_TYPE_ACK);
-
-#ifdef IMX_5
-        g_GpxRtkDebugReq &= ~(0x01 << portId(port));
-#endif
         break;
 
     case PKT_TYPE_STOP_DID_BROADCAST:
         disableDidBroadcast(port, pkt->hdr.id);
-#ifdef IMX_5
-        if (DID_RTK_DEBUG)
-            g_GpxRtkDebugReq &= ~(0x01 << portId(port));
-#endif
         break;
 
     case PKT_TYPE_NACK:
