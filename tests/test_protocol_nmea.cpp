@@ -170,6 +170,9 @@ TEST(protocol_nmea, zda_cpu_time_skip)
 
         int n = nmea_zda(buf, sizeof(buf), pos);
 
+        ASSERT_EQ(g_debug.i[5], 0) << "Correction offset non-zero at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.i[6], 0) << "Correction offset non-zero at timeSec: " << timeSec;
+
         uint32_t gpsTowMs;
         uint32_t gpsWeek;
         utc_date_t utcDate;
@@ -183,9 +186,8 @@ TEST(protocol_nmea, zda_cpu_time_skip)
             PrintUtcDateTime(utcDate, utcTime);
         }
 #endif
-        ASSERT_EQ(pos.timeOfWeekMs, gpsTowMs) << "GPS tow failed at timeSec: " << timeSec;
-        ASSERT_EQ(pos.week, gpsWeek) << "Week failed at timeSec: " << timeSec;
-        ASSERT_EQ(g_debug.i[5], 0) << "Time offset failed at timeSec: " << timeSec;
+        ASSERT_EQ(gpsTowMs, timeSec*1000) << "Linear time at timeSec: " << timeSec;
+        ASSERT_EQ(gpsTowMs, pos.timeOfWeekMs) << "GPS tow failed at timeSec: " << timeSec;
 
         g_debug.i[6] = 0;
         g_sysParams.genFaultCode = 0;
