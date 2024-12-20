@@ -4,6 +4,9 @@ import os, sys, re, time, threading
 from subprocess import Popen
 from threading import Thread
 from pathlib import Path
+import shutil
+import sys
+import threading
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -28,10 +31,11 @@ class SuperNPP():
         self.rmsFailResults = []
         self._key_lock = threading.Lock()
 
-        eprint("=====================  Init SuperNPP  =====================")
-        eprint("  Directory: ", self.directory)
-        eprint("  config_serials:", self.config_serials)
-        eprint("  startMode: ", self.startMode)
+        print("=====================  Init SuperNPP  =====================")
+        print("  Directory: ", self.directory)
+        print("  config_serials:", self.config_serials)
+        print("  startMode: ", self.startMode)
+        self.remove_post_processed_dirs(self.directory)
         self.findLogFiles(self.directory)
 
     def getSerialNumbers(self):
@@ -57,6 +61,23 @@ class SuperNPP():
             if "post_processed" in subdir:
                 continue
             self.findLogFiles(subdir2)
+
+    def remove_post_processed_dirs(self, base_dir):
+        """
+        Recursively remove all directories named 'post_processed' in the specified base directory.
+
+        Args:
+            base_dir (str): The path to the base directory to search within.
+        """
+        for root, dirs, files in os.walk(base_dir, topdown=False):
+            for dir_name in dirs:
+                if dir_name == "post_processed":
+                    dir_path = os.path.join(root, dir_name)
+                    try:
+                        shutil.rmtree(dir_path)
+                        print(f"Removed directory: {dir_path}")
+                    except Exception as e:
+                        print(f"Failed to remove {dir_path}: {e}")
 
     def print_file_contents(self, file_path):
         with open(file_path, 'r') as file:

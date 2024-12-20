@@ -385,16 +385,16 @@ enum eHdwStatusFlags
     /** IMX pins G5-G8 are configure for SPI use */
     HDW_STATUS_SPI_INTERFACE_ENABLED            = (int)0x08000000,
 
-    /** Fault reset cause */
-    HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,
-    /** Reset from Backup mode (low-power state w/ CPU off) */
-    HDW_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
-    /** Reset from Watchdog */
-    HDW_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
-    /** Reset from Software */
-    HDW_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
-    /** Reset from Hardware (NRST pin low) */
-    HDW_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
+    /** Cause of system reset */
+    HDW_STATUS_RESET_CAUSE_MASK                 = (int)0x70000000,
+    /** Reset from backup mode (low-power state w/ CPU off) */
+    HDW_STATUS_RESET_CAUSE_BACKUP_MODE          = (int)0x10000000,
+    /** Reset from watchdog fault */
+    HDW_STATUS_RESET_CAUSE_WATCHDOG_FAULT       = (int)0x20000000,
+    /** Reset from software */
+    HDW_STATUS_RESET_CAUSE_SOFT                 = (int)0x30000000,
+    /** Reset from hardware (NRST pin low) */
+    HDW_STATUS_RESET_CAUSE_HDW                  = (int)0x40000000,
 
     /** Critical System Fault - CPU error */
     HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
@@ -4569,14 +4569,14 @@ enum eGPXHdwStatusFlags
     /** Time synchronized by GPS PPS */
     GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x08000000,
 
-    /** Fault reset cause */
-    GPX_HDW_STATUS_FAULT_RESET_MASK                     = (int)0x70000000,    
+    /** Cause of system reset */
+    GPX_HDW_STATUS_RESET_CAUSE_MASK                     = (int)0x70000000,    
     /** Reset from Backup mode (low-power state w/ CPU off) */
-    GPX_HDW_STATUS_FAULT_RESET_BACKUP_MODE              = (int)0x10000000,
+    GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE              = (int)0x10000000,
     /** Reset from Software */
-    GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x20000000,
+    GPX_HDW_STATUS_RESET_CAUSE_SOFT                     = (int)0x20000000,
     /** Reset from Hardware (NRST pin low) */
-    GPX_HDW_STATUS_FAULT_RESET_HDW                      = (int)0x40000000,
+    GPX_HDW_STATUS_RESET_CAUSE_HDW                      = (int)0x40000000,
     
     /** Critical System Fault - CPU error */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
