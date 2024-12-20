@@ -711,14 +711,15 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
 
 // TODO: Remove after ZDA issue is resolved.
 #if defined(IMX_5) || defined(SDK_UNIT_TEST)
-extern uint32_t g_time_msec;
+extern uint32_t g_cpu_msec;
 extern sys_params_t g_sysParams;
 extern debug_array_t g_debug;
 #endif
 
 int millisecondsToSeconds(int milliseconds) 
 {
-    return (milliseconds + 500) / 1000;
+    if (milliseconds >= 0)  { return (milliseconds + 500) / 1000; } 
+    else                    { return (milliseconds - 500) / 1000; }
 }
 
 void nmea_report_fault(int fault_code)
@@ -769,7 +770,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
 #if defined(IMX_5)
     int32_t cpuMs = (int32_t)time_msec();
 #else
-    int32_t cpuMs = (int32_t)g_time_msec;
+    int32_t cpuMs = (int32_t)g_cpu_msec;
 #endif
     int32_t utcMs = 
         t.hour*C_MILLISECONDS_PER_HOUR + 
@@ -791,7 +792,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
 
     // Check for irregular update timing
     int32_t cpuDtMs = cpuMs - lastCpuMs;
-    bool cpuDtMsGood = cpuDtMs < C_MILLISECONDS_PER_WEEK/2;
+    bool cpuDtMsGood = _ABS(cpuDtMs) < C_MILLISECONDS_PER_DAY;
     if (cpuDtMsGood)
     {   // No time wrap
         check_dt_skip(cpuDtMs, 750, 1250, 1, g_debug.f[5]);
@@ -817,7 +818,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     int32_t ddtMs = utcDtMs - cpuDtMs;
     if (cpuDtMsGood && utcDtMsGood)
     {   // No time wrap
-        utcOffsetSec = millisecondsToSeconds(ddtMs);
+        utcOffsetSec += millisecondsToSeconds(ddtMs);
         g_debug.i[3] = ddtMs;
         // g_debug.i[4] = utcOffsetSec;
         if (_ABS(utcOffsetSec) > 2)
@@ -842,7 +843,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     {
         // nmea_report_fault(4);
 
-        t.second += utcOffsetSec;
+        t.second -= utcOffsetSec;
         if (t.second >= 60)
         {   // Wrap 
             t.second -= 60;
