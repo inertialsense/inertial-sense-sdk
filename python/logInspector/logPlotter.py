@@ -2897,27 +2897,31 @@ class logPlot:
             if np.any(timeRef):
                 refImuPresent = True
 
-        N = 4
+        N = 5
         if refImuPresent:
             N = N + 2
         ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
 
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'INS dt', 's')
-        self.configureSubplot(ax[1], 'GPS dt', 's')
-        self.configureSubplot(ax[2], 'IMU Integration Period', 's')
-        self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week' )
+        self.configureSubplot(ax[1], 'GPS1 dt', 's')
+        self.configureSubplot(ax[2], 'GPS2 dt', 's')
+        self.configureSubplot(ax[3], 'IMU Integration Period', 's')
+        self.configureSubplot(ax[4], 'IMU Delta Timestamp', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week' )
 
         for d in self.active_devs_no_ref:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
             dtIns = dtIns / self.d
             timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek')[1:], True)
 
-            towMsGps = self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:]
-            weekGps = self.getData(d, DID_GPS1_POS, 'week')[1:]
-            dtGps = 0.001*(towMsGps - self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[0:-1])
-            dtGps = dtGps / self.d
-            timeGps = getTimeFromGpsTowMs(towMsGps)
+            towMsGps1 = self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:]
+            towMsGps2 = self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[1:]
+            dtGps1 = 0.001*(towMsGps1 - self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[0:-1])
+            dtGps2 = 0.001*(towMsGps2 - self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[0:-1])
+            dtGps1 = dtGps1 / self.d
+            dtGps2 = dtGps2 / self.d
+            timeGps1 = getTimeFromGpsTowMs(towMsGps1)
+            timeGps2 = getTimeFromGpsTowMs(towMsGps2)
 
             dtPimu = self.getData(d, DID_PIMU, 'dt')
             if dtPimu.size:
@@ -2951,27 +2955,29 @@ class logPlot:
 
             if self.xAxisSample:
                 xIns = np.arange(0, np.shape(dtIns)[0])
-                xGps = np.arange(0, np.shape(dtGps)[0])
+                xGps1 = np.arange(0, np.shape(dtGps1)[0])
+                xGps2 = np.arange(0, np.shape(dtGps2)[0])
                 xImu = np.arange(0, np.shape(deltaTimestamp)[0])
             else:
                 xIns = timeIns
-                xGps = timeGps
+                xGps1 = timeGps1
+                xGps2 = timeGps2
                 xImu = timeImu
 
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
-            ax[1].plot(xGps, dtGps)
+            ax[1].plot(xGps1, dtGps1)
+            ax[2].plot(xGps2, dtGps2)
             if integrationPeriod.size:
-                ax[2].plot(xImu, integrationPeriod)
-            ax[3].plot(xImu, deltaTimestamp)
+                ax[3].plot(xImu, integrationPeriod)
+            ax[4].plot(xImu, deltaTimestamp)
 
-        self.setPlotYSpanMin(ax[0], 0.005)
-        self.setPlotYSpanMin(ax[1], 0.005)
-        self.setPlotYSpanMin(ax[2], 0.005)
-        self.setPlotYSpanMin(ax[3], 0.005)
+        # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
+        for i in range(len(ax)):
+            self.setPlotYSpanMin(ax[i], 0.005)
 
         if refImuPresent:
-            self.configureSubplot(ax[4], 'Reference IMU Integration Period', 's')
-            self.configureSubplot(ax[5], 'Reference IMU Delta Timestamp', 's')
+            self.configureSubplot(ax[5], 'Reference IMU Integration Period', 's')
+            self.configureSubplot(ax[6], 'Reference IMU Delta Timestamp', 's')
             for d in self.active_devs:
                 deltaTimestampRef = 0
                 timeImuRef = 0
@@ -2981,10 +2987,63 @@ class logPlot:
                     deltaTimestampRef = timeRef[1:] - timeRef[0:-1]
                     deltaTimestampRef = deltaTimestampRef / self.d
                     timeImuRef = getTimeFromGpsTow(timeRef[1:] + towOffset)
-                    ax[4].plot(timeImuRef, integrationPeriodRef)
-                    ax[5].plot(timeImuRef, deltaTimestampRef)
-            self.setPlotYSpanMin(ax[4], 0.005)
-            self.setPlotYSpanMin(ax[5], 0.005)
+                    ax[5].plot(timeImuRef, integrationPeriodRef)
+                    ax[6].plot(timeImuRef, deltaTimestampRef)
+
+        self.legends_add(ax[0].legend(ncol=2))
+        for a in ax:
+            a.grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, axs, fig, 'deltatime')
+
+    def gpsTime(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+
+        refImuPresent = False
+        for d in self.active_devs:
+            timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time')
+            if np.any(timeRef):
+                refImuPresent = True
+
+        N = 4
+        ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
+
+        fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        self.configureSubplot(ax[0], 'GPS1 dt', 's')
+        self.configureSubplot(ax[1], 'GPS2 dt', 's')
+        self.configureSubplot(ax[2], 'GPS1 TOW Offset', 's')
+        self.configureSubplot(ax[3], 'GPS2 TOW Offset', 's')
+
+        for d in self.active_devs_no_ref:
+            towMsGps1 = self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:]
+            towMsGps2 = self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[1:]
+            dtGps1 = 0.001*(towMsGps1 - self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[0:-1])
+            dtGps2 = 0.001*(towMsGps2 - self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[0:-1])
+            dtGps1 = dtGps1 / self.d
+            dtGps2 = dtGps2 / self.d
+            timeGps1 = getTimeFromGpsTowMs(towMsGps1)
+            timeGps2 = getTimeFromGpsTowMs(towMsGps2)
+
+            towOffsetGps1 = self.getData(d, DID_GPS1_POS, 'towOffset')[1:]
+            towOffsetGps2 = self.getData(d, DID_GPS2_POS, 'towOffset')[1:]
+
+            if self.xAxisSample:
+                xGps1 = np.arange(0, np.shape(dtGps1)[0])
+                xGps2 = np.arange(0, np.shape(dtGps2)[0])
+            else:
+                xGps1 = timeGps1
+                xGps2 = timeGps2
+
+            ax[0].plot(xGps1, dtGps1)
+            ax[1].plot(xGps2, dtGps2)
+            ax[2].plot(xGps1, towOffsetGps1)
+            ax[3].plot(xGps2, towOffsetGps2)
+
+        # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
+        for i in range(len(ax)):
+            self.setPlotYSpanMin(ax[i], 0.005)
 
         self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
