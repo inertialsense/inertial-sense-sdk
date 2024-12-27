@@ -250,6 +250,8 @@ bool DeviceRuntimeTests::CheckGpsIrregularPeriod(const char* description, int &c
 {
     if (hist.size()<3) return false;
 
+    if (hist[1].irregularPeriod) return false;  // Prevent displaying irregular period twice
+
     int64_t toyMs[3];
     for (int i=0; i<3; i++)
         toyMs[i] = hist[i].gpsTowMs + hist[i].gpsWeek * C_MILLISECONDS_PER_WEEK;     // newest at front
@@ -260,6 +262,7 @@ bool DeviceRuntimeTests::CheckGpsIrregularPeriod(const char* description, int &c
 
     if (dtMs[0] != dtMs[1])
     {   // Irregular period
+        hist[0].irregularPeriod = true;
         LogEvent("Error: %s: Irregular period (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
         if (hist[0].msgSize)
         {

@@ -26,7 +26,6 @@ class DeviceRuntimeTests
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
             msgSize = msgSize_;
-            memset(&dataHdr, 0, sizeof(p_data_hdr_t));
             memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
         }
         sMsgHistory(gps_pos_t *gps, uint8_t *msg_ = NULL, int msgSize_ = 0)
@@ -34,14 +33,12 @@ class DeviceRuntimeTests
             gpsTowMs = gps->timeOfWeekMs;
             gpsWeek = gps->week;
             msgSize = msgSize_;
-            memset(&dataHdr, 0, sizeof(p_data_hdr_t));
             memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
         }
         sMsgHistory(uint32_t gpsTowMs_, uint32_t gpsWeek_, p_data_hdr_t &dataHdr_, const uint8_t *dataBuf_)
         {
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
-            msgSize = 0;
             dataHdr = dataHdr_;
             memcpy(msg, dataBuf_, _MIN(dataHdr.size, MAX_MSG_LENGTH_NMEA));
         }
@@ -51,8 +48,9 @@ class DeviceRuntimeTests
         uint32_t gpsTowMs;
         uint32_t gpsWeek;
         uint8_t msg[MAX_MSG_LENGTH_NMEA];
-        int msgSize;
-        p_data_hdr_t dataHdr;
+        int msgSize = 0;
+        p_data_hdr_t dataHdr = {};
+        bool irregularPeriod = false;
     } msg_history_t;
 
 public:

@@ -731,7 +731,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     utc_time_t t;
     gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &t);
 
-#if defined(IMX_5) || defined(SDK_UNIT_TEST)
+#if 0 // defined(IMX_5) || defined(SDK_UNIT_TEST)
     ///////////////////////////////////////////////////////////////////////
     // TODO: (WHJ) ZDA debug.  Remove after ZDA time skip issue is resolved. (SN-6066)
 
