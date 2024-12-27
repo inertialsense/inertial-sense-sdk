@@ -116,6 +116,7 @@ std::deque<DeviceRuntimeTests::msg_history_t>& DeviceRuntimeTests::AddMsgHistory
     return hist;
 }
 
+// Test timestamps for duplicate messages, reversed order messages, or messages with irregular period.
 void DeviceRuntimeTests::TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf)
 {
     std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.isb.gps1Pos, msg_history_t((gps_pos_t*)dataBuf));
@@ -144,6 +145,7 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
     }
 }
 
+// Test timestamps for duplicate messages, reversed order messages, or messages with irregular period.
 void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
 {
     int utcWeekday = gpsTowMsToUtcWeekday(m_hist.nmea.gga[0].gpsTowMs, C_GPS_LEAP_SECONDS);
@@ -159,6 +161,7 @@ void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
     CheckGpsIrregularPeriod ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
 }
 
+// Test timestamps for duplicate messages, reversed order messages, or messages with irregular period.
 void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
 {
     uint32_t gpsTowMs;
