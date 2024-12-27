@@ -8,6 +8,7 @@
 TEST(time_conversion, UTC_to_GPS_to_UTC_time)
 {
     // GTEST_SKIP();
+    
     int gpsTowMs = 111072800;
     int gpsWeek = 2309;
     int leapS = C_GPS_LEAP_SECONDS;
@@ -59,6 +60,7 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
 TEST(time_conversion, GPS_to_UTC_to_GPS_time)
 {
     // GTEST_SKIP();
+
     uint32_t gpsWeek = 2345;
     int leapS = C_GPS_LEAP_SECONDS;
 
@@ -70,7 +72,6 @@ TEST(time_conversion, GPS_to_UTC_to_GPS_time)
         // PrintUtcStdTm(utcTime, msec);
         printf("\n");
 #endif
-
         // Convert GPS time and week to UTC date and time
         utc_date_t d;
         utc_time_t t;
@@ -78,17 +79,10 @@ TEST(time_conversion, GPS_to_UTC_to_GPS_time)
         gpsWeekTowMsToUtcDateTime(gpsWeek, gpsTowMs, leapS, &d, &t, &milliseconds);
         gpsTowMsToUtcTime(gpsTowMs, leapS, &t);
 
-        // double julian = gpsToJulian(gpsWeek, gpsTowMs, leapS);
-        // utc_date_t d;
-        // uint32_t year, month, day, hours, minutes, seconds, milliseconds;
-        // julianToDate(julian, &year, &month, &day, &hours, &minutes, &seconds, &milliseconds);
-
         // Convert UTC date and time to GPS time and week 		
         int datetime[7] = { d.year, d.month, d.day, t.hour, t.minute, t.second, (int)milliseconds };	// year,month,day,hour,min,sec,msec
         uint32_t gpsTowMs2, gpsWeek2;
         UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs2, gpsWeek2);
-        // gpsTowMs2 += milliseconds;
-        // int weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
 
         ASSERT_EQ(gpsTowMs, gpsTowMs2);
         ASSERT_EQ(gpsWeek, gpsWeek2);

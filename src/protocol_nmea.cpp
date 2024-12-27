@@ -758,11 +758,11 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
 
     // Check for irregular update timing
     int32_t cpuDtMs = cpuMs - lastCpuMs;
-    bool cpuDtMsGood = _ABS(cpuDtMs) < 30000;
+    bool cpuDtMsGood = _ABS(cpuDtMs) < 5000;
 
     // Check for skip in ZDA time
     int32_t utcDtMs = utcMs - lastUtcMs;
-    bool utcDtMsGood = (t.hour >= lastUtcHour) && (_ABS(utcDtMs) < 30000); 
+    bool utcDtMsGood = (t.hour >= lastUtcHour) && (_ABS(utcDtMs) < 5000); 
 
     // Ensure time increments linearly
     int32_t ddtMs = utcDtMs - cpuDtMs;
@@ -774,7 +774,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
         if (adjOffsetSec)
         {
             utcOffsetSec += adjOffsetSec;
-            g_sysParams.genFaultCode |= GFC_GNSS_TIME_FAULT;
+            g_sysParams.genFaultCode |= GFC_GNSS_RECEIVER_TIME;
 #if PLATFORM_IS_EMBEDDED
             g_gnssTimeFaultTimeMs = g_timeMs;
 #endif

@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <deque>
 #include "ISComm.h"
 #include "time_conversion.h"
 
@@ -20,7 +21,7 @@ class DeviceRuntimeTests
 {
     typedef struct sMsgHistory
     {
-        void update(uint32_t gpsTowMs_, uint32_t gpsWeek_, uint8_t *msg_, int msgSize_)
+        sMsgHistory(uint32_t gpsTowMs_, uint32_t gpsWeek_, uint8_t *msg_ = NULL, int msgSize_ = 0)
         {
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
@@ -28,7 +29,15 @@ class DeviceRuntimeTests
             memset(&dataHdr, 0, sizeof(p_data_hdr_t));
             memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
         }
-        void update(uint32_t gpsTowMs_, uint32_t gpsWeek_, p_data_hdr_t &dataHdr_, const uint8_t *dataBuf_)
+        sMsgHistory(gps_pos_t *gps, uint8_t *msg_ = NULL, int msgSize_ = 0)
+        {
+            gpsTowMs = gps->timeOfWeekMs;
+            gpsWeek = gps->week;
+            msgSize = msgSize_;
+            memset(&dataHdr, 0, sizeof(p_data_hdr_t));
+            memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
+        }
+        sMsgHistory(uint32_t gpsTowMs_, uint32_t gpsWeek_, p_data_hdr_t &dataHdr_, const uint8_t *dataBuf_)
         {
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
@@ -66,21 +75,29 @@ public:
         return log; 
     }
     void SetPortName(std::string portName){ m_portName = portName; };
-    void Enable(bool enable=true){ m_enable = enable; }
+    void Enable(bool enable=true)
+    { 
+        m_enable = enable;
+        enable ? LogEvent("Tests enabled...") : LogEvent("Tests disabled...");
+    }
+    void Verbose(bool enable=true){ m_verbose = enable; };
 
     struct error_count
     {
         int parse;
+        int isbGpsTime;
         int nmeaGgaTime;
         int nmeaZdaTime;
     } m_errorCount = {};
     
 private:
+    std::deque<DeviceRuntimeTests::msg_history_t>& AddMsgHistory(std::deque<DeviceRuntimeTests::msg_history_t> &hist, DeviceRuntimeTests::msg_history_t msgHist);
     void TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf);
     void TestNmeaGga(const uint8_t* msg, int msgSize);
     void TestNmeaZda(const uint8_t* msg, int msgSize);
-    bool CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist);
-    bool CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist);
+    bool CheckGpsDuplicate(const char* description, int &count, std::deque<msg_history_t> &hist);
+    bool CheckGpsTimeReverse(const char* description, int &count, std::deque<msg_history_t> &hist);
+    bool CheckGpsIrregularPeriod(const char* description, int &count, std::deque<msg_history_t> &hist);
     void LogEvent(std::string str);
     void LogEvent(const char *format, ...);
     std::string Timestamp();
@@ -88,6 +105,7 @@ private:
     std::string m_filename;
     std::string m_log;
     bool m_enable = false;
+    bool m_verbose = false;
     dev_info_t m_devInfo = {};
     std::string m_portName;
 
@@ -95,20 +113,19 @@ private:
     RuntimeTest     m_testZdaDuplicate{"ZDA Duplicate"};
     RuntimeTest     m_testGgaTimeReverse{"GGA Time Reverse"};
     RuntimeTest     m_testZdaTimeReverse{"ZDA Time Reverse"};
-
-    gps_pos_t       m_gps1Pos;
+    RuntimeTest     m_testZdaTimeJump{"ZDA Time Jump"};
 
     struct
     {
         struct
         {
-            msg_history_t   gps1Pos;
+            std::deque<msg_history_t>   gps1Pos;
         } isb;
 
         struct
         {
-            msg_history_t   zda;
-            msg_history_t   gga;
+            std::deque<msg_history_t>   zda;
+            std::deque<msg_history_t>   gga;
         } nmea;
     } m_hist = {};
     

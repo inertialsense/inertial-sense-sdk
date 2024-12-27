@@ -117,7 +117,7 @@ TEST(protocol_nmea, zda_gps_time_skip)
 
         int n = nmea_zda(buf, sizeof(buf), pos);
 
-        ASSERT_EQ((g_sysParams.genFaultCode&GFC_GNSS_TIME_FAULT) != 0, toggle) << "genFaultCode failed at timeSec: " << timeSec;
+        ASSERT_EQ((g_sysParams.genFaultCode&GFC_GNSS_RECEIVER_TIME) != 0, toggle) << "genFaultCode failed at timeSec: " << timeSec;
         ASSERT_EQ(g_debug.i[6] != 0, fault) << "Correction offset failed at timeSec: " << timeSec;
         ASSERT_EQ(g_debug.i[5], (fault?simulatedOffsetMs/1000:0)) << "Correction offset failed at timeSec: " << timeSec;
 

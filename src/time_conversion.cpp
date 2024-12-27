@@ -203,13 +203,20 @@ double timeToGpst(gtime_t t, int *week)
 	return (double)(sec - (double)w * C_SECONDS_PER_WEEK) + t.sec;
 }
 
-void UtcDateTimeToGpsTime(const int dateTime[6], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek)
+void UtcDateTimeToGpsTime(const int dateTime[6], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek, double *debugGtm)
 {
     gtime_t gtm = epochToTime(dateTime);
     int week;
     gtm.time += leapSeconds;
     double iTOWd = timeToGpst(gtm, &week);
-    gpsTowMs = (uint32_t)((iTOWd * 1000.0) + 0.5);  // Round properly to nearest millisecond
+
+    // TODO: Remove debug later (WHJ)
+    if (debugGtm)
+    {
+        *debugGtm = (double)gtm.time + gtm.sec;
+    }
+
+    gpsTowMs = (uint32_t)((iTOWd * 1000.0) + 0.5);  // Ensure double rounds properly to nearest integer millisecond
     gpsWeek = week;
 }
 

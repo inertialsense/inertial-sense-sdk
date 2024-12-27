@@ -18,12 +18,8 @@
  */
 DeviceRuntimeTests::DeviceRuntimeTests()
 {
-    m_gps1Pos.leapS = C_GPS_LEAP_SECONDS;
-
     ISFileManager::CreateDirectory(LOG_DIRECTORY);
     m_filename = CreateLogFilename(LOG_DIRECTORY);
-
-    LogEvent("Realtime tests started...");
 }
 
 std::string DeviceRuntimeTests::CreateLogFilename(const std::string path, int serialNumber)
@@ -95,7 +91,7 @@ void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *
         return;
     }
     
-    // printf("ISB: ID %d  Size %d\n", dataHdr.id, dataHdr.size);
+//    printf("ISB: ID %d  Size %d\n", dataHdr.id, dataHdr.size);
 
     switch(dataHdr.id)
     {
@@ -113,19 +109,22 @@ void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *
     }
 }
 
+std::deque<DeviceRuntimeTests::msg_history_t>& DeviceRuntimeTests::AddMsgHistory(std::deque<DeviceRuntimeTests::msg_history_t> &hist, DeviceRuntimeTests::msg_history_t msgHist)
+{
+    hist.push_front(msgHist);
+    if (hist.size() > 3) { hist.pop_back(); }    // Keep 2, newest at front
+    return hist;
+}
+
 void DeviceRuntimeTests::TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf)
 {
-    msg_history_t &hist = m_hist.isb.gps1Pos;
+    std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.isb.gps1Pos, msg_history_t((gps_pos_t*)dataBuf));
 
-    copyDataPToStructP2(&m_gps1Pos, &dataHdr, dataBuf, sizeof(gps_pos_t));
+//        printf("ISB GpsPos1 (%d towMs, %d week)", hist[0].gpsTowMs, hist[0].gpsWeek);
 
-    // printf("ISB GpsPos1 (%d ms, %d wkday): %.*s", m_gps1Pos.timeOfWeekMs, utcWeekday, msgSize, msg);
-
-    CheckGpsDuplicate  ("ISB GpsPos1 Error", m_errorCount.nmeaGgaTime, m_gps1Pos.timeOfWeekMs, m_gps1Pos.week, NULL, 0, hist);
-    CheckGpsTimeReverse("ISB GpsPos1 Error", m_errorCount.nmeaGgaTime, m_gps1Pos.timeOfWeekMs, m_gps1Pos.week, NULL, 0, hist);
-
-    // Update history
-    hist.update(m_gps1Pos.timeOfWeekMs, m_gps1Pos.week, NULL, 0);
+    CheckGpsDuplicate       ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
+    CheckGpsTimeReverse     ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
+    CheckGpsIrregularPeriod ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
 }
 
 void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
@@ -135,7 +134,7 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
         return;
     }
 
-    // printf("NMEA (%d): %.*s", msgSize, msgSize, msg);
+//    printf("NMEA (%d): %.*s", msgSize, msgSize, msg);
     
     int id = getNmeaMsgId(msg, msgSize);
     switch(id)
@@ -147,38 +146,33 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
 
 void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
 {
-    msg_history_t &hist = m_hist.nmea.gga;
+    int utcWeekday = gpsTowMsToUtcWeekday(m_hist.isb.gps1Pos[0].gpsTowMs, C_GPS_LEAP_SECONDS);
     gps_pos_t gpsPos = {};
-
     utc_time_t t;
-    int utcWeekday = gpsTowMsToUtcWeekday(gpsPos.timeOfWeekMs, m_gps1Pos.leapS);
     nmea_parse_gga((const char *)msg, msgSize, gpsPos, t, utcWeekday);
+    std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.nmea.gga, msg_history_t(gpsPos.timeOfWeekMs, gpsPos.week, (uint8_t*)msg, msgSize));
 
-    // printf("NMEA GGA (%d ms, %d wkday): %.*s", gpsPos.timeOfWeekMs, utcWeekday, msgSize, msg);
+//    printf("NMEA GGA (%d ms, %d wkday): %.*s", gpsPos.timeOfWeekMs, utcWeekday, msgSize, msg);
 
-    CheckGpsDuplicate  ("NMEA GGA Error", m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, msg, msgSize, hist);
-    CheckGpsTimeReverse("NMEA GGA Error", m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, msg, msgSize, hist);
-
-    // Update history
-    hist.update(gpsPos.timeOfWeekMs, gpsPos.week, (uint8_t*)msg, msgSize);
+    CheckGpsDuplicate       ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
+    CheckGpsTimeReverse     ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
+    CheckGpsIrregularPeriod ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
 }
 
 void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
 {
-    msg_history_t &hist = m_hist.nmea.zda;
     uint32_t gpsTowMs;
     uint32_t gpsWeek;
     utc_date_t utcDate; 
     utc_time_t utcTime;
     nmea_parse_zda((char*)msg, msgSize, gpsTowMs, gpsWeek, utcDate, utcTime, C_GPS_LEAP_SECONDS);
+    std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.nmea.zda, msg_history_t(gpsTowMs, gpsWeek, (uint8_t*)msg, msgSize));
 
-    // printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
+//    printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
 
-    CheckGpsDuplicate  ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
-    CheckGpsTimeReverse("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
-
-    // Update history
-    hist.update(gpsTowMs, gpsWeek, (uint8_t*)msg, msgSize);
+    CheckGpsDuplicate       ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
+    CheckGpsTimeReverse     ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
+    CheckGpsIrregularPeriod ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
 }
 
 std::string printfToString(const char* format, ...) 
@@ -208,18 +202,21 @@ std::string printfToString(const char* format, ...)
     return str;
 }
 
-bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist)
+bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, std::deque<msg_history_t> &hist)
 {
-    int64_t toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
-    int64_t histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
+    if (hist.size()<2) return false;
+    
+    int64_t toyMs[2];
+    for (int i=0; i<2; i++)
+        toyMs[i] = hist[i].gpsTowMs + hist[i].gpsWeek * C_MILLISECONDS_PER_WEEK;     // newest at front
 
-    if (toyMs == histToyMs)
+    if (toyMs[0] == toyMs[1])
     {   // Duplicate time
-        LogEvent("NMEA Error: %s: Duplicate time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist.gpsTowMs, hist.gpsWeek, towMs, gpsWeek);
-        if (msg)
+        LogEvent("Error: %s: Duplicate time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
+        if (hist[0].msgSize)
         {
-            LogEvent("  1: %.*s", hist.msgSize-2, (char*)hist.msg);
-            LogEvent("  2: %.*s", msgSize-2, (char*)msg);
+            for (int i=0; i<2; i++)
+                LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
     }
@@ -227,18 +224,47 @@ bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, 
     return false;
 }
 
-bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist)
+bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count, std::deque<msg_history_t> &hist)
 {
-    int64_t toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
-    int64_t histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
+    if (hist.size()<2) return false;
 
-    if (toyMs < histToyMs)
+    int64_t toyMs[2];
+    for (int i=0; i<2; i++)
+        toyMs[i] = hist[i].gpsTowMs + hist[i].gpsWeek * C_MILLISECONDS_PER_WEEK;     // newest at front
+
+    if (toyMs[0] < toyMs[1])
     {   // Reversed time
-        LogEvent("NMEA Error: %s: Reversed time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist.gpsTowMs, hist.gpsWeek, towMs, gpsWeek);
-        if (msg)
+        LogEvent("Error: %s: Reversed time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
+        if (hist[0].msgSize)
         {
-            LogEvent("  1: %.*s", hist.msgSize-2, (char*)hist.msg);
-            LogEvent("  2: %.*s", msgSize-2, (char*)msg);
+            for (int i=0; i<2; i++)
+                LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
+        }
+        return true;
+    }
+
+    return false;
+}
+
+bool DeviceRuntimeTests::CheckGpsIrregularPeriod(const char* description, int &count, std::deque<msg_history_t> &hist)
+{
+    if (hist.size()<3) return false;
+
+    int64_t toyMs[3];
+    for (int i=0; i<3; i++)
+        toyMs[i] = hist[i].gpsTowMs + hist[i].gpsWeek * C_MILLISECONDS_PER_WEEK;     // newest at front
+
+    int64_t dtMs[2];
+    for (int i=0; i<2; i++)
+        dtMs[i] = toyMs[i] - toyMs[i+1];
+
+    if (dtMs[0] != dtMs[1])
+    {   // Irregular period
+        LogEvent("Error: %s: Irregular period (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
+        if (hist[0].msgSize)
+        {
+            for (int i=0; i<3; i++)
+                LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
     }
