@@ -788,7 +788,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
                 utcOffsetSec = 0;
             }
         }
-        g_debug.f[8] = utcOffsetSec;
+        g_debug.f[8] += 1.0f;
     }
 
     // Update history
