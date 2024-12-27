@@ -731,7 +731,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     utc_time_t t;
     gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &t);
 
-#if 0 // defined(IMX_5) || defined(SDK_UNIT_TEST)
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
     ///////////////////////////////////////////////////////////////////////
     // TODO: (WHJ) ZDA debug.  Remove after ZDA time skip issue is resolved. (SN-6066)
 
@@ -778,13 +778,17 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
 #if PLATFORM_IS_EMBEDDED
             g_gnssTimeFaultTimeMs = g_timeMs;
 #endif
-            g_debug.i[5] = utcOffsetSec;
+            g_debug.i[5] = utcMs;
+            g_debug.i[6] = gpsMs;
+            g_debug.f[5] = utcDtMs;
+            g_debug.f[6] = cpuDtMs;    
+            g_debug.f[7] = utcOffsetSec;
             if (_ABS(utcOffsetSec) > 2)
             {   // Offset exceeded limit
                 utcOffsetSec = 0;
             }
         }
-        g_debug.i[6] = utcOffsetSec;
+        g_debug.f[8] = utcOffsetSec;
     }
 
     // Update history
@@ -792,7 +796,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     lastUtcMs = utcMs;
     lastUtcHour = t.hour;
 
-    // Apply correction offset
+#if 0    // Apply correction offset
     if (utcOffsetSec)
     {
         t.second -= utcOffsetSec;
@@ -817,6 +821,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
             }
         }
     }
+#endif
 
     // TODO: (WHJ) End of debug section
     ///////////////////////////////////////////////////////////////////////
