@@ -215,7 +215,7 @@ bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, 
         LogEvent("Error: %s: Duplicate time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
         if (hist[0].msgSize)
         {
-            for (int i=0; i<2; i++)
+            for (int i=1; i>=0; i--)
                 LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
@@ -237,7 +237,7 @@ bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count
         LogEvent("Error: %s: Reversed time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
         if (hist[0].msgSize)
         {
-            for (int i=0; i<2; i++)
+            for (int i=1; i>=0; i--)
                 LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
@@ -263,7 +263,7 @@ bool DeviceRuntimeTests::CheckGpsIrregularPeriod(const char* description, int &c
         LogEvent("Error: %s: Irregular period (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
         if (hist[0].msgSize)
         {
-            for (int i=0; i<3; i++)
+            for (int i=2; i>=0; i--)
                 LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
