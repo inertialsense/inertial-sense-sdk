@@ -50,12 +50,12 @@ void gpsWeekTowMsToUtcDateTime(uint32_t gpsWeek, uint32_t gpsTowMs, int gpsLeapS
 void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeekMs, int gpsLeapS)
 {
     int towMs = 
+        utcWeekday   * C_MILLISECONDS_PER_DAY +
         time->hour   * C_MILLISECONDS_PER_HOUR +
         time->minute * C_MILLISECONDS_PER_MINUTE +
         time->second * C_MILLISECONDS_PER_SECOND +
         time->millisecond +
-        gpsLeapS * 1000 +
-        utcWeekday * C_MILLISECONDS_PER_DAY;
+        gpsLeapS * 1000;
 
     // Handle week wrap
     if (towMs >= C_MILLISECONDS_PER_WEEK)

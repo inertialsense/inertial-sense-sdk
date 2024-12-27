@@ -120,7 +120,7 @@ void DeviceRuntimeTests::TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *
 {
     std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.isb.gps1Pos, msg_history_t((gps_pos_t*)dataBuf));
 
-//        printf("ISB GpsPos1 (%d towMs, %d week)", hist[0].gpsTowMs, hist[0].gpsWeek);
+    WriteStatus("ISB GpsPos1 (%d towMs, %d week)", hist[0].gpsTowMs, hist[0].gpsWeek);
 
     CheckGpsDuplicate       ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
     CheckGpsTimeReverse     ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
@@ -134,7 +134,7 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
         return;
     }
 
-//    printf("NMEA (%d): %.*s", msgSize, msgSize, msg);
+    WriteStatus("NMEA (%d): %.*s", msgSize, msgSize, msg);
     
     int id = getNmeaMsgId(msg, msgSize);
     switch(id)
@@ -146,13 +146,13 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
 
 void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
 {
-    int utcWeekday = gpsTowMsToUtcWeekday(m_hist.isb.gps1Pos[0].gpsTowMs, C_GPS_LEAP_SECONDS);
+    int utcWeekday = gpsTowMsToUtcWeekday(m_hist.nmea.gga[0].gpsTowMs, C_GPS_LEAP_SECONDS);
     gps_pos_t gpsPos = {};
     utc_time_t t;
     nmea_parse_gga((const char *)msg, msgSize, gpsPos, t, utcWeekday);
     std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.nmea.gga, msg_history_t(gpsPos.timeOfWeekMs, gpsPos.week, (uint8_t*)msg, msgSize));
 
-//    printf("NMEA GGA (%d ms, %d wkday): %.*s", gpsPos.timeOfWeekMs, utcWeekday, msgSize, msg);
+    WriteStatus("NMEA GGA (%d ms, %d wkday): %.*s", gpsPos.timeOfWeekMs, utcWeekday, msgSize, msg);
 
     CheckGpsDuplicate       ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
     CheckGpsTimeReverse     ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
@@ -168,7 +168,7 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
     nmea_parse_zda((char*)msg, msgSize, gpsTowMs, gpsWeek, utcDate, utcTime, C_GPS_LEAP_SECONDS);
     std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.nmea.zda, msg_history_t(gpsTowMs, gpsWeek, (uint8_t*)msg, msgSize));
 
-//    printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
+    WriteStatus("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
 
     CheckGpsDuplicate       ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
     CheckGpsTimeReverse     ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
@@ -312,12 +312,11 @@ void DeviceRuntimeTests::LogEvent(std::string str)
     // Prepend timestamp
     str = Timestamp() + str;
 
-#define MAX_LOG_SIZE    500000
     // Prevent logging too much data
-    if (m_log.size() + str.size() > MAX_LOG_SIZE) 
+    if (m_log.size() + str.size() > RUNTIME_TEST_MAX_LOG_SIZE) 
     {
         // If appending would exceed maxSize, trim the existing content first
-        m_log = m_log.substr(0, MAX_LOG_SIZE - str.size());
+        m_log = m_log.substr(0, RUNTIME_TEST_MAX_LOG_SIZE - str.size());
     }
     m_log += str;
 
@@ -332,6 +331,21 @@ void DeviceRuntimeTests::LogEvent(std::string str)
         fprintf(file, "%.*s", (int)str.size(), str.c_str());
         fclose(file);
     }
+}
+
+void DeviceRuntimeTests::WriteStatus(std::string str)
+{   
+    // Prevent logging too much data
+    if (m_status.size() + str.size() > RUNTIME_TEST_MAX_LOG_SIZE) 
+    {
+        // If appending would exceed maxSize, trim the existing content first
+        m_status = m_status.substr(0, RUNTIME_TEST_MAX_LOG_SIZE - str.size());
+    }
+    m_status += str;
+
+#if 0   // Print to display
+    std::cout << str;
+#endif
 }
 
 std::string formatString(const char* format, va_list args) 
@@ -373,5 +387,13 @@ void DeviceRuntimeTests::LogEvent(const char *format, ...)
     va_list args;
     va_start(args, format);
     LogEvent(formatString(format, args));
+    va_end(args);
+}
+
+void DeviceRuntimeTests::WriteStatus(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    WriteStatus(formatString(format, args));
     va_end(args);
 }

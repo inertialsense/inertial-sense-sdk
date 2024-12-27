@@ -3,6 +3,7 @@
 #include "ISComm.h"
 #include "time_conversion.h"
 
+#define RUNTIME_TEST_MAX_LOG_SIZE    500000
 
 class RuntimeTest
 {
@@ -66,11 +67,18 @@ public:
                 m_errorCount.nmeaZdaTime;
     }
     bool HasLog(){ return m_log.size() != 0; }
+    bool HasStatus(){ return m_status.size() != 0; }
     std::string Log()
     {
         std::string log = m_log;
         m_log.clear();
         return log; 
+    }
+    std::string Status()
+    {
+        std::string status = m_status;
+        m_status.clear();
+        return status; 
     }
     void SetPortName(std::string portName){ m_portName = portName; };
     void Enable(bool enable=true)
@@ -98,10 +106,13 @@ private:
     bool CheckGpsIrregularPeriod(const char* description, int &count, std::deque<msg_history_t> &hist);
     void LogEvent(std::string str);
     void LogEvent(const char *format, ...);
+    void WriteStatus(std::string str);
+    void WriteStatus(const char *format, ...);
     std::string Timestamp();
 
     std::string m_filename;
     std::string m_log;
+    std::string m_status;
     bool m_enable = false;
     bool m_verbose = false;
     dev_info_t m_devInfo = {};
