@@ -123,10 +123,7 @@ void DeviceRuntimeTests::TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *
 
     WriteStatus("ISB GpsPos1 (%d towMs, %d week)\n", hist[0].gpsTowMs, hist[0].gpsWeek);
 
-    CheckGpsTimeDuplicate ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
-    CheckGpsTimeReversed  ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
-    CheckGpsTimeIrregular ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
-    // CheckGpsRxIrregular   ("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
+    CheckGpsTime("ISB Gps1Pos Error", m_errorCount.isbGpsTime, hist);
 }
 
 void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
@@ -159,10 +156,7 @@ void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
 
     // WriteStatus("NMEA GGA (%d ms, %d wkday): %.*s", gpsPos.timeOfWeekMs, utcWeekday, msgSize, msg);
 
-    CheckGpsTimeDuplicate ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
-    CheckGpsTimeReversed  ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
-    CheckGpsTimeIrregular ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
-    // CheckGpsRxIrregular   ("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
+    CheckGpsTime("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
 }
 
 /**
@@ -179,10 +173,7 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
 
     // WriteStatus("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
 
-    CheckGpsTimeDuplicate ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
-    CheckGpsTimeReversed  ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
-    CheckGpsTimeIrregular ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
-    // CheckGpsRxIrregular   ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
+    CheckGpsTime("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
 }
 
 std::string printfToString(const char* format, ...)
@@ -210,6 +201,13 @@ std::string printfToString(const char* format, ...)
     va_end(args);
 
     return str;
+}
+
+bool DeviceRuntimeTests::CheckGpsTime(const char* description, int &count, std::deque<msg_history_t> &hist)
+{
+    return CheckGpsTimeIrregular (description, count, hist) ||
+           CheckGpsTimeDuplicate (description, count, hist) ||
+           CheckGpsTimeReversed  (description, count, hist);
 }
 
 bool DeviceRuntimeTests::CheckGpsTimeDuplicate(const char* description, int &count, std::deque<msg_history_t> &hist)
@@ -256,6 +254,9 @@ bool DeviceRuntimeTests::CheckGpsTimeReversed(const char* description, int &coun
     return false;
 }
 
+/**
+ * @brief Detects irregular timestamps in a message stream and reports cause as either dropped message(s) or irregular timestamps.  
+ */
 bool DeviceRuntimeTests::CheckGpsTimeIrregular(const char* description, int &count, std::deque<msg_history_t> &hist)
 {
     if (hist.size()<3) return false;
@@ -266,49 +267,37 @@ bool DeviceRuntimeTests::CheckGpsTimeIrregular(const char* description, int &cou
     for (int i=0; i<3; i++)
         toyMs[i] = hist[i].gpsTowMs + hist[i].gpsWeek * C_MILLISECONDS_PER_WEEK;     // newest at front
 
-    int64_t dtMs[2];
-    for (int i=0; i<2; i++)
-        dtMs[i] = toyMs[i] - toyMs[i+1];
-
-    if (dtMs[0] != dtMs[1])
-    {   // Irregular period
-        hist[0].timeIrregular = true;
-        LogEvent(SYS_TIME_NOW, "Error: %s: Irregular time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
-        if (hist[0].msgSize)
-        {
-            for (int i=2; i>=0; i--)
-                LogEvent(hist[i].localTime, "  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
-        }
-        return true;
-    }
-
-    return false;
-}
-
-bool DeviceRuntimeTests::CheckGpsRxIrregular(const char* description, int &count, std::deque<msg_history_t> &hist)
-{
-    if (hist.size()<3) return false;
-
-    if (hist[1].rxIrregular) return false;  // Prevent displaying irregular period twice
-
+    int64_t rxDtMs[2];
     int64_t dtMs[2];
     for (int i=0; i<2; i++)
     {
+        dtMs[i] = toyMs[i] - toyMs[i+1];
         auto delta = hist[i].localTime - hist[i+1].localTime;
-        dtMs[i] = std::chrono::duration_cast<std::chrono::microseconds>(delta).count();
+        rxDtMs[i] = std::chrono::duration_cast<std::chrono::microseconds>(delta).count();
     }
 
-    double dtRatio = (double)dtMs[0] / (double)dtMs[1];
+    double dtRatio = (double)rxDtMs[0] / (double)rxDtMs[1];
 
-    // Check if the interval between received messages changed by more than 50%
-    if (dtRatio < 0.75 || dtRatio > 1.5)
-    {   // Dropped message
-        hist[0].rxIrregular = true;
-        LogEvent(SYS_TIME_NOW, "Error: %s: Message dropped (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
+    if (dtMs[0] != dtMs[1])
+    {   // Irregular timestamps
+        hist[0].timeIrregular = true;
+
+        // Check if the interval between received messages changed by more than 50%
+        std::string causeStr;
+        if (dtRatio < 0.75 || dtRatio > 1.5)
+        {   // Dropped message
+            causeStr = "Dropped message";
+        }
+        else
+        {   // Irregular timestamp
+            causeStr = "Irregular time";
+        }
+
+        LogEvent(SYS_TIME_NOW, "Error: %s: %s (#%d): %d ms %d week >> %d ms %d week", description, causeStr.c_str(), ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
         if (hist[0].msgSize)
         {
             for (int i=2; i>=0; i--)
-                LogEvent(hist[i].localTime, "  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
+                LogEvent(hist[i].localTime, "  %d: %.*s", 3-i, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
     }

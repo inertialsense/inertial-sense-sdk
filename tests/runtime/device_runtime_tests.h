@@ -61,7 +61,6 @@ class DeviceRuntimeTests
         int             msgSize = 0;
         p_data_hdr_t    dataHdr = {};
         bool            timeIrregular = false;    // used to prevent redundant error logging
-        bool            rxIrregular = false;         // used to prevent redundant error logging
     } msg_history_t;
 
 public:
@@ -111,10 +110,10 @@ private:
     void TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf);
     void TestNmeaGga(const uint8_t* msg, int msgSize);
     void TestNmeaZda(const uint8_t* msg, int msgSize);
+    bool CheckGpsTime(const char* description, int &count, std::deque<msg_history_t> &hist);
     bool CheckGpsTimeDuplicate(const char* description, int &count, std::deque<msg_history_t> &hist);
     bool CheckGpsTimeReversed(const char* description, int &count, std::deque<msg_history_t> &hist);
     bool CheckGpsTimeIrregular(const char* description, int &count, std::deque<msg_history_t> &hist);
-    bool CheckGpsRxIrregular(const char* description, int &count, std::deque<msg_history_t> &hist);
     void LogEvent(system_time_t time, std::string str);
     void LogEvent(system_time_t time, const char *format, ...);
     void WriteStatus(std::string str);
