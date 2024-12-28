@@ -1,9 +1,14 @@
 #include <cstdint>
+#include <chrono>
+#include <ctime>
 #include <deque>
 #include "ISComm.h"
 #include "time_conversion.h"
 
-#define RUNTIME_TEST_MAX_LOG_SIZE    500000
+#define RUNTIME_TEST_MAX_LOG_SIZE   500000
+#define SYS_TIME_NOW                std::chrono::system_clock::now()
+
+typedef std::chrono::time_point<std::chrono::system_clock> system_time_t;
 
 class RuntimeTest
 {
@@ -24,6 +29,7 @@ class DeviceRuntimeTests
     {
         sMsgHistory(uint32_t gpsTowMs_, uint32_t gpsWeek_, uint8_t *msg_ = NULL, int msgSize_ = 0)
         {
+            localTime = SYS_TIME_NOW;
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
             msgSize = msgSize_;
@@ -31,6 +37,7 @@ class DeviceRuntimeTests
         }
         sMsgHistory(gps_pos_t *gps, uint8_t *msg_ = NULL, int msgSize_ = 0)
         {
+            localTime = SYS_TIME_NOW;
             gpsTowMs = gps->timeOfWeekMs;
             gpsWeek = gps->week;
             msgSize = msgSize_;
@@ -38,20 +45,22 @@ class DeviceRuntimeTests
         }
         sMsgHistory(uint32_t gpsTowMs_, uint32_t gpsWeek_, p_data_hdr_t &dataHdr_, const uint8_t *dataBuf_)
         {
+            localTime = SYS_TIME_NOW;
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
             dataHdr = dataHdr_;
             memcpy(msg, dataBuf_, _MIN(dataHdr.size, MAX_MSG_LENGTH_NMEA));
         }
 
-        utc_date_t date;
-        utc_time_t time;
-        uint32_t gpsTowMs;
-        uint32_t gpsWeek;
-        uint8_t msg[MAX_MSG_LENGTH_NMEA];
-        int msgSize = 0;
-        p_data_hdr_t dataHdr = {};
-        bool irregularPeriod = false;
+        system_time_t   localTime;
+        utc_date_t      date;
+        utc_time_t      time;
+        uint32_t        gpsTowMs;
+        uint32_t        gpsWeek;
+        uint8_t         msg[MAX_MSG_LENGTH_NMEA];
+        int             msgSize = 0;
+        p_data_hdr_t    dataHdr = {};
+        bool            irregularPeriod = false;    // used to prevent redundant logging of errors
     } msg_history_t;
 
 public:
@@ -84,7 +93,7 @@ public:
     void Enable(bool enable=true)
     { 
         m_enable = enable;
-        enable ? LogEvent("Tests enabled...") : LogEvent("Tests disabled...");
+        LogEvent(SYS_TIME_NOW, (enable ? "Tests enabled..." : "Tests disabled..."));
     }
     void Verbose(bool enable=true){ m_verbose = enable; };
 
@@ -104,11 +113,11 @@ private:
     bool CheckGpsDuplicate(const char* description, int &count, std::deque<msg_history_t> &hist);
     bool CheckGpsTimeReverse(const char* description, int &count, std::deque<msg_history_t> &hist);
     bool CheckGpsIrregularPeriod(const char* description, int &count, std::deque<msg_history_t> &hist);
-    void LogEvent(std::string str);
-    void LogEvent(const char *format, ...);
+    void LogEvent(system_time_t time, std::string str);
+    void LogEvent(system_time_t time, const char *format, ...);
     void WriteStatus(std::string str);
     void WriteStatus(const char *format, ...);
-    std::string Timestamp();
+    std::string Timestamp(system_time_t time);
 
     std::string m_filename;
     std::string m_log;

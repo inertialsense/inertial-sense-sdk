@@ -1,5 +1,3 @@
-#include <chrono>
-// #include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -10,7 +8,7 @@
 #include "ISDataMappings.h"
 
 
-#define LOG_DIRECTORY   "realtime_logs"
+#define LOG_DIRECTORY       "realtime_logs"
 
 /**
  * @brief This class provides realtime evaluation conditions or errors in data streaming from the Inertial Sense products.
@@ -25,11 +23,11 @@ DeviceRuntimeTests::DeviceRuntimeTests()
 std::string DeviceRuntimeTests::CreateLogFilename(const std::string path, int serialNumber)
 {
     // Get current time
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    auto now = SYS_TIME_NOW;
+    auto in_time = std::chrono::system_clock::to_time_t(now);
 
     // Convert to local time
-    std::tm bt = *localtime(&in_time_t);
+    std::tm bt = *localtime(&in_time);
 
     // Create a stringstream filename
     std::stringstream ss;
@@ -81,7 +79,7 @@ void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
     }
     
     m_errorCount.parse = comm.rxErrorCount;
-    LogEvent("Parse Error #%d, size %d: %s", comm.rxErrorCount, size, parser.c_str());
+    LogEvent(SYS_TIME_NOW, "Parse Error #%d, size %d: %s", comm.rxErrorCount, size, parser.c_str());
 }
 
 void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf)
@@ -215,11 +213,11 @@ bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, 
 
     if (toyMs[0] == toyMs[1])
     {   // Duplicate time
-        LogEvent("Error: %s: Duplicate time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
+        LogEvent(SYS_TIME_NOW, "Error: %s: Duplicate time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
         if (hist[0].msgSize)
         {
             for (int i=1; i>=0; i--)
-                LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
+                LogEvent(hist[i].localTime, "  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
     }
@@ -237,11 +235,11 @@ bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count
 
     if (toyMs[0] < toyMs[1])
     {   // Reversed time
-        LogEvent("Error: %s: Reversed time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
+        LogEvent(SYS_TIME_NOW, "Error: %s: Reversed time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
         if (hist[0].msgSize)
         {
             for (int i=1; i>=0; i--)
-                LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
+                LogEvent(hist[i].localTime, "  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
     }
@@ -266,11 +264,11 @@ bool DeviceRuntimeTests::CheckGpsIrregularPeriod(const char* description, int &c
     if (dtMs[0] != dtMs[1])
     {   // Irregular period
         hist[0].irregularPeriod = true;
-        LogEvent("Error: %s: Irregular period (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
+        LogEvent(SYS_TIME_NOW, "Error: %s: Irregular period (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist[1].gpsTowMs, hist[1].gpsWeek, hist[0].gpsTowMs, hist[0].gpsWeek);
         if (hist[0].msgSize)
         {
             for (int i=2; i>=0; i--)
-                LogEvent("  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
+                LogEvent(hist[i].localTime, "  %d: %.*s", i+1, hist[i].msgSize-2, (char*)hist[i].msg);
         }
         return true;
     }
@@ -278,19 +276,17 @@ bool DeviceRuntimeTests::CheckGpsIrregularPeriod(const char* description, int &c
     return false;
 }
 
-std::string DeviceRuntimeTests::Timestamp() 
+std::string DeviceRuntimeTests::Timestamp(system_time_t time) 
 {
-    // Get current time as a high-resolution time_point
-    auto now = std::chrono::system_clock::now();
     // Convert time_point to time_t for easier formatting of date and time
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    auto in_time = std::chrono::system_clock::to_time_t(time);
 
     // To add milliseconds, subtract time_t from time_point, then cast to milliseconds
-    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
 
     std::stringstream ss;
     // Use put_time to format the date and time part
-    ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d %H:%M:%S");
+    ss << std::put_time(std::localtime(&in_time), "%Y%m%d %H:%M:%S");
     // Manually add the formatted milliseconds
     ss << '.' << std::setfill('0') << std::setw(3) << milliseconds.count();
 
@@ -303,7 +299,7 @@ std::string DeviceRuntimeTests::Timestamp()
     return timestamp;
 }
 
-void DeviceRuntimeTests::LogEvent(std::string str)
+void DeviceRuntimeTests::LogEvent(system_time_t time, std::string str)
 {   
     // Add serial number if non-zero
     if (m_devInfo.serialNumber)
@@ -313,7 +309,7 @@ void DeviceRuntimeTests::LogEvent(std::string str)
     str += "\n";
 
     // Prepend timestamp
-    str = Timestamp() + str;
+    str = Timestamp(time) + str;
 
     // Prevent logging too much data
     if (m_log.size() + str.size() > RUNTIME_TEST_MAX_LOG_SIZE) 
@@ -385,11 +381,11 @@ std::string formatString(const char* format, va_list args)
     }
 }
 
-void DeviceRuntimeTests::LogEvent(const char *format, ...)
+void DeviceRuntimeTests::LogEvent(system_time_t time, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    LogEvent(formatString(format, args));
+    LogEvent(time, formatString(format, args));
     va_end(args);
 }
 
