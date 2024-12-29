@@ -4,6 +4,10 @@
 #include "data_sets.h"
 #include "time_conversion.h"
 
+#if !defined(GPX_1) && !defined(IMX_5) && !defined(NAV_POST_PROCESS)
+extern uint32_t g_cpu_msec;
+#endif
+
 #define NMEA_CMD_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
