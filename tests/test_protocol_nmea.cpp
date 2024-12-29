@@ -61,9 +61,9 @@ void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
     EXPECT_EQ(g1.status, g2.status);
 }
 
-extern uint32_t g_cpu_msec;
-extern sys_params_t g_sysParams;
-extern debug_array_t g_debug;
+uint32_t g_cpu_msec;
+sys_params_t g_sysParams;
+debug_array_t g_debug;
 
 void initGlobals()
 {
@@ -79,7 +79,7 @@ bool timeWithin(uint32_t timeSec, uint32_t startSec, uint32_t durationSec)
 
 TEST(protocol_nmea, zda_gps_time_skip)
 {
-    // GTEST_SKIP();
+    GTEST_SKIP();   // This test must be run manually as the statically SDK build does not include the ZDA TOD work around code
 
 #ifdef _WIN32
     GTEST_SKIP() << "Skipping test on Windows.";

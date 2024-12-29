@@ -710,15 +710,10 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
 }
 
 // TODO: Remove after ZDA issue is resolved.
-#ifndef GPX_1 
-#ifdef IMX_5
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
+extern uint32_t g_cpu_msec;
 extern sys_params_t g_sysParams;
 extern debug_array_t g_debug;
-#else
-uint32_t g_cpu_msec;
-sys_params_t g_sysParams;
-debug_array_t g_debug;
-#endif
 #endif
 
 // TODO: Remove after ZDA issue is resolved.
@@ -736,11 +731,11 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     utc_time_t t;
     gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &t);
 
-#ifndef GPX_1
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
     ///////////////////////////////////////////////////////////////////////
     // TODO: (WHJ) ZDA debug.  Remove after ZDA time skip issue is resolved. (SN-6066)
 
-#ifdef IMX_5
+#if defined(IMX_5)
     int32_t cpuMs = (int32_t)time_msec();
 #else
     int32_t cpuMs = (int32_t)g_cpu_msec;
