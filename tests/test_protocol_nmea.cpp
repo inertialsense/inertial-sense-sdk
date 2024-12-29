@@ -101,11 +101,6 @@ TEST(protocol_nmea, zda_gps_time_skip)
             timeWithin(timeSec, C_SECONDS_PER_WEEK/4, 200) || 
             timeWithin(timeSec, C_SECONDS_PER_WEEK/2, 10);
 
-        if (timeSec == 151201)
-        {
-            int k = 0;
-        }
-
         bool toggle = fault != faultLast;
         faultLast = fault;
         if (toggle)
