@@ -4,7 +4,7 @@
 #include "data_sets.h"
 #include "time_conversion.h"
 
-#ifndef GPX_1
+#if !defined(GPX_1) && !defined(IMX_5)
 extern uint32_t g_cpu_msec;
 #endif
 

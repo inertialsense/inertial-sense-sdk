@@ -62,8 +62,8 @@ void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
 }
 
 extern uint32_t g_cpu_msec;
-sys_params_t g_sysParams;
-debug_array_t g_debug;
+extern sys_params_t g_sysParams;
+extern debug_array_t g_debug;
 
 void initGlobals()
 {

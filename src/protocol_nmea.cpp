@@ -710,10 +710,15 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
 }
 
 // TODO: Remove after ZDA issue is resolved.
-#ifndef GPX_1
-uint32_t g_cpu_msec;
+#ifndef GPX_1 
+#ifdef IMX_5
 extern sys_params_t g_sysParams;
 extern debug_array_t g_debug;
+#else
+uint32_t g_cpu_msec;
+sys_params_t g_sysParams;
+debug_array_t g_debug;
+#endif
 #endif
 
 // TODO: Remove after ZDA issue is resolved.
