@@ -148,7 +148,7 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
  */
 void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
 {
-    int utcWeekday = gpsTowMsToUtcWeekday(m_hist.nmea.gga[0].gpsTowMs, C_GPS_LEAP_SECONDS);
+    int utcWeekday = m_hist.nmea.gga.size() ? gpsTowMsToUtcWeekday(m_hist.nmea.gga[0].gpsTowMs, C_GPS_LEAP_SECONDS) : 0;
     gps_pos_t gpsPos = {};
     utc_time_t t;
     nmea_parse_gga((const char *)msg, msgSize, gpsPos, t, utcWeekday);
