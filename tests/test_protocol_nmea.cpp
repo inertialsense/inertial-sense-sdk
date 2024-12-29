@@ -61,7 +61,7 @@ void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
     EXPECT_EQ(g1.status, g2.status);
 }
 
-uint32_t g_cpu_msec;
+extern uint32_t g_cpu_msec;
 sys_params_t g_sysParams;
 debug_array_t g_debug;
 
