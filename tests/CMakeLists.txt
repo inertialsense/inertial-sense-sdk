@@ -32,16 +32,16 @@ endif()
 
 # Define the executable
 add_executable(${PROJECT_NAME} 
-    # ${TESTS_SOURCES}
-    # runtime/device_runtime_tests.cpp
+    ${TESTS_SOURCES}
+    runtime/device_runtime_tests.cpp
 
     # test_ISLogger.cpp
     # test_data_utils.cpp
 
-    test_protocol_nmea.cpp
-    test_time_conversion.cpp    
+    # test_protocol_nmea.cpp
+    # test_time_conversion.cpp    
     # test_runtime_tests.cpp
-    test_data_utils.cpp
+    # test_data_utils.cpp
 )
 
 if(WIN32)   # Windows

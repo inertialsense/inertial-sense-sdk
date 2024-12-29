@@ -774,6 +774,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
         if (adjOffsetSec)
         {
             utcOffsetSec += adjOffsetSec;
+
             g_sysParams.genFaultCode |= GFC_GNSS_RECEIVER_TIME;
 #if PLATFORM_IS_EMBEDDED
             g_gnssTimeFaultTimeMs = g_timeMs;
@@ -781,15 +782,15 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
             g_debug.i[5] = utcMs;
             g_debug.i[6] = gpsMs;
             g_debug.f[5] = utcDtMs;
-            g_debug.f[6] = cpuDtMs;    
-            g_debug.f[7] = utcOffsetSec;
+            g_debug.f[6] = cpuDtMs;
+            g_debug.f[8] += 1.0f;
             if (_ABS(utcOffsetSec) > 2)
             {   // Offset exceeded limit
                 utcOffsetSec = 0;
             }
         }
-        g_debug.f[8] += 1.0f;
     }
+    g_debug.f[7] = utcOffsetSec;
 
     // Update history
     lastCpuMs = cpuMs;

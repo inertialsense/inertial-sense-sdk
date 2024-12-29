@@ -61,31 +61,34 @@ TEST(time_conversion, GPS_to_UTC_to_GPS_time)
 {
     // GTEST_SKIP();
 
-    uint32_t gpsWeek = 2345;
     int leapS = C_GPS_LEAP_SECONDS;
 
     // Cycle through entire range of time of week
-    for (uint32_t gpsTowMs = 0; gpsTowMs < C_MILLISECONDS_PER_WEEK; gpsTowMs += 200)
+    uint32_t gpsWeek = 2345;
+    // for (uint32_t gpsWeek = 2345; gpsWeek < 2404; gpsWeek++)
     {
-#if 0   // Enable print for debugging
-        printf("tow: %d ms %d week   ", gpsTowMs, gpsWeek);
-        // PrintUtcStdTm(utcTime, msec);
-        printf("\n");
+        for (uint32_t gpsTowMs = 0; gpsTowMs < C_MILLISECONDS_PER_WEEK; gpsTowMs += 200)
+        {
+#if 0       // Enable print for debugging
+            printf("tow: %d ms %d week   ", gpsTowMs, gpsWeek);
+            // PrintUtcStdTm(utcTime, msec);
+            printf("\n");
 #endif
-        // Convert GPS time and week to UTC date and time
-        utc_date_t d;
-        utc_time_t t;
-        uint32_t milliseconds;
-        gpsWeekTowMsToUtcDateTime(gpsWeek, gpsTowMs, leapS, &d, &t, &milliseconds);
-        gpsTowMsToUtcTime(gpsTowMs, leapS, &t);
+            // Convert GPS time and week to UTC date and time
+            utc_date_t d;
+            utc_time_t t;
+            uint32_t milliseconds;
+            gpsWeekTowMsToUtcDateTime(gpsWeek, gpsTowMs, leapS, &d, &t, &milliseconds);
+            gpsTowMsToUtcTime(gpsTowMs, leapS, &t);
 
-        // Convert UTC date and time to GPS time and week 		
-        int datetime[7] = { d.year, d.month, d.day, t.hour, t.minute, t.second, (int)milliseconds };	// year,month,day,hour,min,sec,msec
-        uint32_t gpsTowMs2, gpsWeek2;
-        UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs2, gpsWeek2);
+            // Convert UTC date and time to GPS time and week 		
+            int datetime[7] = { d.year, d.month, d.day, t.hour, t.minute, t.second, (int)milliseconds };	// year,month,day,hour,min,sec,msec
+            uint32_t gpsTowMs2, gpsWeek2;
+            UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs2, gpsWeek2);
 
-        ASSERT_EQ(gpsTowMs, gpsTowMs2);
-        ASSERT_EQ(gpsWeek, gpsWeek2);
+            ASSERT_EQ(gpsTowMs, gpsTowMs2);
+            ASSERT_EQ(gpsWeek, gpsWeek2);
+        }
     }
 }
 
