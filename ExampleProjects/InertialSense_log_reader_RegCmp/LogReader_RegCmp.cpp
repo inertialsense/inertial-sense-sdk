@@ -22,9 +22,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 typedef struct
 {
-    uint32_t CR1;         /*!< USART Control register 1,                 Address offset: 0x00  */
-    uint32_t CR2;         /*!< USART Control register 2,                 Address offset: 0x04  */
-    uint32_t CR3;         /*!< USART Control register 3,                 Address offset: 0x08  */
+    uint32_t _CR1;         /*!< USART Control register 1,                 Address offset: 0x00  */
+    uint32_t _CR2;         /*!< USART Control register 2,                 Address offset: 0x04  */
+    uint32_t _CR3;         /*!< USART Control register 3,                 Address offset: 0x08  */
     uint32_t BRR;         /*!< USART Baud rate register,                 Address offset: 0x0C  */
     uint32_t GTPR;        /*!< USART Guard time and prescaler register,  Address offset: 0x10  */
     uint32_t RTOR;        /*!< USART Receiver Time Out register,         Address offset: 0x14  */
@@ -311,9 +311,9 @@ typedef struct
 
 typedef struct
 {
-    uint32_t CR1;         /*!< USART Control register 1,                 Address offset: 0x00 */
-    uint32_t CR2;         /*!< USART Control register 2,                 Address offset: 0x04 */
-    uint32_t CR3;         /*!< USART Control register 3,                 Address offset: 0x08 */
+    uint32_t _CR1;         /*!< USART Control register 1,                 Address offset: 0x00 */
+    uint32_t _CR2;         /*!< USART Control register 2,                 Address offset: 0x04 */
+    uint32_t _CR3;         /*!< USART Control register 3,                 Address offset: 0x08 */
     uint32_t BRR;         /*!< USART Baud rate register,                 Address offset: 0x0C */
     uint16_t GTPR;        /*!< USART Guard time and prescaler register,  Address offset: 0x10 */
     uint16_t  RESERVED2;       /*!< Reserved, 0x12                                                 */
@@ -490,13 +490,13 @@ void writeIMXSer0TxReg(uint8_t* evScratch, std::string fileName)
     sprintf((char*)evScratch, "BRR:\t\t0x%08x\r\n", tmpIMXUartReg.BRR);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CR1:\t\t0x%08x\r\n", tmpIMXUartReg.CR1);
+    sprintf((char*)evScratch, "CR1:\t\t0x%08x\r\n", tmpIMXUartReg._CR1);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CR2:\t\t0x%08x\r\n", tmpIMXUartReg.CR2);
+    sprintf((char*)evScratch, "CR2:\t\t0x%08x\r\n", tmpIMXUartReg._CR2);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CR3:\t\t0x%08x\r\n", tmpIMXUartReg.CR3);
+    sprintf((char*)evScratch, "CR3:\t\t0x%08x\r\n", tmpIMXUartReg._CR3);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
     sprintf((char*)evScratch, "GTPR:\t\t0x%08x\r\n", tmpIMXUartReg.GTPR);
@@ -543,7 +543,7 @@ void dataToImxDmaInst(uint8_t* inBuf, int len)
     int endIndex;
 
     // do inital copy
-    memcpy(&tmpIMXUartDmaInst, inBuf, ((uint32_t)&tmpIMXUartDmaInst.ptr_start) - ((uint32_t)&tmpIMXUartDmaInst));
+    memcpy(&tmpIMXUartDmaInst, inBuf, ((uint8_t*)&tmpIMXUartDmaInst.ptr_start) - ((uint8_t*)&tmpIMXUartDmaInst));
 
     // now fix things
     startIndex = 0x10;
@@ -718,13 +718,13 @@ void writeSer0RxReg(uint8_t* evScratch, std::string fileName)
     sprintf((char*)evScratch, "------------Start Ser0 Reg-------------\r\n");
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CR1:\t0x%08x\r\n", tmpUartReg.CR1);
+    sprintf((char*)evScratch, "CR1:\t0x%08x\r\n", tmpUartReg._CR1);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CR2:\t0x%08x\r\n", tmpUartReg.CR2);
+    sprintf((char*)evScratch, "CR2:\t0x%08x\r\n", tmpUartReg._CR2);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CR3:\t0x%08x\r\n", tmpUartReg.CR3);
+    sprintf((char*)evScratch, "CR3:\t0x%08x\r\n", tmpUartReg._CR3);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
     sprintf((char*)evScratch, "BRR:\t0x%08x\r\n", tmpUartReg.BRR);
