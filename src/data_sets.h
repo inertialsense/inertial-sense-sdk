@@ -5039,8 +5039,8 @@ typedef struct{
     uint32_t                inst_CPAR;        /*!< DMA channel x peripheral address register   */
     uint32_t                inst_CMAR;        /*!< DMA channel x memory address register       */
 
-	uint32_t 		        ptr_start;
-	uint32_t 		        ptr_end;
+	uint8_t 		        *ptr_start;
+	uint8_t 		        *ptr_end;
 	uint16_t 		        active_tx_len;
 	uint8_t 			    done;							// Currently only used in TX
 
@@ -5051,12 +5051,12 @@ typedef struct{
 	uint8_t 				cfg_interrupt_priority;			// 0 to 15, 15 is low
 	uint8_t 				cfg_dma_channel_select;			// 0 to 7. See RM0394 11.6.7
 	uint8_t 				cfg_parent_type;				// DMA_PARENT_USART, ...
-	uint32_t				cfg_parent;					    // Pointer to parent init base
-	uint32_t				cfg_periph_reg;				    // Pointer to peripheral register
-	uint32_t				cfg_buf;
+	void 					*cfg_parent;					// Pointer to parent init base
+	uint32_t				*cfg_periph_reg;				// Pointer to peripheral register
+	uint8_t					*cfg_buf;
 	uint16_t				cfg_buf_len;					// This doesn't correspond to the length register, it is just however big the buffer is
 	uint8_t 				cfg_linear_buf;			 		// If true, the buffer is user-specified and we treat it like a non-circular buffer.
-	uint32_t                cfg_tcie_handler;	            // If n
+	void                    *cfg_tcie_handler;	            // If n
 	
     int 					lastDmaUsed;					// Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
 	uint8_t					overflow;						// Buffer overflow
