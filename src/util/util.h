@@ -18,21 +18,62 @@
 #include "ISComm.h"
 
 namespace utils {
-    std::string getCurrentTimestamp();
-    std::string raw_hexdump(const char* raw_data, int bytesLen, int bytesPerLine);
-    std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
+    /**
+     * @brief Trims left-side/leading characters (whitespace by default) from the passed string; this modifies the string, in place.
+     * Locates the first characters which are not within the set of ws, and removes all characters from the start upto that first
+     * non-matching character.
+     *
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return a reference to the input string.
+     */
+    std::string& ltrim(std::string& s, const char* t = " \t\n\r\f\v") { s.erase(0, s.find_first_not_of(t)); return s; };
 
-    // trim from left
-    std::string& ltrim(std::string& s, const char* t = " \t\n\r\f\v");
-    // trim from right
-    std::string& rtrim(std::string& s, const char* t = " \t\n\r\f\v");
-    // trim from left & right
-    std::string& trim(std::string& s, const char* t = " \t\n\r\f\v");
+    /**
+     * @brief Trims right-side/trailing characters (whitespace by default) from the passed string; this modifies the string, in place.
+     * Locates the last characters of the string which are not within the set of ws, and removes all characters from that position
+     * until the end of the string non-matching character.
+     *
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return a reference to the input string.
+     */
+    std::string& rtrim(std::string& s, const char* t = " \t\n\r\f\v") { s.erase(s.find_last_not_of(t) + 1); return s; };
 
-    // copying versions
-    std::string ltrim_copy(std::string s, const char* t = " \t\n\r\f\v");
-    std::string rtrim_copy(std::string s, const char* t = " \t\n\r\f\v");
-    std::string trim_copy(std::string s, const char* t = " \t\n\r\f\v");
+    /**
+     * @brief Trims left-size/leading and right-side/trailing characters (whitespace by default) from the passed string; this modifies
+     * the string, in place. Call both rtrim() and ltrim() in a single call.
+     *
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return a reference to the input string.
+     */
+    std::string& trim(std::string& s, const char* t = " \t\n\r\f\v") { return ltrim(rtrim(s, t), t); };
+
+
+    /**
+     * ltrim() equivalent which makes a new copy, and does not modify the original
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return the modified/trimmed copy of the original input string.
+     */
+    std::string ltrim_copy(std::string s, const char* t = " \t\n\r\f\v") { return ltrim(s, t); };
+
+    /**
+     * rtrim() equivalent which makes a new copy, and does not modify the original
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return the modified/trimmed copy of the original input string.
+     */
+    std::string rtrim_copy(std::string s, const char* t = " \t\n\r\f\v") { return rtrim(s, t); };
+
+    /**
+     * trim() equivalent which makes a new copy, and does not modify the original
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return the modified/trimmed copy of the original input string.
+     */
+    std::string trim_copy(std::string s, const char* t = " \t\n\r\f\v") { return trim(s, t); };
 
     /**
      * Performs sprintf-type formatting, using a std:string for the format string, and outputting a std::string
@@ -92,13 +133,17 @@ namespace utils {
     }
 
     /**
-     * returns a vector of sub-strings derived from str, seperated by delimiter
-     * @param str
-     * @param delimiter
-     * @return
+     * Splits the passed string into a vector of strings, delimited by delimiter.
+     * @param str the string to be split
+     * @param delimiter the substring to use as a delimiter
+     * @return a vector of strings
      */
     std::vector<std::string> split_string(const std::string& str, const std::string& delimiter);
 
+    std::string raw_hexdump(const char* raw_data, int bytesLen, int bytesPerLine);
+    std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
+
+    std::string getCurrentTimestamp();
     std::string devInfoToString(const dev_info_t& devInfo);
     bool devInfoFromString(const std::string& str, dev_info_t& devInfo);
     int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);

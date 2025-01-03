@@ -14,7 +14,7 @@
 #include <memory>
 #include <regex>
 #include <stdexcept>
-#include <acc_prof.h>
+// #include <acc_prof.h>
 
 #include "ISDataMappings.h"
 
@@ -43,43 +43,12 @@ extern "C" char* strptime(const char* s,
 }
 #endif
 
-// trim from left
-std::string& utils::ltrim(std::string& s, const char* t)
-{
-    s.erase(0, s.find_first_not_of(t));
-    return s;
-}
-
-// trim from right
-std::string& utils::rtrim(std::string& s, const char* t)
-{
-    s.erase(s.find_last_not_of(t) + 1);
-    return s;
-}
-
-// trim from left & right
-std::string& utils::trim(std::string& s, const char* t)
-{
-    return ltrim(rtrim(s, t), t);
-}
-
-// copying versions
-
-std::string utils::ltrim_copy(std::string s, const char* t)
-{
-    return ltrim(s, t);
-}
-
-std::string utils::rtrim_copy(std::string s, const char* t)
-{
-    return rtrim(s, t);
-}
-
-std::string utils::trim_copy(std::string s, const char* t)
-{
-    return trim(s, t);
-}
-
+/**
+ * Splits the passed string into a vector of strings, delimited by delimiter.
+ * @param str the string to be split
+ * @param delimiter the substring to use as a delimiter
+ * @return a vector of strings
+ */
 std::vector<std::string> utils::split_string(const std::string& str, const std::string& delimiter) {
     std::vector<std::string> strings;
 
@@ -97,18 +66,19 @@ std::vector<std::string> utils::split_string(const std::string& str, const std::
     return strings;
 }
 
+/**
+ * @return the current system clock as a string with millisecond precision
+ */
 std::string utils::getCurrentTimestamp() {
-    using std::chrono::system_clock;
     auto currentTime = std::chrono::system_clock::now();
-    char buffer[80];
-
     auto transformed = currentTime.time_since_epoch().count() / 1000000;
-
     auto millis = transformed % 1000;
 
     std::time_t tt;
-    tt = system_clock::to_time_t(currentTime);
+    tt = std::chrono::system_clock::to_time_t(currentTime);
     auto timeinfo = localtime(&tt);
+
+    char buffer[80];
     strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
     sprintf(buffer + strlen(buffer), "%03d", (int) millis);
 
@@ -351,7 +321,7 @@ bool utils::fillDevInfoFromFirmwareImage(std::string imgFilename, dev_info_t& de
     }
 
     // hardware version - either 1 or 2 digits, seperated by decimal
-    const std::string hdwStr = match[2];
+    const std::string hdwStr = <static_cast<const char *>(match[2]);
     parseStringVersion(hdwStr, devInfo.hardwareVer);
 
     // image type (we don't really care)
