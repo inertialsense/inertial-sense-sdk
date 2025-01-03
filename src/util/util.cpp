@@ -13,8 +13,8 @@
 #include <cstring>
 #include <memory>
 #include <regex>
-#include <string>
 #include <stdexcept>
+// #include <acc_prof.h>
 
 #include "ISDataMappings.h"
 
@@ -43,18 +43,42 @@ extern "C" char* strptime(const char* s,
 }
 #endif
 
+/**
+ * Splits the passed string into a vector of strings, delimited by delimiter.
+ * @param str the string to be split
+ * @param delimiter the substring to use as a delimiter
+ * @return a vector of strings
+ */
+std::vector<std::string> utils::split_string(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> strings;
+
+    std::string::size_type pos = 0;
+    std::string::size_type prev = 0;
+    while ((pos = str.find(delimiter, prev)) != std::string::npos)
+    {
+        strings.push_back(str.substr(prev, pos - prev));
+        prev = pos + delimiter.size();
+    }
+
+    // To get the last substring (or only, if delimiter is not found)
+    strings.push_back(str.substr(prev));
+
+    return strings;
+}
+
+/**
+ * @return the current system clock as a string with millisecond precision
+ */
 std::string utils::getCurrentTimestamp() {
-    using std::chrono::system_clock;
     auto currentTime = std::chrono::system_clock::now();
-    char buffer[80];
-
     auto transformed = currentTime.time_since_epoch().count() / 1000000;
-
     auto millis = transformed % 1000;
 
     std::time_t tt;
-    tt = system_clock::to_time_t(currentTime);
+    tt = std::chrono::system_clock::to_time_t(currentTime);
     auto timeinfo = localtime(&tt);
+
+    char buffer[80];
     strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
     sprintf(buffer + strlen(buffer), "%03d", (int) millis);
 
@@ -297,7 +321,7 @@ bool utils::fillDevInfoFromFirmwareImage(std::string imgFilename, dev_info_t& de
     }
 
     // hardware version - either 1 or 2 digits, seperated by decimal
-    const std::string hdwStr = match[2];
+    const std::string hdwStr = <static_cast<const char *>(match[2]);
     parseStringVersion(hdwStr, devInfo.hardwareVer);
 
     // image type (we don't really care)
