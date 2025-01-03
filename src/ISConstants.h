@@ -313,8 +313,12 @@ extern "C" {
 #define _LIMIT2(x, xmin, xmax) { if ((x) < (xmin)) { (x) = (xmin); } else { if ((x) > (xmax)) { (x) = (xmax); } } }
 #endif
 
+#ifndef _ROUND_NEAREST
+#define _ROUND_NEAREST(number, multiple) ((((number) + ((multiple)/2)) / (multiple)) * (multiple))
+#endif
+
 #ifndef _ROUND_CLOSEST
-#define _ROUND_CLOSEST(dividend, divisor) (((dividend) + ((divisor)/2)) / (divisor))
+#define _ROUND_CLOSEST(number, multiple) (((number) + ((multiple)/2)) / (multiple))
 #endif
 
 #ifndef _ROUNDUP

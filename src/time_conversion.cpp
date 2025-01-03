@@ -33,15 +33,29 @@ void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time)
     time->millisecond = todayMs % 1000;
 }
 
+void gpsWeekTowMsToUtcDateTime(uint32_t gpsWeek, uint32_t gpsTowMs, int gpsLeapS, utc_date_t *date, utc_time_t *time, uint32_t *milliseconds)
+{
+    double julian = gpsToJulian(gpsWeek, gpsTowMs, gpsLeapS);
+    julianToDate(julian, 
+        (uint32_t*)&date->year, 
+        (uint32_t*)&date->month, 
+        (uint32_t*)&date->day, 
+        (uint32_t*)&time->hour, 
+        (uint32_t*)&time->minute, 
+        (uint32_t*)&time->second, 
+        (uint32_t*)milliseconds);
+    date->weekday = gpsTowMsToUtcWeekday(gpsTowMs, gpsLeapS);
+}
+
 void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeekMs, int gpsLeapS)
 {
     int towMs = 
+        utcWeekday   * C_MILLISECONDS_PER_DAY +
         time->hour   * C_MILLISECONDS_PER_HOUR +
         time->minute * C_MILLISECONDS_PER_MINUTE +
         time->second * C_MILLISECONDS_PER_SECOND +
         time->millisecond +
-        gpsLeapS * 1000 +
-        utcWeekday * C_MILLISECONDS_PER_DAY;
+        gpsLeapS * 1000;
 
     // Handle week wrap
     if (towMs >= C_MILLISECONDS_PER_WEEK)
@@ -145,23 +159,30 @@ void stdUtcDateTimeToGpsTime(const std::tm &utcTime, int leapSeconds, uint32_t &
 
 /* convert calendar day/time to time -------------------------------------------
 * convert calendar day/time to gtime_t struct
-* args   : double *ep       I   day/time {year,month,day,hour,min,sec}
+* args   : int *ep       I   day/time {year,month,day,hour,min,sec,msec}
 * return : gtime_t struct
 * notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
 *-----------------------------------------------------------------------------*/
-gtime_t epochToTime(const double *ep)
+gtime_t epochToTime(const int *ep)
 {
     const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
     gtime_t time = { 0 };
-    int days, sec, year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
+    int days;
+    int year    = ep[0];
+    int mon     = ep[1];
+    int day     = ep[2];
+    int hour    = ep[3];
+    int minute  = ep[4];
+    int sec     = ep[5];
+    int msec    = ep[6];
 
-    if (year < 1970 || 2099 < year || mon < 1 || 12 < mon) return time;
+    if (year < 1970 || 2099 < year || mon < 1 || 12 < mon) 
+        return time;
 
     /* leap year if year%4==0 in 1901-2099 */
     days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 + (year % 4 == 0 && mon >= 3 ? 1 : 0);
-    sec = (int)floor(ep[5]);
-    time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
-    time.sec = ep[5] - sec;
+    time.time = (time_t)days * 86400 + hour * 3600 + minute * 60 + sec;
+    time.sec = msec * 0.001;
     return time;
 }
 
@@ -182,13 +203,20 @@ double timeToGpst(gtime_t t, int *week)
 	return (double)(sec - (double)w * C_SECONDS_PER_WEEK) + t.sec;
 }
 
-void UtcDateTimeToGpsTime(const double datetime[6], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek)
+void UtcDateTimeToGpsTime(const int dateTime[6], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek, double *debugGtm)
 {
-    gtime_t gtm = epochToTime(datetime);
+    gtime_t gtm = epochToTime(dateTime);
+
+    // TODO: Remove debug later (WHJ)
+    if (debugGtm)
+    {
+        *debugGtm = (double)gtm.time + gtm.sec;
+    }
+
     int week;
     gtm.time += leapSeconds;
     double iTOWd = timeToGpst(gtm, &week);
-    gpsTowMs = (uint32_t)((iTOWd + 0.00001) * 1000.0);
+    gpsTowMs = (uint32_t)((iTOWd * 1000.0) + 0.5);  // Ensure double rounds properly to nearest integer millisecond
     gpsWeek = week;
 }
 

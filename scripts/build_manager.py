@@ -138,18 +138,19 @@ class BuildTestManager:
         print("")
 
     def print_summary(self):
-        if self.run_clean:
-            action = "CLEAN"
-        else:
-            action = "BUILD"
-        self.print_blu(f"==========================================")
-        self.print_blu(f" {action} SUMMARY:")
-        self.print_blu(f"==========================================")
-        if self.build_success:
-            self.print_grn(f"[PASSED]: " + ", ".join(self.build_success))
-        if self.build_failure:
-            self.print_red(f"[FAILED]: " + ", ".join(self.build_failure))
-        print("")
+        if self.run_build:
+            if self.run_clean:
+                action = "CLEAN"
+            else:
+                action = "BUILD"
+            self.print_blu(f"==========================================")
+            self.print_blu(f" {action} SUMMARY:")
+            self.print_blu(f"==========================================")
+            if self.build_success:
+                self.print_grn(f"[PASSED]: " + ", ".join(self.build_success))
+            if self.build_failure:
+                self.print_red(f"[FAILED]: " + ", ".join(self.build_failure))
+            print("")
         if self.run_test:
             self.print_cyn(f"==========================================")
             self.print_cyn(f" TEST SUMMARY:")
@@ -162,6 +163,8 @@ class BuildTestManager:
         self.print_release_info()
 
     def build_callback(self, project_name, callback):
+        if not self.run_build:
+            return
         result = 0
         self.build_header(project_name)
         result = callback(self.args)
@@ -181,6 +184,8 @@ class BuildTestManager:
         return result
 
     def build_script(self, project_name, script_path, args=[]):
+        if not self.run_build:
+            return
         if self.is_windows:
             command = ["cmd", "/c", str(script_path)]
         else:
@@ -205,6 +210,8 @@ class BuildTestManager:
         return result
 
     def build_cmake(self, project_name, project_dir):
+        if not self.run_build:
+            return
         project_dir = Path(project_dir)
 
         self.build_header(project_name)

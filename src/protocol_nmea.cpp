@@ -790,11 +790,11 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
 
     // Check for irregular update timing
     int32_t cpuDtMs = cpuMs - lastCpuMs;
-    bool cpuDtMsGood = _ABS(cpuDtMs) < 30000;
+    bool cpuDtMsGood = _ABS(cpuDtMs) < 5000;
 
     // Check for skip in ZDA time
     int32_t utcDtMs = utcMs - lastUtcMs;
-    bool utcDtMsGood = (t.hour >= lastUtcHour) && (_ABS(utcDtMs) < 30000); 
+    bool utcDtMsGood = (t.hour >= lastUtcHour) && (_ABS(utcDtMs) < 5000); 
 
     // Ensure time increments linearly
     int32_t ddtMs = utcDtMs - cpuDtMs;
@@ -806,25 +806,30 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
         if (adjOffsetSec)
         {
             utcOffsetSec += adjOffsetSec;
-            g_sysParams.genFaultCode |= GFC_GNSS_TIME_FAULT;
+
+            g_sysParams.genFaultCode |= GFC_GNSS_RECEIVER_TIME;
 #if PLATFORM_IS_EMBEDDED
             g_gnssTimeFaultTimeMs = g_timeMs;
 #endif
-            g_debug.i[5] = utcOffsetSec;
+            g_debug.i[5] = utcMs;
+            g_debug.i[6] = gpsMs;
+            g_debug.f[5] = utcDtMs;
+            g_debug.f[6] = cpuDtMs;
+            g_debug.f[8] += 1.0f;
             if (_ABS(utcOffsetSec) > 2)
             {   // Offset exceeded limit
                 utcOffsetSec = 0;
             }
         }
-        g_debug.i[6] = utcOffsetSec;
     }
+    g_debug.f[7] = utcOffsetSec;
 
     // Update history
     lastCpuMs = cpuMs;
     lastUtcMs = utcMs;
     lastUtcHour = t.hour;
 
-    // Apply correction offset
+#if 0    // Apply correction offset
     if (utcOffsetSec)
     {
         t.second -= utcOffsetSec;
@@ -849,6 +854,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
             }
         }
     }
+#endif
 
     // TODO: (WHJ) End of debug section
     ///////////////////////////////////////////////////////////////////////
@@ -2863,15 +2869,15 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     float second;
     ptr = ASCII_to_hours_minutes_seconds(&time.hour, &time.minute, &second, ptr);
     time.second = (int)second;
-    time.millisecond = ((int)(second*1000.0f))%1000;
+    time.millisecond = (int)(second*1000.0f) - 1000*time.second;
 
     // 2,3,4 - dd,mm,yyy (Day,Month,Year)
     ptr = ASCII_to_i32((int32_t*)&(date.day), ptr);
     ptr = ASCII_to_i32((int32_t*)&(date.month), ptr);
     ptr = ASCII_to_i32((int32_t*)&(date.year), ptr);
 
-    // Convert UTC date and time to GPS time of week and number of weeks        
-    double datetime[6] = { (double)date.year, (double)date.month, (double)date.day, (double)time.hour, (double)time.minute, (double)second };        // year,month,day,hour,min,sec
+    // Convert UTC date and time to GPS time of week and number of weeks		
+    int datetime[7] = { date.year, date.month, date.day, time.hour, time.minute, time.second, time.millisecond };		// year,month,day,hour,min,sec,msec
     UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs, gpsWeek);
     date.weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
 
