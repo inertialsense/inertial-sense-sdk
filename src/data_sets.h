@@ -1475,6 +1475,11 @@ enum eGenFaultCodes
     GFC_CHIP_ERASE_INVALID                  = 0x01000000,
     /*! Fault: GPS time fault */
     GFC_GNSS_TIME_FAULT                     = 0x02000000,
+    /*! Fault: GPS receiver time fault */
+    GFC_GNSS_RECEIVER_TIME                  = 0x04000000,
+
+/*! IMX GFC flags that relate to GPX status flags */
+    GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_SYS_FAULT | GFC_GNSS_RECEIVER_TIME,
 };
 
 

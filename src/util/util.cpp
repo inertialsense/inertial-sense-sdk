@@ -13,8 +13,8 @@
 #include <cstring>
 #include <memory>
 #include <regex>
-#include <string>
 #include <stdexcept>
+#include <acc_prof.h>
 
 #include "ISDataMappings.h"
 
@@ -42,6 +42,60 @@ extern "C" char* strptime(const char* s,
     return (char*)(s + input.tellg());
 }
 #endif
+
+// trim from left
+std::string& utils::ltrim(std::string& s, const char* t)
+{
+    s.erase(0, s.find_first_not_of(t));
+    return s;
+}
+
+// trim from right
+std::string& utils::rtrim(std::string& s, const char* t)
+{
+    s.erase(s.find_last_not_of(t) + 1);
+    return s;
+}
+
+// trim from left & right
+std::string& utils::trim(std::string& s, const char* t)
+{
+    return ltrim(rtrim(s, t), t);
+}
+
+// copying versions
+
+std::string utils::ltrim_copy(std::string s, const char* t)
+{
+    return ltrim(s, t);
+}
+
+std::string utils::rtrim_copy(std::string s, const char* t)
+{
+    return rtrim(s, t);
+}
+
+std::string utils::trim_copy(std::string s, const char* t)
+{
+    return trim(s, t);
+}
+
+std::vector<std::string> utils::split_string(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> strings;
+
+    std::string::size_type pos = 0;
+    std::string::size_type prev = 0;
+    while ((pos = str.find(delimiter, prev)) != std::string::npos)
+    {
+        strings.push_back(str.substr(prev, pos - prev));
+        prev = pos + delimiter.size();
+    }
+
+    // To get the last substring (or only, if delimiter is not found)
+    strings.push_back(str.substr(prev));
+
+    return strings;
+}
 
 std::string utils::getCurrentTimestamp() {
     using std::chrono::system_clock;
