@@ -37,7 +37,7 @@ typedef struct
     uint32_t AUTOCR;      /*!< USART Autonomous mode control register    Address offset: 0x30  */
 } USART_TypeDef;
 
-enum class IRQn_Type : int32_t
+enum class IRQn_Type : int8_t
 {
     /* =======================================  ARM Cortex-M33 Specific Interrupt Numbers  ======================================= */
     Reset_IRQn = -15,    /*!< -15 Reset Vector, invoked on Power up and warm reset              */
@@ -206,15 +206,15 @@ typedef void(*dma_callback_function)(void*);
 
 typedef struct
 {
-    void* parent;				// Pointer to parent peripheral management struct
+    uint32_t                parent;				// Pointer to parent peripheral management struct
     uint8_t 				mode;				// DMA_MODE_...
-    dma_callback_function 	tc_handler;			// If non-null, this function pointer is called from within transfer complete interrupt handler when all data including queued data has been transferred.
-    IRQn_Type				interrupt;
+    uint32_t 	            tc_handler;			// If non-null, this function pointer is called from within transfer complete interrupt handler when all data including queued data has been transferred.
+    uint8_t				    interrupt;
     uint8_t 				interrupt_priority;
     uint8_t 				priority;			// DMA priority (DMA_PRIO_...)
     uint8_t					request_num;		// DMA request ID, links channel to peripheral (DMA_IDX_... for index)
     uint32_t				periph_reg;			// target 8-bit peripheral register (DMA_IDX_... for index)
-    uint8_t* buf;
+    uint32_t                buf;
     uint16_t				buf_len;			// Actual usable buffer length is one less (buf_len - 1)
 } dma_config_t;
 
@@ -241,16 +241,16 @@ typedef union
 typedef struct
 {
     volatile uint16_t 		active_tx_len;
-    dma_tx_lli_t* lli_head;		// Linked list output to dma
-    dma_tx_lli_t* lli_tail;		// Linked list input from dma_buffer_write() 
+    uint32_t                lli_head;		// Linked list output to dma
+    uint32_t                lli_tail;		// Linked list input from dma_buffer_write() 
     volatile bool			dma_running;
 } dma_tx_state_t;
 
 typedef struct dma_channel_
 {
-    DMA_Channel_TypeDef* instance;
-    volatile uint8_t* ptr_start;
-    volatile uint8_t* ptr_end;
+    uint32_t                instance;
+    volatile uint32_t       ptr_start;
+    volatile uint32_t       ptr_end;
     dma_config_t			cfg;
     dma_lli_u				lli;				// Linked list memory.  DMA_MODE_TX_LLI uses 6, DMA_MODE_RX_CIRC uses 1.
     dma_tx_state_t			txState;
@@ -299,9 +299,9 @@ typedef struct
 
 typedef struct
 {
-    DMA_Channel_TypeDef*    instance;
-    uint8_t*                ptr_start;
-    uint8_t*                ptr_end;
+    uint32_t                instance;
+    uint32_t                ptr_start;
+    uint32_t                ptr_end;
     uint16_t 		        active_tx_len;
     bool 			        done;							// Currently only used in TX
     dma_config_t			cfg;
@@ -361,16 +361,11 @@ void sprintfU32(const char* label, const uint32_t value)
     event_outputEvToFile(s_evScratch, printCurString((char*)s_evScratch));
 }
 
-void sprintfP32(const char* label, const void* ptr)
-{
-    sprintf((char*)s_evScratch, "%s0x%08" PRIx32 "\r\n", label, (uint32_t)((uintptr_t)ptr & 0xFFFFFFFF));
-    event_outputEvToFile(s_evScratch, printCurString((char*)s_evScratch));
-}
-
 void writeIMXGpioReg(did_event_t* ev)
 {
     s_fileName = s_deviceFolder + "/IMX_GPIO.txt";
     if (ev->length > sizeof(GPIO_TypeDef_IMX)) return;
+    assert(ev->length == sizeof(GPIO_TypeDef_IMX));
     GPIO_TypeDef_IMX tmpIMXUartGpio = {};
     memcpy(&tmpIMXUartGpio, ev->data, ev->length);
     sprintfLab("------------Start IMX GPIO Tx0 Reg-------------");
@@ -392,26 +387,27 @@ void writeIMXDmaTx0Chan(did_event_t* ev)
 {
     s_fileName = s_deviceFolder + "/IMX_DMA0_chan.txt";
     if (ev->length > sizeof(dma_ch_t_IMX)) return;
+    assert(ev->length == sizeof(dma_ch_t_IMX));
     dma_ch_t_IMX tmpIMXUartDmaChan = {};
     memcpy(&tmpIMXUartDmaChan, ev->data, ev->length);
     sprintfLab("------------Start IMX Dma Tx0 Channel-------------");
     sprintfU32("active_tx_len:\t\t\t", tmpIMXUartDmaChan.active_tx_len);
-    sprintfP32("cfg.buf:\t\t\t\t", tmpIMXUartDmaChan.cfg.buf);
+    sprintfU32("cfg.buf:\t\t\t\t", tmpIMXUartDmaChan.cfg.buf);
     sprintfU32("cfg.buf_len:\t\t\t", tmpIMXUartDmaChan.cfg.buf_len);
     sprintfU32("cfg.interrupt:\t\t\t", static_cast<int32_t>(tmpIMXUartDmaChan.cfg.interrupt));
     sprintfU32("cfg.interrupt_priority:\t", tmpIMXUartDmaChan.cfg.interrupt_priority);
     sprintfU32("cfg.mode:\t\t\t\t", tmpIMXUartDmaChan.cfg.mode);
-    sprintfP32("cfg.parent:\t\t\t\t", tmpIMXUartDmaChan.cfg.parent);
+    sprintfU32("cfg.parent:\t\t\t\t", tmpIMXUartDmaChan.cfg.parent);
     sprintfU32("cfg.periph_reg:\t\t\t", tmpIMXUartDmaChan.cfg.periph_reg);
     sprintfU32("cfg.priority:\t\t\t", tmpIMXUartDmaChan.cfg.priority);
     sprintfU32("cfg.request_num:\t\t", tmpIMXUartDmaChan.cfg.request_num);
-    sprintfP32("cfg.tc_handler:\t\t\t", (void*)tmpIMXUartDmaChan.cfg.tc_handler);
+    sprintfU32("cfg.tc_handler:\t\t\t", tmpIMXUartDmaChan.cfg.tc_handler);
     sprintfU32("done:\t\t\t\t\t", tmpIMXUartDmaChan.done);
-    sprintfP32("instance:\t\t\t\t", tmpIMXUartDmaChan.instance);
+    sprintfU32("instance:\t\t\t\t", tmpIMXUartDmaChan.instance);
     sprintfU32("lastDmaUsed:\t\t\t", tmpIMXUartDmaChan.lastDmaUsed);
     sprintfU32("overflow:\t\t\t\t", tmpIMXUartDmaChan.overflow);
-    sprintfP32("ptr_end:\t\t\t\t", tmpIMXUartDmaChan.ptr_end);
-    sprintfP32("ptr_start:\t\t\t\t", tmpIMXUartDmaChan.ptr_start);
+    sprintfU32("ptr_end:\t\t\t\t", tmpIMXUartDmaChan.ptr_end);
+    sprintfU32("ptr_start:\t\t\t\t", tmpIMXUartDmaChan.ptr_start);
     sprintfLab("\r\n------------End IMX Dma Tx0 Channel-------------\r\n");
 }
 
@@ -419,7 +415,8 @@ void writeSer0Cfg(did_event_t* ev, std::string name)
 {
     s_fileName = s_deviceFolder + "/" + name + (name.size() ? "_" : "") + "Ser0_cfg.txt";
     if (ev->length > sizeof(usart_cfg_t)) return;
-    usart_cfg_t tmpUartCfg;
+    assert(ev->length == sizeof(usart_cfg_t));
+    usart_cfg_t tmpUartCfg = {};
     memcpy(&tmpUartCfg, ev->data, ev->length);
     name = std::string("------------Start ") + name + std::string(" Ser0 Cfg-------------");
     sprintfLab(name.c_str());
@@ -434,7 +431,8 @@ void writeIMXSer0TxReg(did_event_t* ev)
 {
     s_fileName = s_deviceFolder + "/IMX_Ser0_reg.txt";
     if (ev->length > sizeof(USART_TypeDef_IMX)) return;
-    USART_TypeDef_IMX tmpIMXUartReg;
+    assert(ev->length == sizeof(USART_TypeDef_IMX));
+    USART_TypeDef_IMX tmpIMXUartReg = {};
     memcpy(&tmpIMXUartReg, ev->data, ev->length);
     sprintfLab("------------Start IMX Ser0 Reg-------------");
     sprintfU32("BRR:\t\t", tmpIMXUartReg.BRR);
@@ -455,83 +453,20 @@ void writeIMXSer0TxReg(did_event_t* ev)
     sprintfLab("\r\n------------End IMX Ser0 Reg-------------\r\n");
 }
 
-void dataToImxDmaInst(eventImxDmaTxInst_t &tmpIMXUartDmaInst, uint8_t* inBuf, int len)
-{
-    int startIndex;
-    int endIndex;
-
-    // do inital copy
-    memcpy(&tmpIMXUartDmaInst, inBuf, ((uint8_t*)&tmpIMXUartDmaInst.ptr_start) - ((uint8_t*)&tmpIMXUartDmaInst));
-
-    // now fix things
-    startIndex = 0x10;
-    tmpIMXUartDmaInst.ptr_start = (uint8_t*)(
-        (((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | 
-        inBuf[startIndex]);
-
-    startIndex = 0x14;
-    tmpIMXUartDmaInst.ptr_end = (uint8_t*)(
-        (((uint32_t)inBuf[startIndex+3]) << 24) | 
-        (((uint32_t)inBuf[startIndex+2]) << 16) | 
-        (((uint16_t)inBuf[startIndex+1]) << 8) | 
-        inBuf[startIndex]);
-
-    startIndex = 0x18;
-    endIndex = 0x22;
-    memcpy(&tmpIMXUartDmaInst.active_tx_len, &inBuf[startIndex], endIndex - startIndex);
-
-    startIndex = 0x22;
-    tmpIMXUartDmaInst.cfg_parent = (uint8_t*)(
-        (((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | 
-        inBuf[startIndex]);
-
-    startIndex = 0x26;
-    tmpIMXUartDmaInst.cfg_periph_reg = (uint32_t*)(
-        (((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | 
-        inBuf[startIndex]);
-
-    startIndex = 0x2a;
-    tmpIMXUartDmaInst.cfg_buf = (uint8_t*)(
-        (((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | 
-        inBuf[startIndex]);
-
-    startIndex = 0x2e;
-    endIndex = 0x31;
-    memcpy(&tmpIMXUartDmaInst.cfg_buf_len, &inBuf[startIndex], endIndex - startIndex);
-
-    startIndex = 0x31;
-    tmpIMXUartDmaInst.cfg_tcie_handler = (uint8_t*)(
-        (((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | 
-        inBuf[startIndex]);
-
-    startIndex = 0x35;
-    endIndex = 0x3a;
-    memcpy(&tmpIMXUartDmaInst.lastDmaUsed, &inBuf[startIndex], endIndex - startIndex);
-}
-
 void writeIMXDmaTx0Reg(did_event_t* ev)
 {
     s_fileName = s_deviceFolder + "/IMX_DMA0_inst.txt";
     if (ev->length > sizeof(eventImxDmaTxInst_t)) return;
-    eventImxDmaTxInst_t tmpIMXUartDmaInst;
-    dataToImxDmaInst(tmpIMXUartDmaInst, ev->data, ev->length);
+    assert(ev->length == sizeof(eventImxDmaTxInst_t));
+    eventImxDmaTxInst_t tmpIMXUartDmaInst = {};
+    memcpy(&tmpIMXUartDmaInst, ev->data, ev->length);
     sprintfLab("------------Start IMX Dma Tx0 Inst-------------");
     sprintfU32("inst.CCR:\t\t\t\t", tmpIMXUartDmaInst.inst_CCR);
     sprintfU32("inst.CNDTR:\t\t\t\t", tmpIMXUartDmaInst.inst_CNDTR);
     sprintfU32("inst.CPAR:\t\t\t\t", tmpIMXUartDmaInst.inst_CPAR);
     sprintfU32("inst.CMAR:\t\t\t\t", tmpIMXUartDmaInst.inst_CMAR);
-    sprintfP32("ptr_start:\t\t\t\t", tmpIMXUartDmaInst.ptr_start);
-    sprintfP32("ptr_end:\t\t\t\t", tmpIMXUartDmaInst.ptr_end);
+    sprintfU32("ptr_start:\t\t\t\t", tmpIMXUartDmaInst.ptr_start);
+    sprintfU32("ptr_end:\t\t\t\t", tmpIMXUartDmaInst.ptr_end);
     sprintfU32("active_tx_len:\t\t\t", tmpIMXUartDmaInst.active_tx_len);
     sprintfU32("done:\t\t\t\t\t", tmpIMXUartDmaInst.done);
     sprintfU32("cfg.dir:\t\t\t\t", tmpIMXUartDmaInst.cfg_dir);
@@ -541,12 +476,12 @@ void writeIMXDmaTx0Reg(did_event_t* ev)
     sprintfU32("cfg.interrupt_priority:\t", tmpIMXUartDmaInst.cfg_interrupt_priority);
     sprintfU32("cfg.dma_chan_sel:\t\t", tmpIMXUartDmaInst.cfg_dma_channel_select);
     sprintfU32("cfg.parent_type:\t\t", tmpIMXUartDmaInst.cfg_parent_type);
-    sprintfP32("cfg.parent:\t\t\t\t", tmpIMXUartDmaInst.cfg_parent);
-    sprintfP32("cfg.periph_reg:\t\t\t", tmpIMXUartDmaInst.cfg_periph_reg);
-    sprintfP32("cfg.buf:\t\t\t\t", tmpIMXUartDmaInst.cfg_buf);
+    sprintfU32("cfg.parent:\t\t\t\t", tmpIMXUartDmaInst.cfg_parent);
+    sprintfU32("cfg.periph_reg:\t\t\t", tmpIMXUartDmaInst.cfg_periph_reg);
+    sprintfU32("cfg.buf:\t\t\t\t", tmpIMXUartDmaInst.cfg_buf);
     sprintfU32("cfg.buf_len:\t\t\t", tmpIMXUartDmaInst.cfg_buf_len);
     sprintfU32("cfg.linear_buf:\t\t\t", tmpIMXUartDmaInst.cfg_linear_buf);
-    sprintfP32("cfg_tcie_handler:\t\t", tmpIMXUartDmaInst.cfg_tcie_handler);
+    sprintfU32("cfg_tcie_handler:\t\t", tmpIMXUartDmaInst.cfg_tcie_handler);
     sprintfU32("lastDmaUsed:\t\t\t", tmpIMXUartDmaInst.lastDmaUsed);
     sprintfU32("overflow:\t\t\t\t", tmpIMXUartDmaInst.overflow);
     sprintfLab("\r\n------------End IMX Dma Rx0 Inst-------------\r\n");
@@ -556,7 +491,8 @@ void writeDmaRx0Reg(did_event_t* ev)
 {
     s_fileName = s_deviceFolder + "/DMA0_reg.txt";
     if (ev->length > sizeof(DMA_Channel_TypeDef)) return;
-    DMA_Channel_TypeDef tmpUartDmaReg;
+    assert(ev->length == sizeof(DMA_Channel_TypeDef));
+    DMA_Channel_TypeDef tmpUartDmaReg = {};
     memcpy(&tmpUartDmaReg, ev->data, ev->length);
     sprintfLab("------------Start Dma Rx0 Reg-------------");
     sprintfU32("CBR1:\t", tmpUartDmaReg.CBR1);
@@ -578,7 +514,8 @@ void writeSer0RxReg(did_event_t* ev)
 {
     s_fileName = s_deviceFolder + "/Ser0_reg.txt"; 
     if (ev->length > sizeof(USART_TypeDef)) return;
-    USART_TypeDef tmpUartReg;
+    assert(ev->length == sizeof(USART_TypeDef));
+    USART_TypeDef tmpUartReg = {};
     memcpy(&tmpUartReg, ev->data, ev->length);
     sprintfLab("------------Start Ser0 Reg-------------");
     sprintfU32("CR1:\t", tmpUartReg._CR1);
@@ -601,30 +538,39 @@ void writeDma0RxChan(did_event_t* ev)
 {
     s_fileName = s_deviceFolder + "/DMA0_chan.txt";
     if (ev->length > sizeof(dma_ch_t)) return;
-    dma_ch_t tmpUartDmaChan;
+    assert(ev->length == sizeof(dma_ch_t));
+    dma_ch_t tmpUartDmaChan = {};
     memcpy(&tmpUartDmaChan, ev->data, ev->length);
     sprintfLab("------------Start Dma Rx0 Channel-------------");
-    sprintfP32("cfg.buf:\t\t\t\t", tmpUartDmaChan.cfg.buf);
+    sprintfU32("cfg.buf:\t\t\t\t", tmpUartDmaChan.cfg.buf);
     sprintfU32("cfg.buf_len:\t\t\t", tmpUartDmaChan.cfg.buf_len);
     sprintfU32("cfg.interrupt:\t\t\t", static_cast<int32_t>(tmpUartDmaChan.cfg.interrupt));
     sprintfU32("cfg.interrupt_priority:\t", tmpUartDmaChan.cfg.interrupt_priority);
     sprintfU32("cfg.mode:\t\t\t\t", tmpUartDmaChan.cfg.mode);
-    sprintfP32("cfg.parent:\t\t\t\t", tmpUartDmaChan.cfg.parent);
+    sprintfU32("cfg.parent:\t\t\t\t", tmpUartDmaChan.cfg.parent);
     sprintfU32("cfg.periph_reg:\t\t\t", tmpUartDmaChan.cfg.periph_reg);
     sprintfU32("cfg.priority:\t\t\t", tmpUartDmaChan.cfg.priority);
     sprintfU32("cfg.request_num:\t\t", tmpUartDmaChan.cfg.request_num);
-    sprintfP32("cfg.tc_handler:\t\t\t", (void*)tmpUartDmaChan.cfg.tc_handler);
-    sprintfP32("instance:\t\t\t\t", tmpUartDmaChan.instance);
+    sprintfU32("cfg.tc_handler:\t\t\t", tmpUartDmaChan.cfg.tc_handler);
+    sprintfU32("instance:\t\t\t\t", tmpUartDmaChan.instance);
     sprintfU32("lastDmaUsed:\t\t\t", tmpUartDmaChan.lastDmaUsed);
-    sprintfP32("lli.rx:\t\t\t\t\t", &tmpUartDmaChan.lli.rx.cdar);
-    sprintfP32("lli.tx:\t\t\t\t\t", &tmpUartDmaChan.lli.tx[0]);
+    sprintfU32("lli.rx:\t\t\t\t\t", tmpUartDmaChan.lli.rx.cdar);
+    sprintfU32("lli.tx[0].br1:\t\t\t", tmpUartDmaChan.lli.tx[0].br1);
+    sprintfU32("lli.tx[0].sar:\t\t\t", tmpUartDmaChan.lli.tx[0].sar);
+    sprintfU32("lli.tx[0].llr:\t\t\t", tmpUartDmaChan.lli.tx[0].llr);
+    sprintfU32("lli.tx[1].br1:\t\t\t", tmpUartDmaChan.lli.tx[1].br1);
+    sprintfU32("lli.tx[1].sar:\t\t\t", tmpUartDmaChan.lli.tx[1].sar);
+    sprintfU32("lli.tx[1].llr:\t\t\t", tmpUartDmaChan.lli.tx[1].llr);
+    sprintfU32("lli.tx[2].br1:\t\t\t", tmpUartDmaChan.lli.tx[2].br1);
+    sprintfU32("lli.tx[2].sar:\t\t\t", tmpUartDmaChan.lli.tx[2].sar);
+    sprintfU32("lli.tx[2].llr:\t\t\t", tmpUartDmaChan.lli.tx[2].llr);
     sprintfU32("overflow:\t\t\t\t", tmpUartDmaChan.overflow);
-    sprintfP32("ptr_end:\t\t\t\t", (void*)tmpUartDmaChan.ptr_end);
-    sprintfP32("ptr_start:\t\t\t\t", (void*)tmpUartDmaChan.ptr_start);
+    sprintfU32("ptr_end:\t\t\t\t", tmpUartDmaChan.ptr_end);
+    sprintfU32("ptr_start:\t\t\t\t", tmpUartDmaChan.ptr_start);
     sprintfU32("txState.active_tx_len:\t", tmpUartDmaChan.txState.active_tx_len);
     sprintfU32("txState.dma_running:\t", tmpUartDmaChan.txState.dma_running);
-    sprintfP32("txState.lli_head:\t\t", tmpUartDmaChan.txState.lli_head);
-    sprintfP32("txState.lli_tail:\t\t", tmpUartDmaChan.txState.lli_tail);
+    sprintfU32("txState.lli_head:\t\t", tmpUartDmaChan.txState.lli_head);
+    sprintfU32("txState.lli_tail:\t\t", tmpUartDmaChan.txState.lli_tail);
     sprintfLab("\r\n------------End Dma Rx0 Channel-------------\r\n");
 }
 
@@ -632,7 +578,8 @@ void writeGpioRxReg(did_event_t* ev)
 {
     s_fileName = s_deviceFolder + "/GPIO_Rx0_reg.txt"; 
     if (ev->length > sizeof(GPIO_TypeDef)) return;
-    GPIO_TypeDef tmpUartGpio;
+    assert(ev->length == sizeof(GPIO_TypeDef));
+    GPIO_TypeDef tmpUartGpio = {};
     memcpy(&tmpUartGpio, ev->data, ev->length);
     sprintfLab("------------Start GPIO Rx0 Reg-------------");
     sprintfU32("AFR[0]:\t\t", tmpUartGpio.AFR[0]);
@@ -800,27 +747,27 @@ int main(int argc, char* argv[])
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_DMA_RX_0_INST:
+                case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST:
                     writeDmaRx0Reg(ev);
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_SER0_REG: 
+                case EVENT_MSG_TYPE_ID_GPX_SER0_REG: 
                     writeSer0RxReg(ev);
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_SER0_CFG: 
+                case EVENT_MSG_TYPE_ID_GPX_SER0_CFG: 
                     writeSer0Cfg(ev, "");
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN:
+                case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN:
                     writeDma0RxChan(ev);
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_GPIO_RX_0_REG: 
+                case EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG: 
                     writeGpioRxReg(ev);
                     logged = true;
                     break;

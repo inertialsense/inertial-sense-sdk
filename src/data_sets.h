@@ -5021,11 +5021,11 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_CHAN = 25,
     EVENT_MSG_TYPE_ID_IMX_GPIO_TX_0_REG = 26,
 
-    EVENT_MSG_TYPE_ID_DMA_RX_0_INST     = 27,
-    EVENT_MSG_TYPE_ID_SER0_REG          = 28,
-    EVENT_MSG_TYPE_ID_SER0_CFG          = 29,
-    EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN     = 30,
-    EVENT_MSG_TYPE_ID_GPIO_RX_0_REG     = 31,
+    EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST = 27,
+    EVENT_MSG_TYPE_ID_GPX_SER0_REG      = 28,
+    EVENT_MSG_TYPE_ID_GPX_SER0_CFG      = 29,
+    EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN = 30,
+    EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG = 31,
 
     EVENT_MSG_TYPE_ID_FILTER_RESPONSE   = (uint16_t)-4,
     EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER  = (uint16_t)-3,
@@ -5039,8 +5039,8 @@ typedef struct{
     uint32_t                inst_CPAR;        /*!< DMA channel x peripheral address register   */
     uint32_t                inst_CMAR;        /*!< DMA channel x memory address register       */
 
-	uint8_t 		        *ptr_start;
-	uint8_t 		        *ptr_end;
+	uint32_t 		        ptr_start;
+	uint32_t 		        ptr_end;
 	uint16_t 		        active_tx_len;
 	uint8_t 			    done;							// Currently only used in TX
 
@@ -5051,12 +5051,12 @@ typedef struct{
 	uint8_t 				cfg_interrupt_priority;			// 0 to 15, 15 is low
 	uint8_t 				cfg_dma_channel_select;			// 0 to 7. See RM0394 11.6.7
 	uint8_t 				cfg_parent_type;				// DMA_PARENT_USART, ...
-	void 					*cfg_parent;					// Pointer to parent init base
-	uint32_t				*cfg_periph_reg;				// Pointer to peripheral register
-	uint8_t					*cfg_buf;
+	uint32_t				cfg_parent;					    // Pointer to parent init base
+	uint32_t				cfg_periph_reg;				    // Pointer to peripheral register
+	uint32_t				cfg_buf;
 	uint16_t				cfg_buf_len;					// This doesn't correspond to the length register, it is just however big the buffer is
 	uint8_t 				cfg_linear_buf;			 		// If true, the buffer is user-specified and we treat it like a non-circular buffer.
-	void                    *cfg_tcie_handler;	            // If n
+	uint32_t                cfg_tcie_handler;	            // If n
 	
     int 					lastDmaUsed;					// Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
 	uint8_t					overflow;						// Buffer overflow
