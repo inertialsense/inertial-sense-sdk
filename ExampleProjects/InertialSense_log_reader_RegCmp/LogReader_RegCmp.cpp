@@ -671,7 +671,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
     cISLogger logger;
     if (!logger.LoadFromDirectory(argv[1], cISLogger::eLogType::LOGTYPE_RAW, {"ALL"}))
     {
@@ -699,7 +698,7 @@ int main(int argc, char* argv[])
 #if PLATFORM_IS_WINDOWS
         if (mkdir(outDir.c_str()) == 0)
 #else
-        if (mkdir(outDir.c_str(), 0777))
+        if (mkdir(outDir.c_str(), 0777) == 0)
 #endif
             std::cout << "Created output dir: " << outDir << std::endl;
         else
@@ -733,7 +732,7 @@ int main(int argc, char* argv[])
 #if PLATFORM_IS_WINDOWS
             if (mkdir(s_deviceFolder.c_str()) == 0)
 #else
-            if (mkdir(s_deviceFolder.c_str(), 0777))
+            if (mkdir(s_deviceFolder.c_str(), 0777) == 0)
 #endif
                 std::cout << "Created output dir: " << s_deviceFolder << std::endl;
             else
