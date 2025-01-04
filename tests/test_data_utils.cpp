@@ -622,7 +622,6 @@ uint32_t GenerateRawLogData(std::list<std::vector<uint8_t>*>& msgs, float logSiz
     return runningSize;
 }
 
-
 bool AddDataToStream(uint8_t *buffer, int bufferSize, int &streamSize, uint8_t *data, int dataSize)
 {
     if (streamSize + dataSize < bufferSize)
@@ -714,6 +713,33 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
 
     return streamSize;
 }
+
+std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
+{
+    std::vector<std::string> words= {"lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat"};
+    int numSentences = RAND_RANGE(minSentences, maxSentences);
+    int numWords = RAND_RANGE(minWords, maxWords);
+
+    std::string sb;
+    for (int p = 0; p < numLines; p++)
+    {
+        for (int s = 0; s < numSentences; s++)
+        {
+            for (int w = 0; w < numWords; w++)
+            {
+                if (w > 0) { sb.append(" "); }
+                int word_idx = RAND_RANGE(0, words.size() - 1);
+                std::string word = words[ word_idx ];
+                if (w == 0) { word[0] = toupper(word[0]); }
+                sb.append(word);
+            }
+            sb.append(". ");
+        }
+        if (p < numLines-1) sb.append("\n");
+    }
+    return sb;
+}
+
 
 static int dummyIsbProtocolHandler(p_data_t* data, port_handle_t port) { return 0; }
 static int dummyGenericProtocolHandler(const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }

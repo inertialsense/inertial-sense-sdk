@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include "../protocol/FirmwareUpdate.h"
 #include "miniz.h"
 #include "md5.h"
