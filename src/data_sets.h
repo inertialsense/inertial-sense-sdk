@@ -393,7 +393,7 @@ enum eHdwStatusFlags
     /** Reset from hardware (NRST pin low) */
     HDW_STATUS_RESET_CAUSE_HDW                  = (int)0x40000000,
 
-    /** Critical System Fault - CPU error */
+    /** Critical System Fault, CPU error.  (see DID_SYS_FAULT.status, eSysFaultStatus) */
     HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
@@ -1548,6 +1548,10 @@ enum eSystemCommand
     SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
+
+    SYS_CMD_FAULT_TEST_TRIG_MALLOC                      = 57005,
+    SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                  = 57006,
+    SYS_CMD_FAULT_TEST_TRIG_WATCHDOG                    = 57007,
 };
 
 enum eSerialPortBridge
@@ -4564,7 +4568,7 @@ enum eGPXHdwStatusFlags
     /** Reset from Hardware (NRST pin low) */
     GPX_HDW_STATUS_RESET_CAUSE_HDW                      = (int)0x40000000,
     
-    /** Critical System Fault - CPU error */
+    /** Critical System Fault, CPU error.  (see DID_GPX_STATUS.status, eGpxStatus::GPX_STATUS_FATAL_MASK) */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
 
@@ -5102,37 +5106,38 @@ typedef struct
 
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
-/**
-* (DID_SYS_FAULT) System Fault Information 
-*/
-#define SYS_FAULT_STATUS_HARDWARE_RESET                 0x00000000
-#define SYS_FAULT_STATUS_USER_RESET                     0x00000001
-#define SYS_FAULT_STATUS_ENABLE_BOOTLOADER              0x00000002
-// General:
-#define SYS_FAULT_STATUS_SOFT_RESET                     0x00000010
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          0x00000020
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      0x00000040
-#define SYS_FAULT_STATUS_RTK_MISC_ERROR                 0x00000080
-#define SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE           0x00000100
-#define SYS_FAULT_STATUS_MASK_GENERAL_ERROR             0xFFFFFFF0
-// Critical: (usually associated with system reset)
-#define SYS_FAULT_STATUS_HARD_FAULT                     0x00010000
-#define SYS_FAULT_STATUS_USAGE_FAULT                    0x00020000
-#define SYS_FAULT_STATUS_MEM_MANGE                      0x00040000
-#define SYS_FAULT_STATUS_BUS_FAULT                      0x00080000
-#define SYS_FAULT_STATUS_MALLOC_FAILED                  0x00100000
-#define SYS_FAULT_STATUS_STACK_OVERFLOW                 0x00200000
-#define SYS_FAULT_STATUS_INVALID_CODE_OPERATION         0x00400000
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_MARKER_UPDATED 0x00800000
-#define SYS_FAULT_STATUS_WATCHDOG_RESET                 0x01000000
-#define SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               0x02000000
-#define SYS_FAULT_STATUS_SENSOR_CALIBRATION             0x04000000
-#define SYS_FAULT_STATUS_HARDWARE_DETECTION             0x08000000
-#define SYS_FAULT_STATUS_MASK_CRITICAL_ERROR            0xFFFF0000
+enum eSysFaultStatus
+{
+    SYS_FAULT_STATUS_HARDWARE_RESET                 = 0x00000000,
+    SYS_FAULT_STATUS_USER_RESET                     = 0x00000001,
+    SYS_FAULT_STATUS_ENABLE_BOOTLOADER              = 0x00000002,
+    // General:
+    SYS_FAULT_STATUS_SOFT_RESET                     = 0x00000010,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          = 0x00000020,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      = 0x00000040,
+    SYS_FAULT_STATUS_RTK_MISC_ERROR                 = 0x00000080,
+    SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE           = 0x00000100,
+    SYS_FAULT_STATUS_MASK_GENERAL_ERROR             = 0xFFFFFFF0,
+    // Critical: (usually associated with system reset)
+    SYS_FAULT_STATUS_HARD_FAULT                     = 0x00010000,
+    SYS_FAULT_STATUS_USAGE_FAULT                    = 0x00020000,
+    SYS_FAULT_STATUS_MEM_MANGE                      = 0x00040000,
+    SYS_FAULT_STATUS_BUS_FAULT                      = 0x00080000,
+    SYS_FAULT_STATUS_MALLOC_FAILED                  = 0x00100000,
+    SYS_FAULT_STATUS_STACK_OVERFLOW                 = 0x00200000,
+    SYS_FAULT_STATUS_INVALID_CODE_OPERATION         = 0x00400000,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_MARKER_UPDATED = 0x00800000,
+    SYS_FAULT_STATUS_WATCHDOG_RESET                 = 0x01000000,
+    SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               = 0x02000000,
+    SYS_FAULT_STATUS_SENSOR_CALIBRATION             = 0x04000000,
+    SYS_FAULT_STATUS_HARDWARE_DETECTION             = 0x08000000,
+    SYS_FAULT_STATUS_MASK_CRITICAL_ERROR            = 0xFFFF0000,
+};
 
+/** (DID_SYS_FAULT) System Fault Information */ 
 typedef struct 
 {
-    /** System fault status */
+    /** System fault status (see eSysFaultStatus) */
     uint32_t status;
 
     /** Fault Type at HardFault */

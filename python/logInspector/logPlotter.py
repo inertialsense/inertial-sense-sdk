@@ -1213,16 +1213,16 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x10000000) != 0))
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x10000000))
                 if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x20000000) != 0))
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x20000000))
                 if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x30000000) != 0))
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x30000000))
                 if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x40000000) != 0))
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x40000000))
                 if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x80000000) != 0))
@@ -1242,7 +1242,7 @@ class logPlot:
             if fig is None:
                 fig = plt.figure()
             ax = fig.subplots(1, 1, sharex=True)
-            fig.suptitle('INS Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+            fig.suptitle('Gen Fault Codes - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
             for d in self.active_devs:
                 r = d == self.active_devs[0]    # plot text w/ first device
@@ -1329,7 +1329,10 @@ class logPlot:
                 if r: ax.text(p1, -cnt * 1.5, 'Chip Erase Invalid')
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS Time Fault')
+                if r: ax.text(p1, -cnt * 1.5, 'EKF GNSS Time Fault')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS Rcvr Time Fault')
                 cnt += 1
                 cnt += 1
 

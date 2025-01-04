@@ -528,8 +528,8 @@ static void PopulateMapGroundVehicle(data_set_t data_set[DID_COUNT], uint32_t di
 static void PopulateMapSystemCommand(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<system_command_t> mapper(data_set, did);
-    mapper.AddMember("command", &system_command_t::command, DATA_TYPE_UINT32, "", "99=software reset, 5=zero sensors");
-    mapper.AddMember("invCommand", &system_command_t::invCommand, DATA_TYPE_UINT32, "", "Bitwise inverse of command (-command - 1) required to process command.");
+    mapper.AddMember("command", &system_command_t::command, DATA_TYPE_INT32, "", "99=software reset, 5=zero sensors");
+    mapper.AddMember("invCommand", &system_command_t::invCommand, DATA_TYPE_INT32, "", "Bitwise inverse of command ((-command) - 1) required to process command.");
 }
 
 static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
