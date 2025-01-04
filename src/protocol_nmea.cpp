@@ -389,6 +389,7 @@ char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, c
     float subSec = UTCtime - (int)UTCtime;
     *seconds = (float)((int)UTCtime % 100) + subSec;
 #endif
+    *seconds += 0.00005f;   // add a 0.05ms to address float-conversion aliasing
     ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
@@ -398,7 +399,7 @@ char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, utc_time_t *utcTime, ch
     // HHMMSS.sss
     float fsecond;
     SSCANF(ptr, "%02d%02d%f", &utcTime->hour, &utcTime->minute, &fsecond);
-    fsecond += 0.0005f;	// Prevent truncation problems.  Cause rounding at 0.5 ms.
+    fsecond += 0.00005f;	/// add a 0.05ms to address float-conversion aliasing
     utcTime->second = (uint32_t)fsecond;
     fsecond *= 1000.0f;
     utcTime->millisecond = (uint32_t)fsecond;

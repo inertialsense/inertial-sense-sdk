@@ -716,7 +716,7 @@ int main(int argc, char* argv[])
     for (auto dl : logger.DeviceLogs())
     {
 
-        s_deviceFolder = outDir + "/SN-" + std::to_string(dl->SerialNumber());
+        s_deviceFolder = outDir + "SN-" + std::to_string(dl->SerialNumber());
 
         if (stat(s_deviceFolder.c_str(), &info) == 0)
         {
@@ -843,6 +843,7 @@ int main(int argc, char* argv[])
     }
 
     std::cout << "Done parsing log files: " << argv[1] << std::endl;
+    std::cout << "Output dir: " << s_deviceFolder << std::endl;
     return true;
 }
 
