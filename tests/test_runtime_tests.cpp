@@ -17,6 +17,7 @@ void run_realtime_test(DeviceRuntimeTests &RuntimeTest, uint8_t *stream, int str
     const int chunkSize = 100;
     for (int i=0; i<streamSize;)
     {
+        SLEEP_US(250);  // since these are "real-time" tests, we need to throttle them so they look like "real time".
         // Get available size of comm buffer
         int n = _MIN(is_comm_free(&s_comm), chunkSize);
 
