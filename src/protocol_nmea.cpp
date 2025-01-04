@@ -421,6 +421,7 @@ char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, c
     float subSec = UTCtime - (int)UTCtime;
     *seconds = (float)((int)UTCtime % 100) + subSec;
 #endif
+    *seconds += 0.00005f;   // add a 0.05ms to address float-conversion rounding
     ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
