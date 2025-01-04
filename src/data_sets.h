@@ -1473,12 +1473,12 @@ enum eGenFaultCodes
     GFC_INIT_I2C                            = 0x00800000,
     /*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
     GFC_CHIP_ERASE_INVALID                  = 0x01000000,
-    /*! Fault: GPS time fault */
-    GFC_GNSS_TIME_FAULT                     = 0x02000000,
+    /*! Fault: EKF GPS time fault */
+    GFC_EKF_GNSS_TIME_FAULT                 = 0x02000000,
     /*! Fault: GPS receiver time fault */
     GFC_GNSS_RECEIVER_TIME                  = 0x04000000,
 
-/*! IMX GFC flags that relate to GPX status flags */
+    /*! IMX GFC flags that relate to GPX status flags */
     GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_SYS_FAULT | GFC_GNSS_RECEIVER_TIME,
 };
 
@@ -1608,7 +1608,7 @@ typedef struct PACKED
     nmeaBroadcastMsgPair_t  nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
-     *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGpsDtMs = 200 (5Hz) 
+     *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGPSDtMs = 200 (5Hz)
      *  nmeaBroadcastMsgs[0].msgID = 6, nmeaBroadcastMsgs[0].msgPeriod = 5  
      *  nmeaBroadcastMsgs[1].msgID = 7, nmeaBroadcastMsgs[1].msgPeriod = 1 */           
 
@@ -1748,7 +1748,7 @@ typedef struct PACKED
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
 // #define RMC_BITS_UNUSED              0x0000000000000100
 // #define RMC_BITS_UNUSED              0x0000000000000200 
-#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
 #define RMC_BITS_GPS2_RAW               0x0000000000002000      // "
@@ -1758,7 +1758,7 @@ typedef struct PACKED
 #define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
 #define RMC_BITS_IMU3_UNCAL             0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
-#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
 #define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
 #define RMC_BITS_GPS1_RTK_POS           0x0000000000800000      // "
@@ -1773,7 +1773,7 @@ typedef struct PACKED
 // #define RMC_BITS_UNUSED              0x0000000200000000
 #define RMC_BITS_IMU_MAG                0x0000000400000000
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
-#define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_REFERENCE_IMU          0x0000004000000000        // DID_FLASH_CONFIG.startupNavDtMs
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000        // "
@@ -1817,11 +1817,13 @@ typedef struct PACKED
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
+#define RMC_PRESET_IMX_PPD_IMU3_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
+                                            | RMC_BITS_IMU3_RAW)
+#define RMC_PRESET_IMX_PPD_IMU3_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
+                                            | RMC_BITS_IMU3_UNCAL)
 #define RMC_PRESET_INS                      (RMC_BITS_INS2 \
                                             | RMC_BITS_GPS1_POS \
                                             | RMC_BITS_PRESET)
-#define RMC_PRESET_IMX_PPD_IMU3             (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_UNCAL)
 #define RMC_PRESET_IMX_PPD_RTK_DBG          (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_RTK_STATE \
                                             | RMC_BITS_RTK_CODE_RESIDUAL \
@@ -4476,6 +4478,9 @@ enum eGpxStatus
     /** Reserved */
     GPX_STATUS_RESERVED_1                               = (int)0x00010000,
 
+    /** GNSS receiver time fault **/
+    GPX_STATUS_GNSS_RCVR_TIME_FAULT                     = (int)0x00100000,
+
     /** DMA Fault detected **/
     GPX_STATUS_DMA_FAULT                                = (int)0x00800000,
 
@@ -5041,11 +5046,11 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_CHAN = 25,
     EVENT_MSG_TYPE_ID_IMX_GPIO_TX_0_REG = 26,
 
-    EVENT_MSG_TYPE_ID_DMA_RX_0_INST     = 27,
-    EVENT_MSG_TYPE_ID_SER0_REG          = 28,
-    EVENT_MSG_TYPE_ID_SER0_CFG          = 29,
-    EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN     = 30,
-    EVENT_MSG_TYPE_ID_GPIO_RX_0_REG     = 31,
+    EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST = 27,
+    EVENT_MSG_TYPE_ID_GPX_SER0_REG      = 28,
+    EVENT_MSG_TYPE_ID_GPX_SER0_CFG      = 29,
+    EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN = 30,
+    EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG = 31,
 
     EVENT_MSG_TYPE_ID_FILTER_RESPONSE   = (uint16_t)-4,
     EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER  = (uint16_t)-3,
