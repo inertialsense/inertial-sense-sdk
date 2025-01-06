@@ -64,68 +64,146 @@ void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
     EXPECT_EQ(g1.status, g2.status);
 }
 
-sys_params_t g_sysParams = {};
-uint32_t g_time_msec = {};
-debug_array_t g_debug = {};
+uint32_t g_cpu_msec;
+sys_params_t g_sysParams;
+debug_array_t g_debug;
+
+void initGlobals()
+{
+    memset(&g_sysParams, 0, sizeof(g_sysParams));
+    g_cpu_msec = 0;
+    memset(&g_debug, 0, sizeof(g_debug));
+}
 
 bool timeWithin(uint32_t timeSec, uint32_t startSec, uint32_t durationSec)
 {
     return (timeSec >= startSec) && (timeSec < (startSec + durationSec));
 }
 
-#if 0
 TEST(protocol_nmea, zda_gps_time_skip)
 {
+    GTEST_SKIP();   // This test must be run manually as the statically SDK build does not include the ZDA TOD work around code
+
+#ifdef _WIN32
+    GTEST_SKIP() << "Skipping test on Windows.";
+#endif
+    printf("DESCRIPTION: Test that ZDA time skip detect code works correctly for 1-2 second jumps in the ZDA UTC time due to jumps in GPS time of week.\n");
+    initGlobals();
     char buf[1024]; 
     gps_pos_t pos = {};
     pos.leapS = 18;
     pos.week = 2345;
     bool faultLast = false;
+    int simulatedOffsetMs = 0;
 
     for (int timeSec=0; timeSec<C_SECONDS_PER_WEEK-1; timeSec++)
     {
         pos.timeOfWeekMs = timeSec*1000;
-        g_time_msec = timeSec*1000;
+        g_cpu_msec = timeSec*1000;
         bool fault = 
             timeWithin(timeSec, C_SECONDS_PER_WEEK/4, 200) || 
             timeWithin(timeSec, C_SECONDS_PER_WEEK/2, 10);
 
-        if (timeSec == 151200)
+        bool toggle = fault != faultLast;
+        faultLast = fault;
+        if (toggle)
         {
-            int j = 0;
+            if (fault)
+            {
+                simulatedOffsetMs += 1000;
+                if (simulatedOffsetMs>2000) { simulatedOffsetMs = 0; }
+            }
         }
 
         if (fault)
-        {
-            pos.timeOfWeekMs += 1000;
+        {   // Simulate offset in GPS tow
+            pos.timeOfWeekMs += simulatedOffsetMs;
         }
-        bool toggle = fault != faultLast;
-        faultLast = fault;
 
         int n = nmea_zda(buf, sizeof(buf), pos);
+
+        ASSERT_EQ((g_sysParams.genFaultCode&GFC_GNSS_RECEIVER_TIME) != 0, toggle) << "genFaultCode failed at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.f[8] != 0, toggle) << "Correction offset failed at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.f[7], (fault ? simulatedOffsetMs/1000 : 0)) << "Correction offset failed at timeSec: " << timeSec;
 
         uint32_t gpsTowMs;
         uint32_t gpsWeek;
         utc_date_t utcDate;
         utc_time_t utcTime;
         nmea_parse_zda(buf, n, gpsTowMs, gpsWeek, utcDate, utcTime, pos.leapS);
-
-#if 1
-        printf("timeSec: %d ", timeSec);
-        PrintUtcDateTime(utcDate, utcTime);
-
+#if 0
+        // if (toggle)
+        {
+            printf("timeSec: %d  ", timeSec);
+            printf("gpsTowMs: %d  ", pos.timeOfWeekMs);
+            if (fault)  printf("(fault on)  ");
+            else        printf("(fault off) ");
+            PrintUtcDateTime(utcDate, utcTime);
+        }
 #endif
+        // ASSERT_EQ(gpsTowMs, timeSec*1000) << "Continuous at timeSec: " << timeSec;
+        // ASSERT_EQ(gpsTowMs, pos.timeOfWeekMs - (fault?simulatedOffsetMs:0)) << "GPS tow failed at timeSec: " << timeSec;
 
-        ASSERT_EQ((g_sysParams.genFaultCode&GFC_GNSS_TIME_FAULT) != 0, toggle) << "Failed at timeSec: " << timeSec;
-        ASSERT_EQ((g_debug.i[6]) != 0, toggle) << "Failed at timeSec: " << timeSec;
-        ASSERT_EQ(pos.timeOfWeekMs - (fault?1000:0), gpsTowMs) << "Failed at timeSec: " << timeSec;
-        ASSERT_EQ(pos.week, gpsWeek) << "Failed at timeSec: " << timeSec;
+        g_debug.i[6] = 0;
+        g_debug.f[8] = 0;
+        g_sysParams.genFaultCode = 0;
+    }
+}
+
+TEST(protocol_nmea, zda_cpu_time_skip)
+{
+#ifdef _WIN32
+    GTEST_SKIP() << "Skipping test on Windows.";
+#endif
+    printf("DESCRIPTION: Test that ZDA work around will pregress linearly and not apply incorrectly apply offset when GPS update is missing.\n");
+    initGlobals();
+    char buf[1024]; 
+    gps_pos_t pos = {};
+    pos.leapS = 18;
+    pos.week = 2345;
+    bool faultLast = false;    
+
+    for (int timeSec=0; timeSec<C_SECONDS_PER_WEEK-1; timeSec++)
+    {
+        pos.timeOfWeekMs = timeSec*1000;
+        g_cpu_msec = timeSec*1000;
+        bool fault = 
+            timeWithin(timeSec, C_SECONDS_PER_WEEK/4, 200) || 
+            timeWithin(timeSec, C_SECONDS_PER_WEEK/2, 10);
+
+        bool toggle = fault != faultLast;
+        faultLast = fault;
+        if (toggle)
+        {   // Simulate absent message
+            // printf("timeSec: %d  (absent)\n", timeSec);
+            continue;
+        }
+
+        int n = nmea_zda(buf, sizeof(buf), pos);
+
+        ASSERT_EQ(g_debug.i[5], 0) << "Correction offset non-zero at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.i[6], 0) << "Correction offset non-zero at timeSec: " << timeSec;
+
+        uint32_t gpsTowMs;
+        uint32_t gpsWeek;
+        utc_date_t utcDate;
+        utc_time_t utcTime;
+        nmea_parse_zda(buf, n, gpsTowMs, gpsWeek, utcDate, utcTime, pos.leapS);
+#if 0
+        if (toggle)
+        {
+            printf("timeSec: %d  ", timeSec);
+            printf("gpsTowMs: %d  ", pos.timeOfWeekMs);
+            PrintUtcDateTime(utcDate, utcTime);
+        }
+#endif
+        ASSERT_EQ(gpsTowMs, timeSec*1000) << "Linear time at timeSec: " << timeSec;
+        ASSERT_EQ(gpsTowMs, pos.timeOfWeekMs) << "GPS tow failed at timeSec: " << timeSec;
 
         g_debug.i[6] = 0;
         g_sysParams.genFaultCode = 0;
     }
 }
-#endif
 
 TEST(protocol_nmea, nmea_parse_asce)
 {

@@ -743,47 +743,16 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
 
 // TODO: Remove after ZDA issue is resolved.
 #if defined(IMX_5) || defined(SDK_UNIT_TEST)
-extern uint32_t g_time_msec;
+extern uint32_t g_cpu_msec;
 extern sys_params_t g_sysParams;
 extern debug_array_t g_debug;
 #endif
 
+// TODO: Remove after ZDA issue is resolved.
 int millisecondsToSeconds(int milliseconds) 
 {
-    return (milliseconds + 500) / 1000;
-}
-
-void nmea_report_fault(int fault_code)
-{
-#if defined(IMX_5) || defined(SDK_UNIT_TEST)
-    g_sysParams.genFaultCode |= GFC_GNSS_TIME_FAULT;
-#if PLATFORM_IS_EMBEDDED
-    g_gnssTimeFaultTimeMs = g_timeMs;
-#endif
-    g_debug.i[6] |= 1<<fault_code;
-#endif
-}
-
-void check_dt_skip(int32_t dtMs, int32_t minMs, int32_t maxMs, int fault_code, float &debug)
-{
-#if 1
-    if (dtMs < minMs || dtMs > maxMs)
-    {
-        nmea_report_fault(fault_code);
-        debug = (float)dtMs;
-    }
-#else
-    if (dtMs < minMs)
-    {   // Less than 1s
-        nmea_report_fault(-fault_code);
-        debug = (float)dtMs;
-    }
-    if (dtMs > maxMs)
-    {   // More than 1s
-        nmea_report_fault(fault_code);
-        debug = (float)dtMs;
-    }
-#endif
+    if (milliseconds >= 0)  { return (milliseconds + 500) / 1000; } 
+    else                    { return (milliseconds - 500) / 1000; }
 }
 
 // TODO: Remove after ZDA issue is resolved.
@@ -801,7 +770,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
 #if defined(IMX_5)
     int32_t cpuMs = (int32_t)time_msec();
 #else
-    int32_t cpuMs = (int32_t)g_time_msec;
+    int32_t cpuMs = (int32_t)g_cpu_msec;
 #endif
     int32_t utcMs = 
         t.hour*C_MILLISECONDS_PER_HOUR + 
@@ -817,64 +786,53 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     static int32_t lastCpuMs = cpuMs - 1000;
     static int32_t lastUtcMs = utcMs - 1000;
     static int lastUtcHour = t.hour;
-    // static int lastGpsMs = gpsMs - 1000;
-    // static uint32_t lastWeek = pos.week;
     static int32_t utcOffsetSec = 0;
 
     // Check for irregular update timing
     int32_t cpuDtMs = cpuMs - lastCpuMs;
-    bool cpuDtMsGood = cpuDtMs < C_MILLISECONDS_PER_WEEK/2;
-    if (cpuDtMsGood)
-    {   // No time wrap
-        check_dt_skip(cpuDtMs, 750, 1250, 1, g_debug.f[5]);
-    }
+    bool cpuDtMsGood = _ABS(cpuDtMs) < 5000;
 
     // Check for skip in ZDA time
     int32_t utcDtMs = utcMs - lastUtcMs;
-    bool utcDtMsGood = t.hour >= lastUtcHour; 
-    if (utcDtMsGood)
-    {   // No time wrap
-        check_dt_skip(utcDtMs, 1000, 1000, 2, g_debug.f[6]);
-    }
-
-    // Check for skip in GPS time of week
-    // int32_t gpsDtMs = gpsMs - lastGpsMs;
-    // bool gpsDtMsGood = lastWeek == pos.week; 
-    // if (gpsDtMsGood)
-    // {   // No time wrap
-    //     check_dt_skip(gpsDtMs, 1000, 1000, 3, g_debug.f[7]);
-    // }
+    bool utcDtMsGood = (t.hour >= lastUtcHour) && (_ABS(utcDtMs) < 5000); 
 
     // Ensure time increments linearly
     int32_t ddtMs = utcDtMs - cpuDtMs;
     if (cpuDtMsGood && utcDtMsGood)
     {   // No time wrap
-        utcOffsetSec = millisecondsToSeconds(ddtMs);
-        g_debug.i[3] = ddtMs;
-        // g_debug.i[4] = utcOffsetSec;
-        if (_ABS(utcOffsetSec) > 2)
-        {   // Offset exceeded limit
-            utcOffsetSec = 0;
-            nmea_report_fault(5);
-        }
-        g_debug.i[5] = utcOffsetSec;
-    }
+        g_debug.i[3] = utcDtMs;
+        g_debug.i[4] = cpuDtMs;
+        int adjOffsetSec = millisecondsToSeconds(ddtMs);
+        if (adjOffsetSec)
+        {
+            utcOffsetSec += adjOffsetSec;
 
-#if 1
+            g_sysParams.genFaultCode |= GFC_GNSS_RECEIVER_TIME;
+#if PLATFORM_IS_EMBEDDED
+            g_gnssTimeFaultTimeMs = g_timeMs;
+#endif
+            g_debug.i[5] = utcMs;
+            g_debug.i[6] = gpsMs;
+            g_debug.f[5] = utcDtMs;
+            g_debug.f[6] = cpuDtMs;
+            g_debug.f[8] += 1.0f;
+            if (_ABS(utcOffsetSec) > 2)
+            {   // Offset exceeded limit
+                utcOffsetSec = 0;
+            }
+        }
+    }
+    g_debug.f[7] = utcOffsetSec;
 
     // Update history
     lastCpuMs = cpuMs;
     lastUtcMs = utcMs;
     lastUtcHour = t.hour;
-    // lastGpsMs = gpsMs;            
-    // lastWeek = pos.week;
 
-    // Apply correction offset
+#if 0    // Apply correction offset
     if (utcOffsetSec)
     {
-        // nmea_report_fault(4);
-
-        t.second += utcOffsetSec;
+        t.second -= utcOffsetSec;
         if (t.second >= 60)
         {   // Wrap 
             t.second -= 60;
@@ -896,10 +854,10 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
             }
         }
     }
+#endif
 
     // TODO: (WHJ) End of debug section
     ///////////////////////////////////////////////////////////////////////
-#endif
 #endif
 
     offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", t.hour, t.minute, t.second, t.millisecond);
@@ -2911,15 +2869,15 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     float second;
     ptr = ASCII_to_hours_minutes_seconds(&time.hour, &time.minute, &second, ptr);
     time.second = (int)second;
-    time.millisecond = ((int)(second*1000.0f))%1000;
+    time.millisecond = (int)(second*1000.0f) - 1000*time.second;
 
     // 2,3,4 - dd,mm,yyy (Day,Month,Year)
     ptr = ASCII_to_i32((int32_t*)&(date.day), ptr);
     ptr = ASCII_to_i32((int32_t*)&(date.month), ptr);
     ptr = ASCII_to_i32((int32_t*)&(date.year), ptr);
 
-    // Convert UTC date and time to GPS time of week and number of weeks        
-    double datetime[6] = { (double)date.year, (double)date.month, (double)date.day, (double)time.hour, (double)time.minute, (double)second };        // year,month,day,hour,min,sec
+    // Convert UTC date and time to GPS time of week and number of weeks		
+    int datetime[7] = { date.year, date.month, date.day, time.hour, time.minute, time.second, time.millisecond };		// year,month,day,hour,min,sec,msec
     UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs, gpsWeek);
     date.weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
 
