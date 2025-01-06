@@ -2136,9 +2136,9 @@ class logPlot:
                         imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
                         dt = time[1:] - time[:-1]
                         dt = np.append(dt, dt[-1])
-                        imu1 = None
-                        imu2 = None
-                        imu3 = None
+                        imu1 = []
+                        imu2 = []
+                        imu3 = []
                         if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
                             for sample in range(0, len(I)):
                                 imu1.append(I[sample][0][accelSensor])
@@ -2182,7 +2182,7 @@ class logPlot:
                 refTime.append(refTime_)
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        (time, dt, acc0, acc1, acc2, pqrCount) = self.loadGyros(0)
+        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
 
         plotResidual = pqrCount==1 and self.residual 
         if pqrCount:
