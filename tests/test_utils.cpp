@@ -121,4 +121,10 @@ TEST(test_utils, parse_devInfo_from_filename) {
     EXPECT_EQ(dvBits = utils::devInfoFromString(origStr, devInfo), 54) << "Unable to parse '" << origStr << "'" << std::endl;
     devInfoStr = utils::devInfoToString(devInfo, dvBits);
     EXPECT_EQ(devInfoStr, "GPX-1.0 fw2.3.0-snap.153 2024-12-17 00:28:37");
+
+    // origStr = "cxd5610_v0.134_lib.efpk"  // this is be ignored
+    // EXPECT_EQ(dvBits = utils::devInfoFromString(origStr, devInfo), 54) << "Unable to parse '" << origStr << "'" << std::endl;
+    // devInfoStr = utils::devInfoToString(devInfo, dvBits);
+    // EXPECT_EQ(devInfoStr, "GPX-1.0 fw2.3.0-snap.153 2024-12-17 00:28:37");
+
 }
