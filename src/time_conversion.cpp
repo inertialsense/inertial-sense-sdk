@@ -196,11 +196,11 @@ static const gtime_t gpsRefT0 = { 315964800, 0 };    // (gtime) gps reference ti
 *-----------------------------------------------------------------------------*/
 double timeToGpst(gtime_t t, int *week)
 {
-	time_t sec = t.time - gpsRefT0.time;
-	time_t w = (time_t)(sec / C_SECONDS_PER_WEEK);
-	
-	if (week){ *week = (int)w; }
-	return (double)(sec - (double)w * C_SECONDS_PER_WEEK) + t.sec;
+    time_t sec = t.time - gpsRefT0.time;
+    time_t w = (time_t)(sec / C_SECONDS_PER_WEEK);
+    
+    if (week){ *week = (int)w; }
+    return (double)(sec - (double)w * C_SECONDS_PER_WEEK) + t.sec;
 }
 
 void UtcDateTimeToGpsTime(const int dateTime[6], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek, double *debugGtm)

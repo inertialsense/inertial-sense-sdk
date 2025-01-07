@@ -205,33 +205,33 @@ typedef void(*dma_callback_function)(void*);
 
 typedef struct
 {
-    uint32_t                parent;				// Pointer to parent peripheral management struct
-    uint8_t 				mode;				// DMA_MODE_...
-    uint32_t 	            tc_handler;			// If non-null, this function pointer is called from within transfer complete interrupt handler when all data including queued data has been transferred.
-    uint8_t				    interrupt;
-    uint8_t 				interrupt_priority;
-    uint8_t 				priority;			// DMA priority (DMA_PRIO_...)
-    uint8_t					request_num;		// DMA request ID, links channel to peripheral (DMA_IDX_... for index)
-    uint32_t				periph_reg;			// target 8-bit peripheral register (DMA_IDX_... for index)
+    uint32_t                parent;                // Pointer to parent peripheral management struct
+    uint8_t                 mode;                // DMA_MODE_...
+    uint32_t                tc_handler;            // If non-null, this function pointer is called from within transfer complete interrupt handler when all data including queued data has been transferred.
+    uint8_t                 interrupt;
+    uint8_t                 interrupt_priority;
+    uint8_t                 priority;            // DMA priority (DMA_PRIO_...)
+    uint8_t                 request_num;        // DMA request ID, links channel to peripheral (DMA_IDX_... for index)
+    uint32_t                periph_reg;            // target 8-bit peripheral register (DMA_IDX_... for index)
     uint32_t                buf;
-    uint16_t				buf_len;			// Actual usable buffer length is one less (buf_len - 1)
+    uint16_t                buf_len;            // Actual usable buffer length is one less (buf_len - 1)
 } dma_config_t_GPX;
 
 typedef struct
 {
-	bool					dir;							// DMA_RX or DMA_TX
-	bool					circular;						// DMA_CIRC_ON or DMA_CIRC_OFF
-	uint8_t 				priority;						// DMA_PRIO_LOW, DMA_PRIO_MEDIUM, DMA_PRIO_HIGH, DMA_PRIO_VERY_HIGH
-	uint8_t 				interrupt;
-	uint8_t 				interrupt_priority;				// 0 to 15, 15 is low
-	uint8_t 				dma_channel_select;				// 0 to 7. See RM0394 11.6.7
-	uint8_t 				parent_type;					// DMA_PARENT_USART, ...
-	uint32_t 				parent;						    // Pointer to parent init base
-	uint32_t				periph_reg;					    // Pointer to peripheral register
-	uint32_t				buf;
-	uint16_t				buf_len;						// This doesn't correspond to the length register, it is just however big the buffer is
-	bool 					linear_buf;			 			// If true, the buffer is user-specified and we treat it like a non-circular buffer.
-	uint32_t 	            tcie_handler;					// If non-null on init, transfer complete irq will be enabled, and this fn called by the IRQ
+    bool                    dir;                            // DMA_RX or DMA_TX
+    bool                    circular;                        // DMA_CIRC_ON or DMA_CIRC_OFF
+    uint8_t                 priority;                        // DMA_PRIO_LOW, DMA_PRIO_MEDIUM, DMA_PRIO_HIGH, DMA_PRIO_VERY_HIGH
+    uint8_t                 interrupt;
+    uint8_t                 interrupt_priority;                // 0 to 15, 15 is low
+    uint8_t                 dma_channel_select;                // 0 to 7. See RM0394 11.6.7
+    uint8_t                 parent_type;                    // DMA_PARENT_USART, ...
+    uint32_t                parent;                            // Pointer to parent init base
+    uint32_t                periph_reg;                        // Pointer to peripheral register
+    uint32_t                buf;
+    uint16_t                buf_len;                        // This doesn't correspond to the length register, it is just however big the buffer is
+    bool                    linear_buf;                         // If true, the buffer is user-specified and we treat it like a non-circular buffer.
+    uint32_t                tcie_handler;                    // If non-null on init, transfer complete irq will be enabled, and this fn called by the IRQ
 } dma_config_t_IMX;
 
 typedef struct
@@ -256,10 +256,10 @@ typedef union
 
 typedef struct
 {
-    volatile uint16_t 		active_tx_len;
-    uint32_t                lli_head;		// Linked list output to dma
-    uint32_t                lli_tail;		// Linked list input from dma_buffer_write() 
-    volatile bool			dma_running;
+    volatile uint16_t       active_tx_len;
+    uint32_t                lli_head;       // Linked list output to dma
+    uint32_t                lli_tail;       // Linked list input from dma_buffer_write() 
+    volatile bool            dma_running;
 } dma_tx_state_t;
 
 typedef struct dma_channel_
@@ -267,11 +267,11 @@ typedef struct dma_channel_
     uint32_t                instance;
     volatile uint32_t       ptr_start;
     volatile uint32_t       ptr_end;
-    dma_config_t_GPX		cfg;
-    dma_lli_u				lli;				// Linked list memory.  DMA_MODE_TX_LLI uses 6, DMA_MODE_RX_CIRC uses 1.
-    dma_tx_state_t			txState;
-    int 					lastDmaUsed;
-    uint8_t					overflow;			// Buffer overflow
+    dma_config_t_GPX        cfg;
+    dma_lli_u               lli;            // Linked list memory.  DMA_MODE_TX_LLI uses 6, DMA_MODE_RX_CIRC uses 1.
+    dma_tx_state_t          txState;
+    int                     lastDmaUsed;
+    uint8_t                 overflow;       // Buffer overflow
 } dma_ch_t_GPX;
 
 typedef struct
@@ -318,11 +318,11 @@ typedef struct
     uint32_t                instance;
     uint32_t                ptr_start;
     uint32_t                ptr_end;
-    uint16_t 		        active_tx_len;
-    bool 			        done;							// Currently only used in TX
-    dma_config_t_IMX		cfg;
-    int 					lastDmaUsed;					// Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
-    uint8_t					overflow;						// Buffer overflow
+    uint16_t                active_tx_len;
+    bool                    done;                            // Currently only used in TX
+    dma_config_t_IMX        cfg;
+    int                     lastDmaUsed;                    // Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
+    uint8_t                 overflow;                        // Buffer overflow
 } dma_ch_t_IMX;
 
 typedef struct
@@ -347,32 +347,32 @@ typedef struct
 PUSH_PACK_1
 
 typedef struct{
-    uint32_t                inst_CCR;         /*!< DMA channel x configuration register        */
-    uint32_t                inst_CNDTR;       /*!< DMA channel x number of data register       */
-    uint32_t                inst_CPAR;        /*!< DMA channel x peripheral address register   */
-    uint32_t                inst_CMAR;        /*!< DMA channel x memory address register       */
+    uint32_t    inst_CCR;                   /*!< DMA channel x configuration register        */
+    uint32_t    inst_CNDTR;                 /*!< DMA channel x number of data register       */
+    uint32_t    inst_CPAR;                  /*!< DMA channel x peripheral address register   */
+    uint32_t    inst_CMAR;                  /*!< DMA channel x memory address register       */
 
-	uint32_t 		        ptr_start;
-	uint32_t 		        ptr_end;
-	uint16_t 		        active_tx_len;
-	uint8_t 			    done;							// Currently only used in TX
+    uint32_t    ptr_start;
+    uint32_t    ptr_end;
+    uint16_t    active_tx_len;
+    uint8_t     done;                       // Currently only used in TX
 
-	uint8_t					cfg_dir;						// DMA_RX or DMA_TX
-	uint8_t					cfg_circular;					// DMA_CIRC_ON or DMA_CIRC_OFF
-	uint8_t 				cfg_priority;					// DMA_PRIO_LOW, DMA_PRIO_MEDIUM, DMA_PRIO_HIGH, DMA_PRIO_VERY_HIGH
-	uint8_t				    cfg_interrupt;
-	uint8_t 				cfg_interrupt_priority;			// 0 to 15, 15 is low
-	uint8_t 				cfg_dma_channel_select;			// 0 to 7. See RM0394 11.6.7
-	uint8_t 				cfg_parent_type;				// DMA_PARENT_USART, ...
-	uint32_t				cfg_parent;					    // Pointer to parent init base
-	uint32_t				cfg_periph_reg;				    // Pointer to peripheral register
-	uint32_t				cfg_buf;
-	uint16_t				cfg_buf_len;					// This doesn't correspond to the length register, it is just however big the buffer is
-	uint8_t 				cfg_linear_buf;			 		// If true, the buffer is user-specified and we treat it like a non-circular buffer.
-	uint32_t                cfg_tcie_handler;	            // If n
-	
-    int 					lastDmaUsed;					// Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
-	uint8_t					overflow;						// Buffer overflow
+    uint8_t     cfg_dir;                    // DMA_RX or DMA_TX
+    uint8_t     cfg_circular;               // DMA_CIRC_ON or DMA_CIRC_OFF
+    uint8_t     cfg_priority;               // DMA_PRIO_LOW, DMA_PRIO_MEDIUM, DMA_PRIO_HIGH, DMA_PRIO_VERY_HIGH
+    uint8_t     cfg_interrupt;
+    uint8_t     cfg_interrupt_priority;     // 0 to 15, 15 is low
+    uint8_t     cfg_dma_channel_select;     // 0 to 7. See RM0394 11.6.7
+    uint8_t     cfg_parent_type;            // DMA_PARENT_USART, ...
+    uint32_t    cfg_parent;                 // Pointer to parent init base
+    uint32_t    cfg_periph_reg;             // Pointer to peripheral register
+    uint32_t    cfg_buf;
+    uint16_t    cfg_buf_len;                // This doesn't correspond to the length register, it is just however big the buffer is
+    uint8_t     cfg_linear_buf;             // If true, the buffer is user-specified and we treat it like a non-circular buffer.
+    uint32_t    cfg_tcie_handler;           // If n
+    
+    int         lastDmaUsed;                // Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
+    uint8_t     overflow;                   // Buffer overflow
 } eventImxDmaTxInst_local_t;
 
 POP_PACK
