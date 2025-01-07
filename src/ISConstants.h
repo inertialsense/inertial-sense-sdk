@@ -140,7 +140,7 @@ extern "C" {
     #define VSNPRINTF vsnprintf
 #elif PLATFORM_IS_EMBEDDED
   #ifndef ARDUINO_SAMD_ZERO
-    #include "printf.h"        // Use embedded-safe SNPRINTF
+    #include "../hw-libs/printf/printf.h"        // Use embedded-safe SNPRINTF
   #endif
     #define SNPRINTF snprintf_
     #define VSNPRINTF vsnprintf_

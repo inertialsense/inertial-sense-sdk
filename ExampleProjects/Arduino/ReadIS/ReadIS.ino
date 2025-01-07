@@ -16,7 +16,6 @@
 // You can make this 512 size if memory is really tight.
 static uint8_t s_buffer[1024];
 static is_comm_instance_t comm;
-static serial_port_t s_serialPort;
 
 static void handleINSMessage(ins_1_t *ins)
 {
@@ -40,12 +39,6 @@ static void handleINSMessage(ins_1_t *ins)
     Serial.println(ins->theta[2] * C_RAD2DEG_F);
 }
 
-static int portWrite(unsigned int port, const unsigned char* buf, int len)
-{
-	return Serial1.write(buf, len);
-}
-
-
 void setup()
 {
     // Initialize both serial ports:
@@ -68,7 +61,7 @@ void setup()
     is_comm_enable_protocol(&comm, _PTYPE_NMEA);
 
     // Stop all the broadcasts on the device
-    int messageSize = is_comm_stop_broadcasts_all_ports(portWrite, 0, &comm);
+    int messageSize = is_comm_stop_broadcasts_all_ports(&comm);
     Serial1.write(comm.rxBuf.start, messageSize); // Transmit the message to the inertialsense device
 
     // Ask for ins_1 message 20 times per second.  Ask for the whole thing, so
