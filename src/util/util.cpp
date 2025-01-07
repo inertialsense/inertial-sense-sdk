@@ -343,9 +343,9 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
         std::regex(R"((\d){1,2}:(\d){2}:(\d){2}|_(\d{6}))"),    //!< 3, build time
         std::regex(R"((IS_)?([\w]+)-([\d\.]+)[,]?)"),           //!< 4, hdw type & version
         std::regex(R"(([0-9A-F]{5})(\.(\d+)))"),                //!< 5, build key and build number
-        std::regex(R"(b([\d.]+)([a-z]?))"),                     //!< 6, legacy build number and type -- note that this MUST be tested before 5, because 5 CAN catch it...
+        std::regex(R"(b(\d{1}[\d.]*)([a-z]?))"),                //!< 6, legacy build number and type -- note that this MUST be tested before 5, because 5 CAN catch it...
         std::regex(R"(\(([^\)]*)\))"),                          //!< 7, additional info
-        std::regex(R"(([0-9a-f]{6,8})(\*)?)"),                      //!< 8, repo hash & build status (dirty)
+        std::regex(R"(([0-9a-f]{6,8})(\*)?)"),                  //!< 8, repo hash & build status (dirty)
     };
 
     int ii = 0;

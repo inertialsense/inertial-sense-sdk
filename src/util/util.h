@@ -193,11 +193,12 @@ namespace utils {
     std::string getCurrentTimestamp();
     std::string devInfoToString(const dev_info_t& devInfo, uint16_t flags = -1);
     uint16_t devInfoFromString(const std::string& str, dev_info_t& devInfo);
-    int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
     uint64_t intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis = false);
-    bool devInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo);
     bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
     bool compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
+
+    // int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
+    // bool devInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo);
 };
 
 
