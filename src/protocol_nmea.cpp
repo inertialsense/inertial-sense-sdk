@@ -1100,9 +1100,9 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "ZDA");
-    nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(a, aSize, n, pos);								// 1
-    nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
-    nmea_sprint(a, aSize, n, ",00,00");												// 5,6
+    nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(a, aSize, n, pos);                                // 1
+    nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);                                        // 2,3,4
+    nmea_sprint(a, aSize, n, ",00,00");                                                // 5,6
     
     return nmea_sprint_footer(a, aSize, n);
 }
@@ -2877,8 +2877,8 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     ptr = ASCII_to_i32((int32_t*)&(date.month), ptr);
     ptr = ASCII_to_i32((int32_t*)&(date.year), ptr);
 
-    // Convert UTC date and time to GPS time of week and number of weeks		
-    int datetime[7] = { date.year, date.month, date.day, time.hour, time.minute, time.second, time.millisecond };		// year,month,day,hour,min,sec,msec
+    // Convert UTC date and time to GPS time of week and number of weeks        
+    int datetime[7] = { date.year, date.month, date.day, time.hour, time.minute, time.second, time.millisecond };        // year,month,day,hour,min,sec,msec
     UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs, gpsWeek);
     date.weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
 

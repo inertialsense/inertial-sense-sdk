@@ -307,7 +307,7 @@ int comManagerSendData(port_handle_t port, const void* data, uint16_t did, uint1
 * @param pFlags Additional packet flags if needed.
 * @return 0 if success, anything else if failure
 */
-int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset = 0);
+extern "C" int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset = 0);
 
 /**
 * Write bare data directly to the serial port.

@@ -1775,12 +1775,14 @@ typedef struct PACKED
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
-#define RMC_BITS_REFERENCE_IMU          0x0000004000000000        // DID_FLASH_CONFIG.startupNavDtMs
-#define RMC_BITS_REFERENCE_PIMU         0x0000008000000000        // "
+#define RMC_BITS_REFERENCE_IMU          0x0000004000000000      // DID_FLASH_CONFIG.startupNavDtMs
+#define RMC_BITS_REFERENCE_PIMU         0x0000008000000000      // "
 #define RMC_BITS_IMU3_RAW               0x0000010000000000
 #define RMC_BITS_IMU_RAW                0x0000020000000000
 #define RMC_BITS_GPS1_SIG               0x0000040000000000      // 1s
 #define RMC_BITS_GPS2_SIG               0x0000080000000000
+
+// GPX messages could go into a local grmc if imx memory we expanded. (TM)
 #define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000
 #define RMC_BITS_GPX_DEBUG              0x0000200000000000
 #define RMC_BITS_GPX_STATUS             0x0000400000000000
@@ -1789,6 +1791,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
+#define RMC_BITS_GPX_RTK_DBG            0x0010000000000000
 
 #define RMC_BITS_EVENT                  0x0800000000000000
 
@@ -1832,7 +1835,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPS1_SAT \
                                             | RMC_BITS_GPS2_SAT \
                                             | RMC_BITS_EVENT \
-                                            | RMC_BITS_GPX_STATUS)
+                                            | RMC_BITS_GPX_STATUS \
+                                            | RMC_BITS_GPX_RTK_DBG)
 #define RMC_PRESET_IMX_PPD_GROUND_VEHICLE   (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_WHEEL_ENCODER \
                                             | RMC_BITS_GROUND_VEHICLE)
