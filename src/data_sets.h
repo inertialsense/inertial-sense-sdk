@@ -4455,9 +4455,9 @@ enum eGpxStatus
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
     /** Rx communications dectect in last 30 seconds */
-    GPX_STATUS_COM0_RX_TRAFFIC_DECTECT                  = (int)0x00000010,
-    GPX_STATUS_COM1_RX_TRAFFIC_DECTECT                  = (int)0x00000020,
-    GPX_STATUS_COM2_RX_TRAFFIC_DECTECT                  = (int)0x00000040,
+    GPX_STATUS_COM0_RX_TRAFFIC_nDECTECT                 = (int)0x00000010,
+    GPX_STATUS_COM1_RX_TRAFFIC_nDECTECT                 = (int)0x00000020,
+    GPX_STATUS_COM2_RX_TRAFFIC_nDECTECT                 = (int)0x00000040,
 
     /** Reserved */
     GPX_STATUS_RESERVED_1                               = (int)0x00010000,
