@@ -2242,6 +2242,8 @@ class logPlot:
                 self.legends_add(ax[0,1].legend(ncol=2))
                 for i in range(3):
                     self.setPlotYSpanMin(ax[i,1], 1.0)
+        if not 'ax' in locals():
+            return
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -2317,6 +2319,8 @@ class logPlot:
                 self.legends_add(ax[0,1].legend(ncol=2))
                 for i in range(3):
                     self.setPlotYSpanMin(ax[i,1], 1.0)
+        if not 'ax' in locals():
+            return
         for a in ax:
             for b in a:
                 b.grid(True)
