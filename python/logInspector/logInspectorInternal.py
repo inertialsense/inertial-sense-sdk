@@ -79,6 +79,8 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('EKF Biases', 'ekfBiases')
 
     def createListSensors(self):
+        self.addListItem('IMU 3 PQR', 'imu3PQR')
+        self.addListItem('IMU 3 Accel', 'imu3Acc')
         super(logInspectorInternal, self).createListSensors()
         self.addListItem('Allan Var. PQR', 'allanVariancePQR')
         self.addListItem('Allan Var. Accel', 'allanVarianceAcc')

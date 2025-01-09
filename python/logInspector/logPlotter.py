@@ -2064,13 +2064,13 @@ class logPlot:
                 b.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 
-    def loadGyros(self, device):
-        return self.loadIMU(device, 0)
+    def loadGyros(self, device, forceImu3=False):
+        return self.loadIMU(device, accelSensor=0, forceImu3=forceImu3)
 
-    def loadAccels(self, device):
-        return self.loadIMU(device, 1)
+    def loadAccels(self, device, forceImu3=False):
+        return self.loadIMU(device, accelSensor=1, forceImu3=forceImu3)
 
-    def loadIMU(self, device, accelSensor):   # 0 = gyro, 1 = accelerometer
+    def loadIMU(self, device, accelSensor, forceImu3=False):   # 0 = gyro, 1 = accelerometer
         imu1 = None
         imu2 = None
         imu3 = None
@@ -2085,7 +2085,7 @@ class logPlot:
         else:
             imu1 = np.copy(self.getData(device, DID_PIMU, 'vel'))
 
-        if np.shape(imu1)[0] != 0:  # DID_PIMU
+        if np.shape(imu1)[0] != 0 and not forceImu3:  # DID_PIMU
             # time = self.getData(device, DID_IMU_RAW, 'time')     # to plot raw gyro data
             time = self.getData(device, DID_PIMU, 'time')
             dt = self.getData(device, DID_PIMU, 'dt') 
@@ -2118,7 +2118,7 @@ class logPlot:
             else:  
                 time = self.getData(device, DID_IMU, 'time')
 
-                if len(time) != 0:  # DID_IMU
+                if len(time) != 0 and not forceImu3:  # DID_IMU
                     I = self.getData(device, DID_IMU, 'I')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
@@ -2166,7 +2166,13 @@ class logPlot:
 
         return (time, dt, imu1, imu2, imu3, imuCount)
 
-    def imuPQR(self, fig=None, axs=None):
+    def imu3PQR(self, fig=None, axs=None):
+        self.imuPQR(fig, axs, forceImu3=True)
+
+    def imu3Acc(self, fig=None, axs=None):
+        self.imuAcc(fig, axs, forceImu3=True)
+
+    def imuPQR(self, fig=None, axs=None, forceImu3=False):
         if fig is None:
             fig = plt.figure()
 
@@ -2182,7 +2188,7 @@ class logPlot:
                 refTime.append(refTime_)
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
+        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0, forceImu3)
 
         plotResidual = pqrCount==1 and self.residual 
         if pqrCount:
@@ -2190,13 +2196,13 @@ class logPlot:
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS':
-                    (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+                    (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d, forceImu3)
                     refTime = time
                     refPqr = pqr0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d, forceImu3)
             if pqrCount:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
@@ -2243,7 +2249,7 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
 
-    def imuAcc(self, fig=None, axs=None):
+    def imuAcc(self, fig=None, axs=None, forceImu3=False):
         if fig is None:
             fig = plt.figure()
 
@@ -2258,7 +2264,7 @@ class logPlot:
                 refTime.append(refTime_)
 
         fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
+        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0, forceImu3)
 
         plotResidual = accCount==1 and self.residual 
         if accCount:
@@ -2266,13 +2272,13 @@ class logPlot:
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS':
-                    (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+                    (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d, forceImu3)
                     refTime = time
                     refAcc = acc0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d, forceImu3)
             if accCount:
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
