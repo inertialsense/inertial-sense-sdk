@@ -2217,7 +2217,7 @@ class logPlot:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'deg/s')
+                                self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')
                                 ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
                                 if plotResidual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
