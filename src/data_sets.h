@@ -4578,6 +4578,23 @@ enum eGPXHdwStatusFlags
 };
 
 typedef enum {
+    cxdRst_PowerOn =        0,
+    cxdRst_Watchdog =       1,
+    cxdRst_ErrOpCode =      2,
+    cxdRst_ErrOpCode_FW =   3,
+    cxdRst_ErrOpCode_init = 4,
+    cxdRst_UserRequested =  5,
+    cxdRst_FWUpdate =       6,
+    cxdRst_SysCmd =         7,
+    cxdRst_InitTimeout =    8,
+    cxdRst_Status5 =        9,
+    cxdRst_StatusNot0 =     10,
+    cxdRst_flashUpdate =    11,
+    cxdRst_RTKEphMissing =  12,
+    cxdRst_Max
+} eGNSSDriverRstCause;
+
+typedef enum {
     kReset = 0,
     kInit,
     kRun,
@@ -4594,10 +4611,10 @@ typedef enum {
 
 typedef struct 
 {
-    uint8_t reserved;
-    uint8_t fwUpdateState;      /** GNSS FW update status (see FirmwareUpdateState) **/
-    uint8_t initState;          /** GNSS status (see InitSteps) **/
-    uint8_t runState;           /** GNSS run status (see eGPXGnssRunState) **/
+    uint8_t lastRstCause;   /** Last reset cause (see eGNSSDriverRstCause) **/
+    uint8_t fwUpdateState;  /** GNSS FW update status (see FirmwareUpdateState) **/
+    uint8_t initState;      /** GNSS init status (see InitSteps) **/
+    uint8_t runState;       /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
 /**
