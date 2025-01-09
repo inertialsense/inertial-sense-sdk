@@ -4578,19 +4578,19 @@ enum eGPXHdwStatusFlags
 };
 
 typedef enum {
-    cxdRst_PowerOn = 0,
-    cxdRst_Watchdog,
-    cxdRst_ErrOpCode,
-    cxdRst_ErrOpCode_FW,
-    cxdRst_ErrOpCode_init,
-    cxdRst_UserRequested,
-    cxdRst_FWUpdate,
-    cxdRst_SysCmd,
-    cxdRst_InitTimeout,
-    cxdRst_Status5,
-    cxdRst_StatusNot0,
-    cxdRst_flashUpdate,
-    cxdRst_RTKEphMissing,
+    cxdRst_PowerOn =        0,
+    cxdRst_Watchdog =       1,
+    cxdRst_ErrOpCode =      2,
+    cxdRst_ErrOpCode_FW =   3,
+    cxdRst_ErrOpCode_init = 4,
+    cxdRst_UserRequested =  5,
+    cxdRst_FWUpdate =       6,
+    cxdRst_SysCmd =         7,
+    cxdRst_InitTimeout =    8,
+    cxdRst_Status5 =        9,
+    cxdRst_StatusNot0 =     10,
+    cxdRst_flashUpdate =    11,
+    cxdRst_RTKEphMissing =  12,
     cxdRst_Max
 } eGNSSDriverRstCause;
 
