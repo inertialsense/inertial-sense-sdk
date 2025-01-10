@@ -1,5 +1,5 @@
 /*
-Copyright 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 */
 
 #ifndef LUNA_DATA_SETS_H

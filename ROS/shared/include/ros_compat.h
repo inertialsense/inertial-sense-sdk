@@ -3,7 +3,7 @@
  * @brief ${BRIEF_DESC}
  *
  * @author Kyle Mallory on 10/6/24.
- * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
 #ifndef EVALTOOL_ROS_COMPAT_H
