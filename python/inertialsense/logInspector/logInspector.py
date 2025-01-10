@@ -277,7 +277,7 @@ class LogInspectorWindow(QMainWindow):
         super().closeEvent(event)  
 
     def popPlot(self):
-        print("Pop Plot")
+        print("New Plot")
         mp = MPlotter(len(self.mplots), self, True, self.nameList[self.selectedIndex] + " - " + self.deviceInfo())
         mp.dialogClosed.connect(self.on_mplotter_closed)  # Connect the custom signal to a slot
         mp.show()
@@ -418,14 +418,12 @@ class LogInspectorWindow(QMainWindow):
         self.setAcceptDrops(True)
 
     def createListSystem(self):
-        self.addListSection('SYSTEM')
         self.addListItem('Flash Config', lambda: self.showFlashConfig())
         self.addListItem('Device Info', lambda: self.showDeviceInfo())
         self.addListItem('INS Status', 'insStatus')
         self.addListItem('HDW Status', 'hdwStatus')
 
     def createListIns(self):
-        self.addListSection('INS/AHRS')
         self.addListItem('Pos NED Map', 'posNEDMap')
         self.addListItem('Pos NED', 'posNED')
         self.addListItem('Pos LLA', 'posLLA')
@@ -437,7 +435,6 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Climb Rate', 'climbRate')
 
     def createListSensors(self):
-        self.addListSection('SENSORS')
         self.addListItem('IMU PQR', 'imuPQR')
         self.addListItem('IMU Accel', 'imuAcc')
         self.addListItem('PSD PQR', 'gyroPSD')
@@ -447,7 +444,6 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Temp', 'temp')
 
     def createListGps(self):
-        self.addListSection('GPS')
         self.addListItem('GPS LLA', 'gpsLLA')
         self.addListItem('GPS 1 Stats', 'gpsStats')
         self.addListItem('GPS 2 Stats', 'gps2Stats')
@@ -465,7 +461,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GPS Velocity NED', 'gpsVelNED')
 
     def createListGeneral(self):
-        self.addListSection('GENERAL')
+        None
 
     def setCurrentListRow(self, row):
         if row < self.modelList.rowCount() and row < len(self.functionList):
@@ -500,10 +496,19 @@ class LogInspectorWindow(QMainWindow):
         groupBox.setLayout(LayoutList)
         self.controlLayout.addWidget(groupBox)        
 
+        self.addListSection('SYSTEM')
         self.createListSystem()
+
+        self.addListSection('INS/AHRS')
         self.createListIns()
+
+        self.addListSection('SENSORS')
         self.createListSensors()
+
+        self.addListSection('GPS')
         self.createListGps()
+
+        self.addListSection('GENERAL')
         self.createListGeneral()
 
         self.checkboxResidual = QCheckBox("Residual", self)
@@ -607,14 +612,16 @@ class LogInspectorWindow(QMainWindow):
         self.toolLayout = QHBoxLayout()
         self.toolLayout.addWidget(self.mplots[0].toolbar)
 
-        self.popPlotButton = QPushButton("Pop Plot")
-        self.popPlotButton.setToolTip("Open current plot in separate dialog window.")
-        self.popPlotButton.clicked.connect(self.popPlot)
-        self.toolLayout.addWidget(self.popPlotButton)
         self.hideControlButton = QPushButton("Hide Panel")
         self.hideControlButton.setToolTip("Hide/show left side control panel of the LogInspector.")
         self.hideControlButton.clicked.connect(self.hideControl)
         self.toolLayout.addWidget(self.hideControlButton)
+
+        self.popPlotButton = QPushButton("New Plot")
+        self.popPlotButton.setToolTip("Open current plot in separate dialog window.")
+        self.popPlotButton.clicked.connect(self.popPlot)
+        self.toolLayout.addWidget(self.popPlotButton)
+
         self.newAppButton = QPushButton("New App")
         self.newAppButton.setToolTip("Open a new instance of the LogInspector.")
         self.newAppButton.clicked.connect(self.newWindow)

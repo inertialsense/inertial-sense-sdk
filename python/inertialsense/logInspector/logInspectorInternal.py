@@ -72,13 +72,15 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createListSystem(self):
         super(logInspectorInternal, self).createListSystem()
-        self.addListItem('General Fault', 'genFaultCodes')
+        self.addListItem('General Fault Codes', 'genFaultCodes')
 
     def createListIns(self):
         super(logInspectorInternal, self).createListIns()
         self.addListItem('EKF Biases', 'ekfBiases')
 
     def createListSensors(self):
+        self.addListItem('IMU3 PQR', 'imu3PQR')
+        self.addListItem('IMU3 Accel', 'imu3Acc')
         super(logInspectorInternal, self).createListSensors()
         self.addListItem('Allan Var. PQR', 'allanVariancePQR')
         self.addListItem('Allan Var. Accel', 'allanVarianceAcc')

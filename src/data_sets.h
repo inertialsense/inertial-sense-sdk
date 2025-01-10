@@ -38,7 +38,7 @@ typedef uint32_t eDataIDs;
 #define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
 #define DID_IMX_DEV_INFO                (DID_DEV_INFO)
-#define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information */
+#define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
 #define DID_PIMU                        (eDataIDs)3  /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
@@ -396,7 +396,7 @@ enum eHdwStatusFlags
     /** Reset from hardware (NRST pin low) */
     HDW_STATUS_RESET_CAUSE_HDW                  = (int)0x40000000,
 
-    /** Critical System Fault - CPU error */
+    /** Critical System Fault, CPU error.  (see DID_SYS_FAULT.status, eSysFaultStatus) */
     HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
@@ -1556,6 +1556,10 @@ enum eSystemCommand
     SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
+
+    SYS_CMD_FAULT_TEST_TRIG_MALLOC                      = 57005,
+    SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                  = 57006,
+    SYS_CMD_FAULT_TEST_TRIG_WATCHDOG                    = 57007,
 };
 
 enum eSerialPortBridge
@@ -4479,6 +4483,11 @@ enum eGpxStatus
     GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET               = 0,
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
+    /** Rx communications not dectected in last 30 seconds */
+    GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000010,
+    GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000020,
+    GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000040,
+
     /** Reserved */
     GPX_STATUS_RESERVED_1                               = (int)0x00010000,
 
@@ -4593,9 +4602,26 @@ enum eGPXHdwStatusFlags
     /** Reset from Hardware (NRST pin low) */
     GPX_HDW_STATUS_RESET_CAUSE_HDW                      = (int)0x40000000,
     
-    /** Critical System Fault - CPU error */
+    /** Critical System Fault, CPU error.  (see DID_GPX_STATUS.status, eGpxStatus::GPX_STATUS_FATAL_MASK) */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
+
+typedef enum {
+    cxdRst_PowerOn          = 0,
+    cxdRst_Watchdog         = 1,
+    cxdRst_ErrOpCode        = 2,
+    cxdRst_ErrOpCode_FW     = 3,
+    cxdRst_ErrOpCode_init   = 4,
+    cxdRst_UserRequested    = 5,
+    cxdRst_FWUpdate         = 6,
+    cxdRst_SysCmd           = 7,
+    cxdRst_InitTimeout      = 8,
+    cxdRst_Status5          = 9,
+    cxdRst_StatusNot0       = 10,
+    cxdRst_flashUpdate      = 11,
+    cxdRst_RTKEphMissing    = 12,
+    cxdRst_Max
+} eGNSSDriverRstCause;
 
 typedef enum {
     kReset = 0,
@@ -4614,10 +4640,10 @@ typedef enum {
 
 typedef struct
 {
-    uint8_t reserved;
-    uint8_t fwUpdateState;      /** GNSS FW update status (see FirmwareUpdateState) **/
-    uint8_t initState;          /** GNSS init status (see InitSteps) **/
-    uint8_t runState;           /** GNSS run status (see eGPXGnssRunState) **/
+    uint8_t lastRstCause;   /** Last reset cause (see eGNSSDriverRstCause) **/
+    uint8_t fwUpdateState;  /** GNSS FW update status (see FirmwareUpdateState) **/
+    uint8_t initState;      /** GNSS init status (see InitSteps) **/
+    uint8_t runState;       /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
 /**
@@ -5131,37 +5157,38 @@ typedef struct
 
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
-/**
-* (DID_SYS_FAULT) System Fault Information 
-*/
-#define SYS_FAULT_STATUS_HARDWARE_RESET                 0x00000000
-#define SYS_FAULT_STATUS_USER_RESET                     0x00000001
-#define SYS_FAULT_STATUS_ENABLE_BOOTLOADER              0x00000002
-// General:
-#define SYS_FAULT_STATUS_SOFT_RESET                     0x00000010
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          0x00000020
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      0x00000040
-#define SYS_FAULT_STATUS_RTK_MISC_ERROR                 0x00000080
-#define SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE           0x00000100
-#define SYS_FAULT_STATUS_MASK_GENERAL_ERROR             0xFFFFFFF0
-// Critical: (usually associated with system reset)
-#define SYS_FAULT_STATUS_HARD_FAULT                     0x00010000
-#define SYS_FAULT_STATUS_USAGE_FAULT                    0x00020000
-#define SYS_FAULT_STATUS_MEM_MANGE                      0x00040000
-#define SYS_FAULT_STATUS_BUS_FAULT                      0x00080000
-#define SYS_FAULT_STATUS_MALLOC_FAILED                  0x00100000
-#define SYS_FAULT_STATUS_STACK_OVERFLOW                 0x00200000
-#define SYS_FAULT_STATUS_INVALID_CODE_OPERATION         0x00400000
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_MARKER_UPDATED 0x00800000
-#define SYS_FAULT_STATUS_WATCHDOG_RESET                 0x01000000
-#define SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               0x02000000
-#define SYS_FAULT_STATUS_SENSOR_CALIBRATION             0x04000000
-#define SYS_FAULT_STATUS_HARDWARE_DETECTION             0x08000000
-#define SYS_FAULT_STATUS_MASK_CRITICAL_ERROR            0xFFFF0000
+enum eSysFaultStatus
+{
+    SYS_FAULT_STATUS_HARDWARE_RESET                 = 0x00000000,
+    SYS_FAULT_STATUS_USER_RESET                     = 0x00000001,
+    SYS_FAULT_STATUS_ENABLE_BOOTLOADER              = 0x00000002,
+    // General:
+    SYS_FAULT_STATUS_SOFT_RESET                     = 0x00000010,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          = 0x00000020,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      = 0x00000040,
+    SYS_FAULT_STATUS_RTK_MISC_ERROR                 = 0x00000080,
+    SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE           = 0x00000100,
+    SYS_FAULT_STATUS_MASK_GENERAL_ERROR             = 0xFFFFFFF0,
+    // Critical: (usually associated with system reset)
+    SYS_FAULT_STATUS_HARD_FAULT                     = 0x00010000,
+    SYS_FAULT_STATUS_USAGE_FAULT                    = 0x00020000,
+    SYS_FAULT_STATUS_MEM_MANGE                      = 0x00040000,
+    SYS_FAULT_STATUS_BUS_FAULT                      = 0x00080000,
+    SYS_FAULT_STATUS_MALLOC_FAILED                  = 0x00100000,
+    SYS_FAULT_STATUS_STACK_OVERFLOW                 = 0x00200000,
+    SYS_FAULT_STATUS_INVALID_CODE_OPERATION         = 0x00400000,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_MARKER_UPDATED = 0x00800000,
+    SYS_FAULT_STATUS_WATCHDOG_RESET                 = 0x01000000,
+    SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               = 0x02000000,
+    SYS_FAULT_STATUS_SENSOR_CALIBRATION             = 0x04000000,
+    SYS_FAULT_STATUS_HARDWARE_DETECTION             = 0x08000000,
+    SYS_FAULT_STATUS_MASK_CRITICAL_ERROR            = 0xFFFF0000,
+};
 
+/** (DID_SYS_FAULT) System Fault Information */ 
 typedef struct 
 {
-    /** System fault status */
+    /** System fault status (see eSysFaultStatus) */
     uint32_t status;
 
     /** Fault Type at HardFault */

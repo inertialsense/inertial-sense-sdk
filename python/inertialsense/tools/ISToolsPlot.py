@@ -1533,13 +1533,8 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
             n_plot = 4
             if 'gps1RtkPosMisc' in log.data.keys():
-<<<<<<< HEAD:python/inertialsense/tools/ISToolsPlot.py
-                rtkMiscTime = getTimeFromTowMs(log.data['gps1RtkPosMisc']['timeOfWeekMs'])
-                pt.subplotSingle(ax[n_plot], rtkMiscTime, log.data['gps1RtkPosMisc']['cycleSlipCount'], 'RTK: Slip Counter', ' ')
-=======
                 rtkMiscTime = getTimeFromGpsTowMs(log.data['gps1RtkPosMisc']['timeOfWeekMs'])
                 pt.subplotSingle(ax[n_plot], rtkMiscTime, log.data['gps1RtkPosMisc']['cycleSlipCount'], 'RTK: Slip Counter', ' ' )
->>>>>>> origin/2.2.1-rc:python/pylib/ISToolsPlot.py
                 n_plot += 1
 
 

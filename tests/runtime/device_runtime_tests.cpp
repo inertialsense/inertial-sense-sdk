@@ -140,6 +140,7 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
     {
     case NMEA_MSG_ID_GNGGA:     TestNmeaGga(msg, msgSize);      break;
     case NMEA_MSG_ID_GNZDA:     TestNmeaZda(msg, msgSize);      break;
+    case NMEA_MSG_ID_INTEL:     TestNmeaIntel(msg, msgSize);    break;
     }
 }
 
@@ -174,6 +175,24 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
     // WriteStatus("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
 
     CheckGpsTime("NMEA ZDA Error", m_errorCount.nmeaZdaTime, hist);
+}
+
+/**
+ * @brief Test messages for duplicates, reversed order, or irregular timestamps.
+ */
+void DeviceRuntimeTests::TestNmeaIntel(const uint8_t* msg, int msgSize)
+{
+    dev_info_t info;
+    gps_pos_t pos;
+    gps_vel_t vel;
+    float ppsPhase[2];
+    uint32_t ppsNoiseNs[1];
+    nmea_parse_intel((char*)msg, msgSize, info, pos, vel, ppsPhase, ppsNoiseNs);
+    std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.nmea.intel, msg_history_t(&pos, (uint8_t*)msg, msgSize));
+
+    // WriteStatus("NMEA INTEL (%d ms): %.*s", gpsTowMs, msgSize, msg);
+
+    CheckGpsTime("NMEA INTEL Error", m_errorCount.nmeaZdaTime, hist);
 }
 
 std::string printfToString(const char* format, ...)
