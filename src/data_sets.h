@@ -4487,6 +4487,7 @@ enum eGpxStatus
     GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000010,
     GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000020,
     GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000040,
+    GPX_STATUS_USB_RX_TRAFFIC_NOT_DECTECTED             = (int)0x00000080,
 
     /** Reserved */
     GPX_STATUS_RESERVED_1                               = (int)0x00010000,
