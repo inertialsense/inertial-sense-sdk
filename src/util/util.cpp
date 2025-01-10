@@ -3,7 +3,7 @@
  * @brief ${BRIEF_DESC}
  *
  * @author Kyle Mallory on 3/14/24.
- * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
 #include "util.h"

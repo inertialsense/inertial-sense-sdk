@@ -14,11 +14,13 @@ on:
   push:
     branches:
       - '**'
-    pull_request:
-      - 'develop'
-      - 'main'
     tags:
-      - '\d+.\d.+\d+*'
+      - '[0-9].[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+      - main
+      - develop
+      - '[0-9].[0-9]+.[0-9]+-rc'
 
 concurrency:
   group: ${{ github.ref }}
