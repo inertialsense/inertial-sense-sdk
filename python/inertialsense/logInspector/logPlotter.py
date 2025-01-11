@@ -1235,16 +1235,16 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x10000000) != 0))
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x10000000))
                 if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x20000000) != 0))
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x20000000))
                 if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x30000000) != 0))
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x30000000))
                 if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x40000000) != 0))
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x40000000))
                 if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x80000000) != 0))
@@ -1264,7 +1264,7 @@ class logPlot:
             if fig is None:
                 fig = plt.figure()
             ax = fig.subplots(1, 1, sharex=True)
-            fig.suptitle('INS Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+            fig.suptitle('Gen Fault Codes - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
             for d in self.active_devs:
                 r = d == self.active_devs[0]    # plot text w/ first device
@@ -1351,7 +1351,10 @@ class logPlot:
                 if r: ax.text(p1, -cnt * 1.5, 'Chip Erase Invalid')
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS Time Fault')
+                if r: ax.text(p1, -cnt * 1.5, 'EKF GNSS Time Fault')
+                cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS Rcvr Time Fault')
                 cnt += 1
                 cnt += 1
 
@@ -2086,13 +2089,13 @@ class logPlot:
                 b.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 
-    def loadGyros(self, device):
-        return self.loadIMU(device, 0)
+    def loadGyros(self, device, forceImu3=False):
+        return self.loadIMU(device, accelSensor=0, forceImu3=forceImu3)
 
-    def loadAccels(self, device):
-        return self.loadIMU(device, 1)
+    def loadAccels(self, device, forceImu3=False):
+        return self.loadIMU(device, accelSensor=1, forceImu3=forceImu3)
 
-    def loadIMU(self, device, accelSensor):   # 0 = gyro, 1 = accelerometer
+    def loadIMU(self, device, accelSensor, forceImu3=False):   # 0 = gyro, 1 = accelerometer
         imu1 = None
         imu2 = None
         imu3 = None
@@ -2107,7 +2110,7 @@ class logPlot:
         else:
             imu1 = np.copy(self.getData(device, DID_PIMU, 'vel'))
 
-        if np.shape(imu1)[0] != 0:  # DID_PIMU
+        if np.shape(imu1)[0] != 0 and not forceImu3:  # DID_PIMU
             # time = self.getData(device, DID_IMU_RAW, 'time')     # to plot raw gyro data
             time = self.getData(device, DID_PIMU, 'time')
             dt = self.getData(device, DID_PIMU, 'dt') 
@@ -2140,7 +2143,7 @@ class logPlot:
             else:  
                 time = self.getData(device, DID_IMU, 'time')
 
-                if len(time) != 0:  # DID_IMU
+                if len(time) != 0 and not forceImu3:  # DID_IMU
                     I = self.getData(device, DID_IMU, 'I')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
@@ -2158,9 +2161,9 @@ class logPlot:
                         imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
                         dt = time[1:] - time[:-1]
                         dt = np.append(dt, dt[-1])
-                        imu1 = None
-                        imu2 = None
-                        imu3 = None
+                        imu1 = []
+                        imu2 = []
+                        imu3 = []
                         if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
                             for sample in range(0, len(I)):
                                 imu1.append(I[sample][0][accelSensor])
@@ -2188,7 +2191,13 @@ class logPlot:
 
         return (time, dt, imu1, imu2, imu3, imuCount)
 
-    def imuPQR(self, fig=None, axs=None):
+    def imu3PQR(self, fig=None, axs=None):
+        self.imuPQR(fig, axs, forceImu3=True)
+
+    def imu3Acc(self, fig=None, axs=None):
+        self.imuAcc(fig, axs, forceImu3=True)
+
+    def imuPQR(self, fig=None, axs=None, forceImu3=False):
         if fig is None:
             fig = plt.figure()
 
@@ -2204,7 +2213,7 @@ class logPlot:
                 refTime.append(refTime_)
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        (time, dt, acc0, acc1, acc2, pqrCount) = self.loadGyros(0)
+        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0, forceImu3)
 
         plotResidual = pqrCount==1 and self.residual 
         if pqrCount:
@@ -2212,13 +2221,13 @@ class logPlot:
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS':
-                    (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+                    (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d, forceImu3)
                     refTime = time
                     refPqr = pqr0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d, forceImu3)
             if pqrCount:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
@@ -2233,7 +2242,7 @@ class logPlot:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'deg/s')
+                                self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')
                                 ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
                                 if plotResidual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
@@ -2258,6 +2267,8 @@ class logPlot:
                 self.legends_add(ax[0,1].legend(ncol=2))
                 for i in range(3):
                     self.setPlotYSpanMin(ax[i,1], 1.0)
+        if not 'ax' in locals():
+            return
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -2265,7 +2276,7 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
 
-    def imuAcc(self, fig=None, axs=None):
+    def imuAcc(self, fig=None, axs=None, forceImu3=False):
         if fig is None:
             fig = plt.figure()
 
@@ -2280,7 +2291,7 @@ class logPlot:
                 refTime.append(refTime_)
 
         fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
+        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0, forceImu3)
 
         plotResidual = accCount==1 and self.residual 
         if accCount:
@@ -2288,13 +2299,13 @@ class logPlot:
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS':
-                    (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+                    (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d, forceImu3)
                     refTime = time
                     refAcc = acc0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d, forceImu3)
             if accCount:
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
@@ -2333,6 +2344,8 @@ class logPlot:
                 self.legends_add(ax[0,1].legend(ncol=2))
                 for i in range(3):
                     self.setPlotYSpanMin(ax[i,1], 1.0)
+        if not 'ax' in locals():
+            return
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -2979,13 +2992,6 @@ class logPlot:
                 deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromGpsTow(timeImu3[1:] + towOffset)
 
-<<<<<<< HEAD:python/inertialsense/logInspector/logPlotter.py
-            ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
-            ax[1].plot(timeGps, dtGps)
-            if integrationPeriod.size:
-                ax[2].plot(timeImu, integrationPeriod)
-            ax[3].plot(timeImu, deltaTimestamp)
-=======
             if self.xAxisSample:
                 xIns = np.arange(0, np.shape(dtIns)[0])
                 xGps1 = np.arange(0, np.shape(dtGps1)[0])
@@ -3003,7 +3009,6 @@ class logPlot:
             if integrationPeriod.size:
                 ax[3].plot(xImu, integrationPeriod)
             ax[4].plot(xImu, deltaTimestamp)
->>>>>>> origin/2.2.2-rc:python/logInspector/logPlotter.py
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
         for i in range(len(ax)):

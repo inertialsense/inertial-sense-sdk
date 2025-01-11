@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -535,8 +535,8 @@ static void PopulateMapGroundVehicle(data_set_t data_set[DID_COUNT], uint32_t di
 static void PopulateMapSystemCommand(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<system_command_t> mapper(data_set, did);
-    mapper.AddMember("command", &system_command_t::command, DATA_TYPE_UINT32, "", "99=software reset, 5=zero sensors");
-    mapper.AddMember("invCommand", &system_command_t::invCommand, DATA_TYPE_UINT32, "", "Bitwise inverse of command (-command - 1) required to process command.");
+    mapper.AddMember("command", &system_command_t::command, DATA_TYPE_INT32, "", "99=software reset, 5=zero sensors");
+    mapper.AddMember("invCommand", &system_command_t::invCommand, DATA_TYPE_INT32, "", "Bitwise inverse of command ((-command) - 1) required to process command.");
 }
 
 static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -688,10 +688,10 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     for (int i=0; i<GNSS_RECEIVER_COUNT; i++)
     {
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".reserved",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].reserved),      DATA_TYPE_UINT8, "", "");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".fwUpdateState", i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].fwUpdateState), DATA_TYPE_UINT8, "", "GNSS FW update status (see FirmwareUpdateState)");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",     i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),     DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".runState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].runState),      DATA_TYPE_UINT8, "", "GNSS run status (see eGPXGnssRunState)");
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".lastRstCause", i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].lastRstCause), DATA_TYPE_UINT8, "", "GNSS last reset cause (see eGnssResetCause)");
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".fwUpdateState",  i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].fwUpdateState),  DATA_TYPE_UINT8, "", "GNSS FW update status (see FirmwareUpdateState)");
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),      DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)");
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".runState",       i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].runState),       DATA_TYPE_UINT8, "", "GNSS run status (see eGPXGnssRunState)");
     }
     mapper.AddMember("gpxSourcePort", &gpx_status_t::gpxSourcePort, DATA_TYPE_UINT8, "", "Port", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("upTime", &gpx_status_t::upTime, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);

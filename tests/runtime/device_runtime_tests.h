@@ -110,6 +110,7 @@ private:
     void TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf);
     void TestNmeaGga(const uint8_t* msg, int msgSize);
     void TestNmeaZda(const uint8_t* msg, int msgSize);
+    void TestNmeaIntel(const uint8_t* msg, int msgSize);
     bool CheckGpsTime(const char* description, int &count, std::deque<msg_history_t> &hist);
     bool CheckGpsTimeDuplicate(const char* description, int &count, std::deque<msg_history_t> &hist);
     bool CheckGpsTimeReversed(const char* description, int &count, std::deque<msg_history_t> &hist);
@@ -143,8 +144,9 @@ private:
 
         struct
         {
-            std::deque<msg_history_t>   zda;
             std::deque<msg_history_t>   gga;
+            std::deque<msg_history_t>   intel;
+            std::deque<msg_history_t>   zda;
         } nmea;
     } m_hist = {};
     
