@@ -596,10 +596,10 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
     if (comm == NULL)
-        return "";
+        return "\n";
 
     std::stringstream ss;
-    ss << "is_comm stats:  Rx " << comm->rxPktCount;
+    ss << "is_comm stats:  Rx " << std::setw (10) << comm->rxPktCount;
 
     if (comm->rxErrorCount)
     {
@@ -631,7 +631,7 @@ string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
             }
         }
         ss << endl;
-        ss << HLINE_DIVIDER;
+        ss << HLINE_DIVIDER << endl;
     }
     else
     {
