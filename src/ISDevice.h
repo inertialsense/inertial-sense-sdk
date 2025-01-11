@@ -91,10 +91,10 @@ public:
 
     // Convenience Functions
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
-    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { comManagerGetData(port, dataId, length, offset, period); }
-    int SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) { return comManagerSendData(port, data, dataId, length, offset); }
-    int SendRaw(const uint8_t* data, uint32_t length) { return comManagerSendRaw(port, data, length); }
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard lock(portMutex); comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) {  std::lock_guard lock(portMutex); comManagerGetData(port, dataId, length, offset, period); }
+    int SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) {  std::lock_guard lock(portMutex); return comManagerSendData(port, data, dataId, length, offset); }
+    int SendRaw(const uint8_t* data, uint32_t length) {  std::lock_guard lock(portMutex); return comManagerSendRaw(port, data, length); }
 
     int SendNmea(const std::string& nmeaMsg);
     int QueryDeviceInfo() { return SendRaw((uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
@@ -201,7 +201,7 @@ public:
     */
     fwUpdate::update_status_e getUpdateStatus() { return fwLastStatus; };
 
-
+    std::mutex  portMutex;                                           //! used to guard against concurrent use of the port in multi-threaded environments - only one read/write at a time
     port_handle_t port = 0;
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
@@ -234,8 +234,8 @@ public:
     fwUpdate::update_status_e fwLastStatus = fwUpdate::NOT_STARTED;
     std::string fwLastMessage;
 
-    std::vector<std::string> target_idents;
-    std::vector<std::string> target_messages;
+    // std::vector<std::string> target_idents;
+    // std::vector<std::string> target_messages;
 
     uint32_t lastResetRequest = 0;              //! system time when the last reset requests was sent
     uint32_t resetRequestThreshold = 5000;      //! Don't allow to send reset requests more frequently than this...

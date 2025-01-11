@@ -96,6 +96,13 @@ namespace utils {
     }
 
 
+    /**
+     * Natural String Comparison
+     * @param a
+     * @param b
+     * @param fold_case  if non-zero will perform a case-insensitive comparision (by upper-casing all alpha chars)
+     * @return
+     */
     static int strnatcmp0(nat_char const *a, nat_char const *b, int fold_case) {
         int ai, bi;
         nat_char ca, cb;
@@ -147,20 +154,43 @@ namespace utils {
     }
 
 
+    /**
+     * Perform a case-sensitive "natural" string comparison using char*
+     * @param a
+     * @param b
+     * @return
+     */
     int strnatcmp(nat_char const *a, nat_char const *b) {
         return strnatcmp0(a, b, 0);
     }
 
 
-    /* Compare, recognizing numeric string and ignoring case. */
+    /**
+     * Perform a case-INsensitive "natural" string comparison
+     * @param a
+     * @param b
+     * @return
+     */
     int strnatcasecmp(nat_char const *a, nat_char const *b) {
         return strnatcmp0(a, b, 1);
     }
 
+    /**
+     * Perform a case-sensitive "natural" string comparison using std::string
+     * @param a
+     * @param b
+     * @return
+     */
     int natcmp(const std::string& a, const std::string& b) {
         return strnatcmp0(a.c_str(), b.c_str(), 0);
     }
 
+    /**
+     * Perform a case-INsensitive "natural" string comparison using std::string
+     * @param a
+     * @param b
+     * @return
+     */
     int natcasecmp(const std::string& a, const std::string& b) {
         return strnatcmp0(a.c_str(), b.c_str(), 1);
     }

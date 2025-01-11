@@ -1074,7 +1074,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
                     if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                     { 
                         return _PTYPE_PARSE_ERROR; 
-                    }                                       
+                    }
                     break;
             }
         }
