@@ -429,6 +429,7 @@ class LogInspectorWindow(QMainWindow):
     def createListSystem(self):
         self.addListItem('Flash Config', lambda: self.showFlashConfig())
         self.addListItem('Device Info', lambda: self.showDeviceInfo())
+        self.addListItem('IMU Status', 'imuStatus')
         self.addListItem('INS Status', 'insStatus')
         self.addListItem('HDW Status', 'hdwStatus')
 

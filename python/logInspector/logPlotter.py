@@ -1029,6 +1029,77 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'heading')
 
+    def imuStatus(self, fig=None, axs=None):
+        try:
+            if fig is None:
+                fig = plt.figure()
+            ax = fig.subplots(1, 1, sharex=True)
+            fig.suptitle('IMU Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+            for d in self.active_devs:
+                r = d == self.active_devs[0]    # plot text w/ first device
+                cnt = 0
+
+                time = self.getData(d, DID_PIMU, 'time')
+                towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+                if towOffset.size:
+                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+                status = self.getData(d, DID_PIMU, 'status')
+
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000001) != 0))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU1 Gyr')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000002) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU2 Gyr')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000004) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU3 Gyr')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000008) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU1 Acc')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000010) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU2 Acc')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000020) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU3 Acc')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000100) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Mag Update')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000200) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Ref IMU Present')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00010000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Gyr1 OK')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00020000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Gyr2 OK')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00040000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Gyr3 OK')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00080000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Acc1 OK')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00100000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Acc2 OK')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00200000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Acc3 OK')
+                cnt += 1
+                cnt += 1
+
+            ax.grid(True)
+
+            self.setup_and_wire_legend()
+            return self.saveFigJoinAxes(ax, axs, fig, 'imuStatus')
+        except:
+            print(RED + "problem plotting imuStatus: " + sys.exc_info()[0] + RESET)
+
     def insStatus(self, fig=None, axs=None):
         try:
             if fig is None:
