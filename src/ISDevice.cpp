@@ -25,7 +25,7 @@ bool ISDevice::Update() {
  * @return
  */
 bool ISDevice::step() {
-    std::lock_guard<std::mutex> lock(portMutex);
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (!port)
         return false;
@@ -342,7 +342,7 @@ bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
         return false;   // TODO: Not sure if we really need this here.  We should be doing a broader level check for protocol compatibility either at a higher level, preventing us from getting here in the first place
                         //   Or at a lower-level, like in the comMangerGetData() call that does this check for everything.
 
-    std::lock_guard<std::mutex> lock(portMutex);
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
     if (periodMultiple < 0) {
         comManagerDisableData(port, dataId);
     } else {
@@ -356,7 +356,7 @@ bool ISDevice::verifyFlashConfigUpload() {
     bool success = false;
     unsigned int startTimeMs = current_timeMs();
 
-    std::lock_guard<std::mutex> lock(portMutex);
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     StopBroadcasts(false);  // only stop broadcasts to this port... FIXME: Do we REALLY want to do this??  This will stop legitimately configured broadcasts
     do {
@@ -374,7 +374,7 @@ bool ISDevice::verifyFlashConfigUpload() {
 }
 
 int ISDevice::SetSysCmd(const uint32_t command) {
-    std::lock_guard<std::mutex> lock(portMutex);
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     sysCmd.command = command;
     sysCmd.invCommand = ~command;
