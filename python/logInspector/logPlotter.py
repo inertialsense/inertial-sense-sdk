@@ -1048,23 +1048,25 @@ class logPlot:
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000001) != 0))
                 p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU1 Gyr')
+                if r: ax.text(p1, -cnt * 1.5, 'Gyr1 Saturation')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU2 Gyr')
+                if r: ax.text(p1, -cnt * 1.5, 'Gyr2 Saturation')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU3 Gyr')
+                if r: ax.text(p1, -cnt * 1.5, 'Gyr3 Saturation')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000008) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU1 Acc')
+                if r: ax.text(p1, -cnt * 1.5, 'Acc1 Saturation')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU2 Acc')
+                if r: ax.text(p1, -cnt * 1.5, 'Acc2 Saturation')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation IMU3 Acc')
+                if r: ax.text(p1, -cnt * 1.5, 'Acc3 Saturation')
                 cnt += 1
+                cnt += 1
+
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000100) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Mag Update')
                 cnt += 1
