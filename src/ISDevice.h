@@ -91,10 +91,10 @@ public:
 
     // Convenience Functions
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard lock(portMutex); comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
-    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) {  std::lock_guard lock(portMutex); comManagerGetData(port, dataId, length, offset, period); }
-    int SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) {  std::lock_guard lock(portMutex); return comManagerSendData(port, data, dataId, length, offset); }
-    int SendRaw(const uint8_t* data, uint32_t length) {  std::lock_guard lock(portMutex); return comManagerSendRaw(port, data, length); }
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::mutex> lock(portMutex); comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) {  std::lock_guard<std::mutex> lock(portMutex); comManagerGetData(port, dataId, length, offset, period); }
+    int SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) {  std::lock_guard<std::mutex> lock(portMutex); return comManagerSendData(port, data, dataId, length, offset); }
+    int SendRaw(const uint8_t* data, uint32_t length) {  std::lock_guard<std::mutex> lock(portMutex); return comManagerSendRaw(port, data, length); }
 
     int SendNmea(const std::string& nmeaMsg);
     int QueryDeviceInfo() { return SendRaw((uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
