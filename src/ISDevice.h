@@ -74,6 +74,21 @@ public:
         hdwRunState = HDW_STATE_UNKNOWN;
     }
 
+    ISDevice& operator=(const ISDevice& src) {
+        port = src.port;
+        hdwId = src.hdwId;
+        hdwRunState = src.hdwRunState;
+        devInfo = src.devInfo;
+        flashCfg = src.flashCfg;
+        flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
+        flashCfgUpload = src.flashCfgUpload;
+        evbFlashCfg = src.evbFlashCfg;
+        sysCmd = src.sysCmd;
+        // devLogger = src.devLogger.get();
+        closeStatus = src.closeStatus;
+        return *this;
+    }
+
     /**
      * @return true is this ISDevice has a valid, and open port
      */
