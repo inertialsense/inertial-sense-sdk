@@ -307,18 +307,18 @@ enum eGpsNavFixStatus
 /** Hardware status flags */
 enum eHdwStatusFlags
 {
-    /** Gyro motion detected sigma */
-    HDW_STATUS_MOTION_GYR_SIG                   = (int)0x00000001,
-    /** Accelerometer motion detected sigma */
-    HDW_STATUS_MOTION_ACC_SIG                   = (int)0x00000002,
+    /** Gyro motion detected */
+    HDW_STATUS_MOTION_GYR                       = (int)0x00000001,
+    /** Accelerometer motion detected */
+    HDW_STATUS_MOTION_ACC                       = (int)0x00000002,
     /** Unit is moving and NOT stationary */
-    HDW_STATUS_MOTION_SIG_MASK                  = (int)0x00000003,
-    /** Gyro motion detected deviation */
-    HDW_STATUS_MOTION_GYR_DEV                   = (int)0x00000004,
-    /** Accelerometer motion detected deviation */
-    HDW_STATUS_MOTION_ACC_DEV                   = (int)0x00000008,
-    /** Motion mask */
-    HDW_STATUS_MOTION_MASK                      = (int)0x0000000F,
+    HDW_STATUS_MOTION_MASK                      = (int)0x00000003,
+    /** IMU gyro fault detection. One of the redundant gyro sensors is not in agreement and being excluded. */
+    HDW_STATUS_IMU_GYR_FAULT                    = (int)0x00000004,
+    /** IMU accelerometer fault detection. One of the redundant accelerometer sensors is not in agreement and being excluded. */
+    HDW_STATUS_IMU_ACC_FAULT                    = (int)0x00000008,
+    /** IMU fault detection mask. One of the redundant IMU sensors is not in agreement and being excluded. */
+    HDW_STATUS_IMU_FAULT_MASK                   = (int)0x0000000C,
 
     /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
     HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
