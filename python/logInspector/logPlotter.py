@@ -1034,17 +1034,30 @@ class logPlot:
             if fig is None:
                 fig = plt.figure()
             ax = fig.subplots(1, 1, sharex=True)
-            fig.suptitle('IMU Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
             for d in self.active_devs:
                 r = d == self.active_devs[0]    # plot text w/ first device
                 cnt = 0
 
-                time = self.getData(d, DID_PIMU, 'time')
-                towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
-                if towOffset.size:
-                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+                time   = self.getData(d, DID_PIMU, 'time')
                 status = self.getData(d, DID_PIMU, 'status')
+                title  = 'PIMU Status - '
+                if not len(time):
+                    time   = self.getData(d, DID_IMU, 'time')
+                    status = self.getData(d, DID_IMU, 'status')
+                    title  = 'IMU Status - '
+                if not len(time):
+                    time   = self.getData(d, DID_IMU3_RAW, 'time')
+                    status = self.getData(d, DID_IMU3_RAW, 'status')
+                    title  = 'IMU3-RAW Status - '
+                if not len(time):
+                    return
+
+                fig.suptitle(title + os.path.basename(os.path.normpath(self.log.directory)))
+
+                towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+                if len(towOffset) > 0:
+                    time = getTimeFromGpsTow(time + np.mean(towOffset))
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000001) != 0))
                 p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
@@ -1224,21 +1237,16 @@ class logPlot:
 
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000001) != 0))
                 p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Motion Gyr Sig')
+                if r: ax.text(p1, -cnt * 1.5, 'Motion Gyr')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Motion Acc Sig')
+                if r: ax.text(p1, -cnt * 1.5, 'Motion Acc')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Motion Gyr Dev')
+                if r: ax.text(p1, -cnt * 1.5, 'Fault Detect Gyr')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000005) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Motion Acc Dev')
-                cnt += 1
-                cnt += 1
-
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Satellite Rx')
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000008) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Fault Detect Acc')
                 cnt += 1
                 cnt += 1
 
@@ -1253,6 +1261,20 @@ class logPlot:
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Saturation Baro')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000010) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Satellite Rx')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000020) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Strong In')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000040) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GPS TOW Valid')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000080) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Ref IMU Rx')
                 cnt += 1
                 cnt += 1
 

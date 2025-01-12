@@ -314,11 +314,11 @@ enum eHdwStatusFlags
     /** Unit is moving and NOT stationary */
     HDW_STATUS_MOTION_MASK                      = (int)0x00000003,
     /** IMU gyro fault detection. One of the redundant gyro sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_GYR_FAULT                    = (int)0x00000004,
+    HDW_STATUS_IMU_FAULT_DETECT_GYR             = (int)0x00000004,
     /** IMU accelerometer fault detection. One of the redundant accelerometer sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_ACC_FAULT                    = (int)0x00000008,
+    HDW_STATUS_IMU_FAULT_DETECT_ACC             = (int)0x00000008,
     /** IMU fault detection mask. One of the redundant IMU sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_FAULT_MASK                   = (int)0x0000000C,
+    HDW_STATUS_IMU_FAULT_DETECT_MASK            = (int)0x0000000C,
 
     /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
     HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
