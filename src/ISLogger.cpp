@@ -860,6 +860,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 
 void cISLogger::PrintProgress()
 {
+/*
 #if (LOG_DEBUG_GEN == 2)
 #if 0
     advance_cursor();
@@ -872,35 +873,29 @@ void cISLogger::PrintProgress()
     }
 #endif
 #endif
+*/
 }
 
 void cISLogger::PrintStatistics()
 {
-    return;
-    
-    for (auto it : m_devices)
+/*
+    for (auto& [num, dev] : m_devices)
     {   // Print message statistics
-        std::shared_ptr<cDeviceLog> dev = it.second;
         if (dev==NULL)
             continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << dev->LogStatsString();
+        cout << "SN" << std::setw(6) << dev->SerialNumber() << " " << dev->LogStatsString();
     }
 
     PrintIsCommStatus();
+*/
 }
 
 void cISLogger::PrintIsCommStatus()
 {
-    for (auto it : m_devices)
+    for (auto& [sn, dev] : m_devices)
     {   // Print errors
-        std::shared_ptr<cDeviceLog> dev = it.second;
-        if (dev==NULL)
-            continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
+        if (dev && dev->IsCommInstance())
+            cout << "SN" << std::setw(6) << dev->SerialNumber() << " " << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
     }
 }
 

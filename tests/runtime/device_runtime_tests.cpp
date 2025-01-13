@@ -367,7 +367,7 @@ void DeviceRuntimeTests::LogEvent(system_time_t time, std::string str)
     }
     m_log += str;
 
-#if 0   // Print to display
+#if 1   // Print to display
     std::cout << str;
 #endif
 

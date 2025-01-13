@@ -1612,7 +1612,7 @@ typedef struct PACKED
     nmeaBroadcastMsgPair_t  nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
-     *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGPSDtMs = 200 (5Hz) 
+     *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGPSDtMs = 200 (5Hz)
      *  nmeaBroadcastMsgs[0].msgID = 6, nmeaBroadcastMsgs[0].msgPeriod = 5  
      *  nmeaBroadcastMsgs[1].msgID = 7, nmeaBroadcastMsgs[1].msgPeriod = 1 */           
 
@@ -1825,7 +1825,7 @@ typedef struct PACKED
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_RAW)                                            
+                                            | RMC_BITS_IMU3_RAW)
 #define RMC_PRESET_IMX_PPD_IMU3_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_IMU3_UNCAL)
 #define RMC_PRESET_INS                      (RMC_BITS_INS2 \
