@@ -233,6 +233,9 @@ bool InertialSense::releaseDevice(ISDevice* device, bool closePort)
     if (deviceIter == m_comManagerState.devices.end())
         return false;
 
+    auto dl = Logger()->getDeviceLogByPort(device->port);
+    if (dl) dl->CloseAllFiles();
+
     if (closePort && device->port) {
         serialPortClose(device->port);
         freeSerialPort(device->port, false);
@@ -240,7 +243,7 @@ bool InertialSense::releaseDevice(ISDevice* device, bool closePort)
 
     m_comManagerState.devices.erase(deviceIter); // erase only remove the ISDevice* from the list, but doesn't release/free the instance itself
     device->port = NULL;
-    delete device;
+    delete device; // causes a double free??
 
     return true;
 }
@@ -575,8 +578,24 @@ bool InertialSense::Update()
     return anyOpen;
 }
 
+/**
+ * TCP Server primary handler - parses data received via the first connected device, looking for RTCM3/UBLOX protocol
+ * and sends that same data out to the underlying ISTCPServer's connected clients
+ * @return always returns true, though should probably return false if the m_tcpServer has no active clients (or something)
+ */
 bool InertialSense::UpdateServer()
 {
+    // As I understand it, this function is responsible for reading RTCM3, and other useful data sets from connected IMX,
+    // and publishing it to connected clients (because it is the server).
+
+    // This is a little different, kind-of, because we don't actually let the ISDevice parse any data (but maybe we should).
+    // Rather, we parse data directly from the COMM buffer, so we can determine what type of data it is (though we should
+    // already know this). then, based on the packet type (RTCM3/UBLOX, etc) we'll send that data out to the socket.
+    //
+    // Ideally, the TCP socket would also be a port_handle_t, and we'd essentially plumb up a passthrough:  Let the ISDevice
+    // parse data FROM the device, call a custom callback for the data types we're interested in, and then when those are
+    // received, we'd send them right back out the TCP port_handle_t.  Perhaps one day; not today.
+
     // as a tcp server, only the first serial port is read from
     port_handle_t port = m_comManagerState.devices.front()->port;
     is_comm_instance_t *comm = &(COMM_PORT(port)->comm);
@@ -630,6 +649,10 @@ bool InertialSense::UpdateServer()
     return true;
 }
 
+/**
+ *
+ * @return
+ */
 bool InertialSense::UpdateClient()
 {
     if (m_clientStream == NULLPTR)
@@ -1469,17 +1492,18 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                 break;
             }
 
+            ISDevice device;    // we'll reuse this device for querying each port
             for (auto port : m_serialPorts) {
-                ISDevice device(port);
+                device.port = port;
                 switch (checkType) {
                     case 0 :
-                        comManagerSendRaw(port, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
+                        device.SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
                         break;
                     case 1 :
-                        comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
+                        device.GetData(DID_DEV_INFO, 0, 0, 0);
                         break;
                     case 2 :
-                        // comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
+                        // device.GetData(DID_DEV_INFO, 0, 0, 0);
                         break;
                     case 3 :
                         device.queryDeviceInfoISbl();
@@ -1489,12 +1513,12 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
 
                 for (int i = 0; i < 3; i++) {
                     SLEEP_MS(5);
-                    comManagerStep();
+                    device.step();
                 }
 
                 if ((device.hdwId != 0) && (device.hdwRunState != 0)) {
                     debug_message("[DBG] Received response from serial port '%s'. Registering device.\n", SERIAL_PORT(port)->portName);
-                    registerDevice(&device);
+                    registerNewDevice(port, device.devInfo);
                 } else if (SERIAL_PORT(port)->errorCode) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
                     debug_message("[DBG] There was an error accessing serial port '%s': %s\n", SERIAL_PORT(port)->portName, SERIAL_PORT(port)->error);
@@ -1883,8 +1907,9 @@ std::vector<std::string> InertialSense::checkForNewPorts(std::vector<std::string
         if (ignored)
             continue;
 
-        if (DeviceByPortName(portName) == nullptr)
+        if (DeviceByPortName(portName) == nullptr) {
             new_ports.push_back(portName);
+        }
     }
 
     return new_ports;
