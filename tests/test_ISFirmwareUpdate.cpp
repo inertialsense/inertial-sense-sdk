@@ -346,7 +346,7 @@ public:
             return false; // ignore this message, it's not for us
 
         int percent = (int)(((msg.data.progress.num_chunks)/(float)(msg.data.progress.totl_chunks)*100) + 0.5f);
-        PRINTF("SDK :: Progress %d/%d (%d%%) :: [%d,%d] %s\n", msg.data.progress.num_chunks, msg.data.progress.totl_chunks, percent, msg.data.progress.msg_level, msg.data.progress.msg_len, (const char *)&msg.data.progress.message);
+        TEST_PRINTF("SDK :: Progress %d/%d (%d%%) :: [%d,%d] %s\n", msg.data.progress.num_chunks, msg.data.progress.totl_chunks, percent, msg.data.progress.msg_level, msg.data.progress.msg_len, (const char *)&msg.data.progress.message);
         return true;
     }
 
@@ -388,9 +388,9 @@ public:
 
 #ifdef DEBUG_INFO
             if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK) {
-                PRINTF("SDK :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.req_resend.chunk_id);
+                TEST_PRINTF("SDK :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.req_resend.chunk_id);
             } else {
-                PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], getSessionStatusName());
+                TEST_PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], getSessionStatusName());
             }
 #endif
         }
@@ -702,7 +702,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
 
     // Make the request to the device; the device should expect 8 chunks total
 #ifdef DEBUG_INFO
-    PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
+    TEST_PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
 #endif
     int imageSize = fuSDK.MaxChunkSize * 8;
     fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
@@ -736,7 +736,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
         int msg_len = fuSDK.fwUpdate_mapBufferToPayload(buffer, &msg, &aux_data);
         if (msg_len > 0) {
 #ifdef DEBUG_INFO
-            PRINTF("Modifying chunk 4 to report as chunk 6 (skipping 4 and 5).\n");
+            TEST_PRINTF("Modifying chunk 4 to report as chunk 6 (skipping 4 and 5).\n");
 #endif
             EXPECT_EQ(msg->data.chunk.chunk_id, 4); // if we did it correctly, this should be 4...
             msg->data.chunk.chunk_id = 6; // now let's change it to 6
@@ -781,7 +781,7 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
     ISFirmwareUpdateTestDev fuDev(eb);
 
     // Make the request to the device; the device should expect 8 chunks total
-    PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
+    TEST_PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
     int imageSize = fuSDK.MaxChunkSize * 8;
     fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
     fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512, imageSize, fake_md5);
@@ -835,7 +835,7 @@ TEST(ISFirmwareUpdate, exchange__success)
     fuDev.sendProgressUpdates = false;
 
     // Make the request to the device; the device should expect 8 chunks total
-    PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
+    TEST_PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
     int imageSize = fuSDK.MaxChunkSize * 8;
     fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
     fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512, imageSize, real_md5);
@@ -878,7 +878,7 @@ TEST(ISFirmwareUpdate, exchange__success_non_chunk_boundary)
     fuDev.sendProgressUpdates = false;
 
     // Make the request to the device; the device should expect 8 chunks total
-    PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
+    TEST_PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
     int imageSize = fuSDK.MaxChunkSize * 8.5;
     fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
     fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512, imageSize, real_md5);
