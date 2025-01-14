@@ -390,7 +390,7 @@ public:
             if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK) {
                 TEST_PRINTF("SDK :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.req_resend.chunk_id);
             } else {
-                TEST_PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], getSessionStatusName());
+                TEST_PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], fwUpdate_getSessionStatusName());
             }
 #endif
         }
