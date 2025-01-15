@@ -202,7 +202,7 @@ class FlashConfigDialog(QDialog):
         self.table.setHorizontalHeaderLabels([str(ser) for ser in log.serials])
         self.table.setVerticalHeaderLabels(field_names)
 
-        hex_fields = ['ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits']
+        hex_fields = ['ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits', 'gnssSatSigConst', 'sensorConfig']
         for d in range(log.numDev):
             for f, field in enumerate(field_names):
                 if field in hex_fields:

@@ -1165,11 +1165,28 @@ class logPlot:
                 if r: ax.text(p1, -cnt * 1.5, 'MAG aiding Hdg')
                 cnt += 1
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00001000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Nav Mode')
+                # ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00001000) != 0))
+                # if r: ax.text(p1, -cnt * 1.5, 'Nav Mode')
+                # cnt += 1
+                sol_status = (iStatus & 0x000F0000) >> 16
+                aligning_or_high_variance = np.isin(sol_status, [1,4,6,8])    # Include aligning w/ high variance 
+                solution_nav = np.isin(sol_status,  [3,4])
+                solution_ahrs = np.isin(sol_status, [5,6])
+                solution_vrs = np.isin(sol_status,  [7,8])
+                # ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x000F0000) >> 16) / 4.0)
+                # if r: ax.text(p1, -cnt * 1.5, 'Solution Status')
+                # cnt += 1
+                ax.plot(instime, -cnt * 1.5 + solution_nav)
+                if r: ax.text(p1, -cnt * 1.5, 'Solution: Nav')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x000F0000) >> 16) / 4.0)
-                if r: ax.text(p1, -cnt * 1.5, 'Solution Status')
+                ax.plot(instime, -cnt * 1.5 + solution_ahrs)
+                if r: ax.text(p1, -cnt * 1.5, 'Solution: AHRS')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + solution_vrs)
+                if r: ax.text(p1, -cnt * 1.5, 'Solution: VRS')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + aligning_or_high_variance)
+                if r: ax.text(p1, -cnt * 1.5, 'Aligning/High Variance')
                 cnt += 1
                 cnt += 1
 
@@ -1290,10 +1307,10 @@ class logPlot:
                 if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00040000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS Tx Limited')
+                if r: ax.text(p1, -cnt * 1.5, 'No GPS PPS')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00080000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS Rx Overrun')
+                if r: ax.text(p1, -cnt * 1.5, 'GPS PPS Timesync')
                 cnt += 1
                 cnt += 1
 

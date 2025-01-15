@@ -291,6 +291,13 @@ enum eInsStatusFlags
     INS_STATUS_RTOS_TASK_PERIOD_OVERRUN         = (int)0x40000000,
     /** General fault (see sys_params_t.genFaultCode) */
     INS_STATUS_GENERAL_FAULT                    = (int)0x80000000,
+
+    /** Bitmask of all insStatus errors */
+    INS_STATUS_ERROR_MASK                       =   INS_STATUS_GENERAL_FAULT | 
+                                                    INS_STATUS_RTK_COMPASSING_MASK | 
+                                                    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL |
+                                                    INS_STATUS_RTK_ERROR_MASK |
+                                                    INS_STATUS_RTOS_TASK_PERIOD_OVERRUN,
 };
 
 /** GPS navigation fix type */
@@ -395,6 +402,17 @@ enum eHdwStatusFlags
 
     /** Critical System Fault, CPU error.  (see DID_SYS_FAULT.status, eSysFaultStatus) */
     HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
+
+    /** Bitmask of all hdwStatus errors */
+    HDW_STATUS_ERROR_MASK                       =   HDW_STATUS_FAULT_SYS_CRITICAL | 
+                                                    HDW_STATUS_IMU_FAULT_DETECT_MASK | 
+                                                    HDW_STATUS_SATURATION_MASK | 
+                                                    HDW_STATUS_ERR_GPS_PPS_NOISE |
+                                                    HDW_STATUS_ERR_COM_TX_LIMITED |
+                                                    HDW_STATUS_ERR_COM_RX_OVERRUN |
+                                                    HDW_STATUS_ERR_NO_GPS_PPS |
+                                                    HDW_STATUS_BIT_FAULT |
+                                                    HDW_STATUS_ERR_TEMPERATURE,
 };
 
 /** System status flags */
@@ -2264,6 +2282,7 @@ enum eBitTestMode
     BIT_TEST_MODE_COMMUNICATIONS_REPEAT             = (int)101,     // Send duplicate message 
     BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
     BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
+    BIT_TEST_MODE_IMU_FAULT_REJECTION               = (int)104,     // Simulate a fault on each IMU sensor and ensure it is detected and rejected.
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -2285,6 +2304,7 @@ enum eHdwBitStatusFlags
     HDW_BIT_FAULT_GPS_POOR_CNO              = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
     HDW_BIT_FAULT_GPS_POOR_ACCURACY         = (int)0x00002000,    // Low number of satellites, or bad accuracy 
     HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00004000,    // (Not implemented)
+    HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00008000,    // IMU fault rejection failure
     HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,    // Hardware type does not match firmware
 };
 
