@@ -1365,6 +1365,76 @@ class logPlot:
         except:
             print(RED + "problem plotting insStatus: " + sys.exc_info()[0] + RESET)
 
+    def portMonitor(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(4,2, sharex=True)
+        fig.suptitle('Port Monitor - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        ax[0, 0].set_ylabel('Bytes/Sec (TX)')
+        ax[1, 0].set_ylabel('Bytes (TX)')
+        ax[2, 0].set_ylabel('Overflows (TX)')
+        ax[3, 0].set_ylabel('Bytes Dropped (TX)')
+        ax[0, 1].set_ylabel('Bytes/Sec (RX)')
+        ax[1, 1].set_ylabel('Bytes (RX)')
+        ax[2, 1].set_ylabel('Overflows (RX)')
+        ax[3, 1].set_ylabel('ChecksumErrors (RX)')
+
+        for d in self.active_devs:
+            activePorts = self.getData(d, DID_PORT_MONITOR, 'activePorts')[0]
+            port_sets = self.getData(d, DID_PORT_MONITOR, 'port')
+            for i in range(activePorts):
+                data = port_sets[:,i]
+                ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
+                ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
+                ax[2,0].plot(np.diff(data['txOverflows']), label=f'{self.log.serials[d]}:{i}')
+                ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
+                ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
+                ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
+
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for b in ax:
+            for a in b:
+                a.grid(True)
+
+    def gpxPortMonitor(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(4,2, sharex=True)
+        fig.suptitle('Port Monitor - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        ax[0, 0].set_ylabel('Bytes/Sec (TX)')
+        ax[1, 0].set_ylabel('Bytes (TX)')
+        ax[2, 0].set_ylabel('Overflows (TX)')
+        ax[3, 0].set_ylabel('Bytes Dropped (TX)')
+        ax[0, 1].set_ylabel('Bytes/Sec (RX)')
+        ax[1, 1].set_ylabel('Bytes (RX)')
+        ax[2, 1].set_ylabel('Overflows (RX)')
+        ax[3, 1].set_ylabel('ChecksumErrors (RX)')
+
+        for d in self.active_devs:
+            activePorts = self.getData(d, DID_GPX_PORT_MONITOR, 'activePorts')[0]
+            port_sets = self.getData(d, DID_GPX_PORT_MONITOR, 'port')
+            for i in range(activePorts):
+                data = port_sets[:,i]
+                ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
+                ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
+                ax[2,0].plot(np.diff(data['txOverflows']), label=f'{self.log.serials[d]}:{i}')
+                ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
+                ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
+                ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
+
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for b in ax:
+            for a in b:
+                a.grid(True)
+
     def gpxStatus(self, fig=None, axs=None):
         try:
             if fig is None:
