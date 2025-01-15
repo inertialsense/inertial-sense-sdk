@@ -3,7 +3,7 @@
  * @brief ${BRIEF_DESC}
  *
  * @author Kyle Mallory on 4/27/24.
- * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
 /* -*- mode: c; c-file-style: "k&r" -*-
@@ -50,6 +50,19 @@ namespace utils {
 
     int natcmp(const std::string& a, const std::string& b);
     int natcasecmp(const std::string& a, const std::string& b);
+
+    struct nat_cmp {
+        bool operator()(const std::string& s1, const std::string& s2) const {
+            return (utils::natcmp(s1, s2) < 0);
+        }
+    };
+
+    struct nat_case_cmp {
+        bool operator()(const std::string& s1, const std::string& s2) const {
+            return (utils::natcasecmp(s1, s2) < 0);
+        }
+    };
+
 
 #ifdef __cplusplus
     }

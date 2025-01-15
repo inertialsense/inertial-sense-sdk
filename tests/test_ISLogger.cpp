@@ -17,7 +17,6 @@ static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 static const float s_logDiskUsageLimitPercent = 0.5f;
 static const bool s_useTimestampSubFolder = false;
 
-
 static dev_info_t CreateDeviceInfo(uint32_t serial)
 {
     dev_info_t d = { 0 };
@@ -251,7 +250,8 @@ TEST(ISLogger, logReader_raw)
         msgIndex++;
 
         // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
-        is_comm_init(&isComm, rxBuff, sizeof(rxBuff), NULL);
+        init_test_comm_instance(&isComm, rxBuff, sizeof(rxBuff));
+
         int n = (int)_MIN((int)msg->size(), is_comm_free(&isComm));
         memcpy(isComm.rxBuf.tail, (uint8_t*)msg->data(), n);
         isComm.rxBuf.tail += n;

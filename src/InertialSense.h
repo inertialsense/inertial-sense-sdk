@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -65,7 +65,7 @@ class InertialSense;
 
 typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port);
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, port_handle_t port);
-typedef std::function<int(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+typedef std::function<void(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 
 /**
 * Inertial Sense C++ interface
@@ -454,7 +454,7 @@ public:
         if (!device)
             return true;
 
-        return device->flashCfgUploadChecksum && (device->flashCfgUploadChecksum != device->sysParams.flashCfgChecksum);
+        return device->flashCfgUpload.checksum && (device->flashCfgUpload.checksum != device->sysParams.flashCfgChecksum);
     }
 
     /**
@@ -689,15 +689,18 @@ public:
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
     // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
+    bool registerDevice(ISDevice* device);
+    ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
+
     bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
     bool releaseDevice(ISDevice* device, bool closePort = true);
 
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
     void OnClientConnecting(cISTcpServer* server) OVERRIDE;
-    void OnClientConnected(cISTcpServer* server, socket_t socket) OVERRIDE;
+    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
     void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
-    void OnClientDisconnected(cISTcpServer* server, socket_t socket) OVERRIDE;
+    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
 
     static int OnSerialPortError(port_handle_t port, int errCode, const char *errMsg);
 
@@ -751,8 +754,6 @@ private:
     bool UpdateClient();
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
-    bool registerDevice(ISDevice* device);
-    ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo);
     bool HasReceivedDeviceInfo(ISDevice* device);
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);

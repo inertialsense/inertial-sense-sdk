@@ -8,7 +8,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -28,6 +28,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <mutex>
 
 #include "serialPort.h"
@@ -45,6 +46,7 @@ public:
         void* thread;
         serial_port_t serialPort;
         ISBootloader::cISBootloaderBase* ctx;
+        is_operation_result opResult;
         bool done;
         bool reuse_port;
         bool force_isb;
@@ -73,6 +75,7 @@ public:
         libusb_device_handle* handle;
         char uid[100];
         ISBootloader::cISBootloaderBase* ctx;
+        is_operation_result opResult;
         bool done;
     };
 
@@ -81,6 +84,7 @@ public:
         uint32_t sn;
         uint8_t major;
         char minor;
+        port_handle_t port;
     } confirm_bootload_t;
 
     static std::vector<confirm_bootload_t> set_mode_and_check_devices(
@@ -136,7 +140,7 @@ private:
 
     static bool m_continue_update;
 
-    static std::vector<thread_serial_t*> m_serial_threads;    // List of all serial threads that have run or are running
+    static std::map<std::string, thread_serial_t*> m_serial_threads;    // map of ports to corresponding threads
     static std::vector<thread_libusb_t*> m_libusb_threads;    // List of all libusb threads that have run or are running
     static std::mutex m_serial_thread_mutex;
     static std::mutex m_libusb_thread_mutex;

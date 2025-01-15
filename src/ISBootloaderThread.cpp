@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -45,7 +45,7 @@ bool cISBootloaderThread::m_use_dfu;
 uint32_t cISBootloaderThread::m_libusb_devicesActive;
 uint32_t cISBootloaderThread::m_serial_devicesActive;
 bool cISBootloaderThread::m_continue_update;
-vector<cISBootloaderThread::thread_serial_t*> cISBootloaderThread::m_serial_threads;
+map<std::string, cISBootloaderThread::thread_serial_t*> cISBootloaderThread::m_serial_threads;
 vector<cISBootloaderThread::thread_libusb_t*> cISBootloaderThread::m_libusb_threads;
 
 void cISBootloaderThread::mgmt_thread_libusb(void* context)
@@ -85,7 +85,7 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
             new_thread->done = false;
             new_thread->handle = dfu_list.id[i].handle_libusb;
             m_libusb_threads.push_back(new_thread);
-            m_libusb_threads[m_libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, m_libusb_threads[m_libusb_threads.size() - 1]);
+            m_libusb_threads[m_libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, m_libusb_threads[m_libusb_threads.size() - 1], "isb-libusb");
 
             m_libusb_devicesActive++;
         }
@@ -123,6 +123,10 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
     if (m_use_dfu) { libusb_exit(NULL); }
 }
 
+/**
+ * Thread handler to validate and then enable a serial-device to enter APP mode (ie, boot to application firmware).
+ * @param context the thread context, a thread_serial_t providing details about the device to query/configure
+ */
 void cISBootloaderThread::mode_thread_serial_app(void* context)
 {
     thread_serial_t* thread_info = (thread_serial_t*)context;
@@ -131,13 +135,6 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
     SLEEP_MS(100);
 
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    // serialPortInit(port, 0, PORT_TYPE__COMM);
-    // serialPortPlatformInit(port);
-    // m_serial_thread_mutex.lock();
-    // const char* serial_name = ;
-    // m_serial_thread_mutex.unlock();
-
-    // serialPortSetPort(port, serial_name);
     if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
     {
         serialPortClose(port);
@@ -148,7 +145,7 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
         return;
     }
 
-    cISBootloaderBase::mode_device_app(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    thread_info->opResult = cISBootloaderBase::mode_device_app(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
     serialPortFlush(port);
     serialPortClose(port);
@@ -159,6 +156,10 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
     m_serial_thread_mutex.unlock();
 }
 
+/**
+ * Thread handler to query a device (provided in the context) for its ISbootloader version
+ * @param context the thread context, a thread_serial_t providing details about the device to query/configure
+ */
 void cISBootloaderThread::get_device_isb_version_thread(void* context)
 {
     thread_serial_t* thread_info = (thread_serial_t*)context;
@@ -167,12 +168,6 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
     SLEEP_MS(100);
 
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    //serialPortPlatformInit(port);
-    //m_serial_thread_mutex.lock();
-    //const char* serial_name = ;
-    //m_serial_thread_mutex.unlock();
-
-    //serialPortSetPort(port, portName(port));
     if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
     {
         serialPortClose(port);
@@ -183,7 +178,7 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
         return;
     }
 
-    cISBootloaderBase::get_device_isb_version(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    thread_info->opResult = cISBootloaderBase::get_device_isb_version(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
     serialPortFlush(port);
     serialPortClose(port);
@@ -194,20 +189,19 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
     m_serial_thread_mutex.unlock();
 }
 
+/**
+ * Thread handler to validating and then enabling a serial-device to enter ISB mode.
+ * @param context the thread context, a thread_serial_t providing details about the device to query/configure
+ */
 void cISBootloaderThread::mode_thread_serial_isb(void* context)
 {
     thread_serial_t* thread_info = (thread_serial_t*)context;
     cISBootloaderBase* new_context;
 
-    SLEEP_MS(2500);     // Wait for all other threads to start
+    SLEEP_MS(IS_REBOOT_DELAY_MS);     // Wait for all other threads to start
 
+    // attempt to open the target port; if unable to open, terminate this thread
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    // serialPortPlatformInit(port);
-    // m_serial_thread_mutex.lock();
-    // const char* serial_name = portName(port);
-    // m_serial_thread_mutex.unlock();
-
-    // serialPortSetPort(port, serial_name);
     if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
     {
         serialPortClose(port);
@@ -218,7 +212,8 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
         return;
     }
 
-    cISBootloaderBase::mode_device_isb(m_firmware, thread_info->force_isb, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    // set device to ISB mode
+    thread_info->opResult = cISBootloaderBase::mode_device_isb(m_firmware, thread_info->force_isb, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
     serialPortFlush(port);
     serialPortClose(port);
@@ -229,6 +224,10 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
     m_serial_thread_mutex.unlock();
 }
 
+/**
+ * Thread handler to perform a firmware update on a specific device.
+ * @param context the thread context, a thread_serial_t providing details about the device to query/configure
+ */
 void cISBootloaderThread::update_thread_serial(void* context)
 {
     thread_serial_t* thread_info = (thread_serial_t*)context; 
@@ -254,9 +253,9 @@ void cISBootloaderThread::update_thread_serial(void* context)
         return;
     }
 
-    is_operation_result result = cISBootloaderBase::update_device(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context, m_baudRate);
+    thread_info->opResult = cISBootloaderBase::update_device(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context, m_baudRate);
 
-    if (result == IS_OP_OK)
+    if (thread_info->opResult == IS_OP_OK)
     {   
         // Device is updated, add it to the ctx list so we can reset it later
         m_ctx_mutex.lock();
@@ -268,14 +267,14 @@ void cISBootloaderThread::update_thread_serial(void* context)
         thread_info->ctx = new_context;
         m_serial_thread_mutex.unlock();
     }
-    else if (result == IS_OP_CLOSED)
+    else if (thread_info->opResult == IS_OP_CLOSED)
     {
         // Device is resetting (may have updated if it was a SAM-BA device)
         m_serial_thread_mutex.lock();
         thread_info->reuse_port = true;
         m_serial_thread_mutex.unlock();
     }
-    else if (result == IS_OP_CANCELLED)
+    else if (thread_info->opResult == IS_OP_CANCELLED)
     {
         // Device has already been updated
     }
@@ -297,9 +296,9 @@ void cISBootloaderThread::update_thread_libusb(void* context)
     thread_libusb_t* thread_info = (thread_libusb_t*)context; 
     cISBootloaderBase* new_context;
 
-    is_operation_result result = cISBootloaderBase::update_device(m_firmware, thread_info->handle, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    thread_info->opResult = cISBootloaderBase::update_device(m_firmware, thread_info->handle, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
-    if (result == IS_OP_OK)
+    if (thread_info->opResult == IS_OP_OK)
     {   
         // Device is updated, add it to the ctx list so we can reset it later
         m_ctx_mutex.lock();
@@ -310,11 +309,11 @@ void cISBootloaderThread::update_thread_libusb(void* context)
         thread_info->ctx = new_context;
         m_libusb_thread_mutex.unlock();
     }
-    else if (result == IS_OP_CLOSED)
+    else if (thread_info->opResult == IS_OP_CLOSED)
     {
         // Device is resetting
     }
-    else if (result == IS_OP_CANCELLED)
+    else if (thread_info->opResult == IS_OP_CANCELLED)
     {
         // Device has already been updated
     }
@@ -367,7 +366,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_waitAction = waitAction;
 
     vector<string> portNames;                       // List of all ports connected, including ignored ports
-    vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
+    vector<string> ports_user_ignore;               // List of ports that were connected at startup but not selected. Will ignore in update.
     vector<confirm_bootload_t> updatesPending;
 
     m_serial_threads.clear();
@@ -406,11 +405,9 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         {
             bool found = false;
 
-            for (auto serialThread : m_serial_threads)
+            for (auto& [portName, serialThread] : m_serial_threads)
             {
-                port_handle_t threadPort = (port_handle_t)&(serialThread->serialPort);
-                std::string serPortName(portName(threadPort));
-                if (serPortName == port_name)
+                if (portName == port_name)
                 {
                     if (!serialThread->done)    //(m_serial_threads[j]->ctx != NULL ||
                     {   // Thread hasn't finished
@@ -425,21 +422,17 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                 }
             }
 
-            for (size_t k = 0; k < ports_user_ignore.size(); k++)
-            {
-                if (ports_user_ignore[k] == port_name)
-                {
+            std::for_each(ports_user_ignore.begin(), ports_user_ignore.end(),  [&port_name, &found] (std::string ignoredPort) {
+                if (ignoredPort == port_name)
                     found = true;
-                    break;
-                }
-            }
+            });
 
             if (!found)
             {
                 thread_serial_t* new_thread = new thread_serial_t(port_name); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 if (new_thread->serialPort.errorCode == 0) {
-                    m_serial_threads.push_back(new_thread);
-                    m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[m_serial_threads.size() - 1]);
+                    m_serial_threads[port_name] = new_thread;
+                    new_thread->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[port_name], "isb-serial-app");
 
                     m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "mode_thread_serial_app found viable port: %s", port_name.c_str());
                     m_serial_devicesActive++;
@@ -459,6 +452,8 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
+    SLEEP_MS(IS_REBOOT_DELAY_MS);
+
     ////////////////////////////////////////////////////////////////////////////
     // Join and free
     ////////////////////////////////////////////////////////////////////////////
@@ -473,7 +468,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
         m_serial_thread_mutex.lock();
 
-        for (auto serialThread : m_serial_threads)
+        for (auto& [portName, serialThread] : m_serial_threads)
         {
             if (!serialThread->done)
             {
@@ -484,6 +479,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                 threadJoinAndFree(serialThread->thread);
                 serialThread->thread = NULL;
                 delete serialThread;
+                m_serial_threads[portName] = NULL;
             }
         }
 
@@ -526,12 +522,9 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         for (auto port_name : portNames)
         {
             bool found = false;
-
-            for (auto serialThread : m_serial_threads)
+            for (auto& [portName, serialThread] : m_serial_threads)
             {
-                port_handle_t threadPort = (port_handle_t)&(serialThread->serialPort);
-                std::string serPortName(portName(threadPort));
-                if (serPortName == port_name)
+                if (portName == port_name)
                 {
                     if (!serialThread->done)    //(m_serial_threads[j]->ctx != NULL ||
                     {   // Thread hasn't finished
@@ -547,21 +540,18 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                
             }
 
-            for (size_t k = 0; k < ports_user_ignore.size(); k++)
-            {
-                if (ports_user_ignore[k] == port_name)
-                {
+            std::for_each(ports_user_ignore.begin(), ports_user_ignore.end(),  [&port_name, &found] (std::string ignoredPort) {
+                if (ignoredPort == port_name)
                     found = true;
-                    break;
-                }
-            }
+            });
+
 
             if (!found)
             {
                 m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "get_device_isb_version_thread found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                m_serial_threads.push_back(new_thread);
-                m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(get_device_isb_version_thread, m_serial_threads[m_serial_threads.size() - 1]);
+                m_serial_threads[port_name] = new_thread;
+                new_thread->thread = threadCreateAndStart(get_device_isb_version_thread, new_thread, "isb-dev-version");
 
                 m_serial_devicesActive++;
             }
@@ -593,7 +583,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
         m_serial_thread_mutex.lock();
 
-        for (auto serialThread : m_serial_threads)
+        for (auto& [portName, serialThread] : m_serial_threads)
         {
             if (!serialThread->done)
             {
@@ -605,6 +595,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                 serialThread->thread = NULL;
                 serialPortClose((port_handle_t)&serialThread->serialPort);
                 delete serialThread;
+                m_serial_threads[portName] = NULL;
             }
         }
 
@@ -628,14 +619,15 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     }
     m_ctx_mutex.lock();
 
-    for (size_t i = 0; i < ctx.size(); i++)
+    for (auto& cur_ctx : ctx)
     {
-        if (ctx[i]->isb_mightUpdate)
+        if (cur_ctx->isb_mightUpdate)
         {
             confirm_bootload_t confirm;
-            confirm.major = ctx[i]->m_isb_major;
-            confirm.minor = ctx[i]->m_isb_minor;
-            confirm.sn = ctx[i]->m_sn;
+            confirm.major = cur_ctx->m_isb_major;
+            confirm.minor = cur_ctx->m_isb_minor;
+            confirm.sn = cur_ctx->m_sn;
+            confirm.port = cur_ctx->m_port;
 
             updatesPending.push_back(confirm);
         }
@@ -719,32 +711,26 @@ is_operation_result cISBootloaderThread::update(
         {
             bool found = false;
 
-            for (auto serialThread : m_serial_threads)
+            for (auto& [portName, serialThread] : m_serial_threads)
             {
-                port_handle_t threadPort = (port_handle_t)&(serialThread->serialPort);
-                std::string serPortName(portName(threadPort));
-                if (serPortName == port_name)
+                if (portName == port_name)
                 {
                     found = true;
                     break;
                 }
             }
 
-            for (size_t k = 0; k < ports_user_ignore.size(); k++)
-            {
-                if (ports_user_ignore[k] == port_name)
-                {
+            std::for_each(ports_user_ignore.begin(), ports_user_ignore.end(),  [&port_name, &found] (std::string ignoredPort) {
+                if (ignoredPort == port_name)
                     found = true;
-                    break;
-                }
-            }
+            });
 
             if (!found)
             {
                 m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "mode_thread_serial_isb found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name, force_isb_update); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                m_serial_threads.push_back(new_thread);
-                m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_isb, m_serial_threads[m_serial_threads.size() - 1]);
+                m_serial_threads[port_name] = new_thread;
+                new_thread->thread = threadCreateAndStart(mode_thread_serial_isb, new_thread, "isb-serial-isb");
 
                 m_serial_devicesActive++;
             }
@@ -772,16 +758,16 @@ is_operation_result cISBootloaderThread::update(
 
         m_serial_thread_mutex.lock();
 
-        for (size_t l = 0; l < m_serial_threads.size(); l++)
+        for (auto& [portName, serialThread] : m_serial_threads)
         {
-            if (!m_serial_threads[l]->done)
+            if (!serialThread->done)
             {
                 m_continue_update = true;
             }
-            else if (m_serial_threads[l]->thread != NULL)
+            else if (serialThread->thread != NULL)
             {
-                threadJoinAndFree(m_serial_threads[l]->thread);
-                m_serial_threads[l]->thread = NULL;
+                threadJoinAndFree(serialThread->thread);
+                serialThread->thread = NULL;
             }
         }
 
@@ -810,7 +796,7 @@ is_operation_result cISBootloaderThread::update(
 
     m_libusb_devicesActive = 0;
 
-    void* libusb_thread = threadCreateAndStart(mgmt_thread_libusb, NULL);
+    void* libusb_thread = threadCreateAndStart(mgmt_thread_libusb, NULL, "isb-update-libusb");
 
     m_continue_update = true;
     m_timeStart = current_timeMs();
@@ -832,7 +818,7 @@ is_operation_result cISBootloaderThread::update(
 
         m_serial_thread_mutex.lock();
 
-        for (auto serialThread : m_serial_threads)
+        for (auto& [portName, serialThread] : m_serial_threads)
         {
             if (serialThread->thread != NULL && serialThread->done)
             {
@@ -850,11 +836,9 @@ is_operation_result cISBootloaderThread::update(
         {
             bool found = false;
 
-            for (auto serialThread : m_serial_threads)
+            for (auto& [portName, serialThread] : m_serial_threads)
             {
-                port_handle_t serPort = (port_handle_t)&(serialThread->serialPort);
-                std::string serPortName(portName(serPort));
-                if (serPortName == port_name)
+                if (portName == port_name)
                 {
                     if (!serialThread->done)    //(m_serial_threads[j]->ctx != NULL ||
                     {   // Thread hasn't finished
@@ -867,24 +851,20 @@ is_operation_result cISBootloaderThread::update(
                         break;
                     }
                 }
-               
             }
 
-            for (size_t k = 0; k < ports_user_ignore.size(); k++)
-            {
-                if (ports_user_ignore[k] == port_name)
-                {
+            std::for_each(ports_user_ignore.begin(), ports_user_ignore.end(),  [&port_name, &found] (std::string ignoredPort) {
+                if (ignoredPort == port_name)
                     found = true;
-                    break;
-                }
-            }
+            });
+
 
             if (!found)
             {
                 m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "update_thread_serial found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name, force_isb_update); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                m_serial_threads.push_back(new_thread);
-                m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(update_thread_serial, m_serial_threads[m_serial_threads.size() - 1]);
+                m_serial_threads[port_name] = new_thread;
+                new_thread->thread = threadCreateAndStart(update_thread_serial, new_thread, "isb-update-serial");
 
                 m_serial_devicesActive++;
             }

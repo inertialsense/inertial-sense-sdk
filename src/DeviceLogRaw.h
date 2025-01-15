@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -31,8 +31,8 @@ public:
     cDeviceLogRaw(const ISDevice* dev);
     cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo);
 
-
     void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
+    void InitDeviceForReading() OVERRIDE;
     bool CloseAllFiles() OVERRIDE;
     bool FlushToFile() OVERRIDE;
     bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;
@@ -47,6 +47,7 @@ public:
     cDataChunk m_chunk;
 
 private:
+    void initCommInstance();
     packet_t* ReadPacketFromChunk(protocol_type_t& ptype);
     bool ReadChunkFromFile();
     bool WriteChunkToFile();

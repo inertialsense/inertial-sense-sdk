@@ -107,7 +107,8 @@ struct DeviceLog
     std::vector<rtk_residual_t> rtkPhaseResidual;
     std::vector<rtk_debug_t> rtkDebug;
     // std::vector<rtk_debug_2_t> rtkDebug2;
-//    std::vector<port_monitor_t> portMonitor;
+    std::vector<port_monitor_t> portMonitor;
+    std::vector<port_monitor_t> gpxPortMonitor;
     std::vector<debug_array_t> gpxDebugArray;
 };
 

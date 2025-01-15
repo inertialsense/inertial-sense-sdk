@@ -6,6 +6,7 @@
 #include "ISComm.h"
 #include "ring_buffer.h"
 #include "protocol_nmea.h"
+#include "test_data_utils.h"
 
 #if 0
 extern "C"
@@ -51,7 +52,7 @@ typedef struct
         dev_info_t      devInfo;
         nvm_flash_cfg_t nvmFlashCfg;
         nmea_msgs_t     nmeaMsgs;
-    }                   msgs = { 0 };
+    }                   msgs;
 
     // Used to simulate serial ports
     ring_buf_t          portRxBuf;
@@ -77,29 +78,9 @@ static test_data_t tcm = {};
 static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
-/*
-static int portRead(port_handle_t port, unsigned char* buf, int len)
-{
-    return ringBufRead(&tcm.portRxBuf, buf, len);
-}
-
-static int portWrite(port_handle_t port, const unsigned char* buf, int len)
-{
-    if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
-    {   // Buffer overflow
-        DEBUG_PRINTF("tcm.portTxBuf ring buffer overflow: %d !!!\n", ringBufUsed(&tcm.portTxBuf) + len);
-        EXPECT_TRUE(false);
-    }
-    return len;
-}
-*/
-
 // return 1 on success, 0 on failure
 int msgHandlerNmea2(port_handle_t port, const uint8_t* msg, int msgSize)
 {
-//     comWrite(port, line, lineLength); // echo back
-//     time_delay_msec(50); // give time for the echo to come back
-
     if (msgSize == 10)
     {   // 4 character commands (i.e. "$STPB*14\r\n")
         switch (getNmeaMsgId(msg, msgSize))
@@ -219,17 +200,8 @@ static bool init(test_data_t &t)
     //ringBufInit(&(t.portTxBuf), t.portTxBuffer, sizeof(t.portTxBuffer), 1);
     ringBufInit(&(t.portRxBuf), t.portRxBuffer, sizeof(t.portRxBuffer), 1);
 
-    is_comm_init(&COMM_PORT(TEST0_PORT)->comm, COMM_PORT(TEST0_PORT)->buffer, sizeof(COMM_PORT(TEST0_PORT)->buffer), NULL); // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
-
-    // Enable/disable protocols
-    COMM_PORT(TEST0_PORT)->comm.config.enabledMask = 0;
-    COMM_PORT(TEST0_PORT)->comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB    * TEST_PROTO_ISB);
-    COMM_PORT(TEST0_PORT)->comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA   * TEST_PROTO_NMEA);
-    COMM_PORT(TEST0_PORT)->comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3  * TEST_PROTO_RTCM3);
-    COMM_PORT(TEST0_PORT)->comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SONY   * TEST_PROTO_SONY);
-    COMM_PORT(TEST0_PORT)->comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
-    COMM_PORT(TEST0_PORT)->comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX  * TEST_PROTO_UBLOX);
-
+    init_test_comm_instance(&COMM_PORT(TEST0_PORT)->comm, COMM_PORT(TEST0_PORT)->buffer, sizeof(COMM_PORT(TEST0_PORT)->buffer));
+    
     return true;
 }
 
@@ -1092,8 +1064,8 @@ TEST(ISComm, alternating_isb_nmea_parse_error_check)
 {
     int n;
     is_comm_instance_t &g_comm = COMM_PORT(TEST0_PORT)->comm;
-
-    is_comm_init(&g_comm, rxBuf, sizeof(rxBuf), NULL);  // TODO: Should we be using callbacks??  Probably
+    init_test_comm_instance(&g_comm, rxBuf, sizeof(rxBuf));
+    // is_comm_register_msg_handler(&COMM_PORT(TEST0_PORT)->comm, _PTYPE_PARSE_ERROR, dummyGenericProtocolHandler);
 
     uint8_t *txPtr = txBuf;
     uint8_t *txEnd = txBuf + sizeof(txBuf);
@@ -1187,7 +1159,6 @@ TEST(ISComm, alternating_isb_nmea_parse_error_check)
 }
 #endif
 
-
 #if TEST_TRUNCATED_PACKETS
 TEST(ISComm, TruncatedPackets)
 {
@@ -1195,6 +1166,9 @@ TEST(ISComm, TruncatedPackets)
     is_comm_instance_t &g_comm = COMM_PORT(TEST0_PORT)->comm;
 
     init(tcm);
+    is_comm_register_msg_handler(&COMM_PORT(TEST0_PORT)->comm, _PTYPE_SPARTN, NULL);    // we don't do any SPARTN data in this test
+    is_comm_disable_protocol(&COMM_PORT(TEST0_PORT)->comm, _PTYPE_SPARTN);              // we don't do any SPARTN data in this test disable mask
+
     g_comm.rxErrorState = 0;    // is_comm_init() sets this to -1 to prevent initial stray data from registering as a parse error.
 
     // Generate and add data to deque
@@ -1280,15 +1254,21 @@ TEST(ISComm, TruncatedPackets)
                 case _PTYPE_INERTIAL_SENSE_DATA:
                     // Found data
                     DEBUG_PRINTF("[%d] (%d) Good %d: ISB %3d\n", found, comm.rxPkt.data.size, g_comm.rxPktCount, comm.rxPkt.hdr.id);
-
                     is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
-
                     EXPECT_EQ((int)td.did, (int)comm.rxPkt.hdr.id);
                     break;
 
-                case _PTYPE_UBLOX:    DEBUG_PRINTF("[%d] (%d) Good %d: Ublox\n", found, comm.rxPkt.data.size, g_comm.rxPktCount);        break;
-                case _PTYPE_RTCM3:    DEBUG_PRINTF("[%d] (%d) Good %d: RTCM3\n", found, comm.rxPkt.data.size, g_comm.rxPktCount);        break;
-                case _PTYPE_SONY:     DEBUG_PRINTF("[%d] (%d) Good %d: Sony\n",  found, comm.rxPkt.data.size, g_comm.rxPktCount);        break;
+                case _PTYPE_UBLOX:
+                    DEBUG_PRINTF("[%d] (%d) Good %d: Ublox\n", found, comm.rxPkt.data.size, g_comm.rxPktCount);
+                    break;
+
+                case _PTYPE_RTCM3:
+                    DEBUG_PRINTF("[%d] (%d) Good %d: RTCM3\n", found, comm.rxPkt.data.size, g_comm.rxPktCount);
+                    break;
+
+                case _PTYPE_SONY:
+                    DEBUG_PRINTF("[%d] (%d) Good %d: Sony\n",  found, comm.rxPkt.data.size, g_comm.rxPktCount);
+                    break;
 
                 case _PTYPE_NMEA:
                     DEBUG_PRINTF("[%d] (%d) Good %d ", found, comm.rxPkt.data.size, g_comm.rxPktCount);
@@ -1298,7 +1278,7 @@ TEST(ISComm, TruncatedPackets)
 
             if (ptype != _PTYPE_PARSE_ERROR)
             {
-                EXPECT_EQ(td.size, comm.rxPkt.data.size);
+                EXPECT_EQ(td.size, comm.rxPkt.data.size) << "Failed to match packet size when parsing packet type: " << ptype;
                 EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, td.size) == 0);
                 priorBad = false;
             }

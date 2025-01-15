@@ -1,12 +1,6 @@
 #!/bin/bash
+cd "$(dirname "$(realpath $0)")" > /dev/null
+source lib/activate_python_venv.sh
 
-pushd "$(dirname "$(realpath $0)")" > /dev/null
-
-source ./build_test_cmake.sh
-
-build_cmake "cltool" ../cltool "$@"
-
-popd > /dev/null
-
-# Return results: 0 = pass, 0 != fail
-exit $((BUILD_EXIT_CODE+TESTS_EXIT_CODE))
+# Return if non-zero error code
+python3 build_manager.py cltool ../cltool "$@" || exit $?

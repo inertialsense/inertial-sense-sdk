@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -110,6 +110,23 @@ int serialPortIsOpen(port_handle_t port)
         }
         return 0;
     }
+    return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
+}
+
+int serialPortIsOpenQuick(port_handle_t port)
+{
+    serial_port_t* serialPort = (serial_port_t*)port;
+    if ((serialPort == 0) || (serialPort->pfnIsOpen == 0))
+    {
+        if (serialPort && serialPort->pfnError) {
+            serialPort->pfnError(port, -1, "port::IsOpen is not supported on this port.");
+        }
+        return 0;
+    }
+
+    if ((serialPort->handle != NULL) && (serialPort->errorCode == 0))
+        return 1;
+
     return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
 }
 

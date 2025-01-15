@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -46,14 +46,14 @@ extern "C" {
     #include <winsock2.h>
     #include <WS2tcpip.h>
     #include <windows.h>
-    #define socket_t SOCKET
+    #define is_socket_t SOCKET
 
     #define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
     #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
     #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #elif defined(__APPLE__)
-    #define socket_t int
+    typedef int is_socket_t;
 
     #define PLATFORM_IS_APPLE 1
     #define PLATFORM_IS_EMBEDDED 0
@@ -74,7 +74,7 @@ extern "C" {
 
     #define PLATFORM_IS_LINUX 1
     #define PLATFORM_IS_EMBEDDED 0
-    #define socket_t int
+    typedef int is_socket_t;
     #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
 #elif defined(__INERTIAL_SENSE_EVB_2__)
@@ -313,8 +313,12 @@ extern "C" {
 #define _LIMIT2(x, xmin, xmax) { if ((x) < (xmin)) { (x) = (xmin); } else { if ((x) > (xmax)) { (x) = (xmax); } } }
 #endif
 
+#ifndef _ROUND_NEAREST
+#define _ROUND_NEAREST(number, multiple) ((((number) + ((multiple)/2)) / (multiple)) * (multiple))
+#endif
+
 #ifndef _ROUND_CLOSEST
-#define _ROUND_CLOSEST(dividend, divisor) (((dividend) + ((divisor)/2)) / (divisor))
+#define _ROUND_CLOSEST(number, multiple) (((number) + ((multiple)/2)) / (multiple))
 #endif
 
 #ifndef _ROUNDUP
@@ -364,9 +368,6 @@ extern "C" {
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846f)
-#endif
-#ifndef EPS
-#define EPS (1.0E-10f)
 #endif
 
 #ifndef RAD2DEG

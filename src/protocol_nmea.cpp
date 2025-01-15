@@ -9,6 +9,11 @@
 #include "data_sets.h"
 #include "util/md5.h"
 
+#if defined(IMX_5)
+#include "drivers/d_time.h"
+#include "globals.h"
+#endif
+
 static int s_protocol_version = 0;
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
@@ -416,6 +421,7 @@ char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, c
     float subSec = UTCtime - (int)UTCtime;
     *seconds = (float)((int)UTCtime % 100) + subSec;
 #endif
+    *seconds += 0.00005f;   // add a 0.05ms to address float-conversion aliasing
     ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
@@ -425,7 +431,7 @@ char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, utc_time_t *utcTime, ch
     // HHMMSS.sss
     float fsecond;
     SSCANF(ptr, "%02d%02d%f", &utcTime->hour, &utcTime->minute, &fsecond);
-    fsecond += 0.0005f;    // Prevent truncation problems.  Cause rounding at 0.5 ms.
+    fsecond += 0.00005f;	/// add a 0.05ms to address float-conversion aliasing
     utcTime->second = (uint32_t)fsecond;
     fsecond *= 1000.0f;
     utcTime->millisecond = (uint32_t)fsecond;
@@ -736,6 +742,128 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
     offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", t.hour, t.minute, t.second, t.millisecond);
 }
 
+// TODO: Remove after ZDA issue is resolved.
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
+extern uint32_t g_cpu_msec;
+extern sys_params_t g_sysParams;
+extern debug_array_t g_debug;
+#endif
+
+// TODO: Remove after ZDA issue is resolved.
+int millisecondsToSeconds(int milliseconds) 
+{
+    if (milliseconds >= 0)  { return (milliseconds + 500) / 1000; } 
+    else                    { return (milliseconds - 500) / 1000; }
+}
+
+// TODO: Remove after ZDA issue is resolved.
+void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset, gps_pos_t &pos)
+{
+    aSize -= offset;
+    a += offset;
+    utc_time_t t;
+    gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &t);
+
+#if defined(IMX_5) || defined(SDK_UNIT_TEST)
+    ///////////////////////////////////////////////////////////////////////
+    // TODO: (WHJ) ZDA debug.  Remove after ZDA time skip issue is resolved. (SN-6066)
+
+#if defined(IMX_5)
+    int32_t cpuMs = (int32_t)time_msec();
+#else
+    int32_t cpuMs = (int32_t)g_cpu_msec;
+#endif
+    int32_t utcMs = 
+        t.hour*C_MILLISECONDS_PER_HOUR + 
+        t.minute*C_MILLISECONDS_PER_MINUTE + 
+        t.second*C_MILLISECONDS_PER_SECOND + 
+        t.millisecond;
+    int32_t gpsMs = (int32_t)pos.timeOfWeekMs;
+
+    g_debug.i[0] = cpuMs;
+    g_debug.i[1] = utcMs;
+    g_debug.i[2] = gpsMs;
+
+    static int32_t lastCpuMs = cpuMs - 1000;
+    static int32_t lastUtcMs = utcMs - 1000;
+    static int lastUtcHour = t.hour;
+    static int32_t utcOffsetSec = 0;
+
+    // Check for irregular update timing
+    int32_t cpuDtMs = cpuMs - lastCpuMs;
+    bool cpuDtMsGood = _ABS(cpuDtMs) < 5000;
+
+    // Check for skip in ZDA time
+    int32_t utcDtMs = utcMs - lastUtcMs;
+    bool utcDtMsGood = (t.hour >= lastUtcHour) && (_ABS(utcDtMs) < 5000); 
+
+    // Ensure time increments linearly
+    int32_t ddtMs = utcDtMs - cpuDtMs;
+    if (cpuDtMsGood && utcDtMsGood)
+    {   // No time wrap
+        g_debug.i[3] = utcDtMs;
+        g_debug.i[4] = cpuDtMs;
+        int adjOffsetSec = millisecondsToSeconds(ddtMs);
+        if (adjOffsetSec)
+        {
+            utcOffsetSec += adjOffsetSec;
+
+            g_sysParams.genFaultCode |= GFC_GNSS_RECEIVER_TIME;
+#if PLATFORM_IS_EMBEDDED
+            g_gnssTimeFaultTimeMs = g_timeMs;
+#endif
+            g_debug.i[5] = utcMs;
+            g_debug.i[6] = gpsMs;
+            g_debug.f[5] = utcDtMs;
+            g_debug.f[6] = cpuDtMs;
+            g_debug.f[8] += 1.0f;
+            if (_ABS(utcOffsetSec) > 2)
+            {   // Offset exceeded limit
+                utcOffsetSec = 0;
+            }
+        }
+    }
+    g_debug.f[7] = utcOffsetSec;
+
+    // Update history
+    lastCpuMs = cpuMs;
+    lastUtcMs = utcMs;
+    lastUtcHour = t.hour;
+
+#if 0    // Apply correction offset
+    if (utcOffsetSec)
+    {
+        t.second -= utcOffsetSec;
+        if (t.second >= 60)
+        {   // Wrap 
+            t.second -= 60;
+            t.minute++;
+            if (t.minute >= 60)
+            {   // Wrap
+                t.minute -= 60;
+                t.hour++;
+            }
+        }
+        if (t.second < 0)
+        {   // Wrap 
+            t.second += 60;
+            t.minute--;
+            if (t.minute < 0)
+            {   // Wrap
+                t.minute += 60;
+                t.hour--;
+            }
+        }
+    }
+#endif
+
+    // TODO: (WHJ) End of debug section
+    ///////////////////////////////////////////////////////////////////////
+#endif
+
+    offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", t.hour, t.minute, t.second, t.millisecond);
+}
+
 static void nmea_GPSDateOfLastFix(char* a, int aSize, int &offset, gps_pos_t &pos)
 {
     aSize -= offset;
@@ -972,9 +1100,9 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "ZDA");
-    nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos); // 1
-    nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);         // 2,3,4
-    nmea_sprint(a, aSize, n, ",00,00");                 // 5,6
+    nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(a, aSize, n, pos);                                // 1
+    nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);                                        // 2,3,4
+    nmea_sprint(a, aSize, n, ",00,00");                                                // 5,6
     
     return nmea_sprint_footer(a, aSize, n);
 }
@@ -2014,9 +2142,7 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     uint8_t period;
 
     if (!port)
-    {
         return 0;
-    }
     
     char *ptr = (char*)&a[6];                // $ASCE
     char *end = (char*)&a[aSize];
@@ -2092,12 +2218,25 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     return options;
 }
 
-inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint32_t id, uint8_t period, uint32_t options) {
-    nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
-    grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint32_t id, uint8_t period, uint32_t options) 
+{
+    if (i < ((int)grmci.size()))
+    {
+        nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
+        grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+    }
 }
 
-//uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
+/**
+ * Parses ASCE and sets give GRMC vector
+ * @param port port_handle_t the msg was Rxd on
+ * @param a const char[] incoming msg
+ * @param aSize int size of msg a
+ * @param grmci std::vector<grmci_t*> of GPX GRMC bits 
+ * 
+ * @return 0 on NULL port error
+ * @return options if any (can be 0 if no options exist)
+ */
 uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci)
 {
     (void)aSize;
@@ -2164,7 +2303,7 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
             break;
         
         case RMC_OPTIONS_PORT_ALL:        
-            for (int i=0; i<NUM_COM_PORTS; i++) 
+            for (int i=0; i<((int)grmci.size()); i++) 
             {
                 nmea_configure_grmci(grmci, i, id, period, options);
             }
@@ -2731,7 +2870,7 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     float second;
     ptr = ASCII_to_hours_minutes_seconds(&time.hour, &time.minute, &second, ptr);
     time.second = (int)second;
-    time.millisecond = ((int)(second*1000.0f))%1000;
+    time.millisecond = (int)(second*1000.0f) - 1000*time.second;
 
     // 2,3,4 - dd,mm,yyy (Day,Month,Year)
     ptr = ASCII_to_i32((int32_t*)&(date.day), ptr);
@@ -2739,7 +2878,7 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     ptr = ASCII_to_i32((int32_t*)&(date.year), ptr);
 
     // Convert UTC date and time to GPS time of week and number of weeks        
-    double datetime[6] = { (double)date.year, (double)date.month, (double)date.day, (double)time.hour, (double)time.minute, (double)second };        // year,month,day,hour,min,sec
+    int datetime[7] = { date.year, date.month, date.day, time.hour, time.minute, time.second, time.millisecond };        // year,month,day,hour,min,sec,msec
     UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs, gpsWeek);
     date.weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
 

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -29,6 +29,8 @@ namespace ISBootloader {
 
 static constexpr int IS_DEVICE_LIST_LEN = 256;
 static constexpr int IS_FIRMWARE_PATH_LENGTH = 256;
+
+static constexpr int IS_REBOOT_DELAY_MS = 3000;
 
 typedef enum {
     IS_PROCESSOR_UNKNOWN = -1,
@@ -177,7 +179,13 @@ public:
     virtual is_operation_result verify_image(std::string image) = 0;
 
     virtual bool is_serial_device() { return true; }
-    
+
+    template<typename... Args> void logStatus(eLogLevel level, const char* infoString, Args... args) {
+        if (m_info_callback)
+            m_info_callback(this, level, infoString, args...);
+    }
+
+
     int m_retries_left;
     float m_update_progress;
     float m_verify_progress;

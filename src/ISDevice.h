@@ -3,7 +3,7 @@
  * @brief ${BRIEF_DESC}
  *
  * @author Kyle Mallory on 2/24/24.
- * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
 #ifndef INERTIALSENSESDK_ISDEVICE_H
@@ -53,22 +53,25 @@ public:
     static std::string getFirmwareInfo(const dev_info_t& devInfo, int detail = 1, eHdwRunStates hdwRunState = eHdwRunStates::HDW_STATE_APP);
 
     ISDevice() {
+        //std::cout << "Creating empty ISDevice: " << this << std::endl;
         flashCfg.checksum = (uint32_t)-1;
     }
 
     ISDevice(port_handle_t _port) {
+        // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
         flashCfg.checksum = (uint32_t)-1;
         port = _port;
     }
 
     ISDevice(const ISDevice& src) : devLogger(src.devLogger) {
+        // std::cout << "Creating ISDevice copy from " << ISDevice::getIdAsString(src.devInfo)  << " " << this << std::endl;
         port = src.port;
         hdwId = src.hdwId;
         hdwRunState = src.hdwRunState;
         devInfo = src.devInfo;
         flashCfg = src.flashCfg;
         flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
-        flashCfgUploadChecksum = src.flashCfgUploadChecksum;
+        flashCfgUpload = src.flashCfgUpload;
         evbFlashCfg = src.evbFlashCfg;
         sysCmd = src.sysCmd;
         // devLogger = src.devLogger.get();
@@ -76,20 +79,42 @@ public:
     }
 
     ~ISDevice() {
+//        if (((hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY)) || (devInfo.serialNumber != 0))
+//            std::cout << "Destroying ISDevice " << getDescription() << ". " << this << std::endl;
+
         //if (port && serialPortIsOpen(port))
         //    serialPortClose(port);
-        port = 0;
+        devInfo = {};
         hdwId = IS_HARDWARE_TYPE_UNKNOWN;
         hdwRunState = HDW_STATE_UNKNOWN;
+        port = 0;
+    }
+
+    ISDevice& operator=(const ISDevice& src) {
+        port = src.port;
+        hdwId = src.hdwId;
+        hdwRunState = src.hdwRunState;
+        devInfo = src.devInfo;
+        flashCfg = src.flashCfg;
+        flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
+        flashCfgUpload = src.flashCfgUpload;
+        evbFlashCfg = src.evbFlashCfg;
+        sysCmd = src.sysCmd;
+        // devLogger = src.devLogger.get();
+        closeStatus = src.closeStatus;
+        return *this;
     }
 
     /**
      * @return true is this ISDevice has a valid, and open port
      */
-    bool isConnected() { return (port && serialPortIsOpen(port)); }
+    bool isConnected() { std::lock_guard<std::recursive_mutex> lock(portMutex); return (port && serialPortIsOpen(port)); }
 
     bool hasDeviceInfo() { return (hdwId != 0) && (hdwRunState != ISDevice::HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0); }
 
+    std::string getPortName() {  std::lock_guard<std::recursive_mutex> lock(portMutex); return (port ? portName(port) : ""); }
+
+    bool Update();
     bool step();
 
     std::string getIdAsString();
@@ -101,17 +126,19 @@ public:
 
     // Convenience Functions
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
-    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { comManagerGetData(port, dataId, length, offset, period); }
-    void QueryDeviceInfo() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
-    void SavePersistent() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
-    void SoftwareReset() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
-    void SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) { comManagerSendData(port, data, dataId, length, offset); }
-    void SendRaw(const uint8_t* data, uint32_t length) { comManagerSendRaw(port, data, length); }
-    void SendNmea(const std::string& nmeaMsg);
-    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
-    void SetSysCmd(const uint32_t command);
-    void StopBroadcasts(bool allPorts = false) { comManagerSendRaw(port, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::recursive_mutex> lock(portMutex); comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); comManagerGetData(port, dataId, length, offset, period); }
+    int SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSendData(port, data, dataId, length, offset); }
+    int SendRaw(const uint8_t* data, uint32_t length) {  std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSendRaw(port, data, length); }
+
+    int SendNmea(const std::string& nmeaMsg);
+    int QueryDeviceInfo() { return SendRaw((uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
+    int SavePersistent() { return SendRaw((uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
+    int SoftwareReset() { return SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
+
+    int SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
+    int SetSysCmd(const uint32_t command);
+    int StopBroadcasts(bool allPorts = false) { return SendRaw((uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
     /**
      * @returns true is the device is indicated that a reset is required; this state SHOULD be acted on by resetting the device to ensure that it is operating as expected
@@ -141,22 +168,47 @@ public:
 
     /**
      * A fancy function that attempts to synchronize flashcfg between host and device - Honestly, I'm not sure its use case
-     * @param timeMs
+     * This function DOES NOT BLOCK, it is a (not-so-)simple state check as to whether the flash is currently synced or not.
+     * @param timeMs the current time...
+     * @return true if the config is synchronized, otherwise false.
      */
-    void SyncFlashConfig(unsigned int timeMs);
+    bool SyncFlashConfig();
 
     /**
-    * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
-    * @param port the port to get flash config for
-    * @return true if the flash config is valid, currently synchronized, otherwise false.
-    */
-    bool FlashConfigSynced() { return  (flashCfg.checksum == sysParams.flashCfgChecksum) && (flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(); }
+     * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
+     * @param port the port to get flash config for
+     * @return true if the flash config is valid, currently synchronized, otherwise false.
+     */
+    bool FlashConfigSynced() {
+        step();   // let's give it a very, very brief chance to processing any pendind data before we check our status...
+        if (flashCfgUpload.checksum && (flashCfgUpload.checksum == sysParams.flashCfgChecksum) && (flashCfg.checksum == sysParams.flashCfgChecksum)) {
+            flashCfgUpload = {};
+            flashCfgUploadTimeMs = 0;
+            return true;    // a 3-way match between upload, device, and sysParams
+        }
+        if (flashCfg.checksum == sysParams.flashCfgChecksum) {
+            return true;    // a 2-way check between just the device and the sysParams
+        }
+
+        return false;
+    }
 
     /**
      * Another fancy function that blocks until a flash sync has actually occurred, returning true if successful or false if it couldn't (timeout?  validation?  bad connection?  -- who knows?)
      * @return
      */
-    bool WaitForFlashSynced();
+    bool WaitForFlashSynced(uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+
+    /**
+     * This is kind of like the previous one, but it actually downloads the newest FlashCfg from the device and does a byte-for-byte comparison
+     * to ensure it was uploaded/downlaoded correctly.  This could fail where the previous might pass, because some parts of the flashCfg are programatically set to reflect state.
+     * For example, if you send a rtkConfig = 0x08, it may return a rtkConfig of 0x00400008 because the 0x4 reflects that its persisted (or something like that).
+     * @param flashCfg the config to upload (and later match against the downloaded firmware)
+     * @param timeout a timeout value for how long to wait for the new flash to sync/download before failing
+     * @return true if the new config was uploaded, synced, downloaded and matched with the original flashCfg, otherwise false
+     */
+    bool SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+
 
     bool waitForFlashWrite();
 
@@ -171,7 +223,10 @@ public:
      * @param port the port to get flash config for
      * @return true Flash config upload was either not received or rejected.
      */
-    bool FlashConfigUploadFailure() { return flashCfgUploadChecksum && (flashCfgUploadChecksum != sysParams.flashCfgChecksum); }
+    bool FlashConfigUploadFailure() {
+        // a failed flash upload is considered when flashCfgUploadChecksum is non-zero, and DOES NOT match sysParams.flashCfgChecksum
+        return flashCfgUpload.checksum && (flashCfgUpload.checksum != sysParams.flashCfgChecksum);
+    }
 
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
 
@@ -181,7 +236,7 @@ public:
     */
     fwUpdate::update_status_e getUpdateStatus() { return fwLastStatus; };
 
-
+    std::recursive_mutex  portMutex;                                           //! used to guard against concurrent use of the port in multi-threaded environments - only one read/write at a time
     port_handle_t port = 0;
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
@@ -192,10 +247,9 @@ public:
     sys_params_t                sysParams = { };
     gpx_status_t                gpxStatus = { };
     nvm_flash_cfg_t             flashCfg = { };
-    nvm_flash_cfg_t             flashCfgUpload = { };                //! This is the flashConfig that was most recently sent to the device
-    unsigned int                flashCfgUploadTimeMs = 0;            //! (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
-    unsigned int                flashSyncCheckTimeMs = 0;
-    uint32_t                    flashCfgUploadChecksum = 0;
+    nvm_flash_cfg_t             flashCfgUpload = { };                //!< This is the flashConfig that was most recently sent to the device
+    unsigned int                flashCfgUploadTimeMs = 0;            //!< (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+    unsigned int                flashSyncCheckTimeMs = 0;            //!< (ms) indicates that last time when the host confirmed synchronization of the remote and local flashCfg
     evb_flash_cfg_t             evbFlashCfg = { };
     system_command_t            sysCmd = { };
     manufacturing_info_t        manfInfo = {};
@@ -215,8 +269,8 @@ public:
     fwUpdate::update_status_e fwLastStatus = fwUpdate::NOT_STARTED;
     std::string fwLastMessage;
 
-    std::vector<std::string> target_idents;
-    std::vector<std::string> target_messages;
+    // std::vector<std::string> target_idents;
+    // std::vector<std::string> target_messages;
 
     uint32_t lastResetRequest = 0;              //! system time when the last reset requests was sent
     uint32_t resetRequestThreshold = 5000;      //! Don't allow to send reset requests more frequently than this...

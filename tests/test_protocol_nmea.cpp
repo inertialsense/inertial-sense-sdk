@@ -64,6 +64,147 @@ void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
     EXPECT_EQ(g1.status, g2.status);
 }
 
+uint32_t g_cpu_msec;
+sys_params_t g_sysParams;
+debug_array_t g_debug;
+
+void initGlobals()
+{
+    memset(&g_sysParams, 0, sizeof(g_sysParams));
+    g_cpu_msec = 0;
+    memset(&g_debug, 0, sizeof(g_debug));
+}
+
+bool timeWithin(uint32_t timeSec, uint32_t startSec, uint32_t durationSec)
+{
+    return (timeSec >= startSec) && (timeSec < (startSec + durationSec));
+}
+
+TEST(protocol_nmea, zda_gps_time_skip)
+{
+    GTEST_SKIP();   // This test must be run manually as the statically SDK build does not include the ZDA TOD work around code
+
+#ifdef _WIN32
+    GTEST_SKIP() << "Skipping test on Windows.";
+#endif
+    printf("DESCRIPTION: Test that ZDA time skip detect code works correctly for 1-2 second jumps in the ZDA UTC time due to jumps in GPS time of week.\n");
+    initGlobals();
+    char buf[1024]; 
+    gps_pos_t pos = {};
+    pos.leapS = 18;
+    pos.week = 2345;
+    bool faultLast = false;
+    int simulatedOffsetMs = 0;
+
+    for (int timeSec=0; timeSec<C_SECONDS_PER_WEEK-1; timeSec++)
+    {
+        pos.timeOfWeekMs = timeSec*1000;
+        g_cpu_msec = timeSec*1000;
+        bool fault = 
+            timeWithin(timeSec, C_SECONDS_PER_WEEK/4, 200) || 
+            timeWithin(timeSec, C_SECONDS_PER_WEEK/2, 10);
+
+        bool toggle = fault != faultLast;
+        faultLast = fault;
+        if (toggle)
+        {
+            if (fault)
+            {
+                simulatedOffsetMs += 1000;
+                if (simulatedOffsetMs>2000) { simulatedOffsetMs = 0; }
+            }
+        }
+
+        if (fault)
+        {   // Simulate offset in GPS tow
+            pos.timeOfWeekMs += simulatedOffsetMs;
+        }
+
+        int n = nmea_zda(buf, sizeof(buf), pos);
+
+        ASSERT_EQ((g_sysParams.genFaultCode&GFC_GNSS_RECEIVER_TIME) != 0, toggle) << "genFaultCode failed at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.f[8] != 0, toggle) << "Correction offset failed at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.f[7], (fault ? simulatedOffsetMs/1000 : 0)) << "Correction offset failed at timeSec: " << timeSec;
+
+        uint32_t gpsTowMs;
+        uint32_t gpsWeek;
+        utc_date_t utcDate;
+        utc_time_t utcTime;
+        nmea_parse_zda(buf, n, gpsTowMs, gpsWeek, utcDate, utcTime, pos.leapS);
+#if 0
+        // if (toggle)
+        {
+            printf("timeSec: %d  ", timeSec);
+            printf("gpsTowMs: %d  ", pos.timeOfWeekMs);
+            if (fault)  printf("(fault on)  ");
+            else        printf("(fault off) ");
+            PrintUtcDateTime(utcDate, utcTime);
+        }
+#endif
+        // ASSERT_EQ(gpsTowMs, timeSec*1000) << "Continuous at timeSec: " << timeSec;
+        // ASSERT_EQ(gpsTowMs, pos.timeOfWeekMs - (fault?simulatedOffsetMs:0)) << "GPS tow failed at timeSec: " << timeSec;
+
+        g_debug.i[6] = 0;
+        g_debug.f[8] = 0;
+        g_sysParams.genFaultCode = 0;
+    }
+}
+
+TEST(protocol_nmea, zda_cpu_time_skip)
+{
+#ifdef _WIN32
+    GTEST_SKIP() << "Skipping test on Windows.";
+#endif
+    printf("DESCRIPTION: Test that ZDA work around will pregress linearly and not apply incorrectly apply offset when GPS update is missing.\n");
+    initGlobals();
+    char buf[1024]; 
+    gps_pos_t pos = {};
+    pos.leapS = 18;
+    pos.week = 2345;
+    bool faultLast = false;    
+
+    for (int timeSec=0; timeSec<C_SECONDS_PER_WEEK-1; timeSec++)
+    {
+        pos.timeOfWeekMs = timeSec*1000;
+        g_cpu_msec = timeSec*1000;
+        bool fault = 
+            timeWithin(timeSec, C_SECONDS_PER_WEEK/4, 200) || 
+            timeWithin(timeSec, C_SECONDS_PER_WEEK/2, 10);
+
+        bool toggle = fault != faultLast;
+        faultLast = fault;
+        if (toggle)
+        {   // Simulate absent message
+            // printf("timeSec: %d  (absent)\n", timeSec);
+            continue;
+        }
+
+        int n = nmea_zda(buf, sizeof(buf), pos);
+
+        ASSERT_EQ(g_debug.i[5], 0) << "Correction offset non-zero at timeSec: " << timeSec;
+        ASSERT_EQ(g_debug.i[6], 0) << "Correction offset non-zero at timeSec: " << timeSec;
+
+        uint32_t gpsTowMs;
+        uint32_t gpsWeek;
+        utc_date_t utcDate;
+        utc_time_t utcTime;
+        nmea_parse_zda(buf, n, gpsTowMs, gpsWeek, utcDate, utcTime, pos.leapS);
+#if 0
+        if (toggle)
+        {
+            printf("timeSec: %d  ", timeSec);
+            printf("gpsTowMs: %d  ", pos.timeOfWeekMs);
+            PrintUtcDateTime(utcDate, utcTime);
+        }
+#endif
+        ASSERT_EQ(gpsTowMs, timeSec*1000) << "Linear time at timeSec: " << timeSec;
+        ASSERT_EQ(gpsTowMs, pos.timeOfWeekMs) << "GPS tow failed at timeSec: " << timeSec;
+
+        g_debug.i[6] = 0;
+        g_sysParams.genFaultCode = 0;
+    }
+}
+
 TEST(protocol_nmea, nmea_parse_asce)
 {
     PRINT_TEST_DESCRIPTION("Tests the $ASCE parser function nmea_parse_asce().");
@@ -1360,718 +1501,116 @@ TEST(protocol_nmea, checksum)
 }
 #endif
 
-
 void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
 {
-    gpsSat->numSats = 33;
+    // Satellite data array
+    static const gps_sat_sv_t sat_data[] = 
+    {
+        {SAT_SV_GNSS_ID_GPS, 2, 40, 310, 43, 95},
+        {SAT_SV_GNSS_ID_GPS, 8, 7, 324, 31, 95},
+        {SAT_SV_GNSS_ID_GPS, 10, 48, 267, 45, 31},
+        {SAT_SV_GNSS_ID_GPS, 15, 37, 53, 45, 31},
+        {SAT_SV_GNSS_ID_GPS, 16, 12, 268, 37, 95},
+        {SAT_SV_GNSS_ID_GPS, 18, 69, 78, 41, 31},
+        {SAT_SV_GNSS_ID_GPS, 23, 74, 336, 41, 31},
+        {SAT_SV_GNSS_ID_GPS, 24, 15, 111, 37, 31},
+        {SAT_SV_GNSS_ID_GPS, 26, 2, 239, 31, 31},
+        {SAT_SV_GNSS_ID_GPS, 27, 35, 307, 41, 95},
+        {SAT_SV_GNSS_ID_GPS, 29, 12, 162, 36, 31},
+        {SAT_SV_GNSS_ID_GPS, 32, 14, 199, 40, 95},
+        {SAT_SV_GNSS_ID_SBS, 131, 43, 188, 43, 95},
+        {SAT_SV_GNSS_ID_SBS, 133, 40, 206, 43, 95},
+        {SAT_SV_GNSS_ID_SBS, 138, 43, 173, 35, 95},
+        {SAT_SV_GNSS_ID_GAL, 5, 65, 145, 41, 31},
+        {SAT_SV_GNSS_ID_GAL, 9, 39, 53, 43, 31},
+        {SAT_SV_GNSS_ID_GAL, 34, 71, 340, 42, 31},
+        {SAT_SV_GNSS_ID_GAL, 36, 47, 104, 40, 31},
+        {SAT_SV_GNSS_ID_BEI, 11, 9, 141, 36, 23},
+        {SAT_SV_GNSS_ID_BEI, 14, 52, 47, 44, 31},
+        {SAT_SV_GNSS_ID_BEI, 27, 31, 313, 38, 31},
+        {SAT_SV_GNSS_ID_BEI, 28, 79, 267, 44, 31},
+        {SAT_SV_GNSS_ID_BEI, 33, 82, 40, 42, 31},
+        {SAT_SV_GNSS_ID_BEI, 41, 43, 230, 43, 31},
+        {SAT_SV_GNSS_ID_BEI, 43, 34, 148, 43, 31},
+        {SAT_SV_GNSS_ID_BEI, 58, 0, 0, 43, 39},
+        {SAT_SV_GNSS_ID_GLO, 1, 85, 252, 31, 23},
+        {SAT_SV_GNSS_ID_GLO, 2, 28, 217, 29, 31},
+        {SAT_SV_GNSS_ID_GLO, 8, 37, 34, 35, 31},
+        {SAT_SV_GNSS_ID_GLO, 17, 19, 324, 19, 19},
+        {SAT_SV_GNSS_ID_GLO, 23, 48, 126, 36, 31},
+        {SAT_SV_GNSS_ID_GLO, 24, 72, 349, 32, 28}
+    };
+
+    // Signal data array
+    static const gps_sig_sv_t sig_data[] = 
+    {
+        {SAT_SV_GNSS_ID_GPS, 2, SAT_SV_SIG_ID_GPS_L1CA, 43, 7, 361},
+        {SAT_SV_GNSS_ID_GPS, 8, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 10, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 15, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 16, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 361},
+        {SAT_SV_GNSS_ID_GPS, 18, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 23, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 24, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 26, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 27, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 361},
+        {SAT_SV_GNSS_ID_GPS, 29, SAT_SV_SIG_ID_GPS_L1CA, 36, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 32, SAT_SV_SIG_ID_GPS_L1CA, 40, 7, 361},
+        {2, 131, 0, 43, 7, 361}, 
+        {2, 133, 0, 43, 7, 361}, 
+        {2, 138, 0, 35, 7, 361},
+        {SAT_SV_GNSS_ID_GPS, 10, SAT_SV_SIG_ID_GPS_L2CL, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 15, SAT_SV_SIG_ID_GPS_L2CL, 27, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 18, SAT_SV_SIG_ID_GPS_L2CL, 33, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 23, SAT_SV_SIG_ID_GPS_L2CL, 34, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 27, SAT_SV_SIG_ID_GPS_L2CL, 23, 7, 9},
+        {SAT_SV_GNSS_ID_GPS, 29, SAT_SV_SIG_ID_GPS_L2CL, 25, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 32, SAT_SV_SIG_ID_GPS_L5, 28, 7, 41},
+        {SAT_SV_GNSS_ID_GAL, 5, SAT_SV_SIG_ID_Galileo_E1C2, 41, 7, 41},
+        {SAT_SV_GNSS_ID_GAL, 9, SAT_SV_SIG_ID_Galileo_E1C2, 43, 7, 41},
+        {SAT_SV_GNSS_ID_GAL, 34, SAT_SV_SIG_ID_Galileo_E1C2, 42, 7, 41},
+        {SAT_SV_GNSS_ID_GAL, 36, SAT_SV_SIG_ID_Galileo_E1C2, 40, 7, 41},
+        {SAT_SV_GNSS_ID_GAL, 5, 6, 30, 7, 41}, 
+        {SAT_SV_GNSS_ID_GAL, 9, 6, 30, 7, 41},
+        {SAT_SV_GNSS_ID_GAL, 34, 6, 26, 7, 41}, 
+        {SAT_SV_GNSS_ID_GAL, 36, 6, 31, 7, 41},
+        {SAT_SV_GNSS_ID_BEI, 11, SAT_SV_SIG_ID_BeiDou_B1D1, 36, 7, 1},
+        {SAT_SV_GNSS_ID_BEI, 14, SAT_SV_SIG_ID_BeiDou_B1D1, 44, 7, 41},
+        {SAT_SV_GNSS_ID_BEI, 27, SAT_SV_SIG_ID_BeiDou_B1D1, 38, 7, 41},
+        {SAT_SV_GNSS_ID_BEI, 28, SAT_SV_SIG_ID_BeiDou_B1D1, 44, 7, 41},
+        {SAT_SV_GNSS_ID_BEI, 33, SAT_SV_SIG_ID_BeiDou_B1D1, 42, 7, 41},
+        {SAT_SV_GNSS_ID_BEI, 41, SAT_SV_SIG_ID_BeiDou_B1D1, 43, 7, 41},
+        {SAT_SV_GNSS_ID_BEI, 43, SAT_SV_SIG_ID_BeiDou_B1D1, 43, 7, 41},
+        {SAT_SV_GNSS_ID_BEI, 58, SAT_SV_SIG_ID_BeiDou_B1D1, 43, 7, 2},
+        {SAT_SV_GNSS_ID_BEI, 11, 2, 21, 7, 1}, 
+        {SAT_SV_GNSS_ID_BEI, 14, 2, 30, 7, 41},
+        {SAT_SV_GNSS_ID_GLO, 1, SAT_SV_SIG_ID_GLONASS_L1OF, 31, 7, 1},
+        {SAT_SV_GNSS_ID_GLO, 2, SAT_SV_SIG_ID_GLONASS_L1OF, 29, 7, 41},
+        {SAT_SV_GNSS_ID_GLO, 8, SAT_SV_SIG_ID_GLONASS_L1OF, 35, 7, 41},
+        {SAT_SV_GNSS_ID_GLO, 17, SAT_SV_SIG_ID_GLONASS_L1OF, 19, 7, 1},
+        {SAT_SV_GNSS_ID_GLO, 23, SAT_SV_SIG_ID_GLONASS_L1OF, 36, 7, 41},
+        {SAT_SV_GNSS_ID_GLO, 24, SAT_SV_SIG_ID_GLONASS_L1OF, 32, 7, 41}
+    };
+
+    // Initialize gpsSat
     gpsSat->timeOfWeekMs = 436693200;
-    gps_sat_sv_t *sat = &(gpsSat->sat[0]);
-    sat->azim = 310;
-    sat->cno = 43;
-    sat->elev = 40;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 95;
-    sat->svId = 2;
-    sat++;
-    sat->azim = 324;
-    sat->cno = 31;
-    sat->elev = 07;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 95;
-    sat->svId = 8;
-    sat++;
-    sat->azim = 267;
-    sat->cno = 45;
-    sat->elev = 48;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 31;
-    sat->svId = 10;
-    sat++;
-    sat->azim = 53;
-    sat->cno = 45;
-    sat->elev = 37;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 31;
-    sat->svId = 15;
-    sat++;
-    sat->azim = 268;
-    sat->cno = 37;
-    sat->elev = 12;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 95;
-    sat->svId = 16;
-    sat++;
-    sat->azim = 78;
-    sat->cno = 41;
-    sat->elev = 69;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 31;
-    sat->svId = 18;
-    sat++;
-    sat->azim = 336;
-    sat->cno = 41;
-    sat->elev = 74;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 31;
-    sat->svId = 23;
-    sat++;
-    sat->azim = 111;
-    sat->cno = 37;
-    sat->elev = 15;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 31;
-    sat->svId = 24;
-    sat++;
-    sat->azim = 239;
-    sat->cno = 31;
-    sat->elev = 02;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 31;
-    sat->svId = 26;
-    sat++;
-    sat->azim = 307;
-    sat->cno = 41;
-    sat->elev = 35;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 95;
-    sat->svId = 27;
-    sat++;
-    sat->azim = 162;
-    sat->cno = 36;
-    sat->elev = 12;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 31;
-    sat->svId = 29;
-    sat++;
-    sat->azim = 199;
-    sat->cno = 40;
-    sat->elev = 14;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS;
-    sat->status = 95;
-    sat->svId = 32;
-    sat++;
-    sat->azim = 188;
-    sat->cno = 43;
-    sat->elev = 43;
-    sat->gnssId = 2;
-    sat->status = 95;
-    sat->svId = 131;
-    sat++;
-    sat->azim = 206;
-    sat->cno = 43;
-    sat->elev = 40;
-    sat->gnssId = 2;
-    sat->status = 95;
-    sat->svId = 133;
-    sat++;
-    sat->azim = 173;
-    sat->cno = 35;
-    sat->elev = 43;
-    sat->gnssId = 2;
-    sat->status = 95;
-    sat->svId = 138;
-    sat++;
-    sat->azim = 145;
-    sat->cno = 41;
-    sat->elev = 65;
-    sat->gnssId = SAT_SV_GNSS_ID_GAL;
-    sat->status = 31;
-    sat->svId = 5;
-    sat++;
-    sat->azim = 53;
-    sat->cno = 43;
-    sat->elev = 39;
-    sat->gnssId = SAT_SV_GNSS_ID_GAL;
-    sat->status = 31;
-    sat->svId = 9;
-    sat++;
-    sat->azim = 340;
-    sat->cno = 42;
-    sat->elev = 71;
-    sat->gnssId = SAT_SV_GNSS_ID_GAL;
-    sat->status = 31;
-    sat->svId = 34;
-    sat++;
-    sat->azim = 104;
-    sat->cno = 40;
-    sat->elev = 47;
-    sat->gnssId = SAT_SV_GNSS_ID_GAL;
-    sat->status = 31;
-    sat->svId = 36;
-    sat++;
-    sat->azim = 141;
-    sat->cno = 36;
-    sat->elev = 9;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 23;
-    sat->svId = 11;
-    sat++;
-    sat->azim = 47;
-    sat->cno = 44;
-    sat->elev = 52;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 31;
-    sat->svId = 14;
-    sat++;
-    sat->azim = 313;
-    sat->cno = 38;
-    sat->elev = 31;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 31;
-    sat->svId = 27;
-    sat++;
-    sat->azim = 267;
-    sat->cno = 44;
-    sat->elev = 79;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 31;
-    sat->svId = 28;
-    sat++;
-    sat->azim = 40;
-    sat->cno = 42;
-    sat->elev = 82;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 31;
-    sat->svId = 33;
-    sat++;
-    sat->azim = 230;
-    sat->cno = 43;
-    sat->elev = 43;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 31;
-    sat->svId = 41;
-    sat++;
-    sat->azim = 148;
-    sat->cno = 43;
-    sat->elev = 34;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 31;
-    sat->svId = 43;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 43;
-    sat->elev = 0;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 39;
-    sat->svId = 58;
-    sat++;
-    sat->azim = 252;
-    sat->cno = 31;
-    sat->elev = 85;
-    sat->gnssId = SAT_SV_GNSS_ID_GLO;
-    sat->status = 23;
-    sat->svId = 1;
-    sat++;
-    sat->azim = 217;
-    sat->cno = 29;
-    sat->elev = 28;
-    sat->gnssId = SAT_SV_GNSS_ID_GLO;
-    sat->status = 31;
-    sat->svId = 2;
-    sat++;
-    sat->azim = 34;
-    sat->cno = 35;
-    sat->elev = 37;
-    sat->gnssId = SAT_SV_GNSS_ID_GLO;
-    sat->status = 31;
-    sat->svId = 8;
-    sat++;
-    sat->azim = 324;
-    sat->cno = 19;
-    sat->elev = 19;
-    sat->gnssId = SAT_SV_GNSS_ID_GLO;
-    sat->status = 19;
-    sat->svId = 17;
-    sat++;
-    sat->azim = 126;
-    sat->cno = 36;
-    sat->elev = 48;
-    sat->gnssId = SAT_SV_GNSS_ID_GLO;
-    sat->status = 31;
-    sat->svId = 23;
-    sat++;
-    sat->azim = 349;
-    sat->cno = 32;
-    sat->elev = 72;
-    sat->gnssId = SAT_SV_GNSS_ID_GLO;
-    sat->status = 28;
-    sat->svId = 24;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 1;
-    sat->elev = 1;
-    sat->gnssId = SAT_SV_GNSS_ID_BEI;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 2;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 0;
+    gpsSat->numSats = sizeof(sat_data)/sizeof(gps_sat_sv_t);
+    for (size_t i = 0; i < gpsSat->numSats; i++) 
+    {
+        gpsSat->sat[i] = sat_data[i];
+    }
 
-    // Check array out of bounds
-    ASSERT_TRUE(sat < &(gpsSat->sat[MAX_NUM_SATELLITES]));
-
-    gpsSig->numSigs = 46;
+    // Initialize gpsSig
     gpsSig->timeOfWeekMs = 436693200;
-    gps_sig_sv_t *sig = &(gpsSig->sig[0]);
-    sig->cno = 43;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 361;
-    sig->svId = 2;   
-    sig++;
-    sig->cno = 31;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 41;
-    sig->svId = 8;
-    sig++;
-    sig->cno = 45;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 41;
-    sig->svId = 10;
-    sig++;
-    sig->cno = 45;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 41;
-    sig->svId = 15;
-    sig++;
-    sig->cno = 37;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 361;
-    sig->svId = 16;
-    sig++;
-    sig->cno = 41;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 41;
-    sig->svId = 18;
-    sig++;
-    sig->cno = 41;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 41;
-    sig->svId = 23;
-    sig++;
-    sig->cno = 37;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 41;
-    sig->svId = 24;
-    sig++;
-    sig->cno = 31;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 41;
-    sig->svId = 26;
-    sig++;
-    sig->cno = 41;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 361;
-    sig->svId = 27;
-    sig++;
-    sig->cno = 36;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 41;
-    sig->svId = 29;
-    sig++;
-    sig->cno = 40;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 361;
-    sig->svId = 32;
-    sig++;
-    sig->cno = 43;
-    sig->gnssId = 2;
-    sig->quality = 7;
-    sig->sigId = 0;
-    sig->status = 361;
-    sig->svId = 131;
-    sig++;
-    sig->cno = 43;
-    sig->gnssId = 2;
-    sig->quality = 7;
-    sig->sigId = 0;
-    sig->status = 361;
-    sig->svId = 133;
-    sig++;
-    sig->cno = 35;
-    sig->gnssId = 2;
-    sig->quality = 7;
-    sig->sigId = 0;
-    sig->status = 361;
-    sig->svId = 138;
-    sig++;
-    sig->cno = 45;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L2CL;
-    sig->status = 41;
-    sig->svId = 10;
-    sig++;
-    sig->cno = 27;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L2CL;
-    sig->status = 41;
-    sig->svId = 15;
-    sig++;
-    sig->cno = 33;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L2CL;
-    sig->status = 41;
-    sig->svId = 18;
-    sig++;
-    sig->cno = 34;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L2CL;
-    sig->status = 41;
-    sig->svId = 23;
-    sig++;
-    sig->cno = 23;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L2CL;
-    sig->status = 9;
-    sig->svId = 27;
-    sig++;
-    sig->cno = 25;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L2CL;
-    sig->status = 41;
-    sig->svId = 29;
-    sig++;
-    sig->cno = 28;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L5;
-    sig->status = 41;
-    sig->svId = 32;
-    sig++;
-    sig->cno = 41;
-    sig->gnssId = SAT_SV_GNSS_ID_GAL;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_Galileo_E1C2;
-    sig->status = 41;
-    sig->svId = 5;
-    sig++;
-    sig->cno = 43;
-    sig->gnssId = SAT_SV_GNSS_ID_GAL;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_Galileo_E1C2;
-    sig->status = 41;
-    sig->svId = 9;
-    sig++;
-    sig->cno = 42;
-    sig->gnssId = SAT_SV_GNSS_ID_GAL;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_Galileo_E1C2;
-    sig->status = 41;
-    sig->svId = 34;
-    sig++;
-    sig->cno = 40;
-    sig->gnssId = SAT_SV_GNSS_ID_GAL;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_Galileo_E1C2;
-    sig->status = 41;
-    sig->svId = 36;
-    sig++;
-    sig->cno = 30;
-    sig->gnssId = SAT_SV_GNSS_ID_GAL;
-    sig->quality = 7;
-    sig->sigId = 6;
-    sig->status = 41;
-    sig->svId = 5;
-    sig++;
-    sig->cno = 30;
-    sig->gnssId = SAT_SV_GNSS_ID_GAL;
-    sig->quality = 7;
-    sig->sigId = 6;
-    sig->status = 41;
-    sig->svId = 9;
-    sig++;
-    sig->cno = 26;
-    sig->gnssId = SAT_SV_GNSS_ID_GAL;
-    sig->quality = 7;
-    sig->sigId = 6;
-    sig->status = 41;
-    sig->svId = 34;
-    sig++;
-    sig->cno = 31;
-    sig->gnssId = SAT_SV_GNSS_ID_GAL;
-    sig->quality = 7;
-    sig->sigId = 6;
-    sig->status = 41;
-    sig->svId = 36;
-    sig++;
-    sig->cno = 36;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_BeiDou_B1D1;
-    sig->status = 1;
-    sig->svId = 11;
-    sig++;
-    sig->cno = 44;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_BeiDou_B1D1;
-    sig->status = 41;
-    sig->svId = 14;
-    sig++;
-    sig->cno = 38;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_BeiDou_B1D1;
-    sig->status = 41;
-    sig->svId = 27;
-    sig++;
-    sig->cno = 44;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_BeiDou_B1D1;
-    sig->status = 41;
-    sig->svId = 28;
-    sig++;
-    sig->cno = 42;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_BeiDou_B1D1;
-    sig->status = 41;
-    sig->svId = 33;
-    sig++;
-    sig->cno = 43;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_BeiDou_B1D1;
-    sig->status = 41;
-    sig->svId = 41;
-    sig++;
-    sig->cno = 43;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_BeiDou_B1D1;
-    sig->status = 41;
-    sig->svId = 43;
-    sig++;
-    sig->cno = 43;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_BeiDou_B1D1;
-    sig->status = 2;
-    sig->svId = 58;
-    sig++;
-    sig->cno = 21;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 11;
-    sig++;
-    sig->cno = 30;
-    sig->gnssId = SAT_SV_GNSS_ID_BEI;
-    sig->quality = 7;
-    sig->sigId = 2;
-    sig->status = 41;
-    sig->svId = 14;
-    sig++;
-    sig->cno = 31;
-    sig->gnssId = SAT_SV_GNSS_ID_GLO;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GLONASS_L1OF;
-    sig->status = 1;
-    sig->svId = 1;
-    sig++;
-    sig->cno = 29;
-    sig->gnssId = SAT_SV_GNSS_ID_GLO;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GLONASS_L1OF;
-    sig->status = 41;
-    sig->svId = 2;
-    sig++;
-    sig->cno = 35;
-    sig->gnssId = SAT_SV_GNSS_ID_GLO;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GLONASS_L1OF;
-    sig->status = 41;
-    sig->svId = 8;
-    sig++;
-    sig->cno = 19;
-    sig->gnssId = SAT_SV_GNSS_ID_GLO;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GLONASS_L1OF;
-    sig->status = 1;
-    sig->svId = 17;
-    sig++;
-    sig->cno = 36;
-    sig->gnssId = SAT_SV_GNSS_ID_GLO;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GLONASS_L1OF;
-    sig->status = 41;
-    sig->svId = 23;
-    sig++;
-    sig->cno = 32;
-    sig->gnssId = SAT_SV_GNSS_ID_GLO;
-    sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GLONASS_L1OF;
-    sig->status = 41;
-    sig->svId = 24;
-    sig++;
-    sig->cno = 208;
-    sig->gnssId = 0;
-    sig->quality = 233;
-    sig->sigId = 0;
-    sig->status = 8978;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 1;
-    sig->gnssId = 107;
-    sig->quality = 0;
-    sig->sigId = 133;
-    sig->status = 256;
-    sig->svId = 33;
-    sig++;
-    sig->cno = 15;
-    sig->gnssId = 0;
-    sig->quality = 35;
-    sig->sigId = 0;
-    sig->status = 389;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 236;
-    sig->gnssId = 0;
-    sig->quality = 18;
-    sig->sigId = 0;
-    sig->status = 34083;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 112;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 0;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 0;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 35;
-    sig->gnssId = 160;
-    sig->quality = 133;
-    sig->sigId = 18;
-    sig->status = 1;
-    sig->svId = 234;
-    sig++;
-    sig->cno = 235;
-    sig->gnssId = 0;
-    sig->quality = 18;
-    sig->sigId = 48;
-    sig->status = 34083;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 208;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 235;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 8978;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 1;
-    sig->gnssId = 107;
-    sig->quality = 0;
-    sig->sigId = 133;
-    sig->status = 10240;
-    sig->svId = 33;
-    sig++;
-    sig->cno = 1;
-    sig->gnssId = 243;
-    sig->quality = 0;
-    sig->sigId = 118;
-    sig->status = 0;
-    sig->svId = 186;
-    sig++;
-    sig->cno = 33;
-    sig->gnssId = 100;
-    sig->quality = 133;
-    sig->sigId = 107;
-    sig->status = 1;
-    sig->svId = 7;
-    sig++;
-    sig->cno = 15;
-    sig->gnssId = 0;
-    sig->quality = 35;
-    sig->sigId = 0;
-    sig->status = 389;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 235;
-    sig->gnssId = 0;
-    sig->quality = 18;
-    sig->sigId = 64;
-    sig->status = 34083;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 52;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 0;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 0;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 107;
-    sig->gnssId = 0;
-    sig->quality = 33;
-    sig->sigId = 0;
-    sig->status = 389;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 234;
-    sig->gnssId = 0;
-    sig->quality = 18;
-    sig->sigId = 176;
-    sig->status = 34083;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 74;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS;
-    sig->quality = 0;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
-    sig->status = 19972;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 33;
-    sig->gnssId = 90;
-    sig->quality = 133;
-    sig->sigId = 107;
-    sig->status = 1;
-    sig->svId = 7;
-    sig++;
-    sig->cno = 186;
-    sig->gnssId = 0;
-    sig->quality = 118;
-    sig->sigId = 242;
-    sig->status = 1;
-    sig->svId = 48;
+    gpsSig->numSigs = sizeof(sig_data)/sizeof(gps_sig_sv_t);
+    for (size_t i = 0; i < gpsSig->numSigs; i++) 
+    {
+        gpsSig->sig[i] = sig_data[i];
+    }
 
-    // Check array out of bounds
-    ASSERT_TRUE(sig < &(gpsSig->sig[MAX_NUM_SAT_SIGNALS]));
+    // Array bounds checks
+    ASSERT_TRUE(gpsSat->numSats <= MAX_NUM_SATELLITES);
+    ASSERT_TRUE(gpsSig->numSigs <= MAX_NUM_SAT_SIGNALS);
 }
+
+

@@ -7,6 +7,10 @@
 #include "data_sets.h"
 #include "time_conversion.h"
 
+#if !defined(GPX_1) && !defined(IMX_5) && !defined(NAV_POST_PROCESS)
+extern uint32_t g_cpu_msec;
+#endif
+
 #define NMEA_CMD_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
@@ -44,6 +48,7 @@ char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos);
+void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset, gps_pos_t &pos);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////

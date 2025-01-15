@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -63,6 +63,7 @@ int ISComManager::init(
 
     defaultCbs = {};
     defaultCbs.all = comManagerProcessBinaryRxPacket;
+    defaultCbs.isbData = pstRxFncCb;
 
     if (!portSet) portSet = new std::unordered_set<port_handle_t>();
     ports = portSet;
@@ -157,10 +158,6 @@ bool comManagerRemovePort(port_handle_t port) {
 }
 
 bool ISComManager::removeAllPorts() {
-//    for (auto port : ports) {
-//        removePort(port);
-//        // TODO delete (serial_port_s*)port;
-//    }
     ports->clear();
     return true;
 }
@@ -168,7 +165,6 @@ bool ISComManager::removeAllPorts() {
 bool comManagerReleaseAllPorts() {
     return s_cm.removeAllPorts();
 }
-
 
 int asciiMessageCompare(const void* elem1, const void* elem2)
 {
@@ -592,15 +588,9 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             p_data_get_t *gdata = ((p_data_get_t *) (pkt->data.ptr));
             // Forward to gpx
             if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX &&
-                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || (gdata->id == DID_RTK_DEBUG))) {
+                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || (gdata->id == DID_RTK_DEBUG))) 
+            {
                 comManagerGetData(COM0_PORT, gdata->id, gdata->size, gdata->offset, gdata->period);
-
-                if (gdata->id == DID_RTK_DEBUG) {
-                    if (gdata->period != 0)
-                        g_GpxRtkDebugReq |= 0x01 << portId(port);
-                    else
-                        g_GpxRtkDebugReq |= 0x01 << (portId(port) + 4);
-                }
             }
         }
 #endif
@@ -618,9 +608,6 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             disableBcastFnc(NULL);  // all ports
 
         sendAck(port, pkt, PKT_TYPE_ACK);
-#ifdef IMX_5
-        g_GpxRtkDebugReq = 0;
-#endif
         break;
 
     case PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT:
@@ -631,18 +618,10 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             disableBcastFnc(port);
 
         sendAck(port, pkt, PKT_TYPE_ACK);
-
-#ifdef IMX_5
-        g_GpxRtkDebugReq &= ~(0x01 << portId(port));
-#endif
         break;
 
     case PKT_TYPE_STOP_DID_BROADCAST:
         disableDidBroadcast(port, pkt->hdr.id);
-#ifdef IMX_5
-        if (DID_RTK_DEBUG)
-            g_GpxRtkDebugReq &= ~(0x01 << portId(port));
-#endif
         break;
 
     case PKT_TYPE_NACK:
@@ -945,12 +924,14 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
         return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
     }
 
-    if (ports && !port) {
-        // if port is null, set this for all available ports
-        defaultCbs.generic[ptype] = cbHandler; // TODO: range check this
+    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA))
+    {   // if port is null, set this as the default handler, and also set it for all available ports
+        defaultCbs.generic[ptype] = cbHandler;
+        defaultCbs.protocolMask = DEFAULT_PORT_PROTO_CFG;
+
         for (auto port : *ports) {
             if (port && portType(port) & PORT_TYPE__COMM) {
-                is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+                return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
             }
         }
     }

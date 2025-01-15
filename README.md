@@ -12,9 +12,9 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
 
 **EVB-2** - Multi-purpose hardware evaluation and development kit for the uINS.  The EVB-2 includes the uINS-G2 with Dual GNSS, RTK heading / positioning, onboard logging to micro SD card, 915MHz XBee radio for RTK base corrections, WiFi and BLE interface, serial and SPI communications to uINS interface, and Microchip SAME70 processor as communications bridge and user project development environment.   
 
-**ROS** - The `inertial-sense-sdk/ros` directory contains the [ROS wrapper node implementation](ros) for the Inertial Sense IMX product line.
+**ROS** - The `inertial-sense-sdk/ros` directory contains the [ROS wrapper node implementation](ROS/ros1) for the Inertial Sense IMX product line.
 
-**ROS 2** - The `inertial-sense-sdk/ros2` directory contains the [ROS 2 wrapper node implementation](ros2) for the Inertial Sense IMX product line.
+**ROS 2** - The `inertial-sense-sdk/ros2` directory contains the [ROS 2 wrapper node implementation](ROS/ros2) for the Inertial Sense IMX product line.
 
 ### Documents
 
@@ -41,7 +41,7 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
 
 **MIT LICENSE**
 
-Copyright 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -51,4 +51,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
-(c) 2014-2024 Inertial Sense, Inc.
+(c) 2014-2025 Inertial Sense, Inc.

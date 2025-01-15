@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -307,7 +307,7 @@ int comManagerSendData(port_handle_t port, const void* data, uint16_t did, uint1
 * @param pFlags Additional packet flags if needed.
 * @return 0 if success, anything else if failure
 */
-int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset = 0);
+extern "C" int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset = 0);
 
 /**
 * Write bare data directly to the serial port.

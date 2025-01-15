@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -203,6 +203,19 @@ int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, 
  * @return 1 if open, 0 if not open
  */
 int serialPortIsOpen(port_handle_t port);
+
+/**
+ * check if the port is open, but avoids an expensive OS/kernel call is possible.
+ * If the internal handle is NOT null, and there are recent errors on the port
+ * this function will return true, indicating that the port is open.  However,
+ * it should be noted that the port may still be closed by the OS or another
+ * mechanism which may not be reflected in the local state, which could cause
+ * this to report incorrectly and then leading to a future error state when
+ * operating on the closed port.
+ * @param port
+ * @return 1 if open, 0 if not open
+ */
+int serialPortIsOpenQuick(port_handle_t port);
 
 /**
  * close the serial port - this object can be re-used by calling open again

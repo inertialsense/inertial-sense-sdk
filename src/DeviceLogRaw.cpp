@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -25,20 +25,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+cDeviceLogRaw::cDeviceLogRaw() : cDeviceLog() { initCommInstance(); }
+cDeviceLogRaw::cDeviceLogRaw(const ISDevice *dev) : cDeviceLog(dev) { initCommInstance(); }
+cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) { initCommInstance(); };
 
-cDeviceLogRaw::cDeviceLogRaw() : cDeviceLog()
-{
+void cDeviceLogRaw::initCommInstance() {
     is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
+    is_comm_enable_protocol(&m_comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&m_comm, _PTYPE_NMEA);
+    is_comm_enable_protocol(&m_comm, _PTYPE_RTCM3);
+    is_comm_enable_protocol(&m_comm, _PTYPE_UBLOX);
+    // is_comm_register_msg_handler(&m_comm, _PTYPE_SONY, dummyGenericProtocolHandler);
 }
-
-cDeviceLogRaw::cDeviceLogRaw(const ISDevice *dev) : cDeviceLog(dev) {
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
-}
-
-cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
-};
-
 
 void cDeviceLogRaw::InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
@@ -52,6 +50,11 @@ void cDeviceLogRaw::InitDeviceForWriting(const std::string& timestamp, const std
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
+void cDeviceLogRaw::InitDeviceForReading()
+{
+    m_chunk.Clear();
+    cDeviceLog::InitDeviceForReading();
+}
 
 bool cDeviceLogRaw::CloseAllFiles()
 {

@@ -3,13 +3,14 @@
 echo Installing Log Inspector dependencies...
 echo.
 
-:: Set SDK_DIR as  directory path
+:: Set SDK_DIR as directory path
 for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
-cd %SDK_DIR%\python\
+call %SDK_DIR%\scripts\lib\activate_python_venv.bat
 
 :: Install dependencies
-pip install logInspector/
-cd logInspector
-python setup.py build_ext --inplace
+pip3 install setuptools pybind11 wheel
+if %errorlevel% neq 0 ( echo Error installing Log Inspector dependencies! & exit /b %errorlevel% )
 
-pause
+pip3 install %SDK_DIR%/python/
+if %errorlevel% neq 0 ( echo Error installing Log Inspector dependencies! & exit /b %errorlevel% )
+

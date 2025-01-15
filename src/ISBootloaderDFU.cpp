@@ -8,7 +8,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -325,7 +325,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
 
     uint32_t bytes_written_total = 0;
 
-    status_update("(DFU) Erasing flash...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(DFU) Erasing flash...");
 
     // Erase memory (only erase pages where firmware lives)
     for (size_t i = 0; i < image_sections; i++)
@@ -367,7 +367,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
 
     bytes_written_total = 0;
 
-    status_update("(DFU) Programming flash...", IS_LOG_LEVEL_INFO);
+    logStatus(IS_LOG_LEVEL_INFO, "(DFU) Programming flash...");
 
     // Write memory
     for (size_t i = 0; i < image_sections; i++)

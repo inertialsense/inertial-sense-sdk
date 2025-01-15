@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -10,8 +10,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+
 #include "cltool.h"
 #include <string.h>
+
+#include "version/version.h"
 #include "ISDataMappings.h"
 
 using namespace std;
@@ -110,9 +113,9 @@ bool read_did_argument(stream_did_t *dataset, string s)
 
 string cltool_version()
 {
-    string info;
-#if defined(IS_SDK_DESCRIBE_TAG)
-    info += string("") + IS_SDK_DESCRIBE_TAG;
+    string info("Version ");
+#if defined(IS_SDK_REPO_VERSION)
+    info += string("") + IS_SDK_REPO_VERSION;
 #endif
 #if defined(IS_SDK_BUILD_DATE) && defined(IS_SDK_BUILD_TIME)
     info += string(" ") + IS_SDK_BUILD_DATE + " " + IS_SDK_BUILD_TIME;
@@ -159,6 +162,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.nmeaMessage = "";
     g_commandLineOptions.updateBootloaderFilename = "";
     g_commandLineOptions.forceBootloaderUpdate = false;
+    g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
 
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
@@ -598,13 +602,24 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-verbose"))
         {
-            g_commandLineOptions.verboseLevel = IS_LOG_LEVEL_INFO;
-            if (a[8] == '=') {
-                g_commandLineOptions.verboseLevel = atoi(&a[9]);
+            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_INFO;
+            if (a[8] == '=')
+            {
+                switch (a[9])
+                {
+                    case 'e': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_ERROR; break;
+                    case 'w': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_WARN; break;
+                    case 'i': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO; break;
+                    case 'I': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_INFO; break;
+                    case 'd': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_DEBUG; break;
+                    case 'D': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_DEBUG; break;
+                    default: g_commandLineOptions.verboseLevel = atoi(&a[9]); break;
+                }
             } else {
-                for (int i = 8; (a[i] == '+' || a[i] == '-'); i++) {
-                    if (a[i] == '+') g_commandLineOptions.verboseLevel++;
-                    else g_commandLineOptions.verboseLevel--;
+                const char* p = &a[8];
+                while (*p == '+' || *p == '-' ) {
+                    g_commandLineOptions.verboseLevel += (*p == '+' ? 1 : -1);
+                    p++;
                 }
             }
         }

@@ -3,7 +3,7 @@
  * @brief ${BRIEF_DESC}
  *
  * @author Kyle Mallory on 1/15/24.
- * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <fstream>
@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
-#include "test_utils.h"
+#include "test_data_utils.h"
 
 #include "ISFileManager.h"
 #include "ISFirmwareUpdater.h"

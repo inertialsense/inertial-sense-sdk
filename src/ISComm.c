@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -167,17 +167,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsC
     c->rxBuf.start = buffer;
     c->rxBuf.end = buffer + bufferSize;
     c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
-    
-    // Set parse enable flags
-    c->config.enabledMask = 
-        ENABLE_PROTOCOL_ISB
-        | ENABLE_PROTOCOL_NMEA
-        | ENABLE_PROTOCOL_UBLOX
-        | ENABLE_PROTOCOL_RTCM3
-        // | ENABLE_PROTOCOL_SONY
-        // | ENABLE_PROTOCOL_SPARTN
-        ;
-    
+
     c->rxPkt.data.ptr = c->rxBuf.start;
     c->rxErrorState = 1;
 
@@ -197,23 +187,65 @@ is_comm_instance_t* is_comm_get_port_instance(port_handle_t port) {
     return NULL;
 }
 
+/**
+ * Registering ISB handler for given comm instance
+ * 
+ * @return handler on success
+ * @return NULL if port invalid 
+ */
 pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler) {
     if (!comm)
         return NULL;
 
     pfnIsCommIsbDataHandler priorCb = comm->cb.isbData;
     comm->cb.isbData = cbHandler;
+    comm->cb.protocolMask |= ENABLE_PROTOCOL_ISB;
     return priorCb;
 }
 
+/**
+ * Registering ISB handler for given port
+ * 
+ * @return handler on success
+ * @return NULL if port invalid 
+ */
+pfnIsCommIsbDataHandler is_comm_register_port_isb_handler(port_handle_t port, pfnIsCommIsbDataHandler cbHandler)
+{
+    if (port)
+        return is_comm_register_isb_handler(&COMM_PORT(port)->comm,  cbHandler);
+
+    return NULL;
+}
+
+/**
+ * Registers msg handler for specific comm instance and protocol type
+ * 
+ * @return handler on success
+ * @return NULL if port invalid 
+ */
 pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler) {
     if (!comm || (ptype < _PTYPE_FIRST_DATA) || (ptype > _PTYPE_LAST_DATA))
         return NULL;
 
     pfnIsCommGenMsgHandler priorCb = comm->cb.generic[ptype];
     comm->cb.generic[ptype] = cbHandler;
+    comm->cb.protocolMask |= (int)(0x01) << ptype;
     return priorCb;
 }
+
+/**
+ * Registers msg handler for specific port and protocol type
+ * 
+ * @return handler on success
+ * @return NULL if port invalid 
+ */
+pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int ptype, pfnIsCommGenMsgHandler cbHandler) {
+    if (port)
+        return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+
+    return NULL;
+}
+
 
 void is_comm_register_callbacks(is_comm_instance_t* c, is_comm_callbacks_t *callbacks) {
     if (callbacks)
@@ -225,6 +257,33 @@ void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *ca
         is_comm_register_callbacks(&COMM_PORT(port)->comm, callbacks);
 }
 
+void is_comm_enable_protocol(is_comm_instance_t* instance, protocol_type_t ptype) {
+    if (instance)
+        instance->cb.protocolMask |= (0x01 << ptype);
+}
+
+void is_comm_disable_protocol(is_comm_instance_t* instance, protocol_type_t ptype) {
+    if (instance)
+        instance->cb.protocolMask &= ~(0x01 << ptype);
+}
+
+void is_comm_set_protocol_mask(is_comm_instance_t* instance, uint32_t protocolMask) {
+    if (instance)
+        instance->cb.protocolMask = protocolMask;
+}
+
+uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance) {
+    uint32_t protocols = 0;
+    if (instance->cb.protocolMask)
+        return instance->cb.protocolMask;
+
+    if (instance->cb.isbData) protocols |= _PTYPE_INERTIAL_SENSE_DATA;
+    for (int i = _PTYPE_FIRST_DATA ; i < _PTYPE_LAST_DATA; i++) {
+        if (instance->cb.generic[i]) protocols |= (0x1 << i);
+    }
+
+    return protocols;
+}
 
 int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
@@ -235,17 +294,7 @@ int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
     if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -1; }
     if (c->rxBuf.tail < c->rxBuf.start || c->rxBuf.tail > c->rxBuf.end) { return -1; }
     if (c->rxBuf.scan < c->rxBuf.start || c->rxBuf.scan > c->rxBuf.end) { return -1; }
-    
-    // Set parse enable flags
-    if (c->config.enabledMask != 
-        (ENABLE_PROTOCOL_ISB
-        | ENABLE_PROTOCOL_NMEA
-        | ENABLE_PROTOCOL_UBLOX
-        | ENABLE_PROTOCOL_RTCM3
-        // | ENABLE_PROTOCOL_SONY
-        // | ENABLE_PROTOCOL_SPARTN 
-      )) { return -1; }
-    
+
     if (c->rxPkt.data.ptr != NULL && (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end)) { return -1; }
 
     // Everything matches
@@ -997,16 +1046,16 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 {
     is_comm_buffer_t *buf = &(c->rxBuf);
 
-#if PKT_PARSER_TIMEOUT_MS 
-    if (c->processPkt)
-    {   // Parse in progress
-        if (timeMs > c->parser.timeMs + PKT_PARSER_TIMEOUT_MS)
-        {   // Parser timeout.  Increment head and reset parser.
-            c->rxBuf.head++;
-            is_comm_reset_parser(c);
+    #if PKT_PARSER_TIMEOUT_MS 
+        if (c->processPkt)
+        {   // Parse in progress
+            if (timeMs > c->parser.timeMs + PKT_PARSER_TIMEOUT_MS)
+            {   // Parser timeout.  Increment head and reset parser.
+                c->rxBuf.head++;
+                is_comm_reset_parser(c);
+            }
         }
-    }
-#endif
+    #endif
 
     // Search for packet
     while (buf->scan < buf->tail)
@@ -1014,18 +1063,18 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         if (c->processPkt == NULL)
         {   // Scan for packet start
             switch (*(buf->scan))
-            {            
-                case PSC_ISB_PREAMBLE_BYTE1:    if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)    { setParserStart(c, processIsbPkt); }      break;
-                case PSC_NMEA_START_BYTE:       if (c->config.enabledMask & ENABLE_PROTOCOL_NMEA)   { setParserStart(c, processNmeaPkt); }     break;
-                case UBLOX_START_BYTE1:         if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)  { setParserStart(c, processUbloxPkt); }    break;
-                case RTCM3_START_BYTE:          if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)  { setParserStart(c, processRtcm3Pkt); }    break;
-                case SPARTN_START_BYTE:         if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN) { setParserStart(c, processSpartnByte); }  break;
-                case SONY_START_BYTE:           if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)   { setParserStart(c, processSonyByte); }    break;
+            {
+                case PSC_ISB_PREAMBLE_BYTE1:    if (c->cb.protocolMask & ENABLE_PROTOCOL_ISB)       { setParserStart(c, processIsbPkt); }      break;
+                case PSC_NMEA_START_BYTE:       if (c->cb.protocolMask & ENABLE_PROTOCOL_NMEA)      { setParserStart(c, processNmeaPkt); }     break;
+                case UBLOX_START_BYTE1:         if (c->cb.protocolMask & ENABLE_PROTOCOL_UBLOX)     { setParserStart(c, processUbloxPkt); }    break;
+                case RTCM3_START_BYTE:          if (c->cb.protocolMask & ENABLE_PROTOCOL_RTCM3)     { setParserStart(c, processRtcm3Pkt); }    break;
+                case SPARTN_START_BYTE:         if (c->cb.protocolMask & ENABLE_PROTOCOL_SPARTN)    { setParserStart(c, processSpartnByte); }  break;
+                case SONY_START_BYTE:           if (c->cb.protocolMask & ENABLE_PROTOCOL_SONY)      { setParserStart(c, processSonyByte); }    break;
                 default:                        
                     if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                     { 
                         return _PTYPE_PARSE_ERROR; 
-                    }                                       
+                    }
                     break;
             }
         }
@@ -1061,6 +1110,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
     protocol_type_t ptype;
     while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
     {
+        int notConsumed = -1;  // if 0, this message was successfully processed by a protocol-specific handler; Do not process it again with the ALL callback
         // Found valid packet
         switch (ptype)
         {
@@ -1069,29 +1119,20 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 {
                     p_data_t data;
                     is_comm_to_isb_p_data(comm, &data);
-                    comm->cb.isbData(&data, port);
+                    notConsumed = comm->cb.isbData(&data, port);
                 }
                 break;
             case _PTYPE_INERTIAL_SENSE_ACK:
             case _PTYPE_INERTIAL_SENSE_CMD:
                 break;
-
-    //        case _PTYPE_NMEA:
-    //            if (comm->cb.nmea)    {
-    //                comm->cb.nmea(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
-    //            } break;
-    //        case _PTYPE_RTCM3:          if (comm->cb.rtcm3)   { comm->cb.rtcm3(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-    //        case _PTYPE_SPARTN:         if (comm->cb.sprtn)   { comm->cb.sprtn(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-    //        case _PTYPE_UBLOX:          if (comm->cb.ublox)   { comm->cb.ublox(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-    //        case _PTYPE_SONY:           if (comm->cb.sony)    { comm->cb.sony(comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
             default:
                 if (comm->cb.generic[ptype]) {
-                    comm->cb.generic[ptype](comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
+                    notConsumed = comm->cb.generic[ptype](comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
                 }
                 break;
         }
 
-        if (comm->cb.all)
+        if (comm->cb.all && notConsumed)
         {
             comm->cb.all(ptype, &(comm->rxPkt), port);
         }

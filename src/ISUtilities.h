@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -192,7 +192,7 @@ uint8_t getHexValue(unsigned char hex);
 * @param info the parameter to pass to the thread function
 * @return the thread handle
 */
-void* threadCreateAndStart(void(*function)(void* info), void* info);
+void* threadCreateAndStart(void(*function)(void* info), void* info, const char* threadName = nullptr);
 
 /**
 * Join a thread with this thread, waiting for it to finish, then free the thread

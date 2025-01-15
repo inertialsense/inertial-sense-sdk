@@ -5,6 +5,7 @@
 #include "ring_buffer.h"
 #include "protocol_nmea.h"
 
+#include "test_data_utils.h"
 #include "test_serial_utils.h"
 
 #if 0
@@ -45,7 +46,7 @@ typedef struct
         dev_info_t          devInfo;
         nvm_flash_cfg_t     nvmFlashCfg;
         nmea_msgs_t         nmeaMsgs;
-    }                        msgs = { 0 };
+    }                       msgs = { 0 };
 
     // Used to simulate serial ports
 //    ring_buf_t            portRxBuf;
@@ -71,23 +72,8 @@ static test_data_t tcm = {};
 static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
-
-/*
-static int portRead(port_handle_t port, unsigned char* buf, int len)
-{
-    return ringBufRead(&tcm.portRxBuf, buf, len);
-}
-
-static int portWrite(port_handle_t port, const unsigned char* buf, int len)
-{
-    if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
-    {   // Buffer overflow
-        DEBUG_PRINTF("tcm.portTxBuf ring buffer overflow: %d !!!\n", ringBufUsed(&tcm.portTxBuf) + len);
-        EXPECT_TRUE(false);
-    }
-    return len;
-}
-*/
+static int dummyIsbProtocolHandler(p_data_t* data, port_handle_t port) { return 0; }
+static int dummyGenericProtocolHandler(const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
 
 static int postRxRead(p_data_t* dataRead, port_handle_t port)
 {
@@ -128,9 +114,6 @@ static int msgHandlerBinaryData(p_data_t* msg, port_handle_t port)
 // return 1 on success, 0 on failure
 static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
 {
-//     comWrite(port, line, lineLength); // echo back
-//     time_delay_msec(50); // give time for the echo to come back
-
     if (msgSize == 10)
     {   // 4 character commands (i.e. "$STPB*14\r\n")
         switch (getNmeaMsgId(msg, msgSize))
@@ -299,16 +282,10 @@ static bool initComManager(test_data_t &t)
     t.cm.registerProtocolHandler(_PTYPE_NMEA, msgHandlerNmea);
     t.cm.registerProtocolHandler(_PTYPE_UBLOX, msgHandlerUblox);
     t.cm.registerProtocolHandler(_PTYPE_RTCM3, msgHandlerRtcm3);
+    t.cm.registerProtocolHandler(_PTYPE_SPARTN, dummyGenericProtocolHandler);
 
     t.cm.registerDid(DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
     t.cm.registerDid(DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
-
-    // Enable/disable protocols
-    s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);
-    s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
-    s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
-    s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
-    s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
 
     t.cm.registerPort(TEST0_PORT);
 
@@ -318,11 +295,6 @@ static bool initComManager(test_data_t &t)
 bool init(test_data_t &t)
 {
     initTestPorts();
-
-    // Init Port Buffers
-    // ringBufInit(&(t.portTxBuf), t.portTxBuffer, sizeof(t.portTxBuffer), 1);
-    // ringBufInit(&(t.portRxBuf), t.portRxBuffer, sizeof(t.portRxBuffer), 1);
-
     return initComManager(t);
 }
 
@@ -633,7 +605,8 @@ void parseDequeFromPort(std::deque<data_holder_t> &testDeque, port_handle_t port
 {
     is_comm_instance_t  comm;
     uint8_t             comm_buffer[2048] = { 0 };
-    is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use passed port
+    init_test_comm_instance(&comm, comm_buffer, sizeof(comm_buffer));
+
     unsigned char c;
     protocol_type_t ptype;
     uDatasets dataWritten;
@@ -676,53 +649,6 @@ void parseDequeFromPort(std::deque<data_holder_t> &testDeque, port_handle_t port
     }
 }
 
-
-/*
-void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
-{
-    is_comm_instance_t  comm;
-    uint8_t             comm_buffer[2048] = { 0 };
-    is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
-    unsigned char c;
-    protocol_type_t ptype;
-    uDatasets dataWritten;
-
-    while (ringBufUsed(&t.portTxBuf)>0)
-    {
-        ringBufRead(&t.portTxBuf, &c, 1);
-
-        if ((ptype = is_comm_parse_byte(&comm, c)) != _PTYPE_NONE)
-        {
-            data_holder_t td = testDeque.front();
-            testDeque.pop_front();
-
-            switch (ptype)
-            {
-            case _PTYPE_INERTIAL_SENSE_DATA:
-                // Found data
-                DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
-                is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
-                EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
-                break;
-
-            case _PTYPE_UBLOX:    DEBUG_PRINTF("Found data: UBLOX\n");
-                break;
-            case _PTYPE_RTCM3:    DEBUG_PRINTF("Found data: RTCM3\n");
-                break;
-
-            case _PTYPE_NMEA:
-                printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
-                break;
-            }
-
-            EXPECT_EQ(td.size, comm.rxPkt.data.size);
-            EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, td.size) == 0);
-        }
-    }
-}
-*/
-
-
 static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 {
     uint8_t *buf = new uint8_t[len];
@@ -748,15 +674,16 @@ TEST(ComManager, BasicTxTest)
         // Send data - writes data to tcm.txBuf
         switch (td.ptype)
         {
-        default: // IS binary
-            tcm.cm.sendDataNoAck(TEST0_PORT, &td.data, td.did, td.size, 0);
-            break;
-
-        case _PTYPE_NMEA:
-        case _PTYPE_UBLOX:
-        case _PTYPE_RTCM3:
-            portWrite(TEST0_PORT, td.data.buf, td.size);
-            break;
+            case _PTYPE_INERTIAL_SENSE_DATA:
+                tcm.cm.sendDataNoAck(TEST0_PORT, &td.data, td.did, td.size, 0);
+                break;
+            case _PTYPE_NMEA:
+            case _PTYPE_UBLOX:
+            case _PTYPE_RTCM3:
+                portWrite(TEST0_PORT, td.data.buf, td.size);
+                break;
+            default: // IS binary
+                break;
         }
 
     }

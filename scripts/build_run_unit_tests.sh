@@ -1,10 +1,7 @@
 #!/bin/bash
+cd "$(dirname "$(realpath $0)")" > /dev/null
+source lib/activate_python_venv.sh
 
-pushd "$(dirname "$(realpath $0)")" > /dev/null
-
-./build_unit_tests.sh
-
-../tests/build/IS-SDK_unit-tests 
-
-popd > /dev/null
+# Return if non-zero error code
+python3 build_manager.py IS-SDK_unit-tests ../tests --test || exit $?
 

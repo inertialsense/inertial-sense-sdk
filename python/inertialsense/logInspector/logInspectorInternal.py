@@ -70,11 +70,19 @@ class logInspectorInternal(LogInspectorWindow):
         self.page = 0
         self.exePath = __file__
 
+    def createListSystem(self):
+        super(logInspectorInternal, self).createListSystem()
+        self.addListItem('General Fault Codes', 'genFaultCodes')
+        self.addListItem('Port Monitor (General)', 'portMonitor')
+        self.addListItem('GPX Port Monitor (behind IMX)', 'gpxPortMonitor')
+
     def createListIns(self):
         super(logInspectorInternal, self).createListIns()
         self.addListItem('EKF Biases', 'ekfBiases')
 
     def createListSensors(self):
+        self.addListItem('IMU3 PQR', 'imu3PQR')
+        self.addListItem('IMU3 Accel', 'imu3Acc')
         super(logInspectorInternal, self).createListSensors()
         self.addListItem('Allan Var. PQR', 'allanVariancePQR')
         self.addListItem('Allan Var. Accel', 'allanVarianceAcc')
@@ -131,7 +139,8 @@ class logInspectorInternal(LogInspectorWindow):
 
     def chooseDevs(self):
         try:
-            dlg = ChooseDevsDialog(self.plotter, self)
+            for plotter in self.plotter:
+                dlg = ChooseDevsDialog(plotter, self)
             dlg.show()
             dlg.exec_()
         except Exception as e:
@@ -148,8 +157,8 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createPlotSelection(self):
         super(logInspectorInternal, self).createPlotSelection()
-        self.addButton('RMS', self.RMS, layout=self.LayoutBelowPlotSelection)
-        self.addButton('Devices', self.chooseDevs, layout=self.LayoutBelowPlotSelection)
+        self.addButton('RMS', self.RMS, layout=self.LayoutVButtons, tooltip="Compute RMS Test")
+        self.addButton('Devices', self.chooseDevs, layout=self.LayoutVButtons, tooltip="Show/Hide devices")
 
     def createListGps(self):
         super(logInspectorInternal, self).createListGps()

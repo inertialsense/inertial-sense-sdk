@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -596,10 +596,10 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
     if (comm == NULL)
-        return "";
+        return "\n";
 
     std::stringstream ss;
-    ss << "is_comm stats:  Rx " << comm->rxPktCount;
+    ss << "is_comm stats:  Rx " << std::setw (10) << comm->rxPktCount;
 
     if (comm->rxErrorCount)
     {
@@ -631,7 +631,7 @@ string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
             }
         }
         ss << endl;
-        ss << HLINE_DIVIDER;
+        ss << HLINE_DIVIDER << endl;
     }
     else
     {
@@ -765,7 +765,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
             else
             {
                 std::ostringstream oss;
-                oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id));
+                oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id)) << std::endl;
                 str = oss.str();
             }
             break;
@@ -1752,7 +1752,8 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%3d) %s:\n", hdr.id, cISDataMappings::DataName(hdr.id));
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 
 #if DISPLAY_DELTA_TIME==1
     static double lastTime[2] = { 0 };

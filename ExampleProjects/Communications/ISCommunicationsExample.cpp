@@ -141,6 +141,9 @@ int main(int argc, char* argv[])
 
     // Initialize the comm instance, sets up state tracking, packet parsing, etc.
     is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+
 
     // STEP 3: Initialize and open serial port
 

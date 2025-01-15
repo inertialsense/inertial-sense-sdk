@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -56,6 +56,11 @@ void cDeviceLogSerial::InitDeviceForWriting(const std::string& timestamp, const 
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
+void cDeviceLogSerial::InitDeviceForReading()
+{
+    m_chunk.Clear();
+    cDeviceLog::InitDeviceForReading();
+}
 
 bool cDeviceLogSerial::CloseAllFiles() {
     cDeviceLog::CloseAllFiles();
@@ -68,7 +73,6 @@ bool cDeviceLogSerial::CloseAllFiles() {
 
     return true;
 }
-
 
 bool cDeviceLogSerial::FlushToFile() {
     cDeviceLog::FlushToFile();

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -38,7 +38,7 @@ typedef uint32_t eDataIDs;
 #define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
 #define DID_IMX_DEV_INFO                (DID_DEV_INFO)
-#define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information */
+#define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
 #define DID_PIMU                        (eDataIDs)3  /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
@@ -385,18 +385,18 @@ enum eHdwStatusFlags
     /** IMX pins G5-G8 are configure for SPI use */
     HDW_STATUS_SPI_INTERFACE_ENABLED            = (int)0x08000000,
 
-    /** Fault reset cause */
-    HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,
-    /** Reset from Backup mode (low-power state w/ CPU off) */
-    HDW_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
-    /** Reset from Watchdog */
-    HDW_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
-    /** Reset from Software */
-    HDW_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
-    /** Reset from Hardware (NRST pin low) */
-    HDW_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
+    /** Cause of system reset */
+    HDW_STATUS_RESET_CAUSE_MASK                 = (int)0x70000000,
+    /** Reset from backup mode (low-power state w/ CPU off) */
+    HDW_STATUS_RESET_CAUSE_BACKUP_MODE          = (int)0x10000000,
+    /** Reset from watchdog fault */
+    HDW_STATUS_RESET_CAUSE_WATCHDOG_FAULT       = (int)0x20000000,
+    /** Reset from software */
+    HDW_STATUS_RESET_CAUSE_SOFT                 = (int)0x30000000,
+    /** Reset from hardware (NRST pin low) */
+    HDW_STATUS_RESET_CAUSE_HDW                  = (int)0x40000000,
 
-    /** Critical System Fault - CPU error */
+    /** Critical System Fault, CPU error.  (see DID_SYS_FAULT.status, eSysFaultStatus) */
     HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
@@ -1428,51 +1428,58 @@ typedef struct PACKED
 enum eGenFaultCodes
 {
     /*! INS state limit overrun - UVW */
-    GFC_INS_STATE_ORUN_UVW                = 0x00000001,
+    GFC_INS_STATE_ORUN_UVW                  = 0x00000001,
     /*! INS state limit overrun - Latitude */
-    GFC_INS_STATE_ORUN_LAT                = 0x00000002,
+    GFC_INS_STATE_ORUN_LAT                  = 0x00000002,
     /*! INS state limit overrun - Altitude */
-    GFC_INS_STATE_ORUN_ALT                = 0x00000004,
+    GFC_INS_STATE_ORUN_ALT                  = 0x00000004,
     /*! Unhandled interrupt */
-    GFC_UNHANDLED_INTERRUPT                = 0x00000010,
+    GFC_UNHANDLED_INTERRUPT                 = 0x00000010,
     /*! GNSS system runtime fault */
-    GFC_GNSS_SYS_FAULT                    = 0x00000020,
+    GFC_GNSS_SYS_FAULT                      = 0x00000020,
     /*! GNSS Tx limited */
-    GFC_GNSS_TX_LIMITED                    = 0x00000040,
+    GFC_GNSS_TX_LIMITED                     = 0x00000040,
     /*! GNSS Rx overrun */
-    GFC_GNSS_RX_OVERRUN                    = 0x00000080,
+    GFC_GNSS_RX_OVERRUN                     = 0x00000080,
     /*! Fault: sensor initialization  */
-    GFC_INIT_SENSORS                    = 0x00000100,
+    GFC_INIT_SENSORS                        = 0x00000100,
     /*! Fault: SPI bus initialization  */
-    GFC_INIT_SPI                        = 0x00000200,
+    GFC_INIT_SPI                            = 0x00000200,
     /*! Fault: SPI configuration  */
-    GFC_CONFIG_SPI                        = 0x00000400,
+    GFC_CONFIG_SPI                          = 0x00000400,
     /*! Fault: GNSS1 init  */
-    GFC_GNSS1_INIT                        = 0x00000800,
+    GFC_GNSS1_INIT                          = 0x00000800,
     /*! Fault: GNSS2 init  */
-    GFC_GNSS2_INIT                        = 0x00001000,
+    GFC_GNSS2_INIT                          = 0x00001000,
     /*! Flash failed to load valid values */
-    GFC_FLASH_INVALID_VALUES            = 0x00002000,
+    GFC_FLASH_INVALID_VALUES                = 0x00002000,
     /*! Flash checksum failure */
-    GFC_FLASH_CHECKSUM_FAILURE            = 0x00004000,
+    GFC_FLASH_CHECKSUM_FAILURE              = 0x00004000,
     /*! Flash write failure */
-    GFC_FLASH_WRITE_FAILURE                = 0x00008000,
+    GFC_FLASH_WRITE_FAILURE                 = 0x00008000,
     /*! System Fault: general */
-    GFC_SYS_FAULT_GENERAL                = 0x00010000,
+    GFC_SYS_FAULT_GENERAL                   = 0x00010000,
     /*! System Fault: CRITICAL system fault (see DID_SYS_FAULT) */
-    GFC_SYS_FAULT_CRITICAL                = 0x00020000,
+    GFC_SYS_FAULT_CRITICAL                  = 0x00020000,
     /*! Sensor(s) saturated */
-    GFC_SENSOR_SATURATION                 = 0x00040000,
+    GFC_SENSOR_SATURATION                   = 0x00040000,
     /*! Fault: IMU initialization */
-    GFC_INIT_IMU                        = 0x00100000,
+    GFC_INIT_IMU                            = 0x00100000,
     /*! Fault: Barometer initialization */
-    GFC_INIT_BAROMETER                    = 0x00200000,
+    GFC_INIT_BAROMETER                      = 0x00200000,
     /*! Fault: Magnetometer initialization */
-    GFC_INIT_MAGNETOMETER                = 0x00400000,
+    GFC_INIT_MAGNETOMETER                   = 0x00400000,
     /*! Fault: I2C initialization */
-    GFC_INIT_I2C                        = 0x00800000,
+    GFC_INIT_I2C                            = 0x00800000,
     /*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
-    GFC_CHIP_ERASE_INVALID                = 0x01000000,
+    GFC_CHIP_ERASE_INVALID                  = 0x01000000,
+    /*! Fault: EKF GPS time fault */
+    GFC_EKF_GNSS_TIME_FAULT                 = 0x02000000,
+    /*! Fault: GPS receiver time fault */
+    GFC_GNSS_RECEIVER_TIME                  = 0x04000000,
+
+    /*! IMX GFC flags that relate to GPX status flags */
+    GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_SYS_FAULT | GFC_GNSS_RECEIVER_TIME,
 };
 
 
@@ -1549,6 +1556,10 @@ enum eSystemCommand
     SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
+
+    SYS_CMD_FAULT_TEST_TRIG_MALLOC                      = 57005,
+    SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                  = 57006,
+    SYS_CMD_FAULT_TEST_TRIG_WATCHDOG                    = 57007,
 };
 
 enum eSerialPortBridge
@@ -1601,7 +1612,7 @@ typedef struct PACKED
     nmeaBroadcastMsgPair_t  nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
-     *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGpsDtMs = 200 (5Hz) 
+     *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGPSDtMs = 200 (5Hz)
      *  nmeaBroadcastMsgs[0].msgID = 6, nmeaBroadcastMsgs[0].msgPeriod = 5  
      *  nmeaBroadcastMsgs[1].msgID = 7, nmeaBroadcastMsgs[1].msgPeriod = 1 */           
 
@@ -1702,14 +1713,15 @@ typedef struct PACKED
 } sys_sensors_adc_t;
 
 #if defined(IMX_5)
-    #define NUM_COM_PORTS       4    // Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
+    #define NUM_COM_PORTS           4    // Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
 #elif defined(GPX_1)
-    #define NUM_COM_PORTS   6
+    #define NUM_COM_PORTS           6
 #else
-    #define NUM_COM_PORTS   6
+    #define NUM_COM_PORTS           6
 #endif
+
 #ifndef NUM_SERIAL_PORTS
-#define NUM_SERIAL_PORTS    NUM_COM_PORTS
+#define NUM_SERIAL_PORTS        NUM_COM_PORTS
 #endif
 
 /** Realtime Message Controller (used in rmc_t). 
@@ -1740,7 +1752,7 @@ typedef struct PACKED
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
 // #define RMC_BITS_UNUSED              0x0000000000000100
 // #define RMC_BITS_UNUSED              0x0000000000000200 
-#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
 #define RMC_BITS_GPS2_RAW               0x0000000000002000      // "
@@ -1750,7 +1762,7 @@ typedef struct PACKED
 #define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
 #define RMC_BITS_IMU3_UNCAL             0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
-#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
 #define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
 #define RMC_BITS_GPS1_RTK_POS           0x0000000000800000      // "
@@ -1765,14 +1777,16 @@ typedef struct PACKED
 // #define RMC_BITS_UNUSED              0x0000000200000000
 #define RMC_BITS_IMU_MAG                0x0000000400000000
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
-#define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
-#define RMC_BITS_REFERENCE_IMU          0x0000004000000000        // DID_FLASH_CONFIG.startupNavDtMs
-#define RMC_BITS_REFERENCE_PIMU         0x0000008000000000        // "
+#define RMC_BITS_REFERENCE_IMU          0x0000004000000000      // DID_FLASH_CONFIG.startupNavDtMs
+#define RMC_BITS_REFERENCE_PIMU         0x0000008000000000      // "
 #define RMC_BITS_IMU3_RAW               0x0000010000000000
 #define RMC_BITS_IMU_RAW                0x0000020000000000
 #define RMC_BITS_GPS1_SIG               0x0000040000000000      // 1s
 #define RMC_BITS_GPS2_SIG               0x0000080000000000
+
+// GPX messages could go into a local grmc if imx memory we expanded. (TM)
 #define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000
 #define RMC_BITS_GPX_DEBUG              0x0000200000000000
 #define RMC_BITS_GPX_STATUS             0x0000400000000000
@@ -1781,6 +1795,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
+#define RMC_BITS_GPX_RTK_DBG            0x0010000000000000
 
 #define RMC_BITS_EVENT                  0x0800000000000000
 
@@ -1809,11 +1824,13 @@ typedef struct PACKED
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
+#define RMC_PRESET_IMX_PPD_IMU3_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
+                                            | RMC_BITS_IMU3_RAW)
+#define RMC_PRESET_IMX_PPD_IMU3_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
+                                            | RMC_BITS_IMU3_UNCAL)
 #define RMC_PRESET_INS                      (RMC_BITS_INS2 \
                                             | RMC_BITS_GPS1_POS \
                                             | RMC_BITS_PRESET)
-#define RMC_PRESET_IMX_PPD_IMU3             (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_UNCAL)
 #define RMC_PRESET_IMX_PPD_RTK_DBG          (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_RTK_STATE \
                                             | RMC_BITS_RTK_CODE_RESIDUAL \
@@ -1822,7 +1839,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPS1_SAT \
                                             | RMC_BITS_GPS2_SAT \
                                             | RMC_BITS_EVENT \
-                                            | RMC_BITS_GPX_STATUS)
+                                            | RMC_BITS_GPX_STATUS \
+                                            | RMC_BITS_GPX_RTK_DBG)
 #define RMC_PRESET_IMX_PPD_GROUND_VEHICLE   (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_WHEEL_ENCODER \
                                             | RMC_BITS_GROUND_VEHICLE)
@@ -2095,36 +2113,39 @@ enum GRMC_BIT_POS{
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
 #define GRMC_PRESET_GPX_DEV_INFO_PERIOD_MS      1000
+#define GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS  1000
+#define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS  1000
 #define GRMC_PRESET_GPX_RTOS_INFO_PERIOD_MS     500
 #define GRMC_PRESET_GPX_STATUS_PERIOD_MS        500
 #define GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS   500
-#define GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS  1000
-#define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS  1000
 #define GRMC_PRESET_GPX_PORT_MON_PERIOD_MS      500
 
-#define GRMC_PRESET_GPX_IMX             (GRMC_BITS_PRESET \
+#define GRMC_PRESET_GPX_BASE            (GRMC_BITS_PRESET \
                                         /*| GRMC_BITS_DEV_INFO*/ \
                                         /*| GRMC_BITS_RTOS_INFO*/ \
                                         | GRMC_BITS_STATUS \
-                                        /*| GRMC_BITS_DEBUG_ARRAY*/ \
-                                        | GRMC_BITS_GPS1_POS \
-                                        | GRMC_BITS_GPS2_POS \
+                                        /*| GRMC_BITS_DEBUG_ARRAY*/)
+
+#define GRMC_PRESET_GPX_GPS1            (GRMC_BITS_GPS1_POS \
                                         | GRMC_BITS_GPS1_VEL \
-                                        | GRMC_BITS_GPS2_VEL \
                                         | GRMC_BITS_GPS1_SAT \
-                                        | GRMC_BITS_GPS2_SAT \
                                         | GRMC_BITS_GPS1_SIG \
-                                        | GRMC_BITS_GPS2_SIG \
                                         | GRMC_BITS_GPS1_VERSION \
+                                        /*| GRMC_BITS_GPS1_RTK_POS*/ \
+                                        | GRMC_BITS_GPS1_RAW)
+
+#define GRMC_PRESET_GPX_GPS2            (GRMC_BITS_GPS2_POS \
+                                        | GRMC_BITS_GPS2_VEL \
+                                        | GRMC_BITS_GPS2_SAT \
+                                        | GRMC_BITS_GPS2_SIG \
                                         | GRMC_BITS_GPS2_VERSION \
-                                        | GRMC_BITS_GPS1_RTK_POS \
-                                        | GRMC_BITS_GPS1_RTK_POS_REL\
-                                        | GRMC_BIT_POS_GPS1_RTK_POS_MISC \
+                                        | GRMC_BITS_GPS2_RAW)
+
+#define GRMC_PRESET_GPX_IMX             ( GRMC_PRESET_GPX_BASE\
+                                        | GRMC_PRESET_GPX_GPS1 \
+                                        | GRMC_PRESET_GPX_GPS2 \
                                         | GRMC_BITS_GPS2_RTK_CMP_REL \
-                                        | GRMC_BITS_GPS2_RTK_CMP_MISC \
-                                        | GRMC_BITS_GPS1_RAW \
-                                        | GRMC_BITS_GPS2_RAW \
-                                        | GRMC_BITS_GPS_BASE_RAW)
+                                        | GRMC_BITS_GPS2_RTK_CMP_MISC)
 
 #define GRMC_PRESET_GPX_IMX_RTK_DBG     (GRMC_PRESET_GPX_IMX | GRMC_BITS_DID_RTK_DEBUG)
 
@@ -3334,7 +3355,7 @@ typedef struct PACKED
     uint32_t                lastLlaWeek;
 
     /** Distance between current and last LLA that triggers an update of lastLla  */
-    float                    lastLlaUpdateDistance;
+    float                   lastLlaUpdateDistance;
 
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t                ioConfig;
@@ -4462,8 +4483,17 @@ enum eGpxStatus
     GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET               = 0,
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
+    /** Rx communications not dectected in last 30 seconds */
+    GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000010,
+    GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000020,
+    GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000040,
+    GPX_STATUS_USB_RX_TRAFFIC_NOT_DECTECTED             = (int)0x00000080,
+
     /** Reserved */
     GPX_STATUS_RESERVED_1                               = (int)0x00010000,
+
+    /** GNSS receiver time fault **/
+    GPX_STATUS_GNSS_RCVR_TIME_FAULT                     = (int)0x00100000,
 
     /** DMA Fault detected **/
     GPX_STATUS_DMA_FAULT                                = (int)0x00800000,
@@ -4564,18 +4594,35 @@ enum eGPXHdwStatusFlags
     /** Time synchronized by GPS PPS */
     GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x08000000,
 
-    /** Fault reset cause */
-    GPX_HDW_STATUS_FAULT_RESET_MASK                     = (int)0x70000000,    
+    /** Cause of system reset */
+    GPX_HDW_STATUS_RESET_CAUSE_MASK                     = (int)0x70000000,    
     /** Reset from Backup mode (low-power state w/ CPU off) */
-    GPX_HDW_STATUS_FAULT_RESET_BACKUP_MODE              = (int)0x10000000,
+    GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE              = (int)0x10000000,
     /** Reset from Software */
-    GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x20000000,
+    GPX_HDW_STATUS_RESET_CAUSE_SOFT                     = (int)0x20000000,
     /** Reset from Hardware (NRST pin low) */
-    GPX_HDW_STATUS_FAULT_RESET_HDW                      = (int)0x40000000,
+    GPX_HDW_STATUS_RESET_CAUSE_HDW                      = (int)0x40000000,
     
-    /** Critical System Fault - CPU error */
+    /** Critical System Fault, CPU error.  (see DID_GPX_STATUS.status, eGpxStatus::GPX_STATUS_FATAL_MASK) */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
+
+typedef enum {
+    cxdRst_PowerOn          = 0,
+    cxdRst_Watchdog         = 1,
+    cxdRst_ErrOpCode        = 2,
+    cxdRst_ErrOpCode_FW     = 3,
+    cxdRst_ErrOpCode_init   = 4,
+    cxdRst_UserRequested    = 5,
+    cxdRst_FWUpdate         = 6,
+    cxdRst_SysCmd           = 7,
+    cxdRst_InitTimeout      = 8,
+    cxdRst_Status5          = 9,
+    cxdRst_StatusNot0       = 10,
+    cxdRst_flashUpdate      = 11,
+    cxdRst_RTKEphMissing    = 12,
+    cxdRst_Max
+} eGNSSDriverRstCause;
 
 typedef enum {
     kReset = 0,
@@ -4594,10 +4641,10 @@ typedef enum {
 
 typedef struct
 {
-    uint8_t reserved;
-    uint8_t fwUpdateState;      /** GNSS FW update status (see FirmwareUpdateState) **/
-    uint8_t initState;          /** GNSS init status (see InitSteps) **/
-    uint8_t runState;           /** GNSS run status (see eGPXGnssRunState) **/
+    uint8_t lastRstCause;   /** Last reset cause (see eGNSSDriverRstCause) **/
+    uint8_t fwUpdateState;  /** GNSS FW update status (see FirmwareUpdateState) **/
+    uint8_t initState;      /** GNSS init status (see InitSteps) **/
+    uint8_t runState;       /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
 /**
@@ -5030,11 +5077,11 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_CHAN = 25,
     EVENT_MSG_TYPE_ID_IMX_GPIO_TX_0_REG = 26,
 
-    EVENT_MSG_TYPE_ID_DMA_RX_0_INST     = 27,
-    EVENT_MSG_TYPE_ID_SER0_REG          = 28,
-    EVENT_MSG_TYPE_ID_SER0_CFG          = 29,
-    EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN     = 30,
-    EVENT_MSG_TYPE_ID_GPIO_RX_0_REG     = 31,
+    EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST = 27,
+    EVENT_MSG_TYPE_ID_GPX_SER0_REG      = 28,
+    EVENT_MSG_TYPE_ID_GPX_SER0_CFG      = 29,
+    EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN = 30,
+    EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG = 31,
 
     EVENT_MSG_TYPE_ID_FILTER_RESPONSE   = (uint16_t)-4,
     EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER  = (uint16_t)-3,
@@ -5111,37 +5158,38 @@ typedef struct
 
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
-/**
-* (DID_SYS_FAULT) System Fault Information 
-*/
-#define SYS_FAULT_STATUS_HARDWARE_RESET                 0x00000000
-#define SYS_FAULT_STATUS_USER_RESET                     0x00000001
-#define SYS_FAULT_STATUS_ENABLE_BOOTLOADER              0x00000002
-// General:
-#define SYS_FAULT_STATUS_SOFT_RESET                     0x00000010
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          0x00000020
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      0x00000040
-#define SYS_FAULT_STATUS_RTK_MISC_ERROR                 0x00000080
-#define SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE           0x00000100
-#define SYS_FAULT_STATUS_MASK_GENERAL_ERROR             0xFFFFFFF0
-// Critical: (usually associated with system reset)
-#define SYS_FAULT_STATUS_HARD_FAULT                     0x00010000
-#define SYS_FAULT_STATUS_USAGE_FAULT                    0x00020000
-#define SYS_FAULT_STATUS_MEM_MANGE                      0x00040000
-#define SYS_FAULT_STATUS_BUS_FAULT                      0x00080000
-#define SYS_FAULT_STATUS_MALLOC_FAILED                  0x00100000
-#define SYS_FAULT_STATUS_STACK_OVERFLOW                 0x00200000
-#define SYS_FAULT_STATUS_INVALID_CODE_OPERATION         0x00400000
-#define SYS_FAULT_STATUS_FLASH_MIGRATION_MARKER_UPDATED 0x00800000
-#define SYS_FAULT_STATUS_WATCHDOG_RESET                 0x01000000
-#define SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               0x02000000
-#define SYS_FAULT_STATUS_SENSOR_CALIBRATION             0x04000000
-#define SYS_FAULT_STATUS_HARDWARE_DETECTION             0x08000000
-#define SYS_FAULT_STATUS_MASK_CRITICAL_ERROR            0xFFFF0000
+enum eSysFaultStatus
+{
+    SYS_FAULT_STATUS_HARDWARE_RESET                 = 0x00000000,
+    SYS_FAULT_STATUS_USER_RESET                     = 0x00000001,
+    SYS_FAULT_STATUS_ENABLE_BOOTLOADER              = 0x00000002,
+    // General:
+    SYS_FAULT_STATUS_SOFT_RESET                     = 0x00000010,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          = 0x00000020,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      = 0x00000040,
+    SYS_FAULT_STATUS_RTK_MISC_ERROR                 = 0x00000080,
+    SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE           = 0x00000100,
+    SYS_FAULT_STATUS_MASK_GENERAL_ERROR             = 0xFFFFFFF0,
+    // Critical: (usually associated with system reset)
+    SYS_FAULT_STATUS_HARD_FAULT                     = 0x00010000,
+    SYS_FAULT_STATUS_USAGE_FAULT                    = 0x00020000,
+    SYS_FAULT_STATUS_MEM_MANGE                      = 0x00040000,
+    SYS_FAULT_STATUS_BUS_FAULT                      = 0x00080000,
+    SYS_FAULT_STATUS_MALLOC_FAILED                  = 0x00100000,
+    SYS_FAULT_STATUS_STACK_OVERFLOW                 = 0x00200000,
+    SYS_FAULT_STATUS_INVALID_CODE_OPERATION         = 0x00400000,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_MARKER_UPDATED = 0x00800000,
+    SYS_FAULT_STATUS_WATCHDOG_RESET                 = 0x01000000,
+    SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               = 0x02000000,
+    SYS_FAULT_STATUS_SENSOR_CALIBRATION             = 0x04000000,
+    SYS_FAULT_STATUS_HARDWARE_DETECTION             = 0x08000000,
+    SYS_FAULT_STATUS_MASK_CRITICAL_ERROR            = 0xFFFF0000,
+};
 
+/** (DID_SYS_FAULT) System Fault Information */ 
 typedef struct 
 {
-    /** System fault status */
+    /** System fault status (see eSysFaultStatus) */
     uint32_t status;
 
     /** Fault Type at HardFault */

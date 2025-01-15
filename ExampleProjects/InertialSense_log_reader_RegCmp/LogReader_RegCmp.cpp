@@ -19,12 +19,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define SCRATCH_SIZE    2048
 
-
 typedef struct
 {
-    uint32_t CR1;         /*!< USART Control register 1,                 Address offset: 0x00  */
-    uint32_t CR2;         /*!< USART Control register 2,                 Address offset: 0x04  */
-    uint32_t CR3;         /*!< USART Control register 3,                 Address offset: 0x08  */
+    uint32_t _CR1;         /*!< USART Control register 1,                 Address offset: 0x00  */
+    uint32_t _CR2;         /*!< USART Control register 2,                 Address offset: 0x04  */
+    uint32_t _CR3;         /*!< USART Control register 3,                 Address offset: 0x08  */
     uint32_t BRR;         /*!< USART Baud rate register,                 Address offset: 0x0C  */
     uint32_t GTPR;        /*!< USART Guard time and prescaler register,  Address offset: 0x10  */
     uint32_t RTOR;        /*!< USART Receiver Time Out register,         Address offset: 0x14  */
@@ -37,7 +36,7 @@ typedef struct
     uint32_t AUTOCR;      /*!< USART Autonomous mode control register    Address offset: 0x30  */
 } USART_TypeDef;
 
-typedef enum
+enum class IRQn_Type : int8_t
 {
     /* =======================================  ARM Cortex-M33 Specific Interrupt Numbers  ======================================= */
     Reset_IRQn = -15,    /*!< -15 Reset Vector, invoked on Power up and warm reset              */
@@ -175,7 +174,7 @@ typedef enum
     MDF1_FLT5_IRQn = 122,    /*!< MDF1 Filter 5 global interrupt                                    */
     CORDIC_IRQn = 123,    /*!< CORDIC global interrupt                                           */
     FMAC_IRQn = 124,    /*!< FMAC global interrupt                                             */
-} IRQn_Type;
+};
 
 typedef struct
 {
@@ -206,17 +205,34 @@ typedef void(*dma_callback_function)(void*);
 
 typedef struct
 {
-    void*                   parent;             // Pointer to parent peripheral management struct
-    uint8_t                 mode;               // DMA_MODE_...
-    dma_callback_function   tc_handler;         // If non-null, this function pointer is called from within transfer complete interrupt handler when all data including queued data has been transferred.
-    IRQn_Type               interrupt;
+    uint32_t                parent;                // Pointer to parent peripheral management struct
+    uint8_t                 mode;                // DMA_MODE_...
+    uint32_t                tc_handler;            // If non-null, this function pointer is called from within transfer complete interrupt handler when all data including queued data has been transferred.
+    uint8_t                 interrupt;
     uint8_t                 interrupt_priority;
-    uint8_t                 priority;           // DMA priority (DMA_PRIO_...)
+    uint8_t                 priority;            // DMA priority (DMA_PRIO_...)
     uint8_t                 request_num;        // DMA request ID, links channel to peripheral (DMA_IDX_... for index)
-    uint32_t                periph_reg;         // target 8-bit peripheral register (DMA_IDX_... for index)
-    uint8_t*                buf;
+    uint32_t                periph_reg;            // target 8-bit peripheral register (DMA_IDX_... for index)
+    uint32_t                buf;
     uint16_t                buf_len;            // Actual usable buffer length is one less (buf_len - 1)
-} dma_config_t;
+} dma_config_t_GPX;
+
+typedef struct
+{
+    bool                    dir;                            // DMA_RX or DMA_TX
+    bool                    circular;                        // DMA_CIRC_ON or DMA_CIRC_OFF
+    uint8_t                 priority;                        // DMA_PRIO_LOW, DMA_PRIO_MEDIUM, DMA_PRIO_HIGH, DMA_PRIO_VERY_HIGH
+    uint8_t                 interrupt;
+    uint8_t                 interrupt_priority;                // 0 to 15, 15 is low
+    uint8_t                 dma_channel_select;                // 0 to 7. See RM0394 11.6.7
+    uint8_t                 parent_type;                    // DMA_PARENT_USART, ...
+    uint32_t                parent;                            // Pointer to parent init base
+    uint32_t                periph_reg;                        // Pointer to peripheral register
+    uint32_t                buf;
+    uint16_t                buf_len;                        // This doesn't correspond to the length register, it is just however big the buffer is
+    bool                    linear_buf;                         // If true, the buffer is user-specified and we treat it like a non-circular buffer.
+    uint32_t                tcie_handler;                    // If non-null on init, transfer complete irq will be enabled, and this fn called by the IRQ
+} dma_config_t_IMX;
 
 typedef struct
 {
@@ -241,22 +257,22 @@ typedef union
 typedef struct
 {
     volatile uint16_t       active_tx_len;
-    dma_tx_lli_t*           lli_head;        // Linked list output to dma
-    dma_tx_lli_t*           lli_tail;        // Linked list input from dma_buffer_write() 
-    volatile bool           dma_running;
+    uint32_t                lli_head;       // Linked list output to dma
+    uint32_t                lli_tail;       // Linked list input from dma_buffer_write() 
+    volatile bool            dma_running;
 } dma_tx_state_t;
 
 typedef struct dma_channel_
 {
-    DMA_Channel_TypeDef* instance;
-    volatile uint8_t* ptr_start;
-    volatile uint8_t* ptr_end;
-    dma_config_t            cfg;
-    dma_lli_u               lli;                // Linked list memory.  DMA_MODE_TX_LLI uses 6, DMA_MODE_RX_CIRC uses 1.
+    uint32_t                instance;
+    volatile uint32_t       ptr_start;
+    volatile uint32_t       ptr_end;
+    dma_config_t_GPX        cfg;
+    dma_lli_u               lli;            // Linked list memory.  DMA_MODE_TX_LLI uses 6, DMA_MODE_RX_CIRC uses 1.
     dma_tx_state_t          txState;
     int                     lastDmaUsed;
-    uint8_t                 overflow;            // Buffer overflow
-} dma_ch_t;
+    uint8_t                 overflow;       // Buffer overflow
+} dma_ch_t_GPX;
 
 typedef struct
 {
@@ -299,21 +315,21 @@ typedef struct
 
 typedef struct
 {
-    DMA_Channel_TypeDef*    instance;
-    uint8_t*                ptr_start;
-    uint8_t*                ptr_end;
+    uint32_t                instance;
+    uint32_t                ptr_start;
+    uint32_t                ptr_end;
     uint16_t                active_tx_len;
     bool                    done;                            // Currently only used in TX
-    dma_config_t            cfg;
+    dma_config_t_IMX        cfg;
     int                     lastDmaUsed;                    // Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
     uint8_t                 overflow;                        // Buffer overflow
 } dma_ch_t_IMX;
 
 typedef struct
 {
-    uint32_t CR1;         /*!< USART Control register 1,                 Address offset: 0x00 */
-    uint32_t CR2;         /*!< USART Control register 2,                 Address offset: 0x04 */
-    uint32_t CR3;         /*!< USART Control register 3,                 Address offset: 0x08 */
+    uint32_t _CR1;         /*!< USART Control register 1,                 Address offset: 0x00 */
+    uint32_t _CR2;         /*!< USART Control register 2,                 Address offset: 0x04 */
+    uint32_t _CR3;         /*!< USART Control register 3,                 Address offset: 0x08 */
     uint32_t BRR;         /*!< USART Baud rate register,                 Address offset: 0x0C */
     uint16_t GTPR;        /*!< USART Guard time and prescaler register,  Address offset: 0x10 */
     uint16_t  RESERVED2;       /*!< Reserved, 0x12                                                 */
@@ -328,17 +344,42 @@ typedef struct
     uint16_t  RESERVED5;       /*!< Reserved, 0x2A                                                 */
 } USART_TypeDef_IMX;
 
+PUSH_PACK_1
 
-DMA_Channel_TypeDef tmpUartDmaReg;
-USART_TypeDef tmpUartReg;
-usart_cfg_t tmpUartCfg;
-dma_ch_t tmpUartDmaChan;
-GPIO_TypeDef tmpUartGpio;
+typedef struct{
+    uint32_t    inst_CCR;                   /*!< DMA channel x configuration register        */
+    uint32_t    inst_CNDTR;                 /*!< DMA channel x number of data register       */
+    uint32_t    inst_CPAR;                  /*!< DMA channel x peripheral address register   */
+    uint32_t    inst_CMAR;                  /*!< DMA channel x memory address register       */
 
-eventImxDmaTxInst_t tmpIMXUartDmaInst;
-USART_TypeDef_IMX tmpIMXUartReg;
-dma_ch_t_IMX tmpIMXUartDmaChan;
-GPIO_TypeDef_IMX tmpIMXUartGpio;
+    uint32_t    ptr_start;
+    uint32_t    ptr_end;
+    uint16_t    active_tx_len;
+    uint8_t     done;                       // Currently only used in TX
+
+    uint8_t     cfg_dir;                    // DMA_RX or DMA_TX
+    uint8_t     cfg_circular;               // DMA_CIRC_ON or DMA_CIRC_OFF
+    uint8_t     cfg_priority;               // DMA_PRIO_LOW, DMA_PRIO_MEDIUM, DMA_PRIO_HIGH, DMA_PRIO_VERY_HIGH
+    uint8_t     cfg_interrupt;
+    uint8_t     cfg_interrupt_priority;     // 0 to 15, 15 is low
+    uint8_t     cfg_dma_channel_select;     // 0 to 7. See RM0394 11.6.7
+    uint8_t     cfg_parent_type;            // DMA_PARENT_USART, ...
+    uint32_t    cfg_parent;                 // Pointer to parent init base
+    uint32_t    cfg_periph_reg;             // Pointer to peripheral register
+    uint32_t    cfg_buf;
+    uint16_t    cfg_buf_len;                // This doesn't correspond to the length register, it is just however big the buffer is
+    uint8_t     cfg_linear_buf;             // If true, the buffer is user-specified and we treat it like a non-circular buffer.
+    uint32_t    cfg_tcie_handler;           // If n
+    
+    int         lastDmaUsed;                // Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
+    uint8_t     overflow;                   // Buffer overflow
+} eventImxDmaTxInst_local_t;
+
+POP_PACK
+
+std::string s_fileName;
+std::string s_deviceFolder;
+uint8_t s_evScratch[SCRATCH_SIZE + DID_EVENT_HEADER_SIZE] = {0};
 
 int printCurString(char* c)
 {
@@ -348,558 +389,265 @@ int printCurString(char* c)
     return result.length();
 }
 
-void event_outputEvToFile(std::string fileName, uint8_t* data, int len)
+void event_outputEvToFile(uint8_t* data, int len)
 {
     std::ofstream outfile;
 
-    outfile.open(fileName, std::ios_base::app | std::ios_base::binary); // append instead of overwrite
+    outfile.open(s_fileName, std::ios_base::app | std::ios_base::binary); // append instead of overwrite
     outfile.write((const char*)data, len);
     outfile.close();
 }
 
-void writeIMXGpioReg(uint8_t* evScratch, std::string fileName)
+void sprintfLab(const char* label)
 {
-    sprintf((char*)evScratch, "------------Start IMX GPIP Tx0 Reg-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "AFR[0]:\t\t0x%08x\r\n", tmpIMXUartGpio.AFR[0]);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "AFR[1]:\t\t0x%08x\r\n", tmpIMXUartGpio.AFR[1]);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "BRR:\t\t0x%08x\r\n", tmpIMXUartGpio.BRR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "BSRR:\t\t0x%08x\r\n", tmpIMXUartGpio.BSRR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "IDR:\t\t0x%08x\r\n", tmpIMXUartGpio.IDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "LCKR:\t\t0x%08x\r\n", tmpIMXUartGpio.LCKR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "MODER:\t\t0x%08x\r\n", tmpIMXUartGpio.MODER);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ODR:\t\t0x%08x\r\n", tmpIMXUartGpio.ODR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "OSPEEDR:\t0x%08x\r\n", tmpIMXUartGpio.OSPEEDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "OTYPER:\t\t0x%08x\r\n", tmpIMXUartGpio.OTYPER);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "PUPDR:\t\t0x%08x\r\n", tmpIMXUartGpio.PUPDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End IMX GPIP Tx0 Reg-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+    sprintf((char*)s_evScratch, "%s\r\n", label);
+    event_outputEvToFile(s_evScratch, printCurString((char*)s_evScratch));
 }
 
-void writeIMXDmaTx0Chan(uint8_t* evScratch, std::string fileName)
+void sprintfU32(const char* label, const uint32_t value)
 {
-    sprintf((char*)evScratch, "------------Start IMX Dma Tx0 Channel-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "active_tx_len:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.active_tx_len);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.buf:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.buf);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.buf_len:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.buf_len);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.interrupt:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.interrupt);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.interrupt_priority:\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.interrupt_priority);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.mode:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.mode);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.parent:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.parent);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.periph_reg:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.periph_reg);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.priority:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.priority);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.request_num:\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.request_num);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.tc_handler:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.tc_handler);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "done:\t\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.done);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "instance:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.instance);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "lastDmaUsed:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.lastDmaUsed);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "overflow:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.overflow);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ptr_end:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.ptr_end);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ptr_start:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.ptr_start);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End IMX Dma Tx0 Channel-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
+    sprintf((char*)s_evScratch, "%s0x%08x\r\n", label, value);
+    event_outputEvToFile(s_evScratch, printCurString((char*)s_evScratch));
 }
 
-void writeIMXSer0TxCfg(uint8_t* evScratch, std::string fileName)
+void writeIMXGpioReg(did_event_t* ev)
 {
-    sprintf((char*)evScratch, "------------Start IMX Ser0 Cfg-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "coding.baud:\t\t0x%08x\r\n", tmpUartCfg.coding.baudRate);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "coding.parity:\t\t0x%08x\r\n", tmpUartCfg.coding.parity);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "coding.stopBits:\t0x%08x\r\n", tmpUartCfg.coding.stopBits);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "interrupt:\t\t\t0x%08x\r\n", tmpUartCfg.interrupt);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End IMX Ser0 Cfg-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
+    s_fileName = s_deviceFolder + "/IMX_GPIO.txt";
+    assert(ev->length == sizeof(GPIO_TypeDef_IMX));
+    if (ev->length > sizeof(GPIO_TypeDef_IMX)) return;
+    GPIO_TypeDef_IMX tmpIMXUartGpio = {};
+    memcpy(&tmpIMXUartGpio, ev->data, ev->length);
+    sprintfLab("------------Start IMX GPIO Tx0 Reg-------------");
+    sprintfU32("AFR[0]:\t\t", tmpIMXUartGpio.AFR[0]);
+    sprintfU32("AFR[1]:\t\t", tmpIMXUartGpio.AFR[1]);
+    sprintfU32("BRR:\t\t", tmpIMXUartGpio.BRR);
+    sprintfU32("BSRR:\t\t", tmpIMXUartGpio.BSRR);
+    sprintfU32("IDR:\t\t", tmpIMXUartGpio.IDR);
+    sprintfU32("LCKR:\t\t", tmpIMXUartGpio.LCKR);
+    sprintfU32("MODER:\t\t", tmpIMXUartGpio.MODER);
+    sprintfU32("ODR:\t\t", tmpIMXUartGpio.ODR);
+    sprintfU32("OSPEEDR:\t", tmpIMXUartGpio.OSPEEDR);
+    sprintfU32("OTYPER:\t\t", tmpIMXUartGpio.OTYPER);
+    sprintfU32("PUPDR:\t\t", tmpIMXUartGpio.PUPDR);
+    sprintfLab("------------End IMX GPIO Tx0 Reg-------------\r\n");
 }
 
-void writeIMXSer0TxReg(uint8_t* evScratch, std::string fileName)
+void writeIMXDmaTx0Chan(did_event_t* ev)
 {
-    sprintf((char*)evScratch, "------------Start IMX Ser0 Reg-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "BRR:\t\t0x%08x\r\n", tmpIMXUartReg.BRR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CR1:\t\t0x%08x\r\n", tmpIMXUartReg.CR1);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CR2:\t\t0x%08x\r\n", tmpIMXUartReg.CR2);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CR3:\t\t0x%08x\r\n", tmpIMXUartReg.CR3);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "GTPR:\t\t0x%08x\r\n", tmpIMXUartReg.GTPR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ICR:\t\t0x%08x\r\n", tmpIMXUartReg.ICR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ISR:\t\t0x%08x\r\n", tmpIMXUartReg.ISR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RDR:\t\t0x%08x\r\n", tmpIMXUartReg.RDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RQR:\t\t0x%08x\r\n", tmpIMXUartReg.RQR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RTOR:\t\t0x%08x\r\n", tmpIMXUartReg.RTOR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "TDR:\t\t0x%08x\r\n", tmpIMXUartReg.TDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RESERVED2:\t0x%08x\r\n", tmpIMXUartReg.RESERVED2);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RESERVED3:\t0x%08x\r\n", tmpIMXUartReg.RESERVED3);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RESERVED4:\t0x%08x\r\n", tmpIMXUartReg.RESERVED4);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RESERVED5:\t0x%08x\r\n", tmpIMXUartReg.RESERVED5);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End IMX Ser0 Reg-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
+    s_fileName = s_deviceFolder + "/IMX_DMA0_chan.txt";
+    assert(ev->length == sizeof(dma_ch_t_IMX));
+    if (ev->length > sizeof(dma_ch_t_IMX)) return;
+    dma_ch_t_IMX tmpIMXUartDmaChan = {};
+    memcpy(&tmpIMXUartDmaChan, ev->data, ev->length);
+    sprintfLab("------------Start IMX Dma Tx0 Channel-------------");
+    sprintfU32("instance:\t\t\t\t", tmpIMXUartDmaChan.instance);
+    sprintfU32("ptr_end:\t\t\t\t", tmpIMXUartDmaChan.ptr_end);
+    sprintfU32("ptr_start:\t\t\t\t", tmpIMXUartDmaChan.ptr_start);
+    sprintfU32("active_tx_len:\t\t\t", tmpIMXUartDmaChan.active_tx_len);
+    sprintfU32("done:\t\t\t\t\t", tmpIMXUartDmaChan.done);
+    sprintfU32("cfg.dir:\t\t\t\t", tmpIMXUartDmaChan.cfg.dir);
+    sprintfU32("cfg.circular:\t\t\t", tmpIMXUartDmaChan.cfg.circular);
+    sprintfU32("cfg.priority:\t\t\t", tmpIMXUartDmaChan.cfg.priority);
+    sprintfU32("cfg.interrupt:\t\t\t", static_cast<int32_t>(tmpIMXUartDmaChan.cfg.interrupt));
+    sprintfU32("cfg.interrupt_priority:\t", tmpIMXUartDmaChan.cfg.interrupt_priority);
+    sprintfU32("cfg.dma_channel_select:\t", tmpIMXUartDmaChan.cfg.dma_channel_select);
+    sprintfU32("cfg.parent_type:\t\t", tmpIMXUartDmaChan.cfg.parent_type);
+    sprintfU32("cfg.parent:\t\t\t\t", tmpIMXUartDmaChan.cfg.parent);
+    sprintfU32("cfg.periph_reg:\t\t\t", tmpIMXUartDmaChan.cfg.periph_reg);
+    sprintfU32("cfg.buf:\t\t\t\t", tmpIMXUartDmaChan.cfg.buf);
+    sprintfU32("cfg.buf_len:\t\t\t", tmpIMXUartDmaChan.cfg.buf_len);
+    sprintfU32("cfg.linear_buf:\t\t\t", tmpIMXUartDmaChan.cfg.linear_buf);
+    sprintfU32("cfg.tcie_handler:\t\t", tmpIMXUartDmaChan.cfg.tcie_handler);
+    sprintfU32("lastDmaUsed:\t\t\t", tmpIMXUartDmaChan.lastDmaUsed);
+    sprintfU32("overflow:\t\t\t\t", tmpIMXUartDmaChan.overflow);
+    sprintfLab("------------End IMX Dma Tx0 Channel-------------\r\n");
 }
 
-void dataToImxDmaInst(uint8_t* inBuf, int len)
+void writeSer0Cfg(did_event_t* ev, std::string name)
 {
-    int startIndex;
-    int endIndex;
-
-    // do inital copy
-    memcpy(&tmpIMXUartDmaInst, inBuf, ((uint32_t)&tmpIMXUartDmaInst.ptr_start) - ((uint32_t)&tmpIMXUartDmaInst));
-
-    // now fix things
-    startIndex = 0x10;
-    tmpIMXUartDmaInst.ptr_start = (uint8_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
-
-    startIndex = 0x14;
-    tmpIMXUartDmaInst.ptr_end = (uint8_t*)((((uint32_t)inBuf[startIndex+3]) << 24) | 
-                                (((uint32_t)inBuf[startIndex+2]) << 16) | 
-                                (((uint16_t)inBuf[startIndex+1]) << 8) | inBuf[startIndex]);
-
-    startIndex = 0x18;
-    endIndex = 0x22;
-    memcpy(&tmpIMXUartDmaInst.active_tx_len, &inBuf[startIndex], endIndex - startIndex);
-
-    startIndex = 0x22;
-    tmpIMXUartDmaInst.cfg_parent = (uint8_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
-
-    startIndex = 0x26;
-    tmpIMXUartDmaInst.cfg_periph_reg = (uint32_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
-
-    startIndex = 0x2a;
-    tmpIMXUartDmaInst.cfg_buf = (uint8_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
-
-    startIndex = 0x2e;
-    endIndex = 0x31;
-    memcpy(&tmpIMXUartDmaInst.cfg_buf_len, &inBuf[startIndex], endIndex - startIndex);
-
-    startIndex = 0x31;
-    tmpIMXUartDmaInst.cfg_tcie_handler = (uint8_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
-        (((uint32_t)inBuf[startIndex + 2]) << 16) |
-        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
-
-    startIndex = 0x35;
-    endIndex = 0x3a;
-    memcpy(&tmpIMXUartDmaInst.lastDmaUsed, &inBuf[startIndex], endIndex - startIndex);
-
+    s_fileName = s_deviceFolder + "/" + name + (name.size() ? "_" : "") + "Ser0_cfg.txt";
+    assert(ev->length == sizeof(usart_cfg_t));
+    if (ev->length > sizeof(usart_cfg_t)) return;
+    usart_cfg_t tmpUartCfg = {};
+    memcpy(&tmpUartCfg, ev->data, ev->length);
+    name = std::string("------------Start ") + name + std::string(" Ser0 Cfg-------------");
+    sprintfLab(name.c_str());
+    sprintfU32("coding.baud:\t\t", tmpUartCfg.coding.baudRate);
+    sprintfU32("coding.parity:\t\t", tmpUartCfg.coding.parity);
+    sprintfU32("coding.stopBits:\t", tmpUartCfg.coding.stopBits);
+    sprintfU32("interrupt:\t\t\t", static_cast<int32_t>(tmpUartCfg.interrupt));
+    sprintfLab("------------End Ser0 Cfg-------------\r\n");
 }
 
-void writeIMXDmaTx0Reg(uint8_t* evScratch, std::string fileName)
+void writeIMXSer0TxReg(did_event_t* ev)
 {
-    sprintf((char*)evScratch, "------------Start IMX Dma Tx0 Inst-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "inst.CCR:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.inst_CCR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "inst.CNDTR:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.inst_CNDTR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "inst.CPAR:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.inst_CPAR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "inst.CMAR:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.inst_CMAR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ptr_start:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.ptr_start);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ptr_end:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.ptr_end);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "active_tx_len:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.active_tx_len);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "done:\t\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.done);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.dir:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_dir);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.circular:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_circular);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.priority:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_priority);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.interrupt:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_interrupt);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.interrupt_priority:\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_interrupt_priority);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.dma_chan_sel:\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_dma_channel_select);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.parent_type:\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_parent_type);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.parent:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_parent);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.periph_reg:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_periph_reg);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.buf:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_buf);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.buf_len:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_buf_len);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.linear_buf:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_linear_buf);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg_tcie_handler:\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_tcie_handler);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "lastDmaUsed:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.lastDmaUsed);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "overflow:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.overflow);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End IMX Dma Rx0 Inst-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+    s_fileName = s_deviceFolder + "/IMX_Ser0_reg.txt";
+    assert(ev->length == sizeof(USART_TypeDef_IMX));
+    if (ev->length > sizeof(USART_TypeDef_IMX)) return;
+    USART_TypeDef_IMX tmpIMXUartReg = {};
+    memcpy(&tmpIMXUartReg, ev->data, ev->length);
+    sprintfLab("------------Start IMX Ser0 Reg-------------");
+    sprintfU32("BRR:\t\t", tmpIMXUartReg.BRR);
+    sprintfU32("CR1:\t\t", tmpIMXUartReg._CR1);
+    sprintfU32("CR2:\t\t", tmpIMXUartReg._CR2);
+    sprintfU32("CR3:\t\t", tmpIMXUartReg._CR3);
+    sprintfU32("GTPR:\t\t", tmpIMXUartReg.GTPR);
+    sprintfU32("ICR:\t\t", tmpIMXUartReg.ICR);
+    sprintfU32("ISR:\t\t", tmpIMXUartReg.ISR);
+    sprintfU32("RDR:\t\t", tmpIMXUartReg.RDR);
+    sprintfU32("RQR:\t\t", tmpIMXUartReg.RQR);
+    sprintfU32("RTOR:\t\t", tmpIMXUartReg.RTOR);
+    sprintfU32("TDR:\t\t", tmpIMXUartReg.TDR);
+    sprintfU32("RESERVED2:\t", tmpIMXUartReg.RESERVED2);
+    sprintfU32("RESERVED3:\t", tmpIMXUartReg.RESERVED3);
+    sprintfU32("RESERVED4:\t", tmpIMXUartReg.RESERVED4);
+    sprintfU32("RESERVED5:\t", tmpIMXUartReg.RESERVED5);
+    sprintfLab("------------End IMX Ser0 Reg-------------\r\n");
 }
 
-void writeDmaRx0Reg(uint8_t* evScratch, std::string fileName)
+void writeIMXDmaTx0Reg(did_event_t* ev)
 {
-    sprintf((char*)evScratch, "------------Start Dma Rx0 Reg-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CBR1:\t0x%08x\r\n", tmpUartDmaReg.CBR1);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CBR2:\t0x%08x\r\n", tmpUartDmaReg.CBR2);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CCR:\t0x%08x\r\n", tmpUartDmaReg.CCR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CDAR:\t0x%08x\r\n", tmpUartDmaReg.CDAR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CFCR:\t0x%08x\r\n", tmpUartDmaReg.CFCR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CLBAR:\t0x%08x\r\n", tmpUartDmaReg.CLBAR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CLLR:\t0x%08x\r\n", tmpUartDmaReg.CLLR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CSAR:\t0x%08x\r\n", tmpUartDmaReg.CSAR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CSR:\t0x%08x\r\n", tmpUartDmaReg.CSR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CTR1:\t0x%08x\r\n", tmpUartDmaReg.CTR1);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CTR2:\t0x%08x\r\n", tmpUartDmaReg.CTR2);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CTR3:\t0x%08x\r\n", tmpUartDmaReg.CTR3);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End Dma Rx0 Reg-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+    s_fileName = s_deviceFolder + "/IMX_DMA0_inst.txt";
+    assert(ev->length == sizeof(eventImxDmaTxInst_local_t));
+    if (ev->length > sizeof(eventImxDmaTxInst_local_t)) return;
+    eventImxDmaTxInst_local_t tmpIMXUartDmaInst = {};
+    memcpy(&tmpIMXUartDmaInst, ev->data, ev->length);
+    sprintfLab("------------Start IMX Dma Tx0 Inst-------------");
+    sprintfU32("inst.CCR:\t\t\t\t", tmpIMXUartDmaInst.inst_CCR);
+    sprintfU32("inst.CNDTR:\t\t\t\t", tmpIMXUartDmaInst.inst_CNDTR);
+    sprintfU32("inst.CPAR:\t\t\t\t", tmpIMXUartDmaInst.inst_CPAR);
+    sprintfU32("inst.CMAR:\t\t\t\t", tmpIMXUartDmaInst.inst_CMAR);
+    sprintfU32("ptr_start:\t\t\t\t", tmpIMXUartDmaInst.ptr_start);
+    sprintfU32("ptr_end:\t\t\t\t", tmpIMXUartDmaInst.ptr_end);
+    sprintfU32("active_tx_len:\t\t\t", tmpIMXUartDmaInst.active_tx_len);
+    sprintfU32("done:\t\t\t\t\t", tmpIMXUartDmaInst.done);
+    sprintfU32("cfg.dir:\t\t\t\t", tmpIMXUartDmaInst.cfg_dir);
+    sprintfU32("cfg.circular:\t\t\t", tmpIMXUartDmaInst.cfg_circular);
+    sprintfU32("cfg.priority:\t\t\t", tmpIMXUartDmaInst.cfg_priority);
+    sprintfU32("cfg.interrupt:\t\t\t", tmpIMXUartDmaInst.cfg_interrupt);
+    sprintfU32("cfg.interrupt_priority:\t", tmpIMXUartDmaInst.cfg_interrupt_priority);
+    sprintfU32("cfg.dma_chan_sel:\t\t", tmpIMXUartDmaInst.cfg_dma_channel_select);
+    sprintfU32("cfg.parent_type:\t\t", tmpIMXUartDmaInst.cfg_parent_type);
+    sprintfU32("cfg.parent:\t\t\t\t", tmpIMXUartDmaInst.cfg_parent);
+    sprintfU32("cfg.periph_reg:\t\t\t", tmpIMXUartDmaInst.cfg_periph_reg);
+    sprintfU32("cfg.buf:\t\t\t\t", tmpIMXUartDmaInst.cfg_buf);
+    sprintfU32("cfg.buf_len:\t\t\t", tmpIMXUartDmaInst.cfg_buf_len);
+    sprintfU32("cfg.linear_buf:\t\t\t", tmpIMXUartDmaInst.cfg_linear_buf);
+    sprintfU32("cfg_tcie_handler:\t\t", tmpIMXUartDmaInst.cfg_tcie_handler);
+    sprintfU32("lastDmaUsed:\t\t\t", tmpIMXUartDmaInst.lastDmaUsed);
+    sprintfU32("overflow:\t\t\t\t", tmpIMXUartDmaInst.overflow);
+    sprintfLab("------------End IMX Dma Rx0 Inst-------------\r\n");
 }
 
-void writeSer0RxReg(uint8_t* evScratch, std::string fileName)
+void writeGpxDmaRx0Reg(did_event_t* ev)
 {
-    sprintf((char*)evScratch, "------------Start Ser0 Reg-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CR1:\t0x%08x\r\n", tmpUartReg.CR1);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CR2:\t0x%08x\r\n", tmpUartReg.CR2);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "CR3:\t0x%08x\r\n", tmpUartReg.CR3);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "BRR:\t0x%08x\r\n", tmpUartReg.BRR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "GTPR:\t0x%08x\r\n", tmpUartReg.GTPR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RTOR:\t0x%08x\r\n", tmpUartReg.RTOR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RQR:\t0x%08x\r\n", tmpUartReg.RQR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ISR:\t0x%08x\r\n", tmpUartReg.ISR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ICR:\t0x%08x\r\n", tmpUartReg.ICR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "RDR:\t0x%08x\r\n", tmpUartReg.RDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "TDR:\t0x%08x\r\n", tmpUartReg.TDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "PRESC:\t0x%08x\r\n", tmpUartReg.PRESC);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "AUTOCR:\t0x%08x\r\n", tmpUartReg.AUTOCR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End Ser0 Reg-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+    s_fileName = s_deviceFolder + "/GPX_DMA0_reg.txt";
+    assert(ev->length == sizeof(DMA_Channel_TypeDef));
+    if (ev->length > sizeof(DMA_Channel_TypeDef)) return;
+    DMA_Channel_TypeDef tmpUartDmaReg = {};
+    memcpy(&tmpUartDmaReg, ev->data, ev->length);
+    sprintfLab("------------Start Dma Rx0 Reg-------------");
+    sprintfU32("CBR1:\t", tmpUartDmaReg.CBR1);
+    sprintfU32("CBR2:\t", tmpUartDmaReg.CBR2);
+    sprintfU32("CCR:\t", tmpUartDmaReg.CCR);
+    sprintfU32("CDAR:\t", tmpUartDmaReg.CDAR);
+    sprintfU32("CFCR:\t", tmpUartDmaReg.CFCR);
+    sprintfU32("CLBAR:\t", tmpUartDmaReg.CLBAR);
+    sprintfU32("CLLR:\t", tmpUartDmaReg.CLLR);
+    sprintfU32("CSAR:\t", tmpUartDmaReg.CSAR);
+    sprintfU32("CSR:\t", tmpUartDmaReg.CSR);
+    sprintfU32("CTR1:\t", tmpUartDmaReg.CTR1);
+    sprintfU32("CTR2:\t", tmpUartDmaReg.CTR2);
+    sprintfU32("CTR3:\t", tmpUartDmaReg.CTR3);
+    sprintfLab("------------End Dma Rx0 Reg-------------\r\n");
 }
 
-void writeSer0RxCfg(uint8_t* evScratch, std::string fileName)
+void writeGpxSer0RxReg(did_event_t* ev)
 {
-    sprintf((char*)evScratch, "------------Start Ser0 Cfg-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "coding.baud:\t\t0x%08x\r\n", tmpUartCfg.coding.baudRate);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "coding.parity:\t\t0x%08x\r\n", tmpUartCfg.coding.parity);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "coding.stopBits:\t0x%08x\r\n", tmpUartCfg.coding.stopBits);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "interrupt:\t\t\t0x%08x\r\n", tmpUartCfg.interrupt);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End Ser0 Cfg-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+    s_fileName = s_deviceFolder + "/GPX_Ser0_reg.txt"; 
+    assert(ev->length == sizeof(USART_TypeDef));
+    if (ev->length > sizeof(USART_TypeDef)) return;
+    USART_TypeDef tmpUartReg = {};
+    memcpy(&tmpUartReg, ev->data, ev->length);
+    sprintfLab("------------Start Ser0 Reg-------------");
+    sprintfU32("CR1:\t", tmpUartReg._CR1);
+    sprintfU32("CR2:\t", tmpUartReg._CR2);
+    sprintfU32("CR3:\t", tmpUartReg._CR3);
+    sprintfU32("BRR:\t", tmpUartReg.BRR);
+    sprintfU32("GTPR:\t", tmpUartReg.GTPR);
+    sprintfU32("RTOR:\t", tmpUartReg.RTOR);
+    sprintfU32("RQR:\t", tmpUartReg.RQR);
+    sprintfU32("ISR:\t", tmpUartReg.ISR);
+    sprintfU32("ICR:\t", tmpUartReg.ICR);
+    sprintfU32("RDR:\t", tmpUartReg.RDR);
+    sprintfU32("TDR:\t", tmpUartReg.TDR);
+    sprintfU32("PRESC:\t", tmpUartReg.PRESC);
+    sprintfU32("AUTOCR:\t", tmpUartReg.AUTOCR);
+    sprintfLab("------------End Ser0 Reg-------------\r\n");
 }
 
-void writeDma0RxChan(uint8_t* evScratch, std::string fileName)
+void writeGpxDma0RxChan(did_event_t* ev)
 {
-    sprintf((char*)evScratch, "------------Start Dma Rx0 Channel-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.buf:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.buf);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.buf_len:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.buf_len);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.interrupt:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.interrupt);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.interrupt_priority:\t0x%08x\r\n", tmpUartDmaChan.cfg.interrupt_priority);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.mode:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.mode);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.parent:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.parent);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.periph_reg:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.periph_reg);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.priority:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.priority);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.request_num:\t\t0x%08x\r\n", tmpUartDmaChan.cfg.request_num);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "cfg.tc_handler:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.tc_handler);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "instance:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.instance);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "lastDmaUsed:\t\t\t0x%08x\r\n", tmpUartDmaChan.lastDmaUsed);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "lli.rx:\t\t\t\t\t0x%08x\r\n", tmpUartDmaChan.lli.rx);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "lli.tx:\t\t\t\t\t0x%08x\r\n", tmpUartDmaChan.lli.tx);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "overflow:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.overflow);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ptr_end:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.ptr_end);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ptr_start:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.ptr_start);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "txState.active_tx_len:\t0x%08x\r\n", tmpUartDmaChan.txState.active_tx_len);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "txState.dma_running:\t0x%08x\r\n", tmpUartDmaChan.txState.dma_running);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "txState.lli_head:\t\t0x%08x\r\n", tmpUartDmaChan.txState.lli_head);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "txState.lli_tail:\t\t0x%08x\r\n", tmpUartDmaChan.txState.lli_tail);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End Dma Rx0 Channel-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+    s_fileName = s_deviceFolder + "/GPX_DMA0_chan.txt";
+    assert(ev->length == sizeof(dma_ch_t_GPX));
+    if (ev->length > sizeof(dma_ch_t_GPX)) return;
+    dma_ch_t_GPX tmpUartDmaChan = {};
+    memcpy(&tmpUartDmaChan, ev->data, ev->length);
+    sprintfLab("------------Start Dma Rx0 Channel-------------");
+    sprintfU32("cfg.buf:\t\t\t\t", tmpUartDmaChan.cfg.buf);
+    sprintfU32("cfg.buf_len:\t\t\t", tmpUartDmaChan.cfg.buf_len);
+    sprintfU32("cfg.interrupt:\t\t\t", static_cast<int32_t>(tmpUartDmaChan.cfg.interrupt));
+    sprintfU32("cfg.interrupt_priority:\t", tmpUartDmaChan.cfg.interrupt_priority);
+    sprintfU32("cfg.mode:\t\t\t\t", tmpUartDmaChan.cfg.mode);
+    sprintfU32("cfg.parent:\t\t\t\t", tmpUartDmaChan.cfg.parent);
+    sprintfU32("cfg.periph_reg:\t\t\t", tmpUartDmaChan.cfg.periph_reg);
+    sprintfU32("cfg.priority:\t\t\t", tmpUartDmaChan.cfg.priority);
+    sprintfU32("cfg.request_num:\t\t", tmpUartDmaChan.cfg.request_num);
+    sprintfU32("cfg.tc_handler:\t\t\t", tmpUartDmaChan.cfg.tc_handler);
+    sprintfU32("instance:\t\t\t\t", tmpUartDmaChan.instance);
+    sprintfU32("lastDmaUsed:\t\t\t", tmpUartDmaChan.lastDmaUsed);
+    sprintfU32("lli.rx:\t\t\t\t\t", tmpUartDmaChan.lli.rx.cdar);
+    sprintfU32("lli.tx[0].br1:\t\t\t", tmpUartDmaChan.lli.tx[0].br1);
+    sprintfU32("lli.tx[0].sar:\t\t\t", tmpUartDmaChan.lli.tx[0].sar);
+    sprintfU32("lli.tx[0].llr:\t\t\t", tmpUartDmaChan.lli.tx[0].llr);
+    sprintfU32("lli.tx[1].br1:\t\t\t", tmpUartDmaChan.lli.tx[1].br1);
+    sprintfU32("lli.tx[1].sar:\t\t\t", tmpUartDmaChan.lli.tx[1].sar);
+    sprintfU32("lli.tx[1].llr:\t\t\t", tmpUartDmaChan.lli.tx[1].llr);
+    sprintfU32("lli.tx[2].br1:\t\t\t", tmpUartDmaChan.lli.tx[2].br1);
+    sprintfU32("lli.tx[2].sar:\t\t\t", tmpUartDmaChan.lli.tx[2].sar);
+    sprintfU32("lli.tx[2].llr:\t\t\t", tmpUartDmaChan.lli.tx[2].llr);
+    sprintfU32("overflow:\t\t\t\t", tmpUartDmaChan.overflow);
+    sprintfU32("ptr_end:\t\t\t\t", tmpUartDmaChan.ptr_end);
+    sprintfU32("ptr_start:\t\t\t\t", tmpUartDmaChan.ptr_start);
+    sprintfU32("txState.active_tx_len:\t", tmpUartDmaChan.txState.active_tx_len);
+    sprintfU32("txState.dma_running:\t", tmpUartDmaChan.txState.dma_running);
+    sprintfU32("txState.lli_head:\t\t", tmpUartDmaChan.txState.lli_head);
+    sprintfU32("txState.lli_tail:\t\t", tmpUartDmaChan.txState.lli_tail);
+    sprintfLab("------------End Dma Rx0 Channel-------------\r\n");
 }
 
-void writeGpioRxReg(uint8_t* evScratch, std::string fileName)
+void writeGpxGpioRxReg(did_event_t* ev)
 {
-    sprintf((char*)evScratch, "------------Start GPIP Rx0 Reg-------------\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "AFR[0]:\t\t0x%08x\r\n", tmpUartGpio.AFR[0]);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "AFR[1]:\t\t0x%08x\r\n", tmpUartGpio.AFR[1]);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "BRR:\t\t0x%08x\r\n", tmpUartGpio.BRR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "BSRR:\t\t0x%08x\r\n", tmpUartGpio.BSRR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "HSLVR:\t\t0x%08x\r\n", tmpUartGpio.HSLVR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "IDR:\t\t0x%08x\r\n", tmpUartGpio.IDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "LCKR:\t\t0x%08x\r\n", tmpUartGpio.LCKR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "MODER:\t\t0x%08x\r\n", tmpUartGpio.MODER);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "ODR:\t\t0x%08x\r\n", tmpUartGpio.ODR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "OSPEEDR:\t0x%08x\r\n", tmpUartGpio.OSPEEDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "OTYPER:\t\t0x%08x\r\n", tmpUartGpio.OTYPER);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "PUPDR:\t\t0x%08x\r\n", tmpUartGpio.PUPDR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "SECCFGR:\t0x%08x\r\n", tmpUartGpio.SECCFGR);
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-    sprintf((char*)evScratch, "\r\n------------End GPIP Rx0 Reg-------------\r\n\r\n");
-    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+    s_fileName = s_deviceFolder + "/GPX_GPIO_Rx0_reg.txt"; 
+    assert(ev->length == sizeof(GPIO_TypeDef));
+    if (ev->length > sizeof(GPIO_TypeDef)) return;
+    GPIO_TypeDef tmpUartGpio = {};
+    memcpy(&tmpUartGpio, ev->data, ev->length);
+    sprintfLab("------------Start GPIO Rx0 Reg-------------");
+    sprintfU32("AFR[0]:\t\t", tmpUartGpio.AFR[0]);
+    sprintfU32("AFR[1]:\t\t", tmpUartGpio.AFR[1]);
+    sprintfU32("BRR:\t\t", tmpUartGpio.BRR);
+    sprintfU32("BSRR:\t\t", tmpUartGpio.BSRR);
+    sprintfU32("HSLVR:\t\t", tmpUartGpio.HSLVR);
+    sprintfU32("IDR:\t\t", tmpUartGpio.IDR);
+    sprintfU32("LCKR:\t\t", tmpUartGpio.LCKR);
+    sprintfU32("MODER:\t\t", tmpUartGpio.MODER);
+    sprintfU32("ODR:\t\t", tmpUartGpio.ODR);
+    sprintfU32("OSPEEDR:\t", tmpUartGpio.OSPEEDR);
+    sprintfU32("OTYPER:\t\t", tmpUartGpio.OTYPER);
+    sprintfU32("PUPDR:\t\t", tmpUartGpio.PUPDR);
+    sprintfU32("SECCFGR:\t", tmpUartGpio.SECCFGR);
+    sprintfLab("------------End GPIO Rx0 Reg-------------\r\n");
 }
 
 static void msgHandlerIsb(InertialSense* i, p_data_t* data, int pHandle)
@@ -911,8 +659,7 @@ static void msgHandlerIsb(InertialSense* i, p_data_t* data, int pHandle)
 int main(int argc, char* argv[])
 {
     is_comm_instance_t c;
-    uint8_t evScratch[SCRATCH_SIZE + DID_EVENT_HEADER_SIZE];
-    c.rxBuf.start = evScratch;
+    c.rxBuf.start = s_evScratch;
     c.rxBuf.size = SCRATCH_SIZE + DID_EVENT_HEADER_SIZE;
     std::time_t logTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::string outDir = "out/";// + logTime;
@@ -923,7 +670,6 @@ int main(int argc, char* argv[])
         // In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
         return -1;
     }
-
 
     cISLogger logger;
     if (!logger.LoadFromDirectory(argv[1], cISLogger::eLogType::LOGTYPE_RAW, {"ALL"}))
@@ -938,10 +684,10 @@ int main(int argc, char* argv[])
     if (stat(outDir.c_str(), &info) == 0)
     {
         if (info.st_mode & S_IFDIR)
-            printf("Found output dir: %s\r\n", outDir);
+            std::cout << "Found output dir: " << outDir << std::endl;
         else
         {
-            printf("Output dir not a folder: %s\r\n", outDir);
+            std::cout << "Output dir not a folder: " << outDir << std::endl;
             return false;
         }
     }
@@ -952,9 +698,8 @@ int main(int argc, char* argv[])
 #if PLATFORM_IS_WINDOWS
         if (mkdir(outDir.c_str()) == 0)
 #else
-        if (mkdir(outDir.c_str(), 0777))
+        if (mkdir(outDir.c_str(), 0777) == 0)
 #endif
-
             std::cout << "Created output dir: " << outDir << std::endl;
         else
         {
@@ -970,13 +715,13 @@ int main(int argc, char* argv[])
     for (auto dl : logger.DeviceLogs())
     {
 
-        std::string deviceFolder = outDir + "/SN-" + std::to_string(dl->SerialNumber());
+        s_deviceFolder = outDir + "SN-" + std::to_string(dl->SerialNumber());
 
-        if (stat(deviceFolder.c_str(), &info) == 0)
+        if (stat(s_deviceFolder.c_str(), &info) == 0)
         {
             if (!(info.st_mode & S_IFDIR))
             {
-                std::cout << "Output dir not a folder skipping: " << deviceFolder << std::endl;
+                std::cout << "Output dir not a folder skipping: " << s_deviceFolder << std::endl;
                 continue;
             }
         }
@@ -985,14 +730,14 @@ int main(int argc, char* argv[])
             // the folder does not exist try to create it
             // creating output files
 #if PLATFORM_IS_WINDOWS
-            if (mkdir(deviceFolder.c_str()) == 0)
+            if (mkdir(s_deviceFolder.c_str()) == 0)
 #else
-            if (mkdir(deviceFolder.c_str(), 0777))
+            if (mkdir(s_deviceFolder.c_str(), 0777) == 0)
 #endif
-                std::cout << "Created output dir: " << deviceFolder << std::endl;
+                std::cout << "Created output dir: " << s_deviceFolder << std::endl;
             else
             {
-                std::cout << "Failed to created output dir: " << deviceFolder << std::endl;
+                std::cout << "Failed to created output dir: " << s_deviceFolder << std::endl;
                 continue;
             }
         }
@@ -1008,107 +753,84 @@ int main(int argc, char* argv[])
             if (d.hdr.id == DID_EVENT)
             {
                 did_event_t* ev = (did_event_t*)data->buf;
-                memset(evScratch, 0, SCRATCH_SIZE + DID_EVENT_HEADER_SIZE);
-                memcpy(evScratch, ev->data, ev->length);
-                memcpy(&tmpUartReg, evScratch, ev->length);
-                memcpy(&tmpUartCfg, evScratch, ev->length);
-                memcpy(&tmpUartDmaReg, evScratch, ev->length);
-                memcpy(&tmpUartDmaChan, evScratch, ev->length);
-                memcpy(&tmpUartGpio, evScratch, ev->length);
-
-                memcpy(&tmpIMXUartReg, evScratch, ev->length);
-                memcpy(&tmpIMXUartDmaChan, evScratch, ev->length);
-                memcpy(&tmpIMXUartGpio, evScratch, ev->length);
-
-                std::string fileName;
+                memset(s_evScratch, 0, SCRATCH_SIZE + DID_EVENT_HEADER_SIZE);
+                memcpy(s_evScratch, ev->data, _MIN(ev->length, sizeof(s_evScratch)));
 
                 switch (ev->msgTypeID)
                 {
-                case EVENT_MSG_TYPE_ID_RAW:  fileName = deviceFolder + "/out.raw"; break;
-                case EVENT_MSG_TYPE_ID_ASCII: fileName = deviceFolder + "/out.txt";  break;
+                case EVENT_MSG_TYPE_ID_RAW:  s_fileName = s_deviceFolder + "/out.raw"; break;
+                case EVENT_MSG_TYPE_ID_ASCII: s_fileName = s_deviceFolder + "/out.txt";  break;
                 case EVENT_MSG_TYPE_ID_RTMC3_RCVR1:
-                    fileName = deviceFolder + "/rcvr1.rtcm";
+                    s_fileName = s_deviceFolder + "/rcvr1.rtcm";
                     c.rxBuf.size = ev->length;
-                    c.rxBuf.head = evScratch;
-                    c.rxBuf.end = evScratch + ev->length;
-                    c.rxBuf.tail = evScratch + ev->length;
-                    c.rxBuf.scan = evScratch;
+                    c.rxBuf.head = s_evScratch;
+                    c.rxBuf.end = s_evScratch + ev->length;
+                    c.rxBuf.tail = s_evScratch + ev->length;
+                    c.rxBuf.scan = s_evScratch;
 
                     c.processPkt = nullptr;
 
                     is_comm_parse_timeout(&c, 0);
                     break;
-                case EVENT_MSG_TYPE_ID_RTMC3_RCVR2: fileName = deviceFolder + "/rcvr2.rtcm";  break;
-                case EVENT_MSG_TYPE_ID_RTMC3_EXT: fileName = deviceFolder + "/rcvr_ext.rtcm";  break;
-                case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
-                case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
+                case EVENT_MSG_TYPE_ID_RTMC3_RCVR2: s_fileName = s_deviceFolder + "/rcvr2.rtcm";  break;
+                case EVENT_MSG_TYPE_ID_RTMC3_EXT: s_fileName = s_deviceFolder + "/rcvr_ext.rtcm";  break;
+                case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: s_fileName = s_deviceFolder + "/rcvr1.sbp";  break;
+                case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: s_fileName = s_deviceFolder + "/rcvr2.sbp";  break;
 
                 case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
-                    fileName = deviceFolder + "/IMX_DMA0_inst.txt";
-                    dataToImxDmaInst(ev->data, ev->length);
-                    writeIMXDmaTx0Reg(evScratch, fileName);
+                    writeIMXDmaTx0Reg(ev);
                     logged = true;
                     break;
                 case EVENT_MSG_TYPE_ID_IMX_SER0_REG:
-                    fileName = deviceFolder + "/IMX_SER0_reg.txt";
-                    writeIMXSer0TxReg(evScratch, fileName);
+                    writeIMXSer0TxReg(ev);
                     logged = true;
                     break;
                 case  EVENT_MSG_TYPE_ID_IMX_SER0_CFG:
-                    fileName = deviceFolder + "/IMX_SER0_chan.txt";
-                    writeIMXSer0TxCfg(evScratch, fileName);
+                    writeSer0Cfg(ev, "IMX");
                     logged = true;
                     break;
                 case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_CHAN:
-                    fileName = deviceFolder + "/IMX_DMA0_chan.txt";
-                    writeIMXDmaTx0Chan(evScratch, fileName);
+                    writeIMXDmaTx0Chan(ev);
                     logged = true;
                     break;
                 case EVENT_MSG_TYPE_ID_IMX_GPIO_TX_0_REG:
-                    fileName = deviceFolder + "/IMX_GPIO.txt";
-                    writeIMXGpioReg(evScratch, fileName);
+                    writeIMXGpioReg(ev);
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_DMA_RX_0_INST:
-                    fileName = deviceFolder + "/DMA0_reg.txt";
-                    writeDmaRx0Reg(evScratch, fileName);
+                case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST:
+                    writeGpxDmaRx0Reg(ev);
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_SER0_REG: 
-                    fileName = deviceFolder + "/Ser0_reg.txt"; 
-                    writeSer0RxReg(evScratch, fileName);
+                case EVENT_MSG_TYPE_ID_GPX_SER0_REG: 
+                    writeGpxSer0RxReg(ev);
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_SER0_CFG: 
-                    fileName = deviceFolder + "/Ser0_cfg.txt";
-                    writeSer0RxCfg(evScratch, fileName);
+                case EVENT_MSG_TYPE_ID_GPX_SER0_CFG: 
+                    writeSer0Cfg(ev, "GPX");
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN:
-                    fileName = deviceFolder + "/DMA0_chan.txt";
-                    writeDma0RxChan(evScratch, fileName);
+                case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN:
+                    writeGpxDma0RxChan(ev);
                     logged = true;
                     break;
 
-
-                case EVENT_MSG_TYPE_ID_GPIO_RX_0_REG: 
-                    fileName = deviceFolder + "/GPIO_Rx0_reg.txt"; 
-                    writeGpioRxReg(evScratch, fileName);
+                case EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG: 
+                    writeGpxGpioRxReg(ev);
                     logged = true;
                     break;
                 
                 default:
-                    fileName = deviceFolder + "/UNKNOWN_" + std::to_string(ev->msgTypeID) + ".Bin";
-                    printf("Event type %d found but is not supported. Output at: %s\n", ev->msgTypeID, fileName.c_str());
+                    s_fileName = s_deviceFolder + "/UNKNOWN_" + std::to_string(ev->msgTypeID) + ".Bin";
+                    printf("Event type %d found but is not supported. Output at: %s\n", ev->msgTypeID, s_fileName.c_str());
                     break;
                 }
 
                 if (!logged)
-                    event_outputEvToFile(fileName, evScratch, ev->length);
+                    event_outputEvToFile(s_evScratch, ev->length);
 
                 logged = false;
             }
@@ -1120,6 +842,7 @@ int main(int argc, char* argv[])
     }
 
     std::cout << "Done parsing log files: " << argv[1] << std::endl;
+    std::cout << "Output dir: " << s_deviceFolder << std::endl;
     return true;
 }
 

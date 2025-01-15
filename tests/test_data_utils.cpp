@@ -3,7 +3,7 @@
  * @brief a collection of functions and classes that might be useful when writing/running unit tests
  *
  * @author Walt Johnson on 3/6/24
- * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <chrono>
@@ -15,7 +15,6 @@
 #include "ISFileManager.h"
 #include "protocol_nmea.h"
 #include "test_data_utils.h"
-#include "time_conversion.h"
 
 #define MIN_VALUE   -1000
 #define MAX_VALUE   1000
@@ -88,7 +87,19 @@ void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek)
     gpsTimeOfWeekMs *= 1000;
 }
 
-void PrintUtcTime(std::tm &utcTime, uint32_t milliseconds)
+void PrintUtcDateTime(utc_date_t &utcDate, utc_time_t &utcTime)
+{
+    printf( "UTC Time: %04d-%02d-%02d %02d:%02d:%02d.%03d\n", 
+        utcDate.year + 1900,    // year is since 1900
+        utcDate.month,          // month is since January (0-11)
+        utcDate.day,
+        utcTime.hour,
+        utcTime.minute,
+        utcTime.second,
+        utcTime.millisecond );
+}
+
+void PrintUtcStdTm(std::tm &utcTime, uint32_t milliseconds)
 {
     printf("UTC Time: %04d-%02d-%02d %02d:%02d:%02d.%03d\n", 
         utcTime.tm_year + 1900,   // tm_year is year since 1900
@@ -611,7 +622,6 @@ uint32_t GenerateRawLogData(std::list<std::vector<uint8_t>*>& msgs, float logSiz
     return runningSize;
 }
 
-
 bool AddDataToStream(uint8_t *buffer, int bufferSize, int &streamSize, uint8_t *data, int dataSize)
 {
     if (streamSize + dataSize < bufferSize)
@@ -702,4 +712,44 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
     }
 
     return streamSize;
+}
+
+std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
+{
+    std::vector<std::string> words= {"lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat"};
+    int numSentences = RAND_RANGE(minSentences, maxSentences);
+    int numWords = RAND_RANGE(minWords, maxWords);
+
+    std::string sb;
+    for (int p = 0; p < numLines; p++)
+    {
+        for (int s = 0; s < numSentences; s++)
+        {
+            for (int w = 0; w < numWords; w++)
+            {
+                if (w > 0) { sb.append(" "); }
+                int word_idx = RAND_RANGE(0, words.size() - 1);
+                std::string word = words[ word_idx ];
+                if (w == 0) { word[0] = toupper(word[0]); }
+                sb.append(word);
+            }
+            sb.append(". ");
+        }
+        if (p < numLines-1) sb.append("\n");
+    }
+    return sb;
+}
+
+
+static int dummyIsbProtocolHandler(p_data_t* data, port_handle_t port) { return 0; }
+static int dummyGenericProtocolHandler(const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
+
+void init_test_comm_instance(is_comm_instance_t* c, uint8_t *buffer, int bufferSize) {
+    is_comm_init(c, buffer, bufferSize, NULL); // TOOD: Use callbacks?
+    is_comm_register_isb_handler(c, dummyIsbProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_NMEA, dummyGenericProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_RTCM3, dummyGenericProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_SONY, dummyGenericProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_SPARTN, dummyGenericProtocolHandler);
+    is_comm_register_msg_handler(c, _PTYPE_UBLOX, dummyGenericProtocolHandler);
 }

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -685,6 +685,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GPX_RMC]               = RMC_BITS_GPX_RMC,
     [DID_GPX_BIT]               = RMC_BITS_GPX_BIT,
     [DID_GPX_PORT_MONITOR]      = RMC_BITS_GPX_PORT_MON,
+    [DID_RTK_DEBUG]             = RMC_BITS_GPX_RTK_DBG,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -767,7 +768,7 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_DID_RTK_DEBUG]        = GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,  
     [GRMC_BIT_POS_DID_PORT_MON]         = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPX_PORT_MON]     = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
-    [GRMC_BIT_POS_DID_GPS_BASE_RAW]     = 1,  
+    [GRMC_BIT_POS_DID_GPS_BASE_RAW]     = 1,
 };
 
 #ifndef GPX_1

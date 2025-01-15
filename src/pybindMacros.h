@@ -65,8 +65,9 @@ PYBIND11_NUMPY_DTYPE(inl2_ned_sigma_t, timeOfWeekMs, StdPosNed, StdVelNed, StdAt
 PYBIND11_NUMPY_DTYPE(strobe_in_time_t, week, timeOfWeekMs, pin, count);
 PYBIND11_NUMPY_DTYPE(diag_msg_t, timeOfWeekMs, messageLength, message);
 PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTimeSec, hAccuracy, lla);
-// PYBIND11_NUMPY_DTYPE(port_monitor_t, portNumber, txTimeMs, txBytesPerSec, rxTimeMs, rxBytesPerSec, status);
-// PYBIND11_NUMPY_DTYPE(port_monitor_t, port);
+PYBIND11_NUMPY_DTYPE(port_monitor_set_t, portInfo, status, txBytesPerSec, rxBytesPerSec, txBytes, rxBytes, txOverflows, rxOverflows, txBytesDropped, rxChecksumErrors);
+PYBIND11_NUMPY_DTYPE(port_monitor_t, port, activePorts);
+
 // PYBIND11_NUMPY_DTYPE(evb2_t, week, timeOfWeekMs, firmwareVer, comBridgeCfg, loggerMode, loggerElapsedTimeMs, wifiSSID, wifiPSK, wifiIpAddr, serverIpAddr, serverPort);
 // PYBIND11_NUMPY_DTYPE(evb_status_t, week, timeOfWeekMs, firmwareVer, evbStatus, loggerMode, loggerElapsedTimeMs, wifiIpAddr, sysCommand);
 // PYBIND11_NUMPY_DTYPE(evb_flash_cfg_t, size, checksum, key, cbPreset, reserved1, cbf, cbOptions, bits, radioPID, radioNID, radioPowerLevel, wifi, server, encoderTickToWheelRad, CANbaud_kbps, can_receive_address, uinsComPort, uinsAuxPort, reserved2, portOptions, h3sp330BaudRate, h4xRadioBaudRate, h8gpioBaudRate);
@@ -76,7 +77,7 @@ PYBIND11_NUMPY_DTYPE(debug_string_t, s);
 // PYBIND11_NUMPY_DTYPE(pimu_mag_t, pimu, mag);
 // PYBIND11_NUMPY_DTYPE(can_config_t, can_period_mult, can_transmit_address, can_baudrate_kbps, can_receive_address);
 
-PYBIND11_NUMPY_DTYPE(gpx_gnss_status_t, reserved, fwUpdateState, initState, runState);
+PYBIND11_NUMPY_DTYPE(gpx_gnss_status_t, lastRstCause, fwUpdateState, initState, runState);
 PYBIND11_NUMPY_DTYPE(gpx_status_t, timeOfWeekMs, status, grmcBitsSer0, grmcBitsSer1, grmcBitsSer2, grmcBitsUSB, grmcNMEABitsSer0, grmcNMEABitsSer1, grmcNMEABitsSer2, grmcNMEABitsUSB, hdwStatus, mcuTemp, navOutputPeriodMs, flashCfgChecksum, rtkMode, gnssStatus, gpxSourcePort, upTime);
 
 PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);

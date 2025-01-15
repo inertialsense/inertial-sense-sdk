@@ -117,6 +117,7 @@ static inline const char *portName(port_handle_t port) {
  * @return the number of bytes which be be safely written to the port without data drop
  */
 static inline int portFree(port_handle_t port) {
+    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
     return (port && ((base_port_t*)port)->portFree) ? ((base_port_t*)port)->portFree(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -126,6 +127,7 @@ static inline int portFree(port_handle_t port) {
  * @return
  */
 static inline int portAvailable(port_handle_t port) {
+    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
     return (port && ((base_port_t*)port)->portAvailable) ? ((base_port_t*)port)->portAvailable(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -141,6 +143,7 @@ static inline int portAvailable(port_handle_t port) {
  * @return an implementation specific number
  */
 static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void *userData) {
+    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
     return (port && ((base_port_t*)port)->portLogger) ? ((base_port_t*)port)->portLogger(port, op, buf, len, userData) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -153,6 +156,7 @@ static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, un
  * @return the number of actual bytes read from the internal RX buffer.
  */
 static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
+    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
     if (!port && !((base_port_t*)port)->portRead) return PORT_ERROR__NOT_SUPPORTED;
     int bytesRead =  ((base_port_t*)port)->portRead(port, buf, len);
     if (port && ((base_port_t*)port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, ((base_port_t*)port)->portLoggerData);
@@ -167,6 +171,7 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
  * @return the number of bytes sent (0 is valid), or <0 in the event of an error
  */
 static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
+    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
     if (port && ((base_port_t*)port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, ((base_port_t*)port)->portLoggerData);
     return (port && ((base_port_t*)port)->portWrite) ? ((base_port_t*)port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
 }
@@ -193,5 +198,10 @@ static inline void setPortLogger(port_handle_t port, pfnPortLogger portLogger, v
     }
 }
 // static inline void setPortLogger(port_handle_t port, pfnPortLogger portLogger) { setPortLogger(port, portLogger, NULL); }
+
+static inline const char *portName(port_handle_t port) {
+    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return (const char *)0;
+    return (port && ((base_port_t*)port)->portName) ? ((base_port_t*)port)->portName(port) : (const char *)0;
+}
 
 #endif //IS_CORE_TYPES_H

@@ -13,12 +13,17 @@ on:
           - debug
   push:
     branches:
-      - '**'
-    pull_request:
-      - 'develop'
-      - 'main'
+      - main
+      - develop
+      - '[0-9]+.[0-9]+.[0-9]+-rc'
     tags:
-      - '\d+.\d.+\d+*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+      - develop
+      - '[0-9]+.[0-9]+.[0-9]+-rc'
 
 concurrency:
   group: ${{ github.ref }}
@@ -48,14 +53,16 @@ jobs:
           ./install_gtest.sh
 
       - name: Clean All
-        run: |
-          rm -rf ../cltool/build ../ExampleProjects/build
+        run: ./clean_all.sh
 
       - name: Build SDK
         run: ./build_is_sdk.sh
   
-      - name: Build/Run Unit Tests
-        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests IS-SDK_unit-tests
+      - name: Build Unit Tests
+        run: ./build_unit_tests.sh
+
+      - name: Run Unit Tests
+        run: ./build_unit_tests.sh --nobuild --test
 
       - name: Build cltool
         run: ./build_cltool.sh
@@ -66,7 +73,7 @@ jobs:
           ./build_log_inspector.sh
 
       - name: Build SDK Examples
-        run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
+        run: python3 build_manager.py SDK_Examples ../ExampleProjects
 
   ba_windows:
     name: "General Software Windows"
@@ -89,11 +96,11 @@ jobs:
       - name: Clean all
         run: ./clean_all.bat
 
-      - name: Build SDK
+      - name: Build IS SDK library
         run: ./build_is_sdk.bat
 
-      # - name: SDK Unit Tests
-      #   run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
+      - name: Build Unit Tests
+        run: ./build_unit_tests.bat
 
       - name: Build CLTool
         run: ./build_cltool.bat
@@ -116,6 +123,7 @@ jobs:
 
     container:
       image: ros:noetic
+      #options: --privileged -v /dev:/dev
       options: --device-cgroup-rule="c 166:* rmw"
       volumes:
         - "/dev:/dev"
@@ -158,8 +166,9 @@ jobs:
         run: |
           apt-get update && apt-get -y install python3-pip python3-venv python3-git python3-semver
           ./install_sdk_dependencies.sh
+          ./install_python_dependencies.sh
           ./install_gtest.sh
-  
+
       - name: Setup ROS environment
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
@@ -191,7 +200,7 @@ jobs:
           catkin_make run_tests_inertial_sense_ros_gtest_test_ros_bridge
           catkin_test_results
 
-      - name: Cleanup build folder to prevent future errors
+      - name: Cleanup build folder to prevent future errors (Remove maybe?)
         run: |
           rm -rf ./* || true
           rm -rf ./.??* || true
@@ -201,8 +210,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, docker, focal]
     timeout-minutes: 5
     # if: false  # disable this job
-    if: ${{ always() }} # Makes sure job runs regardless of imx5-integration job outcome
-    needs: [imx5-integration]
 
     container:
       image: osrf/ros:jazzy-desktop
@@ -250,21 +257,35 @@ jobs:
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
-      - name: Install post-checkout dependencies
+      - name: Install dependencies
         working-directory: scripts
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
           cd ../../inertial-sense-sdk/scripts
           ./install_sdk_dependencies.sh
+          ./install_python_dependencies.sh
           ./install_gtest.sh
           chown -R 1003:1003 ../../
           "
 
-      - name: Build ROS2 Bridge
+      # - name: Install dependencies
+      #   run: |
+      #     /ros_entrypoint.sh /bin/bash -e -c "
+      #     ../../inertial-sense-sdk/scripts/install_python_dependencies.sh
+      #     "
+
+      - name: Build IS SDK library
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
-          find . -name "libInertialSenseSDK*" -delete
-          rm log/ build/ install/ src/inertial-sense-sdk/CMakeCache.txt &>/dev/null || true
+          git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
+          ../../inertial-sense-sdk/scripts/build_is_sdk.sh
+          "
+
+      - name: Build ROS2 bridge
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          # find . -name "libInertialSenseSDK*" -delete
+          # rm log/ build/ install/ src/inertial-sense-sdk/CMakeCache.txt &>/dev/null || true
           git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
           colcon build
           "
@@ -276,7 +297,7 @@ jobs:
           ros2 run inertial_sense_ros2 test_inertial_sense_ros2
           "
 
-      - name: Cleanup build folder to prevent future errors
+      - name: Cleanup build folder to prevent future errors (maybe remove?)
         run: |
           rm -rf ./* || true
           rm -rf ./.??* || true

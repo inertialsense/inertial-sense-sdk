@@ -35,12 +35,12 @@ This ROS2 (Jazzy) package, uses the inertial-sense-sdk as a submodule. Clone thi
 ```bash
 mkdir -p ros2_ws/src
 cd ros2_ws/src
-git clone https://github.com/inertialsense/inertial-sense-sdk
+git clone --recursive https://github.com/inertialsense/inertial-sense-sdk
 ```
 then, create a symbolic link to the `ROS/ros2` directory in the `ros2_ws/src` directory using the command `sudo ln -s inertial-sense-sdk/ROS/ros2` (run this from `ros2_ws/src`). This
 allows `colcon build` to find the appropriate package to build.
 
-Return to the `ros2_ws/src` directory and run `colcon build`.
+Return to the `ros2_ws/` directory and run `colcon build`.
 
 For ROS2 to run properly, `. install/setup.bash` in the ROS2 workspace (ros2_ws) must be run to add necessary environment variables. 
 
@@ -59,23 +59,23 @@ You will need to run this command on every new shell you open to have access to 
 ## Execution
 
 ```bash
-ros2 run inertial_sense_ros2 new_target
+ros2 run inertial_sense_ros2 inertial_sense_ros2_node
 ```
 
 For instructions on changing parameter values and topic remapping from the command line while using `ros2 run` refer to [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html). For proper operation, all parameters should be set before execution.
 
 ```bash
 
-ros2 run inertial_sense_ros2 new_target --ros-args -r __node:=nh_ -p [parameter_name]:=[parameter_value] #one parameter
+ros2 run inertial_sense_ros2 inertial_sense_ros2_node --ros-args -r __node:=nh_ -p [parameter_name]:=[parameter_value] #one parameter
 
-ros2 run inertial_sense_ros2 new_target --ros-args -r __node:=nh_ -p [parameter_name1]:=[parameter_value1] -p [parameter_name2]:=[parameter_value2] -p [parameter_name3]:=[parameter_value3] #Multiple parameters
+ros2 run inertial_sense_ros2 inertial_sense_ros2_node --ros-args -r __node:=nh_ -p [parameter_name1]:=[parameter_value1] -p [parameter_name2]:=[parameter_value2] -p [parameter_name3]:=[parameter_value3] #Multiple parameters
 
 ```
 
 To set parameters and topic remapping from a YAML file, refer to the [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html) page, or use one of the sample YAML files in this repository, `src/ros2/launch/example_params.yaml` or  `src/ros2/launch/test_config.yaml`:
 
 ```bash
-ros2 run inertial_sense_ros2 new_target "[path to YAML parameter file]"
+ros2 run inertial_sense_ros2 inertial_sense_ros2_node "[path to YAML parameter file]"
 
 ```
 

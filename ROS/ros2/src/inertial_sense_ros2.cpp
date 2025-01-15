@@ -650,7 +650,9 @@ void InertialSenseROS::start_log()
     std::string filename = getenv("HOME");
     filename += "/Documents/Inertial_Sense/Logs/" + cISLogger::CreateCurrentTimestamp();
     RCLCPP_INFO_STREAM(rclcpp::get_logger("creating_log"),"InertialSenseROS: Creating log in " << filename << " folder");
-    IS_.SetLoggerEnabled(true, filename, cISLogger::LOGTYPE_DAT, RMC_PRESET_IMX_PPD_GROUND_VEHICLE);
+    cISLogger::sSaveOptions options;
+    options.logType = cISLogger::LOGTYPE_RAW;
+    IS_.EnableLogger(true, filename, options, RMC_PRESET_IMX_PPD_GROUND_VEHICLE);
 }
 
 void InertialSenseROS::configure_ascii_output()
@@ -2345,22 +2347,28 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Requ
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.SerialPort();
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+
+    std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
-
-    while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
+    
+    for (const port_handle_t& port : ports) 
     {
-        // Search comm buffer for valid packets
-        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
+        while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
         {
-            ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
-            if (msg->insStatus & 0x00400000)
+            // Search comm buffer for valid packets
+            if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
             {
-                res->success = true;
-                res->message = "Successfully initiated mag recalibration.";
-                return true;
+                ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
+                if (msg->insStatus & 0x00400000)
+                {
+                    res->success = true;
+                    res->message = "Successfully initiated mag recalibration.";
+                    return true;
+                }
             }
         }
     }
@@ -2376,22 +2384,28 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.SerialPort();
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+
+    std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
 
-    while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
+    for (const port_handle_t& port : ports) 
     {
-        // Search comm buffer for valid packets
-        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
+        while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
         {
-            ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
-            if (msg->insStatus & 0x00400000)
+            // Search comm buffer for valid packets
+            if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
             {
-                res->success = true;
-                res->message = "Successfully initiated mag recalibration.";
-                return true;
+                ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
+                if (msg->insStatus & 0x00400000)
+                {
+                    res->success = true;
+                    res->message = "Successfully initiated mag recalibration.";
+                    return true;
+                }
             }
         }
     }
