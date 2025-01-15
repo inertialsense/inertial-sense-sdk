@@ -93,14 +93,31 @@ static msg_stats_t createNewMsgStats(int timeMs, string description = "")
 	return s;
 }
 
-static void updateTimeMs(msg_stats_t &s, int timeMs)
+static void updateTimeMs(msg_stats_t &s, int timeMs, int bytes)
 {
 	s.count++;
 	s.prevTimeMs = s.timeMs;
 	s.timeMs = timeMs;
+
+	// Compute data rate (Bytes/s)
+	s.bytes += bytes;
+    if (s.startTimeMs == 0)
+    {   // Initialize time
+        s.startTimeMs = timeMs;
+    }
+    else
+    {
+        uint32_t dtMs = timeMs - s.startTimeMs;
+        if (dtMs >= 1000)
+        {	// Update ever second
+            s.bytesPerSec = (1000 * s.bytes) / dtMs;
+            s.bytes = 0;
+            s.startTimeMs = timeMs;
+        }
+    }
 }
 
-void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int timeMs)
+void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs)
 {
 	switch (ptype)
 	{
@@ -112,7 +129,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 		}
 
 		{	// Update count and timestamps
-			updateTimeMs(msgStats.isb[id], timeMs);
+			updateTimeMs(msgStats.isb[id], timeMs, bytes);
 		}
 		break;
 
@@ -123,7 +140,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 		}
 
 		{	// Update count and timestamps
-			updateTimeMs(msgStats.nmea[id], timeMs);
+			updateTimeMs(msgStats.nmea[id], timeMs, bytes);
 		}
 		break;
 
@@ -136,7 +153,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 		}
 
 		{	// Update count and timestamps
-			updateTimeMs(msgStats.ublox[id], timeMs);
+			updateTimeMs(msgStats.ublox[id], timeMs, bytes);
 		}
 		break;
 
@@ -148,7 +165,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 
 		{	// Update count and timestamps
 			msg_stats_t &s = msgStats.rtcm3[id];
-			updateTimeMs(s, timeMs);
+            updateTimeMs(s, timeMs, bytes);
 
 			if (id == 1029)
 			{
@@ -159,14 +176,14 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 
 	case _PTYPE_INERTIAL_SENSE_ACK:
 		{
-			updateTimeMs(msgStats.ack, timeMs);
+			updateTimeMs(msgStats.ack, timeMs, bytes);
 		}
 		break;
 
 	default:
 	case _PTYPE_PARSE_ERROR:
 		{
-			updateTimeMs(msgStats.parseError, timeMs);
+			updateTimeMs(msgStats.parseError, timeMs, bytes);
 		}
 		break;
 	}
@@ -181,7 +198,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 	if (!msgStats.isb.empty())
 	{
 		str.append("Inertial Sense Binary: __________________\n");
-		str.append(" DID   Count  dtMs  Description\n");
+		str.append(" DID   Count  dtMs   Bps  Description\n");
 		std::map<int, msg_stats_t>::iterator it;
 		for (it = msgStats.isb.begin(); it != msgStats.isb.end(); it++)
 		{
@@ -189,7 +206,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 			msg_stats_t &s = it->second;
 			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 
-			SNPRINTF(buf, BUF_SIZE, "%4d %7d %5d  %s\n", did, s.count, dtMs, s.description.c_str());
+            SNPRINTF(buf, BUF_SIZE, "%4d %7d %5d %5d  %s\n", did, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
 		}
 	}
@@ -197,7 +214,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 	if (!msgStats.nmea.empty())
 	{
 		str.append("NMEA: __________________________________\n");
-		str.append("  ID   Count  dtMs  Description\n");
+		str.append("  ID   Count  dtMs   Bps  Description\n");
 		std::map<int, msg_stats_t>::iterator it;
 		for (it = msgStats.nmea.begin(); it != msgStats.nmea.end(); it++)
 		{
@@ -209,7 +226,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 				char str[8];
 			} val = {};
 			val.id = it->first;
-			SNPRINTF(buf, BUF_SIZE, "%s %7d %5d  %s\n", val.str, s.count, dtMs, s.description.c_str());
+            SNPRINTF(buf, BUF_SIZE, "%4s %7d %5d %5d  %s\n", val.str, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
 		}
 	}
@@ -217,7 +234,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 	if (!msgStats.ublox.empty())
 	{
 		str.append("Ublox: __________________________________\n");
-		str.append("(Class  ID)   Count  dtMs  Description\n");
+		str.append("(Class  ID)   Count  dtMs   Bps  Description\n");
 		std::map<int, msg_stats_t>::iterator it;
 		for (it = msgStats.ublox.begin(); it != msgStats.ublox.end(); it++)
 		{
@@ -226,7 +243,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 			uint8_t msgClass = (uint8_t)id;
 			uint8_t msgID = (uint8_t)(id >> 8);
 			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
-			SNPRINTF(buf, BUF_SIZE, "(0x%02x 0x%02x) %7d %5d  %s\n", msgClass, msgID, s.count, dtMs, s.description.c_str());
+            SNPRINTF(buf, BUF_SIZE, "(0x%02x 0x%02x) %7d %5d %5d  %s\n", msgClass, msgID, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
 		}
 	}
@@ -234,14 +251,14 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 	if (!msgStats.rtcm3.empty())
 	{
 		str.append("RTCM3: __________________________________\n");
-		str.append("  ID   Count  dtMs  Description\n");
+		str.append("  ID   Count  dtMs   Bps  Description\n");
 		std::map<int, msg_stats_t>::iterator it;
 		for (it = msgStats.rtcm3.begin(); it != msgStats.rtcm3.end(); it++)
 		{
 			int id = it->first;
 			msg_stats_t &s = it->second;
 			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
-			SNPRINTF(buf, BUF_SIZE, "%3d %7d %5d  %s\n", id, s.count, dtMs, s.description.c_str());
+            SNPRINTF(buf, BUF_SIZE, "%3d %7d %5d %5d  %s\n", id, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
 		}
 	}
@@ -249,10 +266,10 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 	if (msgStats.ack.count>5)
 	{
 		str.append("Acknowledge: ____________________________\n");
-		str.append("   Count  dtMs\n");
+        str.append("   Count  dtMs   Bps\n");
 		msg_stats_t &s = msgStats.ack;
 		int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
-		SNPRINTF(buf, BUF_SIZE, "%8d %5d\n", s.count, dtMs);
+        SNPRINTF(buf, BUF_SIZE, "%8d %5d %5d\n", s.count, dtMs, s.bytesPerSec);
 		str.append(string(buf));
 	}
 
@@ -260,10 +277,10 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 	if (msgStats.parseError.count>5)
 	{
 		str.append("Parse Error: ____________________________\n");
-		str.append("   Count   dtMs\n");
+		str.append("   Count   dtMs   Bps\n");
 		msg_stats_t &s = msgStats.parseError;
 		int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
-		SNPRINTF(buf, BUF_SIZE, "%8d %5d\n", s.count, dtMs);
+		SNPRINTF(buf, BUF_SIZE, "%8d %5d\n", s.count, dtMs, s.bytesPerSec);
 		str.append(string(buf));
 	}
 #endif

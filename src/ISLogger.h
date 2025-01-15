@@ -55,8 +55,12 @@ public:
         LOGTYPE_SDAT,       // sorted -- unsupported/deprecated, DO NOT USE!
         LOGTYPE_CSV,
         LOGTYPE_KML,
-        LOGTYPE_JSON
+        LOGTYPE_JSON,
+        LOGTYPE_COUNT
     };
+
+    // Static array of strings for log type names
+    static const char* logTypeStrings[LOGTYPE_COUNT];
 
     struct sSaveOptions
     {

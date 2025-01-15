@@ -57,6 +57,8 @@ extern "C" {
 #define VEC3_ANY_ZERO(v)			( ((v[0])==(0.0f)) || ((v[1])==(0.0f)) || ((v[2])==(0.0f)) )
 #define VEC3_ANY_NOT_ZERO(v)		( ((v[0])!=(0.0f)) || ((v[1])!=(0.0f)) || ((v[2])!=(0.0f)) )
 
+#define INT3_ANY_NOT_ZERO(v)		( ((v[0])!=(0)) || ((v[1])!=(0)) || ((v[2])!=(0)) )
+
 #define SET_VEC3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define SET_VEC4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
 

@@ -21,6 +21,9 @@ typedef struct
     int count;
     int timeMs;
     int prevTimeMs;
+    int bytes;
+    unsigned int startTimeMs;
+    int bytesPerSec;
     std::string description;
 } msg_stats_t;
 
@@ -37,7 +40,7 @@ typedef struct
 
 std::string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID);
 std::string messageDescriptionRtcm3(int id);
-void messageStatsAppend(std::string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int timeMs);
+void messageStatsAppend(std::string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs);
 std::string messageStatsSummary(mul_msg_stats_t &msgStats);
 
 
