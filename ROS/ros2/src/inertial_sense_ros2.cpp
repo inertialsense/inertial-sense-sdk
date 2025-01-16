@@ -983,7 +983,7 @@ void InertialSenseROS::configure_rtk()
                 RCLCPP_INFO(rclcpp::get_logger("config_rtk_rover"),"InertialSenseROS: Configuring RTK Rover");
                 rs_.rtk_pos.enabled = true;
                 connect_rtk_client(*(RtkRoverCorrectionProvider_Ntrip *) RTK_rover_->correction_input);
-                rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
+                rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_NEW;
                 SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
 
@@ -993,7 +993,7 @@ void InertialSenseROS::configure_rtk()
                 RCLCPP_INFO(rclcpp::get_logger("config_rtk_rover_w_radio"),"InertialSenseROS: Configuring RTK Rover with radio enabled");
                 rs_.rtk_pos.enabled = true;
                 if (RTK_base_) RTK_base_->enable = false;
-                rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
+                rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_NEW;
                 SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
             }
@@ -1038,7 +1038,7 @@ void InertialSenseROS::configure_rtk()
         {
             RCLCPP_INFO(rclcpp::get_logger("config_dual_gnss"),"InertialSenseROS: Configuring Dual GNSS (compassing)");
             RTK_rover_->enable = false; // FIXME:  Is this right?  Rover is disabled when in Compassing?
-            rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
+            rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRICATED;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
@@ -1047,7 +1047,7 @@ void InertialSenseROS::configure_rtk()
         {
             RCLCPP_INFO(rclcpp::get_logger("config_rtk_rover_w_radio"),"InertialSenseROS: Configuring RTK Rover with radio enabled");
             if (RTK_base_) RTK_base_->enable = false;
-            rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_NEW : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
@@ -1055,7 +1055,7 @@ void InertialSenseROS::configure_rtk()
         {
             RCLCPP_INFO(rclcpp::get_logger("config_as_rtk_rover"),"InertialSenseROS: Configuring as RTK Rover");
             if (RTK_base_) RTK_base_->enable = false;
-            rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_NEW : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED);
             connect_rtk_client((RtkRoverCorrectionProvider_Ntrip&)*RTK_rover_->correction_input);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);

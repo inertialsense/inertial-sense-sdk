@@ -2728,22 +2728,22 @@ enum eGnssSatSigConst
 enum eRTKConfigBits
 {
     /** Enable onboard RTK GNSS precision positioning (GPS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING             = (int)0x00000001,
+    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED  = (int)0x00000001,
 
     /** Enable external RTK GNSS positioning (GPS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL    = (int)0x00000002,
-
-    /** Enable external RTK GNSS compassing on uBlox F9P (GPS2) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P          = (int)0x00000004,
-
+    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_NEW         = (int)0x00000002,
+    
     /** Enable dual GNSS RTK compassing (GPS2 to GPS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING              = (int)0x00000008,    
+    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING              = (int)0x00000004,    
+
+    /** Enable dual GNSS RTK compassing (GPS2 to GPS1) DECPRECATED*/
+    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED   = (int)0x00000008,
 
     /** Mask of RTK GNSS positioning types */
-    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK        = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING|RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL),
+    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK        = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED | RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_NEW),
 
     /** Mask of dual GNSS RTK compassing types */
-    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK         = (RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING|RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P),
+    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK         = (RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED),
 
     /** Mask of RTK position, heading, and base modes */
     RTK_CFG_BITS_ROVER_MODE_MASK                        = (int)0x0000000F,
@@ -2808,6 +2808,15 @@ enum eRTKConfigBits
     /** Forward all messages between the selected GPS and serial port.  Disable for RTK base use (to forward only GPS raw messages and use the surveyed location refLLA instead of current GPS position).  */
     RTK_CFG_BITS_GPS_PORT_PASS_THROUGH                  = (int)0x00800000,
 
+    /** Enable RTK base and output RTCM3 data from GPS 1 on the current serial port */
+    RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_CUR_PORT        = (int)0x01000000,
+
+    /** Enable RTK base and output RTCM3 data from GPS 2 on the current serial port */
+    RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT        = (int)0x02000000,
+
+    /** Mask of RTK base and output RTCM3 data from GPS 2 on the current serial port */
+    RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CUR_PORT_MASK        = (RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_CUR_PORT | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT),
+
     /** All base station bits */
     RTK_CFG_BITS_BASE_MODE = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
@@ -2863,7 +2872,7 @@ enum eRTKConfigBits
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB),
 
     /** Rover on-board RTK engine used */
-    RTK_CFG_BITS_ROVER_MODE_ONBOARD_MASK = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING),
+    RTK_CFG_BITS_ROVER_MODE_ONBOARD_MASK = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING),
 
     /** Mask of Rover, Compassing, and Base modes */
     RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),    
