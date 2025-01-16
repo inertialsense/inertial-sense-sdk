@@ -861,7 +861,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             rs_.rtk_cmp.enabled = true;
-            flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
+            flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_NEW;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
