@@ -2731,10 +2731,10 @@ enum eRTKConfigBits
     RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED  = (int)0x00000001,
 
     /** Enable external RTK GNSS positioning (GPS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING         = (int)0x00000002,
+    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING             = (int)0x00000002,
     
     /** Enable dual GNSS RTK compassing (GPS2 to GPS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING          = (int)0x00000004,    
+    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING              = (int)0x00000004,    
 
     /** Enable dual GNSS RTK compassing (GPS2 to GPS1) DECPRECATED*/
     RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED   = (int)0x00000008,
