@@ -1038,7 +1038,7 @@ void InertialSenseROS::configure_rtk()
         {
             RCLCPP_INFO(rclcpp::get_logger("config_dual_gnss"),"InertialSenseROS: Configuring Dual GNSS (compassing)");
             RTK_rover_->enable = false; // FIXME:  Is this right?  Rover is disabled when in Compassing?
-            rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRICATED;
+            rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
