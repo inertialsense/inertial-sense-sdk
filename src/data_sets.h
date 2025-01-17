@@ -2814,7 +2814,7 @@ enum eRTKConfigBits
     /** Enable RTK base and output RTCM3 data from GPS 2 on the current serial port */
     RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT        = (int)0x02000000,
 
-    /** Mask of RTK base and output RTCM3 data from GPS 2 on the current serial port */
+    /** Mask of RTK base and output RTCM3 data on the current serial ports */
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CUR_PORT_MASK        = (RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_CUR_PORT | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT),
 
     /** All base station bits */
