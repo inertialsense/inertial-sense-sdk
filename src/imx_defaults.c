@@ -158,8 +158,8 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformCo
 
     case PLATFORM_CFG_TYPE_NONE_ONBOARD_G2:
     case PLATFORM_CFG_TYPE_RUG1:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_ONBOARD_1);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_ONBOARD_2);
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
         SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_M8);
         SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_M8);
         break;

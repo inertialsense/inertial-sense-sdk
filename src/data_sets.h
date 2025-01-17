@@ -3059,10 +3059,6 @@ enum eIoConfig
     IO_CONFIG_GPS_SOURCE_MASK                   = (int)0x00000007,
     /** GPS source - Disable */
     IO_CONFIG_GPS_SOURCE_DISABLE                = (int)0,
-    /** GPS source - GNSS receiver 1 onboard uINS */
-    IO_CONFIG_GPS_SOURCE_ONBOARD_1              = (int)1,
-    /** GPS source - GNSS receiver 2 onboard uINS */
-    IO_CONFIG_GPS_SOURCE_ONBOARD_2              = (int)2,
     /** GPS source - Serial 0 */
     IO_CONFIG_GPS_SOURCE_SER0                   = (int)3,
     /** GPS source - Serial 1 */
