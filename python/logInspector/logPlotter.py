@@ -1107,6 +1107,13 @@ class logPlot:
                 if r: ax.text(p1, -cnt * 1.5, 'Acc3 OK')
                 cnt += 1
                 cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x01000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Gyr Reject')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x02000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Acc Reject')
+                cnt += 1
+                cnt += 1
 
             ax.grid(True)
 
@@ -1285,7 +1292,7 @@ class logPlot:
                 if r: ax.text(p1, -cnt * 1.5, 'Satellite Rx')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Strong In')
+                if r: ax.text(p1, -cnt * 1.5, 'Strobe In')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000040) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'GPS TOW Valid')
@@ -1293,8 +1300,6 @@ class logPlot:
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000080) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Ref IMU Rx')
                 cnt += 1
-                cnt += 1
-
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00002000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'EKF using ref. IMU')
                 cnt += 1
@@ -1306,6 +1311,14 @@ class logPlot:
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00020000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
                 cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00F00000) >> 20) / 4)
+                if r: ax.text(p1, -cnt * 1.5, 'Com Parse Error Count')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x02000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Temperature error')
+                cnt += 1
+                cnt += 1
+
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00040000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'No GPS PPS')
                 cnt += 1
@@ -1314,14 +1327,15 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00F00000) >> 20) / 4)
-                if r: ax.text(p1, -cnt * 1.5, 'Com Parse Error Count')
+                bit_status = (hStatus & 0x000F0000) >> 24
+                ax.plot(instime, -cnt * 1.5 + (bit_status == 1))
+                if r: ax.text(p1, -cnt * 1.5, 'BIT Running')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x01000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'BIT Self Test Fault')
+                ax.plot(instime, -cnt * 1.5 + (bit_status == 2))
+                if r: ax.text(p1, -cnt * 1.5, 'BIT Passed')
                 cnt += 1
-                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x02000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Temperature error')
+                ax.plot(instime, -cnt * 1.5 + (bit_status == 3))
+                if r: ax.text(p1, -cnt * 1.5, 'BIT Fault')
                 cnt += 1
                 cnt += 1
 

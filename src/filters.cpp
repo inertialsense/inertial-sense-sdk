@@ -16,10 +16,6 @@
 
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
-void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, int Nsteps, float dti);
-float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast );
-float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast );
-float deltaThetaDeltaVelBortz( pimu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps );
 #if 0
 float integrateDeltaThetaVelRoscoe(
 	pimu_t *output, 
@@ -326,6 +322,13 @@ int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt)
     return 1;
 }
 
+void copyImu(imu_t *dst, const imu_t *src)
+{
+	dst->time = src->time;
+	dst->status = src->status;
+	cpy_Vec3_Vec3(dst->I.pqr, src->I.pqr);
+	cpy_Vec3_Vec3(dst->I.acc, src->I.acc);
+}
 
 #define CON_SCUL_INT_STEPS  2
 
@@ -365,7 +368,7 @@ float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast )
 	add_Vec3_Vec3( output->vel, output->vel, tmp3 );
 
 	// Update history
-	*imuLast = *imu;
+	copyImu(imuLast, imu);
 
 	return dt;
 }
@@ -389,7 +392,7 @@ float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast 
 	add_Vec3_Vec3( output->vel, output->vel, tmp3 );
 
 	// Update history
-	*imuLast = *imu;
+	copyImu(imuLast, imu);
 
 	return dt;
 }
@@ -454,7 +457,7 @@ float deltaThetaDeltaVelBortz(pimu_t *output, imu_t *imu, imu_t *imuLast, int Ns
 	integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), Nsteps, dt);
 
 	// Update history
-	*imuLast = *imu;
+	copyImu(imuLast, imu);
 
 	return dt;
 }
@@ -509,7 +512,7 @@ float integrateDeltaThetaVelRoscoe(
 	cpy_Vec3_Vec3(delta_veloc_last, delta_veloc);							//delta_veloc_last  <-- delta_veloc     {age delta_veloc}
 	
 	// Update history
-	*imuLast = *imu;
+	copyImu(imuLast, imu);
 	
 	return dt;
 }

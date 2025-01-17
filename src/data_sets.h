@@ -320,12 +320,12 @@ enum eHdwStatusFlags
     HDW_STATUS_MOTION_ACC                       = (int)0x00000002,
     /** Unit is moving and NOT stationary */
     HDW_STATUS_MOTION_MASK                      = (int)0x00000003,
-    /** IMU gyro fault detection. One of the redundant gyro sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_FAULT_DETECT_GYR             = (int)0x00000004,
-    /** IMU accelerometer fault detection. One of the redundant accelerometer sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_FAULT_DETECT_ACC             = (int)0x00000008,
-    /** IMU fault detection mask. One of the redundant IMU sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_FAULT_DETECT_MASK            = (int)0x0000000C,
+    /** IMU gyro fault rejection. One of the redundant gyro sensors is divergent and being excluded. */
+    HDW_STATUS_IMU_FAULT_REJECT_GYR             = (int)0x00000004,
+    /** IMU accelerometer fault rejection. One of the redundant accelerometer sensors is divergent and being excluded. */
+    HDW_STATUS_IMU_FAULT_REJECT_ACC             = (int)0x00000008,
+    /** IMU fault rejection mask. One of the redundant IMU sensors is divergent and being excluded. */
+    HDW_STATUS_IMU_FAULT_REJECT_MASK            = (int)0x0000000C,
 
     /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
     HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
@@ -379,7 +379,7 @@ enum eHdwStatusFlags
     /** (BIT) Built-in self-test passed */
     HDW_STATUS_BIT_PASSED                       = (int)0x02000000,
     /** (BIT) Built-in self-test failure */
-    HDW_STATUS_BIT_FAULT                        = (int)0x03000000,
+    HDW_STATUS_BIT_FAILED                       = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
     HDW_STATUS_BIT_MASK                         = (int)0x03000000,
 
@@ -405,13 +405,13 @@ enum eHdwStatusFlags
 
     /** Bitmask of all hdwStatus errors */
     HDW_STATUS_ERROR_MASK                       =   HDW_STATUS_FAULT_SYS_CRITICAL | 
-                                                    HDW_STATUS_IMU_FAULT_DETECT_MASK | 
+                                                    HDW_STATUS_IMU_FAULT_REJECT_MASK | 
                                                     HDW_STATUS_SATURATION_MASK | 
                                                     HDW_STATUS_ERR_GPS_PPS_NOISE |
                                                     HDW_STATUS_ERR_COM_TX_LIMITED |
                                                     HDW_STATUS_ERR_COM_RX_OVERRUN |
                                                     HDW_STATUS_ERR_NO_GPS_PPS |
-                                                    HDW_STATUS_BIT_FAULT |
+                                                    HDW_STATUS_BIT_FAILED |
                                                     HDW_STATUS_ERR_TEMPERATURE,
 };
 
@@ -950,6 +950,11 @@ enum eImuStatus
     IMU_STATUS_IMU3_OK                          = (int)(IMU_STATUS_GYR3_OK | IMU_STATUS_ACC3_OK),
     /** IMU gyros and accelerometers available */
     IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
+
+    /** IMU fault rejection is excluding one of the gyros from the combined IMU output */
+    IMU_STATUS_GYR_FAULT_REJECT                 = (int)0x01000000,
+    /** IMU fault rejection is excluding one of the accelerometers from the combined IMU output */
+    IMU_STATUS_ACC_FAULT_REJECT                 = (int)0x02000000,
 };
 
 /** (DID_GPS1_POS, DID_GPS1_RCVR_POS, DID_GPS2_POS) GPS position data */
@@ -1825,9 +1830,11 @@ typedef struct PACKED
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_RAW)                                            
+                                            | RMC_BITS_IMU3_RAW \
+                                            | RMC_BITS_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_UNCAL)
+                                            | RMC_BITS_IMU3_UNCAL \
+                                            | RMC_BITS_PIMU)
 #define RMC_PRESET_INS                      (RMC_BITS_INS2 \
                                             | RMC_BITS_GPS1_POS \
                                             | RMC_BITS_PRESET)
@@ -2262,15 +2269,16 @@ enum eBitCommand
     BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
     BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
     BIT_CMD_RESERVED_2                              = (int)5,   
+    BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection
 };
 
 /** Built-in Test: State */
 enum eBitState
 {
-    BIT_STATE_OFF					                = (int)0,
-    BIT_STATE_DONE				                    = (int)1,       // Test is finished
+    BIT_STATE_OFF                                   = (int)0,
+    BIT_STATE_DONE                                  = (int)1,       // Test is finished
     BIT_STATE_RUNNING                               = (int)6,
-    BIT_STATE_FINISHING                             = (int)7,	    // Computing results
+    BIT_STATE_FINISHING                             = (int)7,       // Computing results
 };
 
 /** Built-in Test: Test Mode */
