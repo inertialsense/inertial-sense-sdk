@@ -79,11 +79,13 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('EKF Biases', 'ekfBiases')
 
     def createListSensors(self):
-        self.addListItem('IMU3 PQR', 'imu3PQR')
-        self.addListItem('IMU3 Accel', 'imu3Acc')
+        self.addListItem('IMU3 Gyr', 'imu3PQR')
+        self.addListItem('IMU3 Acc', 'imu3Acc')
+        self.addListItem('IMU3 Gyr Combined', 'imu3PqrCombined')
+        self.addListItem('IMU3 Acc Combined', 'imu3AccCombined')
         super(logInspectorInternal, self).createListSensors()
-        self.addListItem('Allan Var. PQR', 'allanVariancePQR')
-        self.addListItem('Allan Var. Accel', 'allanVarianceAcc')
+        self.addListItem('Allan Var. Gyr', 'allanVariancePQR')
+        self.addListItem('Allan Var. Acc', 'allanVarianceAcc')
         self.addListItem('Mag Decl.', 'magDec')
         self.addListItem('Wheel Encoder', 'wheelEncoder')
         self.addListItem('Ground Vehicle Status', 'groundVehicleStatus')
