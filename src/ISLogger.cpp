@@ -83,6 +83,14 @@ SimpleMutex myMutex;
 
 #endif
 
+const char* cISLogger::logTypeStrings[] = {
+    "dat",  // LOGTYPE_DAT
+    "raw",  // LOGTYPE_RAW
+    "sdat", // LOGTYPE_SDAT
+    "csv",  // LOGTYPE_CSV
+    "kml",  // LOGTYPE_KML
+    "json"  // LOGTYPE_JSON
+};
 
 bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
 {
@@ -522,7 +530,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 #if 1
     else
     {	// Success
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id, ISB_HDR_TO_PACKET_SIZE(*dataHdr));
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -581,7 +589,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf));
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf), ISB_HDR_TO_PACKET_SIZE(data->hdr));
     }
     return data;
 }

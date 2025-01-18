@@ -21,24 +21,29 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISComm.h"
 
 
-typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timestamp);
+typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timeMs);
 
 class cLogStatMsgId
 {
 public:
 	unsigned int count;         // count for this data id
 	unsigned int errors;        // error count for this data id
-	double averageTimeDelta;    // average time delta for the data id
-	double totalTimeDelta;      // sum of all time deltas
-	double lastTimestamp;
-	double lastTimestampDelta;
-	double minTimestampDelta;
-	double maxTimestampDelta;
-	unsigned int timestampDeltaCount;
-	unsigned int timestampIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
+	unsigned int meanDtMs;    	// average time delta for the data id
+	unsigned int accumDtMs;     // sum of all time deltas
+	unsigned int lastTimeMs;
+	unsigned int lastDtMs;
+	unsigned int minDtMs;
+	unsigned int maxDtMs;
+	unsigned int dtMsCount;
+	unsigned int timeIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
+
+	unsigned int bpsBytes;
+	unsigned int bpsStartTimeMs;
+	unsigned int bytesPerSec;
 
 	cLogStatMsgId();
-	void LogTimestamp(double timestamp);
+	void LogTimestamp(unsigned int timeMs);
+	void LogByteSize(unsigned int timeMs, int bytes);
 };
 
 struct sLogStatPType
@@ -57,7 +62,7 @@ public:
 	cLogStats();
 	void Clear();
 	void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
+    void LogData(protocol_type_t ptype, int id, int bytes, double timeMs=0.0);
 	unsigned int Count();
 	unsigned int Errors();
 	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
