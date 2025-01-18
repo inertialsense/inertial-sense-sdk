@@ -1327,7 +1327,7 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
-                bit_status = (hStatus & 0x000F0000) >> 24
+                bit_status = (hStatus & 0x03000000) >> 24
                 ax.plot(instime, -cnt * 1.5 + (bit_status == 1))
                 if r: ax.text(p1, -cnt * 1.5, 'BIT Running')
                 cnt += 1
