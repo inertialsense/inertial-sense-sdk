@@ -2357,7 +2357,7 @@ class logPlot:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')                                
                                 ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=label)
-                                if plotResidual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
+                                if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
                                     intPqr = np.empty_like(refPqr)
                                     intPqr[:,i] = np.interp(refTime, time, pqr[:,i], right=np.nan, left=np.nan)
@@ -2440,7 +2440,7 @@ class logPlot:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'm/s^2')
                                 ax[i, n].plot(time, acc[:, i], label=label)
-                                if plotResidual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
+                                if plotResidual and not (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'm/s^2')
                                     intAcc = np.empty_like(refAcc)
                                     intAcc[:,i] = np.interp(refTime, time, acc[:,i], right=np.nan, left=np.nan)
