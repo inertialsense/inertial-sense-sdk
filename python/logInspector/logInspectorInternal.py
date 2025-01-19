@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication
 
 
 class ChooseDevsDialog(QDialog):
-    def __init__(self, plotter, parent=None):
+    def __init__(self, parent):
         super(ChooseDevsDialog, self).__init__(parent)
         self.setWindowTitle("Choose Devices")
         self.parent = parent
@@ -29,7 +29,7 @@ class ChooseDevsDialog(QDialog):
         for i in range(parent.log.numDev):
             checkbox = QCheckBox()
             checkbox.setText(str(parent.log.serials[i]))
-            checkbox.setChecked(i in parent.plotter.active_devs)
+            checkbox.setChecked(i in parent.mplots[0].plotter.active_devs)
             checkbox.clicked.connect(self.updatePlot)
             self.checkboxes.append(checkbox)
             self.mainLayout.addWidget(checkbox)
@@ -47,7 +47,8 @@ class ChooseDevsDialog(QDialog):
         for i, checkbox in enumerate(self.checkboxes):
             if checkbox.isChecked():
                 active_serials.append(self.parent.log.serials[i])
-        self.parent.plotter.setActiveSerials(active_serials)
+        for mplot in self.parent.mplots:
+            mplot.plotter.setActiveSerials(active_serials)
         self.parent.updatePlot()
 
     def clickedOk(self):
@@ -139,8 +140,7 @@ class logInspectorInternal(LogInspectorWindow):
 
     def chooseDevs(self):
         try:
-            for plotter in self.plotter:
-                dlg = ChooseDevsDialog(plotter, self)
+            dlg = ChooseDevsDialog(self)
             dlg.show()
             dlg.exec_()
         except Exception as e:
