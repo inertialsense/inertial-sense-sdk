@@ -2440,7 +2440,7 @@ class logPlot:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'm/s^2')
                                 ax[i, n].plot(time, acc[:, i], label=label)
-                                if plotResidual and not (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
+                                if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'm/s^2')
                                     intAcc = np.empty_like(refAcc)
                                     intAcc[:,i] = np.interp(refTime, time, acc[:,i], right=np.nan, left=np.nan)
