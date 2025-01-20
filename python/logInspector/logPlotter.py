@@ -3080,8 +3080,6 @@ class logPlot:
             timeGps1 = getTimeFromGpsTowMs(towMsGps1)
             timeGps2 = getTimeFromGpsTowMs(towMsGps2)
 
-            dtPimu = self.getData(d, DID_PIMU, 'dt')
-
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if np.size(towOffset) > 0:
                 towOffset = towOffset[-1]
@@ -3097,6 +3095,7 @@ class logPlot:
                 deltaTimestamp = timePimu[1:] - timePimu[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromGpsTow(timePimu[1:] + towOffset)            
+                dtPimu = self.getData(d, DID_PIMU, 'dt')[1:]
             elif timeIMU.size:
                 deltaTimestamp = timeIMU[1:] - timeIMU[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
