@@ -413,15 +413,17 @@ static __inline f_t max_Vec3_X(const ixVector3 v )
  */
 static __inline f_t abs_Vec3_X(const ixVector3 v )
 {
-	f_t val = fabsf(v[0]);
-	
-    if( val < fabsf(v[1]) )
-		val = v[1];
+    f_t result = fabsf(v[0]);
+    f_t val1   = fabsf(v[1]);
+    f_t val2   = fabsf(v[2]);
 
-    if( val < fabsf(v[2]) )
-		val = v[2];
+    if( result < val1 )
+        result = val1;
+
+    if( result < val2 )
+        result = val2;
 		
-	return val;
+    return result;
 }
 
 /* Max of vector elements
