@@ -2204,6 +2204,34 @@ class logPlot:
         time = None
         dt = None
 
+        refTime = self.getData(device, DID_REFERENCE_PIMU, 'time')
+        if refTime.size > 5: # DID_REFERENCE_PIMU, ignore data if there are just a few RefIMU data points (logging bug?)
+            dt = self.getData(device, DID_REFERENCE_PIMU, 'dt')
+            if accelSensor == 0:
+                # Gyro
+                refTheta = self.getData(device, DID_REFERENCE_PIMU, 'theta')
+                ref = refTheta / dt[:,None]
+            else:
+                # Accel
+                refVel = self.getData(device, DID_REFERENCE_PIMU, 'vel')
+                ref = refVel / dt[:,None]
+            refImu = []
+            for sample in range(0, len(I)):
+                refImu.append(ref)
+            refImu = np.array(refImu)
+        else:
+            refTime = self.getData(device, DID_REFERENCE_IMU, 'time')
+            if refTime.size > 5: # DID_REFERENCE_PIMU, ignore data if there are just a few RefIMU data points (logging bug?)
+                I = self.getData(device, DID_REFERENCE_IMU, 'I')
+                if accelSensor == 0:    # Gyro
+                    refImu = I['pqr']
+                else:                   # Accel
+                    refImu = I['acc']
+                # refImu = []
+                # for sample in range(0, len(I)):
+                #     refImu.append(ref)
+                # refImu = np.array(ref)
+
         if accelSensor==0:
             # I = np.copy(self.getData(device, DID_IMU_RAW, 'I'))  # to plot raw gyro data
             # imu1 = I['pqr']                                      # to plot raw gyro data
@@ -2222,62 +2250,43 @@ class logPlot:
                 imu1[:, i] /= dt
             imuCount = 1
 
-        else:
-            time = self.getData(device, DID_REFERENCE_PIMU, 'time')
+        else:  
+            time = self.getData(device, DID_IMU, 'time')
 
-            if time.size > 5: # DID_REFERENCE_PIMU, ignore data if there are just a few RefIMU data points (logging bug?)
-                dt = self.getData(device, DID_REFERENCE_PIMU, 'dt')
-                if accelSensor == 0:
-                    # Gyro
-                    refTheta = self.getData(device, DID_REFERENCE_PIMU, 'theta')
-                    ref = refTheta / dt[:,None]
-                else:
-                    # Accel
-                    refVel = self.getData(device, DID_REFERENCE_PIMU, 'vel')
-                    ref = refVel / dt[:,None]
+            if len(time) != 0 and not useImu3:  # DID_IMU
+                I = self.getData(device, DID_IMU, 'I')
+                dt = time[1:] - time[:-1]
+                dt = np.append(dt, dt[-1])
                 imu1 = []
                 for sample in range(0, len(I)):
-                    imu1.append(ref)
+                    imu1.append(I[sample][accelSensor])
                 imu1 = np.array(imu1)
                 imuCount = 1
 
-            else:  
-                time = self.getData(device, DID_IMU, 'time')
+            else:   
+                time = self.getData(device, DID_IMU3_RAW, 'time')
 
-                if len(time) != 0 and not useImu3:  # DID_IMU
-                    I = self.getData(device, DID_IMU, 'I')
+                if len(time) != 0: # DID_IMU3_RAW 
+                    I = self.getData(device, DID_IMU3_RAW, 'I')
+                    imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
                     imu1 = []
-                    for sample in range(0, len(I)):
-                        imu1.append(I[sample][accelSensor])
+                    imu2 = []
+                    imu3 = []
+                    if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
+                        for sample in range(0, len(I)):
+                            imu1.append(I[sample][0][accelSensor])
+                    if (imuStatus[0] & (0x00020000<<(accelSensor*3))):     # Gyro or accel 2
+                        for sample in range(0, len(I)):
+                            imu2.append(I[sample][1][accelSensor])
+                    if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 3
+                        for sample in range(0, len(I)):
+                            imu3.append(I[sample][2][accelSensor])
                     imu1 = np.array(imu1)
-                    imuCount = 1
-
-                else:   
-                    time = self.getData(device, DID_IMU3_RAW, 'time')
-
-                    if len(time) != 0: # DID_IMU3_RAW 
-                        I = self.getData(device, DID_IMU3_RAW, 'I')
-                        imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
-                        dt = time[1:] - time[:-1]
-                        dt = np.append(dt, dt[-1])
-                        imu1 = []
-                        imu2 = []
-                        imu3 = []
-                        if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
-                            for sample in range(0, len(I)):
-                                imu1.append(I[sample][0][accelSensor])
-                        if (imuStatus[0] & (0x00020000<<(accelSensor*3))):     # Gyro or accel 2
-                            for sample in range(0, len(I)):
-                                imu2.append(I[sample][1][accelSensor])
-                        if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 3
-                            for sample in range(0, len(I)):
-                                imu3.append(I[sample][2][accelSensor])
-                        imu1 = np.array(imu1)
-                        imu2 = np.array(imu2)
-                        imu3 = np.array(imu3)
-                        imuCount = 3
+                    imu2 = np.array(imu2)
+                    imu3 = np.array(imu3)
+                    imuCount = 3
 
         if self.log.serials[device] != 'Ref INS':
             towOffset = self.getData(device, DID_GPS1_POS, 'towOffset')
@@ -2290,7 +2299,7 @@ class logPlot:
         #     imu1[:,1] =  tmp[:,0]
         #     imu1[:,2] = -tmp[:,2]
 
-        return (time, dt, imu1, imu2, imu3, imuCount)
+        return (time, dt, imu1, imu2, imu3, imuCount, refTime, refImu)
 
     def imu3PQR(self, fig=None, axs=None):
         self.imuPQR(fig, axs, useImu3=True)
@@ -2320,15 +2329,23 @@ class logPlot:
                 refTime.append(refTime_)
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        (time, dt, pqr0, pqr1, pqr2, sensorCnt) = self.loadGyros(0, useImu3)
+        (time, dt, pqr0, pqr1, pqr2, sensorCnt, refTime, refPqr) = self.loadGyros(0, useImu3)
 
         plotResidual = (sensorCnt==1 or combineImu3) and self.residual 
         if sensorCnt:
             ax = fig.subplots(3, (2 if plotResidual else 1 if combineImu3 else sensorCnt), sharex=True, squeeze=False)
-        if plotResidual:
+
+        # Scan all devices for reference IMU
+        for d in self.active_devs:
+            (time, dt, pqr0, pqr1, pqr2, sensorCnt, refTime, refPqr) = self.loadGyros(d, useImu3)
+            if refTime.size > 5:
+                break
+
+        # If ref IMU was not found, compute it from the average of all
+        if refTime.size < 5:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImu3:
-                    (time, dt, pqr0, pqr1, pqr2, sensorCnt) = self.loadGyros(d, useImu3)
+                    (time, dt, pqr0, pqr1, pqr2, sensorCnt, refTime, refPqr) = self.loadGyros(d, useImu3)
                     refTime = time
                     if combineImu3:
                         refPqr = (pqr0 + pqr1 + pqr2) / 3
@@ -2337,7 +2354,7 @@ class logPlot:
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (time, dt, pqr0, pqr1, pqr2, sensorCnt) = self.loadGyros(d, useImu3)
+            (time, dt, pqr0, pqr1, pqr2, sensorCnt, refTime, refPqr) = self.loadGyros(d, useImu3)
             if sensorCnt:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
@@ -2364,15 +2381,20 @@ class logPlot:
                                     resPqr = intPqr - refPqr
                                     ax[i,1].plot(refTime, resPqr[:,i]*RAD2DEG, label=(label if dev_idx==0 else None))
 
-        if not plotResidual:
-            for dev_idx, d in enumerate(self.active_devs):
-                if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
-                    for i in range(3):
-                        if dev_idx == 0:
-                            plabel = 'reference'
-                        else:
-                            plabel = ''
-                        ax[i, 0].plot(refTime[d], refPqr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
+
+        if refTime.size > 5:
+            for i in range(3):
+                ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, label="Reference")
+
+        # if not plotResidual:
+        #     for dev_idx, d in enumerate(self.active_devs):
+        #         if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
+        #             for i in range(3):
+        #                 if dev_idx == 0:
+        #                     plabel = 'reference'
+        #                 else:
+        #                     plabel = ''
+        #                 ax[i, 0].plot(refTime[d], refPqr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
 
         for i in range((1 if combineImu3 else sensorCnt)):
             self.legends_add(ax[0][i].legend(ncol=2))
