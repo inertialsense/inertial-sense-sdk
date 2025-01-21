@@ -63,6 +63,7 @@ extern "C" {
 #define SET_VEC4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
 
 #define IS_NAN(v)					((v) != (v))
+#define IS_INF(v)                   (isinf(v))
 
 // Zero order low-pass filter 
 typedef struct

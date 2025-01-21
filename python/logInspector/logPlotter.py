@@ -3119,8 +3119,9 @@ class logPlot:
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
             ax[1].plot(xGps1, dtGps1)
             ax[2].plot(xGps2, dtGps2)
-            if dtPimu.size:
-                ax[3].plot(xImu, dtPimu)
+            if 'dtPimu' in locals():
+                if dtPimu.size:
+                    ax[3].plot(xImu, dtPimu)
             ax[4].plot(xImu, deltaTimestamp)
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
