@@ -1608,7 +1608,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
         case 'c': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-rc");        break;
         case 'd': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-devel");     break;
         case 's': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
-        case '*': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
+        case '^': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
         default : break;
     }
 
@@ -1617,8 +1617,8 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
     }
 
     char dirty = 0;
-    if (info.buildType == '*') {
-        dirty = '*';
+    if (info.buildType == '^') {
+        dirty = '^';
     }
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %08x%c (%05X.%d)",
