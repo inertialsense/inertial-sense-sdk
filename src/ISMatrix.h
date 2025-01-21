@@ -41,21 +41,21 @@ extern "C" {
 #define EPSF32 (1.0e-16f)  // Smallest number for safe division
 #define EPSF64 (1.0e-16l)  // Smallest number for safe division
 
-#define RECIPNORM_VEC2(v)	(1.0f/_MAX(MAG_VEC2(v),  EPSF32))
-#define RECIPNORM_VEC3(v)	(1.0f/_MAX(MAG_VEC3(v),  EPSF32))
-#define RECIPNORM_VEC4(v)	(1.0f/_MAX(MAG_VEC4(v),  EPSF32))
-#define RECIPNORM_VEC3D(v)	(1.0l/_MAX(MAG_VEC3D(v), EPSF64))
-#define RECIPNORM_VEC4D(v)	(1.0l/_MAX(MAG_VEC4D(v), EPSF64))
+#define RECIPNORM_VEC2(v)   (1.0f/_MAX(MAG_VEC2(v),  EPSF32))
+#define RECIPNORM_VEC3(v)   (1.0f/_MAX(MAG_VEC3(v),  EPSF32))
+#define RECIPNORM_VEC4(v)   (1.0f/_MAX(MAG_VEC4(v),  EPSF32))
+#define RECIPNORM_VEC3D(v)  (1.0l/_MAX(MAG_VEC3D(v), EPSF64))
+#define RECIPNORM_VEC4D(v)  (1.0l/_MAX(MAG_VEC4D(v), EPSF64))
 
 #define UNWRAP_VEC3(v)          {UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
-#define VEC3_ANY_LESS_THAN_X(v,x)	( ((v[0])<(x)) || ((v[1])<(x)) || ((v[2])<(x)) )
-#define VEC3_ANY_GRTR_THAN_X(v,x)	( ((v[0])>(x)) || ((v[1])>(x)) || ((v[2])>(x)) )
-#define VEC3_ALL_LESS_THAN_X(v,x)	( ((v[0])<(x)) && ((v[1])<(x)) && ((v[2])<(x)) )
-#define VEC3_ALL_GRTR_THAN_X(v,x)	( ((v[0])>(x)) && ((v[1])>(x)) && ((v[2])>(x)) )
-#define VEC3_ALL_ZERO(v)			( ((v[0])==(0.0f)) && ((v[1])==(0.0f)) && ((v[2])==(0.0f)) )
-#define VEC3_ANY_ZERO(v)			( ((v[0])==(0.0f)) || ((v[1])==(0.0f)) || ((v[2])==(0.0f)) )
-#define VEC3_ANY_NOT_ZERO(v)		( ((v[0])!=(0.0f)) || ((v[1])!=(0.0f)) || ((v[2])!=(0.0f)) )
+#define VEC3_ANY_LESS_THAN_X(v,x)   ( ((v[0])<(x)) || ((v[1])<(x)) || ((v[2])<(x)) )
+#define VEC3_ANY_GRTR_THAN_X(v,x)   ( ((v[0])>(x)) || ((v[1])>(x)) || ((v[2])>(x)) )
+#define VEC3_ALL_LESS_THAN_X(v,x)   ( ((v[0])<(x)) && ((v[1])<(x)) && ((v[2])<(x)) )
+#define VEC3_ALL_GRTR_THAN_X(v,x)   ( ((v[0])>(x)) && ((v[1])>(x)) && ((v[2])>(x)) )
+#define VEC3_ALL_ZERO(v)            ( ((v[0])==(0.0f)) && ((v[1])==(0.0f)) && ((v[2])==(0.0f)) )
+#define VEC3_ANY_ZERO(v)            ( ((v[0])==(0.0f)) || ((v[1])==(0.0f)) || ((v[2])==(0.0f)) )
+#define VEC3_ANY_NOT_ZERO(v)        ( ((v[0])!=(0.0f)) || ((v[1])!=(0.0f)) || ((v[2])!=(0.0f)) )
 
 #define SET_VEC3_X(v,x)         { (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define SET_VEC4_X(v,x)         { (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
