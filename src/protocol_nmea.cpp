@@ -782,7 +782,6 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
             g_gnssTimeFaultTimeMs = g_timeMs;
 #endif
             g_debug.i[5] = utcMs;
-            g_debug.i[6] = gpsMs;
             g_debug.f[5] = utcDtMs;
             g_debug.f[6] = cpuDtMs;
             g_debug.f[8] += 1.0f;
