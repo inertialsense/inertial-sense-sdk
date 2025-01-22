@@ -2269,7 +2269,8 @@ enum eBitCommand
     BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
     BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
     BIT_CMD_RESERVED_2                              = (int)5,   
-    BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection
+    BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection test 
+    BIT_CMD_IMU_REJECT_CONTINUOUS                   = (int)7,       // Continuous IMU fault rejection test without ending
 };
 
 /** Built-in Test: State */
