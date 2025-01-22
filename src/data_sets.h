@@ -2654,12 +2654,8 @@ enum eSysConfigBits
     /** Disable wheel encoder fusion */
     SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION           = (int)0x00100000,
 
-    /** Enable IMU gyro fault rejection */
-    SYS_CFG_BITS_ENABLE_IMU_FAULT_REJECT_GYR            = (int)0x00200000,
-    /** Enable IMU accelerometer fault rejection */
-    SYS_CFG_BITS_ENABLE_IMU_FAULT_REJECT_ACC            = (int)0x00400000,
-    SYS_CFG_BITS_ENABLE_IMU_FAULT_REJECT_MASK           = (int)0x00600000,
-
+    SYS_CFG_BITS_UNUSED3                                = (int)0x00200000,
+    SYS_CFG_BITS_UNUSED4                                = (int)0x00400000,
     SYS_CFG_BITS_UNUSED5                                = (int)0x00800000,
 
     /** Use reference IMU in EKF instead of onboard IMU */
