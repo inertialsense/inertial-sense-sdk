@@ -2277,7 +2277,8 @@ enum eBitCommand
     BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
     BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
     BIT_CMD_RESERVED_2                              = (int)5,   
-    BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection
+    BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection test 
+    BIT_CMD_IMU_REJECT_CONTINUOUS                   = (int)7,       // Continuous IMU fault rejection test without ending
 };
 
 /** Built-in Test: State */
@@ -2938,41 +2939,42 @@ enum eSensorConfig
     SENSOR_CFG_ACC_DLPF_OFFSET			= (int)12,
 
     /** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
-    SENSOR_CFG_SENSOR_ROTATION_MASK        = (int)0x00FF0000,
-    SENSOR_CFG_SENSOR_ROTATION_OFFSET      = (int)16,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_0       = (int)0,	// roll, pitch, yaw rotation (deg).
-    SENSOR_CFG_SENSOR_ROTATION_0_0_90      = (int)1,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_180     = (int)2,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_N90     = (int)3,
-    SENSOR_CFG_SENSOR_ROTATION_90_0_0      = (int)4,
-    SENSOR_CFG_SENSOR_ROTATION_90_0_90     = (int)5,
-    SENSOR_CFG_SENSOR_ROTATION_90_0_180    = (int)6,
-    SENSOR_CFG_SENSOR_ROTATION_90_0_N90    = (int)7,
-    SENSOR_CFG_SENSOR_ROTATION_180_0_0     = (int)8,
-    SENSOR_CFG_SENSOR_ROTATION_180_0_90    = (int)9,
-    SENSOR_CFG_SENSOR_ROTATION_180_0_180   = (int)10,
-    SENSOR_CFG_SENSOR_ROTATION_180_0_N90   = (int)11,
-    SENSOR_CFG_SENSOR_ROTATION_N90_0_0     = (int)12,
-    SENSOR_CFG_SENSOR_ROTATION_N90_0_90    = (int)13,
-    SENSOR_CFG_SENSOR_ROTATION_N90_0_180   = (int)14,
-    SENSOR_CFG_SENSOR_ROTATION_N90_0_N90   = (int)15,
-    SENSOR_CFG_SENSOR_ROTATION_0_90_0      = (int)16,
-    SENSOR_CFG_SENSOR_ROTATION_0_90_90     = (int)17,
-    SENSOR_CFG_SENSOR_ROTATION_0_90_180    = (int)18,
-    SENSOR_CFG_SENSOR_ROTATION_0_90_N90    = (int)19,
-    SENSOR_CFG_SENSOR_ROTATION_0_N90_0     = (int)20,
-    SENSOR_CFG_SENSOR_ROTATION_0_N90_90    = (int)21,
-    SENSOR_CFG_SENSOR_ROTATION_0_N90_180   = (int)22,
-    SENSOR_CFG_SENSOR_ROTATION_0_N90_N90   = (int)23,
+    SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x00FF0000,
+    SENSOR_CFG_SENSOR_ROTATION_OFFSET           = (int)16,
+    SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,	// roll, pitch, yaw rotation (deg).
+    SENSOR_CFG_SENSOR_ROTATION_0_0_90           = (int)1,
+    SENSOR_CFG_SENSOR_ROTATION_0_0_180          = (int)2,
+    SENSOR_CFG_SENSOR_ROTATION_0_0_N90          = (int)3,
+    SENSOR_CFG_SENSOR_ROTATION_90_0_0           = (int)4,
+    SENSOR_CFG_SENSOR_ROTATION_90_0_90          = (int)5,
+    SENSOR_CFG_SENSOR_ROTATION_90_0_180         = (int)6,
+    SENSOR_CFG_SENSOR_ROTATION_90_0_N90         = (int)7,
+    SENSOR_CFG_SENSOR_ROTATION_180_0_0          = (int)8,
+    SENSOR_CFG_SENSOR_ROTATION_180_0_90         = (int)9,
+    SENSOR_CFG_SENSOR_ROTATION_180_0_180        = (int)10,
+    SENSOR_CFG_SENSOR_ROTATION_180_0_N90        = (int)11,
+    SENSOR_CFG_SENSOR_ROTATION_N90_0_0          = (int)12,
+    SENSOR_CFG_SENSOR_ROTATION_N90_0_90         = (int)13,
+    SENSOR_CFG_SENSOR_ROTATION_N90_0_180        = (int)14,
+    SENSOR_CFG_SENSOR_ROTATION_N90_0_N90        = (int)15,
+    SENSOR_CFG_SENSOR_ROTATION_0_90_0           = (int)16,
+    SENSOR_CFG_SENSOR_ROTATION_0_90_90          = (int)17,
+    SENSOR_CFG_SENSOR_ROTATION_0_90_180         = (int)18,
+    SENSOR_CFG_SENSOR_ROTATION_0_90_N90         = (int)19,
+    SENSOR_CFG_SENSOR_ROTATION_0_N90_0          = (int)20,
+    SENSOR_CFG_SENSOR_ROTATION_0_N90_90         = (int)21,
+    SENSOR_CFG_SENSOR_ROTATION_0_N90_180        = (int)22,
+    SENSOR_CFG_SENSOR_ROTATION_0_N90_N90        = (int)23,
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
-    SENSOR_CFG_IMU_FAULT_DETECT_MASK	   	= (int)0x0F000000,
-    SENSOR_CFG_IMU_FAULT_DETECT_OFFSET		= (int)24,
-    SENSOR_CFG_IMU_FAULT_DETECT_NONE		= (int)0,	// Simple averaging
-    SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE		= (int)1,	// One or more IMUs is offline or stuck
-    SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS	= (int)2,
-    SENSOR_CFG_IMU_FAULT_DETECT_BIAS_JUMPS	= (int)3,
-    SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE = (int)4,
+    SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
+    SENSOR_CFG_IMU_FAULT_DETECT_GYR             = (int)0x01000000,      // Enable triple IMU gyro fault detection.           Must be enabled for other gyr detection modes (offline, large bias, and noise).
+    SENSOR_CFG_IMU_FAULT_DETECT_ACC             = (int)0x02000000,      // Enable triple IMU accelerometer fault detection.  Must be enabled for other acc detection modes (offline, large bias, and noise).
+
+    // Set to ZERO to exclude from build
+    SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE         = 0,    // (int)0x04000000,      // One or more IMUs is offline or stuck
+    SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS      = 0,    // (int)0x08000000,
+    SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE    = 0,    // (int)0x10000000,
 };
 
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
@@ -3406,7 +3408,7 @@ typedef struct PACKED
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t				RTKCfgBits;
 
-    /** Sensor config to specify the full-scale sensing ranges and output rotation for the IMU and magnetometer (see eSensorConfig in data_sets.h) */
+    /** Sensor config to specify the full-scale sensing ranges and output rotation for the IMU and magnetometer (see eSensorConfig) */
     uint32_t                sensorConfig;
 
     /** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
