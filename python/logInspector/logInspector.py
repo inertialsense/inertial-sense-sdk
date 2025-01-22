@@ -202,7 +202,7 @@ class FlashConfigDialog(QDialog):
         self.table.setHorizontalHeaderLabels([str(ser) for ser in log.serials])
         self.table.setVerticalHeaderLabels(field_names)
 
-        hex_fields = ['ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits']
+        hex_fields = ['ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits', 'gnssSatSigConst', 'sensorConfig']
         for d in range(log.numDev):
             for f, field in enumerate(field_names):
                 if field in hex_fields:
@@ -445,10 +445,10 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Climb Rate', 'climbRate')
 
     def createListSensors(self):
-        self.addListItem('IMU PQR', 'imuPQR')
-        self.addListItem('IMU Accel', 'imuAcc')
-        self.addListItem('PSD PQR', 'gyroPSD')
-        self.addListItem('PSD Accel', 'accelPSD')
+        self.addListItem('IMU Gyr', 'imuPQR')
+        self.addListItem('IMU Acc', 'imuAcc')
+        self.addListItem('PSD Gyr', 'gyroPSD')
+        self.addListItem('PSD Acc', 'accelPSD')
         self.addListItem('Barometer', 'barometer')
         self.addListItem('Magnetometer', 'magnetometer')
         self.addListItem('Temp', 'temp')

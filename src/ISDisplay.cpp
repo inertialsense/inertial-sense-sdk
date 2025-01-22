@@ -804,7 +804,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tErrors    Rx parse %d, temperature %d, self-test %d\n",
 		HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus),
 		(hdwStatus & HDW_STATUS_ERR_TEMPERATURE) != 0,
-		(hdwStatus & HDW_STATUS_BIT_MASK) == HDW_STATUS_BIT_FAULT);
+		(hdwStatus & HDW_STATUS_BIT_MASK) == HDW_STATUS_BIT_FAILED);
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\thdwStatus (0x%08X)", hdwStatus);
     std::string statusStr;

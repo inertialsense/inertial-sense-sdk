@@ -291,6 +291,13 @@ enum eInsStatusFlags
     INS_STATUS_RTOS_TASK_PERIOD_OVERRUN         = (int)0x40000000,
     /** General fault (see sys_params_t.genFaultCode) */
     INS_STATUS_GENERAL_FAULT                    = (int)0x80000000,
+
+    /** Bitmask of all insStatus errors */
+    INS_STATUS_ERROR_MASK                       =   INS_STATUS_GENERAL_FAULT | 
+                                                    INS_STATUS_RTK_COMPASSING_MASK | 
+                                                    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL |
+                                                    INS_STATUS_RTK_ERROR_MASK |
+                                                    INS_STATUS_RTOS_TASK_PERIOD_OVERRUN,
 };
 
 /** GPS navigation fix type */
@@ -313,12 +320,12 @@ enum eHdwStatusFlags
     HDW_STATUS_MOTION_ACC                       = (int)0x00000002,
     /** Unit is moving and NOT stationary */
     HDW_STATUS_MOTION_MASK                      = (int)0x00000003,
-    /** IMU gyro fault detection. One of the redundant gyro sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_FAULT_DETECT_GYR             = (int)0x00000004,
-    /** IMU accelerometer fault detection. One of the redundant accelerometer sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_FAULT_DETECT_ACC             = (int)0x00000008,
-    /** IMU fault detection mask. One of the redundant IMU sensors is not in agreement and being excluded. */
-    HDW_STATUS_IMU_FAULT_DETECT_MASK            = (int)0x0000000C,
+    /** IMU gyro fault rejection. One of the redundant gyro sensors is divergent and being excluded. */
+    HDW_STATUS_IMU_FAULT_REJECT_GYR             = (int)0x00000004,
+    /** IMU accelerometer fault rejection. One of the redundant accelerometer sensors is divergent and being excluded. */
+    HDW_STATUS_IMU_FAULT_REJECT_ACC             = (int)0x00000008,
+    /** IMU fault rejection mask. One of the redundant IMU sensors is divergent and being excluded. */
+    HDW_STATUS_IMU_FAULT_REJECT_MASK            = (int)0x0000000C,
 
     /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
     HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
@@ -372,7 +379,7 @@ enum eHdwStatusFlags
     /** (BIT) Built-in self-test passed */
     HDW_STATUS_BIT_PASSED                       = (int)0x02000000,
     /** (BIT) Built-in self-test failure */
-    HDW_STATUS_BIT_FAULT                        = (int)0x03000000,
+    HDW_STATUS_BIT_FAILED                       = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
     HDW_STATUS_BIT_MASK                         = (int)0x03000000,
 
@@ -395,6 +402,17 @@ enum eHdwStatusFlags
 
     /** Critical System Fault, CPU error.  (see DID_SYS_FAULT.status, eSysFaultStatus) */
     HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
+
+    /** Bitmask of all hdwStatus errors */
+    HDW_STATUS_ERROR_MASK                       =   HDW_STATUS_FAULT_SYS_CRITICAL | 
+                                                    HDW_STATUS_IMU_FAULT_REJECT_MASK | 
+                                                    HDW_STATUS_SATURATION_MASK | 
+                                                    HDW_STATUS_ERR_GPS_PPS_NOISE |
+                                                    HDW_STATUS_ERR_COM_TX_LIMITED |
+                                                    HDW_STATUS_ERR_COM_RX_OVERRUN |
+                                                    HDW_STATUS_ERR_NO_GPS_PPS |
+                                                    HDW_STATUS_BIT_FAILED |
+                                                    HDW_STATUS_ERR_TEMPERATURE,
 };
 
 /** System status flags */
@@ -932,6 +950,11 @@ enum eImuStatus
     IMU_STATUS_IMU3_OK                          = (int)(IMU_STATUS_GYR3_OK | IMU_STATUS_ACC3_OK),
     /** IMU gyros and accelerometers available */
     IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
+
+    /** IMU fault rejection is excluding one of the gyros from the combined IMU output */
+    IMU_STATUS_GYR_FAULT_REJECT                 = (int)0x01000000,
+    /** IMU fault rejection is excluding one of the accelerometers from the combined IMU output */
+    IMU_STATUS_ACC_FAULT_REJECT                 = (int)0x02000000,
 };
 
 /** (DID_GPS1_POS, DID_GPS1_RCVR_POS, DID_GPS2_POS) GPS position data */
@@ -1807,9 +1830,11 @@ typedef struct PACKED
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_RAW)                                            
+                                            | RMC_BITS_IMU3_RAW \
+                                            | RMC_BITS_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_UNCAL)
+                                            | RMC_BITS_IMU3_UNCAL \
+                                            | RMC_BITS_PIMU)
 #define RMC_PRESET_INS                      (RMC_BITS_INS2 \
                                             | RMC_BITS_GPS1_POS \
                                             | RMC_BITS_PRESET)
@@ -2244,15 +2269,17 @@ enum eBitCommand
     BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
     BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
     BIT_CMD_RESERVED_2                              = (int)5,   
+    BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection test 
+    BIT_CMD_IMU_REJECT_CONTINUOUS                   = (int)7,       // Continuous IMU fault rejection test without ending
 };
 
 /** Built-in Test: State */
 enum eBitState
 {
-    BIT_STATE_OFF					                = (int)0,
-    BIT_STATE_DONE				                    = (int)1,       // Test is finished
+    BIT_STATE_OFF                                   = (int)0,
+    BIT_STATE_DONE                                  = (int)1,       // Test is finished
     BIT_STATE_RUNNING                               = (int)6,
-    BIT_STATE_FINISHING                             = (int)7,	    // Computing results
+    BIT_STATE_FINISHING                             = (int)7,       // Computing results
 };
 
 /** Built-in Test: Test Mode */
@@ -2264,6 +2291,7 @@ enum eBitTestMode
     BIT_TEST_MODE_COMMUNICATIONS_REPEAT             = (int)101,     // Send duplicate message 
     BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
     BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
+    BIT_TEST_MODE_IMU_FAULT_REJECTION               = (int)104,     // Simulate a fault on each IMU sensor and ensure it is detected and rejected.
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -2285,6 +2313,7 @@ enum eHdwBitStatusFlags
     HDW_BIT_FAULT_GPS_POOR_CNO              = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
     HDW_BIT_FAULT_GPS_POOR_ACCURACY         = (int)0x00002000,    // Low number of satellites, or bad accuracy 
     HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00004000,    // (Not implemented)
+    HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00008000,    // IMU fault rejection failure
     HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,    // Hardware type does not match firmware
 };
 
@@ -2898,41 +2927,42 @@ enum eSensorConfig
     SENSOR_CFG_ACC_DLPF_OFFSET			= (int)12,
 
     /** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
-    SENSOR_CFG_SENSOR_ROTATION_MASK        = (int)0x00FF0000,
-    SENSOR_CFG_SENSOR_ROTATION_OFFSET      = (int)16,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_0       = (int)0,	// roll, pitch, yaw rotation (deg).
-    SENSOR_CFG_SENSOR_ROTATION_0_0_90      = (int)1,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_180     = (int)2,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_N90     = (int)3,
-    SENSOR_CFG_SENSOR_ROTATION_90_0_0      = (int)4,
-    SENSOR_CFG_SENSOR_ROTATION_90_0_90     = (int)5,
-    SENSOR_CFG_SENSOR_ROTATION_90_0_180    = (int)6,
-    SENSOR_CFG_SENSOR_ROTATION_90_0_N90    = (int)7,
-    SENSOR_CFG_SENSOR_ROTATION_180_0_0     = (int)8,
-    SENSOR_CFG_SENSOR_ROTATION_180_0_90    = (int)9,
-    SENSOR_CFG_SENSOR_ROTATION_180_0_180   = (int)10,
-    SENSOR_CFG_SENSOR_ROTATION_180_0_N90   = (int)11,
-    SENSOR_CFG_SENSOR_ROTATION_N90_0_0     = (int)12,
-    SENSOR_CFG_SENSOR_ROTATION_N90_0_90    = (int)13,
-    SENSOR_CFG_SENSOR_ROTATION_N90_0_180   = (int)14,
-    SENSOR_CFG_SENSOR_ROTATION_N90_0_N90   = (int)15,
-    SENSOR_CFG_SENSOR_ROTATION_0_90_0      = (int)16,
-    SENSOR_CFG_SENSOR_ROTATION_0_90_90     = (int)17,
-    SENSOR_CFG_SENSOR_ROTATION_0_90_180    = (int)18,
-    SENSOR_CFG_SENSOR_ROTATION_0_90_N90    = (int)19,
-    SENSOR_CFG_SENSOR_ROTATION_0_N90_0     = (int)20,
-    SENSOR_CFG_SENSOR_ROTATION_0_N90_90    = (int)21,
-    SENSOR_CFG_SENSOR_ROTATION_0_N90_180   = (int)22,
-    SENSOR_CFG_SENSOR_ROTATION_0_N90_N90   = (int)23,
+    SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x00FF0000,
+    SENSOR_CFG_SENSOR_ROTATION_OFFSET           = (int)16,
+    SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,	// roll, pitch, yaw rotation (deg).
+    SENSOR_CFG_SENSOR_ROTATION_0_0_90           = (int)1,
+    SENSOR_CFG_SENSOR_ROTATION_0_0_180          = (int)2,
+    SENSOR_CFG_SENSOR_ROTATION_0_0_N90          = (int)3,
+    SENSOR_CFG_SENSOR_ROTATION_90_0_0           = (int)4,
+    SENSOR_CFG_SENSOR_ROTATION_90_0_90          = (int)5,
+    SENSOR_CFG_SENSOR_ROTATION_90_0_180         = (int)6,
+    SENSOR_CFG_SENSOR_ROTATION_90_0_N90         = (int)7,
+    SENSOR_CFG_SENSOR_ROTATION_180_0_0          = (int)8,
+    SENSOR_CFG_SENSOR_ROTATION_180_0_90         = (int)9,
+    SENSOR_CFG_SENSOR_ROTATION_180_0_180        = (int)10,
+    SENSOR_CFG_SENSOR_ROTATION_180_0_N90        = (int)11,
+    SENSOR_CFG_SENSOR_ROTATION_N90_0_0          = (int)12,
+    SENSOR_CFG_SENSOR_ROTATION_N90_0_90         = (int)13,
+    SENSOR_CFG_SENSOR_ROTATION_N90_0_180        = (int)14,
+    SENSOR_CFG_SENSOR_ROTATION_N90_0_N90        = (int)15,
+    SENSOR_CFG_SENSOR_ROTATION_0_90_0           = (int)16,
+    SENSOR_CFG_SENSOR_ROTATION_0_90_90          = (int)17,
+    SENSOR_CFG_SENSOR_ROTATION_0_90_180         = (int)18,
+    SENSOR_CFG_SENSOR_ROTATION_0_90_N90         = (int)19,
+    SENSOR_CFG_SENSOR_ROTATION_0_N90_0          = (int)20,
+    SENSOR_CFG_SENSOR_ROTATION_0_N90_90         = (int)21,
+    SENSOR_CFG_SENSOR_ROTATION_0_N90_180        = (int)22,
+    SENSOR_CFG_SENSOR_ROTATION_0_N90_N90        = (int)23,
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
-    SENSOR_CFG_IMU_FAULT_DETECT_MASK	   	= (int)0x0F000000,
-    SENSOR_CFG_IMU_FAULT_DETECT_OFFSET		= (int)24,
-    SENSOR_CFG_IMU_FAULT_DETECT_NONE		= (int)0,	// Simple averaging
-    SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE		= (int)1,	// One or more IMUs is offline or stuck
-    SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS	= (int)2,
-    SENSOR_CFG_IMU_FAULT_DETECT_BIAS_JUMPS	= (int)3,
-    SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE = (int)4,
+    SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
+    SENSOR_CFG_IMU_FAULT_DETECT_GYR             = (int)0x01000000,      // Enable triple IMU gyro fault detection.           Must be enabled for other gyr detection modes (offline, large bias, and noise).
+    SENSOR_CFG_IMU_FAULT_DETECT_ACC             = (int)0x02000000,      // Enable triple IMU accelerometer fault detection.  Must be enabled for other acc detection modes (offline, large bias, and noise).
+
+    // Set to ZERO to exclude from build
+    SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE         = 0,    // (int)0x04000000,      // One or more IMUs is offline or stuck
+    SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS      = 0,    // (int)0x08000000,
+    SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE    = 0,    // (int)0x10000000,
 };
 
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
@@ -3366,7 +3396,7 @@ typedef struct PACKED
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t				RTKCfgBits;
 
-    /** Sensor config to specify the full-scale sensing ranges and output rotation for the IMU and magnetometer (see eSensorConfig in data_sets.h) */
+    /** Sensor config to specify the full-scale sensing ranges and output rotation for the IMU and magnetometer (see eSensorConfig) */
     uint32_t                sensorConfig;
 
     /** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
