@@ -2838,7 +2838,6 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     date.weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
 
     // 5,6 - Local time zone offset from GMT (00,00)
-
     return 0;
 }
 

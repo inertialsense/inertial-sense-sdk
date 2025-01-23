@@ -5068,6 +5068,19 @@ typedef struct
 
 } did_event_filter_t;
 
+#define EVENT_MEM_REQ_SIZE  128
+
+typedef struct
+{
+    uint32_t reqAddr;
+    uint8_t data[EVENT_MEM_REQ_SIZE];
+} did_event_memResp_t;
+
+typedef struct
+{
+    uint32_t reqAddr;
+} did_event_memReq_t;
+
 enum eEventMsgTypeID
 {
     EVENT_MSG_TYPE_ID_RAW               = 1,
@@ -5079,6 +5092,8 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2    = 15,
     EVENT_MSG_TYPE_ID_DBG_READ          = 16,
 
+    EVENT_MSG_TYPE_ID_IMX_MEM_READ      = 20,
+    EVENT_MSG_TYPE_ID_GPX_MEM_READ      = 21,
     EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST = 22,
     EVENT_MSG_TYPE_ID_IMX_SER0_REG      = 23,
     EVENT_MSG_TYPE_ID_IMX_SER0_CFG      = 24,
