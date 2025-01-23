@@ -74,25 +74,32 @@ enum eComManagerErrorType
 // typedef int(*pfnComManagerRead)(port_handle_t port, unsigned char* buf, int len);
 
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by port
-typedef int(*pfnComManagerSendBufferAvailableBytes)(port_handle_t port);
+typedef int(*pfnComManagerSendBufferAvailableBytes)(void* ctx, port_handle_t port);
+// typedef std::function<int(port_handle_t)> pfnComManagerSendBufferAvailableBytes;
 
 // pstRxFnc optional, called after data is sent to the serial port represented by port
-typedef int(*pfnComManagerPostRead)(p_data_t* dataRead, port_handle_t port);
+typedef int(*pfnComManagerPostRead)(void* ctx, p_data_t* dataRead, port_handle_t port);
+// typedef std::function<int(p_data_t*, port_handle_t)> pfnComManagerPostRead;
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by port
-typedef int(*pfnComManagerPostAck)(port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier);
+typedef int(*pfnComManagerPostAck)(void* ctx, port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier);
+// typedef std::function<int(port_handle_t, p_ack_t*, unsigned char)> pfnComManagerPostAck;
 
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL.  Set port to -1 for all ports.
-typedef int(*pfnComManagerDisableBroadcasts)(port_handle_t port);
+typedef int(*pfnComManagerDisableBroadcasts)(void* ctx, port_handle_t port);
+// typedef std::function<int(port_handle_t port)> pfnComManagerDisableBroadcasts;
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
-typedef int(*pfnComManagerPreSend)(port_handle_t port, p_data_hdr_t *dataHdr);
+typedef int(*pfnComManagerPreSend)(void* ctx, port_handle_t port, p_data_hdr_t *dataHdr);
+// typedef std::function<int(port_handle_t port)> pfnComManagerPreSend;
 
 // broadcast message handler
-typedef int(*pfnComManagerRmcHandler)(p_data_get_t* req, port_handle_t port);
+typedef int(*pfnComManagerRmcHandler)(void* ctx, p_data_get_t* req, port_handle_t port);
+// typedef std::function<int(p_data_get_t*, port_handle_t)> pfnComManagerRmcHandler;
 
 // Parse error handler function, return 1 if message handled
-typedef int(*pfnComManagerParseErrorHandler)(port_handle_t port);
+typedef int(*pfnComManagerParseErrorHandler)(void* ctx, port_handle_t port);
+// typedef std::function<int(port_handle_t)> pfnComManagerParseErrorHandler;
 
 
 /**
@@ -380,7 +387,7 @@ void comManagerSetErrorHandler(pfnComManagerParseErrorHandler errorCb);
 */
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 
-int comManagerProcessBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+int comManagerProcessBinaryRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 class ISComManager {
 public:

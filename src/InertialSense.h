@@ -63,9 +63,10 @@ extern "C"
 
 class InertialSense;
 
-typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port);
-typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, port_handle_t port);
-typedef std::function<void(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
+typedef ISDevice*(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
+typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
+typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 
 /**
 * Inertial Sense C++ interface
@@ -113,12 +114,14 @@ public:
             pfnIsCommGenMsgHandler  callbackUblox = NULL,
             pfnIsCommGenMsgHandler  callbackRtcm3 = NULL,
             pfnIsCommGenMsgHandler  callbackSpartn = NULL,
-            pfnOnNewDeviceHandler callbackNewDevice = NULL);
+            pfnOnNewDeviceHandler   callbackNewDevice = NULL);
 
     /**
     * Destructor
     */
     virtual ~InertialSense();
+
+    static InertialSense* getLastInstance();
 
     /**
     * Closes any open connection and then opens the device
@@ -627,7 +630,6 @@ public:
 );
 
     is_operation_result updateFirmware(
-            ISDevice* device,
             fwUpdate::target_t targetDevice,
             std::vector<std::string> cmds,
             fwUpdate::pfnProgressCb fwUpdateProgress,
@@ -690,6 +692,7 @@ public:
     // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
     bool registerDevice(ISDevice* device);
+    ISDevice* registerNewDevice(const ISDevice& orig);
     ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
 
     bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
@@ -709,6 +712,7 @@ private:
     uint32_t m_timeMs;
     InertialSense::com_manager_cpp_state_t m_comManagerState;
     pfnOnNewDeviceHandler m_newDeviceHandler = NULLPTR;
+    pfnOnCloneDeviceHandler m_cloneDeviceHandler = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerNmea = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerUblox = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerRtcm3 = NULLPTR;
@@ -761,7 +765,7 @@ private:
     bool OpenSerialPorts(const char* port, int baudRate);
     void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
-    static void StepLogger(InertialSense* i, const p_data_t* data, port_handle_t port);
+    static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
     static void BootloadStatusUpdate(std::any obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);

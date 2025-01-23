@@ -173,6 +173,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
 
     remoteDevInfo.serialNumber = msg.data.version_resp.serialNumber;
     remoteDevInfo.hardwareType = msg.data.version_resp.hardwareType;
+    remoteDevInfo.hdwRunState = msg.data.version_resp.hdwRunState;
     memcpy(remoteDevInfo.hardwareVer, msg.data.version_resp.hardwareVer, 4);
     memcpy(remoteDevInfo.firmwareVer, msg.data.version_resp.firmwareVer, 4);
     remoteDevInfo.buildYear = msg.data.version_resp.buildYear;
@@ -284,6 +285,8 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     if (session_status >= fwUpdate::NOT_STARTED)
         session_status = msg.data.progress.status; // don't overwrite an error status in the event of racing messages.
 
+    progress_total = msg.data.progress.totl_chunks;
+    progress_num = msg.data.progress.num_chunks;
     percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char* message = (msg.data.progress.msg_len > 0) ? (const char*)&msg.data.progress.message : "";
     if (pfnStatus_cb != nullptr)

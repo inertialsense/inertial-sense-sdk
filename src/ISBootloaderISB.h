@@ -37,7 +37,6 @@ public:
     {
         m_port = port;
         m_bootloader_type = IS_BL_TYPE_ISB;
-        m_device_type = ISBootloader::IS_DEV_TYPE_ISB;
         m_port_name = std::string(portName(port));
     }
     
@@ -125,7 +124,7 @@ private:
     static std::vector<uint32_t> rst_serial_list;
     static std::mutex rst_serial_list_mutex;
 
-    int currentPage = -1;
+    int currentPage = 0;
     int currentOffset = m_isb_props.app_offset;
 
     static const int HEX_BUFFER_SIZE = 1024;

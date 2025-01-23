@@ -1119,7 +1119,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 {
                     p_data_t data;
                     is_comm_to_isb_p_data(comm, &data);
-                    notConsumed = comm->cb.isbData(&data, port);
+                    notConsumed = comm->cb.isbData(comm->cb.context, &data, port);
                 }
                 break;
             case _PTYPE_INERTIAL_SENSE_ACK:
@@ -1127,14 +1127,14 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 break;
             default:
                 if (comm->cb.generic[ptype]) {
-                    notConsumed = comm->cb.generic[ptype](comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
+                    notConsumed = comm->cb.generic[ptype](comm->cb.context, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
                 }
                 break;
         }
 
         if (comm->cb.all && notConsumed)
         {
-            comm->cb.all(ptype, &(comm->rxPkt), port);
+            comm->cb.all(comm->cb.context, ptype, &(comm->rxPkt), port);
         }
     }
 }

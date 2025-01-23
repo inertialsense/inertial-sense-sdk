@@ -33,7 +33,6 @@ public:
   ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb }
     {
         m_port = (port_handle_t)port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_SAMBA;
         m_port_name = std::string(portName(port));
         m_bootloader_type = IS_BL_TYPE_SAMBA;
     }

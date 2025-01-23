@@ -208,6 +208,17 @@ namespace utils {
 
     // int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
     // bool devInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo);
+
+    /**
+     * Generates a detailed comparison, field-by-field, of two pointers of a particular DID.
+     * @param did the Data ID of the data buffers to compare (A & B)
+     * @param A a pointer to the first data buffer to compare
+     * @param B a pointer to the second data buffer to compare
+     * @param printDiff if true, print a detailed list of which fields were different, comparing their values.
+     *   if false, no output it printed
+     * @return true if the two data buffers match, otherwise false
+     */
+    bool compareDataIDs(uint32_t did, const uint8_t* A, const uint8_t* B, bool printDiff);
 };
 
 class ByteBuffer : public std::streambuf {

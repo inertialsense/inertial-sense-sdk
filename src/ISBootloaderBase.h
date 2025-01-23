@@ -13,8 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __IS_BOOTLOADER_BASE_H_
 #define __IS_BOOTLOADER_BASE_H_
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 #include <string>
 #include <mutex>
 
@@ -87,7 +87,7 @@ typedef struct
 
 is_operation_result dummy_update_callback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
 is_operation_result dummy_verify_callback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
-static inline void dummy_info_callback(std::any obj, int level, const char* infoString, ...)
+static inline void dummy_info_callback(std::any obj, eLogLevel level, const char* infoString, ...)
 {
     (void)obj;
     (void)infoString;
@@ -186,32 +186,32 @@ public:
     }
 
 
-    int m_retries_left;
-    float m_update_progress;
-    float m_verify_progress;
-    bool m_verify;
-    bool m_success;
+    int m_retries_left = 3;
+    float m_update_progress = 0;
+    float m_verify_progress = 0;
+    bool m_verify = false;
+    bool m_success = false;
 
     // Callbacks
-    fwUpdate::pfnProgressCb m_update_callback;
-    fwUpdate::pfnProgressCb m_verify_callback;
-    fwUpdate::pfnStatusCb m_info_callback;
+    fwUpdate::pfnProgressCb m_update_callback = nullptr;
+    fwUpdate::pfnProgressCb m_verify_callback = nullptr;
+    fwUpdate::pfnStatusCb m_info_callback = nullptr;
 
-    void* m_thread;
-    bool m_finished_flash;
-    int m_bootloader_type;
-    bool m_use_progress;
-    int m_start_time_ms;
+    void* m_thread = nullptr;
+    bool m_finished_flash = false;
+    int m_bootloader_type = false;
+    bool m_use_progress = false;
+    int m_start_time_ms = 0;
 
-    port_handle_t m_port;
+    port_handle_t m_port = nullptr;
     std::string m_port_name;
-    int m_baud;
+    int m_baud = 0;
 
-    uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
-    uint16_t m_hdw;                     // Inertial Sense Hardware Type (IMX, GPX, etc)
-    uint8_t m_isb_major;                // ISB Major revision on device
-    char m_isb_minor;                   // ISB Minor revision on device
-    bool isb_mightUpdate;               // true if device will be updated if bootloader continues
+    uint32_t m_sn = 0;                      // Inertial Sense serial number, i.e. SN60000
+    uint16_t m_hdw = 0;                     // Inertial Sense Hardware Type (IMX, GPX, etc)
+    uint8_t m_isb_major = 0;                // ISB Major revision on device
+    char m_isb_minor = 0;                   // ISB Minor revision on device
+    bool isb_mightUpdate = 0;               // true if device will be updated if bootloader continues
 
     static is_operation_result mode_device_app(
         firmwares_t filenames,
@@ -271,10 +271,10 @@ public:
 );
 
     std::string m_filename;
-    bool m_isISB;
+    bool m_isISB = false;
 
 protected:
-    void status_update(const char* info, int level)
+    void status_update(const char* info, eLogLevel level)
     { 
         if(m_info_callback) m_info_callback(std::any_cast<cISBootloaderBase*>(this), level, info);
     }

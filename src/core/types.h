@@ -34,11 +34,14 @@ typedef enum {
  * Port definitions used across the entire product line & SDK.
  */
 #define PORT_TYPE__UNKNOWN          0xFFFF  //! Invalid or unknown port type
-#define PORT_TYPE__UART             0x0001
-#define PORT_TYPE__USB              0x0002
-#define PORT_TYPE__SPI              0x0003
-#define PORT_TYPE__CAN              0x0004
-#define PORT_TYPE__LOOPBACK         0x000F
+#define PORT_TYPE__UART             0x0001      //!> this port wraps the UART protocol
+#define PORT_TYPE__USB              0x0002      //!> this port wraps the USB_CDC protocol
+#define PORT_TYPE__SPI              0x0003      //!< this port wraps the SPI protocol
+#define PORT_TYPE__CAN              0x0004      //!< this port wraps the CAN protocol
+#define PORT_TYPE__TCP              0x0005      //!< this port wraps a TCP-based network socket
+#define PORT_TYPE__UDP              0x0006      //!< this port wraps a UDP-based network socket
+#define PORT_TYPE__FILE             0x0007      //!< this port is nothing more than a mapping to a file on the OS
+#define PORT_TYPE__LOOPBACK         0x000F      //!< this port is a loopback to another port
 
 #define PORT_TYPE__GNSS             0x0020    //! bit indicates that this port is a GNSS receiver port
 #define PORT_TYPE__COMM             0x0040    //! bit indicates that this port has an ISComm associated with it
@@ -46,7 +49,7 @@ typedef enum {
 
 #define PORT_ERROR__NONE                 0
 #define PORT_ERROR__NOT_SUPPORTED       -1
-#define PORT_ERROR__INVALID_PORT        -2
+#define PORT_ERROR__INVALID             -2
 #define PORT_ERROR__WRITE_FAILURE       -3
 
 #define PORT_OP__READ               0x00
@@ -105,6 +108,7 @@ static inline uint16_t portType(port_handle_t port) {
  * @return
  */
 static inline const char *portName(port_handle_t port) {
+    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return (const char *)0;
     return (port && ((base_port_t*)port)->portName) ? ((base_port_t*)port)->portName(port) : (const char *)0;
 }
 
@@ -196,12 +200,6 @@ static inline void setPortLogger(port_handle_t port, pfnPortLogger portLogger, v
         ((base_port_t *) port)->portLogger = portLogger;
         ((base_port_t *) port)->portLoggerData = loggerData;
     }
-}
-// static inline void setPortLogger(port_handle_t port, pfnPortLogger portLogger) { setPortLogger(port, portLogger, NULL); }
-
-static inline const char *portName(port_handle_t port) {
-    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return (const char *)0;
-    return (port && ((base_port_t*)port)->portName) ? ((base_port_t*)port)->portName(port) : (const char *)0;
 }
 
 #endif //IS_CORE_TYPES_H

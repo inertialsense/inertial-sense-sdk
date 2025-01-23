@@ -741,8 +741,8 @@ std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSent
 }
 
 
-static int dummyIsbProtocolHandler(p_data_t* data, port_handle_t port) { return 0; }
-static int dummyGenericProtocolHandler(const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
+static int dummyIsbProtocolHandler(void* ctx, p_data_t* data, port_handle_t port) { return 0; }
+static int dummyGenericProtocolHandler(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
 
 void init_test_comm_instance(is_comm_instance_t* c, uint8_t *buffer, int bufferSize) {
     is_comm_init(c, buffer, bufferSize, NULL); // TOOD: Use callbacks?

@@ -453,7 +453,7 @@ int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, u
 
     unsigned char buf[128] = { 0 };
     int count = serialPortReadTimeout(port, buf, waitForLength, timeoutMilliseconds);
-    if (count == waitForLength && memcmp(buf, waitFor, waitForLength) == 0)
+    if ((count == waitForLength) && !memcmp(buf, waitFor, waitForLength))
     {
         return 1;
     }
@@ -563,7 +563,7 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
             bPtr += bytesRead;
 
             // now scan (hopefully quickly) to see if there is any bytes of interest in the data we just read
-            int nMatch = 0;         // number of bytes from 'waitFor' that have matches sequentially
+            unsigned int nMatch = 0;         // number of bytes from 'waitFor' that have matches sequentially
             uint8_t *mPtr = NULL;   // a pointer into buf where the first matching character is found; we'll purge upto this point if we don't find a match
             for (uint8_t* sPtr = buf; sPtr < bPtr; sPtr++) {
                 if (*sPtr == waitFor[nMatch]) {

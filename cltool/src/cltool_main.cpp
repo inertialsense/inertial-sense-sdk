@@ -137,7 +137,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
     logger.PrintLogDiskUsage();
 }
 
-static int cltool_errorCallback(port_handle_t port)
+static int cltool_errorCallback(void* ctx, port_handle_t port)
 {
     #define BUF_SIZE    8192
     #define BLACK   "\u001b[30m"
@@ -233,7 +233,7 @@ static int cltool_errorCallback(port_handle_t port)
 }
 
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
-static int cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
+static int cltool_dataCallback(void* ctx, p_data_t* data, port_handle_t port)
 {
     if (!g_enableDataCallback)
     {   // Receive disabled
@@ -245,7 +245,7 @@ static int cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t p
         return 0;
     }
 
-    (void)i;
+    (void)ctx;
     (void)port;
 
     // track which DIDs we've received and when, and how frequently
@@ -324,21 +324,21 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {   // check for any compatible (protocol version 2) devices
         for (auto device : inertialSenseInterface.getDevices()) {
             if ((device->hdwId == IS_HARDWARE_TYPE_UNKNOWN) ||
-                (device->hdwRunState != ISDevice::HDW_STATE_APP) ||
+                (device->devInfo.hdwRunState != HDW_STATE_APP) ||
                 (device->devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0)) {
-                printf("ERROR: One or more discovered devices are unable to communicate.\n");
+                // printf("ERROR: One or more discovered devices are unable to communicate.\n");
                 // let's print the dev info for all connected devices (so the user can identify the errant device)
                 for (auto dev : inertialSenseInterface.getDevices()) {
-                    switch(dev->hdwRunState) {
+                    switch(dev->devInfo.hdwRunState) {
                         // TODO: Let's be consistent and user utils::devInfoToString() or whatever its called...
-                        case ISDevice::HDW_STATE_UNKNOWN:
-                            printf("%s\n", utils::string_format("SN%lu (%s-%d.%d) :: Device appears unresponsive.", dev->devInfo.serialNumber, g_isHardwareTypeNames[dev->devInfo.hardwareType], dev->devInfo.hardwareVer[0], dev->devInfo.hardwareVer[1]).c_str());
+                        case HDW_STATE_UNKNOWN:
+                            printf("%s :: Device is unresponsive.\n", dev->getIdAsString().c_str());
                             break;
-                        case ISDevice::HDW_STATE_BOOTLOADER:
-                            printf("%s\n", utils::string_format("SN%lu (%s-%d.%d) :: Currently in Bootloader Mode.", dev->devInfo.serialNumber, g_isHardwareTypeNames[dev->devInfo.hardwareType], dev->devInfo.hardwareVer[0], dev->devInfo.hardwareVer[1]).c_str());
+                        case HDW_STATE_BOOTLOADER:
+                            printf("%s :: Currently in Bootloader Mode.\n", dev->getIdAsString().c_str());
                             break;
-                        case ISDevice::HDW_STATE_APP:
-                            printf("%s :: Incompatible protocol version (requires %d.x.x).\n", g_inertialSenseDisplay.DataToStringDevInfo(dev->devInfo, true).c_str(), PROTOCOL_VERSION_CHAR0);
+                        case HDW_STATE_APP:
+                            printf("%s :: Incompatible protocol version (requires %d.x.x).\n", dev->getIdAsString().c_str(), PROTOCOL_VERSION_CHAR0);
                             break;
                     }
                 }
@@ -586,7 +586,7 @@ is_operation_result bootloadUpdateCallback(std::any obj, float percent, const st
     if (stepNo || totalSteps) msg += utils::string_format(" (%d of %d)", stepNo, totalSteps);
     if (percent != 0.0f) msg += utils::string_format(" : %d %%%%", (int)(percent * 100));
     if (!msg.empty() && msg.compare(lastMsg))
-        cltool_firmwareUpdateInfo(obj, 0, msg.c_str());
+        cltool_firmwareUpdateInfo(obj, IS_LOG_LEVEL_NONE, msg.c_str());
 
     if (!msg.empty()) lastMsg = msg;
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
@@ -600,13 +600,13 @@ is_operation_result bootloadVerifyCallback(std::any obj, float percent, const st
     if (stepNo || totalSteps) msg += utils::string_format(" %d of %d)", stepNo, totalSteps);
     if (percent != 0.0f) msg += utils::string_format(" : %d %%%%", (int)(percent * 100));
     if (!msg.empty() && msg.compare(lastMsg))
-        cltool_firmwareUpdateInfo(obj, 0, msg.c_str());
+        cltool_firmwareUpdateInfo(obj, IS_LOG_LEVEL_NONE, msg.c_str());
 
     lastMsg = msg;
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-void cltool_bootloadUpdateInfo(std::any obj, int level, const char* str, ...)
+void cltool_bootloadUpdateInfo(std::any obj, eLogLevel level, const char* str, ...)
 {
     if (level > g_commandLineOptions.verboseLevel)
         return;
@@ -659,7 +659,7 @@ void cltool_bootloadUpdateInfo(std::any obj, int level, const char* str, ...)
     print_mutex.unlock();
 }
 
-void cltool_firmwareUpdateInfo(std::any obj, int level, const char* str, ...)
+void cltool_firmwareUpdateInfo(std::any obj, eLogLevel level, const char* str, ...)
 {
     print_mutex.lock();
     static char buffer[256];
@@ -693,9 +693,9 @@ void cltool_firmwareUpdateInfo(std::any obj, int level, const char* str, ...)
             ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS))) {
             printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, portName(fwPtr->port), fwPtr->devInfo->serialNumber, fwPtr->fwUpdate_getSessionTargetName());
             if (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
-                int tot = fwPtr->fwUpdate_getTotalChunks();
-                int num = fwPtr->fwUpdate_getNextChunkID();
-                float percent = num / (float) (tot) * 100.f;
+                int tot = fwPtr->fwUpdate_getProgressTotal();
+                int num = fwPtr->fwUpdate_getProgressNum();
+                float percent = fwPtr->fwUpdate_getProgressPercent() * 100.f;
                 printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
             } else if (g_commandLineOptions.verboseLevel > ::IS_LOG_LEVEL_MORE_INFO) {
                 // printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
@@ -812,8 +812,6 @@ static int cltool_dataStreaming()
         {
             if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
                 if (inertialSenseInterface.updateFirmware(
-                        g_commandLineOptions.comPort,
-                        g_commandLineOptions.baudRate,
                         g_commandLineOptions.updateFirmwareTarget,
                         g_commandLineOptions.fwUpdateCmds,
                         bootloadUpdateCallback,

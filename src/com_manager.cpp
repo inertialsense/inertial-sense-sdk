@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdlib.h>
 
+#include <functional>
 #include <algorithm>
 #include <vector>
 
@@ -62,6 +63,7 @@ int ISComManager::init(
     broadcastMessages = bcastBuffers;
 
     defaultCbs = {};
+    defaultCbs.context = this;
     defaultCbs.all = comManagerProcessBinaryRxPacket;
     defaultCbs.isbData = pstRxFncCb;
 
@@ -70,6 +72,7 @@ int ISComManager::init(
 
     return 0;
 }
+
 
 int comManagerInit(
         std::unordered_set<port_handle_t>* portSet,
@@ -142,15 +145,12 @@ std::unordered_set<port_handle_t>& comManagerGetPorts() {
 
 bool ISComManager::removePort(port_handle_t port) {
     auto found = std::find(ports->begin(), ports->end(), port);
-    if (found == ports->end())
-        return false;
-
-    if (port) {
-        serialPortClose(port);
-        // ports->erase(found);
+    if (found != ports->end()) {
+        serialPortClose(*found);
+        ports->erase(found);
+        return true;
     }
-
-    return true;
+    return false;
 }
 
 bool comManagerRemovePort(port_handle_t port) {
@@ -262,8 +262,11 @@ void ISComManager::stepSendMessages()
     // Send data (if necessary)
     for (auto& bc : *(broadcastMessages))
     {
+        if (!bc.port)
+            continue;   // no port defined, nothing to send/do
+
         // If send buffer does not have space, exit out
-        if (txFree && (bc.pkt.size > (uint32_t)txFree(bc.port)))
+        if (txFree && (bc.pkt.size > (uint32_t)txFree(this, bc.port)))
         {
             break;
         }
@@ -286,7 +289,7 @@ void ISComManager::stepSendMessages()
                 int sendData = 1;
                 if (id<DID_COUNT && didRegistrationMap[id].preTxFnc)
                 {                    
-                    sendData = didRegistrationMap[id].preTxFnc(bc.port, &bc.pkt.dataHdr);
+                    sendData = didRegistrationMap[id].preTxFnc(this, bc.port, &bc.pkt.dataHdr);
                 }
                 if (sendData)
                 {
@@ -559,13 +562,13 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             // Call data specific callback after data has been received
             if (regData->pstRxFnc)
             {
-                regData->pstRxFnc(&data, port);
+                regData->pstRxFnc(this, &data, port);
             }
         }
 
         // Call general/global callback
         if (pstRxFnc)
-            pstRxFnc(&data, port);
+            pstRxFnc(this, &data, port);
 
 #if ENABLE_PACKET_CONTINUATION
 
@@ -605,7 +608,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
 
         // Call disable broadcasts callback if exists
         if (disableBcastFnc)
-            disableBcastFnc(NULL);  // all ports
+            disableBcastFnc(this, NULL);  // all ports
 
         sendAck(port, pkt, PKT_TYPE_ACK);
         break;
@@ -615,7 +618,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
 
         // Call disable broadcasts callback if exists
         if (disableBcastFnc)
-            disableBcastFnc(port);
+            disableBcastFnc(this, port);
 
         sendAck(port, pkt, PKT_TYPE_ACK);
         break;
@@ -628,7 +631,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
     case PKT_TYPE_ACK:
         // Call general ack callback
         if (pstAckFnc)
-            pstAckFnc(port, (p_ack_t*)(pkt->data.ptr), ptype);
+            pstAckFnc(this, port, (p_ack_t*)(pkt->data.ptr), ptype);
         break;
     }
 
@@ -636,7 +639,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
     return 0;
 }
 
-int comManagerProcessBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port)
+int comManagerProcessBinaryRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
     return s_cm.processBinaryRxPacket(ptype, pkt, port);
 }
@@ -674,7 +677,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
         return -1;
     }
     // Call RealtimeMessageController (RMC) handler
-    else if (cmMsgHandlerRmc && (cmMsgHandlerRmc(req, port) == 0))
+    else if (cmMsgHandlerRmc && (cmMsgHandlerRmc(this, req, port) == 0))
     {
         // Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
         return 0;
@@ -749,7 +752,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
     {
         if (didRegistrationMap[req->id].preTxFnc)
         {
-            sendData = didRegistrationMap[req->id].preTxFnc(port, &(pkt->dataHdr));
+            sendData = didRegistrationMap[req->id].preTxFnc(this, port, &(pkt->dataHdr));
         }
     }
 
@@ -769,7 +772,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
     {
         // ***  Request Broadcast  ***
         // Send data immediately if possible
-        if (txFree == 0 || pkt->size <= (uint32_t)txFree(port))
+        if (txFree == 0 || pkt->size <= (uint32_t)txFree(this, port))
         {
             if (sendData)
             {
@@ -784,7 +787,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
     {
         // ***  Request Single  ***
         // Send data immediately if possible
-        if (txFree == 0 || pkt->size <= (uint32_t)txFree(port))
+        if (txFree == 0 || pkt->size <= (uint32_t)txFree(this, port))
         {
             if (sendData)
             {
@@ -858,7 +861,7 @@ void ISComManager::disableDidBroadcast(port_handle_t port, uint16_t did)
         req.size = 0;
         req.offset = 0;
         req.period = 0;
-        cmMsgHandlerRmc(&req, port);
+        cmMsgHandlerRmc(this, &req, port);
     }
 }
 
@@ -926,6 +929,7 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
 
     if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA))
     {   // if port is null, set this as the default handler, and also set it for all available ports
+        defaultCbs.context = this;
         defaultCbs.generic[ptype] = cbHandler;
         defaultCbs.protocolMask = DEFAULT_PORT_PROTO_CFG;
 

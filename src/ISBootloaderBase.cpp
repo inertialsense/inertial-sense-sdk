@@ -190,7 +190,7 @@ is_operation_result cISBootloaderBase::mode_device_app
     uint32_t fw_IMX_5  = get_image_signature(filenames.fw_IMX_5.path)  & (IS_IMAGE_SIGN_IMX_5p0);
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
 
-    statusfn(NULL, ISBootloader::IS_LOG_LEVEL_DEBUG, "    | (%s): Switching context to APP mode.", portName(port));
+    statusfn(NULL, eLogLevel::IS_LOG_LEVEL_DEBUG, "    | (%s): Switching context to APP mode.", portName(port));
 
     obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, port);
     
@@ -324,7 +324,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
     //uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path,  &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
-    statusfn(NULL, ISBootloader::IS_LOG_LEVEL_DEBUG, "    | (%s): Switching context to IS-bootloader mode.", portName(port));
+    statusfn(NULL, eLogLevel::IS_LOG_LEVEL_DEBUG, "    | (%s): Switching context to IS-bootloader mode.", portName(port));
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
     device = obj->check_is_compatible();
@@ -420,7 +420,7 @@ is_operation_result cISBootloaderBase::update_device
     uint32_t device = IS_IMAGE_SIGN_NONE;
     uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path) & IS_IMAGE_SIGN_ISB_STM32L4;
 
-    statusfn(NULL, ISBootloader::IS_LOG_LEVEL_MORE_INFO, "    | (%s): Starting DFU device update.", "DFU Device");
+    statusfn(NULL, eLogLevel::IS_LOG_LEVEL_MORE_INFO, "    | (%s): Starting DFU device update.", "DFU Device");
 
     obj = new cISBootloaderDFU(updateProgress, verifyProgress, statusfn, handle);
     obj->get_device_info();
@@ -485,7 +485,7 @@ is_operation_result cISBootloaderBase::update_device
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
-    statusfn(NULL, ISBootloader::IS_LOG_LEVEL_MORE_INFO, "    | (%s): Starting Serial Port device update.", portName(port));
+    statusfn(NULL, eLogLevel::IS_LOG_LEVEL_MORE_INFO, "    | (%s): Starting Serial Port device update.", portName(port));
 
     if (bl_EVB_2 || bl_uINS_3)
     {
@@ -557,7 +557,7 @@ is_operation_result cISBootloaderBase::update_device
     serialPortClose(port);
     if (!serialPortOpenRetry(port, portName(port), baud, 1))
     {
-        statusfn(NULL, IS_LOG_LEVEL_ERROR, "    | (%s): Unable to open port at %d baud", portName(port), baud);
+        statusfn(NULL, IS_LOG_LEVEL_ERROR, "Unable to open port at %d baud", baud);
         return IS_OP_ERROR;
     }
 
@@ -565,8 +565,7 @@ is_operation_result cISBootloaderBase::update_device
     device = obj->check_is_compatible();
     if (device == IS_IMAGE_SIGN_NONE)
     {
-        obj->logStatus(IS_LOG_LEVEL_WARN, "    | (%s) Device response missing.", portName(port));
-        statusfn(obj, IS_LOG_LEVEL_ERROR, "    | (%s) Device response missing.", portName(port)); // TODO?  are these the same call?
+        obj->logStatus(IS_LOG_LEVEL_ERROR, "Device response missing."); // TODO?  are these the same call?
         delete obj;
         return IS_OP_ERROR;
     }

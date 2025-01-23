@@ -62,6 +62,52 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, const char* m
 }
 
 
+/**
+ * Same as fwUpdate_sendProgressFormatted() but allows overriding the progress total/num chunks for this progress message.
+ * Normally, you shouldn't use this, but some update mechanisms need a way to send additional progress, such as during
+ * finalization, etc.
+ * @param level
+ * @param total_chunks
+ * @param num_chunks
+ * @param message
+ * @param ...
+ * @return
+ */
+bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, int total_chunks, int num_chunks, const char* message, ...) {
+    static char buffer[256];
+    size_t msg_len = 0;
+
+    if ((session_id == 0) || (session_status == fwUpdate::NOT_STARTED))
+        return false;
+
+    if (message) {
+        va_list ap;
+        va_start(ap, message);
+        msg_len = vsnprintf(buffer, sizeof(buffer) - 1, message, ap);
+        va_end(ap);
+    } else
+        memset(buffer, 0, sizeof(buffer));
+
+    if (msg_len >= sizeof(buffer)-1)
+        return false;
+
+    fwUpdate::payload_t msg;
+    msg.hdr.target_device = fwUpdate::TARGET_HOST; // progress messages always go back to the host.
+    msg.hdr.msg_type = fwUpdate::MSG_UPDATE_PROGRESS;
+    msg.data.progress.session_id = session_id;
+    msg.data.progress.status = session_status;
+    msg.data.progress.totl_chunks = total_chunks;
+    msg.data.progress.num_chunks = _MAX(0, _MIN(total_chunks, num_chunks));
+    msg.data.progress.msg_level = level;
+    msg.data.progress.msg_len = msg_len;
+    msg.data.progress.message = 0;
+
+    msg_len = fwUpdate_packPayload(build_buffer, sizeof(build_buffer), msg, buffer);
+    return fwUpdate_writeToWire((fwUpdate::target_t) msg.hdr.target_device, build_buffer, msg_len);
+}
+
+
+
 // this is called internally by processMessage() to do the things to do, it should also be called periodically to send status updated, etc.
 bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
     static int nextStep = 0;
@@ -70,32 +116,36 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         return false;
 
     if (fwUpdate_getSessionStatus() == fwUpdate::INITIALIZING) {
-        // if we are initializing, we've successfully issued a RESET_INTO_BOOTLOADER, and we're waiting
-        // for this device to become available again, in ISbootloader mode.
-        // its possible, if we are connected via a USB port, that we will get a new port id, so we need
-        // to scan ports to see if that device becomes available through a new port.
-        // once we have the expected SN# and the device is reporting as running in HDW_STATE_BOOTLOADER,
-        // then we can advance to ready.
+        // if we are INITIALIZING, we've successfully issued a RESET_INTO_BOOTLOADER, and we're waiting
+        // for this device to become available again, but in ISbootloader mode.  Its possible, if we are
+        // connected via a USB port, that we will get a new port id, so we need to scan ports to see if
+        // that device becomes available through a new port. Once we have the expected SN# and the device
+        // is reporting as running in HDW_STATE_BOOTLOADER, then we can advance to ready. The InertialSense
+        // class should handle most of this for us, we just need to tell it to look for new ISDevices.
 
         // one strategy is to setup a second InertialSense instance, and have it query devices;
         // our challenge is that we have to inform our primary InertialSense instance of the newly discovered port
 
         SLEEP_MS(2000);
-        InertialSense is;
+        InertialSense* is = InertialSense::getLastInstance();
+
         // Wait upto 15 seconds this device to reboot into bootloader mode.
         bool foundIt = false;
-        // FIXME: We're basically waiting around for the device to reboot into ISbooloader state.
-        //   We want to keep looking for new devices, querying them, and hoping that one of them matches out original device
-        for (uint32_t timeout = current_timeMs() + 15000; (current_timeMs() < timeout) && !foundIt; is.Open("*") ) {
-            if (is.DeviceCount() > 0) {
-                for (auto dev : is.getDevices()) {
-                    if ((dev->devInfo.serialNumber == device->devInfo.serialNumber) && (dev->hdwId == device->hdwId) && (dev->hdwRunState == ISDevice::HDW_STATE_BOOTLOADER)) {
+        // FIXME: We're basically waiting around for the device to reboot into ISbootloader state.
+        //   We want to keep looking for new devices, querying them, and hoping that one of them matches our original device
+        uint32_t timeout = current_timeMs() + 15000 * 10; // For debugging
+        while ( (current_timeMs() < timeout) && !foundIt ) {
+            is->Open("*");
+            if (is->DeviceCount() > 0) {
+                for (auto dev : is->getDevices()) {
+                    if ((dev->devInfo.serialNumber == device->devInfo.serialNumber) && (dev->hdwId == device->hdwId) && (dev->devInfo.hdwRunState == HDW_STATE_BOOTLOADER)) {
+                        this->device = dev; // update the device reference to use the new device (though these should actually be the same pointer)
+
+                        if (fwUpdate_handleInitialize(lastPayload) && (session_status <= fwUpdate::INITIALIZING)) {
+                            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s after rebooting into bootloader; but device failed compatibility check.", device->getIdAsString().c_str());
+                            session_status = fwUpdate::ERR_COMMS;
+                        }
                         foundIt = true;
-                        device->port = dev->port;
-                        device->hdwRunState = dev->hdwRunState;
-                        serialPortClose(device->port);
-                        serialPortClose(&dev->port);   // cleanup/close the newly opened port, so we can can reopen it again...
-                        serialPortOpen(device->port, portName(dev->port), SERIAL_PORT(dev->port)->baudRate, 0);
                         break;
                     }
                 }
@@ -104,7 +154,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         }
 
         if (!foundIt) {
-            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Unable to locate SN%d, after rebooting into bootloader.", device->devInfo.serialNumber);
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Unable to locate %s, after rebooting into bootloader.", device->getIdAsString().c_str());
             session_status = fwUpdate::ERR_COMMS;
             return true;
         }
@@ -124,17 +174,17 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                     updateState = WRITING;
                 break;
             case WRITING: // prepare for write
-                if (writeState < WRITE_DONE) {
-                    writeState = writeFlash_step(writeTimeout);
-                    if (writeState >= WRITE_DONE)
-                        updateState = VERIFYING;
-                } else {
-                    updateState = (doVerify ? VERIFYING : UPDATE_DONE);
-                    session_status = fwUpdate::FINALIZING;
-                }
+                writeState = writeFlash_step(writeTimeout);
+                if (writeState >= WRITE_DONE)
+                    updateState = VERIFYING;
                 break;
             case VERIFYING: // waiting for write to finish
-                session_status = fwUpdate::FINALIZING;
+                if (doVerify) {
+                    // do some verify step??
+                } else {
+                    updateState = UPDATE_DONE;
+                    session_status = fwUpdate::FINALIZING;
+                }
                 break;
             case UPDATE_DONE:
                 delete imgStream;
@@ -194,7 +244,10 @@ int ISBFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUp
 
 // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
 bool ISBFirmwareUpdater::fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& dev_info) {
-    get_device_info();
+    if (get_device_info() == IS_OP_OK) {
+        device->devInfo.serialNumber = m_sn;
+        device->devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
+    }
     if ((device->port != nullptr) && (device->hdwId != 0)) {
         dev_info = device->DeviceInfo();
         return true;
@@ -204,15 +257,17 @@ bool ISBFirmwareUpdater::fwUpdate_queryVersionInfo(fwUpdate::target_t target_id,
 
 // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
 fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdate::payload_t& msg) {
+    lastPayload = msg;
     session_image_size = msg.data.req_update.file_size;
 
-    if (device->hdwRunState == ISDevice::HDW_STATE_BOOTLOADER) {
+    if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
         if (check_is_compatible()) {
             imgBuffer = new ByteBuffer(session_image_size);
             imgStream = new ByteBufferStream(*imgBuffer);
             return fwUpdate::READY;
         }
-    } else if (device->hdwRunState == ISDevice::HDW_STATE_APP) {
+    } else if (device->devInfo.hdwRunState == HDW_STATE_APP) {
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Resetting %s into Bootloader.", device->getIdAsString().c_str());
         rebootToISB();
     }
     return fwUpdate::INITIALIZING;
@@ -273,7 +328,7 @@ uint32_t ISBFirmwareUpdater::get_device_info()
         m_sn = 0;
 
         fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) get_device_info bad read.");
-        return 0;
+        return IS_OP_ERROR;
     }
 
     m_isb_major = buf[2];
@@ -306,7 +361,7 @@ uint32_t ISBFirmwareUpdater::get_device_info()
     else
     {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) get_device_info invalid m_isb_major: %d", m_isb_major);
-        return 0;
+        return IS_OP_ERROR;
     }
 
 #if PLATFORM_IS_WINDOWS
@@ -454,26 +509,68 @@ is_operation_result ISBFirmwareUpdater::sync()
 }
 
 /**
+ * Instructs the Firmware to reset into the ROM DFU bootloader. This will generally
+ * reinitialize the device, forcing a drop of the serial connection. If this device
+ * is connected via USB, the device will likely enumerate as a USB DFU device, and
+ * will not appear as a regular CDC/Uart serial port.
+ * @return true on success, otherwise false
+ */
+bool ISBFirmwareUpdater::rebootToRomDfu()
+{
+    fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to Bootloader (ROM-DFU)...");
+
+    if (device->devInfo.hdwRunState == HDW_STATE_APP) {
+        // In case we are in program mode, try and send the commands to go into bootloader mode
+        for (size_t loop = 0; loop < 10; loop++) {
+            if (!serialPortWriteAscii(device->port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
+            if (!serialPortWriteAscii(device->port, "BLEN", 4)) break;
+            uint8_t c = 0;
+            if (serialPortReadCharTimeout(device->port, &c, 13) == 1) {
+                if (c == '$') {
+                    // done, we got into bootloader mode
+                    return true;
+                }
+            }
+            else serialPortFlush(device->port);
+        }
+    } else if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
+        if (serialPortWrite(device->port, (unsigned char*)":020000040700F3", 15) == 15)
+            return true;
+        if (serialPortWrite(device->port, (unsigned char*)":020000040500F5", 15) == 15)
+            return true;
+    }
+
+    // we never received a valid response.  We are in an unknown state.
+    return false;
+}
+
+/**
  * Instructs the Firmware to reset into the ISbootloader. The device will reinitialize
- * the serial port, forcing a drop of the serial connection.
+ * the serial port, forcing a drop of the serial connection. If this device is connected
+ * via USB, the USB port may get re-enumerated by the oS and assigned a new port.
  * @return true on success, otherwise false
  */
 bool ISBFirmwareUpdater::rebootToISB()
 {
-    fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "Resetting to ISBootloader...");
+    fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to Bootloader (ISbl)...");
 
-    // In case we are in program mode, try and send the commands to go into bootloader mode
-    for (size_t loop = 0; loop < 10; loop++) {
-        if (!serialPortWriteAscii(device->port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
-        if (!serialPortWriteAscii(device->port, "BLEN", 4)) break;
-        uint8_t c = 0;
-        if (serialPortReadCharTimeout(device->port, &c, 13) == 1) {
-            if (c == '$') {
-                // done, we got into bootloader mode
-                return true;
+    if (device->devInfo.hdwRunState == HDW_STATE_APP) {
+        // In case we are in program mode, try and send the commands to go into bootloader mode
+        for (size_t loop = 0; loop < 10; loop++) {
+            if (!serialPortWriteAscii(device->port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
+            if (!serialPortWriteAscii(device->port, "BLEN", 4)) break;
+            uint8_t c = 0;
+            if (serialPortReadCharTimeout(device->port, &c, 13) == 1) {
+                if (c == '$') {
+                    // done, we got into bootloader mode
+                    return true;
+                }
             }
+            else serialPortFlush(device->port);
         }
-        else serialPortFlush(device->port);
+    } else if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
+        if (serialPortWrite(device->port, (unsigned char*)":020000040500F5", 15) == 15)
+            return true;
     }
 
     // we never received a valid response.  We are in an unknown state.
@@ -554,29 +651,40 @@ bool ISBFirmwareUpdater::sendCmd(const std::string& cmd, int chksumPos) {
     return (portWrite(device->port, cmdBuffer, cmd.length()) >= 0);
 }
 
-bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string& progressMsg, uint32_t maxTimeout, uint32_t& timeout, float& progress) {
+/**
+ * Helper functions which waits for a particular acknowledgement response from the remote device, and generates periodic status
+ * reports while it waits.  This function calculates (and returns via 'progress') a percentage progress as an indication of
+ * time elapsed between timeout and maxTimeout. The implementation for progress is non-linear (exponential).
+ * @param ackStr the string to look for, which indicates an acknowledgement
+ * @param progressMsg a message to report when sending periodic status updates
+ * @param maxTimeout the maximum number of milliseconds to wait for the acknowledgement
+ * @param elapsed the number of milliseconds that have elasped since submitting the operation that is waiting for the acknowledgement
+ * @param progress  a calculated percentage (0-1.0) indicating a "progress" toward a timeout occurring
+ * @return false if an acknowledgement has been received, otherwise false
+ */
+bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string& progressMsg, uint32_t maxTimeout, uint32_t& elapsedTime, float& progress) {
     if (!device || !device->port)
         return false;
 
-    int count = portRead(device->port, rxWorkBufPtr, 3);
+    int count = portRead(device->port, rxWorkBufPtr, ackStr.length());
     rxWorkBufPtr += count;
 
     // we want to have a calculated progress which seems reasonable.
     // Since erasing flash is a non-deterministic operation (from our standpoint)
     // let's use a log algorithm that will elapse approx 75% of the progress in
-    // in the average time that a device takes to complete this operation (about 10 seconds)
+    // the average time that a device takes to complete this operation (about 10 seconds)
     // the remaining 25% will slowly elapse as we get closer to the timeout period.
-    progress = 1.0f - ((timeout - current_timeMs()) / (float)maxTimeout);
+    progress = (float)(1.0 - std::pow((double)(maxTimeout - elapsedTime) / (double)maxTimeout, 4));
     if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
         nextProgressReport = current_timeMs() + progress_interval;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, progressMsg);
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, progressMsg.c_str());
     }
 
     while ((rxWorkBufPtr - rxWorkBuf) >= ackStr.length()) {
         if (memcmp(rxWorkBuf, ackStr.c_str(), ackStr.length()) == 0) {
             rxWorkBufPtr = rxWorkBuf;
             progress = 1.0f;
-            timeout = 0;
+            elapsedTime = 0;
             return true;
         }
         rxWorkBufPtr--;
@@ -589,47 +697,55 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
 /**
  * Performs an incremental ERASE operation in a non-blocking fashion.  This function is intended to be
  * called multiple times, until it indicates that the operation has been completed.
- * @return returns a fwUpdate::update_status_e type; a IN_PROGRESS or FINALIZING indicates that the
+ * @returns a fwUpdate::update_status_e type; a IN_PROGRESS or FINALIZING indicates that the
  *   operation is still in progress.
  */
 ISBFirmwareUpdater::eraseState_t ISBFirmwareUpdater::eraseFlash_step(uint32_t timeout) {
     static const std::string SET_LOCATION = ":03000006030000F4CC";
     static const std::string ERASE_FLASH = ":0200000400FFFBCC";
 
+    float setLocProgress = 0.0f;  // use this instead of eraseProgress in ERASE_INITIALIZE, so it doesn't 'glitch' our progress
+
     switch (eraseState) {
         default:
-            eraseTimeout = 0;
+            eraseElapsed = 0;
+            eraseStartedMs = 0;
             eraseState = ERASE_INITIALIZE;
             // fallthrough - any other state should reset back to the init state
         case ERASE_INITIALIZE:
             // load erase location
-            if (eraseTimeout == 0) {
-                if (sendCmd(SET_LOCATION))    // size should be 19, and chksumPos = 17
-                    eraseTimeout = current_timeMs() + BOOTLOADER_TIMEOUT_DEFAULT;
+            if (eraseStartedMs == 0) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initializing flash erase location.");
+                if (sendCmd(SET_LOCATION))
+                    eraseStartedMs = current_timeMs();
                 SLEEP_MS(100); // give a moment for the device to respond to the command (but not too long).
             }
 
-            if (!waitForAck(".\r\n", "Erasing Flash", BOOTLOADER_TIMEOUT_DEFAULT, eraseTimeout, eraseProgress)) {
-                if (current_timeMs() > eraseTimeout) {
+            eraseElapsed = current_timeMs() - eraseStartedMs;
+            if (!waitForAck(".\r\n", "Erasing Flash", timeout, eraseElapsed, setLocProgress)) {
+                if (eraseElapsed > timeout) {
                     fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "Error while erasing flash (timeout after set_location)");
                     session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
                     eraseState = ERASE_TIMEOUT;
                     return eraseState;
                 }
             } else {
+                eraseStartedMs = 0;
                 eraseState = ERASE;
             }
             break;
         case ERASE:
             // load erase location
-            if (eraseTimeout == 0) {
+            if (eraseStartedMs == 0) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Performing flash erase.");
                 if (sendCmd(ERASE_FLASH))
-                    eraseTimeout = current_timeMs() + timeout;
+                    eraseStartedMs = current_timeMs();
                 SLEEP_MS(100); // give a moment for the device to respond to the command (but not too long).
             }
 
-            if (!waitForAck(".\r\n", "Erasing Flash", timeout, eraseTimeout, eraseProgress)) {
-                if (current_timeMs() > eraseTimeout) {
+            eraseElapsed = current_timeMs() - eraseStartedMs;
+            if (!waitForAck(".\r\n", "Erasing Flash", timeout, eraseElapsed, eraseProgress)) {
+                if (eraseElapsed > timeout) {
                     fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "Error while erasing flash (timeout after erase_flash)");
                     session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
                     eraseState = ERASE_TIMEOUT;
@@ -644,6 +760,7 @@ ISBFirmwareUpdater::eraseState_t ISBFirmwareUpdater::eraseFlash_step(uint32_t ti
             eraseState = ERASE_DONE;
             break;
         case ERASE_DONE:
+            fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Flash erase complete.");
             eraseProgress = 1.0f;
             break;
     }
@@ -656,7 +773,8 @@ is_operation_result ISBFirmwareUpdater::select_page(int page)
     unsigned char changePage[24];
 
     // Change page
-    SNPRINTF((char*)changePage, 24, ":040000060301%.4XCC", page);
+    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "Selecting flash page %d.", page);
+    SNPRINTF((char*)changePage, 24, ":040000060301%04XCC", page);
     checksum(0, changePage, 1, 17, 17, 1);
     if (serialPortWriteAndWaitForTimeout(device->port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
@@ -672,11 +790,12 @@ is_operation_result ISBFirmwareUpdater::begin_program_for_current_page(int start
     // Atmel begin program command is 0x01, different from standard intel hex where command 0x01 is end of file
     // After the 0x01 is a 00 which means begin writing program
     // The begin program command uses the current page and specifies two 16 bit addresses that specify where in the current page
-    //  the program code will be written
+    // the program code will be written
     unsigned char programPage[24];
 
     // Select offset
-    SNPRINTF((char*)programPage, 24, ":0500000100%.4X%.4XCC", startOffset, endOffset);
+    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "Setting \"Begin Program\" for current flash page (%d, %04X >= %04X).", currentPage, startOffset, endOffset);
+    SNPRINTF((char*)programPage, 24, ":0500000100%04X%04XCC", startOffset, endOffset);
     checksum(0, programPage, 1, 19, 19, 1);
     if (serialPortWriteAndWaitForTimeout(device->port, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
@@ -687,7 +806,7 @@ is_operation_result ISBFirmwareUpdater::begin_program_for_current_page(int start
     return IS_OP_OK;
 }
 
-int ISBFirmwareUpdater::is_isb_read_line(ByteBufferStream& byteStream, char line[1024])
+int ISBFirmwareUpdater::is_isb_read_line(ByteBufferStream& byteStream, char line[HEX_BUFFER_SIZE])
 {
     char c;
     char* currentPtr = line;
@@ -712,7 +831,15 @@ int ISBFirmwareUpdater::is_isb_read_line(ByteBufferStream& byteStream, char line
     return (int)(currentPtr - line);
 }
 
-is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, int byteCount)
+/**
+ * Formats and sends a single record (upto 255 bytes, or 510 characters) of HEX data to the
+ * receiving device on the current page, and waits for confirmation back that the data was
+ * successfully received.
+ * @param hexData
+ * @param byteCount
+ * @return is_operation_result IS_OP_OK if no error, otherwise IS_OP_ERROR
+ */
+is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, uint8_t byteCount)
 {
     if (byteCount == 0)
     {
@@ -749,11 +876,11 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
 
     checkSum = checksum(checkSum, hexData, 0, charsForThisPage, 0, 1);
     unsigned char checkSumHex[3];
-    SNPRINTF((char*)checkSumHex, 3, "%.2X", checkSum);
+    SNPRINTF((char*)checkSumHex, 3, "%02X", checkSum);
 
     // For some reason, the checksum doesn't always make it through to the IMX-5. Re-send until we get a response or timeout.
     // Update 8/25/22: Increasing the serialPortReadTimeout from 10 to 100 seems to have fixed this. Still needs to be proven.
-    for(int i = 0; i < 10; i++)
+    for (int i = 0; i < 10; i++)
     {
         if (portWrite(device->port, checkSumHex, 2) != 2)
         {
@@ -781,7 +908,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     return IS_OP_OK;
 }
 
-is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, int charCount)
+is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint16_t charCount)
 {
     (void)currentPage;
 
@@ -798,10 +925,10 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, int c
     int byteCount = charCount / 2;
 
     // check if we will overrun the current page
-    if (currentOffset + byteCount < FLASH_PAGE_SIZE)
+    if (currentOffset + byteCount > FLASH_PAGE_SIZE)
     {
         int pageByteCount = FLASH_PAGE_SIZE - currentOffset;
-        if (upload_hex_page(hexData, pageByteCount) != IS_OP_OK)
+        if ((pageByteCount < 0) || (pageByteCount > 255) || upload_hex_page(hexData, pageByteCount) != IS_OP_OK)
         {
             fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Upload hex page error");
             return IS_OP_ERROR;
@@ -826,6 +953,7 @@ is_operation_result ISBFirmwareUpdater::fill_current_page()
         unsigned char hexData[256];
         memset(hexData, 'F', 256);
 
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "Filling remainder of page %d with 0xFF (%d bytes).", currentPage, FLASH_PAGE_SIZE - currentOffset);
         while (currentOffset < FLASH_PAGE_SIZE)
         {
             int byteCount = (FLASH_PAGE_SIZE - currentOffset) * 2;
@@ -846,398 +974,222 @@ is_operation_result ISBFirmwareUpdater::fill_current_page()
     return IS_OP_OK;
 }
 
-#define HEX_BUFFER_SIZE 1024
-/*
-fwUpdate::update_status_e ISBFirmwareUpdater::doHexData(unsigned char* line, int lineLength, unsigned char* output, unsigned char* outputPtr) {
-    if (lineLength > HEX_BUFFER_SIZE * 4) {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) hex file line length too long");
-        writeState = WRITE_DONE;
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
-    unsigned char tmp[5];
-    int pad = 0;
-
-    memcpy(tmp, line + 3, 4);
-    tmp[4] = '\0';
-    int subOffset = strtol((char*)tmp, 0, 16);
-
-    // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
-    // that the bytes that were skipped get set to something
-    if (subOffset > lastSubOffset) {
-        // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
-        pad = (subOffset - lastSubOffset);
-        if (outputPtr + pad >= outputPtrEnd) {
-            writeState = WRITE_DONE;
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
-            return fwUpdate::ERR_INVALID_IMAGE;
-        }
-
-        while (pad-- != 0) {
-            *outputPtr++ = 'F';
-            *outputPtr++ = 'F';
-        }
-    }
-
-    // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
-    // check for overflow
-    pad = lineLength - 11;
-    if (outputPtr + pad >= outputPtrEnd) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Line data overflowed output buffer");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    for (int i = 9; i < lineLength - 2; i++) {
-        *outputPtr++ = line[i];
-    }
-
-    // set the end offset so we can check later for skipped offsets
-    lastSubOffset = subOffset + ((lineLength - 11) / 2);
-    int outputSize = (int)(outputPtr - output);
-
-    // we try to send the most allowed by this hex file format
-    if (outputSize < MAX_SEND_COUNT) {
-        // keep buffering
-        writeState = WRITE;
-        return fwUpdate::IN_PROGRESS;   // we've done what we can, for now...
-    }
-    // upload this chunk
-    if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize)) != IS_OP_OK) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload chunk");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    outputSize -= MAX_SEND_COUNT;
-
-    if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (1)");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    if (outputSize > 0) {
-        // move the left-over data to the beginning
-        memmove(output, output + MAX_SEND_COUNT, outputSize);
-    }
-
-    // reset output ptr back to the next chunk of data
-    outputPtr = output + outputSize;
-}
-
-fwUpdate::update_status_e ISBFirmwareUpdater::writeNewFlashPage(unsigned char* line, unsigned char* output, unsigned char* outputPtr) {
-    unsigned char tmp[5];
-
-    memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
-    tmp[1] = '\0';
-    currentPage = strtol((char*)tmp, 0, 16);
-
-    if(currentPage == 0) {
-        writeState = WRITE;
-        lastSubOffset = currentOffset;
-        return fwUpdate::IN_PROGRESS;   // we've done what we can, for now...
-    } else {
-        lastSubOffset = 0;
-    }
-
-    int outputSize = (int)(outputPtr - output);
-
-    if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (2)");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    // flush the remainder of data to the page
-    if (upload_hex(output, outputSize) != IS_OP_OK) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    // fill remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
-    if (fill_current_page() != IS_OP_OK) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    // change to the next page
-    currentOffset = 0;
-    if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to issue select page or to start programming");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    // set the output ptr back to the beginning, no more data is in the queue
-    outputPtr = output;
-}
-
-fwUpdate::update_status_e ISBFirmwareUpdater::doEndOfFile(unsigned char* output, unsigned char* outputPtr) {
-    int outputSize = (int)(outputPtr - output);
-
-    // flush the remainder of data to the page
-    if (upload_hex(output, outputSize) != IS_OP_OK) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex (last)");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-    if (currentOffset != 0 && fill_current_page() != IS_OP_OK) {
-        writeState = WRITE_DONE;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page (last)");
-        return fwUpdate::ERR_INVALID_IMAGE;
-    }
-
-    outputPtr = output;
-}
-*/
-
 /**
  * Processes an Intel hex file, one chunk/line at a time. This function is meant to be called
  * repeatedly (in a step/thread, minimal-blocking fashion) until the entire file is processed.
  * @return true if the entire file has been processed, otherwise false (repeat until true)
  */
 ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t timeout) {
-    // local variables that can be volatile/non-static
-    static unsigned char output[HEX_BUFFER_SIZE * 2]; // big enough to store an entire extra line of buffer if needed
-    unsigned char* outputPtr = output;
-    const unsigned char* outputPtrEnd = output + (HEX_BUFFER_SIZE * 2);
-    unsigned char tmp[5];
-    static IhexTransformer hexTransformer;
-
-    auto portEmitter = [&](const std::string& record) {
-        printf(":: %s\n", record.c_str());
-        switch (IhexTransformer::sendRecord(device->port, record)) {
-            case IhexTransformer::IHEX_DATA_READY_TO_SEND:
-            case IhexTransformer::IHEX_OP_OK:
-                return;
-            default:
-            // Error occurred.
-            case IhexTransformer::IHEX_ERROR__FAILED_TO_ACK:
-            case IhexTransformer::IHEX_ERROR__FAILED_TO_SEND:
-            case IhexTransformer::IHEX_ERROR__BUFLEN_EXCEEDED:
-            case IhexTransformer::IHEX_ERROR__LINE_LEN_EXCEEDED:
-            case IhexTransformer::IHEX_ERROR__LINE_LEN_MOD:
-            case IhexTransformer::IHEX_ERROR__INVALID_CHECKSUM:
-            case IhexTransformer::IHEX_ERROR__INVALID_START:
-                printf("Unable to send record.\n");
-                break;
-        }
-    };
-
-
     switch (writeState) {
         case WRITE_INITIALIZE:
-            select_page(0);
-            begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1);
-            currentPage = -1;
+            fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initializing flash write.");
+            currentPage = 0;
             currentOffset = m_isb_props.app_offset;
-            totalBytes = m_isb_props.app_offset;
+            totalBytes = 0; // FIXME??  Why was this: m_isb_props.app_offset;
             verifyCheckSum = 5381;
             writeState = WRITE;
+            select_page(currentPage);
+            begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1);
             break;
         case WRITE:
         {
-            process_hex_file(*imgStream);
-/*
-            char line[HEX_BUFFER_SIZE];
-            int lineLen = is_isb_read_line(*imgStream, line);
-            if (lineLen == 0) {
-                writeState = WRITE_FINALIZE;
-                return writeState;
+            switch (process_hex_stream(*imgStream)) {
+                case IS_OP_OK:  // normal operation, and still more data to process
+                    writeState = WRITE;
+                    break;
+                case IS_OP_CLOSED:  // normal operation, all data sent w/ no errors
+                    writeState = WRITE_FINALIZE;
+                    session_status = fwUpdate::FINALIZING;
+                    break;
+                case IS_OP_CANCELLED:   // user cancelled the update??  (currently, no mechanism for this)
+                    writeState = WRITE_DONE;
+                    session_status = fwUpdate::ERR_UPDATER_CLOSED;
+                    return writeState;
+                case IS_OP_RETRY:   // something requested that we start over again??
+                    sleep(1000);
+                    writeState = WRITE_INITIALIZE;
+                    break;
+                case IS_OP_INCOMPATIBLE:    // data is valid, but not for this device (should not happen at this point)
+                    session_status = fwUpdate::ERR_INVALID_TARGET;
+                    return writeState;
+                case IS_OP_ERROR:   // an error; invalid HEX data, etc
+                    writeState = WRITE_ERROR;
+                    session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
+                    return writeState;
             }
-            //std::string record(line);
-            //hexTransformer.processRecord(record, portEmitter);
-            upload_hex(reinterpret_cast<unsigned char *>(line), (lineLen-1) / 2);
-*/
             break;
         }
+        case WRITE_TIMEOUT:
+        case WRITE_ERROR:
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "Error while writing to flash.");
+            // whoops...
+            break;
         case WRITE_FINALIZE:
+            fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Finalizing flash write.");
+            writeState = WRITE_DONE;
             break;
         case WRITE_DONE:
+            fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Flash write completed.");
             break;
     }
 
-    int lastSubOffset = currentOffset;
-    int subOffset;
-
-    writeProgress = ((float)imgStream->tellg() / (float)session_image_size);
+    writeProgress = _MIN((float)imgStream->tellg() / (float)session_image_size, 1.0f);
     if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
-        writeState = WRITE_DONE;
-        nextProgressReport = current_timeMs() + progress_interval;
+        session_status = fwUpdate::IN_PROGRESS;
         fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "Writing Flash");
+        nextProgressReport = current_timeMs() + progress_interval;
     }
 
-    session_status = fwUpdate::IN_PROGRESS;
-    writeState = WRITE;
     return writeState;
 }
 
-is_operation_result ISBFirmwareUpdater::process_hex_file(ByteBufferStream& byteStream)
+is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byteStream)
 {
-    int currentPage = -1;
-    int currentOffset = m_isb_props.app_offset;
-    int lastSubOffset = currentOffset;
-    int subOffset;
-    int totalBytes = m_isb_props.app_offset;
 
-    int verifyCheckSum = 5381;
     int lineLength;
     // m_update_progress = 0.0f;
     char line[HEX_BUFFER_SIZE];
-    unsigned char output[HEX_BUFFER_SIZE * 2]; // big enough to store an entire extra line of buffer if needed
-    unsigned char* outputPtr = output;
-    const unsigned char* outputPtrEnd = output + (HEX_BUFFER_SIZE * 2);
     int outputSize = 0;
     int pad;
     unsigned char tmp[5];
-    int i;
+    int subOffset = 0, i = 0;
 
-    while ((lineLength = is_isb_read_line(byteStream, line)) != 0) {
-        if (lineLength > 12 && line[7] == '0' && line[8] == '0') {
-            if (lineLength > HEX_BUFFER_SIZE * 4) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) hex file line length too long");
-                return IS_OP_ERROR;
-            }
+    if (lastSubOffset < 0) {
+        lastSubOffset = currentOffset;
+        outputPtr = output;
+    }
 
-            // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
-            memcpy(tmp, line + 3, 4);
-            tmp[4] = '\0';
-            subOffset = strtol((char*)tmp, 0, 16);
 
-            // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
-            // that the bytes that were skipped get set to something
-            if (subOffset > lastSubOffset) {
-                // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
-                pad = (subOffset - lastSubOffset);
-                if (outputPtr + pad >= outputPtrEnd) {
-                    fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
-                    return IS_OP_ERROR;
-                }
+    if ((lineLength = is_isb_read_line(byteStream, line)) == 0)
+        return IS_OP_CLOSED;
 
-                while (pad-- != 0) {
-                    *outputPtr++ = 'F';
-                    *outputPtr++ = 'F';
-                }
-            }
+    if (lineLength > 12 && line[7] == '0' && line[8] == '0') {
+        if (lineLength > HEX_BUFFER_SIZE * 4) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) hex file line length too long");
+            return IS_OP_ERROR;
+        }
 
-            // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
-            // check for overflow
-            pad = lineLength - 11;
+        // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
+        memcpy(tmp, line + 3, 4);
+        tmp[4] = '\0';
+        subOffset = strtol((char*)tmp, 0, 16);
+
+        // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
+        // that the bytes that were skipped get set to something
+        if (subOffset > lastSubOffset) {
+            // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
+            pad = (subOffset - lastSubOffset);
             if (outputPtr + pad >= outputPtrEnd) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Line data overflowed output buffer");
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
                 return IS_OP_ERROR;
             }
 
-            for (i = 9; i < lineLength - 2; i++) {
-                *outputPtr++ = line[i];
+            while (pad-- != 0) {
+                *outputPtr++ = 'F';
+                *outputPtr++ = 'F';
             }
-
-            // set the end offset so we can check later for skipped offsets
-            lastSubOffset = subOffset + ((lineLength - 11) / 2);
-            outputSize = (int)(outputPtr - output);
-
-            // we try to send the most allowed by this hex file format
-            if (outputSize < MAX_SEND_COUNT) {
-                // keep buffering
-                continue;
-            }
-            // upload this chunk
-            if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize)) != IS_OP_OK) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload chunk");
-                return IS_OP_ERROR;
-            }
-
-            outputSize -= MAX_SEND_COUNT;
-
-            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (1)");
-                return IS_OP_ERROR;
-            }
-
-            if (outputSize > 0) {
-                // move the left-over data to the beginning
-                memmove(output, output + MAX_SEND_COUNT, outputSize);
-            }
-
-            // reset output ptr back to the next chunk of data
-            outputPtr = output + outputSize;
-        } else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13) {
-            memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
-            tmp[1] = '\0';
-            currentPage = strtol((char*)tmp, 0, 16);
-
-            if(currentPage == 0) {
-                lastSubOffset = currentOffset;
-                continue;
-            } else {
-                lastSubOffset = 0;
-            }
-
-            outputSize = (int)(outputPtr - output);
-
-            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (2)");
-                return IS_OP_ERROR;
-            }
-
-            // flush the remainder of data to the page
-            if (upload_hex(output, outputSize) != IS_OP_OK) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex");
-                return IS_OP_ERROR;
-            }
-
-            // fill remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
-            if (fill_current_page() != IS_OP_OK) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page");
-                return IS_OP_ERROR;
-            }
-
-            // change to the next page
-            currentOffset = 0;
-            if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to issue select page or to start programming");
-                return IS_OP_ERROR;
-            }
-
-            // set the output ptr back to the beginning, no more data is in the queue
-            outputPtr = output;
-        }
-        else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
-        {   // End of last page (end of file marker)
-            outputSize = (int)(outputPtr - output);
-
-            // flush the remainder of data to the page
-            if (upload_hex(output, outputSize) != IS_OP_OK) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex (last)");
-                return IS_OP_ERROR;
-            }
-            if (currentOffset != 0 && fill_current_page() != IS_OP_OK) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page (last)");
-                return IS_OP_ERROR;
-            }
-
-            outputPtr = output;
         }
 
-        writeProgress = ((float)byteStream.tellg() / (float)session_image_size);
-        if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
-            nextProgressReport = current_timeMs() + progress_interval;
-            fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "Writing Flash");
+        // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
+        // check for overflow
+        pad = lineLength - 11;
+        if (outputPtr + pad >= outputPtrEnd) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Line data overflowed output buffer");
+            return IS_OP_ERROR;
         }
+
+        for (i = 9; i < lineLength - 2; i++) {
+            *outputPtr++ = line[i];
+        }
+
+        // set the end offset so we can check later for skipped offsets
+        lastSubOffset = subOffset + ((lineLength - 11) / 2);
+        outputSize = (int)(outputPtr - output);
+
+        // we try to send the most allowed by this hex file format
+        if (outputSize < MAX_SEND_COUNT) {
+            // keep buffering
+            return IS_OP_OK;
+        }
+        // upload this chunk
+        if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize)) != IS_OP_OK) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload chunk");
+            return IS_OP_ERROR;
+        }
+
+        outputSize -= MAX_SEND_COUNT;
+
+        if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (1)");
+            return IS_OP_ERROR;
+        }
+
+        if (outputSize > 0) {
+            // move the left-over data to the beginning
+            memmove(output, output + MAX_SEND_COUNT, outputSize);
+        }
+
+        // reset output ptr back to the next chunk of data
+        outputPtr = output + outputSize;
+    } else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13) {
+        memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
+        tmp[1] = '\0';
+        int newPage = strtol((char*)tmp, 0, 16);
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) flash page changed (%d) in stream.", newPage);
+
+        if(newPage == 0) {
+            lastSubOffset = currentOffset = m_isb_props.app_offset;
+            return IS_OP_OK;
+        }
+
+        lastSubOffset = 0;
+        outputSize = (int)(outputPtr - output);
+
+        if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (2)");
+            return IS_OP_ERROR;
+        }
+
+        // flush the remainder of data to the current page
+        if (upload_hex(output, outputSize) != IS_OP_OK) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex");
+            return IS_OP_ERROR;
+        }
+
+        // fill remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
+        if (fill_current_page() != IS_OP_OK) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page");
+            return IS_OP_ERROR;
+        }
+
+        // change to the next page
+        currentPage = newPage;
+        currentOffset = 0;
+        if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to issue select page or to start programming");
+            return IS_OP_ERROR;
+        }
+
+        // set the output ptr back to the beginning, no more data is in the queue
+        outputPtr = output;
     }
+    else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
+    {   // End of last page (end of file marker)
+        fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) End of last page/file.");
+        outputSize = (int)(outputPtr - output);
 
-    if (writeProgress != 1.0f) {
-        writeProgress = 1.0f;
-        fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "Writing Flash");
+        // flush the remainder of data to the page
+        if (upload_hex(output, outputSize) != IS_OP_OK) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex (last)");
+            return IS_OP_ERROR;
+        }
+        if (currentOffset != 0 && fill_current_page() != IS_OP_OK) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page (last)");
+            return IS_OP_ERROR;
+        }
+
+        outputPtr = output;
     }
-
-    // Set the verify function up
-    // m_currentPage = currentPage;
-    // m_verifyCheckSum = verifyCheckSum;
 
     return IS_OP_OK;
 }
@@ -1276,255 +1228,4 @@ fwUpdate::target_t ISBFirmwareUpdater::getTargetType() {
     }
 
     return fwUpdate::TARGET_UNKNOWN;
-}
-
-/**
- * Calculates a IHEX checksum from the provided "line". If you are calculating an checksum for outgoing message
- * set 'append' to true, which will appends the resulting checksum, in ones-complement, to the end of the line.
- * If you are calculating the checksum for a line which includes the checksum, the returned checksum should be 0
- * indicating a pass, any other value indicates a failure to match.
- * @param line
- * @param append, if true causes the calculated checksum to be appended to the current line
- * @return if >= 0, indicates the calculated checksum, else (<0) indicates a parse error
- */
-int IhexTransformer::checksum(std::string& line, bool append, uint8_t initChksum)
-{
-    std::string lineCopy(line);
-    if (lineCopy[0] == ':')
-        lineCopy = line.substr(1);
-    if ((lineCopy.length() % 2) != 0)
-        return -1; // provided record has invalid length
-
-    uint8_t checksum = initChksum;
-    for (size_t i = 0; i < lineCopy.size(); i += 2) {
-        std::string byteChunk = lineCopy.substr(i, 2);
-        checksum += std::stoul(byteChunk, NULL, 16);
-    }
-
-    if (append) {
-        char chkStr[3] = {};
-        SNPRINTF(chkStr, 3, "%02X", checksum);
-        line.append(chkStr);
-    } else {
-        checksum = (uint8_t)(~checksum + 1);
-    }
-    return checksum;
-}
-
-/**
- * Send the assemble IHEX record/packet to the remote device, including populated the relevant header fields,
- * and calculating and appending the final checksum. This also waits for a response from the remove device
- * confirming receipt of the provided data. This function does not do any data encoding; the hexData to be
- * sent must already be in the ASCII HEX (2 characters per byte) necessary for the Intel HEX format
- * @param port the port to send the record/data do
- * @param recNum the Intel HEX record number associated with this data
- * @param hexData a byte array of hexadecimal encoded pairs of nibbles the represent the data to be sent.
- * @param hexDataLen the number of actual characters (not represented bytes) in the hexData payload
- * @return
- */
-std::string IhexTransformer::buildRecord(uint16_t recordOffset, uint8_t recordType, const char* hexData, int hexDataLen, IhexTransformer::ihex_op_t& error) {
-    // create a record request with just the hex characters that will fit on this page
-    int byteCount = hexDataLen / 2;
-    if (byteCount > 255) {
-        error = IHEX_ERROR__LINE_LEN_EXCEEDED;
-        return "";
-    }
-
-    std::string recordLine = utils::string_format(":%02X%04X%02X", byteCount, recordOffset, recordType);
-    recordLine.append((const char *)hexData, hexDataLen);
-    int newChecksum = checksum(recordLine, false);
-    std::string chksumHex = utils::string_format("%02X", newChecksum);
-    recordLine.append(chksumHex);
-    error = IHEX_OP_OK;
-    return recordLine;
-}
-
-
-IhexTransformer::ihex_op_t IhexTransformer::emitRecord(std::function<void(const std::string& record)> emitterCb, uint16_t recordOffset, uint8_t recordType, const char* hexData, int hexDataLen) {
-    ihex_op_t buildResult = IHEX_OP_OK;
-
-    std::string record = buildRecord(recordOffset, recordType, hexData, hexDataLen, buildResult);
-    if (buildResult == IHEX_OP_OK) {
-        if (recordType == 0)
-            initializeBuffer(); // safe to do, because 'record' is an encoded copy of the entire buffer
-        emitterCb(record);
-    }
-
-    return buildResult;
-}
-
-uint8_t IhexTransformer::waitForAnswer(port_handle_t port, uint32_t timeoutMs) {
-    if (port == 0)
-        return 0;
-
-    const uint16_t TERMINATOR = ('\r' << 8) | '\n';
-    static uint32_t answer = 0;
-
-    uint32_t timeout = current_timeMs() + timeoutMs;
-    while (current_timeMs() < timeout) {
-        uint8_t byte = 0;
-        while (portRead(port, &byte, 1)) {
-             answer = (answer << 8) | (byte & 0xFF);
-             if ((answer & 0xFFFF) == TERMINATOR)
-                 return ((answer >> 16) & 0xFF);
-        }
-    }
-    return 0;
-}
-
-/**
- * Builds and sends a complete packet out to the specified port, and waits for a positive acknowledgement from the remote.
- * NOTE that this function will attempt to resend the final CHKSUM periodically if an acknowledgement isn't received immediately.
- * @param port the port to send the record on
- * @param record the complete HEX record, previously encoded (see buildRecord) including checksum
- * @param bytesSent a pointer to an integer which, if not null, will be set to indicates the total number of bytes transfered
- * @return
- */
-IhexTransformer::ihex_op_t IhexTransformer::sendRecord(port_handle_t port, const std::string& record, int* bytesSent)
-{
-    // create a record request with just the hex characters that will fit on this page
-    std::string chksumHex = record.substr(record.length() - 2, 2);
-    int bytesWritten = portWrite(port, (const uint8_t*)record.c_str(), record.length());
-    if (bytesWritten != (int)record.length())
-        return IHEX_ERROR__FAILED_TO_SEND;
-
-    SLEEP_MS(10);
-    if (bytesSent)
-        *bytesSent = bytesWritten;
-
-    // For some reason, the checksum doesn't always make it through to the IMX-5. Re-send until we get a response or timeout.
-    // Update 8/25/22: Increasing the serialPortReadTimeout from 10 to 100 seems to have fixed this. Still needs to be proven.
-    uint32_t timeout = current_timeMs() + 1000;
-    while (current_timeMs() < timeout) {
-        uint8_t reply = waitForAnswer(port, 200);
-        if (!reply) {
-            printf("Timeout waiting for reply: %c\n", reply);
-        } else if (reply != '.') {
-            printf("Unexpected reply: %c\n", reply);
-            return IHEX_ERROR__FAILED_TO_ACK;
-        } else {
-            return IHEX_OP_OK;
-        }
-
-        if (portWrite(port, (const uint8_t*)chksumHex.c_str(), chksumHex.length()) != 2)
-            return IHEX_ERROR__FAILED_TO_SEND;
-
-        if (bytesSent)
-            *bytesSent += 2;
-    }
-    return IHEX_ERROR__NO_RESPONSE;
-}
-
-
-void IhexTransformer::initializeBuffer() {
-    memset(hexBuffer, 0, sizeof(hexBuffer));
-    baseAddress = -1;
-    currentPage = -1;
-    currentOffset = -1;
-    bufferOffset = -1;
-}
-
-IhexTransformer::ihex_op_t IhexTransformer::processRecord(const std::string &line, std::function<void(const std::string& record)> emitterCb, uint8_t fillByte) {
-    // parse out the header first.
-    std::string finalRecord;
-    ihex_op_t buildResult = IHEX_OP_OK;
-
-    if (line[0] != ':')
-        return IHEX_ERROR__INVALID_START;
-
-    uint8_t recordByteLen = std::stoul(line.substr(IHEX_DATA_LEN_POS, IHEX_DATA_LEN_LEN), 0, BASE_HEXADECIMAL);
-    uint16_t recordOffset = std::stoul(line.substr(IHEX_WRITE_ADDR_POS, IHEX_WRITE_ADDR_LEN), 0, BASE_HEXADECIMAL);
-    uint8_t recordType = std::stoul(line.substr(IHEX_RECORD_TYPE_POS, IHEX_RECORD_TYPE_LEN), 0, BASE_HEXADECIMAL);
-
-    if (checksum(const_cast<std::string &>(line)) != 0) // invalid checksum
-        return IHEX_ERROR__INVALID_CHECKSUM;
-
-    int lineDataCharLen = recordByteLen * 2;
-    if (lineDataCharLen != (line.length() - (IHEX_RECORD_TYPE_POS + IHEX_RECORD_TYPE_LEN) - 2))
-        return IHEX_ERROR__LINE_LEN_MOD;
-
-    std::string dataStr = line.substr(IHEX_DATA_POS, lineDataCharLen);
-
-    if (recordType != 0x00) {
-        // All none-zero record types are handled here, because they are sent directly to the remote target, and require no transforming.
-        // But, we can't handle them if we have a transformed back in the works, if so, send it before we move on.
-        if (bufferOffset > 0) {
-            auto result = emitRecord(emitterCb, currentOffset, 0x00, reinterpret_cast<const char *>(hexBuffer), bufferOffset);
-            if (result != IHEX_OP_OK)
-                return result;
-        }
-
-        // But, occasionally, we need to do some pre-processing when we receive them, so let's handle that here...
-        if ((recordType == 0x04) && (recordByteLen == 2)) {
-            // a record type of 0x04 sets the base address and resets all other working parameters
-            baseAddress = (std::stoul(dataStr, 0, BASE_HEXADECIMAL) << 16);
-            currentOffset = -1;
-        }
-
-        return emitRecord(emitterCb, recordOffset, recordType, dataStr.c_str(), dataStr.length());
-    }
-
-    if (currentOffset < 0) {
-        currentOffset = recordOffset; // only set this if it hasn't been set
-        lastWriteOffset = 0;
-    }
-    bufferOffset = (recordOffset - currentOffset) * 2;  // remember, buffer offset is the number of characters in the hex buffer, not actual byte offset, so x2
-    if (bufferOffset < lastWriteOffset)
-        lastWriteOffset = bufferOffset; // lastWrite should never be greater than the bufferOffset; it so, then we've moved back to an already written address
-
-    if (bufferOffset + lineDataCharLen >= HEX_BUFFER_SIZE ) {
-        return IHEX_ERROR__BUFLEN_EXCEEDED;
-    }
-
-    // Now that we've validated everything, push the newly parsed data into the buffer
-    char* writePtr = (char*)&hexBuffer[lastWriteOffset];
-
-    // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
-    // that the bytes that were skipped get set to something
-    int pad = (bufferOffset - lastWriteOffset);
-    if (pad > 0) {
-        if (pad + lastWriteOffset < MAX_SEND_COUNT) {
-            // fill the skipped memory with our fillByte (defaults to 0xFF)
-            for (; pad > 0; pad -= 2, writePtr += 2) {
-                SNPRINTF(writePtr, 3, "%02X", fillByte);
-            }
-            lastWriteOffset = bufferOffset;
-        } else {
-            // if there isn't room to pad, then just send this record and start over with a clean one
-            // NOTE the use of lastWriteOffset below because bufferOffset is where we WOULD start writing new data, which exceeds the MAX_SEND_COUNT
-            auto result = emitRecord(emitterCb, currentOffset, 0x00, reinterpret_cast<const char *>(hexBuffer), lastWriteOffset);
-            if (result != IHEX_OP_OK)
-                return result;
-            // NOTE, if we successfully sent it, sendRecord() will flush the current buffer, and reinitialize all our variables (like currentOffset/bufferOffset)
-            //   At this point, its probably easier/safer to call stuffHexData() again
-            return processRecord(line, emitterCb, fillByte);
-        }
-    }
-
-    if (bufferOffset + lineDataCharLen >= MAX_SEND_COUNT) {
-        // if we are here, it means we've exceeded our current max SEND limit of 256 bytes (510 characters), so lets send what we have already, and then start over with a fresh buffer
-        auto result = emitRecord(emitterCb, currentOffset, 0x00, reinterpret_cast<const char *>(hexBuffer), bufferOffset);
-        if (result == IHEX_OP_OK) {
-            // reset a new buffer and
-            memset(hexBuffer, 0, sizeof(hexBuffer));
-            currentOffset = bufferOffset = -1;
-            return processRecord(line, emitterCb, fillByte);
-        }
-    }
-
-    // else, there is still sufficient room to append the record
-
-    writePtr = (char*)&hexBuffer[bufferOffset];
-    SNPRINTF(writePtr, lineDataCharLen+1, "%s", dataStr.c_str());
-    bufferOffset += lineDataCharLen;
-    lastWriteOffset = bufferOffset;
-
-    // we try to send the most allowed by this hex file format
-    if (bufferOffset < MAX_SEND_COUNT) {
-        // keep buffering
-        return IHEX_OP_OK;
-    }
-
-    auto result = emitRecord(emitterCb, currentOffset, 0x00, reinterpret_cast<const char *>(hexBuffer), bufferOffset);
-    return result;
 }

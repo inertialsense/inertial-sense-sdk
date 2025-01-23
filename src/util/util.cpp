@@ -517,3 +517,42 @@ bool utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b) {
 
     return a.buildType > b.buildType;
 }
+
+/**
+ * Generates a detailed comparison, field-by-field, of two pointers of a particular DID.
+ * @param did the Data ID of the data buffers to compare (A & B)
+ * @param A a pointer to the first data buffer to compare
+ * @param B a pointer to the second data buffer to compare
+ * @param printDiff if true, print a detailed list of which fields were different, comparing their values.
+ *   if false, no output it printed
+ * @return true if the two data buffers match, otherwise false
+ */
+bool utils::compareDataIDs(uint32_t did, const uint8_t* A, const uint8_t* B, bool printDiff) {
+    const data_set_t& dataInfo = *(cISDataMappings::DataSet(did));
+    bool match = true;
+
+    for (int i = 0; i < dataInfo.size; i++) {
+        if (A[i] != B[i]) {
+            // get the field Info given the current position; we should be able to determine the start and end of this field
+            const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(did, i);
+            if (fieldInfo) {
+                if (printDiff) {
+                    char valueBuff[32] = {};
+                    std::string valueA = "<\?\?>", valueB = "<\?\?>";
+                    std::string fieldName = (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>");
+                    if (fieldInfo) {
+                        cISDataMappings::DataToString(*fieldInfo, NULL, A, valueBuff, 0, false);
+                        valueA = std::string(valueBuff);
+
+                        cISDataMappings::DataToString(*fieldInfo, NULL, B, valueBuff, 0, false);
+                        valueB = std::string(valueBuff);
+                    }
+                    printf("%s field '%s' mismatch: %s (A) != %s (B) (offset %d, size %d)\n",cISDataMappings::DataName(did), fieldName.c_str(), valueA.c_str(), valueB.c_str(), fieldInfo->offset, fieldInfo->size);
+                    match = false;
+                }
+                i = fieldInfo->offset + fieldInfo->size;
+            }
+        }
+    }
+    return match;
+}

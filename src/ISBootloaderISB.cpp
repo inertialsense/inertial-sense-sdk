@@ -779,208 +779,199 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderISB::process_hex_record(const std::string& record, int* verifyCheckSum) {
+#define HEX_BUFFER_SIZE 1024
+
+is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
+{
+    int currentPage = -1;
+    int currentOffset = m_isb_props.app_offset;
     int lastSubOffset = currentOffset;
     int subOffset;
     int totalBytes = m_isb_props.app_offset;
 
-    const char* line = record.c_str();
-    int lineLength = record.length();
+    int verifyCheckSum = 5381;
+    int lineLength;
     m_update_progress = 0.0f;
+    char line[HEX_BUFFER_SIZE];
+    unsigned char output[HEX_BUFFER_SIZE * 2]; // big enough to store an entire extra line of buffer if needed
     unsigned char* outputPtr = output;
     const unsigned char* outputPtrEnd = output + (HEX_BUFFER_SIZE * 2);
     int outputSize;
+    //int page = 0;
     int pad;
+    int fileSize;
     unsigned char tmp[5];
     int i;
-
-
-    if (lineLength > 12 && line[7] == '0' && line[8] == '0')
-    {
-        if (lineLength > HEX_BUFFER_SIZE * 4)
-        {
-            printf("\n");
-                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: hex file line length too long");
-            return IS_OP_ERROR;
-        }
-
-        // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
-        memcpy(tmp, line + 3, 4);
-        tmp[4] = '\0';
-        subOffset = strtol((char*)tmp, 0, 16);
-
-        // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
-        // that the bytes that were skipped get set to something
-        if (subOffset > lastSubOffset)
-        {
-            // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
-            pad = (subOffset - lastSubOffset);
-            if (outputPtr + pad >= outputPtrEnd)
-            {
-                printf("\n");
-                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: FF padding overflowed buffer");
-                return IS_OP_ERROR;
-            }
-
-            while (pad-- != 0)
-            {
-                *outputPtr++ = 'F';
-                *outputPtr++ = 'F';
-            }
-        }
-
-        // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
-        // check for overflow
-        pad = lineLength - 11;
-        if (outputPtr + pad >= outputPtrEnd)
-        {
-            printf("\n");
-                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Line data overflowed output buffer");
-            return IS_OP_ERROR;
-        }
-
-        for (i = 9; i < lineLength - 2; i++)
-        {
-            *outputPtr++ = line[i];
-        }
-
-        // set the end offset so we can check later for skipped offsets
-        lastSubOffset = subOffset + ((lineLength - 11) / 2);
-        outputSize = (int)(outputPtr - output);
-
-        // we try to send the most allowed by this hex file format
-        if (outputSize < MAX_SEND_COUNT)
-        {
-            // keep buffering
-            return IS_OP_OK;
-        }
-        // upload this chunk
-        if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, verifyCheckSum) != IS_OP_OK)
-        {
-                // printf("\n");
-                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload chunk");
-            return IS_OP_ERROR;
-        }
-
-        outputSize -= MAX_SEND_COUNT;
-
-        if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
-        {
-            printf("\n");
-                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Output size was too large (1)");
-            return IS_OP_ERROR;
-        }
-        if (outputSize > 0)
-        {
-            // move the left-over data to the beginning
-            memmove(output, output + MAX_SEND_COUNT, outputSize);
-        }
-
-        // reset output ptr back to the next chunk of data
-        outputPtr = output + outputSize;
-    }
-    else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13)
-    {
-        memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
-        tmp[1] = '\0';
-        currentPage = strtol((char*)tmp, 0, 16);
-
-        if(currentPage == 0)
-        {
-            lastSubOffset = currentOffset;
-            return IS_OP_OK;
-        }
-        else
-        {
-            lastSubOffset = 0;
-        }
-
-        outputSize = (int)(outputPtr - output);
-
-        if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
-        {
-            printf("\n");
-                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Output size was too large (2)");
-            return IS_OP_ERROR;
-        }
-        // flush the remainder of data to the page
-        if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, verifyCheckSum) != IS_OP_OK)
-        {
-                // printf("\n");
-                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload hex");
-            return IS_OP_ERROR;
-        }
-        // // fill the remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
-        if (fill_current_page(&currentPage, &currentOffset, &totalBytes, verifyCheckSum) != IS_OP_OK)
-        {
-            printf("\n");
-                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in fill page");
-            return IS_OP_ERROR;
-        }
-
-        // change to the next page
-        currentOffset = 0;
-        if (select_page(currentPage) != IS_OP_OK )
-        {
-                // printf("\n");
-                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to issue select page for programming");
-            return IS_OP_ERROR;
-        }
-
-        // start programming
-        if (begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
-        {
-                // printf("\n");
-                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to start programming of selected page");
-            return IS_OP_ERROR;
-        }
-
-        // set the output ptr back to the beginning, no more data is in the queue
-        outputPtr = output;
-    }
-    else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
-    {   // End of last page (end of file marker)
-        outputSize = (int)(outputPtr - output);
-
-        // flush the remainder of data to the page
-        if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, verifyCheckSum) != IS_OP_OK)
-        {
-                // printf("\n");
-                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload hex (last)");
-            return IS_OP_ERROR;
-        }
-        if (currentOffset != 0 && (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK))
-        // TODO?? if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, verifyCheckSum) != IS_OP_OK)
-        {
-                // printf("\n");
-                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in fill page (last)");
-            return IS_OP_ERROR;
-        }
-
-        outputPtr = output;
-    }
-    return IS_OP_OK;
-}
-
-is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
-{
-    currentPage = -1;
-    currentOffset = m_isb_props.app_offset;
-
-    int verifyCheckSum = 5381;
-    char line[HEX_BUFFER_SIZE];
-
-    int fileSize, lineLength;
-    is_operation_result opResult = IS_OP_OK;
 
     fseek(file, 0, SEEK_END);
     fileSize = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    while ((opResult == IS_OP_OK) && ((lineLength = is_isb_read_line(file, line)) != 0))
+    while ((lineLength = is_isb_read_line(file, line)) != 0)
     {
-        std::string record(line, lineLength);
-        opResult = process_hex_record(record, &verifyCheckSum);
+        if (lineLength > 12 && line[7] == '0' && line[8] == '0')
+        {
+            if (lineLength > HEX_BUFFER_SIZE * 4)
+            {
+                printf("\n");
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: hex file line length too long");
+                return IS_OP_ERROR;
+            }
+
+            // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
+            memcpy(tmp, line + 3, 4);
+            tmp[4] = '\0';
+            subOffset = strtol((char*)tmp, 0, 16);
+
+            // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
+            // that the bytes that were skipped get set to something
+            if (subOffset > lastSubOffset)
+            {
+                // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
+                pad = (subOffset - lastSubOffset);
+                if (outputPtr + pad >= outputPtrEnd)
+                {
+                    printf("\n");
+                    logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: FF padding overflowed buffer");
+                    return IS_OP_ERROR;
+                }
+
+                while (pad-- != 0)
+                {
+                    *outputPtr++ = 'F';
+                    *outputPtr++ = 'F';
+                }
+            }
+
+            // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
+            // check for overflow
+            pad = lineLength - 11;
+            if (outputPtr + pad >= outputPtrEnd)
+            {
+                printf("\n");
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Line data overflowed output buffer");
+                return IS_OP_ERROR;
+            }
+
+            for (i = 9; i < lineLength - 2; i++)
+            {
+                *outputPtr++ = line[i];
+            }
+
+            // set the end offset so we can check later for skipped offsets
+            lastSubOffset = subOffset + ((lineLength - 11) / 2);
+            outputSize = (int)(outputPtr - output);
+
+            // we try to send the most allowed by this hex file format
+            if (outputSize < MAX_SEND_COUNT)
+            {
+                // keep buffering
+                continue;
+            }
+            // upload this chunk
+            if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            {
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload chunk");
+                return IS_OP_ERROR;
+            }
+
+            outputSize -= MAX_SEND_COUNT;
+
+            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
+            {
+                printf("\n");
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Output size was too large (1)");
+                return IS_OP_ERROR;
+            }
+            if (outputSize > 0)
+            {
+                // move the left-over data to the beginning
+                memmove(output, output + MAX_SEND_COUNT, outputSize);
+            }
+
+            // reset output ptr back to the next chunk of data
+            outputPtr = output + outputSize;
+        }
+        else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13)
+        {
+            memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
+            tmp[1] = '\0';
+            currentPage = strtol((char*)tmp, 0, 16);
+
+            if (currentPage == 0)
+            {
+                lastSubOffset = currentOffset;
+                continue;
+            }
+            else
+            {
+                lastSubOffset = 0;
+            }
+
+            outputSize = (int)(outputPtr - output);
+
+            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
+            {
+                printf("\n");
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Output size was too large (2)");
+                return IS_OP_ERROR;
+            }
+            // flush the remainder of data to the page
+            if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            {
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload hex");
+                return IS_OP_ERROR;
+            }
+            // // fill the remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
+            if (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            {
+                printf("\n");
+                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in fill page");
+                return IS_OP_ERROR;
+            }
+
+            // change to the next page
+            currentOffset = 0;
+            if (select_page(currentPage) != IS_OP_OK)
+            {
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to issue select page for programming");
+                return IS_OP_ERROR;
+            }
+
+            // start programming
+            if (begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
+            {
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to start programming of selected page");
+                return IS_OP_ERROR;
+            }
+
+            // set the output ptr back to the beginning, no more data is in the queue
+            outputPtr = output;
+        }
+        else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
+        {   // End of last page (end of file marker)
+            outputSize = (int)(outputPtr - output);
+
+            // flush the remainder of data to the page
+            if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            {
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in upload hex (last)");
+                return IS_OP_ERROR;
+            }
+            if (currentOffset != 0 && (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK))
+            {
+                // printf("\n");
+                // logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Error in fill page (last)");
+                return IS_OP_ERROR;
+            }
+
+            outputPtr = output;
+        }
 
         if (m_update_callback != 0)
         {
@@ -1089,8 +1080,3 @@ is_operation_result cISBootloaderISB::get_version_from_file(const char* filename
     //No version found
     return IS_OP_ERROR;
 }
-
-
-
-
-

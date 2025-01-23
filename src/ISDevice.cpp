@@ -15,6 +15,39 @@
 
 ISDevice ISDevice::invalidRef;
 
+/**
+ * General Purpose IS-binary protocol handler for the InertialSense class.
+ * This is called anytime ISB packets are received by any of the underlying ports
+ * which are managed by the InertialSense and CommManager classes.  Eventually
+ * this should be moved into the ISDevice class, where devices of different types
+ * can handle their data independently. There could be a hybrid approach here
+ * where this function would (should?) locate the ISDevice by its port, and then
+ * redirect to the ISDevice specific callback.
+ * @param data The data which was parsed and is ready to be consumed
+ * @param port The port which the data was received from
+ * @return 0 if this data packet WILL NOT BE processed again by other handlers;
+ *   any other value indicates that the packet MAY BE processed by other handlers.
+ *   No guarantee is given that other handlers will process this packet if the
+ *   return value is non-zero, but IS GUARANTEED that this packet WILL NOT BE
+ *   further processed if a zero-value is returned.  Effectively, 0 = End-of-line.
+ */
+int ISDevice::processIsbMsgs(void* ctx, p_data_t* data, port_handle_t port)
+{
+    ISDevice* device = (ISDevice*)ctx;
+    //device->stepLogger(ctx, data, port);
+    return device ? device->onIsbDataHandler(data, port) : -1;
+}
+
+int ISDevice::processNmeaMsgs(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port)
+{
+    ISDevice* device = (ISDevice*)ctx;
+    return device ? device->onNmeaHandler(msg, msgSize, port) : -1;
+}
+
+int ISDevice::processPacket(void *ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port) {
+    ISDevice* device = (ISDevice*)ctx;
+    return device ? device->onPacketHandler(ptype, pkt, port) : -1;
+}
 
 bool ISDevice::Update() {
     return step();
@@ -30,7 +63,10 @@ bool ISDevice::step() {
     if (!port)
         return false;
 
-    comManagerStep(port);
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+    // comManagerStep(port);
+
     SyncFlashConfig();
     if (fwUpdater)
         fwUpdate();
@@ -165,11 +201,15 @@ bool ISDevice::queryDeviceInfoISbl() {
 
     handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
 
-    serialPortFlush(port);
-    serialPortRead(port, buf, sizeof(buf));    // empty Rx buffer
+    for (int i = 0; i < 5; i++) {
+        serialPortWrite(port, (uint8_t*)"\n", 1);
+        SLEEP_MS(10);
+        serialPortFlush(port);
+        serialPortRead(port, buf, sizeof(buf));    // empty Rx buffer
+    }
 
     // Query device
-    serialPortWrite(port, (uint8_t*)":020000041000EA", 15);
+    serialPortWrite(port, (uint8_t*)":020000041000EA", 18);
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
     int count = serialPortReadTimeout(port, buf, 14, 1000);
@@ -205,14 +245,14 @@ bool ISDevice::queryDeviceInfoISbl() {
             }
             // m_isb_props.is_evb = buf[6];
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo) ;
-            hdwRunState = ISDevice::HDW_STATE_BOOTLOADER;
+            devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
             memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
             return true;
         }
     }
 
     hdwId = IS_HARDWARE_TYPE_UNKNOWN;
-    hdwRunState = ISDevice::HDW_STATE_UNKNOWN;
+    devInfo = {};
     return false;
 }
 
@@ -257,7 +297,7 @@ bool ISDevice::validateDevice(uint32_t timeout) {
     } while ((hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (devInfo.serialNumber != 0));
 
     if ((hdwId != IS_HARDWARE_TYPE_UNKNOWN) &&
-        (hdwRunState != ISDevice::HDW_STATE_UNKNOWN) &&
+        (devInfo.hdwRunState != HDW_STATE_UNKNOWN) &&
         (devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0)) {
         comManagerGetData(this, DID_SYS_CMD, 0, 0, 0);
         comManagerGetData(this, DID_FLASH_CONFIG, 0, 0, 0);
@@ -290,10 +330,8 @@ std::string ISDevice::getIdAsString() {
 }
 
 std::string ISDevice::getName(const dev_info_t &devInfo) {
-    std::string out;
-
     // device serial no
-    out += utils::string_format("SN%09d (", devInfo.serialNumber);
+    std::string out = utils::string_format("SN%09d (", devInfo.serialNumber);
 
     // hardware type & version
     const char *typeName = "\?\?\?";
@@ -328,10 +366,10 @@ std::string ISDevice::getName() {
  * @return the resulting string
  */
 
-std::string ISDevice::getFirmwareInfo(const dev_info_t& devInfo, int detail, eHdwRunStates hdwRunState) {
+std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int detail) {
     std::string out;
 
-    if (hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
+    if (devInfo.hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
         out += utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], devInfo.firmwareVer[1]);
     } else {
         // firmware version
@@ -371,11 +409,11 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t& devInfo, int detail, eHd
 }
 
 std::string ISDevice::getFirmwareInfo(int detail) {
-    return getFirmwareInfo(devInfo, detail, hdwRunState);
+    return getFirmwareInfo(devInfo, detail);
 }
 
 std::string ISDevice::getDescription() {
-    return utils::string_format("%-12s [ %s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), portName(port));
+    return utils::string_format("%-12s [ %s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), getPortName().c_str());
 }
 
 void ISDevice::registerWithLogger(cISLogger *logger) {
@@ -751,6 +789,9 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
     // save the uploaded config, with correct checksum calculated in SetFlashConfig()
     nvm_flash_cfg_t tmpFlash = flashCfg;
 
+    SLEEP_MS(10);
+    step();
+
     if (!WaitForFlashSynced(timeout))
         return false;   // Re-download flash config
 
@@ -773,11 +814,10 @@ bool ISDevice::reset() {
     return false;
 }
 
-/*
-void ISDevice::processRxData(p_data_t* data)
+int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 {
     if (data->hdr.size==0 || data->ptr==NULL) {
-        return;
+        return 0;   // We didn't process, so let others try
     }
 
     if (devLogger) {
@@ -785,11 +825,12 @@ void ISDevice::processRxData(p_data_t* data)
         // stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
     }
 
-    hdwRunState = ISDevice::HDW_STATE_APP;  // It's basically impossible for us to receive ISB protocol, and NOT be in APP state
     switch (data->hdr.id) {
         case DID_DEV_INFO:
             devInfo = *(dev_info_t*)data->ptr;
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+            if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)
+                devInfo.hdwRunState = HDW_STATE_APP;   // since this is ISB, its pretty safe to assume that we are in APP mode.
             break;
         case DID_SYS_CMD:
             sysCmd = *(system_command_t*)data->ptr;
@@ -813,7 +854,8 @@ void ISDevice::processRxData(p_data_t* data)
             }
             break;
 
-    // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
+        // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
+        //  this seems to be for RTK RTCM3/NTrip Correction services, to republish the device's current position as NMEA GGA
         case DID_GPS1_POS:
             static time_t lastTime;
             time_t currentTime = time(NULLPTR);
@@ -827,30 +869,95 @@ void ISDevice::processRxData(p_data_t* data)
             break;
     }
 
-    // Now that we've done our own processing, we can call others...
-    if (binaryCallbacks[data->hdr.id].callback != NULLPTR) {
-        binaryCallbacks[data->hdr.id].callback(this, data);
-    }
-
-    if (binaryCallbackGlobal != NULLPTR) {
-        // Called for all DID's
-        binaryCallbackGlobal(this, data);
-    }
+    devInfo.hdwRunState = HDW_STATE_APP;  // It's basically impossible for us to receive ISB protocol, and NOT be in APP state
+    return 1;   // allow others to continue to process this message
 }
 
 // return 0 on success, -1 on failure
-void ISDevice::processRxNmea(const uint8_t* msg, int msgSize) {
-    if (m_handlerNmea) {
-        m_handlerNmea(this, msg, msgSize);
-    }
+int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t port) {
 
     switch (getNmeaMsgId(msg, msgSize))
     {
         case NMEA_MSG_ID_INFO:
             nmea_parse_info(devInfo, (const char*)msg, msgSize);
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-            hdwRunState = ISDevice::HDW_STATE_APP;
+            devInfo.hdwRunState = HDW_STATE_APP;
         break;
     }
+    return 1;   // allow others to continue to process this message
 }
+
+int ISDevice::onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port) {
+    return 1;   // allow others to continue to process this message
+}
+
+void ISDevice::stepLogger(void* ctx, const p_data_t* data, port_handle_t port)
+{
+/*
+    InertialSense* i = &InertialSense::StepLogger();
+    cMutexLocker logMutexLocker(&i->m_logMutex);
+    if (i->m_logger.Enabled())
+    {
+        p_data_buf_t d;
+        d.hdr = data->hdr;
+        memcpy(d.buf, data->ptr, d.hdr.size);
+        i->m_logPackets[port].push_back(d);
+    }
 */
+}
+
+bool ISDevice::assignPort(port_handle_t newPort) {
+    if (!newPort)
+        return false;
+
+    if (port) {
+        // releaseSerialPort()  TODO: I'm sure there is something we probably need to do before we can just assign the new port - close, flush, delete, etc?
+    }
+
+    port = newPort;
+    is_comm_callbacks_t portCbs = defaultCbs;
+
+    // Initialize IScomm instance, for serial reads / writes
+    if ((portType(port) & PORT_TYPE__COMM)) {
+        comm_port_t* comm = COMM_PORT(port);
+
+        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), portCbs.all);
+        is_comm_register_port_callbacks(port, &portCbs);
+
+#if ENABLE_PACKET_CONTINUATION
+        // Packet data continuation
+        memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
+#endif
+    }
+    return true;
+}
+
+
+pfnIsCommIsbDataHandler ISDevice::registerIsbDataHandler(pfnIsCommIsbDataHandler cbHandler) {
+    pfnIsCommIsbDataHandler oldHandler = defaultCbs.isbData;
+    defaultCbs.context = this;
+    defaultCbs.isbData = cbHandler;
+    defaultCbs.protocolMask |= ENABLE_PROTOCOL_ISB;
+
+    if (port && (portType(port) & PORT_TYPE__COMM))
+        oldHandler = is_comm_register_isb_handler(&COMM_PORT(port)->comm, cbHandler);
+
+    return oldHandler;
+}
+
+pfnIsCommGenMsgHandler ISDevice::registerProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler) {
+    if ((ptype < _PTYPE_FIRST_DATA) || (ptype > _PTYPE_LAST_DATA))
+        return NULL;
+
+    pfnIsCommGenMsgHandler oldHandler = defaultCbs.generic[ptype];
+
+    // if port is null, set this as the default handler, and also set it for all available ports
+    defaultCbs.context = this;
+    defaultCbs.generic[ptype] = cbHandler;
+    defaultCbs.protocolMask |= (0x01 < ptype);  // enable the protocol  TODO: if cbHandler is NULL, this should disable the protocol
+
+    if (port && portType(port) & PORT_TYPE__COMM)
+        return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+
+    return oldHandler;
+}

@@ -72,10 +72,10 @@ static test_data_t tcm = {};
 static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
-static int dummyIsbProtocolHandler(p_data_t* data, port_handle_t port) { return 0; }
-static int dummyGenericProtocolHandler(const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
+static int dummyIsbProtocolHandler(void* ctx, p_data_t* data, port_handle_t port) { return 0; }
+static int dummyGenericProtocolHandler(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
 
-static int postRxRead(p_data_t* dataRead, port_handle_t port)
+static int postRxRead(void* ctx, p_data_t* dataRead, port_handle_t port)
 {
     data_holder_t td = g_testRxDeque.front();
     g_testRxDeque.pop_front();
@@ -89,30 +89,30 @@ static int postRxRead(p_data_t* dataRead, port_handle_t port)
     return 0;
 }
 
-static int disableBroadcasts(port_handle_t port)
+static int disableBroadcasts(void*ctx, port_handle_t port)
 {
     return 0;
 }
 
-int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
+int prepDevInfo(void* ctx, port_handle_t port, p_data_hdr_t* dataHdr)
 {
     return 1;
 }
 
-int writeNvrUserpageFlashCfg(p_data_t* data, port_handle_t port)
+int writeNvrUserpageFlashCfg(void* ctx, p_data_t* data, port_handle_t port)
 {
     return 0;
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerBinaryData(p_data_t* msg, port_handle_t port)
+static int msgHandlerBinaryData(void* ctx, p_data_t* msg, port_handle_t port)
 {
-    postRxRead(msg, port);
+    postRxRead(ctx, msg, port);
     return 0;
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
+static int msgHandlerNmea(void* ctx, const uint8_t* msg, int msgSize, port_handle_t port)
 {
     if (msgSize == 10)
     {   // 4 character commands (i.e. "$STPB*14\r\n")
@@ -123,11 +123,11 @@ static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
                 break;
 
             case NMEA_MSG_ID_STPB: // stop all broadcasts on all ports
-                disableBroadcasts(0);
+                disableBroadcasts(ctx, 0);
                 break;
 
             case NMEA_MSG_ID_STPC: // stop all broadcasts on current port
-                disableBroadcasts(port);
+                disableBroadcasts(ctx, port);
                 break;
 
             case NMEA_MSG_ID_BLEN: // bootloader enable
@@ -169,7 +169,7 @@ static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
     return 0;
 }
 
-static int msgHandlerUblox(const uint8_t* msg, int msgSize, port_handle_t port)
+static int msgHandlerUblox(void* ctx, const uint8_t* msg, int msgSize, port_handle_t port)
 {
     data_holder_t td = g_testRxDeque.front();
     g_testRxDeque.pop_front();
@@ -207,7 +207,7 @@ static int msgHandlerUblox(const uint8_t* msg, int msgSize, port_handle_t port)
     return 0;
 }
 
-static int msgHandlerRtcm3(const uint8_t* msg, int msgSize, port_handle_t port)
+static int msgHandlerRtcm3(void* ctx, const uint8_t* msg, int msgSize, port_handle_t port)
 {
     data_holder_t td = g_testRxDeque.front();
     g_testRxDeque.pop_front();
@@ -245,7 +245,7 @@ static int msgHandlerRtcm3(const uint8_t* msg, int msgSize, port_handle_t port)
     return 0;
 }
 
-static int msgHandlerError(port_handle_t port)
+static int msgHandlerError(void* ctx, port_handle_t port)
 {
     return 0;
 }

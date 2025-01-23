@@ -577,22 +577,23 @@ typedef struct
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
 // raw packet handler function with is_comm_instance_t
-typedef int(*pfnIsCommHandler)(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+typedef int(*pfnIsCommHandler)(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 // InertialSense binary (ISB) data message handler function
-typedef int(*pfnIsCommIsbDataHandler)(p_data_t* data, port_handle_t port);
+typedef int(*pfnIsCommIsbDataHandler)(void* ctx, p_data_t* data, port_handle_t port);
 
 // broadcast message handler
 // typedef int(*pfnIsCommAsapMsg)(p_data_get_t* req, port_handle_t port);
 
 // Generic message handler function with message pointer and size
-typedef int(*pfnIsCommGenMsgHandler)(const unsigned char* msg, int msgSize, port_handle_t port);
+typedef int(*pfnIsCommGenMsgHandler)(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port);
 
 // Callback functions are called when the specific message is received and callback pointer is not null:
 typedef struct
 {
     /** A bitmask (each bit position corresponding to the _PTYPE_* protocol value) which forces parsing of that protocol (alternative to callbacks) */
     uint32_t                        protocolMask;
+    void*                           context;
     pfnIsCommHandler                all;
     pfnIsCommIsbDataHandler         isbData;
     pfnIsCommGenMsgHandler          generic[_PTYPE_SIZE];

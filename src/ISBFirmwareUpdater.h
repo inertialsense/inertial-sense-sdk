@@ -32,58 +32,7 @@
 #define MAX_SEND_COUNT                      510
 
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
-#define FLASH_PAGE_SIZE 65536
-
-
-class IhexTransformer {
-public:
-    typedef enum : int8_t {
-        IHEX_ERROR__NO_RESPONSE = -8,           //! the packet was sent successfully, but we timed-out waiting for a response
-        IHEX_ERROR__FAILED_TO_ACK = -7,         //! the packet was sent, but we failed to receive an ack response ('./r/n`)
-        IHEX_ERROR__FAILED_TO_SEND = -6,        //! there was an error sending the data to the port
-        IHEX_ERROR__BUFLEN_EXCEEDED = -5,       //! the record data exceeded the available buffer space
-        IHEX_ERROR__LINE_LEN_EXCEEDED = -4,     //! the record data was not a multiple of 2
-        IHEX_ERROR__LINE_LEN_MOD = -3,          //! the record data was not a multiple of 2
-        IHEX_ERROR__INVALID_CHECKSUM = -2,      //! the record data checksum failed to match
-        IHEX_ERROR__INVALID_START = -1,         //! the record had an invalid start character ':'
-        IHEX_OP_OK = 0,
-        IHEX_DATA_READY_TO_SEND = 1
-    } ihex_op_t;
-
-    static const int HEX_BUFFER_SIZE=1024;      //! max packet size, independent of "virtual page" size, this is the maximum amount of HEX data that will be sent to the device at a single time
-    unsigned char hexBuffer[HEX_BUFFER_SIZE] = {0};            //! the actual data that will be sent; should be cleared/reset after each send
-    int totalBytes = 0;                         //! the total number of bytes used in the current hexBuffer
-
-    int baseAddress = -1;                       //! the base address of the page that is being written to
-    int currentPage = -1;                       //! the "virtual page" that this data will be written to
-    int currentOffset = -1;                     //! the offset into the current page; virtual pages are 65535 bytes, and we can only send 256 bytes (512 characters) at a time,
-    int bufferOffset = -1;                      //! the offset into the hexBuffer where the next data stuff should start (also, effectively the length of data in the buffer)
-    int verifyCheckSum = 0;
-
-    // int lastSubOffset = currentOffset;
-    int lastWriteOffset = 0;
-
-    const uint8_t BASE_HEXADECIMAL = 16;
-    const uint8_t IHEX_DATA_LEN_POS = 1; // position in the IHEX line where the write address begins
-    const uint8_t IHEX_DATA_LEN_LEN = 2; // number of char/bytes in IHEX line that contain the write address
-    const uint8_t IHEX_WRITE_ADDR_POS = IHEX_DATA_LEN_POS + IHEX_DATA_LEN_LEN; // position in the IHEX line where the write address begins
-    const uint8_t IHEX_WRITE_ADDR_LEN = 4; // number of char/bytes in IHEX line that contain the write address
-    const uint8_t IHEX_RECORD_TYPE_POS = IHEX_WRITE_ADDR_POS + IHEX_WRITE_ADDR_LEN; // position in the IHEX line where the write address begins
-    const uint8_t IHEX_RECORD_TYPE_LEN = 2; // number of char/bytes in IHEX line that contain the write address
-    const uint8_t IHEX_DATA_POS = IHEX_RECORD_TYPE_POS + IHEX_RECORD_TYPE_LEN;
-
-    static int checksum(std::string& line, bool append = false, uint8_t initChksum = 0);
-    static ihex_op_t sendRecord(port_handle_t port, const std::string& record, int* bytesSent = NULL);
-    static uint8_t waitForAnswer(port_handle_t port, uint32_t timeoutMs);
-
-
-        std::string buildRecord(uint16_t recordOffset, uint8_t recordType, const char* hexData, int hexDataLen, IhexTransformer::ihex_op_t& error);
-    ihex_op_t emitRecord(std::function<void(const std::string& record)> emitterCb, uint16_t recordOffset, uint8_t recordType, const char* hexData, int hexDataLen);
-    ihex_op_t processRecord(const std::string& line, std::function<void(const std::string& record)> emitterCb, uint8_t fillByte = 0xFF);
-
-    void initializeBuffer();
-};
-
+#define FLASH_PAGE_SIZE                     65536
 
 class ISBFirmwareUpdater : public fwUpdate::FirmwareUpdateDevice {
 
@@ -99,7 +48,7 @@ public:
         // as soon as this is instantiated, we should attempt to target and boot the device into ISB mode.
         // rebootToISB(5, 0, false);
     }
-    ~ISBFirmwareUpdater() { };
+    ~ISBFirmwareUpdater() override = default;
 
     /**
      * We override this in this class, because we have to do some better handling for erase/write, rather than chunks.
@@ -110,8 +59,10 @@ public:
      */
     bool fwUpdate_sendProgressFormatted(int level, const char* message, ...) override;
 
+    bool fwUpdate_sendProgressFormatted(int level, int total_chunks, int num_chunks, const char* message, ...);
+
     // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
-    bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
+    bool fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) override;
 
     // called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
     /**
@@ -224,22 +175,26 @@ private:
         IS_IMAGE_SIGN_ERROR = 0x80000000,
     } eImageSignature;
 
+    static const int HEX_BUFFER_SIZE = 1024;
+
     ISDevice* device;
 
-    uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
-    uint16_t hardwareId;                // Inertial Sense Hardware Type (IMX, GPX, etc)
-    uint8_t m_isb_major;                // ISB Major revision on device
-    char m_isb_minor;                   // ISB Minor revision on device
-    bool isb_mightUpdate;               // true if device will be updated if bootloader continues
+    uint32_t m_sn = 0;                      //!< Inertial Sense serial number, i.e. SN60000
+    uint16_t hardwareId = 0;                //!< Inertial Sense Hardware Type (IMX, GPX, etc)
+    uint8_t m_isb_major = 0;                //!< ISB Major revision on device
+    char m_isb_minor = 0;                   //!< ISB Minor revision on device
+    bool isb_mightUpdate = false;           //!< true if device will be updated if bootloader continues
+
+    fwUpdate::payload_t lastPayload{};      //!< the last receive payload (uses during initialization, if having to switch to bootloader mode, etc)
 
     struct {
-        bool is_evb;                    // Available on version 6+, otherwise false
-        int processor;       // Differentiates between uINS-3 and IMX-5
-        bool rom_available;             // ROM bootloader is available on this port
+        bool is_evb = false;                //!< Available on version 6+, otherwise false
+        int processor = 0;                  //!< Differentiates between uINS-3 and IMX-5
+        bool rom_available = 0;             //!< ROM bootloader is available on this port
 
-        uint32_t app_offset;            // Helps in loading bin files
-        uint32_t verify_size;           // Chunk size, limited on Windows
-    } m_isb_props;
+        uint32_t app_offset = 0;            //!< Helps in loading bin files
+        uint32_t verify_size = 0;           //!< Chunk size, limited on Windows
+    } m_isb_props = {};
 
     static std::vector<uint32_t> serial_list;
     static std::mutex serial_list_mutex;
@@ -249,11 +204,12 @@ private:
 
     fwUpdate::target_t getTargetType();
 
-    bool rebootToISB()    ;
+    bool rebootToRomDfu();
+    bool rebootToISB();
     bool rebootToAPP(bool keepPortOpen = false);
 
     bool sendCmd(const std::string& cmd, int chksumPos = -1);
-    bool waitForAck(const std::string& ackStr, const std::string& progressMsg, uint32_t maxTimeout, uint32_t& timeout, float& progress);
+    bool waitForAck(const std::string& ackStr, const std::string& progressMsg, uint32_t maxTimeout, uint32_t& elapsed, float& progress);
 
     is_operation_result sync();
     uint32_t get_device_info();
@@ -261,18 +217,18 @@ private:
     int checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum);
     is_operation_result select_page(int page);
     is_operation_result begin_program_for_current_page(int startOffset, int endOffset);
-    int is_isb_read_line(ByteBufferStream& byteStream, char line[1024]);
-    is_operation_result upload_hex_page(unsigned char* hexData, int byteCount);
-    is_operation_result upload_hex(unsigned char* hexData, int charCount);
+    int is_isb_read_line(ByteBufferStream& byteStream, char line[HEX_BUFFER_SIZE]);
+    is_operation_result upload_hex_page(unsigned char* hexData, uint8_t byteCount);
+    is_operation_result upload_hex(unsigned char* hexData, uint16_t charCount);
     is_operation_result fill_current_page();
-    is_operation_result process_hex_file(ByteBufferStream& byteStream);
+    is_operation_result process_hex_stream(ByteBufferStream& byteStream);
 
     is_operation_result download_data(int startOffset, int endOffset);
 
     ByteBuffer* imgBuffer = nullptr;
     ByteBufferStream* imgStream = nullptr;
 
-    uint8_t rxWorkBuf[128];
+    uint8_t rxWorkBuf[128]{};
     uint8_t *rxWorkBufPtr =rxWorkBuf;
 
     bool doVerify = false;
@@ -297,7 +253,8 @@ private:
     } eraseState_t;
     eraseState_t eraseState = ERASE_INITIALIZE;
     float eraseProgress = 0.f;          // the percentage complete of the erase step
-    uint32_t eraseTimeout = 0;
+    uint32_t eraseStartedMs = 0;        // the timestamp (ms) when the erase step was started
+    uint32_t eraseElapsed = 0;          // milliseconds elapsed since the start of the erase step
 
     typedef enum : int8_t {
         WRITE_TIMEOUT = -2,
@@ -324,17 +281,23 @@ private:
     float verifyProgress = 0.f;          // the percentage complete of the verify step
     uint32_t verifyTimeout = 0;
 
-    int currentPage = 0;
+    int currentPage = -1;
     int currentOffset = 0;
     int totalBytes = 0;
     int verifyCheckSum = 0;
+
+    unsigned char output[HEX_BUFFER_SIZE * 2]{}; // big enough to store an entire extra line of buffer if needed
+    const unsigned char* outputPtrEnd = output + (HEX_BUFFER_SIZE * 2);
+    unsigned char* outputPtr = output;
+
+    int lastSubOffset = -1;
+    int subOffset = 0;
+
 
     std::deque<uint8_t>& toHost;
 
     eraseState_t eraseFlash_step(uint32_t timeout = 60000);
     writeState_t writeFlash_step(uint32_t timeout = 60000);
-
-    fwUpdate::update_status_e doHexData(unsigned char* line, int lineLength, unsigned char* output, unsigned char* outputPtr);
 };
 
 #endif //IS_ISB_FIRMWAREUPDATER_H
