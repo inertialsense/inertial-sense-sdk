@@ -771,7 +771,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     if (cpuDtMsGood && utcDtMsGood)
     {   // No time wrap
         g_debug.i[3] = utcDtMs;
-        g_debug.i[4] = cpuDtMs;
+        // g_debug.i[4] = cpuDtMs;
         int adjOffsetSec = millisecondsToSeconds(ddtMs);
         if (adjOffsetSec)
         {
@@ -781,7 +781,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
 #if PLATFORM_IS_EMBEDDED
             g_gnssTimeFaultTimeMs = g_timeMs;
 #endif
-            g_debug.i[5] = utcMs;
+            //g_debug.i[5] = utcMs;
             g_debug.f[5] = utcDtMs;
             g_debug.f[6] = cpuDtMs;
             g_debug.f[8] += 1.0f;
@@ -2838,7 +2838,6 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     date.weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
 
     // 5,6 - Local time zone offset from GMT (00,00)
-
     return 0;
 }
 
