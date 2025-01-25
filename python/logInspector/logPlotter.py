@@ -1451,6 +1451,9 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00080000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Ser Check Init')
+                cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x01000000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Chip Erase Invalid')
                 cnt += 1
