@@ -709,6 +709,58 @@ static int cltool_createHost()
     return 0;
 }
 
+
+//void testtesty(unsigned int pHandle, p_data_t* data)
+// int testtesty(p_data_t* data, port_handle_t port)
+// {
+//     printf("AAAAAAAAASSSSSSSSSSSSV");
+//     return 0;
+// }
+
+void getMemoryEvent(InertialSense& inertialSenseInterface, uint32_t* addrs, const std::string& destFolder, uint8_t addrCnts, bool IMX)
+{
+#define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
+    uint8_t data[EVENT_MAX_SIZE] = { 0 };
+
+    did_event_t event;
+
+    event.time = 123;
+    event.senderSN = 0;
+    event.senderHdwId = 0;
+    event.length = sizeof(did_event_memReq_t);
+
+    did_event_memReq_t memReq;
+
+    
+        SLEEP_MS(3000);
+
+    //comManagerRegister(DID_EVENT, 0, testtesty, 0, 0, EVENT_MAX_SIZE, 0);
+
+    if (IMX)
+        event.msgTypeID = EVENT_MSG_TYPE_ID_IMX_MEM_READ;
+    else
+        event.msgTypeID = EVENT_MSG_TYPE_ID_GPX_MEM_READ;
+
+    memcpy(data, &event, DID_EVENT_HEADER_SIZE);
+
+    // Send STPB
+    inertialSenseInterface.StopBroadcasts(true);
+
+    // Set DID_EVENT
+    inertialSenseInterface.GetData(DID_EVENT, 0, 0, 1);
+
+    for (int i = 0; i < addrCnts; i++)
+    {
+        memReq.reqAddr = addrs[i];
+        memcpy((void*)(data + DID_EVENT_HEADER_SIZE), &memReq, _MIN(sizeof(memReq), EVENT_MAX_SIZE - DID_EVENT_HEADER_SIZE));
+
+        // if (!port)
+        inertialSenseInterface.SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+
+        SLEEP_MS(100);
+    }
+}
+
 static int cltool_dataStreaming()
 {
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
@@ -773,6 +825,7 @@ static int cltool_dataStreaming()
             // No need to Close() the InertialSense class interface; It will be closed when destroyed.
             return -1;
         }
+
         try
         {
             if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
@@ -796,6 +849,12 @@ static int cltool_dataStreaming()
                     g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask,  
                     g_commandLineOptions.evFCont.evFilter.portMask,
                     g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
+            
+            if (g_commandLineOptions.evMCont.sendEVM)
+                getMemoryEvent(inertialSenseInterface, g_commandLineOptions.evMCont.Addrs,
+                    g_commandLineOptions.evMCont.outDir.c_str(),
+                    g_commandLineOptions.evMCont.addrCnt,
+                    g_commandLineOptions.evMCont.IMX);
 
             // before we start, if we are doing a run-once, set a default runDurationMs, so we don't hang indefinitely
             if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDurationMs)
