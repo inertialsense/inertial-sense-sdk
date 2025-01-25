@@ -314,6 +314,76 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             printf("EVF Enabled!");
 
         }
+        else if (startsWith(a, "-evmi=") || startsWith(a, "-evmg="))
+        {
+
+            printf("Parsing EVM!\n");
+
+            char* token = strtok((char*)&a[6], ",");
+
+            if (token != NULL)
+            {
+                g_commandLineOptions.evMCont.outDir = token;
+                printf("EVM Directory: %s\n", g_commandLineOptions.evMCont.outDir.c_str());
+            }
+            else
+            {
+                printf("EVM Directory missing arg example \"evmi=/tmp/,H,0x2002130,0x00002345\"\n");
+                continue;
+            }
+
+            token = strtok(NULL, ",");
+
+            if (token != NULL)
+            {
+                g_commandLineOptions.evMCont.hex = (token[0] == 'H') || (token[0] == 'h');
+                
+                if (g_commandLineOptions.evMCont.hex)
+                    printf("EVM HEX mode!\n");
+                else
+                    printf("EVM INT mode!\n");
+            }
+            else
+            {
+                printf("EVM Mode missing arg example \"evmi=/tmp/,H,20021a0,0x00002f45\"\n");
+                continue;
+            }
+
+            token = strtok(NULL, ",");
+            // allow 0x00000001-0x08000000,0x10000000-0x200bff00 0x40000000-0x5fffffff,  
+            for (g_commandLineOptions.evMCont.addrCnt = 0; g_commandLineOptions.evMCont.addrCnt < 10 && token != NULL; g_commandLineOptions.evMCont.addrCnt++)
+            {
+                int temp = 0;
+                if (g_commandLineOptions.evMCont.hex)
+                    temp = stoi(token, nullptr, 16);
+                else
+                    g_commandLineOptions.evMCont.Addrs[g_commandLineOptions.evMCont.addrCnt] = stoi(token);
+                
+                // allow 0x00000001-0x08000000,0x10000000-0x200bff00 0x40000000-0x5fffffff 
+                if ((temp > 0 && temp < 0x08000000) || 
+                    (temp > 0x10000000 && temp < 0x200bff00) || 
+                    (temp > 0x40000000 && temp < 0x5fffffff))
+                {
+                    g_commandLineOptions.evMCont.Addrs[g_commandLineOptions.evMCont.addrCnt] = temp;
+                    printf("Found valid Address: 0x%08x\n", temp);
+                }
+                else
+                {
+                    g_commandLineOptions.evMCont.addrCnt--;
+                    printf("0x%08x: is not in valid range(allowed:0x00000001-0x08000000,0x10000000-0x200bff00 0x40000000-0x5fffffff)\n", temp);
+                }
+
+                token = strtok(NULL, ",");
+            }
+
+            if (g_commandLineOptions.evMCont.addrCnt)
+            {
+                g_commandLineOptions.evMCont.sendEVM = true;
+                g_commandLineOptions.evMCont.IMX = startsWith(a, "-evmi=");
+
+                printf("EVM Enabled!");
+            }
+        }
         else if (startsWith(a, "-evo"))
         {
             if ((i + 3) < argc)
