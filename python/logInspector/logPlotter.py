@@ -2167,7 +2167,7 @@ class logPlot:
         ind = ephData > 0
         del_ind = []
         for j, sat in enumerate(sv):
-            if not any(ind[j,:,:]):
+            if not np.any(ind[j,:,:]):
                 del_ind.append(j)
         sv = np.delete(sv, del_ind)
         ephData = np.delete(ephData, (del_ind), axis=0)
