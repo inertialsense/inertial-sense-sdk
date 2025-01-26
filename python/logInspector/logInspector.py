@@ -445,10 +445,10 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Climb Rate', 'climbRate')
 
     def createListSensors(self):
-        self.addListItem('IMU Gyr', 'imuPQR')
-        self.addListItem('IMU Acc', 'imuAcc')
-        self.addListItem('PSD Gyr', 'gyroPSD')
-        self.addListItem('PSD Acc', 'accelPSD')
+        self.addListItem('IMU Gyro', 'imuPQR')
+        self.addListItem('IMU Accel', 'imuAcc')
+        self.addListItem('PSD Gyro', 'gyroPSD')
+        self.addListItem('PSD Accel', 'accelPSD')
         self.addListItem('Barometer', 'barometer')
         self.addListItem('Magnetometer', 'magnetometer')
         self.addListItem('Temp', 'temp')

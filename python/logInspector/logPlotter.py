@@ -2316,14 +2316,14 @@ class logPlot:
             fig = plt.figure()
 
         refTime = []
-        refPqr = []
+        refSnr = []
         for d in self.active_devs:
             refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
             # Ignore data if there are just a few RefIMU data points (logging bug?)
             if refTime_.size > 5:
                 refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
-                refPqr.append(refTheta / refDt[:,None])
+                refSnr.append(refTheta / refDt[:,None])
                 refTime.append(refTime_)
 
         (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(0, useImu3)
@@ -2338,9 +2338,9 @@ class logPlot:
                     (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(d, useImu3)
                     refTime = time
                     if combineImu3:
-                        refPqr = (snr0 + snr1 + snr2) / 3
+                        refSnr = (snr0 + snr1 + snr2) / 3
                     else:
-                        refPqr = snr0
+                        refSnr = snr0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
@@ -2348,12 +2348,12 @@ class logPlot:
             if sensorCnt:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
-                    for n, pqr in enumerate([ snr0, snr1, snr2 ]):
+                    for n, snr in enumerate([ snr0, snr1, snr2 ]):
                         if n<sensorCnt:
-                            if np.all(pqr) is not None:
-                                pqr = quatRot(self.log.mount_bias_quat[d,:], pqr)
-                                mean = np.mean(pqr[:, i])
-                                std = np.std(pqr[:, i])
+                            if np.all(snr) is not None:
+                                snr = quatRot(self.log.mount_bias_quat[d,:], snr)
+                                mean = np.mean(snr[:, i])
+                                std = np.std(snr[:, i])
                                 alable = 'Gyro'
                                 if sensorCnt > 1 and not combineImu3:
                                     alable += '%d ' % n
@@ -2363,13 +2363,13 @@ class logPlot:
                                 if combineImu3:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')                                
-                                ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=label)
+                                ax[i, n].plot(time, snr[:, i] * 180.0/np.pi, label=label)
                                 if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
-                                    intPqr = np.empty_like(refPqr)
-                                    intPqr[:,i] = np.interp(refTime, time, pqr[:,i], right=np.nan, left=np.nan)
-                                    resPqr = intPqr - refPqr
-                                    ax[i,1].plot(refTime, resPqr[:,i]*RAD2DEG, label=(label if dev_idx==0 else None))
+                                    intSnr = np.empty_like(refSnr)
+                                    intSnr[:,i] = np.interp(refTime, time, snr[:,i], right=np.nan, left=np.nan)
+                                    resSnr = intSnr - refSnr
+                                    ax[i,1].plot(refTime, resSnr[:,i]*RAD2DEG, label=(label if dev_idx==0 else None))
 
         if not plotResidual:
             for dev_idx, d in enumerate(self.active_devs):
@@ -2379,7 +2379,7 @@ class logPlot:
                             plabel = 'reference'
                         else:
                             plabel = ''
-                        ax[i, 0].plot(refTime[d], refPqr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
+                        ax[i, 0].plot(refTime[d], refSnr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
 
         for i in range((1 if combineImu3 else sensorCnt)):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -2401,13 +2401,13 @@ class logPlot:
             fig = plt.figure()
 
         refTime = []
-        refAcc = []
+        refSnr = []
         for d in self.active_devs:
             refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if refTime_.size > 5:
                 refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
-                refAcc.append(refVel / refDt[:,None])
+                refSnr.append(refVel / refDt[:,None])
                 refTime.append(refTime_)
 
         (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(0, useImu3)
@@ -2422,21 +2422,21 @@ class logPlot:
                     (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(d, useImu3)
                     refTime = time
                     if combineImu3:
-                        refAcc = (snr0 + snr1 + snr2) / 3
+                        refSnr = (snr0 + snr1 + snr2) / 3
                     else:
-                        refAcc = snr0
+                        refSnr = snr0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (name, stime, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(d, useImu3)
+            (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(d, useImu3)
             if sensorCnt:
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
-                    for n, acc in enumerate([ snr0, snr1, snr2 ]):
+                    for n, snr in enumerate([ snr0, snr1, snr2 ]):
                         if n<sensorCnt:
-                            if np.all(acc) is not None:
-                                mean = np.mean(acc[:, i])
-                                std = np.std(acc[:, i])
+                            if np.all(snr) is not None:
+                                mean = np.mean(snr[:, i])
+                                std = np.std(snr[:, i])
                                 alable = 'Accel'
                                 if sensorCnt > 1 and not combineImu3:
                                     alable += '%d ' % n
@@ -2446,13 +2446,13 @@ class logPlot:
                                 if combineImu3:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'm/s^2')
-                                ax[i, n].plot(time, acc[:, i], label=label)
+                                ax[i, n].plot(time, snr[:, i], label=label)
                                 if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'm/s^2')
-                                    intAcc = np.empty_like(refAcc)
-                                    intAcc[:,i] = np.interp(refTime, time, acc[:,i], right=np.nan, left=np.nan)
-                                    resAcc = intAcc - refAcc
-                                    ax[i,1].plot(refTime, resAcc[:,i], label=(label if dev_idx==0 else None))
+                                    intSnr = np.empty_like(refSnr)
+                                    intSnr[:,i] = np.interp(refTime, time, snr[:,i], right=np.nan, left=np.nan)
+                                    resSnr = intSnr - refSnr
+                                    ax[i,1].plot(refTime, resSnr[:,i], label=(label if dev_idx==0 else None))
 
         if not plotResidual:
             for dev_idx, d in enumerate(self.active_devs):
@@ -2462,7 +2462,7 @@ class logPlot:
                             plabel = 'reference'
                         else:
                             plabel = ''
-                        ax[i, 0].plot(refTime[d], refAcc[d][:, i], color='black', linestyle = 'dashed', label = plabel)
+                        ax[i, 0].plot(refTime[d], refSnr[d][:, i], color='black', linestyle = 'dashed', label = plabel)
 
         for i in range((1 if combineImu3 else sensorCnt)):
             self.legends_add(ax[0][i].legend(ncol=2))
