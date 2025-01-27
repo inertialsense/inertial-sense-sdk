@@ -57,11 +57,6 @@ public:
 
         flashCfg.checksum = (uint32_t)-1;
 
-        defaultCbs.context = this;
-        defaultCbs.all = processPacket;
-        registerIsbDataHandler(processIsbMsgs);
-        registerProtocolHandler(_PTYPE_NMEA, processNmeaMsgs);
-
         assignPort(_port);
     }
 
@@ -101,18 +96,23 @@ public:
         if (portType(port) & PORT_TYPE__COMM) {      // this is pretty much always true, because you can't really have an ISDevice that isn't a COMM port, but just in case..
             COMM_PORT(port)->comm.cb.context = this; // we need to update the port's callback to reference the copy's instance, not the original
         }
-        registerIsbDataHandler(processIsbMsgs);
-        registerProtocolHandler(_PTYPE_NMEA, processNmeaMsgs);
-        // assignPort(src.port);    // this will re-initialize the COMM buffers on the port; since we're using the original port, we shouldn't need to do this; especially if we're updating the comm.cb.context above
+        // NOTE: Don't reconfigure any other callbacks; since this originated from an ISDevice, function pointers should still be valid. We just need the newer context.
     }
 
-    ~ISDevice() {
+    virtual ~ISDevice() {
 //        if (((hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY)) || (devInfo.serialNumber != 0))
 //            std::cout << "Destroying ISDevice " << getDescription() << ". " << this << std::endl;
 
         //if (port && serialPortIsOpen(port))
         //    serialPortClose(port);
         devInfo = {};
+        if (port) {
+            if (portType(port) & PORT_TYPE__COMM) {
+                if (COMM_PORT(port)->comm.cb.context == this) {
+                    COMM_PORT(port)->comm.cb = originalCbs; // return the original callbacks/contexts, but only if the context matches us
+                }
+            }
+        }
         port = 0;
     }
 
@@ -142,7 +142,12 @@ public:
     /**
      * @return true is this ISDevice has a valid, and open port
      */
-    bool isConnected() { std::lock_guard<std::recursive_mutex> lock(portMutex); return (port && serialPortIsOpen(port)); }
+    bool isConnected() {
+        if (port && (portType(port) & PORT_TYPE__COMM))
+            return serialPortIsOpen(port);
+
+        return false;
+    }
 
     /**
      * @return true if the device has valid, minimal required devInfo values sufficient to indicate
@@ -264,8 +269,10 @@ public:
     int SetSysCmd(const uint32_t command);
     int StopBroadcasts(bool allPorts = false) { return SendRaw((uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
-
     bool hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite);
+
+    bool lockPort() { return portMutex.try_lock(); }
+    void unlockPort() { return portMutex.unlock(); }
 
     const dev_info_t& DeviceInfo() { return devInfo; }
     const sys_params_t& SysParams() { return sysParams; }
@@ -435,6 +442,7 @@ private:
     pfnIsCommIsbDataHandler defaultISBHandler = nullptr;
     std::map<int, pfnIsCommIsbDataHandler> didHandlers;
     std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> bcastMsgBuffers = {}; // [MAX_NUM_BCAST_MSGS];
+    is_comm_callbacks_t originalCbs = {}; // a copy of the port's original CBs before it was bound to this ISDevice; will be restored if this device is destroyed
     is_comm_callbacks_t defaultCbs = {}; // local copy of any callbacks passed at init
 
     static int processPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);

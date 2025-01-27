@@ -35,18 +35,18 @@ int ISDevice::processIsbMsgs(void* ctx, p_data_t* data, port_handle_t port)
 {
     ISDevice* device = (ISDevice*)ctx;
     //device->stepLogger(ctx, data, port);
-    return device ? device->onIsbDataHandler(data, port) : -1;
+    return (device && device->port == port) ? device->onIsbDataHandler(data, port) : -1;
 }
 
 int ISDevice::processNmeaMsgs(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port)
 {
     ISDevice* device = (ISDevice*)ctx;
-    return device ? device->onNmeaHandler(msg, msgSize, port) : -1;
+    return (device && device->port == port) ? device->onNmeaHandler(msg, msgSize, port) : -1;
 }
 
 int ISDevice::processPacket(void *ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port) {
     ISDevice* device = (ISDevice*)ctx;
-    return device ? device->onPacketHandler(ptype, pkt, port) : -1;
+    return (device && device->port == port) ? device->onPacketHandler(ptype, pkt, port) : -1;
 }
 
 bool ISDevice::Update() {
@@ -67,9 +67,20 @@ bool ISDevice::step() {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
     // comManagerStep(port);
 
-    SyncFlashConfig();
-    if (fwUpdater)
-        fwUpdate();
+    if (!hasDeviceInfo()) {
+        QueryDeviceInfo();
+        GetData(DID_DEV_INFO);
+    } else {
+        if (sysParams.flashCfgChecksum == 0)
+            GetData(DID_SYS_PARAMS);
+        if (flashCfg.checksum == 0)
+            GetData(DID_FLASH_CONFIG);
+
+        SyncFlashConfig();
+        if (fwUpdater)
+            fwUpdate();
+    }
+
     return true;
 }
 
@@ -473,6 +484,8 @@ int ISDevice::SetSysCmd(const uint32_t command) {
 
 int ISDevice::SendNmea(const std::string& nmeaMsg)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     uint8_t buf[1024] = {0};
     int n = 0;
     if (nmeaMsg[0] != '$') buf[n++] = '$'; // Append header if missing
@@ -494,6 +507,8 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
 */
 int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
 
@@ -538,6 +553,8 @@ int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMas
  *  a valid sync.
  */
 bool ISDevice::SyncFlashConfig() {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     unsigned int timeMs = current_timeMs();
     if (flashCfgUploadTimeMs)
     {   // if flashCfgUploadTimeMs != 0, then a UPLOAD is still in progress (we have sent a new Cfg, but waiting for it to sync back via the DID_SYS_PARAMS
@@ -586,6 +603,8 @@ bool ISDevice::SyncFlashConfig() {
 
 void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     bool platformCfgUpdateIoConfig = flashCfg_.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
 
     // Exclude from the checksum update the following which does not get saved in the flash config
@@ -608,6 +627,8 @@ void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
  */
 bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     // Copy flash config
     flashCfg_ = ISDevice::flashCfg;
 
@@ -626,6 +647,8 @@ bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_)
  * @return true if the ANY of the changes failed to send to the remove device.
  */
 bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
     uint32_t *newCfg = (uint32_t*)&flashCfg_;
     uint32_t *curCfg = (uint32_t*)&(flashCfg);
@@ -697,6 +720,8 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
  */
 bool ISDevice::WaitForFlashSynced(uint32_t timeout)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if (!port)
         return false;   // No device, no flash-sync
 
@@ -769,6 +794,8 @@ bool ISDevice::WaitForFlashSynced(uint32_t timeout)
  * @return true if there are "PENDING FLASH WRITES" waiting to clear, or no response from device.
  */
 bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if (!port || !serialPortIsOpen(port))
         return false;
 
@@ -783,6 +810,8 @@ bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
  */
 bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if (!SetFlashConfig(flashCfg))  // Upload and verify upload
         return false;   // we failed to even upload the new config
 
@@ -803,6 +832,8 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
 
 
 bool ISDevice::reset() {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if (current_timeMs() > nextResetTime) {
         for (int i = 0; i < 3; i++) {
             SetSysCmd(SYS_CMD_SOFTWARE_RESET);
@@ -816,6 +847,8 @@ bool ISDevice::reset() {
 
 int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if (data->hdr.size==0 || data->ptr==NULL) {
         return 0;   // We didn't process, so let others try
     }
@@ -875,6 +908,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 
 // return 0 on success, -1 on failure
 int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     switch (getNmeaMsgId(msg, msgSize))
     {
@@ -888,6 +922,7 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
 }
 
 int ISDevice::onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
     return 1;   // allow others to continue to process this message
 }
 
@@ -907,12 +942,22 @@ void ISDevice::stepLogger(void* ctx, const p_data_t* data, port_handle_t port)
 }
 
 bool ISDevice::assignPort(port_handle_t newPort) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if (!newPort)
         return false;
 
     if (port) {
         // releaseSerialPort()  TODO: I'm sure there is something we probably need to do before we can just assign the new port - close, flush, delete, etc?
     }
+
+    if ((portType(newPort) & PORT_TYPE__COMM)) {
+        originalCbs = COMM_PORT(newPort)->comm.cb; // make a copy of the new port's original callbacks/context, which we'll restore when this device is destroyed
+    }
+
+    defaultCbs.all = processPacket;
+    registerIsbDataHandler(processIsbMsgs);
+    registerProtocolHandler(_PTYPE_NMEA, processNmeaMsgs);
 
     port = newPort;
     is_comm_callbacks_t portCbs = defaultCbs;
@@ -934,6 +979,8 @@ bool ISDevice::assignPort(port_handle_t newPort) {
 
 
 pfnIsCommIsbDataHandler ISDevice::registerIsbDataHandler(pfnIsCommIsbDataHandler cbHandler) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     pfnIsCommIsbDataHandler oldHandler = defaultCbs.isbData;
     defaultCbs.context = this;
     defaultCbs.isbData = cbHandler;
@@ -946,6 +993,8 @@ pfnIsCommIsbDataHandler ISDevice::registerIsbDataHandler(pfnIsCommIsbDataHandler
 }
 
 pfnIsCommGenMsgHandler ISDevice::registerProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if ((ptype < _PTYPE_FIRST_DATA) || (ptype > _PTYPE_LAST_DATA))
         return NULL;
 

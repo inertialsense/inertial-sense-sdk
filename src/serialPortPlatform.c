@@ -640,6 +640,9 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         gettimeofday(&start, NULL);
     }
 
+    if (!handle || !buffer)
+        return -1;
+
     while (1)
     {
         if (timeoutMilliseconds > 0)

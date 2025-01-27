@@ -83,12 +83,12 @@ public:
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
 #define SIZE_BINARY_CALLBACK    256
-        pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK];
-        pfnStepLogFunction stepLogFunction;
-        InertialSense* inertialSenseInterface;
-        char* clientBuffer;
-        int clientBufferSize;
-        int* clientBytesToSend;
+        pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK] = {};
+        pfnStepLogFunction stepLogFunction = nullptr;
+        InertialSense* inertialSenseInterface = nullptr;
+        char* clientBuffer = nullptr;
+        int clientBufferSize = 0;
+        int* clientBytesToSend = 0;
         int16_t discoveryTimeout = 5000;
     };
 
@@ -750,8 +750,6 @@ private:
     port_handle_t allocateSerialPort(int ptype);
     std::unordered_set<port_handle_t> m_serialPorts;   //! actual initialized serial ports
     std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
-
-    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> m_cmBufBcastMsg = {}; // [MAX_NUM_BCAST_MSGS];
 
     // returns false if logger failed to open
     bool UpdateServer();

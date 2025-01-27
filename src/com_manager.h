@@ -36,13 +36,13 @@ typedef struct
     packet_t                pkt;
 
     /* Broadcast period counter */
-    int32_t                 counter;
+    int32_t                 counter = 0;
 
     /* Millisecond broadcast period intervals.  -1 = send once.  0 = disabled/unused/don't send. */
-    int32_t                 period;
+    int32_t                 period = 0;
 
     /* Port to broadcast on. */
-    port_handle_t           port;
+    port_handle_t           port = 0;
 } broadcast_msg_t;
 
 typedef std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> broadcast_msg_array_t;
@@ -717,7 +717,7 @@ private:
 
     is_comm_callbacks_t defaultCbs; // local copy of any callbacks passed at init
 
-    // Array of port
+    // Array of ports - that will be managed, but not owned, by the ISComManager instance
     std::unordered_set<port_handle_t>* ports = NULLPTR;  // this is not a vector of ports, its a pointer to an EXTERNAL set of ports.  This MUST be initialized!!!
 
     // reads n bytes into buffer from the source (usually a serial port)

@@ -134,7 +134,7 @@ namespace utils {
     std::string join_to_string(const T& v, const std::string& delimiter) {
         std::ostringstream s;
         for (const auto& i : v) {
-            if (&i != &v[0]) {
+            if (&i != &*v.begin()) {
                 s << delimiter;
             }
             s << i;
@@ -219,6 +219,13 @@ namespace utils {
      * @return true if the two data buffers match, otherwise false
      */
     bool compareDataIDs(uint32_t did, const uint8_t* A, const uint8_t* B, bool printDiff);
+
+    /**
+     * returns a string describing the portInfo parameter from a port_monitor_set_t.
+     * @param portInfo the port_monitor_set_t.portInfo
+     * @return a string of format "TYPE.ID"
+     */
+    std::string getPortMonitorDescription(uint8_t portInfo);
 };
 
 class ByteBuffer : public std::streambuf {

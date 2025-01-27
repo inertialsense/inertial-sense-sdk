@@ -531,7 +531,7 @@ bool utils::compareDataIDs(uint32_t did, const uint8_t* A, const uint8_t* B, boo
     const data_set_t& dataInfo = *(cISDataMappings::DataSet(did));
     bool match = true;
 
-    for (int i = 0; i < dataInfo.size; i++) {
+    for (uint32_t i = 0; i < dataInfo.size; i++) {
         if (A[i] != B[i]) {
             // get the field Info given the current position; we should be able to determine the start and end of this field
             const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(did, i);
@@ -555,4 +555,9 @@ bool utils::compareDataIDs(uint32_t did, const uint8_t* A, const uint8_t* B, boo
         }
     }
     return match;
+}
+
+std::string utils::getPortMonitorDescription(uint8_t portInfo) {
+    static std::vector<std::string> portTypeNames = { "???", "SER", "USB", "SPI", "I2C", "CAN" };
+    return utils::string_format("%s.%d", portTypeNames[(portInfo >> 4) & 0x0F].c_str(), portInfo & 0x0F);
 }

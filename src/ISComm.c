@@ -419,6 +419,11 @@ static protocol_type_t processIsbPkt(void* v)
 
     // Validate checksum
     packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
+    if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)
+        return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+    if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) && (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB))
+        return parseErrorResetState(c, EPARSE_INVALID_HEADER);
+
     uint16_t payloadSize = isbPkt->hdr.payloadSize;
     uint8_t *payload = c->rxBuf.head + sizeof(packet_hdr_t);
     checksum16_u *cksum = (checksum16_u*)(payload + payloadSize);

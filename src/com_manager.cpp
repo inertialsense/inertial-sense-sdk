@@ -317,9 +317,7 @@ is_comm_instance_t* comManagerGetIsComm(port_handle_t port)
 
 is_comm_instance_t* ISComManager::getIsComm(port_handle_t port)
 {
-    if (port == NULL)
-        return NULL;
-
+    if (!port) return NULL;
     return &((comm_port_t*)port)->comm;
 }
 
@@ -349,7 +347,7 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
     get.size = size;
     get.period = period;
 
-    if (send(port, PKT_TYPE_GET_DATA, &get, 0, sizeof(get), 0)) {
+    if (port && send(port, PKT_TYPE_GET_DATA, &get, 0, sizeof(get), 0)) {
         // if send() is true, then an error occurred...
         // depending on the nature of the error, we may want to close the port.
         // FIXME: we really should be more selective with which errors we actually close the port for.
@@ -437,6 +435,7 @@ int comManagerSend(port_handle_t port, uint8_t pFlags, const void* data, uint16_
  */
 int ISComManager::send(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
+    if (!port) return -1;
     // Return 0 on success, -1 on failure
     return (is_comm_write(port, pFlags, did, size, offset, data) < 0 ? -1 : 0);
 }

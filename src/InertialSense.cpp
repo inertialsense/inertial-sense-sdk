@@ -229,7 +229,7 @@ ISDevice* InertialSense::registerNewDevice(const ISDevice& device) {
     // first, ensure there isn't a matching device already
     for (auto d : m_comManagerState.devices) {
         if ((d->hdwId == ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo)) && (d->devInfo.serialNumber == device.devInfo.serialNumber)) {
-            debug_message("[DBG] Found existing device reference for %s; reusing.\n", d->getIdAsString().c_str());
+            // debug_message("[DBG] Found existing ISDevice reference '%s'; Updating port %s.\n", d->getIdAsString().c_str(), d->getPortName().c_str());
             d->assignPort(device.port);
             d->devInfo = device.devInfo;
             return d;
@@ -239,7 +239,7 @@ ISDevice* InertialSense::registerNewDevice(const ISDevice& device) {
     // If we're here, we didn't find the device above
     ISDevice* newDevice = (m_newDeviceHandler ? m_newDeviceHandler(device.port, device.devInfo) : new ISDevice(device));
     m_comManagerState.devices.push_back(newDevice);
-    debug_message("[DBG] Allocating new ISDevice instances for %s.\n", newDevice->getIdAsString().c_str());
+    // debug_message("[DBG] Allocating new ISDevice '%s' on port %s.\n", newDevice->getIdAsString().c_str(), newDevice->getPortName().c_str());
     return m_comManagerState.devices.empty() ? NULL : (ISDevice*)m_comManagerState.devices.back();
 }
 
@@ -259,7 +259,7 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     // first, ensure there isn't a matching device already
     for (auto d : m_comManagerState.devices) {
         if ((d->hdwId == ENCODE_DEV_INFO_TO_HDW_ID(devInfo)) && (d->devInfo.serialNumber == devInfo.serialNumber)) {
-            debug_message("[DBG] Found existing device reference for %s; reusing.\n", d->getIdAsString().c_str());
+            // debug_message("[DBG] Found existing ISDevice reference '%s'; Updating port %s.\n", d->getIdAsString().c_str(), d->getPortName().c_str());
             d->port = port;
             d->devInfo = devInfo;
             return d;
@@ -272,7 +272,7 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     newDevice->devInfo = devInfo;
     newDevice->hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
     m_comManagerState.devices.push_back(newDevice);
-    debug_message("[DBG] Allocating new ISDevice instances for %s.\n", newDevice->getIdAsString().c_str());
+    // debug_message("[DBG] Allocating new ISDevice '%s' on port %s.\n", newDevice->getIdAsString().c_str(), newDevice->getPortName().c_str());
     return m_comManagerState.devices.empty() ? NULL : (ISDevice*)m_comManagerState.devices.back();
 }
 
@@ -308,6 +308,8 @@ bool InertialSense::releaseDevice(ISDevice* device, bool closePort)
     if (deviceIter == m_comManagerState.devices.end())
         return false;
 
+    debug_message("[DBG] Releasing device '%s' on port '%s'\n", device->getIdAsString().c_str(), device->getPortName().c_str());
+
     auto dl = Logger()->getDeviceLogByPort(device->port);
     if (dl) dl->CloseAllFiles();
 
@@ -318,7 +320,7 @@ bool InertialSense::releaseDevice(ISDevice* device, bool closePort)
 
     m_comManagerState.devices.erase(deviceIter); // erase only remove the ISDevice* from the list, but doesn't release/free the instance itself
     device->port = NULL;
-    delete device; // causes a double free??
+    // delete device; // causes a double free?? -- FIXME This maybe problematic, since there may be external references to this device, which likely won't be notified of it being deleted (DeviceCollector, etc)
 
     return true;
 }
@@ -393,7 +395,7 @@ void InertialSense::StepLogger(void* ctx, const p_data_t* data, port_handle_t po
 {
     if (!ctx) return;
 
-    InertialSense* i = (InertialSense*)ctx;
+    InertialSense* i = getLastInstance(); // (InertialSense*)ctx;
     cMutexLocker logMutexLocker(&i->m_logMutex);
     if (i->m_logger.Enabled())
     {
@@ -1401,6 +1403,7 @@ port_handle_t InertialSense::allocateSerialPort(int ptype) {
     //   -- rather than using new, m_serialPorts will allocate a new port using a copy constructor.
     //   We'll dereference the internal copy in the vector to a port_handle_t -- this avoids us using new/delete or malloc/free
     serial_port_t* serialPort = new serial_port_t;
+    *serialPort = {};
     serialPort->base.pnum = (uint16_t)m_serialPorts.size(); // m_comManagerState.devices.size();
     serialPort->base.ptype = (ptype | PORT_TYPE__UART);
 
@@ -1408,9 +1411,7 @@ port_handle_t InertialSense::allocateSerialPort(int ptype) {
 
     port_handle_t port = (port_handle_t)serialPort;
     serialPortPlatformInit(port);
-
-    m_serialPorts.insert(port);
-    comManagerRegisterPort(port);    // don't forget to register this port with the comManager and wire callbacks
+    comManagerRegisterPort(port);    // register this port with the comManager and wire callbacks
 
     return port;
 }
@@ -1455,7 +1456,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
 
     // Note that the following callbacks/handlers will be updated to be ISDevice specific, once the port is deemed to be an ISDevice
     debug_message("[DBG] Initializing comManager...\n");
-    comManagerInit(&m_serialPorts, 10, staticProcessRxData, 0, 0, 0, &m_cmBufBcastMsg);
+    comManagerInit(&m_serialPorts, 10, staticProcessRxData, 0, 0, 0, 0);
     comManagerRegisterProtocolHandler(_PTYPE_NMEA, staticProcessRxNmea);
     comManagerRegisterProtocolHandler(_PTYPE_UBLOX, m_handlerUblox);
     comManagerRegisterProtocolHandler(_PTYPE_RTCM3, m_handlerRtcm3);
@@ -1480,6 +1481,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     }
 
     // allocate, register and open serial ports, but don't if its already allocated, registered, and opened.
+    debug_message("[DBG] Identified %lu potential serial ports.\n", portNames.size());
     for (std::string curPortName : portNames) {
         // check to see if this port should be ignored
         bool skipPort = false;
@@ -1496,19 +1498,19 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         port_handle_t newPort = NULL;
         for (auto port : m_serialPorts) {
             if (portName(port) && (portName(port) == curPortName)) {
-                debug_message("[DBG] Serial port '%s' has already been allocated.\n", curPortName.c_str());
+                // debug_message("[DBG] Serial port '%s' has already been allocated.\n", curPortName.c_str());
                 newPort = port;
                 break;
             }
         }
 
         if (!newPort) {
-            debug_message("[DBG] Allocating serial port instance for %s\n", curPortName.c_str());
+            // debug_message("[DBG] Allocating serial port instance for %s\n", curPortName.c_str());
             newPort = allocateSerialPort(PORT_TYPE__COMM);
         }
 
         if (!serialPortIsOpen(newPort)) {
-            debug_message("[DBG] Opening serial port '%s'\n", curPortName.c_str());
+            // debug_message("[DBG] Opening serial port '%s'\n", curPortName.c_str());
             if (serialPortOpen(newPort, curPortName.c_str(), baudRate, 0) == 0) {
                 debug_message("[DBG] Error opening serial port '%s'.  Ignoring.  Error was: %s\n", curPortName.c_str(), SERIAL_PORT(newPort)->error);
                 serialPortClose(newPort);           // failed to open
@@ -1519,11 +1521,15 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
     }
 
-    bool timeoutOccurred = false;
     if (m_enableDeviceValidation) {
+        debug_message("[DBG] Starting device validation on %lu registered ports.\n", m_serialPorts.size());
         unsigned int startTime = current_timeMs();
 
-        // since we are validating devices, some may have had previous devInfo that would allow the validation to pass incorrectly
+        // we'll make a copy of all the port handles (into a set); as we validate each, we'll remove it from this new set until they are all gone
+        std::set<std::string> portsToValidate;
+        for (auto port : m_serialPorts) portsToValidate.insert(portName(port));
+
+        // since we can re-validating some devices, there may be previous devInfo that would allow the validation to pass incorrectly, so clear it
         for (auto device : m_comManagerState.devices) device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
 
         // check for Inertial-Sense devices by making a series of protocol requests (which it should respond to at least one of)
@@ -1532,7 +1538,6 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
             if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
                 debug_message("Timeout waiting all discovered ports to validate.\n");
-                timeoutOccurred = true;
                 break;
             }
 
@@ -1541,33 +1546,36 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                 ISDevice device(port);
                 switch (checkType) {
                     case ISDevice::queryTypes::QUERYTYPE_NMEA :
-                        debug_message("[DBG] Querying serial port '%s' using NMEA protocol.\n", SERIAL_PORT(port)->portName);
+                        // debug_message("[DBG] Querying serial port '%s' using NMEA protocol.\n", SERIAL_PORT(port)->portName);
                         // comManagerSendRaw(port, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
                         device.SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
                         break;
                     case ISDevice::queryTypes::QUERYTYPE_ISB :
-                        debug_message("[DBG] Querying serial port '%s' using ISB protocol.\n", SERIAL_PORT(port)->portName);
+                        // debug_message("[DBG] Querying serial port '%s' using ISB protocol.\n", SERIAL_PORT(port)->portName);
                         // comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
                         device.GetData(DID_DEV_INFO);
                         break;
                     case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
-                        debug_message("[DBG] Querying serial port '%s' using ISbootloader protocol.\n", SERIAL_PORT(port)->portName);
+                        // debug_message("[DBG] Querying serial port '%s' using ISbootloader protocol.\n", SERIAL_PORT(port)->portName);
                         device.queryDeviceInfoISbl();
                         break;
                     case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
-                        debug_message("[DBG] Querying serial port '%s' mcuBoot/SMP protocol.\n", SERIAL_PORT(port)->portName);
+                        // debug_message("[DBG] Querying serial port '%s' mcuBoot/SMP protocol.\n", SERIAL_PORT(port)->portName);
                         // comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
                         break;
                 }
 
-                for (int i = 0; i < 3; i++) {
-                    SLEEP_MS(10);
-                    device.step();
-                }
+                SLEEP_MS(10);
+                device.step();
 
                 if ((device.hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (device.hdwId != IS_HARDWARE_ANY) && device.devInfo.hdwRunState) {
-                    debug_message("[DBG] Received response from serial port '%s'. Registering device.\n", SERIAL_PORT(port)->portName);
+                    // debug_message("[DBG] Received response from serial port '%s'. Registering new device: %s.\n", device.getPortName().c_str(), device.getIdAsString().c_str());
                     registerNewDevice(device);
+
+                    // since we've validated, we can remove this from the "portsToValidate" set
+                    auto removeMe = portsToValidate.find(portName(port));
+                    if (removeMe != portsToValidate.end())
+                        portsToValidate.erase(removeMe);
                 } else if (SERIAL_PORT(port)->errorCode) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
                     debug_message("[DBG] There was an error accessing serial port '%s': %s\n", SERIAL_PORT(port)->portName, SERIAL_PORT(port)->error);
@@ -1579,45 +1587,42 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             }
 
             checkType = (checkType + 1) % 4;
-        } while (!HasReceivedDeviceInfoFromAllDevices());
+        } while (!portsToValidate.empty());
+        debug_message("[DBG] Completed device validation for %lu devices, on %lu ports.\n", m_comManagerState.devices.size(), m_serialPorts.size());
 
-        // remove each failed device where communications were not received
-        debug_message("[DBG] Completed device validation. Cleaning up remaining (unresponsive) ports.\n");
-        std::vector<std::string> deadPortNames;
-        std::vector<ISDevice*> deadDevices;
-        for (auto device : m_comManagerState.devices) {
-            if (!device->hasDeviceInfo()) {
-                if (device->port) {
-                    debug_message("[DBG] Failed to receive response on serial port '%s'\n", portName(device->port));
-                    deadPortNames.push_back(portName(device->port));
-                }
-                deadDevices.push_back(device);
-            }
-        }
-
-        if (timeoutOccurred && !deadPortNames.empty()) {
-            auto names = utils::join_to_string<std::vector<std::string>>(deadPortNames, ", ");
-            fprintf(stderr, "Timeout waiting for response from ports: [%s]\n", names.c_str());
+        if (!portsToValidate.empty()) {
+            auto names = utils::join_to_string<std::set<std::string>>(portsToValidate, ", ");
+            fprintf(stderr, "Timeout waiting to validate %lu ports: %s.\n", portsToValidate.size(), names.c_str());
             fflush(stderr);
         }
 
-        // We don't remove the device above while still iterating over the list of devices.
-        for (auto deadDevice : deadDevices) {
-            if (deadDevice) {
-                debug_message("[DBG] Deallocating device associated with port '%s'\n", portName(deadDevice->port));
-                releaseDevice(deadDevice);
+        // Now we need to look for other devices (old?) devices which are effectively dead, and clean them up
+        std::vector<ISDevice*> deadDevices;
+        for (auto dev : m_comManagerState.devices) {
+            if (!dev->port || !dev->isConnected()) {
+                deadDevices.push_back(dev);
             }
         }
-        deadDevices.clear();
+
+        // We don't remove the device above while still iterating over the list of devices.
+        if (!deadDevices.empty()) {
+            for (auto deadDevice : deadDevices) {
+                if (deadDevice) {
+                    fprintf(stderr, "Found device %s on invalid/closed port %s.\n", deadDevice->getIdAsString().c_str(), deadDevice->getPortName().c_str());
+                    releaseDevice(deadDevice);
+                }
+            }
+            deadDevices.clear();
+        }
     }
 
     // request extended device info for remaining connected devices...
     for (auto device : m_comManagerState.devices) {
         // but only if they are of a compatible protocol version
         if (device->hasDeviceInfo()) {
-            device->GetData(DID_SYS_CMD);
+            device->GetData(DID_SYS_PARAMS);
             device->GetData(DID_FLASH_CONFIG);
-            device->GetData(DID_EVB_FLASH_CFG);
+            // device->GetData(DID_EVB_FLASH_CFG);
         }
     }
 
