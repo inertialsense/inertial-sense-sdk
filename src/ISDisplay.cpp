@@ -750,6 +750,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
     case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;
     case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
     case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
+	case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);    			break;
 	default:
         if (m_showRawHex)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
@@ -1851,6 +1852,75 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
                         portMon.port[pIdx].rxBytes / 1024, portMon.port[pIdx].rxBytesPerSec / 1024, portMon.port[pIdx].rxChecksumErrors, portMon.port[pIdx].rxOverflows);
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u overflows\n",
                         portMon.port[pIdx].txBytes / 1024, portMon.port[pIdx].txBytesPerSec / 1024, portMon.port[pIdx].txBytesDropped, portMon.port[pIdx].txOverflows);
+    }
+
+    return buf;
+}
+
+string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    // Print DID
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+
+    // Print Time
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Dev upTime: %dms\n", event.time);
+
+    // print Serial number */
+    event.senderSN;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Sender SN:%d\n", event.senderSN);
+  
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
+    event.senderHdwId;
+    switch (event.senderHdwId)
+    {
+        case IS_HARDWARE_TYPE_IMX:  ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: IMX\n"); break;
+        case IS_HARDWARE_TYPE_GPX:  ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: GPX\n"); break;
+        default:                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: Other\n"); break;
+    }
+    
+    // print eEventPriority */
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Piority: %d\n", event.priority);
+
+    // print length
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Size: %d\n", event.length);
+    
+    // print the data
+    switch (event.msgTypeID)
+    {
+        case EVENT_MSG_TYPE_ID_ASCII:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "Data: %s\n", event.data);
+            break;
+        case EVENT_MSG_TYPE_ID_IMX_MEM_READ:
+        case EVENT_MSG_TYPE_ID_GPX_MEM_READ:
+            {
+                did_event_memResp_t* resp = (did_event_memResp_t*)event.data;
+
+                if (event.msgTypeID == EVENT_MSG_TYPE_ID_IMX_MEM_READ)
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "EVMI ");
+                else
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "EVMG ");
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "Addr: 0x%08x\n", resp->reqAddr);
+                
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "ADDR\t0x0\t0x01\t0x2\t0x3\t\t0x4\t0x5\t0x6\t0x7\n");
+                for (int i = 0; i < EVENT_MEM_REQ_SIZE; i+=8)
+                {
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "0x%02x:\t0x%02x\t0x%02x\t0x%02x\t0x%02x\t\t0x%02x\t0x%02x\t0x%02x\t0x%02x\n", i, resp->data[i], resp->data[i+1], resp->data[i+2], resp->data[i+3], resp->data[i+4], resp->data[i+5], resp->data[i+6], resp->data[i+7]);
+                }
+            }
+            break;
+        default:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "MSG_ID: %d\n", event.msgTypeID);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t0x0\t0x01\t0x2\t0x3\t\t0x4\t0x5\t0x6\t0x7\n");
+            for (int i = 0; ((i < event.length) && (ptr < ptrEnd)); i+=8)
+            {
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "0x%02x:\t0x%02x\t0x%02x\t0x%02x\t0x%02x\t\t0x%02x\t0x%02x\t0x%02x\t0x%02x\n", i, event.data[i], event.data[i+1], event.data[i+2], event.data[i+3], event.data[i+4], event.data[i+5], event.data[i+6], event.data[i+7]);
+            }
+            break;
     }
 
     return buf;
