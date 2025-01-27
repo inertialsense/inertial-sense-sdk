@@ -48,12 +48,18 @@ bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 // print out upload progress
 static is_operation_result uploadProgress(std::any obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if (obj == NULL) return IS_OP_OK;
-
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     int percent = (int)(pct * 100.0f);
     printf("\rUpload Progress: %d%%\r", percent);
-    ctx->m_update_progress = percent;
+
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+            isblPtr->m_update_progress = percent;
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
 
     return IS_OP_OK;
 }
@@ -61,40 +67,58 @@ static is_operation_result uploadProgress(std::any obj, float pct, const std::st
 // print out verify progress
 static is_operation_result verifyProgress(std::any obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if (obj == NULL) return IS_OP_OK;
-
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     int percent = (int)(pct * 100.0f);
     printf("\rVerify Progress: %d%%\r", percent);
-    ctx->m_verify_progress = percent;
+
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+            isblPtr->m_verify_progress = percent;
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
 
     return IS_OP_OK;
 }
 
 static void statusText(std::any obj, int level, const char* info, ...)
 {
-    if (obj == NULL) return;
-
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
-
-    if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
-    {
-        printf("%s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
-    }
-    else if (ctx->m_sn != 0)
-    {
-        printf("(SN%d):\r", ctx->m_sn);
-    }
-    else if (ctx->m_port_name.size() != 0)
-    {
-        printf("%s:\r", ctx->m_port_name.c_str());
-    }
-    else
-    {
-        printf("SN?:\r");
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    ISFirmwareUpdater* fwPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+        } catch (const std::bad_any_cast &e) {
+            try {
+                fwPtr = std::any_cast<ISFirmwareUpdater *>(obj);
+            } catch (const std::bad_any_cast &e) {
+                // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+            }
+        }
     }
 
-    printf("\t\t\t%s\r\n", info);
+    if ((isblPtr == NULL) && (fwPtr == NULL))
+    {
+        cout << info << endl;
+        return;
+    }
+
+    if (isblPtr) {
+        if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
+            printf("    | %s (SN%d):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+        } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
+            printf("    | (SN%d):", isblPtr->m_sn);
+        } else if (isblPtr->m_port_name.size() != 0) {
+            printf("    | %s:", isblPtr->m_port_name.c_str());
+        } else {
+            printf("    | SN?:");
+        }
+    }
+
+    if (info && info[0])
+        printf(" %s\r\n", info);
 }
 
 // [C++ COMM INSTRUCTION] Handle received data 
@@ -110,22 +134,31 @@ static void example_dataCallback(InertialSense* i, p_data_t* data, port_handle_t
 }
 
 static is_operation_result fwUpdateProgress(std::any obj, float pct, const std::string& stepName, int step, int steps) {
-    if (obj == NULL) return IS_OP_OK;
 
-    // FIXME: Probably need to make "obj" and std::any so we can attempt to cast back to an original type
-    // cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
-    // int percent = (int)(pct * 100.0f);
-    // printf("\rUpload Progress: %d%%\r", percent);
-    // ctx->m_update_progress = percent;
+    if (!obj.has_value()) return IS_OP_OK;
+
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    ISFirmwareUpdater* fwPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+        } catch (const std::bad_any_cast &e) {
+            try {
+                fwPtr = std::any_cast<ISFirmwareUpdater *>(obj);
+            } catch (const std::bad_any_cast &e) {
+                // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+            }
+        }
+    }
 
     if (g_showProgress) {
-        printf("    [%s] Step %d of %d: %5.1f %%\r", stepName.c_str(), step, steps, pct * 100.0f);
+        printf("    [%s] Step %d of %d: %5.1f %%\n", stepName.c_str(), step, steps, pct * 100.0f);
         fflush(stdout);
     }
     return IS_OP_OK;
 }
 
-static void fwUpdateStatus(std::any obj, int level, const char* info, ...) {
+static void fwUpdateStatus(std::any obj, eLogLevel level, const char* info, ...) {
     static char buffer[256];
 
     va_list ap;
@@ -152,6 +185,18 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
 
     std::string gpx_firmware;
     std::string gpx_bootloader;
+
+    const char *dfu_errors[] = {
+            "SUCCESS",
+            "DEVICE_NOT_FOUND",
+            "DEVICE_BUSY",
+            "DEVICE_TIMEOUT",
+            "LIBUSB_ERROR",
+            "INVALID_STATUS",
+            "INVALID_ARGUMENT",
+            "FILE_NOT_FOUND",
+            "INVALID_IMAGE",
+    };
 
     // parse arguments
     for (int i = 1; i < argc; i++) {
@@ -182,7 +227,7 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
 
             if (!imx_firmware.empty()) {
                 fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 0x6000);
-                if (fw_result != dfu::DFU_ERROR_NONE)
+                if (fw_result != DFU_ERROR_NONE)
                     fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
                 finalization_needed = true;
             }
