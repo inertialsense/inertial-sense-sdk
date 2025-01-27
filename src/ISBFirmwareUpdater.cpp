@@ -1006,7 +1006,7 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
                     session_status = fwUpdate::ERR_UPDATER_CLOSED;
                     return writeState;
                 case IS_OP_RETRY:   // something requested that we start over again??
-                    sleep(1000);
+                    SLEEP_MS(1000);
                     writeState = WRITE_INITIALIZE;
                     break;
                 case IS_OP_INCOMPATIBLE:    // data is valid, but not for this device (should not happen at this point)
