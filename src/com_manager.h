@@ -36,13 +36,13 @@ typedef struct
     packet_t                pkt;
 
     /* Broadcast period counter */
-    int32_t                 counter = 0;
+    int32_t                 counter;
 
     /* Millisecond broadcast period intervals.  -1 = send once.  0 = disabled/unused/don't send. */
-    int32_t                 period = 0;
+    int32_t                 period;
 
     /* Port to broadcast on. */
-    port_handle_t           port = 0;
+    port_handle_t           port;
 } broadcast_msg_t;
 
 typedef std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> broadcast_msg_array_t;
