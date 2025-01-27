@@ -44,7 +44,7 @@ public:
     std::ostream& m_ostream;
     std::istream& m_istream;
 
-    ISStreamPort(const std::string& name, std::istream& in, std::ostream& out) : m_portName(name), m_istream(in), m_ostream(out) {
+    ISStreamPort(const std::string& name, std::istream& in, std::ostream& out) : m_portName(name), m_ostream(out), m_istream(in) {
         pnum = 128; // FIXME unique ID?  maybe an index value or hash?
         ptype = PORT_TYPE__FILE;
 

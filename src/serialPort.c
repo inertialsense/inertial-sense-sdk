@@ -314,7 +314,7 @@ int serialPortReadCharTimeout(port_handle_t port, unsigned char* c, int timeoutM
 int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (writeCount < 1))
+    if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (writeCount < 1))
     {
         if (serialPort && serialPort->pfnError) {
             if (serialPort->handle == 0) serialPort->pfnError(port, ENOENT, strerror(ENOENT));
@@ -323,7 +323,7 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned in
         return 0;
     }
 
-	int count = portWrite(port, buffer, writeCount);
+    int count = portWrite(port, buffer, writeCount);
     if (count < 0)
     {
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, ENODATA, strerror(ENODATA));
