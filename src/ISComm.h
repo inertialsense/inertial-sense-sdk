@@ -652,6 +652,7 @@ typedef struct {
 #if defined(GPX_1)
     #define GPX_COM_BUFFER_SIZE 2800
     uint8_t buffer[GPX_COM_BUFFER_SIZE];       //! Comm instance data buffer
+    uint8_t flags;                      //! COMM_PORT flags (ie, EXPLICIT, etc)
 #else
     uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
     uint8_t flags;                      //! COMM_PORT flags (ie, EXPLICIT, etc)
