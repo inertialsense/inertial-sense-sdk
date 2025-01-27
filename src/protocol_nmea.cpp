@@ -750,8 +750,6 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     int32_t gpsMs = (int32_t)pos.timeOfWeekMs;
 
     g_debug.i[0] = cpuMs;
-    g_debug.i[1] = utcMs;
-    g_debug.i[2] = gpsMs;
 
     static int32_t lastCpuMs = cpuMs - 1000;
     static int32_t lastUtcMs = utcMs - 1000;
@@ -770,7 +768,6 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     int32_t ddtMs = utcDtMs - cpuDtMs;
     if (cpuDtMsGood && utcDtMsGood)
     {   // No time wrap
-        g_debug.i[3] = utcDtMs;
         // g_debug.i[4] = cpuDtMs;
         int adjOffsetSec = millisecondsToSeconds(ddtMs);
         if (adjOffsetSec)
