@@ -1993,10 +1993,10 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
         case EVENT_MSG_TYPE_ID_GPX_SER0_CFG:
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX SC EV:%d\n", EVENT_MSG_TYPE_ID_GPX_SER0_CFG);
 
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.baud:\t0x%08x\n", *(uint32_t*)&event.data[0]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.parity:\t0x%08x\n", *(uint8_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.baud:\t\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.parity:\t\t0x%08x\n", *(uint8_t*)&event.data[4]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.stopBits:\t0x%08x\n", *(uint8_t*)&event.data[5]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "interrupt:\t0x%08x\n", *(uint8_t*)&event.data[6]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "interrupt:\t\t0x%08x\n", *(uint8_t*)&event.data[6]);
             break;
 
         case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN:
