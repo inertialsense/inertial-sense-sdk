@@ -239,7 +239,7 @@ int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigne
     }
 
     int prevCR = 0;
-    int bufferIndex = 0;
+    unsigned int bufferIndex = 0;
     unsigned char c;
     while (bufferIndex < bufferLength && serialPortReadCharTimeout(port, &c, timeoutMilliseconds) == 1)
     {
@@ -248,7 +248,7 @@ int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigne
         {
             // remove \r\n and null terminate and return count of chars
             buffer[bufferIndex -= 2] = '\0';
-            return bufferIndex;
+            return (int)bufferIndex;
         }
         prevCR = (c == '\r');
     }
@@ -418,7 +418,7 @@ int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* bu
 
     int actuallyWrittenCount = serialPortWrite(port, buffer, writeCount);
 
-    if (actuallyWrittenCount != writeCount)
+    if (actuallyWrittenCount != (int)writeCount)
     {
         return 0;
     }
@@ -453,7 +453,7 @@ int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, u
 
     unsigned char buf[128] = { 0 };
     int count = serialPortReadTimeout(port, buf, waitForLength, timeoutMilliseconds);
-    if ((count == waitForLength) && !memcmp(buf, waitFor, waitForLength))
+    if ((count == (int)waitForLength) && !memcmp(buf, waitFor, waitForLength))
     {
         return 1;
     }
@@ -524,7 +524,7 @@ int portReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int read
         return 0;
 
     uint32_t timeout = current_timeMs() + timeoutMilliseconds;
-    while (portAvailable(port) < readCount) {
+    while (portAvailable(port) < (int)readCount) {
         if (current_timeMs() > timeout)
             return 0;   // timeout reached
 

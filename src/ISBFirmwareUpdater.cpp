@@ -680,7 +680,7 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, progressMsg.c_str());
     }
 
-    while ((rxWorkBufPtr - rxWorkBuf) >= ackStr.length()) {
+    while ((size_t)(rxWorkBufPtr - rxWorkBuf) >= ackStr.length()) {
         if (memcmp(rxWorkBuf, ackStr.c_str(), ackStr.length()) == 0) {
             rxWorkBufPtr = rxWorkBuf;
             progress = 1.0f;
