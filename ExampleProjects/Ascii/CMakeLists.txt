@@ -26,4 +26,4 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 find_package(Threads REQUIRED)
 
 # Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} InertialSenseSDK)
+target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads)
