@@ -584,40 +584,12 @@ bool InertialSense::Update()
     {
         UpdateClient();
 
-        // [C COMM INSTRUCTION]  2.) Update Com Manager at regular interval to send and receive data.
+        // [C COMM INSTRUCTION]  2.) Update each device at regular interval to send and receive data.
         // Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
         // task system with serial port read function that does NOT incorporate a timeout.
-        if (m_comManagerState.devices.size() > 0)
-        {
-            // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
-            for (auto device : m_comManagerState.devices) {
-                if (serialPortIsOpen(device->port) && device->fwUpdater != nullptr) {
-                    if (!device->fwUpdater->fwUpdate_step()) { // device.fwUpdate.update();
-                        if (device->fwLastStatus < fwUpdate::NOT_STARTED) {
-                            // TODO: Report a REAL error
-                            // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
-                            if (device->fwLastStatus == fwUpdate::ERR_TIMEOUT) {
-                                delete device->fwUpdater;
-                                device->fwUpdater = nullptr;
-                            }
-
-#ifdef DEBUG_CONSOLELOGGING
-                        } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
-                            int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
-                            float pcnt = fwUpdater->getTotalChunks() == 0 ? 0.f : ((float)fwUpdater->getNextChunkID() / (float)fwUpdater->getTotalChunks() * 100.f);
-                            float errRt = fwUpdater->getResendRate() * 100.f;
-                            const char *status = fwUpdater->getSessionStatusName();
-                            printf("SN%d :: %s : [%d of %d] %0.1f%% complete (%u, %0.1f%% resend)\n", serialNo, status, fwUpdater->getNextChunkID(), fwUpdater->getTotalChunks(), pcnt, fwUpdater->getResendCount(), errRt);
-#endif
-                        }
-                    }
-                }
-            }
-            // Make sure fwUpdater gets to run first, since it may need to parse data
-            comManagerStep();   // FIXME: This isn't great, because its possible that new data may arrive from an "EXCLUSIVE" port used in a Firmware Update, that may still get consumed here.
-                                //   We probably should have an "EXCLUSIVE" flag that can be set on a COMM_PORT, which if set will skip ISComm parsing (requiring a direct readPort() on the port)
-            SyncFlashConfig(m_timeMs);
-        }
+        for (auto device : m_comManagerState.devices)
+            if (device)
+                device->step();
     }
 
     // if any serial ports have closed, shutdown
@@ -1133,52 +1105,10 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
     for (auto device : m_comManagerState.devices) { device->BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions); }
 }
 
-is_operation_result InertialSense::updateFirmware(
-        const string& comPort,
-        int baudRate,
-        fwUpdate::target_t targetDevice,
-        std::vector<std::string> cmds,
-        fwUpdate::pfnProgressCb fwUpdateProgress,
-        fwUpdate::pfnProgressCb verifyProgress,
-        fwUpdate::pfnStatusCb fwUpdateStatus,
-        void (*waitAction)()
-)
-{
-    EnableDeviceValidation(true);
-    if (OpenSerialPorts(comPort.c_str(), baudRate)) {
-        for (auto device : m_comManagerState.devices) {
-            device->fwUpdater = new ISFirmwareUpdater(device);
-            device->fwUpdater->setTarget(targetDevice);
-
-            // TODO: Implement maybe
-            device->fwUpdater->setUploadProgressCb(fwUpdateProgress);
-            device->fwUpdater->setVerifyProgressCb(verifyProgress);
-            device->fwUpdater->setInfoProgressCb(fwUpdateStatus);
-
-            device->fwUpdater->setCommands(cmds);
-        }
-    }
-
-    printf("\n\r");
-
-#if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25h", stdout);    // Turn cursor back on
-#endif
-
-    return IS_OP_OK;
-}
-
-is_operation_result InertialSense::updateFirmware(
-        fwUpdate::target_t targetDevice,
-        std::vector<std::string> cmds,
-        fwUpdate::pfnProgressCb fwUpdateProgress,
-        fwUpdate::pfnProgressCb verifyProgress,
-        fwUpdate::pfnStatusCb fwUpdateStatus,
-        void (*waitAction)()
-)
+is_operation_result InertialSense::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb fwUpdateStatus, void (*waitAction)())
 {
     for (auto device : m_comManagerState.devices) {
-        device->updateFirmware(targetDevice, cmds, fwUpdateProgress, verifyProgress, fwUpdateStatus, waitAction);
+        device->updateFirmware(targetDevice, cmds, fwUpdateStatus, waitAction);
     }
 
 #if !PLATFORM_IS_WINDOWS
@@ -1205,15 +1135,8 @@ bool InertialSense::isFirmwareUpdateFinished() {
 bool InertialSense::isFirmwareUpdateSuccessful() {
     for (auto device : m_comManagerState.devices) {
         ISFirmwareUpdater *fwUpdater = device->fwUpdater;
-        if (fwUpdater->hasErrors() ||
-            ((fwUpdater != nullptr) &&
-                fwUpdater->fwUpdate_isDone() &&
-                (
-                        (fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) ||
-                        fwUpdater->hasErrors()
-              )
-          ))
-        return false;
+        if (fwUpdater && fwUpdater->fwUpdate_isDone() && ((fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors()))
+            return false;
     }
     return true;
 }

@@ -605,38 +605,15 @@ public:
 );
 
     /**
-     * V2 firmware update mechanism. Calling this function will attempt to inititate a firmware update with the targeted device(s) on the connected port(s), with callbacks to provide information about the status
+     * V2 firmware update mechanism. Calling this function will attempt to initiate a firmware update with the targeted device(s), with callbacks to provide information about the status
      * of the update process.
-     * @param comPort
-     * @param baudRate
      * @param targetDevice the device which all commands should be directed to
      * @param cmds a vector of strings to be interpreted as commands, performed in sequence.  ie ["slot=0","upload=myfirmware.bin","slot=1","upload=configuration.conf","softReset"]
-     * @param uploadProgress
-     * @param verifyProgress
-     * @param infoProgress
-     * @param waitAction
-     * @param LoadFlashConfig
+     * @param infoProgress a callback method which provides progress information about the update
+     * @param waitAction a callback which is checked periodically to see if the update should be cancelled
      * @return
      */
-    is_operation_result updateFirmware(
-            const std::string& comPort,
-            int baudRate,
-            fwUpdate::target_t targetDevice,
-            std::vector<std::string> cmds,
-            fwUpdate::pfnProgressCb fwUpdateProgress,
-            fwUpdate::pfnProgressCb verifyProgress,
-            fwUpdate::pfnStatusCb fwUpdateStatus,
-            void (*waitAction)()
-);
-
-    is_operation_result updateFirmware(
-            fwUpdate::target_t targetDevice,
-            std::vector<std::string> cmds,
-            fwUpdate::pfnProgressCb fwUpdateProgress,
-            fwUpdate::pfnProgressCb verifyProgress,
-            fwUpdate::pfnStatusCb fwUpdateStatus,
-            void (*waitAction)()
-);
+    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb fwUpdateStatus, void (*waitAction)());
 
     /**
      * @return true if all devices have finished all firmware update steps
@@ -690,6 +667,21 @@ public:
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
     // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
+
+    /**
+     * Registers a custom handler to instantiate discovered devices. Default behavior is to
+     * create new ISDevice instances for each new device discovered. Setting a NewDeviceHandler
+     * to a custom function allows for instancing a custom ISDevice subclass and/or doing any
+     * additional initialization of that device at creation. The handler is provided the port
+     * and the device info for the newly discovered device.
+     * @param handler a function pointer to be called when a new device is discovered
+     * @return the previously registered handler, if any
+     */
+    pfnOnNewDeviceHandler registerNewDeviceHandler(pfnOnNewDeviceHandler handler) {
+        pfnOnNewDeviceHandler oldHandler = m_newDeviceHandler;
+        m_newDeviceHandler = handler;
+        return oldHandler;
+    }
 
     bool registerDevice(ISDevice* device);
     ISDevice* registerNewDevice(const ISDevice& orig);

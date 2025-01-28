@@ -924,9 +924,11 @@ is_operation_result cISBootloaderThread::update(
         {
             if (serialThread->ctx)
                 serialThread->ctx->reboot_up();
-            if (&serialThread->serialPort) {
-                serialPortFlush(&serialThread->serialPort);
-                serialPortClose(&serialThread->serialPort);
+
+            port_handle_t port = (port_handle_t)&serialThread->serialPort;
+            if (serialPortIsOpenQuick(port)) {
+                serialPortFlush(port);
+                serialPortClose(port);
             }
         }
     }

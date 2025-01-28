@@ -84,23 +84,10 @@ bool ISDevice::step() {
     return true;
 }
 
-is_operation_result ISDevice::updateFirmware(
-        fwUpdate::target_t targetDevice,
-        std::vector<std::string> cmds,
-        fwUpdate::pfnProgressCb uploadProgress,
-        fwUpdate::pfnProgressCb verifyProgress,
-        fwUpdate::pfnStatusCb infoProgress,
-        void (*waitAction)()
-)
-{
+is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()) {
     fwUpdater = new ISFirmwareUpdater(this);
-    fwUpdater->setTarget(targetDevice);
-
-    // TODO: Implement maybe
-    fwUpdater->setUploadProgressCb(uploadProgress);
-    fwUpdater->setVerifyProgressCb(verifyProgress);
     fwUpdater->setInfoProgressCb(infoProgress);
-
+    fwUpdater->setTarget(targetDevice);
     fwUpdater->setCommands(cmds);
 
     return IS_OP_OK;

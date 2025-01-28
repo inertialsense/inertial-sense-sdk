@@ -235,6 +235,12 @@ static int cltool_errorCallback(void* ctx, port_handle_t port)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static int cltool_dataCallback(void* ctx, p_data_t* data, port_handle_t port)
 {
+    return 0;
+}
+
+int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
+    ISDevice::onIsbDataHandler(data, port);
+
     if (!g_enableDataCallback)
     {   // Receive disabled
         return 0;
@@ -244,9 +250,6 @@ static int cltool_dataCallback(void* ctx, p_data_t* data, port_handle_t port)
     {   // ignore all other received data, except the "onceDid"
         return 0;
     }
-
-    (void)ctx;
-    (void)port;
 
     // track which DIDs we've received and when, and how frequently
     for (stream_did_t& did : g_commandLineOptions.datasets) {
@@ -263,6 +266,10 @@ static int cltool_dataCallback(void* ctx, p_data_t* data, port_handle_t port)
         g_inertialSenseDisplay.ProcessData(data);
 
     return 0;
+}
+
+int CltoolDevice::onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) {
+    return 0;   // do something special, if we need to...
 }
 
 
@@ -762,9 +769,13 @@ static int cltool_dataStreaming()
 {
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface(cltool_dataCallback);
+    InertialSense inertialSenseInterface;
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
+    inertialSenseInterface.registerNewDeviceHandler( [] (port_handle_t port, const dev_info_t& devInfo) -> ISDevice* {
+        CltoolDevice* newDevice = new CltoolDevice(port, devInfo);
+        return (ISDevice*)newDevice;
+    });
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
@@ -814,8 +825,6 @@ static int cltool_dataStreaming()
                 if (inertialSenseInterface.updateFirmware(
                         g_commandLineOptions.updateFirmwareTarget,
                         g_commandLineOptions.fwUpdateCmds,
-                        bootloadUpdateCallback,
-                        (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : nullptr),
                         cltool_firmwareUpdateInfo,
                         cltool_firmwareUpdateWaiter
               ) != IS_OP_OK) {

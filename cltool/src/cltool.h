@@ -146,5 +146,13 @@ void cltool_bootloadUpdateInfo(std::any obj, eLogLevel level, const char* str, .
 void cltool_firmwareUpdateInfo(std::any obj, eLogLevel level, const char* str, ...);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 
+class CltoolDevice : ISDevice {
+    public:
+    CltoolDevice(port_handle_t _port, const dev_info_t& _devInfo) : ISDevice(_port, _devInfo) { }
+    ~CltoolDevice() override = default;
+
+    int onIsbDataHandler(p_data_t *data, port_handle_t port) override;
+    int onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) override;
+};
 #endif // __CLTOOL_H__
 

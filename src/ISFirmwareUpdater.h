@@ -55,8 +55,6 @@ private:
 
     float percentComplete = 0.f;        //! the current percent complete as reported by the device
 
-    fwUpdate::pfnProgressCb pfnUploadProgress_cb = nullptr;
-    fwUpdate::pfnProgressCb pfnVerifyProgress_cb = nullptr;
     fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
     std::deque<uint8_t> toHost;           //! a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
 
@@ -114,13 +112,11 @@ public:
      */
     ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo) { }
 
-    ISFirmwareUpdater(ISDevice* device);
+    explicit ISFirmwareUpdater(ISDevice* device);
 
-    void setUploadProgressCb(fwUpdate::pfnProgressCb cb) { pfnUploadProgress_cb = cb; }
-    void setVerifyProgressCb(fwUpdate::pfnProgressCb cb) { pfnVerifyProgress_cb = cb; }
     void setInfoProgressCb(fwUpdate::pfnStatusCb cb) { pfnStatus_cb = cb; }
 
-    ~ISFirmwareUpdater() override {};
+    ~ISFirmwareUpdater() override = default;
 
     void setTarget(fwUpdate::target_t _target);
 

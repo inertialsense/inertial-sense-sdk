@@ -402,17 +402,11 @@ public:
     fwUpdate::update_status_e fwLastStatus = fwUpdate::NOT_STARTED;
     std::string fwLastMessage;
 
-    // std::vector<std::string> target_idents;
-    // std::vector<std::string> target_messages;
-
     uint32_t lastResetRequest = 0;              //! system time when the last reset requests was sent
     uint32_t resetRequestThreshold = 5000;      //! Don't allow to send reset requests more frequently than this...
     uint32_t nextResetTime = 0;                 //! used to throttle reset requests
 
-    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds,
-            fwUpdate::pfnProgressCb uploadProgress, fwUpdate::pfnProgressCb verifyProgress, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()
-);
-
+    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)());
     bool fwUpdateInProgress();
     bool fwUpdate();
 
