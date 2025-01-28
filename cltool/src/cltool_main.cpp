@@ -586,7 +586,7 @@ is_operation_result bootloadUpdateCallback(std::any obj, float percent, const st
     if (stepNo || totalSteps) msg += utils::string_format(" (%d of %d)", stepNo, totalSteps);
     if (percent != 0.0f) msg += utils::string_format(" : %d %%%%", (int)(percent * 100));
     if (!msg.empty() && msg.compare(lastMsg))
-        cltool_firmwareUpdateInfo(obj, IS_LOG_LEVEL_NONE, msg.c_str());
+        cltool_firmwareUpdateInfo(obj, IS_LOG_LEVEL_MORE_INFO, msg.c_str());
 
     if (!msg.empty()) lastMsg = msg;
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
@@ -600,7 +600,7 @@ is_operation_result bootloadVerifyCallback(std::any obj, float percent, const st
     if (stepNo || totalSteps) msg += utils::string_format(" %d of %d)", stepNo, totalSteps);
     if (percent != 0.0f) msg += utils::string_format(" : %d %%%%", (int)(percent * 100));
     if (!msg.empty() && msg.compare(lastMsg))
-        cltool_firmwareUpdateInfo(obj, IS_LOG_LEVEL_NONE, msg.c_str());
+        cltool_firmwareUpdateInfo(obj, IS_LOG_LEVEL_MORE_INFO, msg.c_str());
 
     lastMsg = msg;
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
@@ -686,7 +686,7 @@ void cltool_firmwareUpdateInfo(std::any obj, eLogLevel level, const char* str, .
         }
     }
 
-    if ((isblPtr == NULL) && (fwPtr == NULL)) {
+    if ((isblPtr == NULL) && (fwPtr == NULL) && (level <= g_commandLineOptions.verboseLevel)) {
         cout << buffer << endl;
     } else if (fwPtr) {
         if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority

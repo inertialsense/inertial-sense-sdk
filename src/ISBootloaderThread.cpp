@@ -284,7 +284,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
     }
 
     serialPortFlush(port);
-    serialPortClose(port);
+    // serialPortClose(port);  DON'T CLOSE THE PORT - We may need it later to finalize/validate everything...
 
     m_serial_thread_mutex.lock();
     thread_info->done = true;
@@ -617,8 +617,8 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         if (m_waitAction) m_waitAction();
         return vector<confirm_bootload_t>(); 
     }
-    m_ctx_mutex.lock();
 
+    m_ctx_mutex.lock();
     for (auto& cur_ctx : ctx)
     {
         if (cur_ctx->isb_mightUpdate)
@@ -632,7 +632,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             updatesPending.push_back(confirm);
         }
     }
-
     m_ctx_mutex.unlock();
 
     m_update_mutex.unlock();
@@ -917,21 +916,16 @@ is_operation_result cISBootloaderThread::update(
     }
     
     // Reset all serial devices up a level into APP or IS-bootloader mode
-    for (size_t i = 0; i < ctx.size(); i++)
+    // At this point, its likely that all ports will be closed at completion of the update process, so we need to reopen and then issue reboot_up()
+    for (auto& cur_ctx : ctx)
     {
-        if (!ctx[i]->m_port_name.empty())
+        if (!cur_ctx->m_port_name.empty())
         {
-            serial_port_t serialPort;
-            port_handle_t port = (port_handle_t)&serialPort;
-            serialPortPlatformInit(port);
-            if (!serialPortOpenRetry(port, ctx[i]->m_port_name.c_str(), m_baudRate, 1))
-            {
-                continue;
-            }
+            auto thread = m_serial_threads[cur_ctx->m_port_name];
+            port_handle_t port = &thread->serialPort;
 
-            ctx[i]->m_port = port;
-
-            if (ctx[i] && ctx[i]->m_finished_flash) ctx[i]->reboot_up();
+            if (cur_ctx && cur_ctx->m_finished_flash)
+                cur_ctx->reboot_up();
 
             serialPortFlush(port);
             serialPortClose(port);
@@ -941,10 +935,10 @@ is_operation_result cISBootloaderThread::update(
     }
     
     // Clear the ctx list
-    for (size_t i = 0; i < ctx.size(); i++)
+    for (auto& cur_ctx : ctx)
     {
-        delete ctx[i];
-        ctx[i] = nullptr;
+        delete cur_ctx;
+        cur_ctx = nullptr;
     }
     ctx.clear();
 
