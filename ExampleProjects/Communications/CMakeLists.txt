@@ -22,8 +22,8 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-# Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} InertialSenseSDK)
+# Link IS-SDK libraries to the executable
+include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
 
 if(NOT WIN32)
     target_link_libraries(${PROJECT_NAME} m)

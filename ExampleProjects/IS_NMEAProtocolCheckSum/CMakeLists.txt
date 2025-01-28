@@ -25,7 +25,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Find pthread package
 find_package(Threads REQUIRED)
 
-# Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads)
+# Link IS-SDK libraries to the executable
+include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
 
 

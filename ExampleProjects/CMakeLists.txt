@@ -31,3 +31,6 @@ add_subdirectory(ISLogger_write)
 add_subdirectory(InertialSense_logger)
 add_subdirectory(NTRIP_rover)
 add_subdirectory(IS_NMEAProtocolCheckSum)
+
+# Link IS-SDK libraries to the executable
+include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
