@@ -296,7 +296,7 @@ int main(int argc, char* argv[])
 
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface(NULL);
+    InertialSense inertialSenseInterface;
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(COMNum.c_str(), baudRate, true))
@@ -339,9 +339,7 @@ int main(int argc, char* argv[])
                     if (device->updateFirmware(
                             fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
                             commands, // vector of strings, commands to run when performing the update
-                        fwUpdateProgress,
-                        fwUpdateProgress,
-                        fwUpdateStatus,
+                            fwUpdateStatus, // status/progress callback
                             NULL) != IS_OP_OK)
                     {
                         inertialSenseInterface.Close();
