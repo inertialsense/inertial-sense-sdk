@@ -917,23 +917,20 @@ is_operation_result cISBootloaderThread::update(
     
     // Reset all serial devices up a level into APP or IS-bootloader mode
     // At this point, its likely that all ports will be closed at completion of the update process, so we need to reopen and then issue reboot_up()
-    for (auto& cur_ctx : ctx)
+    m_serial_thread_mutex.lock();
+    for (auto& [portName, serialThread] : m_serial_threads)
     {
-        if (!cur_ctx->m_port_name.empty())
+        if (serialThread && serialThread->done)
         {
-            auto thread = m_serial_threads[cur_ctx->m_port_name];
-            port_handle_t port = &thread->serialPort;
-
-            if (cur_ctx && cur_ctx->m_finished_flash)
-                cur_ctx->reboot_up();
-
-            serialPortFlush(port);
-            serialPortClose(port);
+            if (serialThread->ctx)
+                serialThread->ctx->reboot_up();
+            if (&serialThread->serialPort) {
+                serialPortFlush(&serialThread->serialPort);
+                serialPortClose(&serialThread->serialPort);
+            }
         }
-
-        if (m_waitAction) m_waitAction();
     }
-    
+
     // Clear the ctx list
     for (auto& cur_ctx : ctx)
     {
