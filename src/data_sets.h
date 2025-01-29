@@ -3711,7 +3711,7 @@ typedef struct
     float prn[6];
 
     /** satellite clock stability (sec/sec) */
-    double sclkstab;
+    float sclkstab;
 
     /** AR validation threshold */
     float thresar[8];
