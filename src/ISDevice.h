@@ -59,7 +59,7 @@ public:
     }
 
     explicit ISDevice(port_handle_t _port, const dev_info_t& _devInfo) {
-        std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
+        // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
         hdwId = ENCODE_DEV_INFO_TO_HDW_ID(_devInfo);
         devInfo = _devInfo;
         flashCfg.checksum = (uint32_t)-1;
