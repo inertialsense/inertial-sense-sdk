@@ -90,6 +90,8 @@ typedef enum
     _PTYPE_LAST_DATA            = _PTYPE_SONY
 } protocol_type_t;
 
+#define DEFAULT_PROTO_MASK (ENABLE_PROTOCOL_ISB | ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_UBLOX | ENABLE_PROTOCOL_RTCM3)
+
 /** The maximum allowable dataset size */
 #define MAX_DATASET_SIZE        1024
 

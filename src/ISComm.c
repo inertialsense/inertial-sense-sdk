@@ -169,14 +169,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
     c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
     
     // Set parse enable flags
-    c->config.enabledMask = 
-        ENABLE_PROTOCOL_ISB
-        | ENABLE_PROTOCOL_NMEA
-        | ENABLE_PROTOCOL_UBLOX
-        | ENABLE_PROTOCOL_RTCM3
-        // | ENABLE_PROTOCOL_SONY
-        // | ENABLE_PROTOCOL_SPARTN
-        ;
+    c->config.enabledMask = DEFAULT_PROTO_MASK;
     
     c->rxPkt.data.ptr = c->rxBuf.start;
     c->rxErrorState = 1;
@@ -187,23 +180,16 @@ int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
     // Clear buffer and initialize buffer pointers
     if (c->rxBuf.size != (uint32_t)bufferSize) { return -1; }
-    if (c->rxBuf.start != buffer) { return -1; }
-    if (c->rxBuf.end != buffer + bufferSize) { return -1; }
-    if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -1; }
-    if (c->rxBuf.tail < c->rxBuf.start || c->rxBuf.tail > c->rxBuf.end) { return -1; }
-    if (c->rxBuf.scan < c->rxBuf.start || c->rxBuf.scan > c->rxBuf.end) { return -1; }
+    if (c->rxBuf.start != buffer) { return -2; }
+    if (c->rxBuf.end != buffer + bufferSize) { return -3; }
+    if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -4; }
+    if (c->rxBuf.tail < c->rxBuf.start || c->rxBuf.tail > c->rxBuf.end) { return -5; }
+    if (c->rxBuf.scan < c->rxBuf.start || c->rxBuf.scan > c->rxBuf.end) { return -6; }
     
     // Set parse enable flags
-    if (c->config.enabledMask != 
-        (ENABLE_PROTOCOL_ISB
-        | ENABLE_PROTOCOL_NMEA
-        | ENABLE_PROTOCOL_UBLOX
-        | ENABLE_PROTOCOL_RTCM3
-        // | ENABLE_PROTOCOL_SONY
-        // | ENABLE_PROTOCOL_SPARTN 
-        )) { return -1; }
+    if ((c->config.enabledMask & DEFAULT_PROTO_MASK) != DEFAULT_PROTO_MASK) { return -7; }
     
-    if (c->rxPkt.data.ptr != NULL && (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end)) { return -1; }
+    if (c->rxPkt.data.ptr != NULL && (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end)) { return -8; }
 
     // Everything matches
     return 0;
