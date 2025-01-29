@@ -3588,8 +3588,8 @@ typedef struct PACKED
 
     //uint8_t obs_pairs_filtered;   // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
     uint8_t reserved2;
-    uint8_t raw_ptr_queue_overrun;
-    uint8_t raw_dat_queue_overrun;
+    uint8_t raw_ptr_queue_limited;
+    uint8_t raw_dat_queue_limited;
     uint8_t obs_unhealthy;          // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
 
     uint8_t obs_rover_avail;        // nu - total number of satellites with observations to rover in relpos() before selsat()
