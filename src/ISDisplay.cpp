@@ -2002,32 +2002,40 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
         case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN:
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX DRC EV:%d\n", EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN);
 
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "instance:\t\t0x%08x\n", ((uint32_t*)&event.data[0])[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "instance:\t\t0x%08x\n", *(uint32_t*)&event.data[0]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_start:\t\t0x%08x\n", *(uint32_t*)&event.data[4]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_end:\t\t0x%08x\n", *(uint32_t*)&event.data[8]);
 
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.parent:\t\t0x%08x\n", *(uint32_t*)&event.data[12]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.mode:\t\t0x%02x\n", event.data[16]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.tc_handler:\t\t0x%08x\n", *(uint32_t*)&event.data[17]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt:\t\t0x%02x\n", event.data[21]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt_priority:\t0x%02x\n", event.data[22]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.priority:\t\t0x%02x\n", event.data[23]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.request_num:\t0x%02x\n", event.data[24]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.periph_reg:\t\t0x%08x\n", *(uint32_t*)&event.data[25]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf:\t0x%08x\t\n", *(uint32_t*)&event.data[29]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf_len:\t\t0x%04x\n", *(uint16_t*)&event.data[33]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt:\t\t0x%02x\n", event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt_priority:\t0x%02x\n", event.data[25]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.priority:\t\t0x%02x\n", event.data[26]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.request_num:\t0x%02x\n", event.data[27]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.periph_reg:\t\t0x%08x\n", *(uint32_t*)&event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf:\t\t0x%08x\n", *(uint32_t*)&event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf_len:\t\t0x%04x\n", *(uint16_t*)&event.data[36]);
     
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t0x%08x\n", *(uint32_t*)&event.data[35]);
-            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[39]);
-            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[43]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[38]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[42]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[46]);
 
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.active_tx_len:\t0x%04x\n", *(uint16_t*)&event.data[47]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.lli_head:\t0x%08x\n", *(uint32_t*)&event.data[49]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.lli_tail:\t0x%08x\n", *(uint32_t*)&event.data[53]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.dma_running:\t0x%02x\n", event.data[57]);
+            //ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[52]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[56]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[60]);
 
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lastDmaUsed:\t0x%08x\n", *(uint32_t*)&event.data[58]);
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "overflow:\t0x%02x\n", event.data[62]);
+            //ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[64]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[68]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[72]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.active_tx_len:\t0x%04x\n", *(uint16_t*)&event.data[73]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.lli_head:\t0x%08x\n", *(uint32_t*)&event.data[77]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.lli_tail:\t0x%08x\n", *(uint32_t*)&event.data[81]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.dma_running:\t0x%02x\n", event.data[88]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lastDmaUsed:\t\t0x%08x\n", *(uint32_t*)&event.data[92]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "overflow:\t\t0x%02x\n", event.data[96]);
             break;
 
         case EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG:
