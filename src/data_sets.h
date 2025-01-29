@@ -5070,7 +5070,7 @@ typedef struct
 
 } did_event_filter_t;
 
-#define EVENT_MEM_REQ_SIZE  128
+#define EVENT_MEM_REQ_SIZE  16
 
 typedef struct
 {
