@@ -973,8 +973,10 @@ pfnIsCommIsbDataHandler ISDevice::registerIsbDataHandler(pfnIsCommIsbDataHandler
     defaultCbs.isbData = cbHandler;
     defaultCbs.protocolMask |= ENABLE_PROTOCOL_ISB;
 
-    if (port && (portType(port) & PORT_TYPE__COMM))
+    if (port && (portType(port) & PORT_TYPE__COMM)) {
+        COMM_PORT(port)->comm.cb.context = this;
         oldHandler = is_comm_register_isb_handler(&COMM_PORT(port)->comm, cbHandler);
+    }
 
     return oldHandler;
 }
@@ -990,10 +992,12 @@ pfnIsCommGenMsgHandler ISDevice::registerProtocolHandler(int ptype, pfnIsCommGen
     // if port is null, set this as the default handler, and also set it for all available ports
     defaultCbs.context = this;
     defaultCbs.generic[ptype] = cbHandler;
-    defaultCbs.protocolMask |= (0x01 < ptype);  // enable the protocol  TODO: if cbHandler is NULL, this should disable the protocol
+    defaultCbs.protocolMask |= (0x01 << ptype);  // enable the protocol  TODO: if cbHandler is NULL, this should disable the protocol
 
-    if (port && portType(port) & PORT_TYPE__COMM)
+    if (port && portType(port) & PORT_TYPE__COMM) {
+        COMM_PORT(port)->comm.cb.context = this;
         return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+    }
 
     return oldHandler;
 }

@@ -232,6 +232,7 @@ ISDevice* InertialSense::registerNewDevice(const ISDevice& device) {
             // debug_message("[DBG] Found existing ISDevice reference '%s'; Updating port %s.\n", d->getIdAsString().c_str(), d->getPortName().c_str());
             d->assignPort(device.port);
             d->devInfo = device.devInfo;
+            d->hdwId = ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo);
             return d;
         }
     }
@@ -262,6 +263,7 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
             // debug_message("[DBG] Found existing ISDevice reference '%s'; Updating port %s.\n", d->getIdAsString().c_str(), d->getPortName().c_str());
             d->port = port;
             d->devInfo = devInfo;
+            d->hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             return d;
         }
     }
@@ -1459,10 +1461,8 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         uint8_t checkType = 0; // 0 == NMEA, 1 = IS binary, 2 = IS bootloader, 3 = mcuBoot
         do {
             // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
-            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
-                debug_message("Timeout waiting all discovered ports to validate.\n");
+            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout)
                 break;
-            }
 
             for (auto port : m_serialPorts) {
                 // FIXME: What happens when this port is already assigned to a device?  Really, it shouldn't be... but occasionally is.

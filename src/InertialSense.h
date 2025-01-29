@@ -748,18 +748,14 @@ private:
     bool UpdateClient();
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
-    bool HasReceivedDeviceInfo(ISDevice* device);
     bool HasReceivedDeviceInfoFromAllDevices();
-    void RemoveDevice(size_t index);
     void RemoveDevice(ISDevice* device);
     bool OpenSerialPorts(const char* port, int baudRate);
     void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
-    static void BootloadStatusUpdate(std::any obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
-    is_operation_result handshakeISB(serial_port_t& port);
 };
 
 #endif
