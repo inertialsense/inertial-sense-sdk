@@ -3747,7 +3747,7 @@ typedef struct
     float maxnis_hi;
 
     /** reject threshold of gdop */
-    double maxgdop;
+    float maxgdop;
 
     /** baseline length constraint {const,sigma before fix, sigma after fix} (m) */
     float baseline[3];
