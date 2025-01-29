@@ -88,9 +88,10 @@ eImageSignature cISBootloaderISB::check_is_compatible()
             break;
         }
 
-        if (retry*READ_DELAY_MS > 4000)
+        if (retry*READ_DELAY_MS > 5000)
         {   // No response
             logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Error: check_is_compatible response missing.");    // FIXME: This is an error (kind of), but it actually happens all the time; let's hide it for now
+            // TODO? m_info_callback(this, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", portName(m_port));
             return IS_IMAGE_SIGN_NONE;
         }
     }
@@ -126,7 +127,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         return (eImageSignature)valid_signatures;
     }
 
-    if (m_isb_major >= 6)   
+    if (m_isb_major >= 6)
     {   // v6 and up has EVB detection built-in
         if (processor == IS_PROCESSOR_SAMx70)
         {   
@@ -148,6 +149,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     if (valid_signatures == 0)
     {
         m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | %s: (ISB) Error: Device has no valid ISB signature.", portName(m_port));
+        // TODO?? m_info_callback(this, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", ((serial_port_t*)m_port)->portName);
     } else {
         m_info_callback(NULL, IS_LOG_LEVEL_DEBUG, "    | %s: (ISB) Device is ISB compatible.", portName(m_port));
     }
@@ -160,7 +162,10 @@ is_operation_result cISBootloaderISB::reboot_up()
     m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
-    serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
+    if (serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15) == 15) {
+        for (int i = 0; i < 3; i++)
+            serialPortWrite(m_port, (unsigned char*)"\r\n", 2);
+    }
     serialPortFlush(m_port);
     SLEEP_MS(100);
     serialPortClose(m_port);
@@ -395,7 +400,8 @@ is_operation_result cISBootloaderISB::erase_flash()
         count += serialPortReadTimeout(m_port, bufPtr, 3, 100);
         bufPtr = buf + count;
 
-        if (m_update_callback(this, 0.0f) != IS_OP_OK)
+        float factor = pow(i / 600, 3);
+        if (m_update_callback(this, factor, "Erasing Flash", 0, 0) != IS_OP_OK)
         {
             return IS_OP_CANCELLED;
         }
@@ -752,7 +758,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
                 if (m_verify_callback != 0)
                 {
                     m_verify_progress = (float)totalCharCount / (float)grandTotalCharCount;
-                    if (m_verify_callback(this, m_verify_progress) != IS_OP_OK)
+                    if (m_verify_callback(this, m_verify_progress, "Verifying Flash", 0, 0) != IS_OP_OK)
                     {
                         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Firmware validate cancelled");
                         return IS_OP_CANCELLED;
@@ -896,16 +902,16 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             tmp[1] = '\0';
             currentPage = strtol((char*)tmp, 0, 16);
 
-            if (currentPage == 0) 
+            if (currentPage == 0)
             {
                 lastSubOffset = currentOffset;
                 continue;
             }
-            else 
+            else
             {
                 lastSubOffset = 0;
             }
-            
+
             outputSize = (int)(outputPtr - output);
 
             if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
@@ -967,7 +973,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
                 return IS_OP_ERROR;
             }
 
-            outputPtr = output;            
+            outputPtr = output;
         }
 
         if (m_update_callback != 0)
@@ -978,7 +984,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // Try catch added m_update_callback being correupted
             try
             {
-                if (m_update_callback(this, m_update_progress) != IS_OP_OK)
+                if (m_update_callback(this, m_update_progress, "Writing Flash", 0, 0) != IS_OP_OK)
                 {
                     logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Firmware update cancelled");
                     return IS_OP_CANCELLED;
@@ -995,7 +1001,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
     if (m_update_callback != 0 && m_update_progress != 1.0f)
     {
         m_update_progress = 1.0f;
-        m_update_callback(this, m_update_progress);
+        m_update_callback(this, m_update_progress, "Writing Flash", 0, 0);
     }
 
     // Set the verify function up
@@ -1077,8 +1083,3 @@ is_operation_result cISBootloaderISB::get_version_from_file(const char* filename
     //No version found
     return IS_OP_ERROR;
 }
-
-
-
-
-

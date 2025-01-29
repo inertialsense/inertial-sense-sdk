@@ -10,6 +10,7 @@
 #include <string>
 #include <stdexcept>
 
+#include "ISConstants.h"
 #include "ISComm.h"
 #include "util/util.h"
 #include "com_manager.h"
@@ -150,42 +151,57 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
 }
 #endif  // PLATFORM_IS_EMBEDDED
 
+static test_port_t* boundPorts[NUM_COM_PORTS] {
+        TEST0_PORT, TEST1_PORT, // loopbacks
+        TEST3_PORT, TEST2_PORT, // PORT2 <-> PORT3
+        TEST5_PORT, TEST4_PORT, // PORT4 <-> PORT5
+};
 
-static int loopbackPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
+static int testPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
-    return ringBufRead(&((test_port_t*)port)->loopbackPortBuf, buf, len);
+    return ringBufRead(&((test_port_t*)port)->portRingBuf, buf, len);
 }
 
-static int loopbackPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len)
+static int testPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len)
 {
-    if (ringBufWrite(&((test_port_t*)port)->loopbackPortBuf, (unsigned char*)buf, len))
+    test_port_t* destPort = boundPorts[portId(port)];
+
+    if (ringBufWrite(&destPort->portRingBuf, (unsigned char*)buf, len))
     {   
         // Buffer overflow
         #if !defined(GPX_1)
-            throw new std::out_of_range(utils::string_format("loopbackPortWrite ring buffer overflow: %d !!!\n", ringBufUsed(&((test_port_t*)port)->loopbackPortBuf) + len));
+            throw new std::out_of_range(utils::string_format("testPortWrite ring buffer overflow on %s: %d !!!\n", portName(destPort), ringBufUsed(&destPort->portRingBuf) + len));
         #endif
+        return PORT_ERROR__WRITE_FAILURE;
     }
     return len;
 }
 
-static int loopbackPortFree(port_handle_t port) {
-    return ringBufFree(&((test_port_t*)port)->loopbackPortBuf);
+static int testPortFree(port_handle_t port) {
+    return ringBufFree(&((test_port_t*)port)->portRingBuf);
 }
 
-static int loopbackPortAvailable(port_handle_t port) {
-    return ringBufUsed(&((test_port_t*)port)->loopbackPortBuf);
+static int testPortAvailable(port_handle_t port) {
+    return ringBufUsed(&((test_port_t*)port)->portRingBuf);
+}
+
+static const char* testPortName(port_handle_t port) {
+    return (const char*)((test_port_t*)port)->name;
 }
 
 void initTestPorts() {
     int portNum = 0;
     for (test_port_t& port : g_testPorts) {
         port.base.pnum = portNum;
-        port.base.ptype = PORT_TYPE__LOOPBACK | PORT_TYPE__COMM;
-        port.base.portRead = loopbackPortRead;
-        port.base.portWrite = loopbackPortWrite;
-        port.base.portFree = loopbackPortFree;
-        port.base.portAvailable = loopbackPortAvailable;
-        ringBufInit(&port.loopbackPortBuf, port.loopbackportBuffer, PORT_BUFFER_SIZE, 1);
+        port.base.ptype = (portNum <= 1) ? PORT_TYPE__LOOPBACK | PORT_TYPE__COMM : PORT_TYPE__COMM; // only PORT0 and PORT1 are Loopbacks
+        port.base.portRead = testPortRead;
+        port.base.portWrite = testPortWrite;
+        port.base.portFree = testPortFree;
+        port.base.portAvailable = testPortAvailable;
+        port.base.portName = testPortName;
+
+        ringBufInit(&port.portRingBuf, port.portBuffer, PORT_BUFFER_SIZE, 1);
+        SNPRINTF((char *)port.name, 6, "TEST%1d", portNum);
 
         portNum++;
     }

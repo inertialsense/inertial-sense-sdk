@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iomanip>      // std::setw
 #include <algorithm>
 #include <string>
+#include <any>
 
 // change these includes to be the correct path for your system
 #include "InertialSense.h" // best to include this file first
@@ -84,16 +85,16 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t magRecalMode;
     survey_in_t surveyIn;
     bool nmeaRx;
-    std::string nmeaMessage;                // A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent 
+    std::string nmeaMessage;                // A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent
     double replaySpeed;
     int displayMode;
-    int verboseLevel = ISBootloader::eLogLevel::IS_LOG_LEVEL_INFO;
-    
+    int verboseLevel = IS_LOG_LEVEL_INFO;
+
     uint64_t rmcPreset;
     bool persistentMessages;
     stream_did_t datasetEdit;               // -edit DID#=periodMultiple
-    std::vector<stream_did_t> datasets;     // -did DID#=periodMultiple    
-    
+    std::vector<stream_did_t> datasets;     // -did DID#=periodMultiple
+
     bool enableLogging;
     std::string logType;                    // -lt=dat
     std::string logPath;                    // -lp path
@@ -102,15 +103,15 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t maxLogFileSize;                // -lmf=max_file_size
     std::string logSubFolder;               // -lts=1
     int baudRate;                           // -baud=3000000
-    bool disableBroadcastsOnClose;    
-    
+    bool disableBroadcastsOnClose;
+
     std::string roverConnection;            // -rover=type:IP/URL:port:mountpoint:user:password   (server)
-    std::string baseConnection;             // -base=IP:port    (client)    
-    
+    std::string baseConnection;             // -base=IP:port    (client)
+
     std::string flashCfg;
     uint32_t timeoutFlushLoggerSeconds;
-    uint32_t outputOnceDid;    
-    
+    uint32_t outputOnceDid;
+
     uint32_t sysCommand;
     int32_t platformType;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
@@ -141,9 +142,17 @@ bool cltool_extractEventData();
 void cltool_outputUsage();
 void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
-void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
-void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
+void cltool_bootloadUpdateInfo(std::any obj, eLogLevel level, const char* str, ...);
+void cltool_firmwareUpdateInfo(std::any obj, eLogLevel level, const char* str, ...);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 
+class CltoolDevice : ISDevice {
+    public:
+    CltoolDevice(port_handle_t _port, const dev_info_t& _devInfo) : ISDevice(_port, _devInfo) { }
+    ~CltoolDevice() override = default;
+
+    int onIsbDataHandler(p_data_t *data, port_handle_t port) override;
+    int onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) override;
+};
 #endif // __CLTOOL_H__
 

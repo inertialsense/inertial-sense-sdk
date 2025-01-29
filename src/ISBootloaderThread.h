@@ -79,7 +79,7 @@ public:
         bool done;
     };
 
-    typedef struct 
+    typedef struct
     {
         uint32_t sn;
         uint8_t major;
@@ -91,9 +91,9 @@ public:
         std::vector<std::string>&               comPorts,
         int                                     baudRate,
         const ISBootloader::firmwares_t&        firmware,
-        ISBootloader::pfnBootloadProgress       uploadProgress, 
-        ISBootloader::pfnBootloadProgress       verifyProgress,
-        ISBootloader::pfnBootloadStatus         infoProgress,
+        fwUpdate::pfnProgressCb                 uploadProgress,
+        fwUpdate::pfnProgressCb                 verifyProgress,
+        fwUpdate::pfnStatusCb                   infoProgress,
         void                                    (*waitAction)()
 );
 
@@ -102,9 +102,9 @@ public:
         bool                                    force_isb_update,
         int                                     baudRate,
         const ISBootloader::firmwares_t&        firmware,
-        ISBootloader::pfnBootloadProgress       uploadProgress, 
-        ISBootloader::pfnBootloadProgress       verifyProgress,
-        ISBootloader::pfnBootloadStatus         infoProgress,
+        fwUpdate::pfnProgressCb                 uploadProgress,
+        fwUpdate::pfnProgressCb                 verifyProgress,
+        fwUpdate::pfnStatusCb                   infoProgress,
         void                                    (*waitAction)()
 );
 
@@ -128,9 +128,9 @@ private:
 
     static std::mutex m_update_mutex;
     
-    static ISBootloader::pfnBootloadProgress m_uploadProgress; 
-    static ISBootloader::pfnBootloadProgress m_verifyProgress;
-    static ISBootloader::pfnBootloadStatus m_infoProgress;
+    static fwUpdate::pfnProgressCb m_uploadProgress;
+    static fwUpdate::pfnProgressCb m_verifyProgress;
+    static fwUpdate::pfnStatusCb m_infoProgress;
     static void (*m_waitAction)();
 
     static uint32_t m_timeStart;

@@ -59,14 +59,14 @@ class cISBootloaderDFU : public ISBootloader::cISBootloaderBase
 {
 public:
     cISBootloaderDFU(
-        pfnBootloadProgress upload_cb,
-        pfnBootloadProgress verify_cb,
-        pfnBootloadStatus info_cb,
+        fwUpdate::pfnProgressCb upload_cb,
+        fwUpdate::pfnProgressCb verify_cb,
+        fwUpdate::pfnStatusCb info_cb,
         libusb_device_handle* handle
   ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_dfu.handle_libusb = handle;
-        m_device_type = IS_DEV_TYPE_DFU;
+        m_bootloader_type = IS_BL_TYPE_DFU;
     }
 
     ~cISBootloaderDFU() 

@@ -40,14 +40,14 @@ extern "C"
 #if 0
 #define DEBUG_PRINTF                            printf
 #else
-#define DEBUG_PRINTF    
+#define DEBUG_PRINTF
 #endif
 
 //#define PORT_BUFFER_SIZE                      10000
 
 typedef struct
 {
-    struct 
+    struct
     {
         dev_info_t      devInfo;
         nvm_flash_cfg_t nvmFlashCfg;
@@ -444,7 +444,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
             switch (j++)
             {
                 default: j = 0; // fall-through
-                case 0: 
+                case 0:
                 {
                     td.ptype = _PTYPE_SONY;
                     uint8_t buf[] = { 0x7F,0x0E,0x00,0x81,0x0E,0x80,0x61,0x7B,0x04,0xE0,0x17,0x59,0x3E,0x72,0xBD,0xA7,0x2F,0x02,0x00,0xF5 };
@@ -462,7 +462,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     if (!generateDataAppend(testDeque, td, byteSize)) return;
                 } break;
 
-                case 2: 
+                case 2:
                 {
                     td.ptype = _PTYPE_SONY;
                     uint8_t buf[] = { 0x7F,0x1F,0x00,0x84,0x22,0x80,0x1C,0x00,0xD3,0x00,0x16,0x43,0xF0,0x00,0x8A,0x21,0xD7,0x72,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x66,0xC0,0x17,0xE9 };
@@ -471,7 +471,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     if (!generateDataAppend(testDeque, td, byteSize)) return;
                 } break;
 
-                case 3: 
+                case 3:
                 {
                     td.ptype = _PTYPE_SONY;
                     uint8_t buf[] = { 0x7F,0xAE,0x00,0x84,0xB1,0x80,0xAB,0x00,0xD3,0x00,0xA5,0x44,0x90,0x00,0x59,0xF5,0x82,0xB2,0x00,0x00,0x20,0x38,0x00,0xC0,0x08,0x00,0x00,0x00,0x20,0x00,0x00,0x80,0x5D,0x7E,0xAC,0xA0,0x94,0xAA,0xA6,0x9A,0xAA,0x00,0x00,0x00,0x1F,0xC8,0xD3,0xC8,0xA3,0x66,0x0D,0x5B,0x60,0x79,0xC3,0xFA,0xAF,0xC4,0x40,0x19,0xFF,0xDF,0xF1,0x5F,0x91,0x38,0xA6,0x88,0x51,0x3B,0x60,0x00,0x01,0xFC,0xE3,0xE7,0x64,0x27,0xD3,0x3F,0x20,0x00,0x00,0x27,0xA0,0x00,0x00,0x01,0xB4,0x69,0xA0,0x00,0x00,0x01,0xF5,0xF2,0x30,0x4C,0xDD,0xFF,0xFD,0xA6,0x1D,0xF2,0x80,0x0D,0x86,0xDE,0x12,0xAD,0x9C,0x00,0x00,0xB4,0x28,0xDE,0x7A,0x00,0x06,0xD1,0xDF,0xB0,0xAD,0xFF,0xFD,0x93,0x22,0x4C,0x60,0x04,0xC7,0x31,0xCC,0x60,0x04,0xC6,0x00,0x48,0x20,0x01,0x15,0xB1,0xB1,0x21,0xBE,0xB4,0xA2,0x6E,0x10,0x02,0xF0,0x00,0x2B,0x50,0x03,0x78,0xA8,0x6E,0x00,0x00,0x1E,0x27,0x47,0xEE,0x7F,0xA2,0x00,0x01,0xE5,0x49,0xF3,0x09,0x26,0x70,0x00,0x00,0x87,0x40,0x5C,0x5B };
@@ -480,7 +480,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     if (!generateDataAppend(testDeque, td, byteSize)) return;
                 } break;
 
-                case 4: 
+                case 4:
                 {
                     td.ptype = _PTYPE_SONY;
                     uint8_t buf[] = { 0x7F,0x1F,0x00,0x84,0x22,0x80,0x1C,0x00,0xD3,0x00,0x16,0x45,0xD0,0x00,0x59,0xF5,0x82,0xB2,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x70,0x48,0xD5,0xA9 };
@@ -489,7 +489,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     if (!generateDataAppend(testDeque, td, byteSize)) return;
                 } break;
 
-                case 5: 
+                case 5:
                 {
                     td.ptype = _PTYPE_SONY;
                     // uint8_t buf[] = { 0x7F,0x1F,0x00,0x84,0x22,0x80,0x1C,0x00,0xD3,0x00,0x16,0x46,0x70,0x00,0x59,0xF4,0xA7,0xF0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x4A,0x14,0x8F,0x0C };
@@ -522,7 +522,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
         switch (td.ptype)
         {
             case _PTYPE_INERTIAL_SENSE_DATA:
-                // Packetize data 
+                // Packetize data
                 uint8_t buf[COM_BUFFER_SIZE];
                 n = is_comm_set_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
                 td.pktSize = n;
@@ -594,7 +594,7 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
             {
                 return;
             }
-        }        
+        }
     }
 }
 
@@ -695,11 +695,11 @@ TEST(ISComm, BasicTxBufferRxByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-    parseRingBufByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+	parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-    EXPECT_TRUE(ringBufUsed(&TEST0_PORT->loopbackPortBuf) == 0);
+	EXPECT_TRUE(ringBufUsed(&TEST0_PORT->portRingBuf) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -737,11 +737,11 @@ TEST(ISComm, BasicTxPortRxByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-    parseRingBufByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+	parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -780,11 +780,11 @@ TEST(ISComm, BasicTxRxMultiByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-    parseRingBufMultiByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+	parseRingBufMultiByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -865,8 +865,8 @@ TEST(ISComm, TxRxWithOffsetTest)
     {
         ins_1_t rxIns1 = {};
 
-        int n = ringBufUsed(&(TEST0_PORT->loopbackPortBuf));
-        ringBufRead(&(TEST0_PORT->loopbackPortBuf), g_comm.rxBuf.tail, n);
+		int n = ringBufUsed(&(TEST0_PORT->portRingBuf));
+		ringBufRead(&(TEST0_PORT->portRingBuf), g_comm.rxBuf.tail, n);
         g_comm.rxBuf.tail += n;
 
         // Read timeOfWeek
@@ -920,7 +920,7 @@ TEST(ISComm, SegmentedRxTest)
         }
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufEmpty(&tcm.portRxBuf));
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
@@ -962,7 +962,7 @@ TEST(ISComm, BlastRxTest)
         }
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufEmpty(&tcm.portRxBuf));
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
@@ -1010,7 +1010,7 @@ TEST(ISComm, RxWithGarbageTest)
         parseRingBufByte(g_testRxDeque, tcm.portRxBuf);
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
 }
@@ -1033,7 +1033,7 @@ TEST(ISComm, IsCommGetDataTest)
 
     // Reset buffer if needed
     is_comm_free(&g_comm);
-    
+
     // Add byte to buffer
     ringBufRead(&tcm.portTxBuf, g_comm.rxBuf.tail, size);
     g_comm.rxBuf.tail += size;
@@ -1232,8 +1232,8 @@ TEST(ISComm, TruncatedPackets)
 
     while (g_testTxDeque.size()>0)
     {
-        int n = _MIN(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)), is_comm_free(&comm));
-        ringBufRead(&(TEST0_PORT->loopbackPortBuf), comm.rxBuf.tail, n);
+		int n = _MIN(ringBufUsed(&(TEST0_PORT->portRingBuf)), is_comm_free(&comm));
+		ringBufRead(&(TEST0_PORT->portRingBuf), comm.rxBuf.tail, n);
 
         // Update comm buffer tail pointer
         comm.rxBuf.tail += n;
@@ -1291,21 +1291,21 @@ TEST(ISComm, TruncatedPackets)
             found++;
         }
 
-        if (ringBufUsed(&(TEST0_PORT->loopbackPortBuf))<=0)
+		if (ringBufUsed(&(TEST0_PORT->portRingBuf)) <= 0)
         {
             // No more data left in ring buffer.  Reset parser one byte ahead of head and try again until there's no more data iscomm buffer.
             comm.rxBuf.head++;
             is_comm_reset_parser(&comm);
 
             if (comm.rxBuf.head >= comm.rxBuf.tail)
-            {   // No more data to parse. 
+            {   // No more data to parse.
                 break;
             }
         }
     }
 
     // Check that we got all data
-    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_TRUE(g_testTxDeque.empty());
 
     // Check good and bad packet count
