@@ -626,11 +626,11 @@ class ISVersionTools:
         self.generate_version()
 
         if prefix is None:
-            if self.repo.name == "inertial-sense-sdk":
+            if self.repo.name == "inertial-sense-sdk" or self.repo.name == "inertial-sense-sdk_testing":
                 prefix = 'IS_SDK_'
-            elif self.repo.name == "imx":
+            elif self.repo.name == "imx" or self.repo.name == "imx_testing":
                 prefix = ''
-            elif self.repo.name == "is-gpx":
+            elif self.repo.name == "is-gpx" or self.repo.name == "is-gpx_testing":
                 prefix = 'IS_GPX_'
             else:
                 prefix = ''
