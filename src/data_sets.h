@@ -3749,10 +3749,13 @@ typedef struct
     /** reject threshold of gdop */
     float maxgdop;
 
-    /** baseline length constraint {const,sigma before fix, sigma after fix} (m) */
+    /** baseline length constraint {baseline length, variance before fix, variance after fix} (m, m^2, m^2) */
     float baseline[3];
     float max_baseline_error;
     float reset_baseline_error;
+
+    /** velocity constraint in compassing mode {var before fix, var after fix} (m^2/s^2) **/
+    float velcon[2];
 
     /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
     float max_ubx_error;
