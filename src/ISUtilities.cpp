@@ -437,7 +437,8 @@ uint8_t getHexValue(unsigned char hex)
 void* threadCreateAndStart(void(*function)(void* info), void* info)
 {
 #if PLATFORM_IS_EMBEDDED
-
+    (void)function;
+    (void)info;
     return NULLPTR;
 
 #elif CPP11_IS_ENABLED
@@ -522,7 +523,7 @@ void mutexLock(void* handle)
 {
 
 #if PLATFORM_IS_EMBEDDED
-
+    (void)handle;
     return;
 
 #elif CPP11_IS_ENABLED
@@ -545,23 +546,14 @@ void mutexUnlock(void* handle)
 {
 
 #if PLATFORM_IS_EMBEDDED
-
-    return;
-
+    (void)handle;
 #elif CPP11_IS_ENABLED
-
 	((mutex*)handle)->unlock();
-
 #elif PLATFORM_IS_WINDOWS
-
 	LeaveCriticalSection((CRITICAL_SECTION*)handle);
-
 #else
-
 	pthread_mutex_unlock((pthread_mutex_t*)handle);
-
 #endif
-
 }
 
 void mutexFree(void* handle)

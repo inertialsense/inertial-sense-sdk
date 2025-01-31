@@ -46,6 +46,7 @@ void serWriteInPieces(int serPort, const unsigned char *buf, int length)
  */
 void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, unsigned int srcPort, unsigned int dstPort, uint32_t led, int testMode)
 {
+    (void)led;
 #if TEST_ENABLE_MANUAL_TX   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
     while(1)
     {
@@ -130,7 +131,6 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
                         // Restore enabled protocol mask
                         comm.config.enabledMask = enabledMaskBackup;
                         enabledMaskBackup = 0;
-                        testMode = 0;
                         break;
                     }
                 }

@@ -3,37 +3,37 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 project(InertialSenseSDK)
 
 file(GLOB SOURCES_SDK
-    "src/*.c"
-    "src/*.cpp"
-    "src/*.h"
-    "src/protocol/*.cpp"
-    "src/protocol/*.h"
-    "src/util/*.cpp"
-    "src/util/*.h"
-    "hw-libs/bootloader/bootloaderShared.c"
-    "tests/runtime/*.cpp"
-    "tests/runtime/*.h"
-    "src/yaml-cpp/*.cpp"
-    "src/yaml-cpp/*.h"
-    "src/yaml-cpp/contrib/*.cpp"
-    "src/yaml-cpp/contrib/*.h"
-    "src/yaml-cpp/node/*.cpp"
-    "src/yaml-cpp/node/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/src/*.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/src/protocol/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/protocol/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/src/util/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/util/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/hw-libs/bootloader/bootloaderShared.c"
+    "${CMAKE_CURRENT_LIST_DIR}/tests/runtime/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/tests/runtime/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/contrib/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/contrib/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.h"
 )
 
 # Compile libusb from source
 if (WIN32)
     file(GLOB SOURCES_LIB_USB
-        "src/libusb/libusb/*.h"
-        "src/libusb/libusb/*.c"
-        "src/libusb/libusb/os/*windows*"
+        "${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+        "${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+        "${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*windows*"
     )
 else ()
     file(GLOB SOURCES_LIB_USB
-        "src/libusb/libusb/*.h"
-        "src/libusb/libusb/*.c"
-        "src/libusb/libusb/os/*linux*"
-        "src/libusb/libusb/os/*posix*"
+        "${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+        "${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+        "${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*linux*"
+        "${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*posix*"
     )
 endif ()
 
@@ -51,14 +51,14 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 
 # Include paths
 target_include_directories(${PROJECT_NAME} PUBLIC
-    src
-    src/util
-    src/protocol
-    src/libusb
-    src/libusb/libusb
-    src/yaml-cpp
-    tests/runtime
-    external
+        ${CMAKE_CURRENT_LIST_DIR}/src
+        ${CMAKE_CURRENT_LIST_DIR}/src/util
+        ${CMAKE_CURRENT_LIST_DIR}/src/protocol
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb
+        ${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp
+        ${CMAKE_CURRENT_LIST_DIR}/tests/runtime
+        ${CMAKE_CURRENT_LIST_DIR}/external
 )
 
 # Build using C11 and CXX20

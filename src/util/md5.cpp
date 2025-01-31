@@ -271,7 +271,7 @@ int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
 
     filesize = 0;
     is->seekg(ios_base::beg);
-    while (is && (is->tellg() != -1))
+    while (is->tellg() != -1)
     {
         uint8_t buff[MD5_BUFF_SIZE] = {};
         is->read((char *)buff, sizeof(buff));
@@ -513,7 +513,7 @@ int altMD5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
 
     filesize = 0;
     is->seekg(ios_base::beg);
-    while (is && (is->tellg() != -1))
+    while (is->tellg() != -1)
     {
         uint8_t buff[MD5_BUFF_SIZE] = {};
         is->read((char *)buff, sizeof(buff));

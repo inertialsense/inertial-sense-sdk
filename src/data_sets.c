@@ -803,31 +803,21 @@ int satNo(int sys, int prn)
 	if (prn <= 0) return 0;
 	switch (sys) {
 	case SYS_GPS:
-		if (prn < MINPRNGPS || MAXPRNGPS < prn) return 0;
-		return prn - MINPRNGPS + 1;
+		if (prn >= MINPRNGPS && MAXPRNGPS >= prn) return prn - MINPRNGPS + 1;
 	case SYS_GLO:
-		if (prn < MINPRNGLO || MAXPRNGLO < prn) return 0;
-		return NSATGPS + prn - MINPRNGLO + 1;
+		if (prn >= MINPRNGLO && MAXPRNGLO >= prn) return NSATGPS + prn - MINPRNGLO + 1;
 	case SYS_GAL:
-		if (prn < MINPRNGAL || MAXPRNGAL < prn) return 0;
-		return NSATGPS + NSATGLO + prn - MINPRNGAL + 1;
+		if (prn >= MINPRNGAL && MAXPRNGAL >= prn) return NSATGPS + NSATGLO + prn - MINPRNGAL + 1;
 	case SYS_QZS:
-		if (prn < MINPRNQZS || MAXPRNQZS < prn) return 0;
-		return NSATGPS + NSATGLO + NSATGAL + prn - MINPRNQZS + 1;
+		if (prn >= MINPRNQZS && MAXPRNQZS >= prn) return NSATGPS + NSATGLO + NSATGAL + prn - MINPRNQZS + 1;
 	case SYS_CMP:
-		if (prn < MINPRNCMP || MAXPRNCMP < prn) return 0;
-		return NSATGPS + NSATGLO + NSATGAL + NSATQZS + prn - MINPRNCMP + 1;
+		if (prn >= MINPRNCMP && MAXPRNCMP >= prn) return NSATGPS + NSATGLO + NSATGAL + NSATQZS + prn - MINPRNCMP + 1;
 	case SYS_IRN:
-		if (prn < MINPRNIRN || MAXPRNIRN < prn) return 0;
-		return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + prn - MINPRNIRN + 1;
+		if (prn >= MINPRNIRN && MAXPRNIRN >= prn) return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + prn - MINPRNIRN + 1;
 	case SYS_LEO:
-		if (prn < MINPRNLEO || MAXPRNLEO < prn) return 0;
-		return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + NSATIRN +
-			prn - MINPRNLEO + 1;
+		if (prn >= MINPRNLEO && MAXPRNLEO >= prn) return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + NSATIRN + prn - MINPRNLEO + 1;
 	case SYS_SBS:
-		if (prn < MINPRNSBS || MAXPRNSBS < prn) return 0;
-		return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + NSATIRN + NSATLEO +
-			prn - MINPRNSBS + 1;
+		if (prn >= MINPRNSBS && MAXPRNSBS >= prn) return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + NSATIRN + NSATLEO + prn - MINPRNSBS + 1;
 	}
 	return 0;
 }

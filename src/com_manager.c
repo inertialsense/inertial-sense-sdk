@@ -258,6 +258,7 @@ void comManagerStepInstance(CMHANDLE cmInstance_)
     comManagerStepTxInstance(cmInstance);
 }
 
+// TODO remove timeMs
 void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
 {
     com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
@@ -509,6 +510,7 @@ int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
             return -1;
         }
 
+        // TODO Confirm that *regData is a valid pointer (but it will always be non-NULL)
         registered_data_t *regData = &(cmInstance->regData[data.hdr.id]);
 
         // Validate and constrain Rx data size to fit within local data struct
@@ -571,19 +573,16 @@ int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
 
 #endif
 
-        if (regData)
+        // Write to data structure if it was registered
+        if (regData->dataSet.rxPtr)
         {
-            // Write to data structure if it was registered
-            if (regData->dataSet.rxPtr)
-            {
-                copyDataPToStructP(regData->dataSet.rxPtr, &data, regData->dataSet.size);
-            }
+            copyDataPToStructP(regData->dataSet.rxPtr, &data, regData->dataSet.size);
+        }
 
-            // Call data specific callback after data has been received
-            if (regData->pstRxFnc)
-            {
-                regData->pstRxFnc(pHandle, &data);
-            }
+        // Call data specific callback after data has been received
+        if (regData->pstRxFnc)
+        {
+            regData->pstRxFnc(pHandle, &data);
         }
 
         // Call general/global callback
@@ -920,20 +919,14 @@ int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 
 void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags)
 {
-    int ackSize;
-
     // Create and Send request packet
     p_ack_t ack = { 0 };
     ack.hdr.pktInfo = pkt->hdr.flags;
-    ackSize = sizeof(p_ack_hdr_t);
 
     // Set ack body
-    switch (pkt->hdr.flags & PKT_TYPE_MASK)
+    if ((pkt->hdr.flags & PKT_TYPE_MASK) == PKT_TYPE_SET_DATA)
     {
-    case PKT_TYPE_SET_DATA:
         ack.body.dataHdr = *((p_data_hdr_t*)(pkt->data.ptr));
-        ackSize += sizeof(p_data_hdr_t);
-        break;
     }
 
     comManagerSendInstance(cmInstance, pHandle, pTypeFlags, &ack, 0, sizeof(ack), 0);

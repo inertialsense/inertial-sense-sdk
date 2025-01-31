@@ -291,13 +291,11 @@ uint32_t imxPlatformConfigTypeToDefaultPlatformPreset(uint32_t platformType)
     case PLATFORM_CFG_TYPE_RUG2_1_G0:
     case PLATFORM_CFG_TYPE_RUG3_G0:
         return PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT;
-        break;
     case PLATFORM_CFG_TYPE_RUG2_1_G1:
     case PLATFORM_CFG_TYPE_RUG2_1_G2:
     case PLATFORM_CFG_TYPE_RUG3_G1:
     case PLATFORM_CFG_TYPE_RUG3_G2:
         return PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT;
-        break;
     default:
         return 0;
     }

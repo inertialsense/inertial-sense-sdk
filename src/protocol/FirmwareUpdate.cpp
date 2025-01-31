@@ -289,7 +289,6 @@ namespace fwUpdate {
                     case 2: return "CXD5610.2";
                     default: return "CXD5610";
                 }
-                break;
             default: return "[UNKNOWN]";
         }
     }
@@ -359,6 +358,7 @@ namespace fwUpdate {
         return result;
     }
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
+        (void) buf_len;
         fwUpdate::payload_t *payload = nullptr;
         void *aux_data = nullptr;
 
@@ -711,6 +711,7 @@ namespace fwUpdate {
     }
 
     bool FirmwareUpdateHost::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
+        (void)buf_len;
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
 

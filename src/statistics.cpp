@@ -129,7 +129,7 @@ f_t variance( f_t *input, int size, int byteIncrement )
 		ptr += byteIncrement;
 	}
     
-    return sum /= size;
+    return sum / (f_t)size;
 }
 
 
@@ -154,7 +154,7 @@ double variance_d(double *input, int size, int byteIncrement)
         ptr += byteIncrement;
     }
 
-    return sum /= size;
+    return sum / (f_t)size;
 }
 
 
@@ -179,7 +179,7 @@ f_t variance_int32(int32_t *input, int size, int byteIncrement)
 		ptr += byteIncrement;
 	}
 
-	return sum /= size;
+	return sum / (f_t)size;
 }
 
 
@@ -204,7 +204,7 @@ double variance_int64(int64_t *input, int size, int byteIncrement)
 		ptr += byteIncrement;
 	}
 
-	return sum /= size;
+	return sum / (f_t)size;
 }
 
 
@@ -230,7 +230,7 @@ f_t variance_mean( f_t *input, f_t *ave, int size, int byteIncrement )
 		ptr += byteIncrement;
 	}
 	
-	return sum /= size;
+	return sum / (f_t)size;
 }
 
 
@@ -390,5 +390,5 @@ f_t delta_mean(f_t *input, int size, int byteIncrement, float ave)
 		ptr += byteIncrement;
 	}
 
-	return sum /= size;
+	return sum / (f_t)size;
 }

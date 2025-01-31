@@ -1558,7 +1558,7 @@ uint8_t gsv_get_const_mask(uint8_t constellation)
 
 /**
  * Checks if for a given gps_sig_sv_t* sig 
- * the freqency accociated with sig is enabled
+ * the frequency associated with sig is enabled
 */
 bool gsv_freq_ena(gps_sig_sv_t* sig)
 {
@@ -1665,8 +1665,6 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
         default: 
             return false;
     }
-    
-    return false;
 }
 
 int nmea_gsv_group(char a[], int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
@@ -1740,8 +1738,7 @@ int nmea_gsv_gnss(char a[], int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t
         return nmea_gsv_group(a, aSize, gsat, gsig, gnssId);
     }
 
-    uint8_t *sigIds;
-    uint8_t gpsSigIds[] = { 
+    uint8_t gpsSigIds[] = {
         SAT_SV_SIG_ID_GPS_L1CA,
         SAT_SV_SIG_ID_GPS_L2CL,
         SAT_SV_SIG_ID_GPS_L2CM,
@@ -1779,23 +1776,17 @@ int nmea_gsv_gnss(char a[], int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t
     uint8_t nvcSigIds[] = { 
         SAT_SV_SIG_ID_NAVIC_L5A,
     };		
-    int numSigIds = 0;
 
     int n = 0;
     switch(gnssId)
     {
-    case SAT_SV_GNSS_ID_GPS:	sigIds = gpsSigIds;		numSigIds = sizeof(gpsSigIds);	break;
-    case SAT_SV_GNSS_ID_GAL:	sigIds = galSigIds;		numSigIds = sizeof(galSigIds);	break;
-    case SAT_SV_GNSS_ID_BEI:	sigIds = beiSigIds;		numSigIds = sizeof(beiSigIds);	break;
-    case SAT_SV_GNSS_ID_QZS:	sigIds = qzsSigIds;		numSigIds = sizeof(qzsSigIds);	break;
-    case SAT_SV_GNSS_ID_GLO:	sigIds = gloSigIds;		numSigIds = sizeof(gloSigIds);	break;
-    case SAT_SV_GNSS_ID_IRN:	sigIds = nvcSigIds;		numSigIds = sizeof(nvcSigIds);	break;
+    case SAT_SV_GNSS_ID_GPS:	for (auto t : gpsSigIds) n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, t); break;
+    case SAT_SV_GNSS_ID_GAL:	for (auto t : galSigIds) n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, t); break;
+    case SAT_SV_GNSS_ID_BEI:	for (auto t : beiSigIds) n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, t); break;
+    case SAT_SV_GNSS_ID_QZS:	for (auto t : qzsSigIds) n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, t); break;
+    case SAT_SV_GNSS_ID_GLO:	for (auto t : gloSigIds) n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, t); break;
+    case SAT_SV_GNSS_ID_IRN:	for (auto t : nvcSigIds) n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, t); break;
     default: return 0;
-    }
-
-    for (int i = 0; i<numSigIds; i++)
-    {
-        n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, sigIds[i]);
     }
 
     return n;
@@ -1910,7 +1901,7 @@ int nmea_parse_pimu(imu_t &imu, const char a[], const int aSize)
     // PQR angular rate
     ptr = ASCII_to_vec3f(imu.I.pqr, ptr);
     // XYZ linear acceleration
-    ptr = ASCII_to_vec3f(imu.I.acc, ptr);
+    ASCII_to_vec3f(imu.I.acc, ptr);
 
     return 0;
 }
@@ -1926,7 +1917,7 @@ int nmea_parse_pimu_to_rimu(imu_t &imu, const char a[], const int aSize)
     // PQR angular rate
     ptr = ASCII_to_vec3f(imu.I.pqr, ptr);
     // XYZ linear acceleration
-    ptr = ASCII_to_vec3f(imu.I.acc, ptr);
+    ASCII_to_vec3f(imu.I.acc, ptr);
 
     return 0;
 }
@@ -1945,7 +1936,7 @@ int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize)
     ptr = ASCII_to_vec3f(pimu.vel, ptr);
 
     // Integration period 
-    ptr = ASCII_to_f32(&(pimu.dt), ptr);
+    ASCII_to_f32(&(pimu.dt), ptr);
 
     return 0;
 }
@@ -1970,7 +1961,7 @@ int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize)
     // LLA
     ptr = ASCII_to_vec3d(ins.lla, ptr);
     // NED
-    ptr = ASCII_to_vec3f(ins.ned, ptr);
+    ASCII_to_vec3f(ins.ned, ptr);
 
     return 0;
 }
@@ -1993,7 +1984,7 @@ int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize)
     // UVW
     ptr = ASCII_to_vec3f(ins.uvw, ptr);
     // LLA
-    ptr = ASCII_to_vec3d(ins.lla, ptr);
+    ASCII_to_vec3d(ins.lla, ptr);
 
     return 0;
 }
@@ -2030,7 +2021,7 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 
     // Time of Week offset, leapS
     ptr = ASCII_to_f64(&(gpsPos.towOffset), ptr);
-    ptr = ASCII_to_u8(&(gpsPos.leapS), ptr);
+    ASCII_to_u8(&(gpsPos.leapS), ptr);
 
     return 0;
 }
@@ -2404,9 +2395,9 @@ int nmea_parse_gns(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
                 
     gpsPos.ecef[0] = ecef[0];
     gpsPos.ecef[1] = ecef[1];
-    gpsPos.ecef[2] = ecef[2];	
+    gpsPos.ecef[2] = ecef[2];
 
-    return 0;	
+    return 0;
 }
 
 int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags)
@@ -2491,7 +2482,7 @@ int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
 
     // 11,12 - Geoid separation = alt(HAE) - alt(MSL)
     double geoidSep;
-    ptr = ASCII_to_f64(&(geoidSep), ptr);
+    ASCII_to_f64(&(geoidSep), ptr);
     gpsPos.lla[2] = gpsPos.hMSL + geoidSep;
 
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
@@ -2517,7 +2508,7 @@ int nmea_parse_gll(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
     // 3,4 - Longitude (deg)
     ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
     // 5 - UTC time HHMMSS.sss
-    ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &utcTime, ptr, utcWeekday, gpsPos.leapS);
+    ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &utcTime, ptr, utcWeekday, gpsPos.leapS);
     // 6 - Valid (A=active, V=void)
 
     return 0;
@@ -2562,7 +2553,7 @@ int nmea_parse_gsa(const char a[], const int aSize, gps_pos_t &gpsPos, gps_sat_t
     ptr = ASCII_to_f32(&(gpsPos.hAcc), ptr);
 
     // 17 - vDop (vAcc)
-    ptr = ASCII_to_f32(&(gpsPos.vAcc), ptr);
+    ASCII_to_f32(&(gpsPos.vAcc), ptr);
 
     return 0;
 }
@@ -2713,7 +2704,7 @@ int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_
     ptr = ASCII_to_u32(&(ppsNoiseNs[0]), ptr);
     
     // 9-11 - ECEF X,Y,Z velocity (m/s)
-    ptr = ASCII_to_vec3f(vel.vel, ptr);
+    ASCII_to_vec3f(vel.vel, ptr);
         
     // 12-14 - NED veocity (m/s)
     // float velNed[3];
@@ -2811,7 +2802,7 @@ int nmea_parse_vtg(const char a[], int aSize, gps_vel_t &vel, const double refLl
     // 		M: Manual Input mode
     // 		S: Simulator mode
     // 		N: Data not valid
-    ptr = ASCII_find_next_field(ptr);
+    ASCII_find_next_field(ptr);
 
     return 0;
 }
@@ -2830,7 +2821,7 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     // 2,3,4 - dd,mm,yyy (Day,Month,Year)
     ptr = ASCII_to_i32((int32_t*)&(date.day), ptr);
     ptr = ASCII_to_i32((int32_t*)&(date.month), ptr);
-    ptr = ASCII_to_i32((int32_t*)&(date.year), ptr);
+    ASCII_to_i32((int32_t*)&(date.year), ptr);
 
     // Convert UTC date and time to GPS time of week and number of weeks		
     int datetime[7] = { date.year, date.month, date.day, time.hour, time.minute, time.second, time.millisecond };		// year,month,day,hour,min,sec,msec
