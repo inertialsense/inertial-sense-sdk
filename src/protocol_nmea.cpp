@@ -435,6 +435,9 @@ void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask)
 
 void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_t periodMultiple)
 {
+    if (nmeaId >= NMEA_MSG_ID_COUNT)
+        return;
+
     uint32_t nmeaBits = (1<<nmeaId);
     period[nmeaId] = periodMultiple;
 
@@ -2031,13 +2034,13 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
  * returns NMEA_MSG_ID_GNGSV if successful 
  * returns 0 if unsuccessful
 */
-int parseASCE_GSV(int inId, int period)
+uint32_t parseASCE_GSV(uint32_t inId, int period)
 {
     uint8_t constTarget = (inId & 0xf0) >> 4;
     uint8_t freqMask = (inId & 0x0f);
 
     if(inId < NMEA_MSG_ID_GNGSV_START || inId > NMEA_MSG_ID_GNGSV_END)
-        return 0;
+        return NMEA_MSG_ID_INVALID;
 
     if (period != 0)
     {
@@ -2068,7 +2071,7 @@ int parseASCE_GSV(int inId, int period)
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
                 break;
             default:
-                return 0;
+                return NMEA_MSG_ID_INVALID;
         }
     }
 
@@ -2118,7 +2121,6 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
             char *ptr2 = ptr-1;
             id = getNmeaMsgId(ptr2, end-ptr2);
         }
-
         ptr = ASCII_find_next_field(ptr);
 
         // end of nmea string
@@ -2134,6 +2136,9 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
             parseASCE_GSV(NMEA_MSG_ID_GNGSV_5_3_2_1, period);
         else if(id >= NMEA_MSG_ID_GNGSV_START && id <= NMEA_MSG_ID_GNGSV_END)
             id = parseASCE_GSV(id, period);
+
+        if (id == NMEA_MSG_ID_INVALID)
+            continue;
 
         // Copy tmp to corresponding port(s)
         switch (ports)

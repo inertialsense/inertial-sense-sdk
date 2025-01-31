@@ -936,10 +936,10 @@ int decodeGSV(char* a, int aSize)
 
 #define UINT32_MATCH(u1,u2)	((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
 
-int getNmeaMsgId(const void *msg, int msgSize)
+uint32_t getNmeaMsgId(const void *msg, int msgSize)
 {
     if (msgSize < 5)     // five characters required (i.e. "$INFO")
-        return -2;
+        return NMEA_MSG_ID_INVALID;
 
     char *cptr = (char*)msg;
     char *talker = &cptr[1];
@@ -991,7 +991,7 @@ int getNmeaMsgId(const void *msg, int msgSize)
         break;		
     }
 
-    return -1;
+    return NMEA_MSG_ID_INVALID;
 }
 
 int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)

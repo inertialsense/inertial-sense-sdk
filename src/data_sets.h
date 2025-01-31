@@ -626,9 +626,9 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo);
  * 
  * @param a NMEA talker string
  * @param aSize Length of the talker string
- * @return int NMEA ID (eNmeaMsgId) on success or negative for failure. -1 for NMEA head not found, -2 for invalid length, -3 other error
+ * @return int NMEA ID (eNmeaMsgId) on success or zero for failure.
  */
-int getNmeaMsgId(const void* msg, int msgSize);
+uint32_t getNmeaMsgId(const void* msg, int msgSize);
 
 /**
  * @brief Convert NMEA ID (eNmeaMsgId) to talker string
