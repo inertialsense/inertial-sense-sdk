@@ -3707,7 +3707,7 @@ typedef struct
     /** initial-state std [0]bias,[1]iono [2]trop */
     double std[3];
 
-    /** process-noise std [0]bias,[1]iono [2]trop [3]acch [4]accv [5] pos */
+    /** process-noise variance [0]bias,[1]iono [2]trop [3]acch [4]accv [5]pos */
     float prn[6];
 
     /** satellite clock stability (sec/sec) */
