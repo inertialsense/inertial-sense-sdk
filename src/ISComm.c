@@ -1171,7 +1171,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *pkt)
 {
-    if (pkt->data.size + sizeof(packet_hdr_t) + 4 > ISB_MAX_PACKET_SIZE)
+    if (pkt->data.size + sizeof(packet_hdr_t) + 4 > PKT_BUF_SIZE)
     {	// Packet size + offset + payload + footer is too large
         return -1;
     }
@@ -1179,10 +1179,29 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-    uint8_t buf[ISB_MAX_PACKET_SIZE];
+#if 1
+    // Write packet to port
+    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
+
+    if (pkt->offset)
+    {
+        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
+    }
+
+    if (pkt->data.size)
+    {
+        // Include payload in checksum calculation
+        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
+
+        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
+    }
+
+    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
+#else
+    uint8_t buf[PKT_BUF_SIZE];
     uint8_t *ptr = buf;
 
-    // Copy packet into buffer then write it all at once to serial port at end of this function
+    // Copy packet into buffer then write packet to serial port using single write call.
     memcpy(ptr, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));       // Header
     ptr += sizeof(packet_hdr_t);
 
@@ -1206,6 +1225,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
 
     // Write packet to port (all in one write)
     int n = portWrite(port, buf, ptr - buf);
+#endif
 
     // Increment Tx count
     comm->txPktCount++;
