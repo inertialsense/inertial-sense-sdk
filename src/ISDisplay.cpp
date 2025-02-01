@@ -1850,8 +1850,8 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "Port \'%s.%d\' [Status: 0x%02x]\n", portTypeNames[portTypeIdx], portId, portMon.port[pIdx].status);
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\trx:  %u Kbytes,  %u KB/s,  %u errors,  %u overflows\n",
                         portMon.port[pIdx].rxBytes / 1024, portMon.port[pIdx].rxBytesPerSec / 1024, portMon.port[pIdx].rxChecksumErrors, portMon.port[pIdx].rxOverflows);
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u overflows\n",
-                        portMon.port[pIdx].txBytes / 1024, portMon.port[pIdx].txBytesPerSec / 1024, portMon.port[pIdx].txBytesDropped, portMon.port[pIdx].txOverflows);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u drops\n",
+                        portMon.port[pIdx].txBytes / 1024, portMon.port[pIdx].txBytesPerSec / 1024, portMon.port[pIdx].txBytesDropped, portMon.port[pIdx].txDataDrops);
     }
 
     return buf;

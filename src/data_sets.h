@@ -356,7 +356,7 @@ enum eHdwStatusFlags
     HDW_STATUS_ERR_GPS_PPS_NOISE                = (int)0x00002000,
     /** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
     HDW_STATUS_MAG_RECAL_COMPLETE               = (int)0x00004000,
-    /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, tipically 150-250 ms. */
+    /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
     HDW_STATUS_FLASH_WRITE_PENDING              = (int)0x00008000,
 
     /** Communications Tx buffer limited */
@@ -5025,8 +5025,8 @@ typedef struct
     /** Rx byte count */
     uint32_t        rxBytes;
 
-    /** Tx buffer overflow occurrences, times serWrite could not send all data */
-    uint32_t        txOverflows;
+    /** Tx buffer data drop occurrences, times serWrite could not send all data */
+    uint32_t        txDataDrops;
     /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
     uint32_t        rxOverflows;
 

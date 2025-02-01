@@ -183,7 +183,7 @@ void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
         mapper.AddMember2("[" + std::to_string(i) + "].rxBytesPerSec",      i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Rx data rate", DATA_FLAGS_READ_ONLY);
         mapper.AddMember2("[" + std::to_string(i) + "].txBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytes), DATA_TYPE_UINT32, "bytes", "Tx byte count");
         mapper.AddMember2("[" + std::to_string(i) + "].rxBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytes), DATA_TYPE_UINT32, "bytes", "Rx byte count");
-        mapper.AddMember2("[" + std::to_string(i) + "].txOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txOverflows), DATA_TYPE_UINT32, "", "Tx buffer overflow occurrences");			
+        mapper.AddMember2("[" + std::to_string(i) + "].txDataDrops",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txDataDrops), DATA_TYPE_UINT32, "", "Tx buffer data drop occurrences");			
         mapper.AddMember2("[" + std::to_string(i) + "].rxOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxOverflows), DATA_TYPE_UINT32, "", "Rx buffer overflow occurrences");        
         mapper.AddMember2("[" + std::to_string(i) + "].txBytesDropped",     i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytesDropped), DATA_TYPE_UINT32, "bytes", "Tx number of bytes that were not sent");
         mapper.AddMember2("[" + std::to_string(i) + "].rxChecksumErrors",   i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxChecksumErrors), DATA_TYPE_UINT32, "", "Rx number of checksum failures");
