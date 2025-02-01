@@ -5025,8 +5025,8 @@ typedef struct
     /** Rx byte count */
     uint32_t        rxBytes;
 
-    /** Tx buffer overflow occurrences, times serWrite could not send all data */
-    uint32_t        txOverflows;
+    /** Tx buffer data drop occurrences, times serWrite could not send all data */
+    uint32_t        txDataDrops;
     /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
     uint32_t        rxOverflows;
 
