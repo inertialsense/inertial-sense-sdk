@@ -316,7 +316,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-evmi=") || startsWith(a, "-evmg="))
         {
-
             printf("Parsing EVM!\n");
 
             char* token = strtok((char*)&a[6], ",");
