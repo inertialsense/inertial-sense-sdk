@@ -1180,6 +1180,8 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
     pkt->checksum = pkt->hdrCksum;
 
 #if 1
+    // Write packet to port in multiple write calls
+
     // Write packet to port
     int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
 
@@ -1198,10 +1200,11 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
 
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
 #else
+    // Write packet to port in a single write call
+
     uint8_t buf[PKT_BUF_SIZE];
     uint8_t *ptr = buf;
 
-    // Copy packet into buffer then write packet to serial port using single write call.
     memcpy(ptr, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));       // Header
     ptr += sizeof(packet_hdr_t);
 
