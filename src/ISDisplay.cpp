@@ -1871,11 +1871,11 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "Dev upTime: %dms\n", event.time);
 
     // print Serial number */
-    event.senderSN;
+    // event.senderSN;
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "Sender SN:%d\n", event.senderSN);
   
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
-    event.senderHdwId;
+    // event.senderHdwId;
     switch (event.senderHdwId)
     {
         case IS_HARDWARE_TYPE_IMX:  ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: IMX\n"); break;
