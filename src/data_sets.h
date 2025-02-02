@@ -1454,8 +1454,8 @@ enum eGenFaultCodes
     GFC_INS_STATE_ORUN_ALT				= 0x00000004,
     /*! Unhandled interrupt */
     GFC_UNHANDLED_INTERRUPT				= 0x00000010,
-    /*! GNSS system runtime fault */
-    GFC_GNSS_SYS_FAULT					= 0x00000020,
+    /*! GNSS receiver critical fault. See the corresponding GPS status fault flags (i.e. GPX_STATUS_FATAL_MASK) */
+    GFC_GNSS_CRITICAL_FAULT             = 0x00000020,
     /*! GNSS Tx limited */
     GFC_GNSS_TX_LIMITED				    = 0x00000040,
     /*! GNSS Rx overrun */
@@ -1483,7 +1483,7 @@ enum eGenFaultCodes
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION 				= 0x00040000,
     /*! Fault: GPS receiver time fault */
-    GFC_SER_CHECK_INIT             = 0x00080000,
+    GFC_SER_CHECK_INIT                  = 0x00080000,
     /*! Fault: IMU initialization */
     GFC_INIT_IMU						= 0x00100000,
     /*! Fault: Barometer initialization */
@@ -1492,15 +1492,17 @@ enum eGenFaultCodes
     GFC_INIT_MAGNETOMETER				= 0x00400000,
     /*! Fault: I2C initialization */
     GFC_INIT_I2C						= 0x00800000,
-    /*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
+    /*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin. */
     GFC_CHIP_ERASE_INVALID				= 0x01000000,
     /*! Fault: EKF GPS time fault */
     GFC_EKF_GNSS_TIME_FAULT             = 0x02000000,
     /*! Fault: GPS receiver time fault */
     GFC_GNSS_RECEIVER_TIME              = 0x04000000,
+    /*! Fault: GNSS reciever ceneral fault. See the corresponding GPS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK) */
+    GFC_GNSS_GENERAL_FAULT              = 0x08000000,
 
     /*! IMX GFC flags that relate to GPX status flags */
-    GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_SYS_FAULT | GFC_GNSS_RECEIVER_TIME,
+    GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,
 };
 
 
@@ -3586,8 +3588,8 @@ typedef struct PACKED
 
     //uint8_t obs_pairs_filtered;   // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
     uint8_t reserved2;
-    uint8_t raw_ptr_queue_overrun;
-    uint8_t raw_dat_queue_overrun;
+    uint8_t raw_ptr_queue_limited;
+    uint8_t raw_dat_queue_limited;
     uint8_t obs_unhealthy;          // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
 
     uint8_t obs_rover_avail;        // nu - total number of satellites with observations to rover in relpos() before selsat()
@@ -4499,21 +4501,26 @@ enum eGpxStatus
     GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000020,
     GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000040,
 
-    /** Reserved */
-    GPX_STATUS_RESERVED_1                               = (int)0x00010000,
+    /** General Fault mask */
+    GPX_STATUS_GENERAL_FAULT_MASK                       = (int)0xFFFF0000,
+
+    /** RTK buffer filled causing data loss */
+    GPX_STATUS_FAULT_RTK_QUEUE_LIMITED                  = (int)0x00010000,
+    /** RTK data access blocked by mutex */
+    GPX_STATUS_FAULT_RTK_QUEUE_MUTEX                    = (int)0x00020000,
 
     /** GNSS receiver time fault **/
-    GPX_STATUS_GNSS_RCVR_TIME_FAULT                     = (int)0x00100000,
+    GPX_STATUS_FAULT_GNSS_RCVR_TIME                     = (int)0x00100000,
 
     /** DMA Fault detected **/
-    GPX_STATUS_DMA_FAULT                                = (int)0x00800000,
+    GPX_STATUS_FAULT_DMA                                = (int)0x00800000,
 
-    /** Fatal event */
-    GPX_STATUS_FATAL_MASK                               = (int)0xFF000000,
+    /** Fatal faults - critical failure resulting in CPU reset */
+    GPX_STATUS_FATAL_MASK                               = (int)0x1F000000,
     GPX_STATUS_FATAL_OFFSET                             = 24,
-    GPX_STATUS_FATAL_RESET_LOW_POW                      = (int)1,   // reset from low power
-    GPX_STATUS_FATAL_RESET_BROWN                        = (int)2,   // reset from brown out
-    GPX_STATUS_FATAL_RESET_WATCHDOG                     = (int)3,   // reset from watchdog
+    GPX_STATUS_FATAL_RESET_LOW_POW                      = (int)1,       // reset from low power
+    GPX_STATUS_FATAL_RESET_BROWN                        = (int)2,       // reset from brown out
+    GPX_STATUS_FATAL_RESET_WATCHDOG                     = (int)3,       // reset from watchdog
     GPX_STATUS_FATAL_CPU_EXCEPTION                      = (int)4,                     
     GPX_STATUS_FATAL_UNHANDLED_INTERRUPT                = (int)5,
     GPX_STATUS_FATAL_STACK_OVERFLOW                     = (int)6,
@@ -4521,12 +4528,16 @@ enum eGpxStatus
     GPX_STATUS_FATAL_KERNEL_PANIC                       = (int)8,
     GPX_STATUS_FATAL_UNALIGNED_ACCESS                   = (int)9,
     GPX_STATUS_FATAL_MEMORY_ERROR                       = (int)10,
-    GPX_STATUS_FATAL_BUS_ERROR                          = (int)11,  // bad pointer or malloc
+    GPX_STATUS_FATAL_BUS_ERROR                          = (int)11,      // bad pointer or malloc
     GPX_STATUS_FATAL_USAGE_ERROR                        = (int)12,
     GPX_STATUS_FATAL_DIV_ZERO                           = (int)13,
     GPX_STATUS_FATAL_SER0_REINIT                        = (int)14,
-
     GPX_STATUS_FATAL_UNKNOWN                            = (int)0x1F,    // TODO: Temporarily set to (5 bits). Reset to 0xFF when gpx_flash_cfg.debug is no longer used with fault reporting. (WHJ) 
+
+    /** Internal use */
+    GPX_STATUS_FAULT_RP                                 = (int)0x20000000,
+    /** Reserved for future fault status */
+    GPX_STATUS_FAULT_UNUSED                             = (int)0xC0000000,
 };
 
 /** Hardware status flags */
