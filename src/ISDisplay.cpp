@@ -1868,7 +1868,7 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
     // Print Time
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Dev upTime: %dms\n", event.time);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Dev upTime: %fs\n", event.time);
 
     // print Serial number */
     // event.senderSN;
