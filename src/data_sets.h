@@ -328,7 +328,7 @@ enum eHdwStatusFlags
     HDW_STATUS_IMU_FAULT_REJECT_MASK            = (int)0x0000000C,
 
     /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
-    HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
+    HDW_STATUS_GPS_SATELLITE_RX_VALID                 = (int)0x00000010,
     /** Event occurred on strobe input pin */
     HDW_STATUS_STROBE_IN_EVENT                  = (int)0x00000020,
     /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
