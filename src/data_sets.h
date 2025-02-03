@@ -4668,6 +4668,8 @@ typedef struct
     uint8_t runState;       /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
+#define GPX_INVALID_MCU_TEMP    -274.0f // 1 degree less than  absolute 0 
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
