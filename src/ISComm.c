@@ -1165,7 +1165,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-#if 1
+#if 0
     // Write packet to port in multiple write calls
 
     // Write packet to port
