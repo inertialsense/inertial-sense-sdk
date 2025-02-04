@@ -4506,8 +4506,6 @@ enum eGpxStatus
 
     /** RTK buffer filled causing data loss */
     GPX_STATUS_FAULT_RTK_QUEUE_LIMITED                  = (int)0x00010000,
-    /** RTK data access blocked by mutex */
-    GPX_STATUS_FAULT_RTK_QUEUE_MUTEX                    = (int)0x00020000,
 
     /** GNSS receiver time fault **/
     GPX_STATUS_FAULT_GNSS_RCVR_TIME                     = (int)0x00100000,
