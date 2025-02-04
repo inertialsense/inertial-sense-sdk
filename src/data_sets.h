@@ -4695,7 +4695,7 @@ typedef struct
     /** Hardware status flags (eGPXHdwStatusFlags) */
     uint32_t                hdwStatus;
 
-    /** MCU temperature (not available yet) */
+    /** MCU temperature (GPX_INVALID_MCU_TEMP if not availible) */
     float                   mcuTemp;
 
     /** Nav output period (ms). */
