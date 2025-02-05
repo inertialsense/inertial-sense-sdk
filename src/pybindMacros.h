@@ -91,7 +91,7 @@ PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, c
                         lack_of_valid_sats, divergent_pnt_pos_iteration, chi_square_error, cycle_slips, ubx_error, 
                         solStatus, rescode_err_marker, error_count, error_code, dist2base, reserved1, gdop_error, 
                         warning_count, warning_code, double_debug, debug, obs_count_bas, obs_count_rov, 
-                        /*obs_pairs_filtered*/ reserved2, raw_ptr_queue_overrun, raw_dat_queue_overrun, 
+                        /*obs_pairs_filtered*/ reserved2, raw_ptr_queue_limited, raw_dat_queue_limited, 
                         obs_unhealthy, obs_rover_avail, obs_base_avail, obs_pairs_used_float, obs_pairs_used_ar, 
                         obs_eph_avail, obs_low_snr_rover, obs_low_snr_base, obs_high_snr_parity, obs_zero_L1_rover, 
                         obs_zero_L1_base, obs_low_elev_rover, obs_low_elev_base, eph1RxCnt, eph2RxCnt, reserved);
