@@ -4630,7 +4630,7 @@ typedef enum {
     cxdRst_PowerOn          = 0,
     cxdRst_Watchdog         = 1,
     cxdRst_ErrOpCode        = 2,
-    cxdRst_ErrOpCode_FW     = 3,
+    cxdRst_ErrOpCode_FwUp   = 3,
     cxdRst_ErrOpCode_init   = 4,
     cxdRst_UserRequested    = 5,
     cxdRst_FWUpdate         = 6,
