@@ -2939,7 +2939,7 @@ enum eSensorConfig
     SENSOR_CFG_ACC_DLPF_OFFSET			= (int)12,
 
     /** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
-    SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x00FF0000,
+    SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x001F0000,
     SENSOR_CFG_SENSOR_ROTATION_OFFSET           = (int)16,
     SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,	// roll, pitch, yaw rotation (deg).
     SENSOR_CFG_SENSOR_ROTATION_0_0_90           = (int)1,
@@ -2965,6 +2965,9 @@ enum eSensorConfig
     SENSOR_CFG_SENSOR_ROTATION_0_N90_90         = (int)21,
     SENSOR_CFG_SENSOR_ROTATION_0_N90_180        = (int)22,
     SENSOR_CFG_SENSOR_ROTATION_0_N90_N90        = (int)23,
+
+    /** Magnetometer output data rate (ODR).  Set to enable 100Hz output data rate.  System reset required to enable. */
+    // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
     SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
