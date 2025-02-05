@@ -286,7 +286,7 @@ TEST(protocol_nmea, INFO)
     nmea_dev_info(abuf, ASCII_BUF_LEN, info);
     dev_info_t result = {};
     nmea_parse_info(result, abuf, ASCII_BUF_LEN);
-    EXPECT_TRUE(memcmp(&info, &result, sizeof(result)) == 0) << "abuf: " << abuf;
+    EXPECT_TRUE(memcmp(&info, &result, sizeof(result)) == 0) << utils::compareDataIDs(DID_DEV_INFO, (const uint8_t*)&result, (const uint8_t*)&info, true) << std::endl << "abuf: " << abuf << std::endl;
 }
 
 TEST(protocol_nmea, PIMU)

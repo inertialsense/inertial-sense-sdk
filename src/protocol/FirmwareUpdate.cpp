@@ -21,6 +21,7 @@ namespace fwUpdate {
 
     static const status_strings_t status_names [] = {
             { .name = "ERR_UNKNOWN", .nice = "Unknown Error" },
+            { .name = "ERR_INTERRUPTED", .nice = "Interrupted by User" },
             { .name = "ERR_INVALID_TARGET", .nice = "Invalid Target" },
             { .name = "ERR_INVALID_CHUNK", .nice = "Invalid or Out of Sequence Chunk" },
             { .name = "ERR_INVALID_IMAGE", .nice = "Invalid Image" },
@@ -625,6 +626,7 @@ namespace fwUpdate {
         response.data.version_resp.resTarget = payload.hdr.target_device;
         response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareType = devInfo.hardwareType;
+        response.data.version_resp.hdwRunState = devInfo.hdwRunState;
         memcpy(&response.data.version_resp.hardwareVer[0], &devInfo.hardwareVer[0], 4);
         memcpy(&response.data.version_resp.firmwareVer[0], &devInfo.firmwareVer[0], 4);
         response.data.version_resp.buildYear = devInfo.buildYear;

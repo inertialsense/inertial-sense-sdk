@@ -79,8 +79,8 @@ SimpleMutex myMutex;
 
 #else
 
-#define LOCK_MUTEX()        
-#define UNLOCK_MUTEX()      
+#define LOCK_MUTEX()
+#define UNLOCK_MUTEX()
 
 #endif
 
@@ -373,7 +373,7 @@ bool nextStreamDigit(stringstream &ss, string &str)
     return true;
 }
 
-// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.  
+// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.
 bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
 {
     serialNum = 0;
@@ -570,7 +570,8 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
 
     if (deviceLog == NULL || dataSize <= 0 || dataBuf == NULL)
     {
-        m_errorFile.lprintf("Invalid device handle or NULL data\r\n");
+        // if we don't have a logger, we probably should set one up...
+        m_errorFile.lprintf("Invalid device handle or NULL data.\r\n");
         return false;
     }
 

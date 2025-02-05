@@ -505,17 +505,12 @@ void* threadCreateAndStart(void(*function)(void* info), void* info, const char* 
     return new_thread;
 
 #elif PLATFORM_IS_WINDOWS
-
     return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)function, info, 0, NULL);
-
-#else
-
+#elif PPTHREAD_ONCE_INIT
     pthread_t* t = (pthread_t*)MALLOC(sizeof(pthread_t));
     pthread_create(t, NULL, function, info);
     return t;
-
 #endif
-
 }
 
 void threadJoinAndFree(void* handle)

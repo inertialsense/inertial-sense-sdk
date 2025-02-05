@@ -544,6 +544,11 @@ static const is_hardware_t IS_HARDWARE_GPX_1_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
 
+enum eHdwRunStates {
+    HDW_STATE_UNKNOWN,
+    HDW_STATE_BOOTLOADER,
+    HDW_STATE_APP,
+};
 
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED
@@ -554,8 +559,8 @@ typedef struct PACKED
     /** Hardware Type: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eIsHardwareType) */
     uint8_t         hardwareType;
 
-    /** Unused */
-    uint8_t         reserved2;
+    /** Device Run State : Bootloader, App, etc */
+    uint8_t         hdwRunState;
 
     /** Serial number */
     uint32_t        serialNumber;
