@@ -797,7 +797,7 @@ def run_tests():
     run_repo_tests()
 
 
-def main():  # Main function to use if if not used as a library
+def main():  # Main function to use if not used as a library
     parser = argparse.ArgumentParser("version_tools", "Utility application to generate version/release information from the git repo (both local & remote).")
     parser.add_argument('base_dir')
     parser.add_argument('-p', '--prefix', type=str)

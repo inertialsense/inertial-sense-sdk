@@ -29,6 +29,7 @@
 
 #include "data_sets.h"
 #include "InertialSense.h"
+#include "version/version.h"
 
 #include "RtkBase.h"
 #include "RtkRover.h"
@@ -111,9 +112,6 @@ using namespace std::chrono_literals;
 #define GPS_UNIX_OFFSET 315964800 // GPS time started on 6/1/1980 while UNIX time started 1/1/1970 this is the difference between those in seconds
 #define LEAP_SECONDS 18           // GPS time does not have leap seconds, UNIX does (as of 1/1/2017 - next one is probably in 2020 sometime unless there is some crazy earthquake or nuclear blast)
 #define UNIX_TO_GPS_OFFSET (GPS_UNIX_OFFSET - LEAP_SECONDS)
-#define REPO_VERSION_MAJOR 2
-#define REPO_VERSION_MINOR 2   // [UPDATE_RELEASE_VERSION_HERE] The repo/firmware version should originate from git tag (like repositoryInfo.h used in EvalTool).  For now we set these manually.
-#define REPO_VERSION_REVIS 2
 
 #define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                                                   \
     IS_.BroadcastBinaryData((eDataIDs)(DID), (int)(__periodmultiple),                                           \
