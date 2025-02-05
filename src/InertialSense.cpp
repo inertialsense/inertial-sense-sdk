@@ -175,7 +175,7 @@ bool InertialSense::EnableLogging(const string& path, const cISLogger::sSaveOpti
     }
     if (m_logThread == NULLPTR)
     {
-        m_logThread = threadCreateAndStart(&InertialSense::LoggerThread, this, nullptr);
+        m_logThread = threadCreateAndStart(&InertialSense::LoggerThread, this, "LoggingThread");
     }
     return true;
 }

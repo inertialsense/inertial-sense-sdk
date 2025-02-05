@@ -613,7 +613,7 @@ public:
      * @param waitAction a callback which is checked periodically to see if the update should be cancelled
      * @return
      */
-    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb fwUpdateStatus, void (*waitAction)());
+    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb fwUpdateStatus, void (*waitAction)() = nullptr);
 
     /**
      * @return true if all devices have finished all firmware update steps

@@ -324,12 +324,14 @@ void cDeviceLog::addIndexRecord() {
 
 bool cDeviceLog::writeIndexChunk() {
     std::string fileName = m_fileName + ".idx";
-    m_indexFile = CreateISLogFile(fileName, "ab");
+
+    cISLogFile indexFile(fileName, "ab");
+    // m_indexFile = CreateISLogFile(fileName, "ab");
     for (index_record_t& rec : m_indexChunks) {
-        if (m_indexFile->write(&rec, sizeof(index_record_s)) != sizeof(index_record_s))
+        if (indexFile.write(&rec, sizeof(index_record_s)) != sizeof(index_record_s))
             return false; // writing error; we have to assume this entire file is now bad.
     }
     m_indexChunks.clear();
-    m_indexFile->close();
+    indexFile.close();  // unnecessary since this is destroyed on exit
     return true;
 }
