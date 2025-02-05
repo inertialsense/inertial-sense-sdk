@@ -2966,8 +2966,8 @@ enum eSensorConfig
     SENSOR_CFG_SENSOR_ROTATION_0_N90_180        = (int)22,
     SENSOR_CFG_SENSOR_ROTATION_0_N90_N90        = (int)23,
 
-    /** Magnetometer output data rate (ODR) */
-    // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,      // Set to enable 100Hz output data rate.  System reset required to enable.
+    /** Magnetometer output data rate (ODR).  Set to enable 100Hz output data rate.  System reset required to enable. */
+    // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
     SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
