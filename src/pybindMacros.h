@@ -65,7 +65,7 @@ PYBIND11_NUMPY_DTYPE(inl2_ned_sigma_t, timeOfWeekMs, StdPosNed, StdVelNed, StdAt
 PYBIND11_NUMPY_DTYPE(strobe_in_time_t, week, timeOfWeekMs, pin, count);
 PYBIND11_NUMPY_DTYPE(diag_msg_t, timeOfWeekMs, messageLength, message);
 PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTimeSec, hAccuracy, lla);
-PYBIND11_NUMPY_DTYPE(port_monitor_set_t, portInfo, status, txBytesPerSec, rxBytesPerSec, txBytes, rxBytes, txOverflows, rxOverflows, txBytesDropped, rxChecksumErrors);
+PYBIND11_NUMPY_DTYPE(port_monitor_set_t, portInfo, status, txBytesPerSec, rxBytesPerSec, txBytes, rxBytes, txDataDrops, rxOverflows, txBytesDropped, rxChecksumErrors);
 PYBIND11_NUMPY_DTYPE(port_monitor_t, port, activePorts);
 
 // PYBIND11_NUMPY_DTYPE(evb2_t, week, timeOfWeekMs, firmwareVer, comBridgeCfg, loggerMode, loggerElapsedTimeMs, wifiSSID, wifiPSK, wifiIpAddr, serverIpAddr, serverPort);
