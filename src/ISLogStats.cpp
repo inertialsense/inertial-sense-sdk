@@ -29,37 +29,64 @@ cLogStatMsgId::cLogStatMsgId()
 {
     count = 0;
     errors = 0;
-    averageTimeDelta = 0.0;
-    totalTimeDelta = 0.0;
-    lastTimestamp = 0.0;
-    lastTimestampDelta = 0.0;
-    maxTimestampDelta = 0.0;
-    minTimestampDelta = 1.0E6;
-    timestampDeltaCount = 0;
-    timestampIrregCount = 0;
+    meanDtMs = 0;
+    accumDtMs = 0;
+    lastTimeMs = 0;
+    lastDtMs = 0;
+    maxDtMs = 0;
+    minDtMs = 10000000;
+    dtMsCount = 0;
+    timeIrregCount = 0;
 }
 
-void cLogStatMsgId::LogTimestamp(double timestamp)
+void cLogStatMsgId::LogTimestamp(unsigned int timeMs)
 {
-    // check for corrupt data
-    if (_ISNAN(timestamp) || timestamp < 0.0 || timestamp > 999999999999.0)
-    {
+    if (timeMs == 0)
         return;
-    }
-    else if (lastTimestamp > 0.0)
+
+    if (lastTimeMs)
     {
-        double delta = fabs(timestamp - lastTimestamp);
-        minTimestampDelta = _MIN(delta, minTimestampDelta);
-        maxTimestampDelta = _MAX(delta, maxTimestampDelta);
-        totalTimeDelta += delta;
-        averageTimeDelta = (totalTimeDelta / (double)++timestampDeltaCount);
-        if (lastTimestampDelta != 0.0 && (fabs(delta - lastTimestampDelta) > (lastTimestampDelta * 0.5)))
+        unsigned int dtMs = timeMs - lastTimeMs;
+        minDtMs = _MIN(dtMs, minDtMs);
+        maxDtMs = _MAX(dtMs, maxDtMs);
+        accumDtMs += dtMs;
+        meanDtMs = accumDtMs / (++dtMsCount);
+        if (dtMsCount > 20)
         {
-            timestampIrregCount++;
+            dtMsCount /= 2;
+            accumDtMs /= 2;
         }
-        lastTimestampDelta = delta;
+        if (lastDtMs != 0.0) 
+        {
+            unsigned int ddtMs = dtMs - lastDtMs;
+            if (ddtMs > (lastDtMs/2))
+            {
+                timeIrregCount++;
+            }
+        }
+        lastDtMs = dtMs;
     }
-    lastTimestamp = timestamp;
+    lastTimeMs = timeMs;
+}
+
+void cLogStatMsgId::LogByteSize(unsigned int timeMs, int bytes)
+{
+    if (bpsStartTimeMs == 0)
+    {   // Initialize
+        bpsBytes = bytes;
+        bpsStartTimeMs = timeMs;
+    }
+    else
+    {
+        bpsBytes += bytes;
+        unsigned int dtMs = timeMs - bpsStartTimeMs;
+        if (dtMs >= 1000)
+        {
+            bytesPerSec = 1000 * bpsBytes / dtMs;
+            bpsBytes = 0;
+            bpsStartTimeMs = timeMs;
+        }
+    }
 }
 
 cLogStats::cLogStats()
@@ -76,7 +103,7 @@ void cLogStats::Clear()
         for (uint32_t id=0; id < DID_COUNT; id++)
         {
             msg.stats[id] = {};
-            msg.stats[id].minTimestampDelta = 1.0E6;
+            msg.stats[id].minDtMs = 1.0E6;
         }
     }
 }
@@ -93,16 +120,18 @@ void cLogStats::LogError(const p_data_hdr_t* hdr, protocol_type_t ptype)
     }
 }
 
-void cLogStats::LogData(protocol_type_t ptype, int id, double timestamp)
+void cLogStats::LogData(protocol_type_t ptype, int id, int bytes, double timestamp)
 {
     sLogStatPType &msg = msgs[ptype];
     cLogStatMsgId &d = msg.stats[id];
     msg.count++;
     d.count++;
 
-    if (timestamp != 0.0)
+    unsigned int timeMs = (unsigned int)(timestamp*1000.0);
+    if (timeMs != 0.0)
     {   // Use system time
-        msgs[ptype].stats[id].LogTimestamp(timestamp);
+        d.LogTimestamp(timeMs);
+        d.LogByteSize(timeMs, bytes);
     }
 }
 
@@ -128,7 +157,7 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
 
     ss << " ID " << std::setw(colWidName) << std::left << "Name" << std::right << " Count";
     if (showErrors)     { ss << " Errors"; }
-    if (showDeltaTime)  { ss << "  dtMs(avg  min  max) Irreg"; }
+    if (showDeltaTime)  { ss << "  dtMs(avg  min  max)   Bps Irreg"; }
     ss << endl;
 
     for (std::map<int, cLogStatMsgId>::iterator it = msg.stats.begin(); it != msg.stats.end(); ++it)
@@ -173,16 +202,14 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
         if (showDeltaTime)
         {
 #define DT_COL_WIDTH    5
-            if (stat.timestampDeltaCount)
+            if (stat.dtMsCount)
             {
-                int dtMsAve = int(stat.averageTimeDelta*1000.0);
-                int dtMsMin = int(stat.minTimestampDelta*1000.0);
-                int dtMsMax = int(stat.maxTimestampDelta*1000.0);
                 ss << "  (" 
-                   << std::setw(DT_COL_WIDTH) << dtMsAve << " " 
-                   << std::setw(DT_COL_WIDTH) << dtMsMin << " " 
-                   << std::setw(DT_COL_WIDTH) << dtMsMax << ") " 
-                   << std::setw(5) << stat.timestampIrregCount;
+                   << std::setw(DT_COL_WIDTH) << stat.meanDtMs << " " 
+                   << std::setw(DT_COL_WIDTH) << stat.minDtMs << " " 
+                   << std::setw(DT_COL_WIDTH) << stat.maxDtMs << ") " 
+                   << std::setw(DT_COL_WIDTH) << stat.bytesPerSec << " " 
+                   << std::setw(5) << stat.timeIrregCount;
             }
         }
         ss << endl;

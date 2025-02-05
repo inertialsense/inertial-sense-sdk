@@ -54,8 +54,12 @@ public:
         LOGTYPE_RAW,        // packetized serial.  Supports multiple packet types
         LOGTYPE_CSV,
         LOGTYPE_KML,
-        LOGTYPE_JSON
+        LOGTYPE_JSON,
+        LOGTYPE_COUNT
     };
+
+    // Static array of strings for log type names
+    static const char* logTypeStrings[LOGTYPE_COUNT];
 
     struct sSaveOptions
     {

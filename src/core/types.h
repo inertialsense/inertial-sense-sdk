@@ -66,6 +66,8 @@ static inline uint16_t portType(port_handle_t port) {
     return (port) ? ((base_port_t*)port)->ptype : 0xFFFF;
 }
 
+#define NOT_GNSS_PORT(port) ((portType(port) & PORT_TYPE__GNSS) == 0)
+
 static inline int portFree(port_handle_t port) {
     if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
     return (port && ((base_port_t*)port)->portFree) ? ((base_port_t*)port)->portFree(port) : PORT_ERROR__NOT_SUPPORTED;
