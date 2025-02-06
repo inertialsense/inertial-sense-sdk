@@ -369,7 +369,7 @@ class RepositoryInfo:
         :return: the newly updated semantic version object.
         """
         latest_ver = latest_ver if latest_ver is not None else self.version
-        latest_rc = latest_rc if latest_rc is not None else self.get_latest_release_candidate()[1]
+        latest_rc = latest_rc if latest_rc is not None else self.get_latest_prerelease()[1]
         latest_release = latest_release if latest_release is not None else self.get_latest_release()[1]
         branch = branch if branch is not None else self.branch
 
