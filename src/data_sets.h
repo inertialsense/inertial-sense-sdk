@@ -3623,13 +3623,13 @@ PUSH_PACK_1
 typedef struct
 {
     /** positioning mode (PMODE_???) */
-    int32_t mode;           
+    uint32_t mode;           
 
     /** solution type (0:forward,1:backward,2:combined) */
     int32_t soltype;
 
     /** number of frequencies (1:L1,2:L1+L2,3:L1+L2+L5) */
-    int32_t nf;
+    uint32_t nf;
 
     /** navigation systems */
     int32_t navsys;
@@ -3756,9 +3756,6 @@ typedef struct
     float baseline[3];
     float max_baseline_error;
     float reset_baseline_error;
-
-    /** velocity constraint in compassing mode {var before fix, var after fix} (m^2/s^2) **/
-    float velcon[2];
 
     /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
     float max_ubx_error;
