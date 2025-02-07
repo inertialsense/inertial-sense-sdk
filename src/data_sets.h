@@ -3774,6 +3774,9 @@ typedef struct
 
     /** output single by dgps/float/fix/ppp outage */
     int32_t outsingle;
+
+    /** velocity constraint in compassing mode {var before fix, var after fix} (m^2/s^2) **/
+    float velcon[2];
 } prcopt_t;
 typedef prcopt_t gps_rtk_opt_t;
 
