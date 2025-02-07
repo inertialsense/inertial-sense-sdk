@@ -356,7 +356,7 @@ enum eHdwStatusFlags
     HDW_STATUS_ERR_GPS_PPS_NOISE                = (int)0x00002000,
     /** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
     HDW_STATUS_MAG_RECAL_COMPLETE               = (int)0x00004000,
-    /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, tipically 150-250 ms. */
+    /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
     HDW_STATUS_FLASH_WRITE_PENDING              = (int)0x00008000,
 
     /** Communications Tx buffer limited */
@@ -2939,7 +2939,7 @@ enum eSensorConfig
     SENSOR_CFG_ACC_DLPF_OFFSET			= (int)12,
 
     /** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
-    SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x00FF0000,
+    SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x001F0000,
     SENSOR_CFG_SENSOR_ROTATION_OFFSET           = (int)16,
     SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,	// roll, pitch, yaw rotation (deg).
     SENSOR_CFG_SENSOR_ROTATION_0_0_90           = (int)1,
@@ -2965,6 +2965,9 @@ enum eSensorConfig
     SENSOR_CFG_SENSOR_ROTATION_0_N90_90         = (int)21,
     SENSOR_CFG_SENSOR_ROTATION_0_N90_180        = (int)22,
     SENSOR_CFG_SENSOR_ROTATION_0_N90_N90        = (int)23,
+
+    /** Magnetometer output data rate (ODR).  Set to enable 100Hz output data rate.  System reset required to enable. */
+    // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
     SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
@@ -4509,8 +4512,6 @@ enum eGpxStatus
 
     /** RTK buffer filled causing data loss */
     GPX_STATUS_FAULT_RTK_QUEUE_LIMITED                  = (int)0x00010000,
-    /** RTK data access blocked by mutex */
-    GPX_STATUS_FAULT_RTK_QUEUE_MUTEX                    = (int)0x00020000,
 
     /** GNSS receiver time fault **/
     GPX_STATUS_FAULT_GNSS_RCVR_TIME                     = (int)0x00100000,
@@ -5039,8 +5040,8 @@ typedef struct
     /** Rx byte count */
     uint32_t        rxBytes;
 
-    /** Tx buffer overflow occurrences, times serWrite could not send all data */
-    uint32_t        txOverflows;
+    /** Tx buffer data drop occurrences, times serWrite could not send all data */
+    uint32_t        txDataDrops;
     /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
     uint32_t        rxOverflows;
 
