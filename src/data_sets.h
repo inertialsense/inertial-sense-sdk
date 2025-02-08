@@ -5286,10 +5286,10 @@ typedef enum
 /** RTOS tasks */
 typedef enum
 {
-    /** Task 0: Sample	*/
+    /** Task 0: Communication */
     GPX_TASK_COMM = 0,
 
-    /** Task 1: Nav */
+    /** Task 1: RTK */
     GPX_TASK_RTK,
 
     /** Task 2: Idle */
