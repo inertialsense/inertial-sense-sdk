@@ -107,7 +107,7 @@ void rtos_monitor(int numRtosTasks)
 }
 
 
-void rtosResetStats(void)
+void rtosInfoReset(void)
 {
 	for (size_t i = 0; i < RTOS_NUM_TASKS; i++)
 	{

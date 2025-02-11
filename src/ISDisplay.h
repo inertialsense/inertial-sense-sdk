@@ -121,6 +121,7 @@ public:
 	std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
 	std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
 	std::string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
+	std::string DataToStringGRTOS(const gpx_rtos_info_t& info, const p_data_hdr_t& hdr);
 	std::string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
 	static std::string DataToStringDevInfo(const dev_info_t &info, bool full=false);
 	std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);

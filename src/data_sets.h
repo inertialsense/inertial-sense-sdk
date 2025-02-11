@@ -1560,6 +1560,7 @@ enum eSystemCommand
     SYS_CMD_GPX_SOFT_RESET_GPX                          = 38,           // (uint32 inv: 4294967257)
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 39,           // (uint32 inv: 4294967256) // Enables serial bridge on IMX to GPX and loopback on GPX.
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
+    SYS_CMD_ENABLE_GPX_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
     SYS_CMD_TEST_CHECK_INIT_SER0                        = 60,           // (uint32 inv: 4294967235)
     SYS_CMD_TEST_FORCE_INIT_SER0                        = 61,           // (uint32 inv: 4294967234)
@@ -4636,7 +4637,7 @@ typedef enum {
     cxdRst_PowerOn          = 0,
     cxdRst_Watchdog         = 1,
     cxdRst_ErrOpCode        = 2,
-    cxdRst_ErrOpCode_FW     = 3,
+    cxdRst_ErrOpCode_FwUp   = 3,
     cxdRst_ErrOpCode_init   = 4,
     cxdRst_UserRequested    = 5,
     cxdRst_FWUpdate         = 6,
@@ -4672,6 +4673,8 @@ typedef struct
     uint8_t runState;       /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
+#define GPX_INVALID_MCU_TEMP    -274.0f // 1 degree less than  absolute 0 
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
@@ -4697,7 +4700,7 @@ typedef struct
     /** Hardware status flags (eGPXHdwStatusFlags) */
     uint32_t                hdwStatus;
 
-    /** MCU temperature (not available yet) */
+    /** MCU temperature (GPX_INVALID_MCU_TEMP if not availible) */
     float                   mcuTemp;
 
     /** Nav output period (ms). */
@@ -5283,10 +5286,10 @@ typedef enum
 /** RTOS tasks */
 typedef enum
 {
-    /** Task 0: Sample	*/
+    /** Task 0: Communication */
     GPX_TASK_COMM = 0,
 
-    /** Task 1: Nav */
+    /** Task 1: RTK */
     GPX_TASK_RTK,
 
     /** Task 2: Idle */
@@ -5599,6 +5602,7 @@ typedef union PACKED
     sys_params_t			sysParams;
     sys_sensors_t			sysSensors;
     rtos_info_t				rtosInfo;
+    gpx_rtos_info_t			gRtosInfo;
     gps_raw_t				gpsRaw;
     sys_sensors_adc_t       sensorsAdc;
     rmc_t					rmc;
