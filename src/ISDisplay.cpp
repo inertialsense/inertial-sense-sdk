@@ -774,7 +774,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 {
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tSTATUS\n");
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     Aiding: Mag %d, GPS (Hdg %d, Pos %d)\n",
-		(hdwStatus & HDW_STATUS_GPS_SATELLITE_RX) != 0,
+		(hdwStatus & HDW_STATUS_GPS_SATELLITE_RX_VALID) != 0,
         (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_POS) != 0);
