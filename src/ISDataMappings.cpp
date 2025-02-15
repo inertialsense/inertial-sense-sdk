@@ -1032,9 +1032,9 @@ static void PopulateMapRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_1); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_1); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_1); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
@@ -1057,9 +1057,9 @@ static void PopulateMapGpxRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority"); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time"); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_1); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_1); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_1); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time"); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
@@ -1887,10 +1887,12 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
         valuef32 = (*(float*)dataBuffer) * conversion;
         if (precision)
         {
+            precision -= 1;
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, valuef32);
         }
         else
         {
+            precision -= 1;
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", valuef32);
         }
         break;
