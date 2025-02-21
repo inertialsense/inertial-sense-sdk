@@ -1560,6 +1560,7 @@ enum eSystemCommand
     SYS_CMD_GPX_SOFT_RESET_GPX                          = 38,           // (uint32 inv: 4294967257)
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 39,           // (uint32 inv: 4294967256) // Enables serial bridge on IMX to GPX and loopback on GPX.
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
+    SYS_CMD_ENABLE_GPX_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
     SYS_CMD_TEST_CHECK_INIT_SER0                        = 60,           // (uint32 inv: 4294967235)
     SYS_CMD_TEST_FORCE_INIT_SER0                        = 61,           // (uint32 inv: 4294967234)
@@ -2939,7 +2940,7 @@ enum eSensorConfig
     SENSOR_CFG_ACC_DLPF_OFFSET			= (int)12,
 
     /** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
-    SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x00FF0000,
+    SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x001F0000,
     SENSOR_CFG_SENSOR_ROTATION_OFFSET           = (int)16,
     SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,	// roll, pitch, yaw rotation (deg).
     SENSOR_CFG_SENSOR_ROTATION_0_0_90           = (int)1,
@@ -2965,6 +2966,9 @@ enum eSensorConfig
     SENSOR_CFG_SENSOR_ROTATION_0_N90_90         = (int)21,
     SENSOR_CFG_SENSOR_ROTATION_0_N90_180        = (int)22,
     SENSOR_CFG_SENSOR_ROTATION_0_N90_N90        = (int)23,
+
+    /** Magnetometer output data rate (ODR).  Set to enable 100Hz output data rate.  System reset required to enable. */
+    // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
     SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
@@ -3768,6 +3772,9 @@ typedef struct
 
     /** output single by dgps/float/fix/ppp outage */
     int32_t outsingle;
+
+    /** velocity constraint in compassing mode {var before fix, var after fix} (m^2/s^2) **/
+    float velcon[2];
 } prcopt_t;
 typedef prcopt_t gps_rtk_opt_t;
 
@@ -4630,7 +4637,7 @@ typedef enum {
     cxdRst_PowerOn          = 0,
     cxdRst_Watchdog         = 1,
     cxdRst_ErrOpCode        = 2,
-    cxdRst_ErrOpCode_FW     = 3,
+    cxdRst_ErrOpCode_FwUp   = 3,
     cxdRst_ErrOpCode_init   = 4,
     cxdRst_UserRequested    = 5,
     cxdRst_FWUpdate         = 6,
@@ -4666,6 +4673,8 @@ typedef struct
     uint8_t runState;       /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
+#define GPX_INVALID_MCU_TEMP    -274.0f // 1 degree less than  absolute 0 
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
@@ -4691,7 +4700,7 @@ typedef struct
     /** Hardware status flags (eGPXHdwStatusFlags) */
     uint32_t                hdwStatus;
 
-    /** MCU temperature (not available yet) */
+    /** MCU temperature (GPX_INVALID_MCU_TEMP if not availible) */
     float                   mcuTemp;
 
     /** Nav output period (ms). */
@@ -5277,10 +5286,10 @@ typedef enum
 /** RTOS tasks */
 typedef enum
 {
-    /** Task 0: Sample	*/
+    /** Task 0: Communication */
     GPX_TASK_COMM = 0,
 
-    /** Task 1: Nav */
+    /** Task 1: RTK */
     GPX_TASK_RTK,
 
     /** Task 2: Idle */
@@ -5593,6 +5602,7 @@ typedef union PACKED
     sys_params_t			sysParams;
     sys_sensors_t			sysSensors;
     rtos_info_t				rtosInfo;
+    gpx_rtos_info_t			gRtosInfo;
     gps_raw_t				gpsRaw;
     sys_sensors_adc_t       sensorsAdc;
     rmc_t					rmc;
