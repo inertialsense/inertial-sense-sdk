@@ -152,8 +152,8 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             }
 
             // Update log statistics
-            m_logStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
-            globalLogStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
+            m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, timestamp);
+            globalLogStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, timestamp);
         }
     }
 
@@ -303,12 +303,12 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
                 break;
 
             default:
-                m_logStats.LogData(ptype, m_comm.rxPkt.id);
+                m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size);
                 break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
-                m_logStats.LogData(ptype, m_comm.rxPkt.id, cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
+                m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
 
                 m_pData.hdr = m_comm.rxPkt.dataHdr;
                 memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
