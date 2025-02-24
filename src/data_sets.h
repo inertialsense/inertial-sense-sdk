@@ -4508,6 +4508,8 @@ enum eGpxStatus
     GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000020,
     GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000040,
 
+    GPX_STATUS_COM0_RX_SOFTWARE_DRIVER_MODE             = (int)0x00000100,
+
     /** General Fault mask */
     GPX_STATUS_GENERAL_FAULT_MASK                       = (int)0xFFFF0000,
 
