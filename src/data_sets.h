@@ -1573,8 +1573,7 @@ enum eSystemCommand
     SYS_CMD_TEST_BIT_BANG_SER0_SRST                     = 68,           // (uint32 inv: 4294967227)
 
     // TODO: DEBUG REMOVE ONCE INTEL TX->RX bug (TM)
-    SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 69,           // (uint32 inv: 4294967226)
-    SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
+    SYS_CMD_FORCE_GPX_SOFT_SER                          = 69,           // (uint32 inv: 4294967226)
 
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
