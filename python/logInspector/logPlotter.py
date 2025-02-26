@@ -1890,7 +1890,7 @@ class logPlot:
     def rtkObsSingleDiff(self, fig=None, axs=None):
         name = "Compassing"
         Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
-        n_plots = 4
+        n_plots = 8
         if fig is None:
             fig = plt.figure()
 
@@ -1900,6 +1900,10 @@ class logPlot:
         self.configureSubplot(ax[1], 'L5 Pseudorange difference', 'm')
         self.configureSubplot(ax[2], 'L1 Carier phase difference', 'cycles')
         self.configureSubplot(ax[3], 'L5 Carier phase difference', 'cycles')
+        self.configureSubplot(ax[4], 'L1 GPS1 SNR', 'dB*Hz')
+        self.configureSubplot(ax[5], 'L5 GPS1 SNR', 'dB*Hz')
+        self.configureSubplot(ax[6], 'L1 GPS2 SNR', 'dB*Hz')
+        self.configureSubplot(ax[7], 'L5 GPS2 SNR', 'dB*Hz')
 
         for id_, d in enumerate(self.active_devs):
 
@@ -2006,6 +2010,10 @@ class logPlot:
             delta_L = np.empty([Nf, N1, Nsat])
             delta_P[:] = np.nan
             delta_L[:] = np.nan
+            snr1 = np.empty([Nf, N1, Nsat])
+            snr2 = np.empty([Nf, N1, Nsat])
+            snr1[:] = np.nan
+            snr2[:] = np.nan
 
             # Compute single differences
             for j in range(N1):
@@ -2028,6 +2036,8 @@ class logPlot:
                     if np.size(indval1) > 0 and np.size(indval2) > 0:
                         delta_P[:,j,k] = obs1['P'][ind1][indval1] - obs2['P'][ind2][indval2]
                         delta_L[:,j,k] = obs1['L'][ind1][indval1] - obs2['L'][ind2][indval2]
+                        snr1[:,j,k] = obs1['SNR'][ind1][indval1] * 0.25
+                        snr2[:,j,k] = obs2['SNR'][ind2][indval2] * 0.25
 
             for k in range(Nsat):
                 # Do not plot satellites that appeared only for a short time
@@ -2038,6 +2048,10 @@ class logPlot:
                 ax[1].plot(t1, delta_P[1,:,k])
                 ax[2].plot(t1, delta_L[0,:,k])
                 ax[3].plot(t1, delta_L[1,:,k])
+                ax[4].plot(t1, snr1[0,:,k])
+                ax[5].plot(t1, snr1[1,:,k])
+                ax[6].plot(t1, snr2[0,:,k])
+                ax[7].plot(t1, snr2[1,:,k])
 
                 self.legends_add(ax[0].legend(ncol=2))
 

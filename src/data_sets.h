@@ -3706,7 +3706,7 @@ typedef struct
     double eratio[NFREQ];
 
     /** measurement error factor */
-    double err[5];
+    double err[7];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
     double std[3];
