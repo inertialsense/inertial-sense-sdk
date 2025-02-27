@@ -1813,10 +1813,11 @@ class logPlot:
         for i, d in enumerate(self.active_devs):
             gps_data = self.log.data[d, relDid][0]
             N = len(gps_data)
+            j0 = 20 # skip a few samples that may be corrupted
 
             # Build satellite array
             sat = np.empty(0, dtype=int)
-            for j in range(N):
+            for j in range(j0, N):
                 obs = gps_data[j]
                 M = len(obs)
                 for k in range(M):
@@ -1838,7 +1839,7 @@ class logPlot:
             LLI[:]  = np.nan
 
             # Fill observation arrays
-            for j in range(N):
+            for j in range(j0, N):
                 obs = gps_data[j]
                 M = len(obs)
                 for k in range(M):
@@ -1911,9 +1912,10 @@ class logPlot:
             gps2_data = self.log.data[d, DID_GPS2_RAW][0]
 
             # Reassemble multiple chunks of data by timestamp
+            j0 = 10 # skip a few first samples in case there is some odd data corruption
             t1 = np.empty(0)
-            del_ind = np.empty(0, dtype=int)
-            for j in range(len(gps1_data)):
+            del_ind = range(j0) #np.empty(0, dtype=int)
+            for j in range(j0, len(gps1_data)):
                 ind = np.flatnonzero(gps1_data[j]['time']['time'])
                 if len(ind) == 0:
                     # Empty chunk of data (all time stamps are zero)
@@ -1921,7 +1923,7 @@ class logPlot:
                     continue
                 ind = ind[0]
                 t_ = gps1_data[j]['time']['time'][ind] + gps1_data[j]['time']['sec'][ind]
-                if j > 0 and t_ == t1[-1]:
+                if j > j0 and t_ == t1[-1]:
                     # add chunk to the previous data and mark for deletion
                     gps1_data[j-1] = np.append(gps1_data[j-1], gps1_data[j])
                     del_ind = np.append(del_ind, j)
@@ -1933,8 +1935,8 @@ class logPlot:
             gps1_data = np.delete(gps1_data, del_ind)
 
             t2 = np.empty(0)
-            del_ind = np.empty(0, dtype=int)
-            for j in range(len(gps2_data)):
+            del_ind = range(j0) #np.empty(0, dtype=int)
+            for j in range(j0, len(gps2_data)):
                 ind = np.flatnonzero(gps2_data[j]['time']['time'])
                 if len(ind) == 0:
                     # Empty chunk of data (all time stamps are zero)
@@ -1942,7 +1944,7 @@ class logPlot:
                     continue
                 ind = ind[0]
                 t_ = gps2_data[j]['time']['time'][ind] + gps2_data[j]['time']['sec'][ind]
-                if j > 0 and t_ == t2[-1]:
+                if j > j0 and t_ == t2[-1]:
                     # add chunk to the previous data and mark for deletion
                     gps2_data[j-1] = np.append(gps2_data[j-1], gps2_data[j])
                     del_ind = np.append(del_ind, j)
@@ -2019,7 +2021,6 @@ class logPlot:
             for j in range(N1):
                 obs1 = gps1_data[j]
                 obs2 = gps2_data[j]
-
                 for k in range(Nsat):
                     sat_k = sat[k]
                     # is this satellite present in both gps1 and gps2 data?
@@ -2029,7 +2030,6 @@ class logPlot:
                         continue
                     ind1 = ind1[0][0]
                     ind2 = ind2[0][0]
-
                     # Use only non-zero pseudorange and phase
                     indval1 = np.flatnonzero(obs1['P'][ind1])
                     indval2 = np.flatnonzero(obs2['P'][ind2])
@@ -2060,6 +2060,7 @@ class logPlot:
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_sd')
+
 
     def rtkPosMisc(self, fig=None, axs=None):
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig, axs=axs)
