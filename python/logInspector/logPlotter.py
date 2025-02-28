@@ -1912,7 +1912,7 @@ class logPlot:
             gps2_data = self.log.data[d, DID_GPS2_RAW][0]
 
             # Reassemble multiple chunks of data by timestamp
-            j0 = 10 # skip a few first samples in case there is some odd data corruption
+            j0 = 30 # skip a few first samples in case there is some odd data corruption
             t1 = np.empty(0)
             del_ind = range(j0) #np.empty(0, dtype=int)
             for j in range(j0, len(gps1_data)):
