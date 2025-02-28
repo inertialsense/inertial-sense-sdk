@@ -138,6 +138,19 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 
 int validateBaudRate(unsigned int baudRate)
 {
+#if 1   // TODO: Remove after debug.  Used to debug possible cause of GPX no Rx comms.
+
+    // Allow arbitrary baud rates within acceptable range
+    if (baudRate >= IS_BAUDRATE_STANDARD_MIN && baudRate <= IS_BAUDRATE_MAX)
+    {   // Valid baud rate
+        return 0;
+    }
+    
+    // Invalid baud rate
+    return -1;
+    
+#else
+
     if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
     {
         // Valid baudrates for InertialSense hardware
@@ -155,6 +168,7 @@ int validateBaudRate(unsigned int baudRate)
     }
 
     return -1;
+#endif
 }
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
