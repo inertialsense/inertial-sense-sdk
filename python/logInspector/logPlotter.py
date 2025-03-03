@@ -1813,7 +1813,7 @@ class logPlot:
         for i, d in enumerate(self.active_devs):
             gps_data = self.log.data[d, relDid][0]
             N = len(gps_data)
-            j0 = 20 # skip a few samples that may be corrupted
+            j0 = 0 # skip a few samples that may be corrupted
 
             # Build satellite array
             sat = np.empty(0, dtype=int)
@@ -1864,22 +1864,33 @@ class logPlot:
                         LLI[:,j,inds]  = obs['LLI'][indo]
 
             for k in range(len(sat)):
-                ind = np.where(tgps[:,k] != 0.0)
+                ind = np.squeeze(np.where(tgps[:,k] != 0.0))
                 # Do not plot satellites with invalid L1 pseudorange
                 if np.isnan(P[0,ind,k]).all():
                     continue
                 # Do not plot satellites with invalid L1 phase
                 if np.isnan(L[0,ind,k]).all():
                     continue
+                dt = np.diff(tgps[ind,k])
                 t = np.squeeze(tgps[ind, k])
-                ax[0].plot(t, np.squeeze(P[0,ind,k]), label=('Sat %s' % sat[k]))
-                ax[1].plot(t, np.squeeze(P[1,ind,k]))
-                ax[2].plot(t, np.squeeze(L[0,ind,k]))
-                ax[3].plot(t, np.squeeze(L[1,ind,k]))
-                ax[4].plot(t, np.squeeze(D[0,ind,k]))
-                ax[5].plot(t, np.squeeze(D[1,ind,k]))
-                ax[6].plot(t, np.squeeze(LLI[0,ind,k]))
-                ax[7].plot(t, np.squeeze(LLI[1,ind,k]))
+                Pk = P[:,ind,k]
+                Lk = L[:,ind,k]
+                Dk = D[:,ind,k]
+                LLIk = LLI[:,ind,k]
+                ind1 = np.squeeze(np.where(dt > 10*dt[0])) # jump in time
+                if np.size(ind1) == 0:
+                    ind1 = 0
+                elif np.size(ind1) > 1:
+                    ind1 = ind1[-1]
+                ind1 = ind1 + 1
+                ax[0].plot(t[ind1:,], Pk[0,ind1:], label=('Sat %s' % sat[k]))
+                ax[1].plot(t[ind1:,], Pk[1,ind1:])
+                ax[2].plot(t[ind1:,], Lk[0,ind1:])
+                ax[3].plot(t[ind1:,], Lk[1,ind1:])
+                ax[4].plot(t[ind1:,], Dk[0,ind1:])
+                ax[5].plot(t[ind1:,], Dk[1,ind1:])
+                ax[6].plot(t[ind1:,], LLIk[0,ind1:])
+                ax[7].plot(t[ind1:,], LLIk[1,ind1:])
                 self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
