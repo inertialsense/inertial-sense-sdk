@@ -4509,6 +4509,7 @@ enum eGpxStatus
 
     /** Software UART driver enabled instead of hardware UART driver for Ser0 Rx */
     GPX_STATUS_COM0_RX_SOFTWARE_DRIVER_MODE             = (int)0x00000100,
+    GPX_STATUS_COM0_RX_SOFT_SER_LOOP_BACK_MODE          = (int)0x00000200,
 
     /** General Fault mask */
     GPX_STATUS_GENERAL_FAULT_MASK                       = (int)0xFFFF0000,
