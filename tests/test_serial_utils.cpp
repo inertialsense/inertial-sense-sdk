@@ -6,12 +6,11 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#include "../src/ISComm.h"
 #include "test_serial_utils.h"
 
 #if PLATFORM_IS_EMBEDDED
 #include "drivers/d_time.h"
-#include "drivers/d_serial.h"
+// #include "drivers/d_serial.h"
 #if defined(IMX_5)
 #include "drivers/d_watchdog.h"
 #endif
@@ -25,13 +24,13 @@
 
 
 #if PLATFORM_IS_EMBEDDED
-void serWriteInPieces(int serPort, const unsigned char *buf, int length)
+void serWriteInPieces(pfnIsCommPortWrite portWrite, int serPort, const unsigned char *buf, int length)
 {
     int left = length; 
     for (int send=1; left>0; send*=2)
     {
         send = _MIN(left, send);
-        serWrite(serPort, &(buf[length - left]), send);
+        portWrite(serPort, &(buf[length - left]), send);
         left -= send; 
     }
 }
@@ -44,7 +43,7 @@ void serWriteInPieces(int serPort, const unsigned char *buf, int length)
  * @param dstPort Serial port to write to.
  * @param testMode Enable test mode to perform sequential serWrite() calls back to back to test capability of the serial driver.
  */
-void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, unsigned int srcPort, unsigned int dstPort, uint32_t led, int testMode)
+void serial_port_bridge_forward_unidirectional(pfnIsCommPortRead portRead, pfnIsCommPortWrite portWrite, is_comm_instance_t &comm, uint8_t &serialPortBridge, unsigned int srcPort, unsigned int dstPort, uint32_t led, int testMode)
 {
 #if TEST_ENABLE_MANUAL_TX   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
     while(1)
@@ -52,9 +51,9 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
         uint8_t txBuf[200];
         int n = test_serial_generate_ordered_data(txBuf, sizeof(txBuf));
 #if 1   // Send data once
-        serWrite(dstPort, (unsigned char*)&(txBuf), n);
+        portWrite(dstPort, (unsigned char*)&(txBuf), n);
 #else   // Send data in pieces
-        serWriteInPieces(dstPort, (unsigned char*)&(txBuf), n);
+        serWriteInPieces(portWrite, dstPort, (unsigned char*)&(txBuf), n);
 #endif
         test_serial_delay_for_tx(n+5);
 
@@ -68,7 +67,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
     // gpio_toggle_level(G19_QDEC1B_PIN);   // GPX debug
 
     int n = is_comm_free(&comm);    // Call before adding data to comm->rxBuf.tail with serRead().
-    if ((n = serRead(srcPort, comm.rxBuf.tail, n)) <= 0)
+    if ((n = portRead(srcPort, comm.rxBuf.tail, n)) <= 0)
     {   // No data to forward
         return;
     }
@@ -84,11 +83,11 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
     // Forward data
     if (testMode)
     {   // Test mode enabled for driver testing.  Forward data in pieces.
-        serWriteInPieces(dstPort, comm.rxBuf.tail, n);
+        serWriteInPieces(portWrite, dstPort, comm.rxBuf.tail, n);
     }
     else
     {   // All at once
-        serWrite(dstPort, comm.rxBuf.tail, n);
+        portWrite(dstPort, comm.rxBuf.tail, n);
     }
 
     // Update comm buffer tail pointer
