@@ -1560,7 +1560,7 @@ enum eSystemCommand
     SYS_CMD_GPX_SOFT_RESET_GPX                          = 38,           // (uint32 inv: 4294967257)
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 39,           // (uint32 inv: 4294967256) // Enables serial bridge on IMX to GPX and loopback on GPX.
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
-    SYS_CMD_ENABLE_GPX_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
+    SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
     SYS_CMD_TEST_CHECK_INIT_SER0                        = 60,           // (uint32 inv: 4294967235)
     SYS_CMD_TEST_FORCE_INIT_SER0                        = 61,           // (uint32 inv: 4294967234)
@@ -1573,8 +1573,9 @@ enum eSystemCommand
     SYS_CMD_TEST_BIT_BANG_SER0_SRST                     = 68,           // (uint32 inv: 4294967227)
 
     // TODO: DEBUG REMOVE ONCE INTEL TX->RX bug (TM)
-    SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 69,           // (uint32 inv: 4294967226)
+    SYS_CMD_SET_GPX_SOFT_SER                            = 69,           // (uint32 inv: 4294967226)
     SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
+    SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
 
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
@@ -4508,6 +4509,10 @@ enum eGpxStatus
     GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000020,
     GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000040,
 
+    /** Software UART driver enabled instead of hardware UART driver for Ser0 Rx */
+    GPX_STATUS_COM0_RX_SOFTWARE_DRIVER_MODE             = (int)0x00000100,
+    GPX_STATUS_COM0_RX_SOFT_SER_LOOP_BACK_MODE          = (int)0x00000200,
+
     /** General Fault mask */
     GPX_STATUS_GENERAL_FAULT_MASK                       = (int)0xFFFF0000,
 
@@ -4516,7 +4521,6 @@ enum eGpxStatus
 
     /** GNSS receiver time fault **/
     GPX_STATUS_FAULT_GNSS_RCVR_TIME                     = (int)0x00100000,
-
     /** DMA Fault detected **/
     GPX_STATUS_FAULT_DMA                                = (int)0x00800000,
 

@@ -138,9 +138,18 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 
 int validateBaudRate(unsigned int baudRate)
 {
+#if 1   // TODO: Remove after debug.  Used to debug possible cause of GPX no Rx comms.
+
+    // Allow arbitrary baud rates within acceptable range
+    if (baudRate >= IS_BAUDRATE_STANDARD_MIN && baudRate <= IS_BAUDRATE_MAX)
+    {   // Valid baud rate
+        return 0;
+    }
+    
+#else
+
     if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
-    {
-        // Valid baudrates for InertialSense hardware
+    {   // Valid baudrates for InertialSense hardware
         for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
         {
             if (g_validBaudRates[i] == baudRate)
@@ -154,7 +163,10 @@ int validateBaudRate(unsigned int baudRate)
         return 0;
     }
 
-    return -1;
+#endif
+
+    // Invalid baud rate
+    return -1;    
 }
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
@@ -1165,7 +1177,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-#if 0
+#ifdef GPX_1
     // Write packet to port in multiple write calls
 
     // Write packet to port
