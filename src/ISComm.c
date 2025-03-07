@@ -146,14 +146,10 @@ int validateBaudRate(unsigned int baudRate)
         return 0;
     }
     
-    // Invalid baud rate
-    return -1;
-    
 #else
 
     if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
-    {
-        // Valid baudrates for InertialSense hardware
+    {   // Valid baudrates for InertialSense hardware
         for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
         {
             if (g_validBaudRates[i] == baudRate)
@@ -167,8 +163,10 @@ int validateBaudRate(unsigned int baudRate)
         return 0;
     }
 
-    return -1;
 #endif
+
+    // Invalid baud rate
+    return -1;    
 }
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
