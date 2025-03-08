@@ -289,7 +289,7 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
                 inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
                 break;
             case DID_GPX_RTOS_INFO:
-                cfg.command = SYS_CMD_ENABLE_GPX_RTOS_STATS;
+                cfg.command = SYS_CMD_GPX_ENABLE_RTOS_STATS;
                 cfg.invCommand = ~cfg.command;
                 inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
                 break;
