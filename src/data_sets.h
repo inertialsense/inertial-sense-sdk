@@ -4435,9 +4435,12 @@ typedef struct
 //  GPX
 //////////////////////////////////////////////////////////////////////////
 
-/** GPX System Configuration (used with DID_GPX_FLASH_CONFIG.sysCfgBits) */
+/** GPX System Configuration (used with DID_GPX_FLASH_CFG.sysCfgBits) */
 enum eGpxSysConfigBits
 {
+    /** Disable (tri-state) VCC_RF (GPX pin 16) output supplied via VAUX (GPX pin 40). */
+    GPX_SYS_CFG_BITS_DISABLE_VCC_RF                         = 0x00000001,
+
     /** Brownout reset threshold voltage level */
     GPX_SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,              // 1.65 - 1.75 V  (default)
     GPX_SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
