@@ -2661,8 +2661,14 @@ enum eSysConfigBits
     SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION           = (int)0x00100000,
 
     SYS_CFG_BITS_UNUSED3                                = (int)0x00200000,
-    SYS_CFG_BITS_UNUSED4                                = (int)0x00400000,
-    SYS_CFG_BITS_UNUSED5                                = (int)0x00800000,
+
+    /** Brownout reset threshold voltage level */
+    SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,              // 1.65 - 1.75 V  (default)
+    SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
+    SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
+    SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
+    SYS_CFG_BITS_BOR_THREHOLD_MASK                      = (int)0x00C00000,
+    SYS_CFG_BITS_BOR_THREHOLD_OFFSET                    = 20,
 
     /** Use reference IMU in EKF instead of onboard IMU */
     SYS_CFG_USE_REFERENCE_IMU_IN_EKF                    = (int)0x01000000,
@@ -4429,6 +4435,18 @@ typedef struct
 //  GPX
 //////////////////////////////////////////////////////////////////////////
 
+/** GPX System Configuration (used with DID_GPX_FLASH_CONFIG.sysCfgBits) */
+enum eGpxSysConfigBits
+{
+    /** Brownout reset threshold voltage level */
+    GPX_SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,              // 1.65 - 1.75 V  (default)
+    GPX_SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
+    GPX_SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
+    GPX_SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
+    GPX_SYS_CFG_BITS_BOR_THREHOLD_MASK                      = (int)0x00C00000,
+    GPX_SYS_CFG_BITS_BOR_THREHOLD_OFFSET                    = 20,
+};
+
 /**
 * (DID_GPX_FLASH_CFG) GPX flash config.
 */
@@ -4491,8 +4509,11 @@ typedef struct
     /** Reserved */
     uint8_t                 reserved1[2];
 
+    /** System configuration bits (see eGpxSysConfigBits). */
+    uint32_t				sysCfgBits;
+
     /** Reserved */
-    uint32_t                reserved2[2];
+    uint32_t                reserved2;
 
 } gpx_flash_cfg_t;
 
