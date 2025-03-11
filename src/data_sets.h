@@ -423,9 +423,11 @@ enum eSysStatusFlags
 
     SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
 
+#if ENABLE_CHECK_INIT_SER
     SYS_STATUS_SER0_CHECK_ACTIVE                    = (int)0x00000010,
     SYS_STATUS_SER1_CHECK_ACTIVE                    = (int)0x00000020,
     SYS_STATUS_SER2_CHECK_ACTIVE                    = (int)0x00000040,
+#endif
 };
 
 // Used to validate GPS position (and velocity)
@@ -1482,8 +1484,12 @@ enum eGenFaultCodes
     GFC_SYS_FAULT_CRITICAL				= 0x00020000,
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION 				= 0x00040000,
+
+#if ENABLE_CHECK_INIT_SER
     /*! Fault: GPS receiver time fault */
     GFC_SER_CHECK_INIT                  = 0x00080000,
+#endif
+
     /*! Fault: IMU initialization */
     GFC_INIT_IMU						= 0x00100000,
     /*! Fault: Barometer initialization */
@@ -1562,15 +1568,14 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
+#if ENABLE_CHECK_INIT_SER
     SYS_CMD_TEST_CHECK_INIT_SER0                        = 60,           // (uint32 inv: 4294967235)
     SYS_CMD_TEST_FORCE_INIT_SER0                        = 61,           // (uint32 inv: 4294967234)
     SYS_CMD_TEST_CHECK_INIT_SER1                        = 62,           // (uint32 inv: 4294967233)
     SYS_CMD_TEST_FORCE_INIT_SER1                        = 63,           // (uint32 inv: 4294967232)
     SYS_CMD_TEST_CHECK_INIT_SER2                        = 64,           // (uint32 inv: 4294967231)
     SYS_CMD_TEST_FORCE_INIT_SER2                        = 65,           // (uint32 inv: 4294967230)
-    SYS_CMD_TEST_GPIO                                   = 66,           // (uint32 inv: 4294967229)
-    SYS_CMD_TEST_BIT_BANG_SER0_STPB                     = 67,           // (uint32 inv: 4294967228)
-    SYS_CMD_TEST_BIT_BANG_SER0_SRST                     = 68,           // (uint32 inv: 4294967227)
+#endif
 
     // TODO: DEBUG REMOVE ONCE INTEL TX->RX bug (TM)
     SYS_CMD_SET_GPX_SOFT_SER                            = 69,           // (uint32 inv: 4294967226)
