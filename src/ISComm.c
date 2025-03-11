@@ -169,7 +169,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsC
     c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
     
     // Set parse enable flags
-    c->config.enabledMask = DEFAULT_PROTO_MASK;
+    c->cb.protocolMask = DEFAULT_PROTO_MASK;
     
     c->rxPkt.data.ptr = c->rxBuf.start;
     c->rxErrorState = 1;
