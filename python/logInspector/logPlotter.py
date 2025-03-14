@@ -1813,10 +1813,11 @@ class logPlot:
         for i, d in enumerate(self.active_devs):
             gps_data = self.log.data[d, relDid][0]
             N = len(gps_data)
+            j0 = 0 # skip a few samples that may be corrupted
 
             # Build satellite array
             sat = np.empty(0, dtype=int)
-            for j in range(N):
+            for j in range(j0, N):
                 obs = gps_data[j]
                 M = len(obs)
                 for k in range(M):
@@ -1838,7 +1839,7 @@ class logPlot:
             LLI[:]  = np.nan
 
             # Fill observation arrays
-            for j in range(N):
+            for j in range(j0, N):
                 obs = gps_data[j]
                 M = len(obs)
                 for k in range(M):
@@ -1863,22 +1864,33 @@ class logPlot:
                         LLI[:,j,inds]  = obs['LLI'][indo]
 
             for k in range(len(sat)):
-                ind = np.where(tgps[:,k] != 0.0)
+                ind = np.squeeze(np.where(tgps[:,k] != 0.0))
                 # Do not plot satellites with invalid L1 pseudorange
                 if np.isnan(P[0,ind,k]).all():
                     continue
                 # Do not plot satellites with invalid L1 phase
                 if np.isnan(L[0,ind,k]).all():
                     continue
+                dt = np.diff(tgps[ind,k])
                 t = np.squeeze(tgps[ind, k])
-                ax[0].plot(t, np.squeeze(P[0,ind,k]), label=('Sat %s' % sat[k]))
-                ax[1].plot(t, np.squeeze(P[1,ind,k]))
-                ax[2].plot(t, np.squeeze(L[0,ind,k]))
-                ax[3].plot(t, np.squeeze(L[1,ind,k]))
-                ax[4].plot(t, np.squeeze(D[0,ind,k]))
-                ax[5].plot(t, np.squeeze(D[1,ind,k]))
-                ax[6].plot(t, np.squeeze(LLI[0,ind,k]))
-                ax[7].plot(t, np.squeeze(LLI[1,ind,k]))
+                Pk = P[:,ind,k]
+                Lk = L[:,ind,k]
+                Dk = D[:,ind,k]
+                LLIk = LLI[:,ind,k]
+                ind1 = np.squeeze(np.where(dt > 10*dt[0])) # jump in time
+                if np.size(ind1) == 0:
+                    ind1 = 0
+                elif np.size(ind1) > 1:
+                    ind1 = ind1[-1]
+                ind1 = ind1 + 1
+                ax[0].plot(t[ind1:,], Pk[0,ind1:], label=('Sat %s' % sat[k]))
+                ax[1].plot(t[ind1:,], Pk[1,ind1:])
+                ax[2].plot(t[ind1:,], Lk[0,ind1:])
+                ax[3].plot(t[ind1:,], Lk[1,ind1:])
+                ax[4].plot(t[ind1:,], Dk[0,ind1:])
+                ax[5].plot(t[ind1:,], Dk[1,ind1:])
+                ax[6].plot(t[ind1:,], LLIk[0,ind1:])
+                ax[7].plot(t[ind1:,], LLIk[1,ind1:])
                 self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
@@ -1890,7 +1902,7 @@ class logPlot:
     def rtkObsSingleDiff(self, fig=None, axs=None):
         name = "Compassing"
         Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
-        n_plots = 4
+        n_plots = 8
         if fig is None:
             fig = plt.figure()
 
@@ -1900,6 +1912,10 @@ class logPlot:
         self.configureSubplot(ax[1], 'L5 Pseudorange difference', 'm')
         self.configureSubplot(ax[2], 'L1 Carier phase difference', 'cycles')
         self.configureSubplot(ax[3], 'L5 Carier phase difference', 'cycles')
+        self.configureSubplot(ax[4], 'L1 GPS1 SNR', 'dB*Hz')
+        self.configureSubplot(ax[5], 'L5 GPS1 SNR', 'dB*Hz')
+        self.configureSubplot(ax[6], 'L1 GPS2 SNR', 'dB*Hz')
+        self.configureSubplot(ax[7], 'L5 GPS2 SNR', 'dB*Hz')
 
         for id_, d in enumerate(self.active_devs):
 
@@ -1907,9 +1923,10 @@ class logPlot:
             gps2_data = self.log.data[d, DID_GPS2_RAW][0]
 
             # Reassemble multiple chunks of data by timestamp
+            j0 = 10 # skip a few first samples in case there is some odd data corruption
             t1 = np.empty(0)
-            del_ind = np.empty(0, dtype=int)
-            for j in range(len(gps1_data)):
+            del_ind = range(j0) #np.empty(0, dtype=int)
+            for j in range(j0, len(gps1_data)):
                 ind = np.flatnonzero(gps1_data[j]['time']['time'])
                 if len(ind) == 0:
                     # Empty chunk of data (all time stamps are zero)
@@ -1917,7 +1934,7 @@ class logPlot:
                     continue
                 ind = ind[0]
                 t_ = gps1_data[j]['time']['time'][ind] + gps1_data[j]['time']['sec'][ind]
-                if j > 0 and t_ == t1[-1]:
+                if j > j0 and t_ == t1[-1]:
                     # add chunk to the previous data and mark for deletion
                     gps1_data[j-1] = np.append(gps1_data[j-1], gps1_data[j])
                     del_ind = np.append(del_ind, j)
@@ -1929,8 +1946,8 @@ class logPlot:
             gps1_data = np.delete(gps1_data, del_ind)
 
             t2 = np.empty(0)
-            del_ind = np.empty(0, dtype=int)
-            for j in range(len(gps2_data)):
+            del_ind = range(j0) #np.empty(0, dtype=int)
+            for j in range(j0, len(gps2_data)):
                 ind = np.flatnonzero(gps2_data[j]['time']['time'])
                 if len(ind) == 0:
                     # Empty chunk of data (all time stamps are zero)
@@ -1938,7 +1955,7 @@ class logPlot:
                     continue
                 ind = ind[0]
                 t_ = gps2_data[j]['time']['time'][ind] + gps2_data[j]['time']['sec'][ind]
-                if j > 0 and t_ == t2[-1]:
+                if j > j0 and t_ == t2[-1]:
                     # add chunk to the previous data and mark for deletion
                     gps2_data[j-1] = np.append(gps2_data[j-1], gps2_data[j])
                     del_ind = np.append(del_ind, j)
@@ -2006,6 +2023,10 @@ class logPlot:
             delta_L = np.empty([Nf, N1, Nsat])
             delta_P[:] = np.nan
             delta_L[:] = np.nan
+            snr1 = np.empty([Nf, N1, Nsat])
+            snr2 = np.empty([Nf, N1, Nsat])
+            snr1[:] = np.nan
+            snr2[:] = np.nan
 
             # Compute single differences
             for j in range(N1):
@@ -2028,6 +2049,8 @@ class logPlot:
                     if np.size(indval1) > 0 and np.size(indval2) > 0:
                         delta_P[:,j,k] = obs1['P'][ind1][indval1] - obs2['P'][ind2][indval2]
                         delta_L[:,j,k] = obs1['L'][ind1][indval1] - obs2['L'][ind2][indval2]
+                        snr1[:,j,k] = obs1['SNR'][ind1][indval1] * 0.25
+                        snr2[:,j,k] = obs2['SNR'][ind2][indval2] * 0.25
 
             for k in range(Nsat):
                 # Do not plot satellites that appeared only for a short time
@@ -2038,6 +2061,10 @@ class logPlot:
                 ax[1].plot(t1, delta_P[1,:,k])
                 ax[2].plot(t1, delta_L[0,:,k])
                 ax[3].plot(t1, delta_L[1,:,k])
+                ax[4].plot(t1, snr1[0,:,k])
+                ax[5].plot(t1, snr1[1,:,k])
+                ax[6].plot(t1, snr2[0,:,k])
+                ax[7].plot(t1, snr2[1,:,k])
 
                 self.legends_add(ax[0].legend(ncol=2))
 
