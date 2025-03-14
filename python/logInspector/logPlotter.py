@@ -1923,7 +1923,7 @@ class logPlot:
             gps2_data = self.log.data[d, DID_GPS2_RAW][0]
 
             # Reassemble multiple chunks of data by timestamp
-            j0 = 30 # skip a few first samples in case there is some odd data corruption
+            j0 = 10 # skip a few first samples in case there is some odd data corruption
             t1 = np.empty(0)
             del_ind = range(j0) #np.empty(0, dtype=int)
             for j in range(j0, len(gps1_data)):
@@ -2032,6 +2032,7 @@ class logPlot:
             for j in range(N1):
                 obs1 = gps1_data[j]
                 obs2 = gps2_data[j]
+
                 for k in range(Nsat):
                     sat_k = sat[k]
                     # is this satellite present in both gps1 and gps2 data?
@@ -2041,6 +2042,7 @@ class logPlot:
                         continue
                     ind1 = ind1[0][0]
                     ind2 = ind2[0][0]
+
                     # Use only non-zero pseudorange and phase
                     indval1 = np.flatnonzero(obs1['P'][ind1])
                     indval2 = np.flatnonzero(obs2['P'][ind2])
@@ -2071,7 +2073,6 @@ class logPlot:
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_sd')
-
 
     def rtkPosMisc(self, fig=None, axs=None):
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig, axs=axs)
