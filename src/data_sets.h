@@ -659,28 +659,30 @@ unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len);
 typedef struct PACKED
 {
     /** Inertial Sense serial number */
-    uint32_t		serialNumber;
+    uint32_t                serialNumber;
 
     /** Hardware ID: This is a packed identifier, which includes the Hardware Type, hardwareVer Major, and hardwareVer Minor */
-    uint16_t        hardwareId;
+    uint16_t                hardwareId;
 
     /** Inertial Sense lot number */
-    uint16_t		lotNumber;
+    uint16_t                lotNumber;
 
     /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
-    char			date[16];
+    char                    date[16];
 
 	/** Key - write: unlock manufacturing info, read: number of times OTP has been set, 15 max */
-	uint32_t		key;
+	uint32_t                key;
 
 	/** Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
-	int32_t			platformType;
+	uint32_t                platformType;
 
-    int32_t         reserved;
+    uint8_t                 reserved1[3];
+    uint8_t                 reserved2;
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
-	uint32_t 		uid[4];
+	uint32_t                uid[4];
 } manufacturing_info_t;
+
 
 /** (DID_INS_1) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
 typedef struct PACKED
@@ -4543,7 +4545,7 @@ enum eGpxStatus
     GPX_STATUS_COM0_RX_SOFT_SER_LOOP_BACK_MODE          = (int)0x00000200,
 
     /** General Fault mask */
-    GPX_STATUS_GENERAL_FAULT_MASK                       = (int)0xFFFF0000,
+    GPX_STATUS_GENERAL_FAULT_MASK                       = (int)0x1FFF0000,
 
     /** RTK buffer filled causing data loss */
     GPX_STATUS_FAULT_RTK_QUEUE_LIMITED                  = (int)0x00010000,
