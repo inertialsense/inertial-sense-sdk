@@ -51,7 +51,7 @@ using namespace std;
 
 #define DATASET_VIEW_NUM_ROWS   25
 #define DISPLAY_DELTA_TIME	    0    // show delta time instead of time
-#define SNPRINTF_ID_NAME(id)    SNPRINTF(ptr, ptrEnd - ptr, "(%3d) %s:", id, cISDataMappings::DataName(id))
+#define SNPRINTF_ID_NAME(id)    SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", id, cISDataMappings::DataName(id))
 
 static bool s_exitProgram;
 
