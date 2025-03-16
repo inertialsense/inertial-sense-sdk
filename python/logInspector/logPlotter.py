@@ -396,7 +396,7 @@ class logPlot:
                 towOffset = 0
                 timeGPS1 = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 if len(timeGPS1):
-                    towOffset = self.getGpsTowOffset(device)[-1]
+                    towOffset = self.getGpsTowOffset(d)[-1]
                     ax[0].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS1')
                     ax[1].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 1])
                     ax[2].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 2], label='GPS1')
@@ -1097,7 +1097,7 @@ class logPlot:
 
                 fig.suptitle(title + os.path.basename(os.path.normpath(self.log.directory)))
 
-                towOffset = self.getGpsTowOffset(device)
+                towOffset = self.getGpsTowOffset(d)
                 if len(towOffset) > 0:
                     time = getTimeFromGpsTow(time + np.mean(towOffset))
 
@@ -2819,7 +2819,7 @@ class logPlot:
         
         for d in self.active_devs:
             timeBar = self.getData(d, DID_BAROMETER, 'time')
-            towOffset = self.getGpsTowOffset(device)
+            towOffset = self.getGpsTowOffset(d)
             timeGps = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             llaGps = self.getData(d, DID_GPS1_POS, 'lla')
             if len(llaGps) > 0:
@@ -2879,7 +2879,7 @@ class logPlot:
                 altIns = llaIns[:, 2]
             else:
                 altIns = []
-            towOffset = self.getGpsTowOffset(device)
+            towOffset = self.getGpsTowOffset(d)
             if len(towOffset) > 0:
                 timeBar = timeBar + towOffset[-1]
             if len(timeBar) > 2:
@@ -2909,7 +2909,7 @@ class logPlot:
         for d in self.active_devs:
             if 1:
                 time = self.getData(d, DID_BAROMETER, 'time')
-                towOffset = self.getGpsTowOffset(device)
+                towOffset = self.getGpsTowOffset(d)
                 if np.shape(towOffset)[0] != 0:
                     time = getTimeFromGpsTow(time + np.mean(towOffset))
                 mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
@@ -2936,7 +2936,7 @@ class logPlot:
         for d in self.active_devs:
             if 1:
                 time = self.getData(d, DID_MAGNETOMETER, 'time')
-                towOffset = self.getGpsTowOffset(device)
+                towOffset = self.getGpsTowOffset(d)
                 if np.shape(towOffset)[0] != 0:
                     time = getTimeFromGpsTow(time + np.mean(towOffset))
                 mag = self.getData(d, DID_MAGNETOMETER, 'mag')
@@ -2984,7 +2984,7 @@ class logPlot:
                 tempImu = self.getData(d, DID_SYS_PARAMS, 'imuTemp')
                 tempBar = self.getData(d, DID_SYS_PARAMS, 'baroTemp')
                 tempMcu = self.getData(d, DID_SYS_PARAMS, 'mcuTemp')
-                towOffset = self.getGpsTowOffset(device)
+                towOffset = self.getGpsTowOffset(d)
                 if np.shape(towOffset)[0] != 0:
                     tempImu = getTimeFromGpsTow(tempImu + np.mean(towOffset))
                     tempBar = getTimeFromGpsTow(tempBar + np.mean(towOffset))
@@ -3134,7 +3134,7 @@ class logPlot:
             timeGps1 = getTimeFromGpsTowMs(towMsGps1)
             timeGps2 = getTimeFromGpsTowMs(towMsGps2)
 
-            towOffset = self.getGpsTowOffset(device)
+            towOffset = self.getGpsTowOffset(d)
             if np.size(towOffset) > 0:
                 towOffset = towOffset[-1]
             else:
