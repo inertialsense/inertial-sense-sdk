@@ -899,6 +899,8 @@ class LogInspectorWindow(QMainWindow):
         mplot.canvas.draw()
 
     def plot(self, func, args=None):
+        if func is None:
+            return
         print("plotting " + func)
         self.selectedPlotFunc = func
         self.plotargs = args
