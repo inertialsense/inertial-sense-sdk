@@ -2899,8 +2899,8 @@ enum eRTKConfigBits
 
 #define DEFAULT_DYNAMIC_MODEL                   DYNAMIC_MODEL_AIRBORNE_4G
 #define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)  // (rad)
-#define DEFAULT_GNSS_RTK_CN0_MINIMUM            25  // (dBHz)
-#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     10  // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_MINIMUM            30  // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     20  // (dBHz)
 
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
