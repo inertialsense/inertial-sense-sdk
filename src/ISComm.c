@@ -187,7 +187,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
     c->rxErrorState = 1;
 }
 
-
+#if ENABLE_CHECK_INIT_SER
 int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
     // Clear buffer and initialize buffer pointers
@@ -219,6 +219,7 @@ int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, u
     // 0 on match, -1 on mismatch
     return result;
 }
+#endif
 
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {

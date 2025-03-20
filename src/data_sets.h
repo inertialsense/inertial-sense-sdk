@@ -423,9 +423,11 @@ enum eSysStatusFlags
 
     SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
 
+#if ENABLE_CHECK_INIT_SER
     SYS_STATUS_SER0_CHECK_ACTIVE                    = (int)0x00000010,
     SYS_STATUS_SER1_CHECK_ACTIVE                    = (int)0x00000020,
     SYS_STATUS_SER2_CHECK_ACTIVE                    = (int)0x00000040,
+#endif
 };
 
 // Used to validate GPS position (and velocity)
@@ -1482,8 +1484,12 @@ enum eGenFaultCodes
     GFC_SYS_FAULT_CRITICAL				= 0x00020000,
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION 				= 0x00040000,
+
+#if ENABLE_CHECK_INIT_SER
     /*! Fault: GPS receiver time fault */
     GFC_SER_CHECK_INIT                  = 0x00080000,
+#endif
+
     /*! Fault: IMU initialization */
     GFC_INIT_IMU						= 0x00100000,
     /*! Fault: Barometer initialization */
@@ -1562,20 +1568,26 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
+#if ENABLE_CHECK_INIT_SER
     SYS_CMD_TEST_CHECK_INIT_SER0                        = 60,           // (uint32 inv: 4294967235)
     SYS_CMD_TEST_FORCE_INIT_SER0                        = 61,           // (uint32 inv: 4294967234)
     SYS_CMD_TEST_CHECK_INIT_SER1                        = 62,           // (uint32 inv: 4294967233)
     SYS_CMD_TEST_FORCE_INIT_SER1                        = 63,           // (uint32 inv: 4294967232)
     SYS_CMD_TEST_CHECK_INIT_SER2                        = 64,           // (uint32 inv: 4294967231)
     SYS_CMD_TEST_FORCE_INIT_SER2                        = 65,           // (uint32 inv: 4294967230)
-    SYS_CMD_TEST_GPIO                                   = 66,           // (uint32 inv: 4294967229)
-    SYS_CMD_TEST_BIT_BANG_SER0_STPB                     = 67,           // (uint32 inv: 4294967228)
-    SYS_CMD_TEST_BIT_BANG_SER0_SRST                     = 68,           // (uint32 inv: 4294967227)
+#endif
 
     // TODO: DEBUG REMOVE ONCE INTEL TX->RX bug (TM)
     SYS_CMD_SET_GPX_SOFT_SER                            = 69,           // (uint32 inv: 4294967226)
     SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
     SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
+
+    SYS_CMD_TEST_SER0_TX_INPUT                          = 72,           // (uint32 inv: 4294967223)
+    
+    // PULL UP/DOWN RESISTOR COMMANDS
+    SYS_CMD_TEST_SER0_TX_PP_NONE                        = 80,           // (uint32 inv: 4294967215)
+    SYS_CMD_TEST_SER0_TX_PP_U                           = 81,           // (uint32 inv: 4294967214)
+    SYS_CMD_TEST_SER0_TX_PP_D                           = 82,           // (uint32 inv: 4294967213)
 
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
@@ -4435,9 +4447,12 @@ typedef struct
 //  GPX
 //////////////////////////////////////////////////////////////////////////
 
-/** GPX System Configuration (used with DID_GPX_FLASH_CONFIG.sysCfgBits) */
+/** GPX System Configuration (used with DID_GPX_FLASH_CFG.sysCfgBits) */
 enum eGpxSysConfigBits
 {
+    /** Disable (tri-state) VCC_RF (GPX pin 16) output supplied via VAUX (GPX pin 40). */
+    GPX_SYS_CFG_BITS_DISABLE_VCC_RF                         = 0x00000001,
+
     /** Brownout reset threshold voltage level */
     GPX_SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,              // 1.65 - 1.75 V  (default)
     GPX_SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
