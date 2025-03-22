@@ -2990,9 +2990,9 @@ enum eSensorConfig
     // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
 
     /** Disable magnetometer sensor (sensorConfig[22]) */	
-    SENSOR_CFG_MAGNETOMETER_DISABLE             = (int)0x00400000,
+    SENSOR_CFG_DISABLE_MAGNETOMETER             = (int)0x00400000,
     /** Disable barometometer sensor (sensorConfig[23]) */	
-    SENSOR_CFG_BAROMETER_DISABLE                = (int)0x00800000,
+    SENSOR_CFG_DISABLE_BAROMETER                = (int)0x00800000,
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
     SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
