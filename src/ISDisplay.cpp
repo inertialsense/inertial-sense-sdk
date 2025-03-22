@@ -243,12 +243,18 @@ string cInertialSenseDisplay::Connected()
 
 	unsigned int timeMs = current_timeMs();
 
-	// cltool runtime
-	double runtime = 0.001 * (timeMs - m_startMs);
+	// cltool elapsed
+	unsigned int elapsedMs = timeMs - m_startMs;
+	unsigned int totalSeconds = elapsedMs / 1000;
+	unsigned int hours = totalSeconds / 3600;
+	unsigned int minutes = (totalSeconds % 3600) / 60;
+	unsigned int seconds = totalSeconds % 60;
 
 	std::ostringstream stream;
 	stream << Header() << "Connected.  ";
-    stream << std::fixed << std::setprecision(1) << runtime << "s";
+	stream << hours << ':'
+		<< std::setw(2) << std::setfill('0') << minutes << ':'
+		<< std::setw(2) << std::setfill('0') << seconds << 's';
 	stream << ", Tx " << (m_comm ? std::to_string(m_comm->txPktCount) : "--");
 	stream << ", Rx " << (m_comm ? std::to_string(m_comm->rxPktCount) : "--");
 	if (m_port)
