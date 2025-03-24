@@ -2989,6 +2989,11 @@ enum eSensorConfig
     /** Magnetometer output data rate (ODR).  Set to enable 100Hz output data rate.  System reset required to enable. */
     // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
 
+    /** Disable magnetometer sensor (sensorConfig[22]) */	
+    SENSOR_CFG_DISABLE_MAGNETOMETER             = (int)0x00400000,
+    /** Disable barometometer sensor (sensorConfig[23]) */	
+    SENSOR_CFG_DISABLE_BAROMETER                = (int)0x00800000,
+
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
     SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
     SENSOR_CFG_IMU_FAULT_DETECT_GYR             = (int)0x01000000,      // Enable triple IMU gyro fault detection.           Must be enabled for other gyr detection modes (offline, large bias, and noise).
