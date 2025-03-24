@@ -1834,7 +1834,8 @@ typedef struct PACKED
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
-#define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS	100
+#define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS   100
+#define RMC_PRESET_PPD_IMU3_PERIOD_MULT     1000
 
 // Preset: Post Processing Data
 #define RMC_PRESET_IMX_PPD_NO_IMU           (RMC_BITS_PRESET \
@@ -2988,6 +2989,11 @@ enum eSensorConfig
 
     /** Magnetometer output data rate (ODR).  Set to enable 100Hz output data rate.  System reset required to enable. */
     // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
+
+    /** Disable magnetometer sensor (sensorConfig[22]) */	
+    SENSOR_CFG_DISABLE_MAGNETOMETER             = (int)0x00400000,
+    /** Disable barometometer sensor (sensorConfig[23]) */	
+    SENSOR_CFG_DISABLE_BAROMETER                = (int)0x00800000,
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
     SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
