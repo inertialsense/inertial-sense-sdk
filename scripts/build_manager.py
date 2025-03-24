@@ -283,7 +283,7 @@ class BuildTestManager:
         try:
             subprocess.check_call(exec_path, cwd=test_dir)
         except subprocess.CalledProcessError as e:
-            print(f"Error building {test_name}!")
+            print(f"Error testing {test_name}!")
             result = e.returncode
         self.test_footer(result)
         if result:
