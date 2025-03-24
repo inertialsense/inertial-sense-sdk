@@ -130,10 +130,10 @@ class BuildTestManager:
 
     def test_footer(self, exit_code):  
         if exit_code:
-            self.print_red(f"[***** BUILD: {self.test_name} - FAILED *****]")
+            self.print_red(f"[***** TEST: {self.test_name} - FAILED *****]")
             self.test_failure.append(self.test_name)
         else:
-            self.print_grn(f"[BUILD: {self.test_name} - Passed]")
+            self.print_grn(f"[TEST: {self.test_name} - Passed]")
             self.test_success.append(self.test_name)
         print("")
 
