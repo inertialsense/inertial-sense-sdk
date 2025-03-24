@@ -284,6 +284,7 @@ private:
     bool					m_showPath = false;
     bool					m_showTimeStamp = false;
     double					m_iconUpdatePeriodSec = false;
+    time_t                  m_logStartTime = 0;
     time_t					m_lastCommTime = 0;
     time_t					m_timeoutFlushSeconds = 0;
     time_t					m_timeoutFileCullingSeconds = 10;
