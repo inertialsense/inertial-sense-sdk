@@ -969,8 +969,8 @@ class logPlot:
                 sumCount = 1
 
                 for d in self.active_devs:
-                    gpsTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
-                    gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
+                    gpsTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs'))
+                    gpsHdg = self.getData(d, DID_GPS2_RTK_CMP_REL, 'baseToRoverHeading')
                     if refRtkTime is None:
                         refRtkTime = gpsTime
                         refRtkHdg = np.copy(gpsHdg)
@@ -1011,10 +1011,10 @@ class logPlot:
 
         for d in self.active_devs:
             magTime = getTimeFromGpsTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'), True)
-            gpsTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
+            gpsTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs'))
             insTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
-            gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
+            gpsHdg = self.getData(d, DID_GPS2_RTK_CMP_REL, 'baseToRoverHeading')
             qn2b = self.getData(d, DID_INS_2, 'qn2b')
             if len(qn2b) == 0:
                 continue
@@ -1733,7 +1733,7 @@ class logPlot:
         self.rtkStats("Position", DID_GPS1_RTK_POS_REL, fig=fig, axs=axs)
 
     def rtkCmpStats(self, fig=None, axs=None):
-        self.rtkStats("Compassing", DID_GPS1_RTK_CMP_REL, fig=fig, axs=axs)
+        self.rtkStats("Compassing", DID_GPS2_RTK_CMP_REL, fig=fig, axs=axs)
 
     def rtkStats(self, name, relDid, fig=None, axs=None):
         # try:
@@ -1754,7 +1754,7 @@ class logPlot:
             rtkRelTime = getTimeFromGpsTowMs(self.getData(d, relDid, 'timeOfWeekMs'))
             if len(rtkRelTime) == 0:
                 continue
-            # rtkMiscTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_RTK_CMP_MISC, 'timeOfWeekMs'))
+            # rtkMiscTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_MISC, 'timeOfWeekMs'))
             if not self.log.compassing:
                 gps1PosTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'), 1)
                 gps2PosTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'), 1)
@@ -1792,7 +1792,7 @@ class logPlot:
 
     def rtkBaselineVector(self, fig=None, axs=None):
         name = "Compassing"
-        relDid = DID_GPS1_RTK_CMP_REL
+        relDid = DID_GPS2_RTK_CMP_REL
 
         # try:
         n_plots = 2
@@ -2125,7 +2125,7 @@ class logPlot:
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig, axs=axs)
 
     def rtkCmpMisc(self, fig=None, axs=None):
-        self.rtkMisc("Position", DID_GPS1_RTK_CMP_MISC, fig=fig, axs=axs)
+        self.rtkMisc("Position", DID_GPS2_RTK_CMP_MISC, fig=fig, axs=axs)
 
     def rtkMisc(self, name, miscDid, fig=None, axs=None):
         # try:

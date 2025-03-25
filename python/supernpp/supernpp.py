@@ -18,23 +18,43 @@ sys.path.insert(1, '..')
 from logReader import Log
 
 class SuperNPP():
-    def __init__(self, directory, config_serials, startMode=0, computeRMS=0):		# start mode 0=hot, 1=cold, 2=factory
-        self.config_serials = config_serials
-        self.directory = os.path.normpath(Path(directory))
+    def __init__(self, test_name=None, logs_file=None, directory=None, serials=['ALL'], startMode=0, computeRMS=0, computeRtkCmp=0):		# start mode 0=hot, 1=cold, 2=factory
+        self.config_serials = serials
+        self.test_name = test_name or "test_imx_ins"
+        self.logs_file = None
+        if logs_file:
+            self.logs_file = os.path.normpath(Path(logs_file))
+            self.test_name = os.path.splitext(os.path.basename(logs_file))[0]
+            self.directory = os.path.dirname(logs_file)
+            with open(logs_file, 'r') as f:
+                self.directories = [
+                    os.path.normpath(os.path.join(self.directory, line.strip()))
+                    for line in f
+                    if line.strip() and not os.path.isabs(line.strip())
+                ]
+        elif directory:
+            self.directory = os.path.normpath(Path(directory))
+            self.directories = [ self.directory ]
+        else:
+            print("No log list file or directory provided.")
+            return
         self.startMode = startMode
         self.computeRMS = computeRMS
+        self.computeRtkCmp = computeRtkCmp
         self.subdirs = []
         self.log = Log()
-        self.rmsPassResults = []
-        self.rmsFailResults = []
+        self.passResults = []
+        self.failResults = []
         self._key_lock = threading.Lock()
 
         print("=====================  Init SuperNPP  =====================")
-        print("  Directory: ", self.directory)
+        if self.logs_file:
+            print("  Log List: ", self.logs_file)
+        print("  Directories: ", self.directories)
         print("  config_serials:", self.config_serials)
         print("  startMode: ", self.startMode)
-        self.remove_post_processed_dirs(self.directory)
-        self.findLogFiles(self.directory)
+        self.remove_post_processed_dirs(self.directories)
+        self.findLogFiles(self.directories)
             
     def getSerialNumbers(self):
         return self.log.getSerialNumbers()
@@ -45,65 +65,86 @@ class SuperNPP():
     def exitHack(self):
         self.log.exitHack()
 
-    def findLogFiles(self, directory):
-        # print("findLogFiles: ", directory)
-        for file in os.listdir(directory):
-            if (".dat" in file or ".raw" in file) and (not "base_station.raw" in file):
+    def findLogFiles(self, directories):
+        if isinstance(directories, str):
+            directories = [directories]  # Handle single string input just in case
+
+        for directory in directories:
+            self._findLogFilesRecursive(directory)
+
+    def _findLogFilesRecursive(self, directory):
+        try:
+            entries = os.listdir(directory)
+        except FileNotFoundError:
+            print(f"Directory not found: {directory}")
+            exit(1)
+        except PermissionError:
+            print(f"Permission denied: {directory}")
+            exit(1)
+
+        for file in entries:
+            if (".dat" in file or ".raw" in file) and "base_station.raw" not in file:
                 self.subdirs.append(directory)
                 break
-        # Recursively search for data in sub directories
-        for subdir in os.listdir(directory):
-            subdir2 = os.path.join(directory, subdir)
-            if not os.path.isdir(subdir2):
+
+        for subdir in entries:
+            subdir_path = os.path.join(directory, subdir)
+            if not os.path.isdir(subdir_path):
                 continue
             if "post_processed" in subdir:
                 continue
-            self.findLogFiles(subdir2)
+            self._findLogFilesRecursive(subdir_path)
 
-    def remove_post_processed_dirs(self, base_dir):
+    def remove_post_processed_dirs(self, base_dirs):
         """
-        Recursively remove all directories named 'post_processed' in the specified base directory.
+        Recursively remove all directories named 'post_processed' in the specified base directories.
 
         Args:
-            base_dir (str): The path to the base directory to search within.
+            base_dirs (list of str): The paths to the base directories to search within.
         """
-        for root, dirs, files in os.walk(base_dir, topdown=False):
-            for dir_name in dirs:
-                if dir_name == "post_processed":
-                    dir_path = os.path.join(root, dir_name)
-                    try:
-                        shutil.rmtree(dir_path)
-                        print(f"Removed directory: {dir_path}")
-                    except Exception as e:
-                        print(f"Failed to remove {dir_path}: {e}")
+        if isinstance(base_dirs, str):
+            base_dirs = [base_dirs]  # Allow fallback for single string input
+
+        for base_dir in base_dirs:
+            for root, dirs, files in os.walk(base_dir, topdown=False):
+                for dir_name in dirs:
+                    if dir_name == "post_processed":
+                        dir_path = os.path.join(root, dir_name)
+                        try:
+                            shutil.rmtree(dir_path)
+                            print(f"Removed directory: {dir_path}")
+                        except Exception as e:
+                            print(f"Failed to remove {dir_path}: {e}")
+
 
     def print_file_contents(self, file_path):
         with open(file_path, 'r') as file:
             for line in file:
                 print(line, end='')  # end='' prevents adding extra newlines
 
-    def run(self):
+    def run_process(self):
         print('  log count: ' + str(len(self.subdirs)))
         for subdir in self.subdirs:
             print("   " + subdir)
         time.sleep(2)	# seconds
-        self.rmsFailResults = []
-        self.rmsPassResults = []
+        self.failResults = []
+        self.passResults = []
 
         # Start threads
-        threads = [Thread(target=self.run_log_folder, args=(folder, self.config_serials)) for folder in self.subdirs]
+        threads = [Thread(target=self.reprocess_folder, args=(folder, self.config_serials)) for folder in self.subdirs]
         for thread in threads:
             thread.start()
         for thread in threads:
             thread.join()
 
         # Record list of logs to be processed
-        logListFilename = self.directory+"/test_summary.txt"        
+        self.results_filename = self.directory + "/results_" + self.test_name.split('_', 1)[1] + ".txt"
         try:
-            os.remove(logListFilename)      # Remove old file
+            os.remove(self.results_filename)      # Remove old file
         except OSError:
             pass
 
+    def test_ins_rms(self):
         results = []
         for subdir in self.subdirs:
             sdir = os.path.normpath(str(subdir) + "/post_processed")
@@ -118,24 +159,56 @@ class SuperNPP():
                     passRMS = self.log.printRMSReport()
                     if passRMS == 1:
                         results.append("[PASSED] " + sdir)
-                        self.rmsPassResults.append(sdir)
+                        self.passResults.append(sdir)
                     else:
                         results.append("[FAILED] " + sdir)
-                        self.rmsFailResults.append(sdir)
+                        self.failResults.append(sdir)
                 else:
                     results.append("[NODATA] " + sdir)
             else:
                 results.append("[      ] " + sdir)
             ### Compute RMS ##################################################
-        with open(logListFilename, "w") as f:
+        with open(self.results_filename, "w") as f:
             f.write("\n".join(results))
 
         print('-------------------------------------------------------------')
-        print(os.path.basename(logListFilename))
-        self.print_file_contents(logListFilename)
+        print(os.path.basename(self.results_filename))
+        self.print_file_contents(self.results_filename)
         print('-------------------------------------------------------------')
 
-    def run_log_folder(self, folder, config_serials):
+    def test_rtk_compassing(self):
+        results = []
+        for subdir in self.subdirs:
+            sdir = os.path.normpath(str(subdir) + "/post_processed")
+            nppPrint("   " + sdir)
+
+            ### Compute RTK Compassing ##################################################
+            if self.computeRtkCmp:
+                passRMS = 0
+                if self.log.load(sdir):
+                    # Compute and output RMS Report
+                    self.log.calculateRtkCmp()
+                    passRMS = self.log.printRtkCmpReport()
+                    if passRMS == 1:
+                        results.append("[PASSED] " + sdir)
+                        self.passResults.append(sdir)
+                    else:
+                        results.append("[FAILED] " + sdir)
+                        self.failResults.append(sdir)
+                else:
+                    results.append("[NODATA] " + sdir)
+            else:
+                results.append("[      ] " + sdir)
+            ### Compute RTK Compassing ##################################################
+        with open(self.results_filename, "w") as f:
+            f.write("\n".join(results))
+
+        print('-------------------------------------------------------------')
+        print(os.path.basename(self.results_filename))
+        self.print_file_contents(self.results_filename)
+        print('-------------------------------------------------------------')
+
+    def reprocess_folder(self, folder, config_serials):
         # Find the serial numbers in the log
         # subdir = os.path.basename(os.path.normpath(folder))
         (folder, subdir) = os.path.split(folder)
@@ -263,9 +336,12 @@ if __name__ == "__main__":
     # directory = config["directory"]
     # serials = config["serials"]
 
-    # 2nd argument: Log Directory
-    if len(sys.argv) >= 2:
-        directory = sys.argv[1]
+    # 2nd argument: Log directory list file
+    if len(sys.argv) < 2:
+        exit(1)
+    logs_file = sys.argv[1]
+    test_name = os.path.splitext(os.path.basename(logs_file))[0]
+    directory = os.path.dirname(logs_file)
 
     # Debug
     # directory = '/home/walt/src/IS-src/scripts/../../goldenlogs/AHRS'
@@ -276,9 +352,9 @@ if __name__ == "__main__":
     # serials = ""
     # directory = 'D:/Dropbox (Inertial Sense)/ISD/logs/202110/20211022_14_NAV_Drive_uins4_branch/20211022_145320'
 
-    if 'directory' not in locals():
-        print("First parameter must be directory!")
-        exit()
+    if not os.path.isfile(logs_file):
+        print("First parameter must the path to the log list file!")
+        exit(1)
 
     # 3rd argument: Serial #s
     if len(sys.argv) >= 3:
@@ -293,11 +369,19 @@ if __name__ == "__main__":
     else:
         computeRMS = 1
 
-    # Run Super NPP
-    snpp = SuperNPP(directory, serials, computeRMS=computeRMS)
-    snpp.run()
+    # 5th argument: Compute RTK compassing Comparison Report
+    if len(sys.argv) >= 5:
+        computeRtkCmp = sys.argv[4]
+    else:
+        computeRtkCmp = 1
 
-    testSummaryFilename = directory+"/test_summary.txt"
+    # Run Super NPP
+    snpp = SuperNPP(logs_file=logs_file, serials=serials, computeRMS=computeRMS, computeRtkCmp=computeRtkCmp)
+    snpp.run_process()
+    # snpp.test_ins_rms()
+    snpp.test_rtk_compassing()
+
+    testSummaryFilename = directory + "/results_" + test_name.split('_', 1)[1] + ".txt"
     nppPrint("\n")
     nppPrint("====================  Super NPP Results  ====================")
     print_case(testSummaryFilename, "  RMS Test PASSED:", "[PASSED]")

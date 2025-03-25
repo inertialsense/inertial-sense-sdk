@@ -810,9 +810,9 @@ class LogInspectorWindow(QMainWindow):
         setDataInformationDirectory(directory, startMode=startMode)
         sys.path.insert(1, '../../../../python/src')
         from supernpp.supernpp import SuperNPP
-        spp = SuperNPP(directory, self.config['serials'], startMode=startMode)
+        spp = SuperNPP(directory=directory, serials=self.config['serials'], startMode=startMode)
         self.setStatus(("NPP %s running..." % (startModes[startMode])))
-        spp.run()
+        spp.run_process()
         
         # Expand file tree so "post_processed" directory is visable
         self.updateFileTree()

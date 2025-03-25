@@ -256,7 +256,7 @@ class Log:
 
             # If we are in compassing mode, then only calculate RMS after all devices have fix
             if self.compassing:
-                # time_of_fix_ms = [self.data[dev, DID_GPS1_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS1_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
+                # time_of_fix_ms = [self.data[dev, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS2_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
                 time_of_fix_ms = [self.data[dev, DID_GPS1_POS]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS1_POS]['status'] & 0x08000000)] / 1000.0 for dev in range(self.numDev)]
                 # print time_of_fix_ms
                 self.min_time = max(time_of_fix_ms)
@@ -317,7 +317,6 @@ class Log:
         self.getRMSTruth()
         self.calcAttitudeError()
 
-
         # Calculate the Mounting Bias for all devices (assume the mounting bias is the mean of the attitude error)
         uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.uvw_error = np.empty_like(self.stateArray[:, :, 4:7])
@@ -349,6 +348,21 @@ class Log:
         self.averageRMSNED = np.mean(self.RMSNED, axis=0)
         self.averageRMSUVW = np.mean(self.RMSUVW, axis=0)
         self.averageRMSAtt = np.mean(self.RMSAtt, axis=0)
+
+    def calculateRtkCmp(self):
+        self.data = np.array(self.data)
+        for d in range(self.numDev):
+            lla = self.data[d, DID_INS_2]['lla']
+            rtkRelTime = self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio']
+
+            if len(rtkRelTime) == 0:
+                continue
+            # rtkMiscTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_MISC, 'timeOfWeekMs'))
+            # fixType = self.getData(d, relDid, 'arRatio').copy()
+            fixType = self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio'].copy()
+            fixType[(fixType > 3)] = 12
+            fixType[(fixType > 0) & (fixType < 3)] = 11
+            fixType[fixType == 0] = 10
 
     def pass_fail(self, ratio):
         if ratio > 1.0:
@@ -550,6 +564,9 @@ class Log:
 
         # Report if RMS passed all
         self.passRMS = self.tmpPassRMS
+        return self.passRMS
+    
+    def printRtkCmpReport(self):
         return self.passRMS
 
     def debugPlot(self):
