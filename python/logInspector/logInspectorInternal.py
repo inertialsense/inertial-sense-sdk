@@ -146,18 +146,26 @@ class logInspectorInternal(LogInspectorWindow):
         except Exception as e:
             self.showError(e)
 
-    def RMS(self):
+    def TestImx(self):
         if self.log is not None:
-            self.setStatus("Calculating RMS...")
-            self.log.calculateRMS()
-            self.log.printRMSReport()
-            self.log.openRMSReport()
+            self.setStatus("Calculating IMX INS report...")
+            result = self.log.runImxPerformanceReport()
+            self.log.openReport()
             self.updatePlot()
-            self.setStatus("RMS done.")
+            self.setStatus("IMX INS test: " + ("PASS" if result else "FAIL"))
+
+    def TestGpx(self):
+        if self.log is not None:
+            self.setStatus("Calculating GPX Compassing report...")
+            result = self.log.runGpxPerformanceReport()
+            self.log.openReport()
+            self.updatePlot()
+            self.setStatus("GPX Cmp test: " + ("PASS" if result else "FAIL"))
 
     def createPlotSelection(self):
         super(logInspectorInternal, self).createPlotSelection()
-        self.addButton('RMS', self.RMS, layout=self.LayoutVButtons, tooltip="Compute RMS Test")
+        self.addButton('IMX Test', self.TestImx, layout=self.LayoutVButtons, tooltip="Compute IMX Test")
+        self.addButton('GPX Test', self.TestGpx, layout=self.LayoutVButtons, tooltip="Compute GPX Test")
         self.addButton('Devices', self.chooseDevs, layout=self.LayoutVButtons, tooltip="Show/Hide devices")
 
     def createListGps(self):

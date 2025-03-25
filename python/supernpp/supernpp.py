@@ -155,8 +155,7 @@ class SuperNPP():
                 passRMS = 0
                 if self.log.load(sdir):
                     # Compute and output RMS Report
-                    self.log.calculateRMS()
-                    passRMS = self.log.printRMSReport()
+                    passRMS = self.log.runImxPerformanceReport()
                     if passRMS == 1:
                         results.append("[PASSED] " + sdir)
                         self.passResults.append(sdir)
@@ -184,12 +183,11 @@ class SuperNPP():
 
             ### Compute RTK Compassing ##################################################
             if self.computeRtkCmp:
-                passRMS = 0
+                passRTK = 0
                 if self.log.load(sdir):
-                    # Compute and output RMS Report
-                    self.log.calculateRtkCmp()
-                    passRMS = self.log.printRtkCmpReport()
-                    if passRMS == 1:
+                    # Compute and output RMS Report                    
+                    passRTK = self.log.runGpxPerformanceReport()
+                    if passRTK == 1:
                         results.append("[PASSED] " + sdir)
                         self.passResults.append(sdir)
                     else:
@@ -277,10 +275,10 @@ class SuperNPP():
         # self._key_lock.release()
         #
         # # Compute and output RMS Report
-        # log.calculateRMS()
+        # log.calcImxInsStats()
         #
         # self._key_lock.acquire()
-        # passRMS = log.printRMSReport()
+        # passRMS = log.printImxInsReport()
         # if passRMS == 1:
         # 	self.rmsPassResults.append(sdir)
         # 	print("RMS Test PASSED: " + sdir)
@@ -378,8 +376,8 @@ if __name__ == "__main__":
     # Run Super NPP
     snpp = SuperNPP(logs_file=logs_file, serials=serials, computeRMS=computeRMS, computeRtkCmp=computeRtkCmp)
     snpp.run_process()
-    # snpp.test_ins_rms()
-    snpp.test_rtk_compassing()
+    snpp.test_ins_rms()
+    # snpp.test_rtk_compassing()
 
     testSummaryFilename = directory + "/results_" + test_name.split('_', 1)[1] + ".txt"
     nppPrint("\n")
