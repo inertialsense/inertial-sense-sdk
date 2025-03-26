@@ -115,7 +115,7 @@ def setDataInformationDirectory(path, startMode=START_MODE_HOT):
             json.dump(data, f, indent=4)
 
 def verArrayToString(array):
-    return str(array[0]) + '.' + str(array[1]) + '.' + str(array[2]) #+ '.' + str(array[3])
+    return str(array[0]) + '.' + str(array[1]) + '.' + str(array[2]) + '.' + str(array[3])
 
 def dateTimeArrayToString(info):
     year   = info['buildYear']

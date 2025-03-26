@@ -240,29 +240,6 @@ class SuperNPP():
         for p in processes:
             p.wait()
 
-        ### Compute RMS ##################################################
-        # print("NPP done.  Running RMS calc...")
-        # sdir = os.path.join(folder, subdir, "post_processed")
-        #
-        # self._key_lock.acquire()
-        # log = Log()
-        # log.load(sdir)
-        # self._key_lock.release()
-        #
-        # # Compute and output RMS Report
-        # log.calcImxInsStats()
-        #
-        # self._key_lock.acquire()
-        # passRMS = log.printImxInsReport()
-        # if passRMS == 1:
-        # 	self.rmsPassResults.append(sdir)
-        # 	print("RMS Test PASSED: " + sdir)
-        # else:
-        # 	self.rmsFailResults.append(sdir)
-        # 	print("RMS Test FAILED: " + sdir)
-        # self._key_lock.release()
-        ### Compute RMS ##################################################
-
         print("All processes done!")
 
 def buildNPP(npp_build_folder):
@@ -351,8 +328,8 @@ if __name__ == "__main__":
     testSummaryFilename = directory + "/results_" + test_name.split('_', 1)[1] + ".txt"
     nppPrint("\n")
     nppPrint("====================  Super NPP Results  ====================")
-    print_case(testSummaryFilename, "  RMS Test PASSED:", "[PASSED]")
-    print_case(testSummaryFilename, "  RMS Test FAILED:", "[FAILED]")
+    print_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
+    print_case(testSummaryFilename, "  Tests FAILED:", "[FAILED]")
     print_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
     nppPrint("=============================================================")
 
