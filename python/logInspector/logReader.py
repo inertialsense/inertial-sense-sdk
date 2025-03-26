@@ -471,7 +471,7 @@ class Log:
 
         ############################################################################################################
         f = open(self.report_filename, 'w')
-        f.write('*****   IMX Performance Report - %s\n' % (self.directory))
+        f.write('** IMX Performance Report - %s\n' % (self.directory))
         f.write('\n')
         mode = ('IMX-5' if hardware == 5 else 'uINS-3' )
         mode += (", NAV" if self.navMode else ", AHRS")
@@ -611,7 +611,7 @@ class Log:
                 hardware = 1
 
         f = open(self.report_filename, 'w')
-        f.write('*****   GPX Performance Report - %s\n' % (self.directory))
+        f.write('** GPX Performance Report - %s\n' % (self.directory))
         f.write('\n')
 
         # Reference INS does not exist.  Compute reference from average heading.

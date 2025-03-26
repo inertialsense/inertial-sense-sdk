@@ -39,8 +39,9 @@ class SuperNPP():
             print("No log list file or directory provided.")
             return
         self.startMode = startMode
-        self.computeIMX = "IMX" in options
-        self.computeGPX = "GPX" in options
+        options_upper = options.upper()
+        self.computeIMX = "IMX" in options_upper
+        self.computeGPX = "GPX" in options_upper
         self.subdirs = []
         self.log = Log()
         self.passResults = []
