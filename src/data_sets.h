@@ -1578,6 +1578,8 @@ enum eSystemCommand
 #endif
 
     // TODO: DEBUG REMOVE ONCE INTEL TX->RX bug (TM)
+    SYS_CMD_SET_GPX_SER0_PIN_DEFAULT                    = 67,           // (uint32 inv: 4294967228)
+    SYS_CMD_SET_GPX_SER0_PIN_REINIT                     = 68,           // (uint32 inv: 4294967227)
     SYS_CMD_SET_GPX_SOFT_SER                            = 69,           // (uint32 inv: 4294967226)
     SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
     SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
