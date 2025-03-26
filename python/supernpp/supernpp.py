@@ -18,9 +18,9 @@ sys.path.insert(1, '..')
 from logReader import Log
 
 class SuperNPP():
-    def __init__(self, test_name=None, logs_file=None, directory=None, serials=['ALL'], startMode=0, computeRMS=0, computeRtkCmp=0):		# start mode 0=hot, 1=cold, 2=factory
+    def __init__(self, test_name=None, logs_file=None, directory=None, serials=['ALL'], startMode=0, options=""):		# start mode 0=hot, 1=cold, 2=factory
         self.config_serials = serials
-        self.test_name = test_name or "test_imx_ins"
+        self.test_name = test_name or "test_imx"
         self.logs_file = None
         if logs_file:
             self.logs_file = os.path.normpath(Path(logs_file))
@@ -39,8 +39,8 @@ class SuperNPP():
             print("No log list file or directory provided.")
             return
         self.startMode = startMode
-        self.computeRMS = computeRMS
-        self.computeRtkCmp = computeRtkCmp
+        self.computeIMX = "IMX" in options
+        self.computeGPX = "GPX" in options
         self.subdirs = []
         self.log = Log()
         self.passResults = []
@@ -144,60 +144,34 @@ class SuperNPP():
         except OSError:
             pass
 
-    def test_ins_rms(self):
+    def run_tests(self):
+        if self.computeIMX: self.run_report(self.log.runImxPerformanceReport)
+        if self.computeGPX: self.run_report(self.log.runGpxPerformanceReport)
+
+    def run_report(self, runReportFunc):
         results = []
+        parent_dir = os.path.commonpath(self.subdirs)
+        results.append(parent_dir + "\n")
+
         for subdir in self.subdirs:
             sdir = os.path.normpath(str(subdir) + "/post_processed")
+            rel_dir = os.path.relpath(sdir, parent_dir)
             nppPrint("   " + sdir)
 
-            ### Compute RMS ##################################################
-            if self.computeRMS:
-                passRMS = 0
-                if self.log.load(sdir):
-                    # Compute and output RMS Report
-                    passRMS = self.log.runImxPerformanceReport()
-                    if passRMS == 1:
-                        results.append("[PASSED] " + sdir)
-                        self.passResults.append(sdir)
-                    else:
-                        results.append("[FAILED] " + sdir)
-                        self.failResults.append(sdir)
+            ### Compute Performance report ##################################################
+            passRMS = 0
+            if self.log.load(sdir):
+                # Compute and output performance report
+                passRMS = runReportFunc()
+                if passRMS == 1:
+                    results.append("[PASSED] " + rel_dir)
+                    self.passResults.append(rel_dir)
                 else:
-                    results.append("[NODATA] " + sdir)
+                    results.append("[FAILED] " + rel_dir)
+                    self.failResults.append(rel_dir)
             else:
-                results.append("[      ] " + sdir)
-            ### Compute RMS ##################################################
-        with open(self.results_filename, "w") as f:
-            f.write("\n".join(results))
-
-        print('-------------------------------------------------------------')
-        print(os.path.basename(self.results_filename))
-        self.print_file_contents(self.results_filename)
-        print('-------------------------------------------------------------')
-
-    def test_rtk_compassing(self):
-        results = []
-        for subdir in self.subdirs:
-            sdir = os.path.normpath(str(subdir) + "/post_processed")
-            nppPrint("   " + sdir)
-
-            ### Compute RTK Compassing ##################################################
-            if self.computeRtkCmp:
-                passRTK = 0
-                if self.log.load(sdir):
-                    # Compute and output RMS Report                    
-                    passRTK = self.log.runGpxPerformanceReport()
-                    if passRTK == 1:
-                        results.append("[PASSED] " + sdir)
-                        self.passResults.append(sdir)
-                    else:
-                        results.append("[FAILED] " + sdir)
-                        self.failResults.append(sdir)
-                else:
-                    results.append("[NODATA] " + sdir)
-            else:
-                results.append("[      ] " + sdir)
-            ### Compute RTK Compassing ##################################################
+                results.append("[NODATA] " + rel_dir)
+            ### Compute Performance report ##################################################
         with open(self.results_filename, "w") as f:
             f.write("\n".join(results))
 
@@ -354,30 +328,24 @@ if __name__ == "__main__":
         print("First parameter must the path to the log list file!")
         exit(1)
 
-    # 3rd argument: Serial #s
+    # 3rd argument: Compute Comparison Report
     if len(sys.argv) >= 3:
-        serials = sys.argv[2]
+        options = sys.argv[2]
     else:
-        serials = ['ALL']
-        print("Using default value for serials: ", serials)
+        options = "IMX" # Default to IMX
 
-    # 4th argument: Compute RMS Comparison Report
+    # 3rd argument: Serial #s
+    serials = ['ALL']
     if len(sys.argv) >= 4:
-        computeRMS = sys.argv[3]
-    else:
-        computeRMS = 1
-
-    # 5th argument: Compute RTK compassing Comparison Report
-    if len(sys.argv) >= 5:
-        computeRtkCmp = sys.argv[4]
-    else:
-        computeRtkCmp = 1
+        serials = sys.argv[3]
 
     # Run Super NPP
-    snpp = SuperNPP(logs_file=logs_file, serials=serials, computeRMS=computeRMS, computeRtkCmp=computeRtkCmp)
+    snpp = SuperNPP(
+        logs_file=logs_file, 
+        options=options,
+        serials=serials)
     snpp.run_process()
-    snpp.test_ins_rms()
-    # snpp.test_rtk_compassing()
+    snpp.run_tests()
 
     testSummaryFilename = directory + "/results_" + test_name.split('_', 1)[1] + ".txt"
     nppPrint("\n")

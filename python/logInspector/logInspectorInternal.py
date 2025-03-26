@@ -147,26 +147,24 @@ class logInspectorInternal(LogInspectorWindow):
             self.showError(e)
 
     def TestImx(self):
-        if self.log is not None:
-            self.setStatus("Calculating IMX INS report...")
-            result = self.log.runImxPerformanceReport()
-            self.log.openReport()
-            self.updatePlot()
-            self.setStatus("IMX INS test: " + ("PASS" if result else "FAIL"))
+        self.RunTest("IMX", self.log.runImxPerformanceReport)
 
     def TestGpx(self):
+        self.RunTest("GPX", self.log.runGpxPerformanceReport)
+
+    def RunTest(self, name, reportFunc):
         if self.log is not None:
-            self.setStatus("Calculating GPX Compassing report...")
-            result = self.log.runGpxPerformanceReport()
+            self.setStatus("Running "+ name +" report...")
+            result = reportFunc()
             self.log.openReport()
             self.updatePlot()
-            self.setStatus("GPX Cmp test: " + ("PASS" if result else "FAIL"))
+            self.setStatus(name +" Test: " + ("PASSED" if result else "FAILED"))
 
     def createPlotSelection(self):
         super(logInspectorInternal, self).createPlotSelection()
-        self.addButton('IMX Test', self.TestImx, layout=self.LayoutVButtons, tooltip="Compute IMX Test")
-        self.addButton('GPX Test', self.TestGpx, layout=self.LayoutVButtons, tooltip="Compute GPX Test")
         self.addButton('Devices', self.chooseDevs, layout=self.LayoutVButtons, tooltip="Show/Hide devices")
+        self.addButton('IMX Test', self.TestImx, layout=self.LayoutVButtons, tooltip="Run IMX Test")
+        self.addButton('GPX Test', self.TestGpx, layout=self.LayoutVButtons, tooltip="Run GPX Test")
 
     def createListGps(self):
         super(logInspectorInternal, self).createListGps()

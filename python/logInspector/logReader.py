@@ -638,7 +638,7 @@ class Log:
                 sum_count += 1
         ref_yaw += sum_delta / sum_count
             
-        f.write("       Serial#  Fix(  time,    % ) ArRatio, YawErr\n")
+        f.write("         Serial#  Fix(  time,    % ) ArRatio, YawErr\n")
 
         for d in range(self.numDev):
             serial_number = self.data[d, DID_DEV_INFO]['serialNumber'][0]
@@ -679,14 +679,14 @@ class Log:
                 yaw_err_mean < threshold['headingErr']
             )
             if not success: result = 0
-            f.write( "[%s] SN%6d    ( %ss, %3.0f%% )    %4.0f, %5.1f°\n" % 
-                  (("PASS" if success else "FAIL"), 
+            f.write(   "[%s] SN%6d    ( %ss, %3.0f%% )    %4.0f, %5.1f°\n" % 
+                  (("PASSED" if success else "FAILED"), 
                    serial_number, 
                    self.format_minutes_seconds(time_to_first_fix), 
                    fix_percent,
                    ar_ratio_mean,  
                    yaw_err_mean*RAD2DEG))
-        f.write("Thresholds:        ( %ss, %3.0f%% )    %4.0f, %5.1f°\n" % 
+        f.write("Thresholds:          ( %ss, %3.0f%% )    %4.0f, %5.1f°\n" % 
               (self.format_minutes_seconds(threshold['timeToFirstFix']), 
                threshold['percentFix'], 
                threshold['arRatio'], 
