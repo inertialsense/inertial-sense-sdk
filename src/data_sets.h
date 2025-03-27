@@ -3214,7 +3214,7 @@ enum ePlatformConfig
 /** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
 typedef struct PACKED
 {
-    /** Time of measurement wrt current week */
+    /** (Do not use, internal development only) Time of measurement in current GPS week */
     double timeOfWeek;
 
     /** Status */
