@@ -3217,25 +3217,25 @@ typedef struct PACKED
     /** Time of measurement wrt current week */
     double timeOfWeek;
 
-    /** Status Word */
+    /** Status */
     uint32_t status;
 
-    /** Left wheel angle (rad) */
+    /** (Do not use, internal development only) Left wheel angle (rad) */
     float theta_l;
 
-    /** Right wheel angle (rad) */
+    /** (Do not use, internal development only) Right wheel angle (rad) */
     float theta_r;
     
-    /** Left wheel angular rate (rad/s) */
+    /** Left wheel angular rate (rad/s). Positive when wheel is turning toward the forward direction of the vehicle. Use WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT in DID_FLASH_CONFIG::wheelConfig to reverse this. */
     float omega_l;
 
-    /** Right wheel angular rate (rad/s) */
+    /** Right wheel angular rate (rad/s). Positive when wheel is turning toward the forward direction of the vehicle. Use WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT in DID_FLASH_CONFIG::wheelConfig to reverse this. */
     float omega_r;
 
-    /** Left wheel revolution count */
+    /** (Do not use, internal development only) Left wheel revolution count */
     uint32_t wrap_count_l;
 
-    /** Right wheel revolution count */
+    /** (Do not use, internal development only) Right wheel revolution count */
     uint32_t wrap_count_r;
 
 } wheel_encoder_t;
@@ -3245,8 +3245,8 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
     WHEEL_CFG_BITS_ENABLE_CONTROL           = (int)0x00000004,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
-    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
-    WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_l 
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_r
     WHEEL_CFG_BITS_ENCODER_SOURCE			= (int)0x00000400,	// 0 = uINS, 1 = EVB
 };
 
