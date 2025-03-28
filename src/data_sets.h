@@ -422,12 +422,6 @@ enum eSysStatusFlags
     SYS_STATUS_TBED3_LEDS_ENABLED				    = (int)0x00000001,
 
     SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
-
-#if ENABLE_CHECK_INIT_SER
-    SYS_STATUS_SER0_CHECK_ACTIVE                    = (int)0x00000010,
-    SYS_STATUS_SER1_CHECK_ACTIVE                    = (int)0x00000020,
-    SYS_STATUS_SER2_CHECK_ACTIVE                    = (int)0x00000040,
-#endif
 };
 
 // Used to validate GPS position (and velocity)
@@ -1484,11 +1478,6 @@ enum eGenFaultCodes
     GFC_SYS_FAULT_CRITICAL				= 0x00020000,
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION 				= 0x00040000,
-
-#if ENABLE_CHECK_INIT_SER
-    /*! Fault: GPS receiver time fault */
-    GFC_SER_CHECK_INIT                  = 0x00080000,
-#endif
 
     /*! Fault: IMU initialization */
     GFC_INIT_IMU						= 0x00100000,
