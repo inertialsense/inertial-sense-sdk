@@ -187,40 +187,6 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
     c->rxErrorState = 1;
 }
 
-#if ENABLE_CHECK_INIT_SER
-int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
-{
-    // Clear buffer and initialize buffer pointers
-    if (c->rxBuf.size != (uint32_t)bufferSize) { return -1; }
-    if (c->rxBuf.start != buffer) { return -2; }
-    if (c->rxBuf.end != buffer + bufferSize) { return -3; }
-    if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -4; }
-    if (c->rxBuf.tail < c->rxBuf.start || c->rxBuf.tail > c->rxBuf.end) { return -5; }
-    if (c->rxBuf.scan < c->rxBuf.start || c->rxBuf.scan > c->rxBuf.end) { return -6; }
-    
-    // Set parse enable flags
-    if ((c->config.enabledMask & DEFAULT_PROTO_MASK) != DEFAULT_PROTO_MASK) { return -7; }
-    
-    if (c->rxPkt.data.ptr != NULL && (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end)) { return -8; }
-
-    // Everything matches
-    return 0;
-}
-
-int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, uint8_t forceInit)
-{
-    int result = is_comm_check(c, buffer, bufferSize);
-
-    if (result || forceInit)
-    {   // Mismatch or forced init
-        is_comm_init(c, buffer, bufferSize);
-    }
-
-    // 0 on match, -1 on mismatch
-    return result;
-}
-#endif
-
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {
     is_comm_parser_t *p = &(c->parser);
