@@ -704,7 +704,7 @@ class Log:
             threshold['headingErr']*RAD2DEG)
         if failures:
             failures.append(thresh_str)
-        f.write("        " + thresh_str + "\n")
+        f.write("         " + thresh_str + "\n")
 
         # Print Device Information
         f.write('\n')
