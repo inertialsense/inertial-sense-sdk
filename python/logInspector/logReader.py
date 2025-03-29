@@ -365,11 +365,11 @@ class Log:
         addi    = devInfo['addInfo']
         
         return (
-            '%2d SN%d  HW: %d.%d.%d.%d   FW: %d.%d.%d.%d build %d repo %d   Proto: %d.%d.%d.%d  Date: %04d-%02d-%02d %02d:%02d:%02d  %s\n' % (
+            '%2d SN%d  H: %d.%d.%d.%d  F: %d.%d.%d.%d build %d repo %d  P: %d.%d.%d.%d  %04d-%02d-%02d %02d:%02d:%02d  %s\n' % (
                 n, devInfo['serialNumber'],
-                hver[3], hver[2], hver[1], hver[0],
-                fver[3], fver[2], fver[1], fver[0], buld, repo,
-                cver[3], cver[2], cver[1], cver[0],
+                hver[0], hver[1], hver[2], hver[3],
+                fver[0], fver[1], fver[2], fver[3], buld, repo,
+                cver[0], cver[1], cver[2], cver[3],
                 year, month, day,
                 hour, minute, second,
                 addi
@@ -421,7 +421,7 @@ class Log:
         # Print out the results
         device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.tmpPassRMS = 1
-        self.report_filename = os.path.join(self.directory, 'IMX_performance_report.txt')
+        self.report_filename = os.path.join(self.directory, 'performance_report_imx.txt')
         # Make sure all devices have the same hardware
         hardware = self.hardware[device_idx[0]]
         for dev in device_idx:
@@ -591,7 +591,7 @@ class Log:
         self.passRMS = self.tmpPassRMS
         return not self.passRMS
 
-    def arRationToFixType(self, ar_ratio):
+    def arRatioToFixType(self, ar_ratio):
         fix_type = ar_ratio.copy()
         fix_type[(fix_type > 3)] = 12
         fix_type[(fix_type > 0) & (fix_type < 3)] = 11
@@ -609,7 +609,7 @@ class Log:
 
         device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.tmpPassRMS = 1
-        self.report_filename = os.path.join(self.directory, 'GPX_performance_report.txt')
+        self.report_filename = os.path.join(self.directory, 'performance_report_gpx.txt')
         # Make sure all devices have the same hardware
         hardware = self.hardware[device_idx[0]]
         for dev in device_idx:
@@ -634,7 +634,7 @@ class Log:
 
             if ref_time is None:
                 # Find reference time and yaw starting at first fix
-                fix_type = self.arRationToFixType(self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio'])
+                fix_type = self.arRatioToFixType(self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio'])
                 first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
                 ref_time = time[first_fix_index:]
                 ref_yaw = np.copy(yaw[first_fix_index:])
@@ -648,7 +648,8 @@ class Log:
                 sum_count += 1
         ref_yaw += sum_delta / sum_count
             
-        f.write("         Serial#  Fix(  time,    % ) ArRatio, YawErr\n")
+        title_str = "Serial#  Fix(  time,    % ) ArRatio, YawErr"
+        f.write(" "*9 + title_str + "\n")
 
         for d in range(self.numDev):
             serial_number = self.data[d, DID_DEV_INFO]['serialNumber'][0]
@@ -660,7 +661,7 @@ class Log:
                 continue
 
             # Fix type
-            fix_type = self.arRationToFixType(ar_ratio)
+            fix_type = self.arRatioToFixType(ar_ratio)
             # First time to fix
             first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
             time_to_first_fix = (time_ms[first_fix_index] - time_ms[0])/1000
@@ -691,20 +692,21 @@ class Log:
                 time_to_first_fix < threshold['timeToFirstFix'] and
                 fix_percent > threshold['percentFix'] and
                 ar_ratio_mean > threshold['arRatio'] and
-                yaw_err_mean < threshold['headingErr']
+                np.abs(yaw_err_mean) < threshold['headingErr']
             )
 
             if not success: 
                 failures.append(str)
             f.write(   "[%s] %s\n" % (("PASSED" if success else "FAILED"), str))
-        thresh_str = "Thresholds  ( %ss, %3.0f%% )    %4.0f, %5.1f°" % (
+        thresh_str = "Required    (<%ss, <%2.0f%% )    >%3.0f,  <%3.1f°" % (
             self.format_minutes_seconds(threshold['timeToFirstFix']), 
             threshold['percentFix'], 
             threshold['arRatio'], 
             threshold['headingErr']*RAD2DEG)
         if failures:
+            failures.insert(0, title_str)
             failures.append(thresh_str)
-        f.write("         " + thresh_str + "\n")
+        f.write(" "*9 + thresh_str + "\n")
 
         # Print Device Information
         f.write('\n')
