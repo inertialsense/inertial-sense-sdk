@@ -422,12 +422,6 @@ enum eSysStatusFlags
     SYS_STATUS_TBED3_LEDS_ENABLED				    = (int)0x00000001,
 
     SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
-
-#if ENABLE_CHECK_INIT_SER
-    SYS_STATUS_SER0_CHECK_ACTIVE                    = (int)0x00000010,
-    SYS_STATUS_SER1_CHECK_ACTIVE                    = (int)0x00000020,
-    SYS_STATUS_SER2_CHECK_ACTIVE                    = (int)0x00000040,
-#endif
 };
 
 // Used to validate GPS position (and velocity)
@@ -1485,11 +1479,6 @@ enum eGenFaultCodes
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION 				= 0x00040000,
 
-#if ENABLE_CHECK_INIT_SER
-    /*! Fault: GPS receiver time fault */
-    GFC_SER_CHECK_INIT                  = 0x00080000,
-#endif
-
     /*! Fault: IMU initialization */
     GFC_INIT_IMU						= 0x00100000,
     /*! Fault: Barometer initialization */
@@ -1568,17 +1557,10 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
-#if ENABLE_CHECK_INIT_SER
-    SYS_CMD_TEST_CHECK_INIT_SER0                        = 60,           // (uint32 inv: 4294967235)
-    SYS_CMD_TEST_FORCE_INIT_SER0                        = 61,           // (uint32 inv: 4294967234)
-    SYS_CMD_TEST_CHECK_INIT_SER1                        = 62,           // (uint32 inv: 4294967233)
-    SYS_CMD_TEST_FORCE_INIT_SER1                        = 63,           // (uint32 inv: 4294967232)
-    SYS_CMD_TEST_CHECK_INIT_SER2                        = 64,           // (uint32 inv: 4294967231)
-    SYS_CMD_TEST_FORCE_INIT_SER2                        = 65,           // (uint32 inv: 4294967230)
-#endif
-
     // TODO: DEBUG REMOVE ONCE INTEL TX->RX bug (TM)
-    SYS_CMD_SET_GPX_SOFT_SER                            = 69,           // (uint32 inv: 4294967226)
+    SYS_CMD_SET_GPX_SER0_PIN_DEFAULT                    = 67,           // (uint32 inv: 4294967228)
+    SYS_CMD_SET_GPX_SER0_PIN_REINIT                     = 68,           // (uint32 inv: 4294967227)
+    
     SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
     SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
 
@@ -3214,28 +3196,28 @@ enum ePlatformConfig
 /** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
 typedef struct PACKED
 {
-    /** Time of measurement wrt current week */
+    /** (Do not use, internal development only) Time of measurement in current GPS week */
     double timeOfWeek;
 
-    /** Status Word */
+    /** Status */
     uint32_t status;
 
-    /** Left wheel angle (rad) */
+    /** (Do not use, internal development only) Left wheel angle (rad) */
     float theta_l;
 
-    /** Right wheel angle (rad) */
+    /** (Do not use, internal development only) Right wheel angle (rad) */
     float theta_r;
     
-    /** Left wheel angular rate (rad/s) */
+    /** Left wheel angular rate (rad/s). Positive when wheel is turning toward the forward direction of the vehicle. Use WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT in DID_FLASH_CONFIG::wheelConfig to reverse this. */
     float omega_l;
 
-    /** Right wheel angular rate (rad/s) */
+    /** Right wheel angular rate (rad/s). Positive when wheel is turning toward the forward direction of the vehicle. Use WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT in DID_FLASH_CONFIG::wheelConfig to reverse this. */
     float omega_r;
 
-    /** Left wheel revolution count */
+    /** (Do not use, internal development only) Left wheel revolution count */
     uint32_t wrap_count_l;
 
-    /** Right wheel revolution count */
+    /** (Do not use, internal development only) Right wheel revolution count */
     uint32_t wrap_count_r;
 
 } wheel_encoder_t;
@@ -3245,8 +3227,8 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
     WHEEL_CFG_BITS_ENABLE_CONTROL           = (int)0x00000004,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
-    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
-    WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_l 
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_r
     WHEEL_CFG_BITS_ENCODER_SOURCE			= (int)0x00000400,	// 0 = uINS, 1 = EVB
 };
 
@@ -4550,10 +4532,6 @@ enum eGpxStatus
     GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000010,
     GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000020,
     GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED            = (int)0x00000040,
-
-    /** Software UART driver enabled instead of hardware UART driver for Ser0 Rx */
-    GPX_STATUS_COM0_RX_SOFTWARE_DRIVER_MODE             = (int)0x00000100,
-    GPX_STATUS_COM0_RX_SOFT_SER_LOOP_BACK_MODE          = (int)0x00000200,
 
     /** General Fault mask */
     GPX_STATUS_GENERAL_FAULT_MASK                       = (int)0xFFFF0000,
