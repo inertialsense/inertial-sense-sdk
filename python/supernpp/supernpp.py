@@ -160,16 +160,16 @@ class SuperNPP():
             nppPrint("   " + sdir)
 
             ### Compute Performance report ##################################################
-            passRMS = 0
             if self.log.load(sdir):
                 # Compute and output performance report
-                passRMS = runReportFunc()
-                if passRMS == 1:
+                failures = runReportFunc()
+                if failures:
+                    results.append("[FAILED] " + rel_dir)
+                    results.append("\n".join("         " + line for line in failures))
+                    self.failResults.append(rel_dir)
+                else:
                     results.append("[PASSED] " + rel_dir)
                     self.passResults.append(rel_dir)
-                else:
-                    results.append("[FAILED] " + rel_dir)
-                    self.failResults.append(rel_dir)
             else:
                 results.append("[NODATA] " + rel_dir)
             ### Compute Performance report ##################################################

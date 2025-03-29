@@ -589,7 +589,14 @@ class Log:
 
         # Report if RMS passed all
         self.passRMS = self.tmpPassRMS
-        return self.passRMS
+        return not self.passRMS
+
+    def arRationToFixType(self, ar_ratio):
+        fix_type = ar_ratio.copy()
+        fix_type[(fix_type > 3)] = 12
+        fix_type[(fix_type > 0) & (fix_type < 3)] = 11
+        fix_type[fix_type == 0] = 10
+        return fix_type
 
     def runGpxPerformanceReport(self):
         self.data = np.array(self.data)
@@ -598,7 +605,7 @@ class Log:
         threshold['percentFix']         = 95            # percent of time in fix, excluding time to first fix
         threshold['arRatio']            = 500           # (RTK AR ratio)
         threshold['headingErr']         = 1.5*DEG2RAD   # (rad)
-        result = 1
+        failures = []
 
         device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.tmpPassRMS = 1
@@ -626,9 +633,12 @@ class Log:
                 continue
 
             if ref_time is None:
-                ref_time = time
-                ref_yaw = np.copy(yaw)
-                sum_delta = np.zeros_like(yaw)
+                # Find reference time and yaw starting at first fix
+                fix_type = self.arRationToFixType(self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio'])
+                first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
+                ref_time = time[first_fix_index:]
+                ref_yaw = np.copy(yaw[first_fix_index:])
+                sum_delta = np.zeros_like(ref_yaw)
             else:
                 unwrap_yaw = self.angle_unwrap(yaw)
                 int_yaw = np.empty_like(ref_yaw)
@@ -650,10 +660,7 @@ class Log:
                 continue
 
             # Fix type
-            fix_type = self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio'].copy()
-            fix_type[(fix_type > 3)] = 12
-            fix_type[(fix_type > 0) & (fix_type < 3)] = 11
-            fix_type[fix_type == 0] = 10
+            fix_type = self.arRationToFixType(ar_ratio)
             # First time to fix
             first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
             time_to_first_fix = (time_ms[first_fix_index] - time_ms[0])/1000
@@ -671,6 +678,14 @@ class Log:
                 # Filter out NaNs and zeros
                 yaw_err_valid = yaw_error[~np.isnan(yaw_error) & (yaw_error != 0)]
             yaw_err_mean = np.mean(yaw_err_valid)
+
+            str = "SN%6d    ( %ss, %3.0f%% )    %4.0f, %5.1f°" % (
+                    serial_number, 
+                    self.format_minutes_seconds(time_to_first_fix), 
+                    fix_percent,
+                    ar_ratio_mean,  
+                    yaw_err_mean*RAD2DEG)
+
             # Check thresholds
             success = (
                 time_to_first_fix < threshold['timeToFirstFix'] and
@@ -678,19 +693,18 @@ class Log:
                 ar_ratio_mean > threshold['arRatio'] and
                 yaw_err_mean < threshold['headingErr']
             )
-            if not success: result = 0
-            f.write(   "[%s] SN%6d    ( %ss, %3.0f%% )    %4.0f, %5.1f°\n" % 
-                  (("PASSED" if success else "FAILED"), 
-                   serial_number, 
-                   self.format_minutes_seconds(time_to_first_fix), 
-                   fix_percent,
-                   ar_ratio_mean,  
-                   yaw_err_mean*RAD2DEG))
-        f.write("Thresholds:          ( %ss, %3.0f%% )    %4.0f, %5.1f°\n" % 
-              (self.format_minutes_seconds(threshold['timeToFirstFix']), 
-               threshold['percentFix'], 
-               threshold['arRatio'], 
-               threshold['headingErr']*RAD2DEG))
+
+            if not success: 
+                failures.append(str)
+            f.write(   "[%s] %s\n" % (("PASSED" if success else "FAILED"), str))
+        thresh_str = "Thresholds  ( %ss, %3.0f%% )    %4.0f, %5.1f°" % (
+            self.format_minutes_seconds(threshold['timeToFirstFix']), 
+            threshold['percentFix'], 
+            threshold['arRatio'], 
+            threshold['headingErr']*RAD2DEG)
+        if failures:
+            failures.append(thresh_str)
+        f.write("        " + thresh_str + "\n")
 
         # Print Device Information
         f.write('\n')
@@ -703,7 +717,7 @@ class Log:
         # Print report to terminal
         print(open(self.report_filename).read())
 
-        return result
+        return failures
 
     def debugPlot(self):
         import matplotlib.pyplot as plt
