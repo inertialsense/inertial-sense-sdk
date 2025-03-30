@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import sys
 import threading
+import yaml
 
 sys.path.insert(1, '../../SDK/python/logInspector')
 sys.path.insert(1, '../logInspector')
@@ -18,30 +19,30 @@ sys.path.insert(1, '..')
 from logReader import Log
 
 class SuperNPP():
-    def __init__(self, test_name=None, logs_file=None, directory=None, serials=['ALL'], startMode=0, options=""):		# start mode 0=hot, 1=cold, 2=factory
+    def __init__(self, params=None, serials=['ALL'], startMode=0, options=""):		# start mode 0=hot, 1=cold, 2=factory
         self.config_serials = serials
-        self.test_name = test_name or "test_imx"
         self.logs_file = None
-        if logs_file:
-            self.logs_file = os.path.normpath(Path(logs_file))
-            self.test_name = os.path.splitext(os.path.basename(logs_file))[0]
-            self.directory = os.path.dirname(logs_file)
-            with open(logs_file, 'r') as f:
-                self.directories = [
-                    os.path.normpath(os.path.join(self.directory, line.strip()))
-                    for line in f
-                    if line.strip() and not os.path.isabs(line.strip())
-                ]
-        elif directory:
-            self.directory = os.path.normpath(Path(directory))
-            self.directories = [ self.directory ]
-        else:
-            print("No log list file or directory provided.")
-            return
+        self.params = params 
+        # if params:
+        #     self.logs_file = os.path.normpath(Path(logs_file))
+        #     self.test_name = os.path.splitext(os.path.basename(logs_file))[0]
+        #     self.directory = os.path.dirname(logs_file)
+        #     with open(logs_file, 'r') as f:
+        #         self.params["directories"] = [
+        #             os.path.normpath(os.path.join(self.directory, line.strip()))
+        #             for line in f
+        #             if line.strip() and not os.path.isabs(line.strip())
+        #         ]
+        # elif directory:
+        #     self.directory = os.path.normpath(Path(directory))
+        #     self.params["directories"] = [ self.directory ]
+        # else:
+        #     print("No log list file or directory provided.")
+        #     return
         self.startMode = startMode
         options_upper = options.upper()
-        self.computeIMX = "IMX" in options_upper
-        self.computeGPX = "GPX" in options_upper
+        self.testIMX = "IMX" in options_upper
+        self.testGPX = "GPX" in options_upper
         self.subdirs = []
         self.log = Log()
         self.passResults = []
@@ -49,13 +50,11 @@ class SuperNPP():
         self._key_lock = threading.Lock()
 
         print("=====================  Init SuperNPP  =====================")
-        if self.logs_file:
-            print("  Log List: ", self.logs_file)
-        print("  Directories: ", self.directories)
+        print("  Directories: ", self.params["directories"])
         print("  config_serials:", self.config_serials)
         print("  startMode: ", self.startMode)
-        self.remove_post_processed_dirs(self.directories)
-        self.findLogFiles(self.directories)
+        self.remove_post_processed_dirs(self.params["directories"])
+        self.findLogFiles(self.params["directories"])
             
     def getSerialNumbers(self):
         return self.log.getSerialNumbers()
@@ -139,15 +138,15 @@ class SuperNPP():
             thread.join()
 
         # Record list of logs to be processed
-        self.results_filename = self.directory + "/results_" + self.test_name.split('_', 1)[1] + ".txt"
+        self.results_filename = self.params["results_directory"] + "/results_" + self.params["name"] + ".txt"
         try:
             os.remove(self.results_filename)      # Remove old file
         except OSError:
             pass
 
     def run_tests(self):
-        if self.computeIMX: self.run_report(self.log.runImxPerformanceReport)
-        if self.computeGPX: self.run_report(self.log.runGpxPerformanceReport)
+        if self.testIMX: self.run_report(self.log.runImxPerformanceReport)
+        if self.testGPX: self.run_report(self.log.runGpxPerformanceReport)
 
     def run_report(self, runReportFunc):
         results = []
@@ -289,9 +288,12 @@ if __name__ == "__main__":
     # 2nd argument: Log directory list file
     if len(sys.argv) < 2:
         exit(1)
-    logs_file = sys.argv[1]
-    test_name = os.path.splitext(os.path.basename(logs_file))[0]
-    directory = os.path.dirname(logs_file)
+    params_yaml = sys.argv[1]
+    if not os.path.isfile(params_yaml):
+        print("First parameter must the params yaml!")
+        exit(1)
+    with open(params_yaml, "r") as file:
+        params = yaml.safe_load(file)
 
     # Debug
     # directory = '/home/walt/src/IS-src/scripts/../../goldenlogs/AHRS'
@@ -302,16 +304,6 @@ if __name__ == "__main__":
     # serials = ""
     # directory = 'D:/Dropbox (Inertial Sense)/ISD/logs/202110/20211022_14_NAV_Drive_uins4_branch/20211022_145320'
 
-    if not os.path.isfile(logs_file):
-        print("First parameter must the path to the log list file!")
-        exit(1)
-
-    # 3rd argument: Compute Comparison Report
-    if len(sys.argv) >= 3:
-        options = sys.argv[2]
-    else:
-        options = "IMX" # Default to IMX
-
     # 3rd argument: Serial #s
     serials = ['ALL']
     if len(sys.argv) >= 4:
@@ -319,13 +311,12 @@ if __name__ == "__main__":
 
     # Run Super NPP
     snpp = SuperNPP(
-        logs_file=logs_file, 
-        options=options,
+        params=params, 
         serials=serials)
     snpp.run_process()
     snpp.run_tests()
 
-    testSummaryFilename = directory + "/results_" + test_name.split('_', 1)[1] + ".txt"
+    testSummaryFilename = params["result_directory"] + "/results_" + params['name'] + ".txt"
     nppPrint("\n")
     nppPrint("====================  Super NPP Results  ====================")
     print_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
