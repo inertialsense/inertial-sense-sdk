@@ -1240,6 +1240,89 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
     return nmea_sprint_footer(a, aSize, n);
 }
 
+int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
+{
+    /*  $POWGPS prorietary NMEA message
+            0	Message ID $POWGPS
+            1	GPS Time Quality (0=invalid, 1=valid)
+            2	GPS Week Number
+            3	GPS Time of Week (micro seconds)
+            4	GPS leap seconds validity (0=invalid, 1=valid)
+            5	GPS leap seconds
+            6	Holdover flag (0=no holdover, 1=EGR is in holdover)
+            7	Checksum, begins with *
+    */
+
+    int valid;
+    int n = ssnprintf(a, aSize, "$POWGPS");                 // 0
+
+    valid = (pos.week > 2359) ? 1 : 0; // assume time is valid if week > 2359 (03/23/2025)
+    nmea_sprint(a, aSize, n, ",%d", valid);                 // 1
+    nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
+    nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);      // 3 
+
+    valid = (pos.leapS > 0) ? 1 : 0; // assume leap seconds is valid if non 0
+    nmea_sprint(a, aSize, n, ",%d", valid);                 // 4
+    nmea_sprint(a, aSize, n, ",%d", pos.leapS);             // 5
+
+    valid = () ? 1 : 0;
+    nmea_sprint(a, aSize, n, ",%d", valid);                 // 6
+
+    return nmea_sprint_footer(a, aSize, n);
+}
+
+int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1)
+{
+    /*  $POWGPS prorietary NMEA message
+            0	Message ID $POWGPS
+            1	GPS Time Quality (0=invalid, 1=valid)
+            2	GPS Week Number
+            3	GPS Time of Week (micro seconds)
+            4	GPS leap seconds validity (0=invalid, 1=valid)
+            5	GPS leap seconds
+            6	Holdover flag (0=no holdover, 1=EGR is in holdover)
+            7   Latitude ddmm.mmmm
+            8   North/South indicator (N/S)
+            9   Longitude dddmm.mmmm
+            10  East/West indicator (E/W)
+            11  Altitude (x.xxx meters)
+            12  Mean Sea Level (MSL) (x.xxx meters)
+            13  Horizontal Speed (x.xxx m/s)
+            14  Vertical Speed (x.xxx m/s)
+            15  Heading (x.xxx degrees)
+            16	Checksum, begins with *
+    */
+    
+    float horVel = sqrt(vel.vel[0]*vel.vel[0] + vel.vel[1]*vel.vel[1]);
+    int valid;
+    int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
+
+    valid = (pos.week > 2359) ? 1 : 0; // assume time is valid if week > 2359 (03/23/2025)
+    nmea_sprint(a, aSize, n, ",%d", valid);                     // 1
+    nmea_sprint(a, aSize, n, ",%d", pos.week);                  // 2
+    nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);          // 3 
+
+    valid = (pos.leapS > 0) ? 1 : 0; // assume leap seconds is valid if non 0
+    nmea_sprint(a, aSize, n, ",%d", valid);                     // 4
+    nmea_sprint(a, aSize, n, ",%d", pos.leapS);                 // 5
+
+    valid = () ? 1 : 0;
+    nmea_sprint(a, aSize, n, ",%d", valid);                     // 6
+
+    nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8                                                      // 2,3
+    nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
+
+    nmea_sprint(a, aSize, n, ",%.3f,M", pos.lla[2] - pos.hMSL); // 11
+    nmea_sprint(a, aSize, n, ",%.3f,M", pos.hMSL);              // 12
+
+    nmea_sprint(a, aSize, n, ",%.3f", horVel);                  // 13
+
+    nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);              // 14
+
+    nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(ins1.theta[2]));  // 15
+
+    return nmea_sprint_footer(a, aSize, n);                     // 16
+}
 
 void print_string_n(char a[], int n)
 {
