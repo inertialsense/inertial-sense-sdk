@@ -2879,7 +2879,7 @@ int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t
     (void)aSize;
     char *ptr = (char *)&a[8];	// $POWGPS,
     uint32_t temp;
-    float tempFt;
+    float horVel, courseMadeTrue;
     
     // 1 -	GPS Time valid
     ptr = ASCII_to_u32(&temp, ptr);
@@ -2912,28 +2912,23 @@ int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t
     ptr = ASCII_DegMin_to_Lon(&(pos.lla[1]), ptr);
 
     // 11 - Altitude (x.xxx meters)
+    ptr = ASCII_to_f64(&(pos.lla[2]), ptr);
+
     // 12 - Mean Sea Level (MSL) (x.xxx meters)
     ptr = ASCII_to_f32(&(pos.hMSL), ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    // 11,12 - Geoid separation = alt(HAE) - alt(MSL)
-    double geoidSep;
-    ptr = ASCII_to_f64(&(geoidSep), ptr);
-    pos.lla[2] = gpsPos.hMSL + geoidSep;
 
     // 13 - Horizontal Speed (x.xxx m/s)
-    ptr = ASCII_to_f32(&tempFt, ptr);
+    ptr = ASCII_to_f32(&horVel, ptr);
 
     // 14 - Vertical Speed (x.xxx m/s)
     ptr = ASCII_to_f32(&vel.vel[2], ptr);
 
     // 15 - Heading (x.xxx degrees)
-    float courseMadeTrue;
     ptr = ASCII_to_f32(&courseMadeTrue, ptr);
     courseMadeTrue *= C_DEG2RAD_F;
 
-    vel.vel[0] = tempFt * cosf(courseMadeTrue);
-    vel.vel[1] = tempFt * sinf(courseMadeTrue);
+    vel.vel[0] = horVel * cosf(courseMadeTrue);
+    vel.vel[1] = horVel * sinf(courseMadeTrue);
 
     return 0;
 }
