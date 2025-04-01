@@ -1240,7 +1240,7 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
     return nmea_sprint_footer(a, aSize, n);
 }
 
-int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
+int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 {
     /*  $POWGPS prorietary NMEA message
             0	Message ID $POWGPS
@@ -1252,11 +1252,10 @@ int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
             6	Holdover flag (0=no holdover, 1=EGR is in holdover)
             7	Checksum, begins with *
     */
+   
+    int n = startN;
+    int valid = (pos.week > 2359) ? 1 : 0; // assume time is valid if week > 2359 (03/23/2025)
 
-    int valid;
-    int n = ssnprintf(a, aSize, "$POWGPS");                 // 0
-
-    valid = (pos.week > 2359) ? 1 : 0; // assume time is valid if week > 2359 (03/23/2025)
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 1
     nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
     nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);      // 3 
@@ -1267,19 +1266,39 @@ int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
 
     nmea_sprint(a, aSize, n, ",%d", 0);                     // 6
 
+    return n;
+}
+
+
+int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
+{
+    /*  $POWGPS prorietary NMEA message
+            1   GPS Time Quality (0=invalid, 1=valid)
+            2   GPS Week Number
+            3   GPS Time of Week (micro seconds)
+            4   GPS leap seconds validity (0=invalid, 1=valid)
+            5   GPS leap seconds
+            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+    */
+
+    int valid;
+    int n = ssnprintf(a, aSize, "$POWGPS");     // 0
+
+    n = nmea_powPrep(a, n, aSize, pos);         // 1-6
+
     return nmea_sprint_footer(a, aSize, n);
 }
 
 int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
     /*  $POWGPS prorietary NMEA message
-            0	Message ID $POWGPS
-            1	GPS Time Quality (0=invalid, 1=valid)
-            2	GPS Week Number
-            3	GPS Time of Week (micro seconds)
-            4	GPS leap seconds validity (0=invalid, 1=valid)
-            5	GPS leap seconds
-            6	Holdover flag (0=no holdover, 1=EGR is in holdover)
+            0   Message ID $POWGPS
+            1   GPS Time Quality (0=invalid, 1=valid)
+            2   GPS Week Number
+            3   GPS Time of Week (micro seconds)
+            4   GPS leap seconds validity (0=invalid, 1=valid)
+            5   GPS leap seconds
+            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
             7   Latitude ddmm.mmmm
             8   North/South indicator (N/S)
             9   Longitude dddmm.mmmm
@@ -1289,7 +1308,7 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
             13  Horizontal Speed (x.xxx m/s)
             14  Vertical Speed (x.xxx m/s)
             15  Heading (x.xxx degrees)
-            16	Checksum, begins with *
+            16  Checksum, begins with *
     */
     
     float horVel = MAG_VEC2(vel.vel);
@@ -1298,16 +1317,7 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
     int valid;
     int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
 
-    valid = (pos.week > 2359) ? 1 : 0; // assume time is valid if week > 2359 (03/23/2025)
-    nmea_sprint(a, aSize, n, ",%d", valid);                     // 1
-    nmea_sprint(a, aSize, n, ",%d", pos.week);                  // 2
-    nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);          // 3 
-
-    valid = (pos.leapS > 0) ? 1 : 0; // assume leap seconds is valid if non 0
-    nmea_sprint(a, aSize, n, ",%d", valid);                     // 4
-    nmea_sprint(a, aSize, n, ",%d", pos.leapS);                 // 5
-
-    nmea_sprint(a, aSize, n, ",%d", 0);                         // 6
+    n = nmea_powPrep(a, n, aSize, pos);                         // 1-6
 
     nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8                                                      // 2,3
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
