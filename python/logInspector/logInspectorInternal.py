@@ -158,7 +158,7 @@ class logInspectorInternal(LogInspectorWindow):
             result = reportFunc()
             self.log.openReport()
             self.updatePlot()
-            self.setStatus(name +" Test: " + ("PASSED" if result else "FAILED"))
+            self.setStatus(name +" Test: " + ("FAILED" if result else "PASSED"))
 
     def createPlotSelection(self):
         super(logInspectorInternal, self).createPlotSelection()

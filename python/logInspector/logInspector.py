@@ -809,8 +809,20 @@ class LogInspectorWindow(QMainWindow):
         cleanFolder(directory)
         setDataInformationDirectory(directory, startMode=startMode)
         sys.path.insert(1, '../../../../python/src')
+        params_flename = directory + '/params.yaml'
+        data = {
+            'name': 'test_imx',
+            'results_directory': ".",
+            'directory': directory,
+            'logs': ['.'],
+            'blacklist_logs': [],
+            'options': [],
+            'run_test': []
+        }
+        with open(params_flename, 'w') as file:
+            yaml.dump(data, file, default_flow_style=False)
         from supernpp.supernpp import SuperNPP
-        spp = SuperNPP(directory=directory, serials=self.config['serials'], startMode=startMode)
+        spp = SuperNPP(params_flename, serials=self.config['serials'], startMode=startMode)
         self.setStatus(("NPP %s running..." % (startModes[startMode])))
         spp.run_process()
         
@@ -830,6 +842,26 @@ class LogInspectorWindow(QMainWindow):
                 continue
             
         self.setStatus("NPP done.")
+
+    def runGpxTest(self, directory, startMode):
+        sys.path.insert(1, '../../../../python/src')
+        params_flename = directory + '/params.yaml'
+        data = {
+            'name': 'test_gpx',
+            'results_directory': ".",
+            'directory': directory,
+            'logs': ['.'],
+            'blacklist_logs': [],
+            'options': [],
+            'run_test': ["gpx"],
+            'reprocess': True,
+        }
+        with open(params_flename, 'w') as file:
+            yaml.dump(data, file, default_flow_style=False)
+        from supernpp.supernpp import SuperNPP
+        spp = SuperNPP(params_flename, serials=self.config['serials'], startMode=startMode)
+        self.setStatus(("NPP %s running..." % (startModes[startMode])))
+        spp.run_process()
 
     def setTreeViewDirectoryRoot(self, event):
         directory = self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0])

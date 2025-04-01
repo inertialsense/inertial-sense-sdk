@@ -664,36 +664,39 @@ class Log:
             fix_type = self.arRatioToFixType(ar_ratio)
             # First time to fix
             first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
-            time_to_first_fix = (time_ms[first_fix_index] - time_ms[0])/1000
-            # Percent of time in fix
-            fix_percent = np.mean(fix_type[first_fix_index:] >= 12) * 100    # Percent fix from first fix to the end
-            # Average AR ratio
-            ar_ratio_mean = np.mean(ar_ratio[first_fix_index:])
-            # Heading Error
-            yaw_err_valid = 0
-            if self.numDev > 1: 
-                unwrap_yaw = self.angle_unwrap(yaw)
-                int_yaw = np.empty_like(ref_yaw)
-                int_yaw = np.interp(ref_time, time_ms, unwrap_yaw, right=np.nan, left=np.nan)
-                yaw_error = self.angle_wrap(int_yaw - ref_yaw)
-                # Filter out NaNs and zeros
-                yaw_err_valid = yaw_error[~np.isnan(yaw_error) & (yaw_error != 0)]
-            yaw_err_mean = np.mean(yaw_err_valid)
+            str = "SN%6d    (no fix)"
+            success = False
+            if first_fix_index is not None: 
+                # Acquired RTK fix
+                time_to_first_fix = (time_ms[first_fix_index] - time_ms[0])/1000
+                # Percent of time in fix
+                fix_percent = np.mean(fix_type[first_fix_index:] >= 12) * 100    # Percent fix from first fix to the end
+                # Average AR ratio
+                ar_ratio_mean = np.mean(ar_ratio[first_fix_index:])
+                # Heading Error
+                yaw_err_valid = 0
+                if self.numDev > 1: 
+                    unwrap_yaw = self.angle_unwrap(yaw)
+                    int_yaw = np.empty_like(ref_yaw)
+                    int_yaw = np.interp(ref_time, time_ms, unwrap_yaw, right=np.nan, left=np.nan)
+                    yaw_error = self.angle_wrap(int_yaw - ref_yaw)
+                    # Filter out NaNs and zeros
+                    yaw_err_valid = yaw_error[~np.isnan(yaw_error) & (yaw_error != 0)]
+                yaw_err_mean = np.mean(yaw_err_valid)
+                str = "SN%6d    ( %ss, %3.0f%% )    %4.0f, %5.1f°" % (
+                        serial_number, 
+                        self.format_minutes_seconds(time_to_first_fix), 
+                        fix_percent,
+                        ar_ratio_mean,  
+                        yaw_err_mean*RAD2DEG)
 
-            str = "SN%6d    ( %ss, %3.0f%% )    %4.0f, %5.1f°" % (
-                    serial_number, 
-                    self.format_minutes_seconds(time_to_first_fix), 
-                    fix_percent,
-                    ar_ratio_mean,  
-                    yaw_err_mean*RAD2DEG)
-
-            # Check thresholds
-            success = (
-                time_to_first_fix < threshold['timeToFirstFix'] and
-                fix_percent > threshold['percentFix'] and
-                ar_ratio_mean > threshold['arRatio'] and
-                np.abs(yaw_err_mean) < threshold['headingErr']
-            )
+                # Check thresholds
+                success = (
+                    time_to_first_fix < threshold['timeToFirstFix'] and
+                    fix_percent > threshold['percentFix'] and
+                    ar_ratio_mean > threshold['arRatio'] and
+                    np.abs(yaw_err_mean) < threshold['headingErr']
+                )                
 
             if not success: 
                 failures.append(str)

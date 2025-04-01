@@ -19,28 +19,24 @@ sys.path.insert(1, '..')
 from logReader import Log
 
 class SuperNPP():
-    def __init__(self, params=None, serials=['ALL'], startMode=0, options=""):		# start mode 0=hot, 1=cold, 2=factory
+    def __init__(self, params_filename=None, serials=['ALL'], startMode=0):		# start mode 0=hot, 1=cold, 2=factory
         self.config_serials = serials
         self.logs_file = None
-        self.params = params 
-        # if params:
-        #     self.logs_file = os.path.normpath(Path(logs_file))
-        #     self.test_name = os.path.splitext(os.path.basename(logs_file))[0]
-        #     self.directory = os.path.dirname(logs_file)
-        #     with open(logs_file, 'r') as f:
-        #         self.params["directories"] = [
-        #             os.path.normpath(os.path.join(self.directory, line.strip()))
-        #             for line in f
-        #             if line.strip() and not os.path.isabs(line.strip())
-        #         ]
-        # elif directory:
-        #     self.directory = os.path.normpath(Path(directory))
-        #     self.params["directories"] = [ self.directory ]
-        # else:
-        #     print("No log list file or directory provided.")
-        #     return
+
+        # Open and read the YAML file
+        with open(params_filename, 'r') as file:
+            self.params = yaml.safe_load(file)
+            if "directory" not in self.params:
+                directory = os.path.dirname(params_filename)
+                self.params["directory"] = str(directory)
+            if not os.path.isdir(self.params["directory"]):
+                print("Directory does not exist: ", self.params["directory"])
+                exit(1)
+            # Add full path to list of logs
+            self.params["logs"] = [str(Path(self.params["directory"]) / Path(s)) for s in self.params["logs"]]
+
         self.startMode = startMode
-        options_upper = options.upper()
+        options_upper = ",".join(self.params["run_test"]).upper()
         self.testIMX = "IMX" in options_upper
         self.testGPX = "GPX" in options_upper
         self.subdirs = []
@@ -50,11 +46,12 @@ class SuperNPP():
         self._key_lock = threading.Lock()
 
         print("=====================  Init SuperNPP  =====================")
-        print("  Directories: ", self.params["directories"])
-        print("  config_serials:", self.config_serials)
-        print("  startMode: ", self.startMode)
-        self.remove_post_processed_dirs(self.params["directories"])
-        self.findLogFiles(self.params["directories"])
+        print("  Directory:      ", self.params['directory'])
+        print("  Logs:           ", self.params["logs"])
+        print("  config_serials: ", self.config_serials)
+        print("  startMode:      ", self.startMode)
+        self.remove_post_processed_dirs(self.params["logs"])
+        self.findLogFiles(self.params["logs"])
             
     def getSerialNumbers(self):
         return self.log.getSerialNumbers()
@@ -138,7 +135,7 @@ class SuperNPP():
             thread.join()
 
         # Record list of logs to be processed
-        self.results_filename = self.params["results_directory"] + "/results_" + self.params["name"] + ".txt"
+        self.results_filename = os.path.join(self.params["directory"], self.params["results_directory"] , self.params["name"] + "_results.txt")
         try:
             os.remove(self.results_filename)      # Remove old file
         except OSError:
@@ -288,12 +285,10 @@ if __name__ == "__main__":
     # 2nd argument: Log directory list file
     if len(sys.argv) < 2:
         exit(1)
-    params_yaml = sys.argv[1]
-    if not os.path.isfile(params_yaml):
+    params_filename = sys.argv[1]
+    if not os.path.isfile(params_filename):
         print("First parameter must the params yaml!")
         exit(1)
-    with open(params_yaml, "r") as file:
-        params = yaml.safe_load(file)
 
     # Debug
     # directory = '/home/walt/src/IS-src/scripts/../../goldenlogs/AHRS'
@@ -310,19 +305,21 @@ if __name__ == "__main__":
         serials = sys.argv[3]
 
     # Run Super NPP
-    snpp = SuperNPP(
-        params=params, 
-        serials=serials)
+    snpp = SuperNPP(params_filename, serials)
     snpp.run_process()
     snpp.run_tests()
 
-    testSummaryFilename = params["result_directory"] + "/results_" + params['name'] + ".txt"
-    nppPrint("\n")
-    nppPrint("====================  Super NPP Results  ====================")
-    print_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
-    print_case(testSummaryFilename, "  Tests FAILED:", "[FAILED]")
-    print_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
-    nppPrint("=============================================================")
+    # Open and read the YAML file
+    with open(params_filename, 'r') as file:
+        params = yaml.safe_load(file)
+        directory = os.path.dirname(params_filename)
+        testSummaryFilename = os.path.join(directory, params["results_directory"], params['name'] + "_results.txt")
+        nppPrint("\n")
+        nppPrint("====================  Super NPP Results  ====================")
+        print_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
+        print_case(testSummaryFilename, "  Tests FAILED:", "[FAILED]")
+        print_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
+        nppPrint("=============================================================")
 
     snpp.exitHack()
 
