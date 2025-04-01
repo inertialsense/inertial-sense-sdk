@@ -1280,8 +1280,6 @@ int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
             5   GPS leap seconds
             6   Holdover flag (0=no holdover, 1=EGR is in holdover)
     */
-
-    int valid;
     int n = ssnprintf(a, aSize, "$POWGPS");     // 0
 
     n = nmea_powPrep(a, n, aSize, pos);         // 1-6
@@ -1314,7 +1312,6 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
     float horVel = MAG_VEC2(vel.vel);
     float groundTrackHeading = C_RAD2DEG_F * atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
 
-    int valid;
     int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
 
     n = nmea_powPrep(a, n, aSize, pos);                         // 1-6
