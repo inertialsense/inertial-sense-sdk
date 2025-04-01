@@ -346,7 +346,6 @@ class Log:
             self.tmpPassRMS = -1
             return 'FAIL'
         else:
-            # self.tmpPassRMS = -1  # Debug
             return 'PASS'
 
     def deviceInfo(self, n, dev, did):
@@ -589,7 +588,7 @@ class Log:
 
         # Report if RMS passed all
         self.passRMS = self.tmpPassRMS
-        return not self.passRMS
+        return self.passRMS < 1
 
     def arRatioToFixType(self, ar_ratio):
         fix_type = ar_ratio.copy()
@@ -608,7 +607,6 @@ class Log:
         failures = []
 
         device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
-        self.tmpPassRMS = 1
         self.report_filename = os.path.join(self.directory, 'performance_report_gpx.txt')
         # Make sure all devices have the same hardware
         hardware = self.hardware[device_idx[0]]
@@ -754,13 +752,15 @@ class Log:
                 plt.plot(self.att_error[n, :, m])
         plt.show()
 
-    def openReport(self):
-        if self.report_filename is None:
+    def openReport(self, filename=None):
+        if filename is None:
+            filename = self.report_filename
+        if filename is None:
             return        
         if 'win' in sys.platform:
-            subprocess.Popen(["notepad.exe", self.report_filename])
+            subprocess.Popen(["notepad.exe", filename])
         if 'linux' in sys.platform:
-            subprocess.Popen(['gedit', self.report_filename])
+            subprocess.Popen(['gedit', filename])
 
 if __name__ == '__main__':
     np.set_printoptions(linewidth=200)

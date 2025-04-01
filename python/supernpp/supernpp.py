@@ -45,6 +45,12 @@ class SuperNPP():
         self.failResults = []
         self._key_lock = threading.Lock()
 
+        self.results_filename = self.resultsFilename(self.params)
+        try:
+            os.remove(self.results_filename)      # Remove old file
+        except OSError:
+            pass
+
         print("=====================  Init SuperNPP  =====================")
         print("  Directory:      ", self.params['directory'])
         print("  Logs:           ", self.params["logs"])
@@ -53,6 +59,12 @@ class SuperNPP():
         self.remove_post_processed_dirs(self.params["logs"])
         self.findLogFiles(self.params["logs"])
             
+    def resultsFilename(self, params=None):
+        if params is None:
+            params = self.params
+        results_filename =  os.path.normpath(os.path.join(self.params["directory"], self.params["results_directory"] , self.params["name"] + "_results.txt"))
+        return results_filename
+
     def getSerialNumbers(self):
         return self.log.getSerialNumbers()
 
@@ -120,31 +132,21 @@ class SuperNPP():
                 print(line, end='')  # end='' prevents adding extra newlines
 
     def run_reprocess(self):
-        We need to change supernpp so that it doesn't reprocess if not enabled and just run the tests on the current directories
         if not self.params["reprocess"]:
-            print("Reprocess not enabled")
+            print("Reprocess disabled")
             return
 
         print('  log count: ' + str(len(self.subdirs)))
         for subdir in self.subdirs:
             print("   " + subdir)
         time.sleep(2)	# seconds
-        self.failResults = []
-        self.passResults = []
 
         # Start threads
-        threads = [Thread(target=self.reprocess_folder, args=(folder, self.config_serials)) for folder in self.subdirs]
+        threads = [Thread(target=self.reprocess_log, args=(folder, self.config_serials)) for folder in self.subdirs]
         for thread in threads:
             thread.start()
         for thread in threads:
             thread.join()
-
-        # Record list of logs to be processed
-        self.results_filename = os.path.join(self.params["directory"], self.params["results_directory"] , self.params["name"] + "_results.txt")
-        try:
-            os.remove(self.results_filename)      # Remove old file
-        except OSError:
-            pass
 
     def run_tests(self):
         if self.testIMX: self.run_report(self.log.runImxPerformanceReport)
@@ -156,7 +158,9 @@ class SuperNPP():
         results.append(parent_dir + "\n")
 
         for subdir in self.subdirs:
-            sdir = os.path.normpath(str(subdir) + "/post_processed")
+            sdir = os.path.normpath(str(subdir))
+            if self.params["reprocess"]:
+                sdir = os.path.normpath(str(sdir) + "/post_processed")
             rel_dir = os.path.relpath(sdir, parent_dir)
             nppPrint("   " + sdir)
 
@@ -166,7 +170,8 @@ class SuperNPP():
                 failures = runReportFunc()
                 if failures:
                     results.append("[FAILED] " + rel_dir)
-                    results.append("\n".join("         " + line for line in failures))
+                    if isinstance(failures, list):
+                        results.append("\n".join("         " + line for line in failures))
                     self.failResults.append(rel_dir)
                 else:
                     results.append("[PASSED] " + rel_dir)
@@ -182,7 +187,7 @@ class SuperNPP():
         self.print_file_contents(self.results_filename)
         print('-------------------------------------------------------------')
 
-    def reprocess_folder(self, folder, config_serials):
+    def reprocess_log(self, folder, config_serials):
         # Find the serial numbers in the log
         # subdir = os.path.basename(os.path.normpath(folder))
         (folder, subdir) = os.path.split(folder)
@@ -318,7 +323,7 @@ if __name__ == "__main__":
     with open(params_filename, 'r') as file:
         params = yaml.safe_load(file)
         directory = os.path.dirname(params_filename)
-        testSummaryFilename = os.path.join(directory, params["results_directory"], params['name'] + "_results.txt")
+        testSummaryFilename = snpp.resultsFilename()
         nppPrint("\n")
         nppPrint("====================  Super NPP Results  ====================")
         print_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
