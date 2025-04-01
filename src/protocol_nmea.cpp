@@ -1265,13 +1265,12 @@ int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 4
     nmea_sprint(a, aSize, n, ",%d", pos.leapS);             // 5
 
-    valid = () ? 1 : 0;
-    nmea_sprint(a, aSize, n, ",%d", valid);                 // 6
+    nmea_sprint(a, aSize, n, ",%d", 0);                     // 6
 
     return nmea_sprint_footer(a, aSize, n);
 }
 
-int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1)
+int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
     /*  $POWGPS prorietary NMEA message
             0	Message ID $POWGPS
@@ -1293,7 +1292,9 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1
             16	Checksum, begins with *
     */
     
-    float horVel = sqrt(vel.vel[0]*vel.vel[0] + vel.vel[1]*vel.vel[1]);
+    float horVel = MAG_VEC2(vel.vel);
+    float groundTrackHeading = C_RAD2DEG_F * atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
+
     int valid;
     int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
 
@@ -1306,8 +1307,7 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1
     nmea_sprint(a, aSize, n, ",%d", valid);                     // 4
     nmea_sprint(a, aSize, n, ",%d", pos.leapS);                 // 5
 
-    valid = () ? 1 : 0;
-    nmea_sprint(a, aSize, n, ",%d", valid);                     // 6
+    nmea_sprint(a, aSize, n, ",%d", 0);                         // 6
 
     nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8                                                      // 2,3
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
@@ -1319,7 +1319,7 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1
 
     nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);              // 14
 
-    nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(ins1.theta[2]));  // 15
+    nmea_sprint(a, aSize, n, ",%.3f", groundTrackHeading);      // 15
 
     return nmea_sprint_footer(a, aSize, n);                     // 16
 }
