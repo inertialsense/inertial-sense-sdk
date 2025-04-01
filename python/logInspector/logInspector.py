@@ -824,7 +824,7 @@ class LogInspectorWindow(QMainWindow):
         from supernpp.supernpp import SuperNPP
         spp = SuperNPP(params_flename, serials=self.config['serials'], startMode=startMode)
         self.setStatus(("NPP %s running..." % (startModes[startMode])))
-        spp.run_process()
+        spp.run_reprocess()
         
         # Expand file tree so "post_processed" directory is visable
         self.updateFileTree()
@@ -861,7 +861,7 @@ class LogInspectorWindow(QMainWindow):
         from supernpp.supernpp import SuperNPP
         spp = SuperNPP(params_flename, serials=self.config['serials'], startMode=startMode)
         self.setStatus(("NPP %s running..." % (startModes[startMode])))
-        spp.run_process()
+        spp.run_reprocess()
 
     def setTreeViewDirectoryRoot(self, event):
         directory = self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0])

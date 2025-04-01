@@ -119,7 +119,12 @@ class SuperNPP():
             for line in file:
                 print(line, end='')  # end='' prevents adding extra newlines
 
-    def run_process(self):
+    def run_reprocess(self):
+        We need to change supernpp so that it doesn't reprocess if not enabled and just run the tests on the current directories
+        if not self.params["reprocess"]:
+            print("Reprocess not enabled")
+            return
+
         print('  log count: ' + str(len(self.subdirs)))
         for subdir in self.subdirs:
             print("   " + subdir)
@@ -306,7 +311,7 @@ if __name__ == "__main__":
 
     # Run Super NPP
     snpp = SuperNPP(params_filename, serials)
-    snpp.run_process()
+    snpp.run_reprocess()
     snpp.run_tests()
 
     # Open and read the YAML file
