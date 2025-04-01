@@ -2815,6 +2815,129 @@ int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_
     return 0;
 }
 
+int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
+{
+    /*  $POWGPS prorietary NMEA message
+            0   Message ID $POWGPS
+            1   GPS Time Quality (0=invalid, 1=valid)
+            2   GPS Week Number
+            3   GPS Time of Week (micro seconds)
+            4   GPS leap seconds validity (0=invalid, 1=valid)
+            5   GPS leap seconds
+            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+            7   Checksum, begins with *
+    */
+    (void)aSize;
+    char *ptr = (char *)&a[8];	// $POWGPS,
+    uint32_t timeValid;
+    uint32_t lsValid;
+    
+    // 1 -	GPS Time valid
+    ptr = ASCII_to_u32(&timeValid, ptr);
+
+    // 2 -	GPS week number
+    ptr = ASCII_to_u32(&(pos.week), ptr);
+
+    // 3 -	GPS Time of Week (ms)
+    ptr = ASCII_to_u32(&(pos.timeOfWeekMs), ptr);
+    
+    // 4 -	GPS leap seconds valid
+    ptr = ASCII_to_u32(&lsValid, ptr);
+    
+    // 5 -	GPS leap seconds
+    ptr = ASCII_to_u8(&(pos.leapS), ptr);
+
+    // 6 -	Holdover flag (0=no holdover, 1=EGR is in holdover)
+
+    if (lsValid == 0) { pos.leapS = 0; }
+    if (timeValid == 0) { pos.timeOfWeekMs = 0; pos.week = 0; }
+
+    return 0;
+}
+
+int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
+{
+    /*  $POWGPS prorietary NMEA message
+            0   Message ID $POWGPS
+            1   GPS Time Quality (0=invalid, 1=valid)
+            2   GPS Week Number
+            3   GPS Time of Week (micro seconds)
+            4   GPS leap seconds validity (0=invalid, 1=valid)
+            5   GPS leap seconds
+            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+            7   Latitude ddmm.mmmm
+            8   North/South indicator (N/S)
+            9   Longitude dddmm.mmmm
+            10  East/West indicator (E/W)
+            11  Altitude (x.xxx meters)
+            12  Mean Sea Level (MSL) (x.xxx meters)
+            13  Horizontal Speed (x.xxx m/s)
+            14  Vertical Speed (x.xxx m/s)
+            15  Heading (x.xxx degrees)
+            16  Checksum, begins with *
+    */
+    (void)aSize;
+    char *ptr = (char *)&a[8];	// $POWGPS,
+    uint32_t temp;
+    float tempFt;
+    
+    // 1 -	GPS Time valid
+    ptr = ASCII_to_u32(&temp, ptr);
+
+    // 2 -	GPS week number
+    ptr = ASCII_to_u32(&(pos.week), ptr);
+
+    // 3 -	GPS Time of Week (ms)
+    ptr = ASCII_to_u32(&(pos.timeOfWeekMs), ptr);
+
+    // if time is not valid, set time to 0
+    if (temp == 0) { pos.timeOfWeekMs = 0; pos.week = 0; }
+    
+    // 4 -	GPS leap seconds valid
+    ptr = ASCII_to_u32(&temp, ptr);
+    
+    // 5 -	GPS leap seconds
+    ptr = ASCII_to_u8(&(pos.leapS), ptr);
+
+    // if LS not valid, set to 0
+    if (temp == 0) { pos.leapS = 0; }
+
+    // 6 -	Holdover flag (0=no holdover, 1=EGR is in holdover)
+    ptr = ASCII_to_u32(&temp, ptr);
+
+    // 7,8 -  Latitude ddmm.mmmm, North/South indicator (N/S)
+    ptr = ASCII_DegMin_to_Lat(&(pos.lla[0]), ptr);
+    
+    // 9,10 -  Longitude dddmm.mmmm, East/West indicator (E/W)
+    ptr = ASCII_DegMin_to_Lon(&(pos.lla[1]), ptr);
+
+    // 11 - Altitude (x.xxx meters)
+    // 12 - Mean Sea Level (MSL) (x.xxx meters)
+    ptr = ASCII_to_f32(&(pos.hMSL), ptr);
+    ptr = ASCII_find_next_field(ptr);
+
+    // 11,12 - Geoid separation = alt(HAE) - alt(MSL)
+    double geoidSep;
+    ptr = ASCII_to_f64(&(geoidSep), ptr);
+    pos.lla[2] = gpsPos.hMSL + geoidSep;
+
+    // 13 - Horizontal Speed (x.xxx m/s)
+    ptr = ASCII_to_f32(&tempFt, ptr);
+
+    // 14 - Vertical Speed (x.xxx m/s)
+    ptr = ASCII_to_f32(&vel.vel[2], ptr);
+
+    // 15 - Heading (x.xxx degrees)
+    float courseMadeTrue;
+    ptr = ASCII_to_f32(&courseMadeTrue, ptr);
+    courseMadeTrue *= C_DEG2RAD_F;
+
+    vel.vel[0] = tempFt * cosf(courseMadeTrue);
+    vel.vel[1] = tempFt * sinf(courseMadeTrue);
+
+    return 0;
+}
+
 /* G_RMC Message
 * Provides speed (speed and course over ground)
 */
