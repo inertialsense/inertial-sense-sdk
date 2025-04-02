@@ -892,7 +892,7 @@ TEST(protocol_nmea, POWTLV)
     gps_vel_t vel = {};
     vel.vel[0] = 1.0;
     vel.vel[1] = 1.0;
-    vel.vel[1] = 2.0;
+    vel.vel[2] = 3.0;
     
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_powtlv(abuf, ASCII_BUF_LEN, pos, vel);
