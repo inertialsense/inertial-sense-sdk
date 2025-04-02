@@ -439,7 +439,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
     period[nmeaId] = periodMultiple;
 
     if (periodMultiple)
-        bits |=  (nmeaBits);
+        bits |= (nmeaBits);
     else
         bits &= ~(nmeaBits);
 }
@@ -1242,15 +1242,13 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
 
 int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 {
-    /*  $POWGPS prorietary NMEA message
-            0	Message ID $POWGPS
-            1	GPS Time Quality (0=invalid, 1=valid)
-            2	GPS Week Number
-            3	GPS Time of Week (micro seconds)
-            4	GPS leap seconds validity (0=invalid, 1=valid)
-            5	GPS leap seconds
-            6	Holdover flag (0=no holdover, 1=EGR is in holdover)
-            7	Checksum, begins with *
+    /*  $POWxxx prorietary NMEA message
+            1   GPS Time Quality (0=invalid, 1=valid)
+            2   GPS Week Number
+            3   GPS Time of Week (micro seconds)
+            4   GPS leap seconds validity (0=invalid, 1=valid)
+            5   GPS leap seconds
+            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
     */
    
     int n = startN;
@@ -1316,7 +1314,7 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 
     n = nmea_powPrep(a, n, aSize, pos);                         // 1-6
 
-    nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8                                                      // 2,3
+    nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
 
     nmea_sprint(a, aSize, n, ",%.3f,M", pos.lla[2] - pos.hMSL); // 11

@@ -703,7 +703,9 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 	[DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
 	[DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
 	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GNGSV,
-	[DID_GPS1_POS]				=
+	[DID_GPS1_POS] =
+        NMEA_RMC_BITS_POWGPS |
+        NMEA_RMC_BITS_POWTLV |
 		NMEA_RMC_BITS_INTEL |
 		NMEA_RMC_BITS_PGPSP |
 		NMEA_RMC_BITS_GNGGA |
@@ -713,6 +715,18 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 		NMEA_RMC_BITS_GNZDA |
 		NMEA_RMC_BITS_GNVTG |
 		NMEA_RMC_BITS_PASHR,
+    [DID_GPS2_POS] =
+        NMEA_RMC_BITS_POWGPS |
+        NMEA_RMC_BITS_POWTLV |
+        NMEA_RMC_BITS_INTEL |
+        NMEA_RMC_BITS_PGPSP |
+        NMEA_RMC_BITS_GNGGA |
+        NMEA_RMC_BITS_GNGLL |
+        NMEA_RMC_BITS_GNGSA |
+        NMEA_RMC_BITS_GNRMC |
+        NMEA_RMC_BITS_GNZDA |
+        NMEA_RMC_BITS_GNVTG |
+        NMEA_RMC_BITS_PASHR,
 	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
 };
 
