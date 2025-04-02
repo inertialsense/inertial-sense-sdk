@@ -902,15 +902,38 @@ TEST(protocol_nmea, POWTLV)
     gps_vel_t resultVel = {};
 
     nmea_parse_powtlv(abuf, n, resultPos, resultVel);
+
+    /**
+*  $POWTLV prorietary NMEA message
+*    0   Message ID $POWGPS
+*    1   GPS Time Quality (0=invalid, 1=valid)
+*    2   GPS Week Number
+*    3   GPS Time of Week (micro seconds)
+*    4   GPS leap seconds validity (0=invalid, 1=valid)
+*    5   GPS leap seconds
+*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+*    7   Latitude ddmm.mmmm
+*    8   North/South indicator (N/S)
+*    9   Longitude dddmm.mmmm
+*    10  East/West indicator (E/W)
+*    11  Altitude (x.xxx meters)
+*    12  Mean Sea Level (MSL) (x.xxx meters)
+*    13  Horizontal Speed (x.xxx m/s)
+*    14  Vertical Speed (x.xxx m/s)
+*    15  Heading (x.xxx degrees)
+*    16  Checksum, begins with *
+*/
     
     printf("week: %d, %d\n", pos.week, resultPos.week);
     printf("tow: %d, %d\n", pos.timeOfWeekMs, resultPos.timeOfWeekMs);
     printf("leap: %d, %d\n", pos.leapS, resultPos.leapS);
-    printf("hMSL: %f, %f\n", pos.hMSL, resultPos.hMSL);
+    
     
     printf("lla[0]: %f, %f\n", pos.lla[0], resultPos.lla[0]);
     printf("lla[1]: %f, %f\n", pos.lla[1], resultPos.lla[1]);
     printf("lla[2]: %f, %f\n", pos.lla[2], resultPos.lla[2]);
+    
+    printf("hMSL: %f, %f\n", pos.hMSL, resultPos.hMSL);
     printf("vel[0]: %f, %f\n", vel.vel[0], resultVel.vel[0]);
     printf("vel[1]: %f, %f\n", vel.vel[1], resultVel.vel[1]);
     printf("vel[2]: %f, %f\n", vel.vel[2], resultVel.vel[2]);
