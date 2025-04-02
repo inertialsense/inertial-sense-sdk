@@ -2894,8 +2894,8 @@ enum eRTKConfigBits
 
 #define DEFAULT_DYNAMIC_MODEL                   DYNAMIC_MODEL_AIRBORNE_4G
 #define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)  // (rad)
-#define DEFAULT_GNSS_RTK_CN0_MINIMUM            25  // (dBHz)
-#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     10  // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_MINIMUM            30  // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     20  // (dBHz)
 
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
@@ -3713,7 +3713,7 @@ typedef struct
     double eratio[NFREQ];
 
     /** measurement error factor */
-    double err[5];
+    double err[7];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
     double std[3];
@@ -3751,11 +3751,11 @@ typedef struct
     /** reset sat biases after this long trying to get fix if not acquired */
     int fix_reset_base_msgs;
 
-    /* reject threshold of innovation for phase [0] and code [1] (m) */
+    /** reject threshold of innovation for phase [0] and code [1] (m) */
     double maxinno[2];
-    /** reject thresholds of NIS */
-    double maxnis_lo;
-    double maxnis_hi;
+    /** reject thresholds of NIS for phase [0] and code [1] */
+    double maxnis_lo[2];
+    double maxnis_hi[2];
 
     /** reject threshold of gdop */
     double maxgdop;
