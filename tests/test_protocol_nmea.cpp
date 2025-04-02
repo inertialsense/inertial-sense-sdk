@@ -896,18 +896,38 @@ TEST(protocol_nmea, POWTLV)
     
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_powtlv(abuf, ASCII_BUF_LEN, pos, vel);
-    // printf("%s\n", abuf);
+    printf("%s\n", abuf);
 
     gps_pos_t resultPos = {};
     gps_vel_t resultVel = {};
 
     nmea_parse_powtlv(abuf, n, resultPos, resultVel);
+    
+    printf("week: %d, %d\n", pos.week, resultPos.week);
+    printf("tow: %d, %d\n", pos.timeOfWeekMs, resultPos.timeOfWeekMs);
+    printf("leap: %d, %d\n", pos.leapS, resultPos.leapS);
+    printf("hMSL: %f, %f\n", pos.hMSL, resultPos.hMSL);
+    
+    printf("lla[0]: %f, %f\n", pos.lla[0], resultPos.lla[0]);
+    printf("lla[1]: %f, %f\n", pos.lla[1], resultPos.lla[1]);
+    printf("lla[2]: %f, %f\n", pos.lla[2], resultPos.lla[2]);
+    printf("vel[0]: %f, %f\n", vel.vel[0], resultVel.vel[0]);
+    printf("vel[1]: %f, %f\n", vel.vel[1], resultVel.vel[1]);
+    printf("vel[2]: %f, %f\n", vel.vel[2], resultVel.vel[2]);
+
+    ASSERT_EQ(abuf[8], '1');
 
     for (int i=0; i<3; i++)
     {
         ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
+        ASSERT_NEAR(pos.lla[i], resultPos.lla[i], 0.02f);
     }
+    
+    ASSERT_EQ(pos.week, resultPos.week);
+    ASSERT_EQ(pos.timeOfWeekMs, resultPos.timeOfWeekMs);
 
+    ASSERT_EQ(pos.leapS, resultPos.leapS);
+    ASSERT_EQ(pos.hMSL, resultPos.hMSL);
 }
 
 // TEST(protocol_nmea, POWGPS_valid)
