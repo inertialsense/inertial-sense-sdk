@@ -1240,17 +1240,17 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
     return nmea_sprint_footer(a, aSize, n);
 }
 
+/**
+*  Preps fields 1-6 of $POWxxx prorietary NMEA message
+*     1   GPS Time Quality (0=invalid, 1=valid)
+*     2   GPS Week Number
+*     3   GPS Time of Week (micro seconds)
+*     4   GPS leap seconds validity (0=invalid, 1=valid)
+*     5   GPS leap seconds
+*     6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+*/
 int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
-{
-    /*  $POWxxx prorietary NMEA message
-            1   GPS Time Quality (0=invalid, 1=valid)
-            2   GPS Week Number
-            3   GPS Time of Week (micro seconds)
-            4   GPS leap seconds validity (0=invalid, 1=valid)
-            5   GPS leap seconds
-            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-    */
-   
+{  
     int n = startN;
     int valid = (pos.week > 2359) ? 1 : 0; // assume time is valid if week > 2359 (03/23/2025)
 
@@ -1267,17 +1267,19 @@ int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
     return n;
 }
 
-
+/**
+*  $POWGPS prorietary NMEA message
+*    0   Message ID $POWGPS
+*    1   GPS Time Quality (0=invalid, 1=valid)
+*    2   GPS Week Number
+*    3   GPS Time of Week (micro seconds)
+*    4   GPS leap seconds validity (0=invalid, 1=valid)
+*    5   GPS leap seconds
+*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+*    7   Checksum, begins with *
+*/
 int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
 {
-    /*  $POWGPS prorietary NMEA message
-            1   GPS Time Quality (0=invalid, 1=valid)
-            2   GPS Week Number
-            3   GPS Time of Week (micro seconds)
-            4   GPS leap seconds validity (0=invalid, 1=valid)
-            5   GPS leap seconds
-            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-    */
     int n = ssnprintf(a, aSize, "$POWGPS");     // 0
 
     n = nmea_powPrep(a, n, aSize, pos);         // 1-6
@@ -1285,28 +1287,28 @@ int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
     return nmea_sprint_footer(a, aSize, n);
 }
 
+/**
+*  $POWTLV prorietary NMEA message
+*    0   Message ID $POWGPS
+*    1   GPS Time Quality (0=invalid, 1=valid)
+*    2   GPS Week Number
+*    3   GPS Time of Week (micro seconds)
+*    4   GPS leap seconds validity (0=invalid, 1=valid)
+*    5   GPS leap seconds
+*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+*    7   Latitude ddmm.mmmm
+*    8   North/South indicator (N/S)
+*    9   Longitude dddmm.mmmm
+*    10  East/West indicator (E/W)
+*    11  Altitude (x.xxx meters)
+*    12  Mean Sea Level (MSL) (x.xxx meters)
+*    13  Horizontal Speed (x.xxx m/s)
+*    14  Vertical Speed (x.xxx m/s)
+*    15  Heading (x.xxx degrees)
+*    16  Checksum, begins with *
+*/
 int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
-{
-    /*  $POWGPS prorietary NMEA message
-            0   Message ID $POWGPS
-            1   GPS Time Quality (0=invalid, 1=valid)
-            2   GPS Week Number
-            3   GPS Time of Week (micro seconds)
-            4   GPS leap seconds validity (0=invalid, 1=valid)
-            5   GPS leap seconds
-            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-            7   Latitude ddmm.mmmm
-            8   North/South indicator (N/S)
-            9   Longitude dddmm.mmmm
-            10  East/West indicator (E/W)
-            11  Altitude (x.xxx meters)
-            12  Mean Sea Level (MSL) (x.xxx meters)
-            13  Horizontal Speed (x.xxx m/s)
-            14  Vertical Speed (x.xxx m/s)
-            15  Heading (x.xxx degrees)
-            16  Checksum, begins with *
-    */
-    
+{    
     float horVel = MAG_VEC2(vel.vel);
     float groundTrackHeading = C_RAD2DEG_F * atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
 
@@ -2810,6 +2812,17 @@ int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_
     return 0;
 }
 
+/**
+*  $POWGPS prorietary NMEA message
+*    0   Message ID $POWGPS
+*    1   GPS Time Quality (0=invalid, 1=valid)
+*    2   GPS Week Number
+*    3   GPS Time of Week (micro seconds)
+*    4   GPS leap seconds validity (0=invalid, 1=valid)
+*    5   GPS leap seconds
+*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+*    7  Checksum, begins with *
+*/
 int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
 {
     /*  $POWGPS prorietary NMEA message
@@ -2850,27 +2863,28 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
     return 0;
 }
 
+/**
+*  $POWTLV prorietary NMEA message
+*    0   Message ID $POWGPS
+*    1   GPS Time Quality (0=invalid, 1=valid)
+*    2   GPS Week Number
+*    3   GPS Time of Week (micro seconds)
+*    4   GPS leap seconds validity (0=invalid, 1=valid)
+*    5   GPS leap seconds
+*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+*    7   Latitude ddmm.mmmm
+*    8   North/South indicator (N/S)
+*    9   Longitude dddmm.mmmm
+*    10  East/West indicator (E/W)
+*    11  Altitude (x.xxx meters)
+*    12  Mean Sea Level (MSL) (x.xxx meters)
+*    13  Horizontal Speed (x.xxx m/s)
+*    14  Vertical Speed (x.xxx m/s)
+*    15  Heading (x.xxx degrees)
+*    16  Checksum, begins with *
+*/
 int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
-    /*  $POWGPS prorietary NMEA message
-            0   Message ID $POWGPS
-            1   GPS Time Quality (0=invalid, 1=valid)
-            2   GPS Week Number
-            3   GPS Time of Week (micro seconds)
-            4   GPS leap seconds validity (0=invalid, 1=valid)
-            5   GPS leap seconds
-            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-            7   Latitude ddmm.mmmm
-            8   North/South indicator (N/S)
-            9   Longitude dddmm.mmmm
-            10  East/West indicator (E/W)
-            11  Altitude (x.xxx meters)
-            12  Mean Sea Level (MSL) (x.xxx meters)
-            13  Horizontal Speed (x.xxx m/s)
-            14  Vertical Speed (x.xxx m/s)
-            15  Heading (x.xxx degrees)
-            16  Checksum, begins with *
-    */
     (void)aSize;
     char *ptr = (char *)&a[8];	// $POWGPS,
     uint32_t temp;
