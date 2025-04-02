@@ -1319,8 +1319,8 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
     nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
 
-    nmea_sprint(a, aSize, n, ",%.3f,M", pos.lla[2]);            // 11
-    nmea_sprint(a, aSize, n, ",%.3f,M", pos.hMSL);              // 12
+    nmea_sprint(a, aSize, n, ",%.3f", pos.lla[2]);            // 11
+    nmea_sprint(a, aSize, n, ",%.3f", pos.hMSL);              // 12
 
     nmea_sprint(a, aSize, n, ",%.3f", horVel);                  // 13
 
