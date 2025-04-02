@@ -895,109 +895,107 @@ TEST(protocol_nmea, POWTLV)
     vel.vel[1] = 2.0;
     
     char abuf[ASCII_BUF_LEN] = { 0 };
-    int n = nmea_intel(abuf, ASCII_BUF_LEN, info, pos, vel);
+    int n = nmea_powtlv(abuf, ASCII_BUF_LEN, pos, vel);
     // printf("%s\n", abuf);
 
     gps_pos_t resultPos = {};
     gps_vel_t resultVel = {};
 
-    nmea_parse_intel(abuf, n, resultPos, resultVel);
+    nmea_parse_powtlv(abuf, n, resultPos, resultVel);
 
     for (int i=0; i<3; i++)
     {
         ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
     }
-    for (int i=0; i<4; i++)
-    {
-        ASSERT_EQ(info.firmwareVer[i], resultInfo.firmwareVer[i]);
-    }
+
 }
 
-TEST(protocol_nmea, POWGPS_valid)
-{
-    return;
-    dev_info_t info = {};
-    info.firmwareVer[0] = 1;
-    info.firmwareVer[1] = 2;
-    info.firmwareVer[2] = 3;
-    info.firmwareVer[3] = 4;
+// TEST(protocol_nmea, POWGPS_valid)
+// {
+//     return;
+//     dev_info_t info = {};
 
-    gps_pos_t pos = {};    
-    pos.timeOfWeekMs = 423199200;
-    pos.lla[0] = 40.19759002;
-    pos.lla[1] = -111.62147172;
-    pos.lla[2] = 1408.565264;
+//     info.firmwareVer[0] = 1;
+//     info.firmwareVer[1] = 2;
+//     info.firmwareVer[2] = 3;
+//     info.firmwareVer[3] = 4;
 
-    ixQuat qe2n;
-    float velNed[3] = { 0.0f, 4.0f, 0.0f };
-    quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
-    gps_vel_t vel = {};
-    // Velocity in ECEF
-    quatRot(vel.vel, qe2n, velNed);
+//     gps_pos_t pos = {};    
+//     pos.timeOfWeekMs = 423199200;
+//     pos.lla[0] = 40.19759002;
+//     pos.lla[1] = -111.62147172;
+//     pos.lla[2] = 1408.565264;
+
+//     ixQuat qe2n;
+//     float velNed[3] = { 0.0f, 4.0f, 0.0f };
+//     quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
+//     gps_vel_t vel = {};
+//     // Velocity in ECEF
+//     quatRot(vel.vel, qe2n, velNed);
     
-    char abuf[ASCII_BUF_LEN] = { 0 };
-    int n = nmea_intel(abuf, ASCII_BUF_LEN, info, pos, vel);
-    // printf("%s\n", abuf);
-    dev_info_t resultInfo = {};
-    gps_pos_t resultPos = {};
-    gps_vel_t resultVel = {};
-    float resultPpsPhase[2];
-    uint32_t resultPpsNoiseNs[1];
+//     char abuf[ASCII_BUF_LEN] = { 0 };
+//     int n = nmea_intel(abuf, ASCII_BUF_LEN, info, pos, vel);
+//     // printf("%s\n", abuf);
+//     dev_info_t resultInfo = {};
+//     gps_pos_t resultPos = {};
+//     gps_vel_t resultVel = {};
+//     float resultPpsPhase[2];
+//     uint32_t resultPpsNoiseNs[1];
 
-    nmea_parse_intel(abuf, n, resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs);
+//     nmea_parse_intel(abuf, n, resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs);
 
-    for (int i=0; i<3; i++)
-    {
-        ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
-    }
-    for (int i=0; i<4; i++)
-    {
-        ASSERT_EQ(info.firmwareVer[i], resultInfo.firmwareVer[i]);
-    }
-}
+//     for (int i=0; i<3; i++)
+//     {
+//         ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
+//     }
+//     for (int i=0; i<4; i++)
+//     {
+//         ASSERT_EQ(info.firmwareVer[i], resultInfo.firmwareVer[i]);
+//     }
+// }
 
-TEST(protocol_nmea, POWGPS_invalid)
-{
-    return;
-    dev_info_t info = {};
-    info.firmwareVer[0] = 1;
-    info.firmwareVer[1] = 2;
-    info.firmwareVer[2] = 3;
-    info.firmwareVer[3] = 4;
+// TEST(protocol_nmea, POWGPS_invalid)
+// {
+//     return;
+//     dev_info_t info = {};
+//     info.firmwareVer[0] = 1;
+//     info.firmwareVer[1] = 2;
+//     info.firmwareVer[2] = 3;
+//     info.firmwareVer[3] = 4;
 
-    gps_pos_t pos = {};    
-    pos.timeOfWeekMs = 423199200;
-    pos.lla[0] = 40.19759002;
-    pos.lla[1] = -111.62147172;
-    pos.lla[2] = 1408.565264;
+//     gps_pos_t pos = {};    
+//     pos.timeOfWeekMs = 423199200;
+//     pos.lla[0] = 40.19759002;
+//     pos.lla[1] = -111.62147172;
+//     pos.lla[2] = 1408.565264;
 
-    ixQuat qe2n;
-    float velNed[3] = { 0.0f, 4.0f, 0.0f };
-    quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
-    gps_vel_t vel = {};
-    // Velocity in ECEF
-    quatRot(vel.vel, qe2n, velNed);
+//     ixQuat qe2n;
+//     float velNed[3] = { 0.0f, 4.0f, 0.0f };
+//     quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
+//     gps_vel_t vel = {};
+//     // Velocity in ECEF
+//     quatRot(vel.vel, qe2n, velNed);
     
-    char abuf[ASCII_BUF_LEN] = { 0 };
-    int n = nmea_intel(abuf, ASCII_BUF_LEN, info, pos, vel);
-    // printf("%s\n", abuf);
-    dev_info_t resultInfo = {};
-    gps_pos_t resultPos = {};
-    gps_vel_t resultVel = {};
-    float resultPpsPhase[2];
-    uint32_t resultPpsNoiseNs[1];
+//     char abuf[ASCII_BUF_LEN] = { 0 };
+//     int n = nmea_intel(abuf, ASCII_BUF_LEN, info, pos, vel);
+//     // printf("%s\n", abuf);
+//     dev_info_t resultInfo = {};
+//     gps_pos_t resultPos = {};
+//     gps_vel_t resultVel = {};
+//     float resultPpsPhase[2];
+//     uint32_t resultPpsNoiseNs[1];
 
-    nmea_parse_intel(abuf, n, resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs);
+//     nmea_parse_intel(abuf, n, resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs);
 
-    for (int i=0; i<3; i++)
-    {
-        ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
-    }
-    for (int i=0; i<4; i++)
-    {
-        ASSERT_EQ(info.firmwareVer[i], resultInfo.firmwareVer[i]);
-    }
-}
+//     for (int i=0; i<3; i++)
+//     {
+//         ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
+//     }
+//     for (int i=0; i<4; i++)
+//     {
+//         ASSERT_EQ(info.firmwareVer[i], resultInfo.firmwareVer[i]);
+//     }
+// }
 
 #define ASCII_BUF2  2048
 
