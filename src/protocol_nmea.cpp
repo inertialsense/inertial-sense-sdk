@@ -1328,7 +1328,7 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 
     nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);              // 14
 
-    groundTrackHeading = C_RAD2DEG_F * atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
+    groundTrackHeading = C_RAD2DEG_F * atan2f(vel.vel[1], vel.vel[0]);
     nmea_sprint(a, aSize, n, ",%.3f", groundTrackHeading);      // 15
 
     return nmea_sprint_footer(a, aSize, n);                     // 16
