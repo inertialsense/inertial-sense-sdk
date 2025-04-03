@@ -33,6 +33,7 @@ class Log:
     def __init__(self):
         self.c_log = LogReader()
         self.init_vars()
+        self.report_filename = None
 
     def init_vars(self):
         self.data = []
@@ -256,7 +257,7 @@ class Log:
 
             # If we are in compassing mode, then only calculate RMS after all devices have fix
             if self.compassing:
-                # time_of_fix_ms = [self.data[dev, DID_GPS1_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS1_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
+                # time_of_fix_ms = [self.data[dev, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS2_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
                 time_of_fix_ms = [self.data[dev, DID_GPS1_POS]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS1_POS]['status'] & 0x08000000)] / 1000.0 for dev in range(self.numDev)]
                 # print time_of_fix_ms
                 self.min_time = max(time_of_fix_ms)
@@ -307,22 +308,88 @@ class Log:
         means[:, 6:] = meanOfQuatArray(refData[:, :, 7:].transpose((1, 0, 2)))  # Calculate mean attitude of all devices at each timestep
         self.truth = means
 
+    def format_minutes_seconds(self, seconds):
+        seconds = int(seconds)
+        minutes = seconds // 60
+        remaining_seconds = seconds % 60
+        return f"{minutes}:{remaining_seconds:02}"
+
+    def angle_wrap(self, angle):
+        result = np.copy(angle)
+        for i in range(np.shape(result)[0]):
+            while result[i] > np.pi: 
+                result[i] -= 2*np.pi
+            while result[i] < -np.pi: 
+                result[i] += 2*np.pi
+        return result
+
+    def angle_unwrap(self, angle):
+        unwrap = 0.0
+        result = np.empty_like(angle)
+        anglePrev = angle[0]
+        for i in range(np.shape(angle)[0]):
+            result[i] = angle[i] + unwrap
+
+            deltaAngle = result[i]-anglePrev
+            if deltaAngle > np.pi:                
+                unwrap -= 2*np.pi
+                result[i] = angle[i] + unwrap
+            elif deltaAngle < -np.pi: 
+                unwrap += 2*np.pi
+                result[i] = angle[i] + unwrap
+
+            anglePrev = result[i]
+        return result
+
+    def pass_fail(self, ratio):
+        if ratio > 1.0:
+            self.tmpPassRMS = -1
+            return 'FAIL'
+        else:
+            return 'PASS'
+
+    def deviceInfo(self, n, dev, did):
+        devInfo = self.data[dev, did][0]
+        hver    = devInfo['hardwareVer']
+        cver    = devInfo['protocolVer']
+        fver    = devInfo['firmwareVer']
+        buld    = devInfo['buildNumber']
+        repo    = devInfo['repoRevision']
+        year    = 2000 + int(devInfo['buildYear'])
+        month   = devInfo['buildMonth']
+        day     = devInfo['buildDay']
+        hour    = devInfo['buildHour']
+        minute  = devInfo['buildMinute']
+        second  = devInfo['buildSecond']
+        addi    = devInfo['addInfo']
+        
+        return (
+            '%2d SN%d  H: %d.%d.%d.%d  F: %d.%d.%d.%d build %d repo %d  P: %d.%d.%d.%d  %04d-%02d-%02d %02d:%02d:%02d  %s\n' % (
+                n, devInfo['serialNumber'],
+                hver[0], hver[1], hver[2], hver[3],
+                fver[0], fver[1], fver[2], fver[3], buld, repo,
+                cver[0], cver[1], cver[2], cver[3],
+                year, month, day,
+                hour, minute, second,
+                addi
+            )
+        )
+
     def calcAttitudeError(self):
         att_error = np.array([qboxminus(self.stateArray[dev, :, 7:], self.truth[:, 6:]) for dev in range(len(self.stateArray))])
         self.att_error = att_error
 
-    def calculateRMS(self):
+    def runImxPerformanceReport(self, params={}):
         self.data = np.array(self.data)
         self.getRMSArray()
         self.getRMSTruth()
         self.calcAttitudeError()
 
-
         # Calculate the Mounting Bias for all devices (assume the mounting bias is the mean of the attitude error)
-        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
+        device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.uvw_error = np.empty_like(self.stateArray[:, :, 4:7])
         mount_bias_output = dict()
-        for n, dev in enumerate(uINS_device_idx):
+        for n, dev in enumerate(device_idx):
             mount_bias = np.mean(self.att_error[n, :, :], axis=0)
             #if self.compassing:
                 # When in compassing, assume all units are sharing the same GPS antennas and should therefore have
@@ -350,21 +417,13 @@ class Log:
         self.averageRMSUVW = np.mean(self.RMSUVW, axis=0)
         self.averageRMSAtt = np.mean(self.RMSAtt, axis=0)
 
-    def pass_fail(self, ratio):
-        if ratio > 1.0:
-            self.tmpPassRMS = -1
-            return 'FAIL'
-        else:
-            # self.tmpPassRMS = -1  # Debug
-            return 'PASS'
-
-    def printRMSReport(self):
-        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
+        # Print out the results
+        device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.tmpPassRMS = 1
-        filename = os.path.join(self.directory, 'RMS_test_report.txt')
+        self.report_filename = os.path.join(self.directory, 'performance_report_imx.txt')
         # Make sure all devices have the same hardware
-        hardware = self.hardware[uINS_device_idx[0]]
-        for dev in uINS_device_idx:
+        hardware = self.hardware[device_idx[0]]
+        for dev in device_idx:
             if self.hardware[dev] != hardware:
                 # Use default value if not all devices use the same hardware
                 hardware = 0
@@ -409,8 +468,9 @@ class Log:
         self.specRatioUVW = self.averageRMSUVW / thresholdUVW
         self.specRatioAtt = self.averageRMSAtt / thresholdAtt
 
-        f = open(filename, 'w')
-        f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))
+        ############################################################################################################
+        f = open(self.report_filename, 'w')
+        f.write('** IMX Performance Report - %s\n' % (self.directory))
         f.write('\n')
         mode = ('IMX-5' if hardware == 5 else 'uINS-3' )
         mode += (", NAV" if self.navMode else ", AHRS")
@@ -432,7 +492,7 @@ class Log:
         line += '\n'
         f.write(line)
 
-        for n, dev in enumerate(uINS_device_idx):
+        for n, dev in enumerate(device_idx):
             devInfo = self.data[dev,DID_DEV_INFO][0]
             line = '%2d SN%d      ' % (n, devInfo['serialNumber'])
             line += '[ %6.4f  %6.4f  %6.4f ]' % (
@@ -502,7 +562,7 @@ class Log:
         # Print Mounting Biases
         f.write('--------------- Angular Mounting Biases ----------------\n')
         f.write('Device       Euler Biases[   (deg)     (deg)     (deg) ]\n')
-        for dev in uINS_device_idx:
+        for dev in device_idx:
             devInfo = self.data[dev, DID_DEV_INFO][0]
             f.write('%2d SN%d               [ %7.4f   %7.4f   %7.4f ]\n' % (
                 n, devInfo['serialNumber'], 
@@ -516,41 +576,155 @@ class Log:
         for i in range(self.numIns):
             qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
-            f.write("%d\t%f\t%f\t%f\n" % (self.serials[uINS_device_idx[i]], euler[0], euler[1], euler[2]))
+            f.write("%d\t%f\t%f\t%f\n" % (self.serials[device_idx[i]], euler[0], euler[1], euler[2]))
 
-        # Print Device Version Information
-        f.write(
-            '\n\n------------------------------------------- Device Info -------------------------------------------------\n')
-        for n, dev in enumerate(uINS_device_idx):
-            devInfo = self.data[dev, DID_DEV_INFO][0]
-            hver    = devInfo['hardwareVer']
-            cver    = devInfo['protocolVer']
-            fver    = devInfo['firmwareVer']
-            buld    = devInfo['buildNumber']
-            repo    = devInfo['repoRevision']
-            year    = 2000 + int(devInfo['buildYear'])
-            month   = devInfo['buildMonth']
-            day     = devInfo['buildDay']
-            hour    = devInfo['buildHour']
-            minute  = devInfo['buildMinute']
-            second  = devInfo['buildSecond']
-            addi    = devInfo['addInfo']
-            f.write(
-                '%2d SN%d  HW: %d.%d.%d.%d   FW: %d.%d.%d.%d build %d repo %d   Proto: %d.%d.%d.%d  Date: %04d-%02d-%02d %02d:%02d:%02d  %s\n' % (
-                    n, devInfo['serialNumber'],
-                    hver[3], hver[2], hver[1], hver[0],
-                    fver[3], fver[2], fver[1], fver[0], buld, repo,
-                    cver[3], cver[2], cver[1], cver[0],
-                    year, month, day,
-                    hour, minute, second,
-                    addi))
+        # Print Device Information
         f.write('\n')
-
+        f.write('------------------------------------------- Device Info -------------------------------------------------\n')
+        for n, dev in enumerate(device_idx):
+            f.write(self.deviceInfo(n, dev, DID_DEV_INFO))
+        f.write('\n')
         f.close()
 
         # Report if RMS passed all
         self.passRMS = self.tmpPassRMS
-        return self.passRMS
+        return self.passRMS < 1
+
+    def arRatioToFixType(self, ar_ratio):
+        fix_type = ar_ratio.copy()
+        fix_type[(fix_type > 3)] = 12
+        fix_type[(fix_type > 0) & (fix_type < 3)] = 11
+        fix_type[fix_type == 0] = 10
+        return fix_type
+
+    def runGpxPerformanceReport(self, params={}):
+        self.data = np.array(self.data)        
+        threshold = {}
+        threshold['timeToFirstFix']     = 3*60          # (s)
+        threshold['percentFix']         = 95            # percent of time in fix, excluding time to first fix
+        threshold['arRatio']            = 500           # (RTK AR ratio)
+        threshold['headingErr']         = 1.5*DEG2RAD   # (rad)
+        if 'threshold' in params:
+            threshold.update(params['threshold'])    # override defaults with user params
+        failures = []
+
+        print("Using timeToFirstFix: %d s" % (threshold['timeToFirstFix']))
+
+        device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
+        self.report_filename = os.path.join(self.directory, 'performance_report_gpx.txt')
+        # Make sure all devices have the same hardware
+        hardware = self.hardware[device_idx[0]]
+        for dev in device_idx:
+            if self.hardware[dev] != hardware:
+                # Use GPX value if not all devices use the same hardware
+                hardware = 1
+
+        f = open(self.report_filename, 'w')
+        f.write('** GPX Performance Report - %s\n' % (self.directory))
+        f.write('\n')
+
+        # Reference INS does not exist.  Compute reference from average heading.
+        ref_time = None
+        ref_yaw = None
+        sum_delta = None
+        sum_count = 1
+        for d in range(self.numDev):
+            time = self.data[d, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs']
+            yaw  = self.data[d, DID_GPS2_RTK_CMP_REL]['baseToRoverHeading']
+            if len(yaw) == 0:
+                continue
+
+            if ref_time is None:
+                # Find reference time and yaw starting at first fix
+                fix_type = self.arRatioToFixType(self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio'])
+                first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
+                ref_time = time[first_fix_index:]
+                ref_yaw = np.copy(yaw[first_fix_index:])
+                sum_delta = np.zeros_like(ref_yaw)
+            else:
+                unwrap_yaw = self.angle_unwrap(yaw)
+                int_yaw = np.empty_like(ref_yaw)
+                int_yaw = np.interp(ref_time, time, unwrap_yaw)
+                delta = self.angle_wrap(int_yaw - ref_yaw)
+                sum_delta += delta
+                sum_count += 1
+        ref_yaw += sum_delta / sum_count
+            
+        title_str = "Serial#  Fix(  time,    % ) ArRatio, YawErr"
+        f.write(" "*9 + title_str + "\n")
+
+        for d in range(self.numDev):
+            serial_number = self.data[d, DID_DEV_INFO]['serialNumber'][0]
+            time_ms = self.data[d, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs']
+            yaw = self.data[d, DID_GPS2_RTK_CMP_REL]['baseToRoverHeading']
+            ar_ratio = self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio']
+
+            if len(time_ms) == 0:
+                continue
+
+            # Fix type
+            fix_type = self.arRatioToFixType(ar_ratio)
+            # First time to fix
+            first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
+            str = "SN%6d    (no fix)"
+            success = False
+            if first_fix_index is not None: 
+                # Acquired RTK fix
+                time_to_first_fix = (time_ms[first_fix_index] - time_ms[0])/1000
+                # Percent of time in fix
+                fix_percent = np.mean(fix_type[first_fix_index:] >= 12) * 100    # Percent fix from first fix to the end
+                # Average AR ratio
+                ar_ratio_mean = np.mean(ar_ratio[first_fix_index:])
+                # Heading Error
+                yaw_err_valid = 0
+                if self.numDev > 1: 
+                    unwrap_yaw = self.angle_unwrap(yaw)
+                    int_yaw = np.empty_like(ref_yaw)
+                    int_yaw = np.interp(ref_time, time_ms, unwrap_yaw, right=np.nan, left=np.nan)
+                    yaw_error = self.angle_wrap(int_yaw - ref_yaw)
+                    # Filter out NaNs and zeros
+                    yaw_err_valid = yaw_error[~np.isnan(yaw_error) & (yaw_error != 0)]
+                yaw_err_mean = np.mean(yaw_err_valid)
+                str = "SN%6d    ( %ss, %3.0f%% )    %4.0f, %5.1f°" % (
+                        serial_number, 
+                        self.format_minutes_seconds(time_to_first_fix), 
+                        fix_percent,
+                        ar_ratio_mean,  
+                        yaw_err_mean*RAD2DEG)
+
+                # Check thresholds
+                success = (
+                    time_to_first_fix < threshold['timeToFirstFix'] and
+                    fix_percent > threshold['percentFix'] and
+                    ar_ratio_mean > threshold['arRatio'] and
+                    np.abs(yaw_err_mean) < threshold['headingErr']
+                )                
+
+            if not success: 
+                failures.append(str)
+            f.write(   "[%s] %s\n" % (("PASSED" if success else "FAILED"), str))
+        thresh_str = "Required    (<%ss, <%2.0f%% )    >%3.0f,  <%3.1f°" % (
+            self.format_minutes_seconds(threshold['timeToFirstFix']), 
+            threshold['percentFix'], 
+            threshold['arRatio'], 
+            threshold['headingErr']*RAD2DEG)
+        if failures:
+            failures.insert(0, title_str)
+            failures.append(thresh_str)
+        f.write(" "*9 + thresh_str + "\n")
+
+        # Print Device Information
+        f.write('\n')
+        f.write('------------------------------------------- Device Info -------------------------------------------------\n')
+        for n, dev in enumerate(device_idx):
+            f.write(self.deviceInfo(n, dev, DID_DEV_INFO))
+        f.write('\n')
+        f.close()
+
+        # Print report to terminal
+        print(open(self.report_filename).read())
+
+        return failures
 
     def debugPlot(self):
         import matplotlib.pyplot as plt
@@ -582,14 +756,15 @@ class Log:
                 plt.plot(self.att_error[n, :, m])
         plt.show()
 
-    # This does not work when running in debug mode
-    def openRMSReport(self):
-        filename = os.path.join(self.directory, 'RMS_test_report.txt')
+    def openReport(self, filename=None):
+        if filename is None:
+            filename = self.report_filename
+        if filename is None:
+            return        
         if 'win' in sys.platform:
             subprocess.Popen(["notepad.exe", filename])
         if 'linux' in sys.platform:
             subprocess.Popen(['gedit', filename])
-
 
 if __name__ == '__main__':
     np.set_printoptions(linewidth=200)
@@ -614,7 +789,6 @@ if __name__ == '__main__':
     log = Log()
     if log.load(directory):
         # Compute and output RMS Report
-        log.calculateRMS()
+        log.runImxPerformanceReport()
         # log.debugPlot()
-        log.printRMSReport()
-        log.openRMSReport()
+        log.openImxReport()

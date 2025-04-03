@@ -93,8 +93,8 @@ DID_GROUND_VEHICLE              = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
-DID_GPS1_RTK_CMP_REL            = 91
-DID_GPS1_RTK_CMP_MISC           = 92
+DID_GPS2_RTK_CMP_REL            = 91
+DID_GPS2_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
 DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
@@ -136,9 +136,9 @@ did_name_lookup = {
  DID_MAG_CAL : "magCal",
  DID_INTERNAL_DIAGNOSTIC : "internalDiagnostic",
  DID_GPS1_RTK_POS_REL : "gps1RtkPosRel",
- DID_GPS1_RTK_CMP_REL : "gps1RtkCmpRel",
+ DID_GPS2_RTK_CMP_REL : "gps1RtkCmpRel",
  DID_GPS1_RTK_POS_MISC: "gps1RtkPosMisc",
- DID_GPS1_RTK_CMP_MISC: "gps1RtkCmpMisc",
+ DID_GPS2_RTK_CMP_MISC: "gps1RtkCmpMisc",
  DID_FEATURE_BITS : "featureBits",
  DID_SENSORS_UCAL : "sensorsUcal",
  DID_SENSORS_TCAL : "sensorsTcal",
