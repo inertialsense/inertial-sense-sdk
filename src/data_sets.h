@@ -1901,24 +1901,26 @@ typedef struct PACKED
 
 enum eNmeaMsgId
 {
-    NMEA_MSG_ID_INVALID   = 0,
-    NMEA_MSG_ID_PIMU      = 1,
-    NMEA_MSG_ID_PPIMU     = 2,
-    NMEA_MSG_ID_PRIMU     = 3,
-    NMEA_MSG_ID_PINS1     = 4,
-    NMEA_MSG_ID_PINS2     = 5,
-    NMEA_MSG_ID_PGPSP     = 6,
-    NMEA_MSG_ID_GNGGA     = 7,
-    NMEA_MSG_ID_GNGLL     = 8,
-    NMEA_MSG_ID_GNGSA     = 9,
-    NMEA_MSG_ID_GNRMC     = 10,
-    NMEA_MSG_ID_GNZDA     = 11,
-    NMEA_MSG_ID_PASHR     = 12,
-    NMEA_MSG_ID_PSTRB     = 13,
-    NMEA_MSG_ID_INFO      = 14,
-    NMEA_MSG_ID_GNGSV     = 15,
-    NMEA_MSG_ID_GNVTG     = 16,
-    NMEA_MSG_ID_INTEL     = 17,
+    NMEA_MSG_ID_INVALID     = 0,
+    NMEA_MSG_ID_PIMU        = 1,
+    NMEA_MSG_ID_PPIMU       = 2,
+    NMEA_MSG_ID_PRIMU       = 3,
+    NMEA_MSG_ID_PINS1       = 4,
+    NMEA_MSG_ID_PINS2       = 5,
+    NMEA_MSG_ID_PGPSP       = 6,
+    NMEA_MSG_ID_GNGGA       = 7,
+    NMEA_MSG_ID_GNGLL       = 8,
+    NMEA_MSG_ID_GNGSA       = 9,
+    NMEA_MSG_ID_GNRMC       = 10,
+    NMEA_MSG_ID_GNZDA       = 11,
+    NMEA_MSG_ID_PASHR       = 12,
+    NMEA_MSG_ID_PSTRB       = 13,
+    NMEA_MSG_ID_INFO        = 14,
+    NMEA_MSG_ID_GNGSV       = 15,
+    NMEA_MSG_ID_GNVTG       = 16,
+    NMEA_MSG_ID_INTEL       = 17,
+    NMEA_MSG_ID_POWGPS      = 18,
+    NMEA_MSG_ID_POWTLV      = 19,
     NMEA_MSG_ID_COUNT,
 
 	// IMX/GPX Input Commands
@@ -2032,6 +2034,8 @@ typedef struct {
 #define NMEA_RMC_BITS_GNGSV         (1<<NMEA_MSG_ID_GNGSV)
 #define NMEA_RMC_BITS_GNVTG         (1<<NMEA_MSG_ID_GNVTG)
 #define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
+#define NMEA_RMC_BITS_POWGPS        (1<<NMEA_MSG_ID_POWGPS)
+#define NMEA_RMC_BITS_POWTLV        (1<<NMEA_MSG_ID_POWTLV)
 
 typedef struct PACKED
 {

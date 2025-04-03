@@ -703,8 +703,10 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 	[DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
 	[DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
 	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GNGSV,
-	[DID_GPS1_POS]				=
-		NMEA_RMC_BITS_INTEL  |
+	[DID_GPS1_POS] =
+        NMEA_RMC_BITS_POWGPS |
+        NMEA_RMC_BITS_POWTLV |
+		NMEA_RMC_BITS_INTEL |
 		NMEA_RMC_BITS_PGPSP |
 		NMEA_RMC_BITS_GNGGA |
 		NMEA_RMC_BITS_GNGLL |
@@ -713,6 +715,18 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 		NMEA_RMC_BITS_GNZDA |
 		NMEA_RMC_BITS_GNVTG |
 		NMEA_RMC_BITS_PASHR,
+    [DID_GPS2_POS] =
+        NMEA_RMC_BITS_POWGPS |
+        NMEA_RMC_BITS_POWTLV |
+        NMEA_RMC_BITS_INTEL |
+        NMEA_RMC_BITS_PGPSP |
+        NMEA_RMC_BITS_GNGGA |
+        NMEA_RMC_BITS_GNGLL |
+        NMEA_RMC_BITS_GNGSA |
+        NMEA_RMC_BITS_GNRMC |
+        NMEA_RMC_BITS_GNZDA |
+        NMEA_RMC_BITS_GNVTG |
+        NMEA_RMC_BITS_PASHR,
 	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
 };
 
@@ -992,6 +1006,8 @@ int getNmeaMsgId(const void *msg, int msgSize)
         else if (UINT32_MATCH(talker,"PPIM"))       { return NMEA_MSG_ID_PPIMU; }
         else if (UINT32_MATCH(talker,"PRIM"))       { return NMEA_MSG_ID_PRIMU; }
         else if (UINT32_MATCH(talker,"PASH"))       { return NMEA_MSG_ID_PASHR; }
+        else if (UINT32_MATCH(talker,"POWGPS"))   	{ return NMEA_MSG_ID_POWGPS; }
+        else if (UINT32_MATCH(talker,"POWTLV"))  	{ return NMEA_MSG_ID_POWTLV; }
         break;
 
     case 'S':
@@ -1015,32 +1031,34 @@ int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
     switch(msgId)
     {
     default: return -1;
-    case NMEA_MSG_ID_PIMU:	memcpy(buf, "PIMU",  n = 4);	break;
-    case NMEA_MSG_ID_PPIMU:	memcpy(buf, "PPIMU", n = 5);	break;
-    case NMEA_MSG_ID_PRIMU:	memcpy(buf, "PRIMU", n = 5);	break;
-    case NMEA_MSG_ID_PINS1:	memcpy(buf, "PINS1", n = 5);	break;
-    case NMEA_MSG_ID_PINS2:	memcpy(buf, "PINS2", n = 5);	break;
-    case NMEA_MSG_ID_PGPSP:	memcpy(buf, "PGPSP", n = 5);	break;
-    case NMEA_MSG_ID_GNGGA:	memcpy(buf, "GNGGA", n = 5);	break;
-    case NMEA_MSG_ID_GNGLL:	memcpy(buf, "GNGLL", n = 5);	break;
-    case NMEA_MSG_ID_GNGSA:	memcpy(buf, "GNGSA", n = 5);	break;
-    case NMEA_MSG_ID_GNRMC:	memcpy(buf, "GNRMC", n = 5);	break;
-    case NMEA_MSG_ID_GNZDA:	memcpy(buf, "GNZDA", n = 5);	break;
-    case NMEA_MSG_ID_PASHR:	memcpy(buf, "PASHR", n = 5);	break;
-    case NMEA_MSG_ID_PSTRB:	memcpy(buf, "PSTRB", n = 5);	break;
-    case NMEA_MSG_ID_INFO:	memcpy(buf, "INFO",  n = 4);	break;
-    case NMEA_MSG_ID_GNGSV:	memcpy(buf, "GNGSV", n = 5);	break;
-    case NMEA_MSG_ID_GNVTG:	memcpy(buf, "GNVTG", n = 5);	break;
-    case NMEA_MSG_ID_INTEL:	memcpy(buf, "INTEL", n = 5);	break;
+    case NMEA_MSG_ID_PIMU:      memcpy(buf, "PIMU",  n = 4);	break;
+    case NMEA_MSG_ID_PPIMU:     memcpy(buf, "PPIMU", n = 5);	break;
+    case NMEA_MSG_ID_PRIMU:     memcpy(buf, "PRIMU", n = 5);	break;
+    case NMEA_MSG_ID_PINS1:     memcpy(buf, "PINS1", n = 5);	break;
+    case NMEA_MSG_ID_PINS2:     memcpy(buf, "PINS2", n = 5);	break;
+    case NMEA_MSG_ID_PGPSP:     memcpy(buf, "PGPSP", n = 5);	break;
+    case NMEA_MSG_ID_GNGGA:     memcpy(buf, "GNGGA", n = 5);	break;
+    case NMEA_MSG_ID_GNGLL:     memcpy(buf, "GNGLL", n = 5);	break;
+    case NMEA_MSG_ID_GNGSA:     memcpy(buf, "GNGSA", n = 5);	break;
+    case NMEA_MSG_ID_GNRMC:     memcpy(buf, "GNRMC", n = 5);	break;
+    case NMEA_MSG_ID_GNZDA:     memcpy(buf, "GNZDA", n = 5);	break;
+    case NMEA_MSG_ID_PASHR:     memcpy(buf, "PASHR", n = 5);	break;
+    case NMEA_MSG_ID_PSTRB:     memcpy(buf, "PSTRB", n = 5);	break;
+    case NMEA_MSG_ID_INFO:      memcpy(buf, "INFO",  n = 4);	break;
+    case NMEA_MSG_ID_GNGSV:     memcpy(buf, "GNGSV", n = 5);	break;
+    case NMEA_MSG_ID_GNVTG:     memcpy(buf, "GNVTG", n = 5);	break;
+    case NMEA_MSG_ID_INTEL:     memcpy(buf, "INTEL", n = 5);	break;
+    case NMEA_MSG_ID_POWGPS:    memcpy(buf, "POWGPS", n = 6);   break;
+    case NMEA_MSG_ID_POWTLV:    memcpy(buf, "POWTLV", n = 6);   break;
 
-    case NMEA_MSG_ID_ASCE:	memcpy(buf, "ASCE", n = 4);		break;
-    case NMEA_MSG_ID_BLEN:	memcpy(buf, "BLEN", n = 4);		break;
-    case NMEA_MSG_ID_EBLE:	memcpy(buf, "EBLE", n = 4);		break;
-    case NMEA_MSG_ID_NELB:	memcpy(buf, "NELB", n = 4);		break;
-    case NMEA_MSG_ID_PERS:	memcpy(buf, "PERS", n = 4);		break;
-    case NMEA_MSG_ID_SRST:	memcpy(buf, "SRST", n = 4);		break;
-    case NMEA_MSG_ID_STPB:	memcpy(buf, "STPB", n = 4);		break;
-    case NMEA_MSG_ID_STPC:	memcpy(buf, "STPC", n = 4);		break;
+    case NMEA_MSG_ID_ASCE:      memcpy(buf, "ASCE", n = 4);     break;
+    case NMEA_MSG_ID_BLEN:      memcpy(buf, "BLEN", n = 4);     break;
+    case NMEA_MSG_ID_EBLE:      memcpy(buf, "EBLE", n = 4);     break;
+    case NMEA_MSG_ID_NELB:      memcpy(buf, "NELB", n = 4);     break;
+    case NMEA_MSG_ID_PERS:      memcpy(buf, "PERS", n = 4);     break;
+    case NMEA_MSG_ID_SRST:      memcpy(buf, "SRST", n = 4);     break;
+    case NMEA_MSG_ID_STPB:      memcpy(buf, "STPB", n = 4);     break;
+    case NMEA_MSG_ID_STPC:      memcpy(buf, "STPC", n = 4);     break;
     }
     // Null terminate
     ((uint8_t*)buf)[n] = 0;
