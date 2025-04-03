@@ -200,7 +200,6 @@ class SuperNPP():
 
     def reprocess_log(self, folder, config_serials):
         # Find the serial numbers in the log
-        # subdir = os.path.basename(os.path.normpath(folder))
         (folder, subdir) = os.path.split(folder)
 
         # Find serial numbers, and determine the log type
@@ -220,11 +219,6 @@ class SuperNPP():
         else:
             serials = config_serials
 
-        print("serial numbers")
-        print(serials)
-
-        if os.name == 'posix':
-            cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
         file_path = os.path.dirname(os.path.realpath(__file__))
         npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
         if os.name == 'posix':  # Linux
@@ -234,20 +228,15 @@ class SuperNPP():
             npp_build_folder += '/Release'
         cmds = [exename + ' -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
 
-        if self.startMode == 1:
-            for i in range(len(cmds)):
-                cmds[i] += ' -mode COLD -kml'		# Cold init, enable KML output
-
-        if self.startMode == 2:
-            for i in range(len(cmds)):
-                cmds[i] += ' -mode FACTORY -kml'	# Factory init, enable KML output
-
+        mode_suffix = {1: ' -mode COLD', 2: ' -mode FACTORY'}.get(self.startMode, '')
         for i in range(len(cmds)):
+            cmds[i] += mode_suffix		            # Cold/Factory init
+            cmds[i] += ' -kml'                      # Cold init, enable KML output
             cmds[i] += ' --outputoff'				# disable INS display output
-
-        for i in range(len(cmds)):
             cmds[i] += ' --disableBaroFusion'		# disable barometer fusion
 
+        print("serial numbers")
+        print(serials)
         print("Running NPP...")
 
         for cmd in cmds:
