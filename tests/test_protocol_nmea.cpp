@@ -878,6 +878,9 @@ TEST(protocol_nmea, INTEL)
     }
 }
 
+/**
+ * @brief Test creation and parsing of the POWTLV message.
+ */
 TEST(protocol_nmea, POWTLV)
 {
     gps_pos_t pos = {};    
@@ -927,6 +930,9 @@ TEST(protocol_nmea, POWTLV)
     ASSERT_EQ(pos.hMSL, resultPos.hMSL);
 }
 
+/**
+ * @brief Test creation and parsing of the POWGPS message.
+ */
 TEST(protocol_nmea, POWGPS_valid)
 {
     gps_pos_t pos = {};    
@@ -958,6 +964,9 @@ TEST(protocol_nmea, POWGPS_valid)
     ASSERT_EQ(pos.leapS, resultPos.leapS);
 }
 
+/**
+ * @brief Test creation and parsing of the POWGPS message with invalid time * 
+ */
 TEST(protocol_nmea, POWGPS_gps_time_invalid)
 {
     gps_pos_t pos = {};    
@@ -989,6 +998,9 @@ TEST(protocol_nmea, POWGPS_gps_time_invalid)
     ASSERT_EQ(pos.leapS, resultPos.leapS);
 }
 
+/**
+ * @brief Test creation and parsing of the POWGPS message with invalid leap second
+ */
 TEST(protocol_nmea, POWGPS_leap_invalid)
 {
     gps_pos_t pos = {};    
