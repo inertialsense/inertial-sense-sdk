@@ -97,7 +97,7 @@ static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("protocolVer", &dev_info_t::protocolVer, DATA_TYPE_UINT8, 4, "", "Communications protocol version", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("repoRevision", &dev_info_t::repoRevision, DATA_TYPE_UINT32, "", "Repo revision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("manufacturer", &dev_info_t::manufacturer, DATA_TYPE_STRING, "", "manufacturer", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("buildType", &dev_info_t::buildType, DATA_TYPE_UINT8, "", "'a'(97)=ALPHA, 'b'(98)=BETA, 'c'(99)=CANDIDATE, 'r'(114)=PRODUCTION, 'd'(100)=develop, 's'(115)=snapshot, '*'(42)=dirty", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("buildType", &dev_info_t::buildType, DATA_TYPE_UINT8, "", "'a'(97)=ALPHA, 'b'(98)=BETA, 'c'(99)=CANDIDATE, 'r'(114)=PRODUCTION, 'd'(100)=develop, 's'(115)=snapshot, '^'(94)=dirty", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildYear", &dev_info_t::buildYear, DATA_TYPE_UINT8, "", "Build year-2000", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildMonth", &dev_info_t::buildMonth, DATA_TYPE_UINT8, "", "Build month", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildDay", &dev_info_t::buildDay, DATA_TYPE_UINT8, "", "Build day", DATA_FLAGS_READ_ONLY);
@@ -148,7 +148,7 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("pqrSigma", &bit_t::pqrSigma, DATA_TYPE_F32, SYM_DEG_PER_S, "Angular rate standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("accSigma", &bit_t::accSigma, DATA_TYPE_F32, SYM_M_PER_S, "Acceleration standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " TOSTRING(BIT_TEST_MODE_SIM_GPS_NOISE) "=GPS noise, " TOSTRING(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) "=Rx overflow, " TOSTRING(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) "=Tx overflow");
-    mapper.AddMember("testVar", &bit_t::testVar, DATA_TYPE_UINT8, "", "Test Mode variable (port number)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("testVar", &bit_t::testVar, DATA_TYPE_UINT8, "", "Test Mode variable (port number)");
     mapper.AddMember("detectedHardwareId", &bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
 
@@ -190,7 +190,7 @@ void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
         mapper.AddMember2("[" + std::to_string(i) + "].rxBytesPerSec",      i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Rx data rate", DATA_FLAGS_READ_ONLY);
         mapper.AddMember2("[" + std::to_string(i) + "].txBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytes), DATA_TYPE_UINT32, "bytes", "Tx byte count");
         mapper.AddMember2("[" + std::to_string(i) + "].rxBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytes), DATA_TYPE_UINT32, "bytes", "Rx byte count");
-        mapper.AddMember2("[" + std::to_string(i) + "].txOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txOverflows), DATA_TYPE_UINT32, "", "Tx buffer overflow occurrences");            
+        mapper.AddMember2("[" + std::to_string(i) + "].txDataDrops",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txDataDrops), DATA_TYPE_UINT32, "", "Tx buffer data drop occurrences");			
         mapper.AddMember2("[" + std::to_string(i) + "].rxOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxOverflows), DATA_TYPE_UINT32, "", "Rx buffer overflow occurrences");        
         mapper.AddMember2("[" + std::to_string(i) + "].txBytesDropped",     i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytesDropped), DATA_TYPE_UINT32, "bytes", "Tx number of bytes that were not sent");
         mapper.AddMember2("[" + std::to_string(i) + "].rxChecksumErrors",   i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxChecksumErrors), DATA_TYPE_UINT32, "", "Rx number of checksum failures");
@@ -239,7 +239,7 @@ static void PopulateMapSysParams(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("imuTemp",             &sys_params_t::imuTemp, DATA_TYPE_F32, SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("baroTemp",            &sys_params_t::baroTemp, DATA_TYPE_F32, SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("mcuTemp",             &sys_params_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
-    mapper.AddMember("sysStatus",           &sys_params_t::sysStatus, DATA_TYPE_UINT32, SYM_DEG_C, "MCU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("sysStatus",           &sys_params_t::sysStatus, DATA_TYPE_UINT32, "", "System Status Flags (See eSysStatusFlags)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("imuSamplePeriodMs",   &sys_params_t::imuSamplePeriodMs, DATA_TYPE_UINT32, "ms", "IMU sample period. Zero disables sensor sampling");
     mapper.AddMember("navOutputPeriodMs",   &sys_params_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter ouput period");
     mapper.AddMember("navUpdatePeriodMs",   &sys_params_t::navUpdatePeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter update period", DATA_FLAGS_READ_ONLY);
