@@ -1572,7 +1572,7 @@ enum eSystemCommand
     // TODO: Action date (after 8/8/25): 
     //  A: Remove if does not fix tx->rx bug. 
     //  B: If it does help consider expanding to all pins to prevent from happening.
-    SYS_CMD_OUTPUT_IDLE                  = 96,           // (uint32 inv: 4294967199)
+    SYS_CMD_OUTPUT_IDLE                                 = 96,           // (uint32 inv: 4294967199)
     
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
