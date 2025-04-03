@@ -1568,11 +1568,13 @@ enum eSystemCommand
     SYS_CMD_TEST_SER0_TX_PP_U                           = 81,           // (uint32 inv: 4294967214)
     SYS_CMD_TEST_SER0_TX_PP_D                           = 82,           // (uint32 inv: 4294967213)
 
-    // SYS_CMD_OUTPUT_IDLE is an experimental command for debuging TX->RX bug (TM) 
+    // SYS_CMD_OUTPUT_IDLE is an EXPERIMENTAL command for debuging TX->RX bug (TM) 
     // TODO: Action date (after 8/8/25): 
     //  A: Remove if does not fix tx->rx bug. 
     //  B: If it does help consider expanding to all pins to prevent from happening.
-    SYS_CMD_OUTPUT_IDLE                                 = 96,           // (uint32 inv: 4294967199)
+    // THIS IS UNTESTED AND MAY CAUSE UNEXPECTED BEHAVIOR. USE AT YOUR OWN RISK.
+    SYS_CMD_OUTPUT_IDLE                                 = 95,           // (uint32 inv: 4294967200)
+    SYS_CMD_EXIT_OUTPUT_IDLE                            = 96,           // (uint32 inv: 4294967199)
     
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
