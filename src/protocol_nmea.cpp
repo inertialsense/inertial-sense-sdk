@@ -1258,7 +1258,7 @@ int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
     nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
     nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);      // 3 
 
-    valid = (pos.leapS > 0) ? 1 : 0; // assume leap seconds is valid if non 0
+    valid = (pos.leapS > 10 && pos.leapS < 30) ? 1 : 0;     // should be ~18 so give a little leeway
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 4
     nmea_sprint(a, aSize, n, ",%d", pos.leapS);             // 5
 

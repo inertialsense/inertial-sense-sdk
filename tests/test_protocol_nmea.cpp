@@ -891,7 +891,7 @@ TEST(protocol_nmea, POWTLV)
 
     gps_vel_t vel = {};
     vel.vel[0] = 1.0;
-    vel.vel[1] = 1.0;
+    vel.vel[1] = 2.0;
     vel.vel[2] = 3.0;
     
     char abuf[ASCII_BUF_LEN] = { 0 };
@@ -903,142 +903,121 @@ TEST(protocol_nmea, POWTLV)
 
     nmea_parse_powtlv(abuf, n, resultPos, resultVel);
 
-    /**
-*  $POWTLV prorietary NMEA message
-*    0   Message ID $POWGPS
-*    1   GPS Time Quality (0=invalid, 1=valid)
-*    2   GPS Week Number
-*    3   GPS Time of Week (micro seconds)
-*    4   GPS leap seconds validity (0=invalid, 1=valid)
-*    5   GPS leap seconds
-*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-*    7   Latitude ddmm.mmmm
-*    8   North/South indicator (N/S)
-*    9   Longitude dddmm.mmmm
-*    10  East/West indicator (E/W)
-*    11  Altitude (x.xxx meters)
-*    12  Mean Sea Level (MSL) (x.xxx meters)
-*    13  Horizontal Speed (x.xxx m/s)
-*    14  Vertical Speed (x.xxx m/s)
-*    15  Heading (x.xxx degrees)
-*    16  Checksum, begins with *
-*/
-    
-    printf("week: %d, %d\n", pos.week, resultPos.week);
-    printf("tow: %d, %d\n", pos.timeOfWeekMs, resultPos.timeOfWeekMs);
-    printf("leap: %d, %d\n", pos.leapS, resultPos.leapS);
-    
-    
-    printf("lla[0]: %f, %f\n", pos.lla[0], resultPos.lla[0]);
-    printf("lla[1]: %f, %f\n", pos.lla[1], resultPos.lla[1]);
-    printf("lla[2]: %f, %f\n", pos.lla[2], resultPos.lla[2]);
-    
-    printf("hMSL: %f, %f\n", pos.hMSL, resultPos.hMSL);
-    printf("vel[0]: %f, %f\n", vel.vel[0], resultVel.vel[0]);
-    printf("vel[1]: %f, %f\n", vel.vel[1], resultVel.vel[1]);
-    printf("vel[2]: %f, %f\n", vel.vel[2], resultVel.vel[2]);
-
+    // Checks time valid bit set field 1
     ASSERT_EQ(abuf[8], '1');
 
     for (int i=0; i<3; i++)
     {
+        // test field 13,14,15
         ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
+        // test field 7,8,9,10,11
         ASSERT_NEAR(pos.lla[i], resultPos.lla[i], 0.02f);
     }
     
+    // test field 1,2
     ASSERT_EQ(pos.week, resultPos.week);
+
+    // test field 1,3
     ASSERT_EQ(pos.timeOfWeekMs, resultPos.timeOfWeekMs);
 
+    // test field 4,5
     ASSERT_EQ(pos.leapS, resultPos.leapS);
+
+    // tests field 12
     ASSERT_EQ(pos.hMSL, resultPos.hMSL);
 }
 
-// TEST(protocol_nmea, POWGPS_valid)
-// {
-//     return;
-//     dev_info_t info = {};
-
-//     info.firmwareVer[0] = 1;
-//     info.firmwareVer[1] = 2;
-//     info.firmwareVer[2] = 3;
-//     info.firmwareVer[3] = 4;
-
-//     gps_pos_t pos = {};    
-//     pos.timeOfWeekMs = 423199200;
-//     pos.lla[0] = 40.19759002;
-//     pos.lla[1] = -111.62147172;
-//     pos.lla[2] = 1408.565264;
-
-//     ixQuat qe2n;
-//     float velNed[3] = { 0.0f, 4.0f, 0.0f };
-//     quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
-//     gps_vel_t vel = {};
-//     // Velocity in ECEF
-//     quatRot(vel.vel, qe2n, velNed);
+TEST(protocol_nmea, POWGPS_valid)
+{
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2361;
+    pos.leapS = 18;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+    pos.hMSL = 1438.2f;
     
-//     char abuf[ASCII_BUF_LEN] = { 0 };
-//     int n = nmea_intel(abuf, ASCII_BUF_LEN, info, pos, vel);
-//     // printf("%s\n", abuf);
-//     dev_info_t resultInfo = {};
-//     gps_pos_t resultPos = {};
-//     gps_vel_t resultVel = {};
-//     float resultPpsPhase[2];
-//     uint32_t resultPpsNoiseNs[1];
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
+    printf("%s\n", abuf);
 
-//     nmea_parse_intel(abuf, n, resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs);
+    gps_pos_t resultPos = {};
 
-//     for (int i=0; i<3; i++)
-//     {
-//         ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
-//     }
-//     for (int i=0; i<4; i++)
-//     {
-//         ASSERT_EQ(info.firmwareVer[i], resultInfo.firmwareVer[i]);
-//     }
-// }
+    nmea_parse_powgps(abuf, n, resultPos);
 
-// TEST(protocol_nmea, POWGPS_invalid)
-// {
-//     return;
-//     dev_info_t info = {};
-//     info.firmwareVer[0] = 1;
-//     info.firmwareVer[1] = 2;
-//     info.firmwareVer[2] = 3;
-//     info.firmwareVer[3] = 4;
+    // test field 1
+    ASSERT_EQ(abuf[8], '1');
 
-//     gps_pos_t pos = {};    
-//     pos.timeOfWeekMs = 423199200;
-//     pos.lla[0] = 40.19759002;
-//     pos.lla[1] = -111.62147172;
-//     pos.lla[2] = 1408.565264;
+    // test field 1,2
+    ASSERT_EQ(pos.week, resultPos.week);
+    // test field 1,3
+    ASSERT_EQ(pos.timeOfWeekMs, resultPos.timeOfWeekMs);
 
-//     ixQuat qe2n;
-//     float velNed[3] = { 0.0f, 4.0f, 0.0f };
-//     quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
-//     gps_vel_t vel = {};
-//     // Velocity in ECEF
-//     quatRot(vel.vel, qe2n, velNed);
+    // test field 4,5
+    ASSERT_EQ(pos.leapS, resultPos.leapS);
+}
+
+TEST(protocol_nmea, POWGPS_gps_time_invalid)
+{
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2270;
+    pos.leapS = 18;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+    pos.hMSL = 1438.2f;
     
-//     char abuf[ASCII_BUF_LEN] = { 0 };
-//     int n = nmea_intel(abuf, ASCII_BUF_LEN, info, pos, vel);
-//     // printf("%s\n", abuf);
-//     dev_info_t resultInfo = {};
-//     gps_pos_t resultPos = {};
-//     gps_vel_t resultVel = {};
-//     float resultPpsPhase[2];
-//     uint32_t resultPpsNoiseNs[1];
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
+    printf("%s\n", abuf);
 
-//     nmea_parse_intel(abuf, n, resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs);
+    gps_pos_t resultPos = {};
 
-//     for (int i=0; i<3; i++)
-//     {
-//         ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
-//     }
-//     for (int i=0; i<4; i++)
-//     {
-//         ASSERT_EQ(info.firmwareVer[i], resultInfo.firmwareVer[i]);
-//     }
-// }
+    nmea_parse_powgps(abuf, n, resultPos);
+
+    // test field 1
+    ASSERT_EQ(abuf[8], '0');
+
+    // test field 1,2
+    ASSERT_EQ(0, resultPos.week);
+    // test field 1,3
+    ASSERT_EQ(0, resultPos.timeOfWeekMs);
+
+    // test field 4,5
+    ASSERT_EQ(pos.leapS, resultPos.leapS);
+}
+
+TEST(protocol_nmea, POWGPS_leap_invalid)
+{
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2361;
+    pos.leapS = 9;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+    pos.hMSL = 1438.2f;
+    
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
+    printf("%s\n", abuf);
+
+    gps_pos_t resultPos = {};
+
+    nmea_parse_powgps(abuf, n, resultPos);
+
+    // test field 1
+    ASSERT_EQ(abuf[8], '1');
+
+    // test field 1,2
+    ASSERT_EQ(pos.week, resultPos.week);
+    // test field 1,3
+    ASSERT_EQ(pos.timeOfWeekMs, resultPos.timeOfWeekMs);
+    // test field 4,5
+    ASSERT_EQ(0, resultPos.leapS);
+}
 
 #define ASCII_BUF2  2048
 
