@@ -379,7 +379,7 @@ class Log:
         att_error = np.array([qboxminus(self.stateArray[dev, :, 7:], self.truth[:, 6:]) for dev in range(len(self.stateArray))])
         self.att_error = att_error
 
-    def runImxPerformanceReport(self):
+    def runImxPerformanceReport(self, params={}):
         self.data = np.array(self.data)
         self.getRMSArray()
         self.getRMSTruth()
@@ -597,14 +597,18 @@ class Log:
         fix_type[fix_type == 0] = 10
         return fix_type
 
-    def runGpxPerformanceReport(self):
-        self.data = np.array(self.data)
+    def runGpxPerformanceReport(self, params={}):
+        self.data = np.array(self.data)        
         threshold = {}
         threshold['timeToFirstFix']     = 3*60          # (s)
         threshold['percentFix']         = 95            # percent of time in fix, excluding time to first fix
         threshold['arRatio']            = 500           # (RTK AR ratio)
         threshold['headingErr']         = 1.5*DEG2RAD   # (rad)
+        if 'threshold' in params:
+            threshold.update(params['threshold'])    # override defaults with user params
         failures = []
+
+        print("Using timeToFirstFix: %d s" % (threshold['timeToFirstFix']))
 
         device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.report_filename = os.path.join(self.directory, 'performance_report_gpx.txt')

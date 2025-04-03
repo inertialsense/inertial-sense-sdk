@@ -39,7 +39,7 @@ class SuperNPP():
         options_upper = ",".join(self.params["run_test"]).upper()
         self.testIMX = "IMX" in options_upper
         self.testGPX = "GPX" in options_upper
-        self.subdirs = []
+        self.logs = []
         self.log = Log()
         self.passResults = []
         self.failResults = []
@@ -81,9 +81,9 @@ class SuperNPP():
         for directory in directories:
             self._findLogFilesRecursive(directory)
 
-    def _findLogFilesRecursive(self, directory):
+    def _findLogFilesRecursive(self, directory, params={}):
         try:
-            entries = os.listdir(directory)
+            items = os.listdir(directory)
         except FileNotFoundError:
             print(f"Directory not found: {directory}")
             exit(1)
@@ -91,18 +91,28 @@ class SuperNPP():
             print(f"Permission denied: {directory}")
             exit(1)
 
-        for file in entries:
-            if (".dat" in file or ".raw" in file) and "base_station.raw" not in file:
-                self.subdirs.append(directory)
-                break
+        yaml_file = os.path.join(directory, "params.yaml")
+        if os.path.isfile(yaml_file):
+            with open(yaml_file, 'r') as file:
+                override_params = yaml.safe_load(file)
+                params.update(override_params)
 
-        for subdir in entries:
-            subdir_path = os.path.join(directory, subdir)
-            if not os.path.isdir(subdir_path):
-                continue
-            if "post_processed" in subdir:
-                continue
-            self._findLogFilesRecursive(subdir_path)
+        for item in items:
+            item_path = os.path.join(directory, item)
+            if os.path.isfile(item_path):
+                # Directory contains .raw or .dat file
+                if (".dat" in item or ".raw" in item) and "base_station.raw" not in item:
+                    if os.path.basename(directory) in self.params["blacklist_logs"]:
+                        print("Excluding blacklisted log: " + os.path.basename(directory))
+                    else:
+                        print("Adding log: " + directory)
+                        params["directory"] = directory
+                        self.logs.append(params.copy())
+                    break
+            elif os.path.isdir(item_path):
+                if "post_processed" in item:
+                    continue
+                self._findLogFilesRecursive(item_path, params.copy())
 
     def remove_post_processed_dirs(self, base_dirs):
         """
@@ -136,13 +146,13 @@ class SuperNPP():
             print("Reprocess disabled")
             return
 
-        print('  log count: ' + str(len(self.subdirs)))
-        for subdir in self.subdirs:
-            print("   " + subdir)
+        print('  log count: ' + str(len(self.logs)))
+        for log in self.logs:
+            print("   " + log["directory"])
         time.sleep(2)	# seconds
 
         # Start threads
-        threads = [Thread(target=self.reprocess_log, args=(folder, self.config_serials)) for folder in self.subdirs]
+        threads = [Thread(target=self.reprocess_log, args=(log["directory"], self.config_serials)) for log in self.logs]
         for thread in threads:
             thread.start()
         for thread in threads:
@@ -154,20 +164,21 @@ class SuperNPP():
 
     def run_report(self, runReportFunc):
         results = []
-        parent_dir = os.path.commonpath(self.subdirs)
+        directories = [log["directory"] for log in self.logs]
+        parent_dir = os.path.commonpath(directories)
         results.append(parent_dir + "\n")
 
-        for subdir in self.subdirs:
-            sdir = os.path.normpath(str(subdir))
+        for log in self.logs:
+            log["directory"] = os.path.normpath(str(log["directory"]))
             if self.params["reprocess"]:
-                sdir = os.path.normpath(str(sdir) + "/post_processed")
-            rel_dir = os.path.relpath(sdir, parent_dir)
-            nppPrint("   " + sdir)
+                log["directory"] = os.path.normpath(str(log["directory"]) + "/post_processed")
+            rel_dir = os.path.relpath(log["directory"], parent_dir)
+            nppPrint("   " + log["directory"])
 
             ### Compute Performance report ##################################################
-            if self.log.load(sdir):
+            if self.log.load(log["directory"]):
                 # Compute and output performance report
-                failures = runReportFunc()
+                failures = runReportFunc(log)
                 if failures:
                     results.append("[FAILED] " + rel_dir)
                     if isinstance(failures, list):
