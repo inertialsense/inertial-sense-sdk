@@ -1310,22 +1310,25 @@ int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
 int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {    
     float horVel = MAG_VEC2(vel.vel);
-    float groundTrackHeading = C_RAD2DEG_F * atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
+    float groundTrackHeading = 0;
 
     int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
+    
+    update_nmea_speed(pos, vel);
 
     n = nmea_powPrep(a, n, aSize, pos);                         // 1-6
 
     nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
 
-    nmea_sprint(a, aSize, n, ",%.3f", pos.lla[2]);            // 11
-    nmea_sprint(a, aSize, n, ",%.3f", pos.hMSL);              // 12
+    nmea_sprint(a, aSize, n, ",%.3f", pos.lla[2]);              // 11
+    nmea_sprint(a, aSize, n, ",%.3f", pos.hMSL);                // 12
 
     nmea_sprint(a, aSize, n, ",%.3f", horVel);                  // 13
 
     nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);              // 14
 
+    groundTrackHeading = C_RAD2DEG_F * atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
     nmea_sprint(a, aSize, n, ",%.3f", groundTrackHeading);      // 15
 
     return nmea_sprint_footer(a, aSize, n);                     // 16
