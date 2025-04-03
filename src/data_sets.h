@@ -1568,7 +1568,7 @@ enum eSystemCommand
     SYS_CMD_TEST_SER0_TX_PP_U                           = 81,           // (uint32 inv: 4294967214)
     SYS_CMD_TEST_SER0_TX_PP_D                           = 82,           // (uint32 inv: 4294967213)
 
-    // Experimental commands to help debug TX->RX bug (TM) TODO: Remove/refactor depending on the result.
+    // Experimental to help debug TX->RX bug (TM, 4/3/2025) TODO: If using this resolves the latched output pin issue, consider refactoring into general purpose SYS_CMD_SYS_IDLE.
     SYS_CMD_SET_OUTPUT_PIN_TO_TRISTATE                  = 96,           // (uint32 inv: 4294967199)
     
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
