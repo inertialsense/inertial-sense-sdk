@@ -1241,14 +1241,21 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
 }
 
 /**
-*  Preps fields 1-6 of $POWxxx prorietary NMEA message
-*     1   GPS Time Quality (0=invalid, 1=valid)
-*     2   GPS Week Number
-*     3   GPS Time of Week (micro seconds)
-*     4   GPS leap seconds validity (0=invalid, 1=valid)
-*     5   GPS leap seconds
-*     6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-*/
+ * @brief Preps fields 1-6 of $POWxxx prorietary NMEA message
+ * 
+ * @param a[] - output buffer
+ * @param startN - starting index in output buffer
+ * @param aSize - size of output buffer
+ * @param pos - gps position data
+ * 
+ * @note output message format: 
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ */
 int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 {  
     int n = startN;
@@ -1268,16 +1275,22 @@ int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 }
 
 /**
-*  $POWGPS prorietary NMEA message
-*    0   Message ID $POWGPS
-*    1   GPS Time Quality (0=invalid, 1=valid)
-*    2   GPS Week Number
-*    3   GPS Time of Week (micro seconds)
-*    4   GPS leap seconds validity (0=invalid, 1=valid)
-*    5   GPS leap seconds
-*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-*    7   Checksum, begins with *
-*/
+ * @brief creates $POWGPS prorietary NMEA message
+ * 
+ * @param a[] - output buffer
+ * @param aSize - size of output buffer
+ * @param pos - gps position data
+ * 
+ * @note output message format:
+ *  0   Message ID $POWGPS
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ *  7   Checksum, begins with *
+ */
 int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
 {
     int n = ssnprintf(a, aSize, "$POWGPS");     // 0
@@ -1288,25 +1301,32 @@ int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
 }
 
 /**
-*  $POWTLV prorietary NMEA message
-*    0   Message ID $POWGPS
-*    1   GPS Time Quality (0=invalid, 1=valid)
-*    2   GPS Week Number
-*    3   GPS Time of Week (micro seconds)
-*    4   GPS leap seconds validity (0=invalid, 1=valid)
-*    5   GPS leap seconds
-*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-*    7   Latitude ddmm.mmmm
-*    8   North/South indicator (N/S)
-*    9   Longitude dddmm.mmmm
-*    10  East/West indicator (E/W)
-*    11  Altitude (x.xxx meters)
-*    12  Mean Sea Level (MSL) (x.xxx meters)
-*    13  Horizontal Speed (x.xxx m/s)
-*    14  Vertical Speed (x.xxx m/s)
-*    15  Heading (x.xxx degrees)
-*    16  Checksum, begins with *
-*/
+ * @brief $POWTLV prorietary NMEA message
+ * 
+ * @param a[] - output buffer
+ * @param aSize - size of output buffer
+ * @param pos - gps position data
+ * @param vel - gps velocity data
+ * 
+ * @note output message format: 
+ *  0   Message ID $POWGPS
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ *  7   Latitude ddmm.mmmm
+ *  8   North/South indicator (N/S)
+ *  9   Longitude dddmm.mmmm
+ *  10  East/West indicator (E/W)
+ *  11  Altitude (x.xxx meters)
+ *  12  Mean Sea Level (MSL) (x.xxx meters)
+ *  13  Horizontal Speed (x.xxx m/s)
+ *  14  Vertical Speed (x.xxx m/s)
+ *  15  Heading (x.xxx degrees)
+ *  16  Checksum, begins with *
+ */
 int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {    
     float horVel = MAG_VEC2(vel.vel);
@@ -2816,16 +2836,22 @@ int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_
 }
 
 /**
-*  $POWGPS prorietary NMEA message
-*    0   Message ID $POWGPS
-*    1   GPS Time Quality (0=invalid, 1=valid)
-*    2   GPS Week Number
-*    3   GPS Time of Week (micro seconds)
-*    4   GPS leap seconds validity (0=invalid, 1=valid)
-*    5   GPS leap seconds
-*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-*    7  Checksum, begins with *
-*/
+ * @brief $POWGPS prorietary NMEA message
+ * 
+ * @param a[]  NMEA string
+ * @param aSize  NMEA string size
+ * @param pos  GPS position structure
+ * 
+ * @note
+ *  0   Message ID $POWGPS
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ *  7  Checksum, begins with *
+ */
 int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
 {
     /*  $POWGPS prorietary NMEA message
@@ -2867,25 +2893,32 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
 }
 
 /**
-*  $POWTLV prorietary NMEA message
-*    0   Message ID $POWGPS
-*    1   GPS Time Quality (0=invalid, 1=valid)
-*    2   GPS Week Number
-*    3   GPS Time of Week (micro seconds)
-*    4   GPS leap seconds validity (0=invalid, 1=valid)
-*    5   GPS leap seconds
-*    6   Holdover flag (0=no holdover, 1=EGR is in holdover)
-*    7   Latitude ddmm.mmmm
-*    8   North/South indicator (N/S)
-*    9   Longitude dddmm.mmmm
-*    10  East/West indicator (E/W)
-*    11  Altitude (x.xxx meters)
-*    12  Mean Sea Level (MSL) (x.xxx meters)
-*    13  Horizontal Speed (x.xxx m/s)
-*    14  Vertical Speed (x.xxx m/s)
-*    15  Heading (x.xxx degrees)
-*    16  Checksum, begins with *
-*/
+ * @brief $POWTLV prorietary NMEA message
+ * 
+ * @param a[]  NMEA string
+ * @param aSize  NMEA string size
+ * @param pos  GPS position structure
+ * @param vel  GPS velocity structure
+ * 
+ * @note
+ *  0   Message ID $POWGPS
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ *  7   Latitude ddmm.mmmm
+ *  8   North/South indicator (N/S)
+ *  9   Longitude dddmm.mmmm
+ *  10  East/West indicator (E/W)
+ *  11  Altitude (x.xxx meters)
+ *  12  Mean Sea Level (MSL) (x.xxx meters)
+ *  13  Horizontal Speed (x.xxx m/s)
+ *  14  Vertical Speed (x.xxx m/s)
+ *  15  Heading (x.xxx degrees)
+ *  16  Checksum, begins with *
+ */
 int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
     (void)aSize;
