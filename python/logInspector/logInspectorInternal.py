@@ -2,7 +2,8 @@
 
 from logInspector import LogInspectorWindow
 
-import sys, os, signal, ctypes
+import subprocess
+import sys, os, signal, ctypes, yaml
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
 from PyQt5.QtWidgets import QApplication
@@ -146,19 +147,82 @@ class logInspectorInternal(LogInspectorWindow):
         except Exception as e:
             self.showError(e)
 
-    def RMS(self):
+    def isLogDirectory(self, directory):
+        for filename in os.listdir(directory):
+            if filename.endswith('.dat') or filename.endswith('.raw'):
+                return True
+
+    def openTextFile(self, filename=None):
+        if filename is None:
+            return        
+        if 'win' in sys.platform:
+            subprocess.Popen(["notepad.exe", filename])
+        if 'linux' in sys.platform:
+            subprocess.Popen(['gedit', filename])
+
+    def TestImx(self):
+        directory = self.selectedDirectory()
+        if self.isLogDirectory(directory):
+            self.RunTest("IMX", self.log.runImxPerformanceReport)
+        else:
+            self.runSuperNppTest(directory, "imx")
+
+    def TestGpx(self):
+        directory = self.selectedDirectory()
+        if self.isLogDirectory(directory):
+            self.RunTest("GPX", self.log.runGpxPerformanceReport)
+        else:
+            self.runSuperNppTest(directory, "gpx")
+
+    def RunTest(self, name, reportFunc):
         if self.log is not None:
-            self.setStatus("Calculating RMS...")
-            self.log.calculateRMS()
-            self.log.printRMSReport()
-            self.log.openRMSReport()
+            self.setStatus("Running "+ name +" report...")
+            result = reportFunc()
+            self.log.openReport()
             self.updatePlot()
-            self.setStatus("RMS done.")
+            self.setStatus(name +" Test: " + ("FAILED" if result else "PASSED"))
+
+    def file_contains(self, filepath, text):
+        with open(filepath, 'r') as f:
+            for line in f:
+                if text.lower() in line.lower():
+                    return True
+        return False
+
+    def runSuperNppTest(self, directory, test):
+        sys.path.insert(1, '../../../../python/src')
+        params_filename = directory + '/params.yaml'
+        params = {
+            'name': 'test_' + test,
+            'results_directory': ".",
+            'directory': directory,
+            'logs': ['.'],
+            'blacklist_logs': [],
+            'options': [],
+            'run_test': [test],
+            'reprocess': self.reprocess.isChecked(),
+        }
+        with open(params_filename, 'w') as file:
+            yaml.dump(params, file, default_flow_style=False)
+        from supernpp.supernpp import SuperNPP
+        spp = SuperNPP(params_filename, serials=self.config['serials'])
+        self.setStatus(("Running %s test..." % (test)))
+        spp.run_reprocess()
+        spp.run_tests()
+        results_filename = spp.resultsFilename()
+        self.openTextFile(results_filename)
+        self.setStatus(test.upper() + " test: " + ("FAILED" if self.file_contains(results_filename, "FAILED") else "PASSED"))
 
     def createPlotSelection(self):
         super(logInspectorInternal, self).createPlotSelection()
-        self.addButton('RMS', self.RMS, layout=self.LayoutVButtons, tooltip="Compute RMS Test")
-        self.addButton('Devices', self.chooseDevs, layout=self.LayoutVButtons, tooltip="Show/Hide devices")
+        self.addButton('Devices', self.chooseDevs, layout=self.VLayoutOptions2, tooltip="Show/Hide devices")
+        self.addButton('IMX Test', self.TestImx, layout=self.LayoutVTests, tooltip="Run IMX Test")
+        self.addButton('GPX Test', self.TestGpx, layout=self.LayoutVTests, tooltip="Run GPX Test")
+
+        self.reprocess = QCheckBox("Reprocess", self)
+        self.reprocess.setToolTip("Reprocess data using NPP.  Requires pre-compiled NavProcess.")
+        self.LayoutVTests.addWidget(self.reprocess)
+        # self.reprocess.stateChanged.connect(self.changeReprocess)
 
     def createListGps(self):
         super(logInspectorInternal, self).createListGps()
