@@ -11,6 +11,7 @@ import shutil
 import sys
 import threading
 import yaml
+import json
 
 sys.path.insert(1, '../../SDK/python/logInspector')
 sys.path.insert(1, '../logInspector')
@@ -149,10 +150,12 @@ class SuperNPP():
         print('  log count: ' + str(len(self.logs)))
         for log in self.logs:
             print("   " + log["directory"])
+            yaml_data = yaml.dump(log)
+            print(yaml_data)
         time.sleep(2)	# seconds
 
         # Start threads
-        threads = [Thread(target=self.reprocess_log, args=(log["directory"], self.config_serials)) for log in self.logs]
+        threads = [Thread(target=self.reprocess_log, args=(log["directory"], self.config_serials, yaml.dump(log).replace('\n', ';'))) for log in self.logs]
         for thread in threads:
             thread.start()
         for thread in threads:
@@ -198,7 +201,7 @@ class SuperNPP():
         self.print_file_contents(self.results_filename)
         print('-------------------------------------------------------------')
 
-    def reprocess_log(self, folder, config_serials):
+    def reprocess_log(self, folder, config_serials, params_str):
         # Find the serial numbers in the log
         (folder, subdir) = os.path.split(folder)
 
@@ -234,6 +237,7 @@ class SuperNPP():
             cmds[i] += ' -kml'                      # Cold init, enable KML output
             cmds[i] += ' --outputoff'				# disable INS display output
             cmds[i] += ' --disableBaroFusion'		# disable barometer fusion
+            cmds[i] += f' --params "{params_str}"'
 
         print("serial numbers")
         print(serials)
