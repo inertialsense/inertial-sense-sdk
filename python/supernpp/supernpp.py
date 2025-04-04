@@ -11,7 +11,6 @@ import shutil
 import sys
 import threading
 import yaml
-import json
 
 sys.path.insert(1, '../../SDK/python/logInspector')
 sys.path.insert(1, '../logInspector')
@@ -136,12 +135,6 @@ class SuperNPP():
                         except Exception as e:
                             print(f"Failed to remove {dir_path}: {e}")
 
-
-    def print_file_contents(self, file_path):
-        with open(file_path, 'r') as file:
-            for line in file:
-                print(line, end='')  # end='' prevents adding extra newlines
-
     def run_reprocess(self):
         if not self.params["reprocess"]:
             print("Reprocess disabled")
@@ -150,8 +143,6 @@ class SuperNPP():
         print('  log count: ' + str(len(self.logs)))
         for log in self.logs:
             print("   " + log["directory"])
-            yaml_data = yaml.dump(log)
-            print(yaml_data)
         time.sleep(2)	# seconds
 
         # Start threads
@@ -176,7 +167,7 @@ class SuperNPP():
             if self.params["reprocess"]:
                 log["directory"] = os.path.normpath(str(log["directory"]) + "/post_processed")
             rel_dir = os.path.relpath(log["directory"], parent_dir)
-            nppPrint("   " + log["directory"])
+            nppPrint("\nRun Report: " + log["directory"])
 
             ### Compute Performance report ##################################################
             if self.log.load(log["directory"]):
@@ -196,10 +187,13 @@ class SuperNPP():
         with open(self.results_filename, "w") as f:
             f.write("\n".join(results))
 
-        print('-------------------------------------------------------------')
-        print(os.path.basename(self.results_filename))
-        self.print_file_contents(self.results_filename)
-        print('-------------------------------------------------------------')
+        output = '-------------------------------------------------------------\n'
+        output += os.path.basename(self.results_filename) + "\n"
+        with open(self.results_filename, 'r') as file:
+            output += file.read()    
+            output += "\n"
+        output += '-------------------------------------------------------------\n'
+        print(output)
 
     def reprocess_log(self, folder, config_serials, params_str):
         # Find the serial numbers in the log
@@ -238,13 +232,14 @@ class SuperNPP():
             cmds[i] += ' --outputoff'				# disable INS display output
             cmds[i] += ' --disableBaroFusion'		# disable barometer fusion
             cmds[i] += f' --params "{params_str}"'
-
-        print("serial numbers")
-        print(serials)
-        print("Running NPP...")
-
+        
+        output = "Running NPP: \n"
+        output += f"  Directory: {folder}\n"
+        output += f"  Serials:   {', '.join(str(s) for s in serials)}\n"
+        output += f"  Commands: \n"
         for cmd in cmds:
-            print(cmd)
+            output += cmd + "\n"
+        print(output)
 
         processes = [Popen(cmd, shell=True, cwd=npp_build_folder) for cmd in cmds]
         for p in processes:
@@ -272,17 +267,21 @@ def file_contains_string_count(file_path, search_string):
         count = content.count(search_string)
     return count
 
-def print_lines_with_string(file_path, search_string):
+def lines_with_string(file_path, search_string):
+    output = ""
     with open(file_path, 'r') as file:
         for line in file:
             if search_string in line:
-                print(line, end='')  # end='' avoids adding extra newlines
+                output += line
+    return output
 
-def print_case(filename, title_string, search_string):
+def string_case(filename, title_string, search_string):
+    output = ""
     count = file_contains_string_count(filename, search_string)
     if count:
-        nppPrint(title_string + " " + str(count))
-        print_lines_with_string(filename, search_string)
+        output += title_string + " " + str(count)
+        output += lines_with_string(filename, search_string)
+    return output
 
 if __name__ == "__main__":
 
@@ -328,12 +327,13 @@ if __name__ == "__main__":
         params = yaml.safe_load(file)
         directory = os.path.dirname(params_filename)
         testSummaryFilename = snpp.resultsFilename()
-        nppPrint("\n")
-        nppPrint("====================  Super NPP Results  ====================")
-        print_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
-        print_case(testSummaryFilename, "  Tests FAILED:", "[FAILED]")
-        print_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
-        nppPrint("=============================================================")
+        output =  "====================  Super NPP Results  ====================\n"
+        output += string_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
+        output += string_case(testSummaryFilename, "  Tests FAILED:", "[FAILED]")
+        output += string_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
+        output += "\n"
+        output += "============================================================="
+        print(output)
 
     snpp.exitHack()
 
