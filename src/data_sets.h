@@ -3336,8 +3336,10 @@ typedef enum
 } eDynamicModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
- * IMPORTANT! These fields should not be deleted, they can be deprecated and marked as reserved,
- * or new fields added to the end.
+ * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
+ * or new fields added to the end.  
+ * NOTE: The key value must be incremented to ensure the defaults are restored anytime the fields 
+ * change or the default values change.  Default changes should be noted in the changelog.
 */
 typedef struct PACKED
 {
@@ -4460,7 +4462,11 @@ enum eGpxSysConfigBits
 };
 
 /**
-* (DID_GPX_FLASH_CFG) GPX flash config.
+ * (DID_GPX_FLASH_CFG) GPX flash config.
+ * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
+ * or new fields added to the end.  
+ * NOTE: The key value must be incremented to ensure the defaults are restored anytime the fields 
+ * change or the default values change.  Default changes should be noted in the changelog.
 */
 typedef struct
 {  
