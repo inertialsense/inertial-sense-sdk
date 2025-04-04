@@ -115,7 +115,7 @@ def setDataInformationDirectory(path, startMode=START_MODE_HOT):
             json.dump(data, f, indent=4)
 
 def verArrayToString(array):
-    return str(array[0]) + '.' + str(array[1]) + '.' + str(array[2]) #+ '.' + str(array[3])
+    return str(array[0]) + '.' + str(array[1]) + '.' + str(array[2]) + '.' + str(array[3])
 
 def dateTimeArrayToString(info):
     year   = info['buildYear']
@@ -405,6 +405,7 @@ class LogInspectorWindow(QMainWindow):
         self.controlWidget.setLayout(self.controlLayout)
         
         self.createPlotSelection()
+        self.createPlotSelectionPost()
         self.createFileTree()
         self.createStatus()
         self.controlLayout.setStretch(0, 2)     # Plot selection
@@ -533,32 +534,38 @@ class LogInspectorWindow(QMainWindow):
         self.checkboxUtc.setToolTip("Display UTC time")
         self.checkboxUtc.stateChanged.connect(self.changeUtcCheckbox)
 
+        self.saveAllPushButton = QPushButton("Save All Plots")
+        self.saveAllPushButton.setToolTip("Save all plots to file")
+        self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
+
         self.VLayoutOptions1 = QVBoxLayout()
         self.VLayoutOptions1.addWidget(self.checkboxResidual)
         self.VLayoutOptions1.addWidget(self.checkboxTime)
+        self.VLayoutOptions1.addWidget(self.xAxisSample)
+        self.VLayoutOptions1.addWidget(self.checkboxUtc)
         self.VLayoutOptions1.setSpacing(0)
-        self.VLayoutOptions1.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.VLayoutOptions2 = QVBoxLayout()
-        self.VLayoutOptions2.addWidget(self.xAxisSample)
-        self.VLayoutOptions2.addWidget(self.checkboxUtc)
-        self.VLayoutOptions2.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.VLayoutOptions2.addWidget(self.saveAllPushButton)
         self.VLayoutOptions2.setSpacing(0)
+
+        group_box = QGroupBox("")
+        self.LayoutVTests = QVBoxLayout()
+        self.LayoutVTests.setSpacing(0)
+        group_box.setLayout(self.LayoutVTests)
+
 
         self.LayoutBelowPlotSelection = QHBoxLayout()
         self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions1)
         self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2)
-
-        self.saveAllPushButton = QPushButton("Save All Plots")
-        self.saveAllPushButton.setToolTip("Save all plots to file")
-        self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
         self.LayoutBelowPlotSelection.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
-
-        self.LayoutVButtons = QVBoxLayout()
-        self.LayoutVButtons.addWidget(self.saveAllPushButton)
-        self.LayoutVButtons.setSpacing(0)
-        self.LayoutBelowPlotSelection.addLayout(self.LayoutVButtons)
+        self.LayoutBelowPlotSelection.addWidget(group_box)
 
         self.controlLayout.addLayout(self.LayoutBelowPlotSelection)
+
+    def createPlotSelectionPost(self):
+        self.VLayoutOptions1.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.VLayoutOptions2.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.LayoutVTests.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
     def createFileTree(self):
         self.dirModel = QFileSystemModel()
@@ -809,10 +816,23 @@ class LogInspectorWindow(QMainWindow):
         cleanFolder(directory)
         setDataInformationDirectory(directory, startMode=startMode)
         sys.path.insert(1, '../../../../python/src')
+        params_flename = directory + '/params.yaml'
+        data = {
+            'name': 'test_imx',
+            'results_directory': ".",
+            'directory': directory,
+            'logs': ['.'],
+            'blacklist_logs': [],
+            'options': [],
+            'run_test': [],
+            'reprocess': True
+        }
+        with open(params_flename, 'w') as file:
+            yaml.dump(data, file, default_flow_style=False)
         from supernpp.supernpp import SuperNPP
-        spp = SuperNPP(directory, self.config['serials'], startMode=startMode)
+        spp = SuperNPP(params_flename, serials=self.config['serials'], startMode=startMode)
         self.setStatus(("NPP %s running..." % (startModes[startMode])))
-        spp.run()
+        spp.run_reprocess()
         
         # Expand file tree so "post_processed" directory is visable
         self.updateFileTree()
@@ -831,13 +851,17 @@ class LogInspectorWindow(QMainWindow):
             
         self.setStatus("NPP done.")
 
+    def selectedDirectory(self):
+        directory = os.path.normpath(self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0]))
+        return directory
+
     def setTreeViewDirectoryRoot(self, event):
         directory = self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0])
         self.dirLineEdit.setText(directory)
         self.handleTreeDirChange()
 
     def handleTreeViewRightClick(self, event):
-        directory = os.path.normpath(self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0]))
+        directory = self.selectedDirectory()
         menu = QMenu(self)
         copyAction                  = menu.addAction("Copy path")
         nppActionHot                = menu.addAction("Run NPP, HOT")

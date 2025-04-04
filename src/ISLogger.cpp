@@ -820,9 +820,7 @@ void cISLogger::PrintStatistics()
         std::shared_ptr<cDeviceLog> dev = it.second;
         if (dev==NULL)
             continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << dev->LogStatsString();
+        cout << endl << "SN" << std::setw(6) << dev->SerialNumber() << " " << dev->LogStatsString();
     }
 
     PrintIsCommStatus();
@@ -835,9 +833,7 @@ void cISLogger::PrintIsCommStatus()
         std::shared_ptr<cDeviceLog> dev = it.second;
         if (dev==NULL)
             continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
+        // cout << endl << "SN" << std::setw(6) << dev->SerialNumber() << " " << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
     }
 }
 

@@ -1557,10 +1557,7 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
-    // TODO: DEBUG REMOVE ONCE INTEL TX->RX bug (TM)
-    SYS_CMD_SET_GPX_SER0_PIN_DEFAULT                    = 67,           // (uint32 inv: 4294967228)
-    SYS_CMD_SET_GPX_SER0_PIN_REINIT                     = 68,           // (uint32 inv: 4294967227)
-    
+    // TODO: DEBUG REMOVE ONCE TX->RX bug (TM)
     SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
     SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
 
@@ -1571,6 +1568,14 @@ enum eSystemCommand
     SYS_CMD_TEST_SER0_TX_PP_U                           = 81,           // (uint32 inv: 4294967214)
     SYS_CMD_TEST_SER0_TX_PP_D                           = 82,           // (uint32 inv: 4294967213)
 
+    // The following two commands are EXPERIMENTAL for debuging TX->RX bug (TM) 
+    // THEY ARE UNTESTED AND MAY CAUSE UNEXPECTED BEHAVIOR.
+    // TODO: Action date (after 8/8/25): 
+    //  A: Remove if does not fix tx->rx bug. 
+    //  B: If it does help consider expanding to all pins to prevent from happening.
+    SYS_CMD_OUTPUT_IDLE                                 = 95,           // (uint32 inv: 4294967200)
+    SYS_CMD_EXIT_OUTPUT_IDLE                            = 96,           // (uint32 inv: 4294967199)
+    
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
@@ -2898,8 +2903,8 @@ enum eRTKConfigBits
 
 #define DEFAULT_DYNAMIC_MODEL                   DYNAMIC_MODEL_AIRBORNE_4G
 #define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)  // (rad)
-#define DEFAULT_GNSS_RTK_CN0_MINIMUM            25  // (dBHz)
-#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     10  // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_MINIMUM            30  // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     20  // (dBHz)
 
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
@@ -3717,7 +3722,7 @@ typedef struct
     double eratio[NFREQ];
 
     /** measurement error factor */
-    double err[5];
+    double err[7];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
     double std[3];
@@ -3755,11 +3760,11 @@ typedef struct
     /** reset sat biases after this long trying to get fix if not acquired */
     int fix_reset_base_msgs;
 
-    /* reject threshold of innovation for phase [0] and code [1] (m) */
+    /** reject threshold of innovation for phase [0] and code [1] (m) */
     double maxinno[2];
-    /** reject thresholds of NIS */
-    double maxnis_lo;
-    double maxnis_hi;
+    /** reject thresholds of NIS for phase [0] and code [1] */
+    double maxnis_lo[2];
+    double maxnis_hi[2];
 
     /** reject threshold of gdop */
     double maxgdop;
