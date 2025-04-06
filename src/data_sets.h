@@ -3452,10 +3452,10 @@ typedef struct PACKED
     /** (dBHz) GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum. */
     uint8_t                 gnssCn0DynMinOffset;
 
-    /** IMU gyro fault rejection low */
+    /** IMU gyro fault rejection threshold low */
     uint8_t                 imuRejectThreshGyroLow;
 
-    /** IMU gyro fault rejection low */
+    /** IMU gyro fault rejection threshold high */
     uint8_t                 imuRejectThreshGyroHigh;
 
     /** Reserved */
