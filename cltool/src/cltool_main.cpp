@@ -305,7 +305,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
     if (!g_commandLineOptions.listenMode)
     {   
-        inertialSenseInterface.StopBroadcasts();
+        inertialSenseInterface.StopBroadcasts(false);
     }
     SLEEP_MS(100);
     g_enableDataCallback = true;
