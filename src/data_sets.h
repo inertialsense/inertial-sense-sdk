@@ -1821,8 +1821,8 @@ typedef struct PACKED
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
-#define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS   100
-#define RMC_PRESET_PPD_IMU3_PERIOD_MULT     1000
+#define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS   100         // uint8
+#define RMC_PRESET_PPD_IMU3_PERIOD_MULT     255         // uint8
 
 // Preset: Post Processing Data
 #define RMC_PRESET_IMX_PPD_NO_IMU           (RMC_BITS_PRESET \
@@ -3452,8 +3452,11 @@ typedef struct PACKED
     /** (dBHz) GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum. */
     uint8_t                 gnssCn0DynMinOffset;
 
-    /** Reserved */
-    uint8_t                 reserved1[2];
+    /** IMU gyro fault rejection threshold low */
+    uint8_t                 imuRejectThreshGyroLow;
+
+    /** IMU gyro fault rejection threshold high */
+    uint8_t                 imuRejectThreshGyroHigh;
 
     /** Reserved */
     uint32_t                reserved2[2];
