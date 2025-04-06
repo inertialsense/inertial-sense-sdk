@@ -595,7 +595,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("debug", &nvm_flash_cfg_t::debug, DATA_TYPE_UINT8);
     mapper.AddMember("gnssCn0Minimum", &nvm_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
     mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
-    mapper.AddArray("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
+    mapper.AddMember("imuRejectThreshGyroLow", &nvm_flash_cfg_t::imuRejectThreshGyroLow, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
+    mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
  
     // Keep at end
