@@ -109,8 +109,9 @@ static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_
     mapper.AddMember("lotNumber", &manufacturing_info_t::lotNumber, DATA_TYPE_UINT16, "", "Lot number", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("date", &manufacturing_info_t::date, DATA_TYPE_STRING, "", "Manufacturing date (YYYYMMDDHHMMSS)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("key", &manufacturing_info_t::key, DATA_TYPE_UINT32, "", "key (times OTP area was set, 15 max)", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("platformType", &manufacturing_info_t::platformType, DATA_TYPE_INT32, "", "Platform type (carrier board)", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("reserved", &manufacturing_info_t::reserved, DATA_TYPE_INT32, "", "Reserved", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("platformType", &manufacturing_info_t::platformType, DATA_TYPE_UINT32, "", "Platform type (carrier board)", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("reserved1", &manufacturing_info_t::reserved1, DATA_TYPE_UINT8, 3, "", "Reserved1", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("reserved2", &manufacturing_info_t::reserved2, DATA_TYPE_UINT8, "", "Reserved2", DATA_FLAGS_READ_ONLY);
     mapper.AddArray("uid", &manufacturing_info_t::uid, DATA_TYPE_UINT32, 4, "", "Unique microcontroller identifier", DATA_FLAGS_READ_ONLY);
 }
 
