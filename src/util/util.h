@@ -226,6 +226,14 @@ namespace utils {
      * @return a string of format "TYPE.ID"
      */
     std::string getPortMonitorDescription(uint8_t portInfo);
+
+    /**
+     * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
+     * @param info1
+     * @param info2
+     * @return a uint32_t with each bit indicating a match of a specific field in the struct
+     */
+    uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
 };
 
 class ByteBuffer : public std::streambuf {

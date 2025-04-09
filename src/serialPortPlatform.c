@@ -432,6 +432,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
 #endif
 
+    serialPort->base.ptype |= PORT_FLAG__OPENED;
     return 1;    // success
 }
 
@@ -502,6 +503,7 @@ static int serialPortClosePlatform(port_handle_t port)
 
     free(serialPort->handle);
     serialPort->handle = 0;
+    serialPort->base.ptype &= ~PORT_FLAG__OPENED;
 
     return 1;
 }

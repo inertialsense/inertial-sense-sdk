@@ -95,6 +95,9 @@ struct serial_port_s
     // the current (or expected) baud rate to communicate at
     int baudRate;
 
+    // non-zero if this port is configured for blocking calls
+    int blocking;
+
     // latest errno that was reported from an operation on this port
     int errorCode;
 

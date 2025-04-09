@@ -43,9 +43,12 @@ typedef enum {
 #define PORT_TYPE__FILE             0x0007      //!< this port is nothing more than a mapping to a file on the OS
 #define PORT_TYPE__LOOPBACK         0x000F      //!< this port is a loopback to another port
 
-#define PORT_TYPE__GNSS             0x0020    //! bit indicates that this port is a GNSS receiver port
-#define PORT_TYPE__COMM             0x0040    //! bit indicates that this port has an ISComm associated with it
-#define PORT_TYPE__HDW              0x0080    //! bit indicates that this port is static/hardware-defined
+#define PORT_TYPE__GNSS             0x0020      //!< bit indicates that this port is a GNSS receiver port
+#define PORT_TYPE__COMM             0x0040      //!< bit indicates that this port has an ISComm associated with it
+#define PORT_TYPE__HDW              0x0080      //!< bit indicates that this port is static/hardware-defined
+
+#define PORT_FLAG__VALID            0x8000      //!< bit indicates that this port is valid, and can be operated on
+#define PORT_FLAG__OPENED           0x4000      //!< bit indicates that this port is opened, and able to process data
 
 #define PORT_ERROR__NONE                 0
 #define PORT_ERROR__NOT_SUPPORTED       -1
@@ -70,6 +73,7 @@ typedef const char*(*pfnPortName)(port_handle_t port);
 typedef struct base_port_s {
     uint16_t pnum;                  //! an identifier for a specific port that belongs to this device
     uint16_t ptype;                 //! an indicator of the type of port
+    uint16_t pflags;                //! a bitmask of flags, incidating state of special capabilities for this port
 
     pfnPortName portName;           //! a function which returns an optional name to (ideally) uniquely identify this port
     pfnPortFree portFree;           //! a function which returns the number of bytes which can safely be written
@@ -103,12 +107,52 @@ static inline uint16_t portType(port_handle_t port) {
 }
 
 /**
+ * returns true if the port's ptype's has the PORT_FLAG__VALID bit set
+ * @param port the port handle
+ * @return the port type
+ */
+static inline uint8_t portIsValid(port_handle_t port) {
+    return (port && ((((base_port_t *)port)->ptype & PORT_FLAG__VALID) == PORT_FLAG__VALID));
+}
+
+/**
+ * clears the PORT_FLAG__VALID bit from the portType mask, incidating that this port is no longer valid.
+ * NOTE: When marking a port as invalid, you are indicating that it is no longer suitable for use and
+ * its state can not be trusted. You should release the port handle and reallocate it, before attempting
+ * to use this port again.
+ * @param port the port handle
+ * @return the port type
+ */
+static inline void portInvalidate(port_handle_t port) {
+    if (port) { ((base_port_t *)port)->ptype &= ~PORT_FLAG__VALID; }
+}
+
+/**
+ * returns true if the port's ptype's has the PORT_FLAG__OPENED bit set
+ * @param port the port handle
+ * @return the port type
+ */
+static inline uint8_t portIsOpened(port_handle_t port) {
+    return (port && ((((base_port_t *)port)->ptype & PORT_FLAG__OPENED) == PORT_FLAG__OPENED));
+}
+
+/**
+ * returns the port flags for the specified port.
+ * Note that any flags which does not have the lsb0 bit set, indicates the port is invalid.
+ * @param port the port handle
+ * @return the port flags
+ */
+static inline uint16_t portFlags(port_handle_t port) {
+    return (port) ? ((base_port_t*)port)->pflags : 0;
+}
+
+/**
  * Returns the name, if any, associated with this port
  * @param port
  * @return
  */
 static inline const char *portName(port_handle_t port) {
-    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return (const char *)0;
+    if (!portIsValid(port)) return (const char *)0;
     return (port && ((base_port_t*)port)->portName) ? ((base_port_t*)port)->portName(port) : (const char *)0;
 }
 
@@ -121,7 +165,7 @@ static inline const char *portName(port_handle_t port) {
  * @return the number of bytes which be be safely written to the port without data drop
  */
 static inline int portFree(port_handle_t port) {
-    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
     return (port && ((base_port_t*)port)->portFree) ? ((base_port_t*)port)->portFree(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -131,7 +175,7 @@ static inline int portFree(port_handle_t port) {
  * @return
  */
 static inline int portAvailable(port_handle_t port) {
-    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
     return (port && ((base_port_t*)port)->portAvailable) ? ((base_port_t*)port)->portAvailable(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -147,7 +191,7 @@ static inline int portAvailable(port_handle_t port) {
  * @return an implementation specific number
  */
 static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void *userData) {
-    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
     return (port && ((base_port_t*)port)->portLogger) ? ((base_port_t*)port)->portLogger(port, op, buf, len, userData) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -160,7 +204,7 @@ static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, un
  * @return the number of actual bytes read from the internal RX buffer.
  */
 static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
-    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
     if (!port && !((base_port_t*)port)->portRead) return PORT_ERROR__NOT_SUPPORTED;
     int bytesRead =  ((base_port_t*)port)->portRead(port, buf, len);
     if (port && ((base_port_t*)port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, ((base_port_t*)port)->portLoggerData);
@@ -175,7 +219,7 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
  * @return the number of bytes sent (0 is valid), or <0 in the event of an error
  */
 static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
-    if (port && ( (portType(port) <= 0) || (portType(port) >= 0xFF))) return PORT_ERROR__INVALID;
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
     if (port && ((base_port_t*)port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, ((base_port_t*)port)->portLoggerData);
     return (port && ((base_port_t*)port)->portWrite) ? ((base_port_t*)port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
 }

@@ -6,8 +6,8 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef CLTOOL_ISFILEPORT_H
-#define CLTOOL_ISFILEPORT_H
+#ifndef IS_CORE__ISFILEPORT_H
+#define IS_CORE__ISFILEPORT_H
 
 #include <fstream>
 #include <iostream>
@@ -66,4 +66,4 @@ class ISFilePort : ISStreamPort {
     }
 };
 
-#endif //CLTOOL_ISFILEPORT_H
+#endif //IS_CORE__ISFILEPORT_H

@@ -561,3 +561,55 @@ std::string utils::getPortMonitorDescription(uint8_t portInfo) {
     static std::vector<std::string> portTypeNames = { "???", "SER", "USB", "SPI", "I2C", "CAN" };
     return utils::string_format("%s.%d", portTypeNames[(portInfo >> 4) & 0x0F].c_str(), portInfo & 0x0F);
 }
+
+
+/**
+ * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
+ * @param info1
+ * @param info2
+ * @return a uint32_t with each bit indicating a match of a specific field in the struct
+ */
+uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2) {
+    uint32_t match = 0;
+
+    match |= (((info1.reserved          == info2.reserved)          & 1) << 0);
+
+    match |= (((info1.hardwareType      == info2.hardwareType)      & 1) << 1);
+    match |= (((info1.hdwRunState       == info2.hdwRunState)       & 1) << 2);
+
+    match |= (((info1.serialNumber      == info2.serialNumber)      & 1) << 3);
+
+    match |= (((info1.hardwareVer[0]    == info2.hardwareVer[0])    & 1) << 4);
+    match |= (((info1.hardwareVer[1]    == info2.hardwareVer[1])    & 1) << 5);
+    match |= (((info1.hardwareVer[2]    == info2.hardwareVer[2])    & 1) << 6);
+    match |= (((info1.hardwareVer[3]    == info2.hardwareVer[3])    & 1) << 7);
+
+    match |= (((info1.firmwareVer[0]    == info2.firmwareVer[0])    & 1) << 8);
+    match |= (((info1.firmwareVer[1]    == info2.firmwareVer[1])    & 1) << 9);
+    match |= (((info1.firmwareVer[2]    == info2.firmwareVer[2])    & 1) << 10);
+    match |= (((info1.firmwareVer[3]    == info2.firmwareVer[3])    & 1) << 11);
+
+    match |= (((info1.buildNumber       == info2.buildNumber)       & 1) << 12);
+
+    match |= (((info1.protocolVer[0]    == info2.protocolVer[0])    & 1) << 13);
+    match |= (((info1.protocolVer[1]    == info2.protocolVer[1])    & 1) << 14);
+    match |= (((info1.protocolVer[2]    == info2.protocolVer[2])    & 1) << 15);
+    match |= (((info1.protocolVer[3]    == info2.protocolVer[3])    & 1) << 16);
+
+    match |= (((!strncmp(info1.manufacturer, info2.manufacturer, DEVINFO_MANUFACTURER_STRLEN))    & 1) << 17);
+
+    match |= (((info1.buildType         == info2.buildType)         & 1) << 18);
+
+    match |= (((info1.buildYear         == info2.buildYear)         & 1) << 19);
+    match |= (((info1.buildMonth        == info2.buildMonth)        & 1) << 20);
+    match |= (((info1.buildDay          == info2.buildDay)          & 1) << 21);
+
+    match |= (((info1.buildHour         == info2.buildHour)         & 1) << 22);
+    match |= (((info1.buildMinute       == info2.buildMinute)       & 1) << 23);
+    match |= (((info1.buildSecond       == info2.buildSecond)       & 1) << 24);
+    match |= (((info1.buildMillisecond  == info2.buildMillisecond)  & 1) << 25);
+
+    match |= (((!strncmp(info1.addInfo, info2.addInfo, DEVINFO_ADDINFO_STRLEN))    & 1) << 26);
+
+    return match;
+}
