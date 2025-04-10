@@ -79,7 +79,7 @@ class SuperNPP():
             directories = [directories]  # Handle single string input just in case
 
         for directory in directories:
-            self._findLogFilesRecursive(directory)
+            self._findLogFilesRecursive(directory, self.params.copy())
 
     def _findLogFilesRecursive(self, directory, params={}):
         try:
@@ -236,7 +236,7 @@ class SuperNPP():
         output = "Running NPP: \n"
         output += f"  Directory: {folder}\n"
         output += f"  Serials:   {', '.join(str(s) for s in serials)}\n"
-        output += f"  Commands: \n"
+        output += f"  Command(s): \n"
         for cmd in cmds:
             output += cmd + "\n"
         print(output)
