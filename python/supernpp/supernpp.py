@@ -236,7 +236,7 @@ class SuperNPP():
         output = "Running NPP: \n"
         output += f"  Directory: {folder}\n"
         output += f"  Serials:   {', '.join(str(s) for s in serials)}\n"
-        output += f"  Command: \n"
+        output += f"  Command(s): \n"
         for cmd in cmds:
             output += cmd + "\n"
         print(output)
