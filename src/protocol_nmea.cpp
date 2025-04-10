@@ -2930,6 +2930,7 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
 int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
     (void)aSize;
+    uint64_t TOWus;
     char *ptr = (char *)&a[8];	// $POWGPS,
     uint32_t temp;
     float horVel, courseMadeTrue;
@@ -2941,8 +2942,8 @@ int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t
     ptr = ASCII_to_u32(&(pos.week), ptr);
 
     // 3 -	GPS Time of Week (us)
-    ptr = ASCII_to_u32(&temp, ptr);
-    pos.timeOfWeekMs = temp/1000;	// convert to seconds
+    ptr = ASCII_to_u64(&TOWus, ptr);
+    pos.timeOfWeekMs = TOWus/1000;	// convert to seconds
 
     // if time is not valid, set time to 0
     if (temp == 0) { pos.timeOfWeekMs = 0; pos.week = 0; }
