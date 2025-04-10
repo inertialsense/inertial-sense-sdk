@@ -583,7 +583,6 @@ class Log:
         f.write('------------------------------------------- Device Info -------------------------------------------------\n')
         for n, dev in enumerate(device_idx):
             f.write(self.deviceInfo(n, dev, DID_DEV_INFO))
-        f.write('\n')
         f.close()
 
         # Report if RMS passed all
@@ -648,7 +647,8 @@ class Log:
                 delta = self.angle_wrap(int_yaw - ref_yaw)
                 sum_delta += delta
                 sum_count += 1
-        ref_yaw += sum_delta / sum_count
+        if sum_delta is not None:
+            ref_yaw += sum_delta / sum_count
             
         title_str = "Serial#  Fix(  time,    % ) ArRatio, YawErr"
         f.write(" "*9 + title_str + "\n")
@@ -677,7 +677,7 @@ class Log:
                 ar_ratio_mean = np.mean(ar_ratio[first_fix_index:])
                 # Heading Error
                 yaw_err_valid = 0
-                if self.numDev > 1: 
+                if self.numDev > 1 and ref_yaw is not None: 
                     unwrap_yaw = self.angle_unwrap(yaw)
                     int_yaw = np.empty_like(ref_yaw)
                     int_yaw = np.interp(ref_time, time_ms, unwrap_yaw, right=np.nan, left=np.nan)
@@ -718,7 +718,6 @@ class Log:
         f.write('------------------------------------------- Device Info -------------------------------------------------\n')
         for n, dev in enumerate(device_idx):
             f.write(self.deviceInfo(n, dev, DID_DEV_INFO))
-        f.write('\n')
         f.close()
 
         # Print report to terminal
