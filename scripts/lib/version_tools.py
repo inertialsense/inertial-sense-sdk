@@ -369,7 +369,7 @@ class RepositoryInfo:
         :return: the newly updated semantic version object.
         """
         latest_ver = latest_ver if latest_ver is not None else self.version
-        latest_rc = latest_rc if latest_rc is not None else self.get_latest_release_candidate()[1]
+        latest_rc = latest_rc if latest_rc is not None else self.get_latest_prerelease()[1]
         latest_release = latest_release if latest_release is not None else self.get_latest_release()[1]
         branch = branch if branch is not None else self.branch
 
@@ -626,11 +626,11 @@ class ISVersionTools:
         self.generate_version()
 
         if prefix is None:
-            if self.repo.name == "inertial-sense-sdk":
+            if self.repo.name == "inertial-sense-sdk" or self.repo.name == "inertial-sense-sdk_testing":
                 prefix = 'IS_SDK_'
-            elif self.repo.name == "imx":
+            elif self.repo.name == "imx" or self.repo.name == "imx_testing":
                 prefix = ''
-            elif self.repo.name == "is-gpx":
+            elif self.repo.name == "is-gpx" or self.repo.name == "is-gpx_testing":
                 prefix = 'IS_GPX_'
             else:
                 prefix = ''
@@ -797,7 +797,7 @@ def run_tests():
     run_repo_tests()
 
 
-def main():  # Main function to use if if not used as a library
+def main():  # Main function to use if not used as a library
     parser = argparse.ArgumentParser("version_tools", "Utility application to generate version/release information from the git repo (both local & remote).")
     parser.add_argument('base_dir')
     parser.add_argument('-p', '--prefix', type=str)
