@@ -79,7 +79,7 @@ class SuperNPP():
             directories = [directories]  # Handle single string input just in case
 
         for directory in directories:
-            self._findLogFilesRecursive(directory)
+            self._findLogFilesRecursive(directory, self.params.copy())
 
     def _findLogFilesRecursive(self, directory, params={}):
         try:
