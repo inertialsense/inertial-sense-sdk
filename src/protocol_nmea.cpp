@@ -1263,7 +1263,7 @@ int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 1
     nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
-    nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);      // 3 
+    nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs*1000); // 3 
 
     valid = (pos.leapS > 10 && pos.leapS < 30) ? 1 : 0;     // should be ~18 so give a little leeway
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 4
@@ -2868,6 +2868,7 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
     char *ptr = (char *)&a[8];	// $POWGPS,
     uint32_t timeValid;
     uint32_t lsValid;
+    uint32_t TOWus;;
     
     // 1 -	GPS Time valid
     ptr = ASCII_to_u32(&timeValid, ptr);
@@ -2875,8 +2876,9 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
     // 2 -	GPS week number
     ptr = ASCII_to_u32(&(pos.week), ptr);
 
-    // 3 -	GPS Time of Week (ms)
-    ptr = ASCII_to_u32(&(pos.timeOfWeekMs), ptr);
+    // 3 -	GPS Time of Week (us)
+    ptr = ASCII_to_u32(&TOWus, ptr);
+    pos.timeOfWeekMs = TOWus/1000;
     
     // 4 -	GPS leap seconds valid
     ptr = ASCII_to_u32(&lsValid, ptr);
@@ -2932,8 +2934,9 @@ int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t
     // 2 -	GPS week number
     ptr = ASCII_to_u32(&(pos.week), ptr);
 
-    // 3 -	GPS Time of Week (ms)
-    ptr = ASCII_to_u32(&(pos.timeOfWeekMs), ptr);
+    // 3 -	GPS Time of Week (us)
+    ptr = ASCII_to_u32(&temp, ptr);
+    pos.timeOfWeekMs = temp/1000;	// convert to seconds
 
     // if time is not valid, set time to 0
     if (temp == 0) { pos.timeOfWeekMs = 0; pos.week = 0; }
