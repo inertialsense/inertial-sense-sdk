@@ -279,6 +279,12 @@ char *ASCII_to_u32(uint32_t *val, char *ptr)
     return ptr;
 }
 
+char *ASCII_to_u64(uint64_t *val, char *ptr)
+{
+    val[0] = (uint64_t)atol(ptr);	ptr = ASCII_find_next_field(ptr);
+    return ptr;
+}
+
 char *ASCII_to_i32(int32_t *val, char *ptr)
 {
     val[0] = (int32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
@@ -1263,7 +1269,7 @@ int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 1
     nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
-    nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);      // 3 
+    nmea_sprint(a, aSize, n, ",%lu", ((uint64_t)pos.timeOfWeekMs)*1000); // 3 
 
     valid = (pos.leapS > 10 && pos.leapS < 30) ? 1 : 0;     // should be ~18 so give a little leeway
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 4
@@ -2865,6 +2871,7 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
             7   Checksum, begins with *
     */
     (void)aSize;
+    uint64_t TOWus;
     char *ptr = (char *)&a[8];	// $POWGPS,
     uint32_t timeValid;
     uint32_t lsValid;
@@ -2875,8 +2882,9 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
     // 2 -	GPS week number
     ptr = ASCII_to_u32(&(pos.week), ptr);
 
-    // 3 -	GPS Time of Week (ms)
-    ptr = ASCII_to_u32(&(pos.timeOfWeekMs), ptr);
+    // 3 -	GPS Time of Week (us)
+    ptr = ASCII_to_u64(&TOWus, ptr);
+    pos.timeOfWeekMs = TOWus/1000;
     
     // 4 -	GPS leap seconds valid
     ptr = ASCII_to_u32(&lsValid, ptr);
@@ -2922,6 +2930,7 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
 int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
     (void)aSize;
+    uint64_t TOWus;
     char *ptr = (char *)&a[8];	// $POWGPS,
     uint32_t temp;
     float horVel, courseMadeTrue;
@@ -2932,8 +2941,9 @@ int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t
     // 2 -	GPS week number
     ptr = ASCII_to_u32(&(pos.week), ptr);
 
-    // 3 -	GPS Time of Week (ms)
-    ptr = ASCII_to_u32(&(pos.timeOfWeekMs), ptr);
+    // 3 -	GPS Time of Week (us)
+    ptr = ASCII_to_u64(&TOWus, ptr);
+    pos.timeOfWeekMs = TOWus/1000;	// convert to seconds
 
     // if time is not valid, set time to 0
     if (temp == 0) { pos.timeOfWeekMs = 0; pos.week = 0; }
