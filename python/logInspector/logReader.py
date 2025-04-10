@@ -583,7 +583,6 @@ class Log:
         f.write('------------------------------------------- Device Info -------------------------------------------------\n')
         for n, dev in enumerate(device_idx):
             f.write(self.deviceInfo(n, dev, DID_DEV_INFO))
-        f.write('\n')
         f.close()
 
         # Report if RMS passed all
@@ -719,7 +718,6 @@ class Log:
         f.write('------------------------------------------- Device Info -------------------------------------------------\n')
         for n, dev in enumerate(device_idx):
             f.write(self.deviceInfo(n, dev, DID_DEV_INFO))
-        f.write('\n')
         f.close()
 
         # Print report to terminal
