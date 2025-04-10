@@ -279,6 +279,12 @@ char *ASCII_to_u32(uint32_t *val, char *ptr)
     return ptr;
 }
 
+char *ASCII_to_u64(uint64_t *val, char *ptr)
+{
+    val[0] = (uint64_t)atol(ptr);	ptr = ASCII_find_next_field(ptr);
+    return ptr;
+}
+
 char *ASCII_to_i32(int32_t *val, char *ptr)
 {
     val[0] = (int32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
@@ -2865,10 +2871,10 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
             7   Checksum, begins with *
     */
     (void)aSize;
+    uint64_t TOWus;
     char *ptr = (char *)&a[8];	// $POWGPS,
     uint32_t timeValid;
     uint32_t lsValid;
-    uint32_t TOWus;
     
     // 1 -	GPS Time valid
     ptr = ASCII_to_u32(&timeValid, ptr);
@@ -2877,7 +2883,7 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
     ptr = ASCII_to_u32(&(pos.week), ptr);
 
     // 3 -	GPS Time of Week (us)
-    ptr = ASCII_to_(&TOWus, ptr);
+    ptr = ASCII_to_u64(&TOWus, ptr);
     pos.timeOfWeekMs = TOWus/1000;
     
     // 4 -	GPS leap seconds valid
