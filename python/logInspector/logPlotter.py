@@ -3205,9 +3205,16 @@ class logPlot:
             ax[2].plot(xGps2, dtGps2)
             ax[3].plot(xImu3, deltaImu3Timestamp)
             ax[4].plot(xImu, deltaTimestamp)
-            if 'dtPimu' in locals():
-                if dtPimu.size:
-                    ax[5].plot(xImu, dtPimu)
+            if 'dtPimu' in locals() and dtPimu.size:
+                ax[5].plot(xImu, dtPimu)
+
+            self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
+            self.configureSubplot(ax[1], f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
+            self.configureSubplot(ax[2], f'GPS2 dt: {np.mean(dtGps2):.3f}s', 's')
+            self.configureSubplot(ax[3], f'IMU3 Delta Timestamp: {np.mean(deltaImu3Timestamp):.3f}s', 's')
+            self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.3f}s', 's')
+            if 'dtPimu' in locals() and dtPimu.size:
+                self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.3f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
         for i in range(len(ax)):
