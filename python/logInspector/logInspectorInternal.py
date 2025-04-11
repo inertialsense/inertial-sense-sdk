@@ -245,7 +245,7 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
 
-    configFilePath = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "config.yaml")
+    configFilePath = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "log_inspector.yaml")
 
     main = logInspectorInternal(configFilePath)
     main.setupUi()

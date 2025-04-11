@@ -289,12 +289,6 @@ if __name__ == "__main__":
     npp_build_folder = "../../../cpp/NavPostProcess/build"
     # buildNPP(npp_build_folder)
 
-    # import yaml
-    # file = open(os.path.expanduser("~/Documents/Inertial_Sense/config.yaml"), 'r')
-    # config = yaml.load(file, Loader=yaml.FullLoader)
-    # directory = config["directory"]
-    # serials = config["serials"]
-
     # 2nd argument: Log directory list file
     if len(sys.argv) < 2:
         exit(1)
@@ -302,15 +296,6 @@ if __name__ == "__main__":
     if not os.path.isfile(params_filename):
         print("First parameter must the params yaml!")
         exit(1)
-
-    # Debug
-    # directory = '/home/walt/src/IS-src/scripts/../../goldenlogs/AHRS'
-    # directory = os.path.join('C:/','_IS','goldenlogs','AHRS')
-    # directory = os.path.join('C:/','_IS','goldenlogs')
-    # directory = 'C:/_IS/goldenlogs'
-
-    # serials = ""
-    # directory = 'D:/Dropbox (Inertial Sense)/ISD/logs/202110/20211022_14_NAV_Drive_uins4_branch/20211022_145320'
 
     # 3rd argument: Serial #s
     serials = ['ALL']

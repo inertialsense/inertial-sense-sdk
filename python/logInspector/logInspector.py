@@ -261,28 +261,15 @@ class LogInspectorWindow(QMainWindow):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        if os.path.exists(self.configFilePath):
-            # config.yaml found.  Read from file.
-            file = open(self.configFilePath, 'r')
-            self.config = yaml.load(file, Loader=yaml.FullLoader)
-            file.close()
-        else:
-            # config.yaml not found.  Create new file.
-            self.config = {}
-            self.config['logs_directory'] = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "Logs")
-            self.config['directory'] = ""
-            self.config['serials'] = ["ALL"]
-            file = open(self.configFilePath, 'w')
-            yaml.dump(self.config, file)
-            file.close()
-
+        self.loadConfigFromFile()
         self.selectedIndex = 0
         self.downsample = 5
         self.plotargs = None
         self.log = None
 
     def closeEvent(self, event):
-        # Perform any cleanup if needed
+        self.updateRootPathHist()
+        self.saveConfigToFile()
         super().closeEvent(event)  
 
     def popPlot(self):
@@ -361,25 +348,13 @@ class LogInspectorWindow(QMainWindow):
         except:
             self.setWindowTitle("DID_DEV_INFO missing")
 
-    def choose_directory(self):
-        log_dir = config['logs_directory']
-        config['directory'] = QFileDialog.getExistingDirectory(parent=self, caption='Choose Log Directory', directory=log_dir)
-
-        if directory != '':
-            try:
-                self.load(config['directory'])
-            except Exception as e:
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Critical)
-                msg.setText("Unable to load log: " + e.__str__())
-                msg.setDetailedText(traceback.format_exc())
-                msg.exec()
-
     def reload(self):
         if 'directory' in self.config:
             self.load(self.config['directory'])
 
     def load(self, directory):
+        self.updateRootPathHist()
+        self.saveConfigToFile()
         self.config['directory'] = directory
         print("\nLoading files from " + directory)
         self.setStatus("Loading...")
@@ -569,18 +544,21 @@ class LogInspectorWindow(QMainWindow):
 
     def createFileTree(self):
         self.dirModel = QFileSystemModel()
-        self.dirModel.setRootPath(self.config["logs_directory"])
+        self.dirModel.setRootPath(self.config["root_path"])
         self.dirModel.setFilter(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot)
+        self.recentDirsPushButton = QPushButton("⋯")
+        self.recentDirsPushButton.setFixedWidth(25)
+        self.recentDirsPushButton.clicked.connect(self.showRootPathsHistMenu)
         self.upDirPushButton = QPushButton()
         self.upDirPushButton.setIcon(self.style().standardIcon(QStyle.SP_ArrowUp))
         self.upDirPushButton.clicked.connect(self.fileTreeUpDir)
         self.dirLineEdit = QLineEdit()
-        self.dirLineEdit.setText(self.config["logs_directory"])
+        self.dirLineEdit.setText(self.config["root_path"])
         self.dirLineEdit.setFixedHeight(25)
         self.dirLineEdit.returnPressed.connect(self.handleTreeDirChange)
         self.fileTree = QTreeView()
         self.fileTree.setModel(self.dirModel)
-        self.fileTree.setRootIndex(self.dirModel.index(self.config['logs_directory']))        
+        self.fileTree.setRootIndex(self.dirModel.index(self.config['root_path']))        
         self.fileTree.setColumnHidden(1, True)
         self.fileTree.setColumnHidden(2, True)
         self.fileTree.setColumnHidden(3, True)
@@ -590,20 +568,17 @@ class LogInspectorWindow(QMainWindow):
         self.fileTree.setSelectionMode(QAbstractItemView.SingleSelection) 
         self.fileTree.customContextMenuRequested.connect(self.handleTreeViewRightClick)
         self.fileTree.doubleClicked.connect(self.setTreeViewDirectoryRoot)
-        # self.populateRMSCheck(self.config['logs_directory'])
+        # self.populateRMSCheck(self.config['root_path'])
 
         self.controlDirLayout = QHBoxLayout()
+        self.controlDirLayout.addWidget(self.recentDirsPushButton)
         self.controlDirLayout.addWidget(self.upDirPushButton)
         self.controlDirLayout.addWidget(self.dirLineEdit)
         self.controlLayout.addLayout(self.controlDirLayout)
         self.controlLayout.addWidget(self.fileTree)
 
-        # self.buttonLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        # self.addButton('load', self.choose_directory)
-
         self.setCurrentListRow(self.nameList.index('Pos NED Map'))   # Default to NED Map
-        # self.setCurrentListRow(self.nameList.index('Delta Time'))   # Default to NED Map
-        
+        # self.setCurrentListRow(self.nameList.index('Delta Time'))   # Default to NED Map        
 
     def createStatus(self):
         self.statusLabel = QLabel()
@@ -752,8 +727,8 @@ class LogInspectorWindow(QMainWindow):
         msg.exec()
 
     def updateFileTree(self):
-        self.dirModel.setRootPath(self.config["logs_directory"])
-        self.fileTree.setRootIndex(self.dirModel.index(self.config['logs_directory']))
+        self.dirModel.setRootPath(self.config["root_path"])
+        self.fileTree.setRootIndex(self.dirModel.index(self.config['root_path']))
 
     def expandAndSelectDirectory(self, directory):
         # Find the index for the folder
@@ -782,19 +757,37 @@ class LogInspectorWindow(QMainWindow):
                 else:
                     pass
 
-    def handleTreeDirChange(self):
-        self.config["logs_directory"] = self.dirLineEdit.text()
-        self.updateFileTree()
+    def loadConfigFromFile(self):
+        if os.path.exists(self.configFilePath):
+            # log_inspector.yaml found.  Read from file.
+            file = open(self.configFilePath, 'r')
+            self.config = yaml.load(file, Loader=yaml.FullLoader)
+            file.close()
+            if 'root_path' not in self.config and 'logs_directory' in self.config:
+                self.config['root_path'] = self.config['logs_directory']
+            if 'root_path_hist' not in self.config:
+                self.config['root_path_hist'] = []
+        else:
+            # log_inspector.yaml not found.  Create new file.
+            self.config = {}
+            self.config['root_path'] = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "Logs")
+            self.config['root_path_hist'] = []
+            self.config['directory'] = ""
+            self.config['serials'] = ["ALL"]
+            self.saveConfigToFile()
 
+    def saveConfigToFile(self):
         file = open(self.configFilePath, 'w')
         yaml.dump(self.config, file)
         file.close()
+
+    def handleTreeDirChange(self):
+        self.config["root_path"] = os.path.normpath(self.dirLineEdit.text())
+        self.updateFileTree()
 
     def handleTreeViewClick(self):
         self.config['directory'] = self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0])
-        file = open(self.configFilePath, 'w')
-        yaml.dump(self.config, file)
-        file.close()
+        self.saveConfigToFile()
 
         for fname in os.listdir(self.config['directory']):
             fname = fname.lower()
@@ -808,10 +801,49 @@ class LogInspectorWindow(QMainWindow):
                 break
             
     def fileTreeUpDir(self):
-        self.dirLineEdit.setText(os.path.abspath(os.path.join(self.dirLineEdit.text(), '..')))
-        self.config["logs_directory"] = self.dirLineEdit.text()
+        self.setRootPath(os.path.abspath(os.path.join(self.dirLineEdit.text(), '..')))
+
+    def setRootPath(self, directory):
+        self.dirLineEdit.setText(os.path.normpath(directory))
+        self.config["root_path"] = self.dirLineEdit.text()
         self.handleTreeDirChange()        
-            
+
+    def updateRootPathHist(self):
+        directory = os.path.normpath(self.config["root_path"])
+        root_path_hist = self.config["root_path_hist"]
+
+        # Remove the directory if it already exists
+        if directory in root_path_hist:
+            root_path_hist.remove(directory)
+
+        # Insert it at the beginning
+        root_path_hist.insert(0, directory)
+
+        # Keep only the first 5 entries (most recent)
+        self.config["root_path_hist"] = root_path_hist[:5]
+
+        self.dirLineEdit.setText(directory)
+
+    def showRootPathsHistMenu(self):
+        menu = QMenu()
+        current_root = self.config.get("root_path")
+
+        # Add each item to the menu, skipping the current root path
+        for item in self.config["root_path_hist"]:
+            if item == current_root:
+                continue
+            action = menu.addAction(item)
+            action.triggered.connect(lambda checked=False, text=item: self.on_select_recent_dir(text))
+
+        # Show the menu just below the button
+        menu.exec_(self.recentDirsPushButton.mapToGlobal(self.recentDirsPushButton.rect().bottomLeft()))     
+
+    def on_select_recent_dir(self, text):
+        # Handle the selected item
+        self.setRootPath(text)
+        self.updateFileTree()
+        self.saveConfigToFile()
+
     def runNpp(self, directory, startMode):
         cleanFolder(directory)
         setDataInformationDirectory(directory, startMode=startMode)

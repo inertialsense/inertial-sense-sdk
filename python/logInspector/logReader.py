@@ -779,8 +779,8 @@ if __name__ == '__main__':
         print("First parameter must be directory!")
         exit()
 
-        # Load from config.yaml
-        file = open(home + "/Documents/Inertial_Sense/config.yaml", 'r')
+        # Load from log_inspector.yaml
+        file = open(home + "/Documents/Inertial_Sense/log_inspector.yaml", 'r')
         config = yaml.load(file)
         directory = config["directory"]
         serials = ["ALL"]
