@@ -816,7 +816,7 @@ class LogInspectorWindow(QMainWindow):
         if directory in root_path_hist:
             root_path_hist.remove(directory)
 
-        # Insert it at the beginningfcon
+        # Insert it at the beginning
         root_path_hist.insert(0, directory)
 
         # Keep only the first 5 entries (most recent)
