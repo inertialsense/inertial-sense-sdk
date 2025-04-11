@@ -3135,7 +3135,7 @@ class logPlot:
             if np.any(timeRef):
                 refImuPresent = True
 
-        N = 5
+        N = 6
         if refImuPresent:
             N = N + 2
         ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
@@ -3144,8 +3144,9 @@ class logPlot:
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS1 dt', 's')
         self.configureSubplot(ax[2], 'GPS2 dt', 's')
-        self.configureSubplot(ax[3], 'IMU Integration Period', 's')
-        self.configureSubplot(ax[4], 'IMU Delta Timestamp', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week' )
+        self.configureSubplot(ax[3], 'IMU3 Delta Timestamp', 's')
+        self.configureSubplot(ax[4], 'PIMU Delta Timestamp', 's')
+        self.configureSubplot(ax[5], 'PIMU Integration Period', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         for d in self.active_devs_no_ref:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
@@ -3168,9 +3169,9 @@ class logPlot:
                 towOffset = 0
 
             deltaTimestamp = 0
-            timeImu = 0
+            timeImu  = 0
             timePimu = self.getData(d, DID_PIMU, 'time')
-            timeIMU = self.getData(d, DID_IMU, 'time')
+            timeIMU  = self.getData(d, DID_IMU, 'time')
             timeImu3 = self.getData(d, DID_IMU3_RAW, 'time')
             if timePimu.size:
                 deltaTimestamp = timePimu[1:] - timePimu[0:-1]
@@ -3181,37 +3182,47 @@ class logPlot:
                 deltaTimestamp = timeIMU[1:] - timeIMU[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromGpsTow(timeIMU[1:] + towOffset)
-            elif timeImu3.size:
-                deltaTimestamp = timeImu3[1:] - timeImu3[0:-1]
-                deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromGpsTow(timeImu3[1:] + towOffset)
+            if timeImu3.size:
+                deltaImu3Timestamp = timeImu3[1:] - timeImu3[0:-1]
+                deltaImu3Timestamp = deltaImu3Timestamp / self.d
+                timeImu3 = getTimeFromGpsTow(timeImu3[1:] + towOffset)
 
             if self.xAxisSample:
-                xIns = np.arange(0, np.shape(dtIns)[0])
+                xIns  = np.arange(0, np.shape(dtIns)[0])
                 xGps1 = np.arange(0, np.shape(dtGps1)[0])
                 xGps2 = np.arange(0, np.shape(dtGps2)[0])
-                xImu = np.arange(0, np.shape(deltaTimestamp)[0])
+                xImu3 = np.arange(0, np.shape(deltaImu3Timestamp)[0])
+                xImu  = np.arange(0, np.shape(deltaTimestamp)[0])
             else:
-                xIns = timeIns
+                xIns  = timeIns
                 xGps1 = timeGps1
                 xGps2 = timeGps2
-                xImu = timeImu
+                xImu3 = timeImu3
+                xImu  = timeImu
 
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
             ax[1].plot(xGps1, dtGps1)
             ax[2].plot(xGps2, dtGps2)
-            if 'dtPimu' in locals():
-                if dtPimu.size:
-                    ax[3].plot(xImu, dtPimu)
+            ax[3].plot(xImu3, deltaImu3Timestamp)
             ax[4].plot(xImu, deltaTimestamp)
+            if 'dtPimu' in locals() and dtPimu.size:
+                ax[5].plot(xImu, dtPimu)
+
+            self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
+            self.configureSubplot(ax[1], f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
+            self.configureSubplot(ax[2], f'GPS2 dt: {np.mean(dtGps2):.3f}s', 's')
+            self.configureSubplot(ax[3], f'IMU3 Delta Timestamp: {np.mean(deltaImu3Timestamp):.3f}s', 's')
+            self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.3f}s', 's')
+            if 'dtPimu' in locals() and dtPimu.size:
+                self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.3f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
         for i in range(len(ax)):
             self.setPlotYSpanMin(ax[i], 0.005)
 
         if refImuPresent:
-            self.configureSubplot(ax[5], 'Reference IMU Integration Period', 's')
-            self.configureSubplot(ax[6], 'Reference IMU Delta Timestamp', 's')
+            self.configureSubplot(ax[6], 'Reference IMU Integration Period', 's')
+            self.configureSubplot(ax[7], 'Reference IMU Delta Timestamp', 's')
             for d in self.active_devs:
                 deltaTimestampRef = 0
                 timeImuRef = 0
@@ -4169,7 +4180,7 @@ class logPlot:
 if __name__ == '__main__':
     np.set_printoptions(linewidth=200)
     home = expanduser("~")
-    file = open(home + "/Documents/Inertial_Sense/config.yaml", 'r')
+    file = open(home + "/Documents/Inertial_Sense/log_inspector.yaml", 'r')
     config = yaml.load(file)
     directory = config["directory"]
     directory = "/home/superjax/Code/IS-src/cpp/SDK/cltool/build/IS_logs"
