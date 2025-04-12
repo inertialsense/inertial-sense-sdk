@@ -32,7 +32,7 @@ PYBIND11_NUMPY_DTYPE(nmea_msgs_t, options, nmeaBroadcastMsgs);
 PYBIND11_NUMPY_DTYPE(rmc_t, bits, options);
 PYBIND11_NUMPY_DTYPE(sys_params_t, timeOfWeekMs, insStatus, hdwStatus, imuTemp, baroTemp, mcuTemp, sysStatus, imuSamplePeriodMs, navOutputPeriodMs, sensorTruePeriod, flashCfgChecksum, navUpdatePeriodMs, genFaultCode, upTime);
 PYBIND11_NUMPY_DTYPE(sys_sensors_t, time, temp, pqr, acc, mag, bar, barTemp, mslBar, humidity, vin, ana1, ana3, ana4);
-PYBIND11_NUMPY_DTYPE(nvm_flash_cfg_t, size, checksum, key, startupImuDtMs, startupNavDtMs, ser0BaudRate, ser1BaudRate, insRotation, insOffset, gps1AntOffset, dynamicModel, debug, gnssSatSigConst, sysCfgBits, refLla, lastLla, lastLlaTimeOfWeekMs, lastLlaWeek, lastLlaUpdateDistance, ioConfig, platformConfig, gps2AntOffset, zeroVelRotation, zeroVelOffset, gpsTimeUserDelay, magDeclination, gpsTimeSyncPeriodMs, startupGPSDtMs, RTKCfgBits, sensorConfig, gpsMinimumElevation, ser2BaudRate, wheelConfig, magInterferenceThreshold, magCalibrationQualityThreshold, gnssCn0Minimum, gnssCn0DynMinOffset, imuRejectThreshGyroLow, imuRejectThreshGyroHigh, rtkd_unused24);
+PYBIND11_NUMPY_DTYPE(nvm_flash_cfg_t, size, checksum, key, startupImuDtMs, startupNavDtMs, ser0BaudRate, ser1BaudRate, insRotation, insOffset, gps1AntOffset, dynamicModel, debug, gnssSatSigConst, sysCfgBits, refLla, lastLla, lastLlaTimeOfWeekMs, lastLlaWeek, lastLlaUpdateDistance, ioConfig, platformConfig, gps2AntOffset, zeroVelRotation, zeroVelOffset, gpsTimeUserDelay, magDeclination, gpsTimeSyncPeriodMs, startupGPSDtMs, RTKCfgBits, sensorConfig, gpsMinimumElevation, ser2BaudRate, wheelConfig, magInterferenceThreshold, magCalibrationQualityThreshold, gnssCn0Minimum, gnssCn0DynMinOffset, imuRejectThreshGyroLow, imuRejectThreshGyroHigh, reserved2);
 PYBIND11_NUMPY_DTYPE(gps_pos_t, week, timeOfWeekMs, status, ecef, lla, hMSL, hAcc, vAcc, pDop, cnoMean, towOffset, leapS, satsUsed, cnoMeanSigma, reserved);
 PYBIND11_NUMPY_DTYPE(gps_vel_t, timeOfWeekMs, vel, sAcc, status);
 PYBIND11_NUMPY_DTYPE(gps_sat_t, timeOfWeekMs, numSats, sat);
@@ -86,11 +86,11 @@ PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rtkd_unused1, code_outlier, phase_outlie
                         rtkd_unused3, rtkd_unused4, bad_baseline_holdamb, rtkd_unused5, 
                         outc_ovfl, rtkd_unused6, rtkd_unused7, large_v2b, base_position_update, rover_position_error, 
                         reset_bias, rtkd_unused10, rtkd_unused11, rtkd_unused12, rtkd_unused13, rtkd_unused14, diff_age_error, 
-                        diff_age_error, rover_packet_age_ms, base_packet_age_ms, rtkd_unused16, 
+                        rtkd_unused15, rover_packet_age_ms, base_packet_age_ms, rtkd_unused16, 
                         rtkd_unused17, rtkd_unused18, rtkd_unused19, cycle_slips, rtk_to_rcvr_pos_error, 
-                        rtkd_unused20, rtkd_unused21, error_count, error_code, rtkd_unused22, reserved1, rtkd_unused23, 
+                        rtkd_unused20, rtkd_unused21, error_count, error_code, rtkd_unused22, rtkd_unused22b, rtkd_unused23, 
                         warning_count, warning_code, double_debug, debug, obs_base_unfiltered, obs_rover_unfiltered, 
-                        /*obs_pairs_filtered*/ rtkd_unused24, rtkd_unused25, rtkd_unused26, 
+                        rtkd_unused24, rtkd_unused25, rtkd_unused26, 
                         obs_unhealthy, obs_rover_relpos, obs_base_relpos, obs_pairs_used_float, obs_pairs_used_fixed, 
                         obs_eph_relpos, obs_low_snr_rover, obs_low_snr_base, rtkd_unused27, obs_zero_L1_rover, 
                         obs_zero_L1_base, obs_low_elev, rtkd_unused28, rtkd_unused29, rtkd_unused30, reserved);

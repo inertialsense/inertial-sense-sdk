@@ -3598,7 +3598,7 @@ typedef struct PACKED
 
     float rtkd_unused22;
 
-    uint8_t reserved1;
+    uint8_t rtkd_unused22b;
     uint8_t rtkd_unused23;
     uint8_t warning_count;                   // Pre-filtered observations warning count
     uint8_t warning_code;                    // Pre-filtered observations warning code
