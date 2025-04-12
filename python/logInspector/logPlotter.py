@@ -3258,7 +3258,7 @@ class logPlot:
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'GPS1 dt', 's')
         self.configureSubplot(ax[1], 'GPS2 dt', 's')
-        self.configureSubplot(ax[2], 'RTK Cmp dt', 's')
+        self.configureSubplot(ax[2], 'RTK Compassing dt', 's')
         self.configureSubplot(ax[3], 'GPS1 TOW Offset', 's')
         self.configureSubplot(ax[4], 'GPS2 TOW Offset', 's')
 
@@ -3296,7 +3296,7 @@ class logPlot:
 
             self.configureSubplot(ax[0],  f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
             self.configureSubplot(ax[1],  f'GPS2 dt: {np.mean(dtGps2):.3f}s', 's')
-            self.configureSubplot(ax[2],  f'RTK Cmp dt: {np.mean(dtRtk2):.3f}s', 's')
+            self.configureSubplot(ax[2],  f'RTK Compassing dt: {np.mean(dtRtk2):.3f}s', 's')
 
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
