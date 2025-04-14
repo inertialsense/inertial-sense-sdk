@@ -324,10 +324,10 @@ int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt)
 
 void copyImu(imu_t *dst, const imu_t *src)
 {
-	dst->time = src->time;
-	dst->status = src->status;
-	cpy_Vec3_Vec3(dst->I.pqr, src->I.pqr);
-	cpy_Vec3_Vec3(dst->I.acc, src->I.acc);
+    dst->time = src->time;
+    dst->status = src->status;
+    cpy_Vec3_Vec3(dst->I.pqr, src->I.pqr);
+    cpy_Vec3_Vec3(dst->I.acc, src->I.acc);
 }
 
 #define CON_SCUL_INT_STEPS  2
@@ -367,8 +367,8 @@ float deltaThetaDeltaVelRiemannSum(pimu_t *output, imu_t *imu, imu_t *imuLast)
     mul_Vec3_X(tmp3, imu->I.acc, dt);
     add_Vec3_Vec3(output->vel, output->vel, tmp3);
 
-	// Update history
-	copyImu(imuLast, imu);
+    // Update history
+    copyImu(imuLast, imu);
 
     return dt;
 }
@@ -391,8 +391,8 @@ float deltaThetaDeltaVelTrapezoidal(pimu_t *output, imu_t *imu, imu_t *imuLast)
     mul_Vec3_X(tmp3, tmp3, dt*0.5f);
     add_Vec3_Vec3(output->vel, output->vel, tmp3);
 
-	// Update history
-	copyImu(imuLast, imu);
+    // Update history
+    copyImu(imuLast, imu);
 
     return dt;
 }
@@ -456,8 +456,8 @@ float deltaThetaDeltaVelBortz(pimu_t *output, imu_t *imu, imu_t *imuLast, int Ns
     // IMU
     integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), Nsteps, dt);
 
-	// Update history
-	copyImu(imuLast, imu);
+    // Update history
+    copyImu(imuLast, imu);
 
     return dt;
 }
@@ -485,36 +485,36 @@ float integrateDeltaThetaVelRoscoe(
     ixVector3 delta_alpha;
     ixVector3 delta_veloc;
 
-	//__________________________________________________________________________________________________________________
-	// Roscoe (EQ-32) coning integral:     [DELTA THETA = sum((1/2)*(alpha_last+(1/6)*delta_alpha_last) >< delta_alpha)]
-	mul_Vec3_X(alpha, imu->I.pqr, dt);										//alpha				<-- [pqr] * [dt]
-	sub_Vec3_Vec3(delta_alpha, alpha, alpha_last);							//delta_alpha		<-- [alpha] - [alpha_last]
-	div_Vec3_X(tmp3, delta_alpha_last, 6.0f);								//tmp3				<-- [delta_alpha_last] * [(1/6)]
-	add_Vec3_Vec3(tmp3, alpha_last, tmp3);									//tmp3				<-- [alpha_last] + [(1/6)*delta_alpha_last]
-	div_Vec3_X(tmp3, tmp3, 2.0f);											//tmp3   			<-- [(alpha_last+(1/6)*delta_alpha_last)] * [(1/2)]
-	cross_Vec3(term1, tmp3, delta_alpha);									//term1				<-- [(1/2)*(alpha_last+(1/6)*delta_alpha_last)]	>< [delta_alpha] 
-	add_Vec3_Vec3(output->theta, output->theta, term1);						//theta				<-- sum[(1/2)*(alpha_last+(1/6)*delta_alpha_last)><delta_alpha]
-	cpy_Vec3_Vec3(alpha_last, alpha);										//alpha_last		<-- alpha           {age alpha}
-	cpy_Vec3_Vec3(delta_alpha_last, delta_alpha);							//delta_alpha_last  <-- delta_alpha     {age delta_alpha}
-	//_________________________________________________________________________________________________________________
-	// Roscoe (EQ-33) sculling integral:   [DELTA VELOC = sum((1/2)*(alpha_last+(1/6)*delta_alpha_last) >< delta_veloc)
-	//                                                 + sum((1/2)*(veloc_last+(1/6)*delta_veloc_last) >< delta_alpha)] 	 
-	mul_Vec3_X(veloc, imu->I.acc, dt);										//veloc				<-- [acc] * [dt]
-	sub_Vec3_Vec3(delta_veloc, veloc, veloc_last);							//delta_veloc		<-- [veloc] - [veloc_last]
-	cross_Vec3(term1, tmp3, delta_veloc);									//term1				<-- [(1/2)*(alpha_last+(1/6)*delta_alpha_last)] >< [delta_veloc]
-	div_Vec3_X(tmp3, delta_veloc_last, 6.0f);								//tmp3				<-- [delta_veloc_last] * [(1/6)]
-	add_Vec3_Vec3(tmp3, veloc_last, tmp3);									//tmp3				<-- [veloc_last] + [(1/6)*delta_veloc_last]
-	div_Vec3_X(tmp3, tmp3, 2.0f);											//tmp3				<-- [(veloc_last+(1/6)*delta_veloc_last)] * [(1/2)]
-	cross_Vec3(term2, tmp3, delta_alpha);									//term2				<-- [(1/2)*(veloc_last+(1/6)*delta_veloc_last)] >< [delta_alpha]
-	add_Vec3_Vec3(output->uvw, output->uvw, term1);							//uvw    			<-- sum[(1/2)*(alpha_last+(1/6)*delta_alpha_last)><delta_veloc ...
-	add_Vec3_Vec3(output->uvw, output->uvw, term2);							//...				...   +[(1/2)*(veloc_last+(1/6)*delta_veloc_last)><delta_alpha]
-	cpy_Vec3_Vec3(veloc_last, veloc);										//veloc_last		<-- veloc           {age veloc}
-	cpy_Vec3_Vec3(delta_veloc_last, delta_veloc);							//delta_veloc_last  <-- delta_veloc     {age delta_veloc}
-	
-	// Update history
-	copyImu(imuLast, imu);
-	
-	return dt;
+    //__________________________________________________________________________________________________________________
+    // Roscoe (EQ-32) coning integral:     [DELTA THETA = sum((1/2)*(alpha_last+(1/6)*delta_alpha_last) >< delta_alpha)]
+    mul_Vec3_X(alpha, imu->I.pqr, dt);                                        //alpha                <-- [pqr] * [dt]
+    sub_Vec3_Vec3(delta_alpha, alpha, alpha_last);                            //delta_alpha        <-- [alpha] - [alpha_last]
+    div_Vec3_X(tmp3, delta_alpha_last, 6.0f);                                //tmp3                <-- [delta_alpha_last] * [(1/6)]
+    add_Vec3_Vec3(tmp3, alpha_last, tmp3);                                    //tmp3                <-- [alpha_last] + [(1/6)*delta_alpha_last]
+    div_Vec3_X(tmp3, tmp3, 2.0f);                                            //tmp3               <-- [(alpha_last+(1/6)*delta_alpha_last)] * [(1/2)]
+    cross_Vec3(term1, tmp3, delta_alpha);                                    //term1                <-- [(1/2)*(alpha_last+(1/6)*delta_alpha_last)]    >< [delta_alpha] 
+    add_Vec3_Vec3(output->theta, output->theta, term1);                        //theta                <-- sum[(1/2)*(alpha_last+(1/6)*delta_alpha_last)><delta_alpha]
+    cpy_Vec3_Vec3(alpha_last, alpha);                                        //alpha_last        <-- alpha           {age alpha}
+    cpy_Vec3_Vec3(delta_alpha_last, delta_alpha);                            //delta_alpha_last  <-- delta_alpha     {age delta_alpha}
+    //_________________________________________________________________________________________________________________
+    // Roscoe (EQ-33) sculling integral:   [DELTA VELOC = sum((1/2)*(alpha_last+(1/6)*delta_alpha_last) >< delta_veloc)
+    //                                                 + sum((1/2)*(veloc_last+(1/6)*delta_veloc_last) >< delta_alpha)]      
+    mul_Vec3_X(veloc, imu->I.acc, dt);                                        //veloc                <-- [acc] * [dt]
+    sub_Vec3_Vec3(delta_veloc, veloc, veloc_last);                            //delta_veloc        <-- [veloc] - [veloc_last]
+    cross_Vec3(term1, tmp3, delta_veloc);                                    //term1                <-- [(1/2)*(alpha_last+(1/6)*delta_alpha_last)] >< [delta_veloc]
+    div_Vec3_X(tmp3, delta_veloc_last, 6.0f);                                //tmp3                <-- [delta_veloc_last] * [(1/6)]
+    add_Vec3_Vec3(tmp3, veloc_last, tmp3);                                    //tmp3                <-- [veloc_last] + [(1/6)*delta_veloc_last]
+    div_Vec3_X(tmp3, tmp3, 2.0f);                                            //tmp3                <-- [(veloc_last+(1/6)*delta_veloc_last)] * [(1/2)]
+    cross_Vec3(term2, tmp3, delta_alpha);                                    //term2                <-- [(1/2)*(veloc_last+(1/6)*delta_veloc_last)] >< [delta_alpha]
+    add_Vec3_Vec3(output->uvw, output->uvw, term1);                            //uvw                <-- sum[(1/2)*(alpha_last+(1/6)*delta_alpha_last)><delta_veloc ...
+    add_Vec3_Vec3(output->uvw, output->uvw, term2);                            //...                ...   +[(1/2)*(veloc_last+(1/6)*delta_veloc_last)><delta_alpha]
+    cpy_Vec3_Vec3(veloc_last, veloc);                                        //veloc_last        <-- veloc           {age veloc}
+    cpy_Vec3_Vec3(delta_veloc_last, delta_veloc);                            //delta_veloc_last  <-- delta_veloc     {age delta_veloc}
+    
+    // Update history
+    copyImu(imuLast, imu);
+    
+    return dt;
 }
 #endif
 

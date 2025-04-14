@@ -57,12 +57,12 @@ extern "C" {
 #define VEC3_ANY_ZERO(v)            ( ((v[0])==(0.0f)) || ((v[1])==(0.0f)) || ((v[2])==(0.0f)) )
 #define VEC3_ANY_NOT_ZERO(v)        ( ((v[0])!=(0.0f)) || ((v[1])!=(0.0f)) || ((v[2])!=(0.0f)) )
 
-#define INT3_ANY_NOT_ZERO(v)		( ((v[0])!=(0)) || ((v[1])!=(0)) || ((v[2])!=(0)) )
+#define INT3_ANY_NOT_ZERO(v)        ( ((v[0])!=(0)) || ((v[1])!=(0)) || ((v[2])!=(0)) )
 
-#define SET_VEC3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
-#define SET_VEC4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
+#define SET_VEC3_X(v,x)             { (v[0])=(x); (v[1])=(x); (v[2])=(x); }
+#define SET_VEC4_X(v,x)             { (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
 
-#define IS_NAN(v)					((v) != (v))
+#define IS_NAN(v)                    ((v) != (v))
 #define IS_INF(v)                   (isinf(v))
 
 // Zero order low-pass filter 
@@ -423,7 +423,7 @@ static __inline f_t abs_Vec3_X(const ixVector3 v)
 
     if( result < val2 )
         result = val2;
-		
+        
     return result;
 }
 

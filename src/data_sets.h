@@ -2971,7 +2971,7 @@ enum eSensorConfig
     /** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
     SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x00FF0000,
     SENSOR_CFG_SENSOR_ROTATION_OFFSET           = (int)16,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,	// roll, pitch, yaw rotation (deg).
+    SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,    // roll, pitch, yaw rotation (deg).
     SENSOR_CFG_SENSOR_ROTATION_0_0_90           = (int)1,
     SENSOR_CFG_SENSOR_ROTATION_0_0_180          = (int)2,
     SENSOR_CFG_SENSOR_ROTATION_0_0_N90          = (int)3,
