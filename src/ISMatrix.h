@@ -418,10 +418,10 @@ static __inline f_t abs_Vec3_X(const ixVector3 v)
     f_t val1   = fabsf(v[1]);
     f_t val2   = fabsf(v[2]);
 
-    if( result < val1 )
+    if ( result < val1 )
         result = val1;
 
-    if( result < val2 )
+    if ( result < val2 )
         result = val2;
         
     return result;
