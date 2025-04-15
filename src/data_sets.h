@@ -3552,86 +3552,79 @@ typedef struct PACKED
 {
     gtime_t time;
 
-    uint8_t rej_ovfl;
-    uint8_t code_outlier;
-    uint8_t phase_outlier;
-    uint8_t code_large_residual;
+    uint8_t rtkd_unused8_1;
+    uint8_t code_outlier;                   // Code residual in float solution too large
+    uint8_t phase_outlier;                  // Phase residual in float solution too large
+    uint8_t rtkd_unused8_2;
 
-    uint8_t phase_large_residual;
-    uint8_t invalid_base_position;
-    uint8_t bad_baseline_holdamb;
-    uint8_t base_position_error;
+    uint8_t rtkd_unused8_3;
+    uint8_t rtkd_unused8_4;
+    uint8_t bad_baseline_holdamb;           // Bad baseline during hold ambiguity (may not be needed, consider removing)
+    uint8_t rtkd_unused8_5;
 
-    uint8_t outc_ovfl;
-    uint8_t reset_timer;
-    uint8_t use_ubx_position;
-    uint8_t large_v2b;
+    uint8_t outc_ovfl;                      // Observation/reject outage counter
+    uint8_t rtkd_unused8_6;
+    uint8_t rtkd_unused8_7;
+    uint8_t large_v2b;                      // Vector to base distance too large
 
-    uint8_t base_position_update;
+    uint8_t base_position_update;           // Received position of base correction counter
     uint8_t rover_position_error;
-    uint8_t reset_bias;
-    uint8_t start_relpos;
+    uint8_t reset_bias;                     // Satelite bias reset counter 
+    uint8_t rtkd_unused8_8;
 
-    uint8_t end_relpos;
-    uint8_t start_rtkpos;
-    uint8_t pnt_pos_error;
-    uint8_t no_base_obs_data;
+    uint32_t rtkd_unused32_1;
 
-    uint8_t diff_age_error;
-    uint8_t moveb_time_sync_error;
-    uint8_t waiting_for_rover_packet;
-    uint8_t waiting_for_base_packet;
+    uint8_t diff_age_error;                 // Difference age too large
+    uint8_t rtkd_unused8_9;
+    uint8_t rover_packet_age_ms;            // Age of last received rover packet  (TODO) convert to int16_t
+    uint8_t base_packet_age_ms;             // Age of last received baase packet  (TODO) convert to int16_t
 
-    uint8_t lsq_error;
-    uint8_t lack_of_valid_sats;
-    uint8_t divergent_pnt_pos_iteration;
-    uint8_t chi_square_error;
+    uint32_t rtkd_unused32_2;
 
-    uint32_t cycle_slips;
+    uint32_t cycle_slips;                   // Accumulation of total cycle slips
 
-    float ubx_error;
+    float rtk_to_rcvr_pos_error;            // RTK position Error with respect to GNSS receiver
 
-    uint8_t solStatus;
-    uint8_t rescode_err_marker;
-    uint8_t error_count;
-    uint8_t error_code;
+    uint8_t rtkd_unused8_10;
+    uint8_t rtkd_unused8_11;
+    uint8_t error_count;                    // Pre-filtered observations error count
+    uint8_t error_code;                     // Pre-filtered observations error code
 
-    float dist2base;
+    uint32_t rtkd_unused32_3;
 
-    uint8_t reserved1;
-    uint8_t gdop_error;
-    uint8_t warning_count;
-    uint8_t warning_code;
+    uint8_t rtkd_unused8_12;
+    uint8_t rtkd_unused8_13;
+    uint8_t warning_count;                   // Pre-filtered observations warning count
+    uint8_t warning_code;                    // Pre-filtered observations warning code
 
     double double_debug[4];
 
     uint8_t debug[2];
-    uint8_t obs_count_bas;
-    uint8_t obs_count_rov;
+    uint8_t obs_base_unfiltered;            // Number of base observations from the receiver (before filtering)
+    uint8_t obs_rover_unfiltered;           // Number of rovr observations from the receiver (before filtering)
 
-    //uint8_t obs_pairs_filtered;   // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
-    uint8_t reserved2;
-    uint8_t raw_ptr_queue_limited;
-    uint8_t raw_dat_queue_limited;
-    uint8_t obs_unhealthy;          // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
+    uint8_t rtkd_unused8_14;
+    uint8_t rtkd_unused8_15;
+    uint8_t rtkd_unused8_16;
+    uint8_t obs_unhealthy;                  // number of sats marked as "unhealthy" by GNSS receiver (nonzero terms in svh)
 
-    uint8_t obs_rover_avail;        // nu - total number of satellites with observations to rover in relpos() before selsat()
-    uint8_t obs_base_avail;         // nr - total number of satellites with observations to base in relpos() before selsat()
-    uint8_t obs_pairs_used_float;   // number of satellite pairs used to compute the float solution
-    uint8_t obs_pairs_used_ar;      // number of satellite pairs used to compute the fixed solution
+    uint8_t obs_rover_relpos;               // nu - number of observations input to relpos() before selsat(), rover
+    uint8_t obs_base_relpos;                // nr - number of observations input to relpos() before selsat(), base
+    uint8_t obs_pairs_used_float;           // number of sat pairs used to compute the float solution
+    uint8_t obs_pairs_used_fixed;           // number of sat pairs used to compute the fixed solution
 
-    uint8_t obs_eph_avail;          // number of satellites with ephemeris available (min is 0, max is nu)
-    uint8_t obs_low_snr_rover;      // number of satellites with low snr at rover
-    uint8_t obs_low_snr_base;       // number of satellites with low snr at base
-    uint8_t obs_high_snr_parity;    // number of satellites with high difference between snr at rover and snr at base
+    uint8_t obs_eph_relpos;                 // number of sats with ephemeris available (min is 0, max is nu)
+    uint8_t obs_low_snr_rover;              // number of sats with low snr at rover and exclude from solution
+    uint8_t obs_low_snr_base;               // number of sats with low snr at base and exclude from solution
+    uint8_t rtkd_unused8_17;
 
-    uint8_t obs_zero_L1_rover;      // number of satellites with zero L1 pseudorange or phase at rover
-    uint8_t obs_zero_L1_base;       // number of satellites with zero L1 pseudorange or phase at base
-    uint8_t obs_low_elev_rover;     // number of satellites with low elevation at rover
-    uint8_t obs_low_elev_base;      // number of satellites with low elevation at base
+    uint8_t obs_zero_L1_rover;              // number of sats with zero L1 pseudorange or phase at rover
+    uint8_t obs_zero_L1_base;               // number of sats with zero L1 pseudorange or phase at base
+    uint8_t obs_low_elev;                   // number of sats with low elevation
+    uint8_t rtkd_unused8_18;
 
-    uint8_t eph1RxCnt;              // total ephem recieved for reciever 1 before RTCM3 parse per period
-    uint8_t eph2RxCnt;              // total ephem recieved for reciever 2 before RTCM3 parse per period
+    uint8_t rtkd_unused8_19;
+    uint8_t rtkd_unused8_20;
     uint8_t reserved[2];
 } rtk_debug_t;
 
