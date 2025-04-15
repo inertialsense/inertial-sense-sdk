@@ -3552,54 +3552,48 @@ typedef struct PACKED
 {
     gtime_t time;
 
-    uint8_t rtkd_unused1;
+    uint8_t rtkd_unused8_1;
     uint8_t code_outlier;                   // Code residual in float solution too large
     uint8_t phase_outlier;                  // Phase residual in float solution too large
-    uint8_t rtkd_unused2;
+    uint8_t rtkd_unused8_2;
 
-    uint8_t rtkd_unused3;
-    uint8_t rtkd_unused4;
+    uint8_t rtkd_unused8_3;
+    uint8_t rtkd_unused8_4;
     uint8_t bad_baseline_holdamb;           // Bad baseline during hold ambiguity (may not be needed, consider removing)
-    uint8_t rtkd_unused5;
+    uint8_t rtkd_unused8_5;
 
     uint8_t outc_ovfl;                      // Observation/reject outage counter
-    uint8_t rtkd_unused6;
-    uint8_t rtkd_unused7;
+    uint8_t rtkd_unused8_6;
+    uint8_t rtkd_unused8_7;
     uint8_t large_v2b;                      // Vector to base distance too large
 
     uint8_t base_position_update;           // Received position of base correction counter
     uint8_t rover_position_error;
     uint8_t reset_bias;                     // Satelite bias reset counter 
-    uint8_t rtkd_unused10;
+    uint8_t rtkd_unused8_8;
 
-    uint8_t rtkd_unused11;
-    uint8_t rtkd_unused12;
-    uint8_t rtkd_unused13;
-    uint8_t rtkd_unused14;
+    uint32_t rtkd_unused32_1;
 
     uint8_t diff_age_error;                 // Difference age too large
-    uint8_t rtkd_unused15;
+    uint8_t rtkd_unused8_9;
     uint8_t rover_packet_age_ms;            // Age of last received rover packet  (TODO) convert to int16_t
     uint8_t base_packet_age_ms;             // Age of last received baase packet  (TODO) convert to int16_t
 
-    uint8_t rtkd_unused16;
-    uint8_t rtkd_unused17;
-    uint8_t rtkd_unused18;
-    uint8_t rtkd_unused19;
+    uint32_t rtkd_unused32_2;
 
     uint32_t cycle_slips;                   // Accumulation of total cycle slips
 
     float rtk_to_rcvr_pos_error;            // RTK position Error with respect to GNSS receiver
 
-    uint8_t rtkd_unused20;
-    uint8_t rtkd_unused21;
+    uint8_t rtkd_unused8_10;
+    uint8_t rtkd_unused8_11;
     uint8_t error_count;                    // Pre-filtered observations error count
     uint8_t error_code;                     // Pre-filtered observations error code
 
-    float rtkd_unused22;
+    uint32_t rtkd_unused32_3;
 
-    uint8_t rtkd_unused22b;
-    uint8_t rtkd_unused23;
+    uint8_t rtkd_unused8_12;
+    uint8_t rtkd_unused8_13;
     uint8_t warning_count;                   // Pre-filtered observations warning count
     uint8_t warning_code;                    // Pre-filtered observations warning code
 
@@ -3609,9 +3603,9 @@ typedef struct PACKED
     uint8_t obs_base_unfiltered;            // Number of base observations from the receiver (before filtering)
     uint8_t obs_rover_unfiltered;           // Number of rovr observations from the receiver (before filtering)
 
-    uint8_t rtkd_unused24;
-    uint8_t rtkd_unused25;
-    uint8_t rtkd_unused26;
+    uint8_t rtkd_unused8_14;
+    uint8_t rtkd_unused8_15;
+    uint8_t rtkd_unused8_16;
     uint8_t obs_unhealthy;                  // number of sats marked as "unhealthy" by GNSS receiver (nonzero terms in svh)
 
     uint8_t obs_rover_relpos;               // nu - number of observations input to relpos() before selsat(), rover
@@ -3622,15 +3616,15 @@ typedef struct PACKED
     uint8_t obs_eph_relpos;                 // number of sats with ephemeris available (min is 0, max is nu)
     uint8_t obs_low_snr_rover;              // number of sats with low snr at rover and exclude from solution
     uint8_t obs_low_snr_base;               // number of sats with low snr at base and exclude from solution
-    uint8_t rtkd_unused27;
+    uint8_t rtkd_unused8_17;
 
     uint8_t obs_zero_L1_rover;              // number of sats with zero L1 pseudorange or phase at rover
     uint8_t obs_zero_L1_base;               // number of sats with zero L1 pseudorange or phase at base
     uint8_t obs_low_elev;                   // number of sats with low elevation
-    uint8_t rtkd_unused28;
+    uint8_t rtkd_unused8_18;
 
-    uint8_t rtkd_unused29;
-    uint8_t rtkd_unused30;
+    uint8_t rtkd_unused8_19;
+    uint8_t rtkd_unused8_20;
     uint8_t reserved[2];
 } rtk_debug_t;
 
