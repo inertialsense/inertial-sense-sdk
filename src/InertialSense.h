@@ -689,6 +689,9 @@ public:
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
     // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
+    bool registerDevice(ISDevice* device);
+    ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
+
     bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
     bool releaseDevice(ISDevice* device, bool closePort = true);
 
@@ -751,8 +754,6 @@ private:
     bool UpdateClient();
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
-    bool registerDevice(ISDevice* device);
-    ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo);
     bool HasReceivedDeviceInfo(ISDevice* device);
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);

@@ -13,8 +13,8 @@
 #include <cstring>
 #include <memory>
 #include <regex>
-#include <string>
 #include <stdexcept>
+// #include <acc_prof.h>
 
 #include "ISDataMappings.h"
 
@@ -43,18 +43,101 @@ extern "C" char* strptime(const char* s,
 }
 #endif
 
+/**
+ * @brief Trims left-side/leading characters (whitespace by default) from the passed string; this modifies the string, in place.
+ * Locates the first characters which are not within the set of ws, and removes all characters from the start upto that first
+ * non-matching character.
+ *
+ * @param s the string to be trimmed
+ * @param t a set of characters, which will be removed if they exists
+ * @return a reference to the input string.
+ */
+std::string& utils::ltrim(std::string& s, const char* t) { s.erase(0, s.find_first_not_of(t)); return s; };
+
+/**
+ * @brief Trims right-side/trailing characters (whitespace by default) from the passed string; this modifies the string, in place.
+ * Locates the last characters of the string which are not within the set of ws, and removes all characters from that position
+ * until the end of the string non-matching character.
+ *
+ * @param s the string to be trimmed
+ * @param t a set of characters, which will be removed if they exists
+ * @return a reference to the input string.
+ */
+std::string& utils::rtrim(std::string& s, const char* t) { s.erase(s.find_last_not_of(t) + 1); return s; };
+
+/**
+ * @brief Trims left-size/leading and right-side/trailing characters (whitespace by default) from the passed string; this modifies
+ * the string, in place. Call both rtrim() and ltrim() in a single call.
+ *
+ * @param s the string to be trimmed
+ * @param t a set of characters, which will be removed if they exists
+ * @return a reference to the input string.
+ */
+std::string& utils::trim(std::string& s, const char* t) { return ltrim(rtrim(s, t), t); };
+
+
+/**
+ * ltrim() equivalent which makes a new copy, and does not modify the original
+ * @param s the string to be trimmed
+ * @param t a set of characters, which will be removed if they exists
+ * @return the modified/trimmed copy of the original input string.
+ */
+std::string utils::ltrim_copy(std::string s, const char* t) { return ltrim(s, t); };
+
+/**
+ * rtrim() equivalent which makes a new copy, and does not modify the original
+ * @param s the string to be trimmed
+ * @param t a set of characters, which will be removed if they exists
+ * @return the modified/trimmed copy of the original input string.
+ */
+std::string utils::rtrim_copy(std::string s, const char* t) { return rtrim(s, t); };
+
+/**
+ * trim() equivalent which makes a new copy, and does not modify the original
+ * @param s the string to be trimmed
+ * @param t a set of characters, which will be removed if they exists
+ * @return the modified/trimmed copy of the original input string.
+ */
+std::string utils::trim_copy(std::string s, const char* t) { return trim(s, t); };
+
+
+
+/**
+ * Splits the passed string into a vector of strings, delimited by delimiter.
+ * @param str the string to be split
+ * @param delimiter the substring to use as a delimiter
+ * @return a vector of strings
+ */
+std::vector<std::string> utils::split_string(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> strings;
+
+    std::string::size_type pos = 0;
+    std::string::size_type prev = 0;
+    while ((pos = str.find(delimiter, prev)) != std::string::npos)
+    {
+        strings.push_back(str.substr(prev, pos - prev));
+        prev = pos + delimiter.size();
+    }
+
+    // To get the last substring (or only, if delimiter is not found)
+    strings.push_back(str.substr(prev));
+
+    return strings;
+}
+
+/**
+ * @return the current system clock as a string with millisecond precision
+ */
 std::string utils::getCurrentTimestamp() {
-    using std::chrono::system_clock;
     auto currentTime = std::chrono::system_clock::now();
-    char buffer[80];
-
     auto transformed = currentTime.time_since_epoch().count() / 1000000;
-
     auto millis = transformed % 1000;
 
     std::time_t tt;
-    tt = system_clock::to_time_t(currentTime);
+    tt = std::chrono::system_clock::to_time_t(currentTime);
     auto timeinfo = localtime(&tt);
+
+    char buffer[80];
     strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
     sprintf(buffer + strlen(buffer), "%03d", (int) millis);
 
@@ -132,6 +215,76 @@ std::string utils::did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, in
     return std::string(buf);
 }
 
+std::string utils::getHardwareAsString(const dev_info_t& devInfo) {
+    // hardware type & version
+    const char *typeName = "\?\?\?";
+    switch (devInfo.hardwareType) {
+        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
+        case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
+        case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
+        default: typeName = "\?\?\?"; break;
+    }
+    std::string out = utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
+    if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+        out += utils::string_format(".%u", devInfo.hardwareVer[2]);
+        if (devInfo.hardwareVer[3] != 0)
+            out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+    }
+    return out;
+}
+
+std::string utils::getFirmwareAsString(const dev_info_t& devInfo) {
+    std::string out = utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
+    switch(devInfo.buildType) {
+        case 'a': out +="-alpha";       break;
+        case 'b': out +="-beta";        break;
+        case 'c': out +="-rc";          break;
+        case 'd': out +="-devel";       break;
+        case 's': out +="-snap";        break;
+        case '*': out +="-snap";        break;
+        default : out +="";             break;
+    }
+    if (devInfo.firmwareVer[3] != 0)
+        out += utils::string_format(".%u", devInfo.firmwareVer[3]);
+
+    return out;
+}
+
+std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags) {
+    std::string out;
+
+    if ((flags & DV_BIT_BUILD_COMMIT) && devInfo.repoRevision) {
+        out += utils::string_format("%08x", devInfo.repoRevision);
+        if (devInfo.buildType == '*') {
+            out += "*";
+        }
+    }
+
+    if (flags & DV_BIT_BUILD_KEY) {  // include build key/number
+        // build number/type
+        if (!out.empty()) out += " ";
+        if (((devInfo.buildNumber >> 12) & 0xFFFFF) > 0) {
+            out += utils::string_format("%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
+        } else {
+            if (devInfo.buildNumber & 0xFFF) {
+                out += utils::string_format("b%d", (devInfo.buildNumber & 0xFFF));
+            }
+        }
+    }
+
+    if (flags & DV_BIT_BUILD_DATE) {
+        out += (out.empty() ? "" : " ") + utils::string_format("%04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
+    }
+
+    if (flags & DV_BIT_BUILD_TIME) {
+        out += (out.empty() ? "" : " ") + utils::string_format("%02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+        if (devInfo.buildMillisecond)
+            out += utils::string_format(".%03u", devInfo.buildMillisecond);
+    }
+
+    return out;
+}
+
 /**
  * A convenience function to format and return a string representation
  * of (in a very specific format, that matching devInfoFromString())
@@ -144,203 +297,163 @@ std::string utils::did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, in
  * @param devInfo the dev_info_t struct that provides the values to print
  * @return a std::string of the resulting devInfo;
  */
-std::string utils::devInfoToString(const dev_info_t& devInfo) {
+std::string utils::devInfoToString(const dev_info_t& devInfo, uint16_t flags) {
     std::string out;
 
     // device serial no
-    out += utils::string_format("SN%06d: ", devInfo.serialNumber);
 
-    // hardware type & version
-    const char *typeName = "\?\?\?";
-    switch (devInfo.hardwareType) {
-        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
-        case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
-        default: typeName = "\?\?\?"; break;
-    }
-    out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
-    if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
-        out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-        if (devInfo.hardwareVer[3] != 0)
-            out += utils::string_format(".%u", devInfo.hardwareVer[3]);
-    }
+    if (flags & DV_BIT_SERIALNO)
+        out += utils::string_format("SN%06d:", devInfo.serialNumber);
+    if (flags & DV_BIT_HARDWARE_INFO)
+        out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo);
+    if (flags & DV_BIT_FIRMWARE_VER)
+        out += (out.empty() ? "" : " ") + utils::getFirmwareAsString(devInfo);
+    if (flags & (DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME | DV_BIT_BUILD_KEY | DV_BIT_BUILD_COMMIT))
+        out += (out.empty() ? "" : " ") + utils::getBuildAsString(devInfo, flags);
+    if ((flags & DV_BIT_ADDITIONAL_INFO) && devInfo.addInfo[0])
+        out += (out.empty() ? "" : " ") + utils::string_format("(%s)", devInfo.addInfo);
 
-    // firmware version
-    out += utils::string_format(" fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
-    if (devInfo.firmwareVer[3] != 0)
-        out += utils::string_format(".%u", devInfo.firmwareVer[3]);
-
-    // build number/type
-    out += utils::string_format(" b%u", devInfo.buildNumber);
-    if ((devInfo.buildType != 0) && (devInfo.buildType != 'r'))
-        out += utils::string_format("%c", devInfo.buildType);
-
-    // build date/time
-    out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
-    out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
-    if (devInfo.buildMillisecond)
-        out += utils::string_format(".%03u", devInfo.buildMillisecond);
-
-    // additional info
-    out += utils::string_format(" (%s)", devInfo.addInfo);
     return out;
 }
 
 /**
- * A convenience function to parse and populate a dev_info_t struct
- * from an input string of a specific format (the format matching
- * devInfoToString()). Note that this does not parse all dev_info_t
- * fields, but it does handle the majority of them. This function
- * used a regex pattern to match/parse the string contents.
+ * @brief A convenience function to parse and populate a dev_info_t struct from an input string.
+ * This function works by attempting to parse a series of "components" from the input string,
+ * removing each successfully parsed component from the string, and then trying again until
+ * the string is fully consumed, or the string fails to match any component patterns.
+ *
  * @param str the string to parse
  * @param devInfo the dev_info_t struct to parse into
- * @return true if the string was successfully parsed
+ * @return a bitmask of which components were parsed from the input string
  */
-bool utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
+uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
     // first, see what we can derive from the filename
     // REGEX Patterns:
     // SN[serialNo]: [hdwType]-[hdwVer], fw[fwVersion] b[buildNum][buildType] [buildDate] [buildTime] (addlInfo)
-    // SN102934: IMX-5.0, fw2.1.7 b83c 2024-09-18 15:35:43 (p12 cmp)
-    std::regex fwPattern("SN(\\d+): ([\\w]+)-([\\d\\.]+), fw([\\d.]+) b([\\d.]+)([a-z]{0,1}) ([\\d-]+ [\\d:]{8}) \\([^\\)]+\\)$");
-    std::smatch match;
+    // SN102934: IMX-5.0 fw2.1.7-rc.83 1739c.5 2024-09-18 15:35:43 (p12 cmp)
+    // SN102934: IMX-5.0 fw2.1.7 b83c 2024-09-18 15:35:43 (p12 cmp)
+    // SN23914: GPX-1.0 fw0.1.12 b0b 2023-11-03 9:09:13 (Some Info)
 
-    if (!std::regex_match(str, match, fwPattern))
-        return false;
+    // These are a list of Regex patterns that match different components of a firmware string;
+    // these MUST be in order of the most restrictive first, and least restrictive last, otherwise the least restrictive will consume everything.
+    static std::vector<std::regex> componentPatterns = {
+        std::regex(R"(SN(\d+)[:]?)"),                           //!< 0, serial number
+        std::regex(R"((fw|v)([\d.]+)(-([\w]+)\.([\d]+))?)"),    //!< 1, firmware version w/ optional release type
+        std::regex(R"((\d){4}-(\d){1,2}-(\d){1,2})"),           //!< 2, build date
+        std::regex(R"((\d){1,2}:(\d){2}:(\d){2}|_(\d{6}))"),    //!< 3, build time
+        std::regex(R"((IS_)?([\w]+)-([\d\.]+)[,]?)"),           //!< 4, hdw type & version
+        std::regex(R"(([0-9A-F]{5})(\.(\d+)))"),                //!< 5, build key and build number
+        std::regex(R"(b(\d{1}[\d.]*)([a-z]?))"),                //!< 6, legacy build number and type -- note that this MUST be tested before 5, because 5 CAN catch it...
+        std::regex(R"(\(([^\)]*)\))"),                          //!< 7, additional info
+        std::regex(R"(([0-9a-f]{6,8})(\*)?)"),                  //!< 8, repo hash & build status (dirty)
+    };
 
-    // match components are: (0) serial-number, (1) device-type, (2) hdw-version, (3) image-type, (4) firmware version, (5) build-number, (6) build-type, (7) build-date, (8) build-time, (9) addl info
+    int ii = 0;
+    std::tm tm = {};
+    uint16_t componentsParsed = 0;
+    std::string local_str = str;    // make a copy that we can destroy
+    bool making_progress = true;      // we'll keep trying, as long as we keep making progress..
+    devInfo = {};                   // reinitialize dev_info_t
 
-    // hardware type
-    std::string hdwType = match[1];
-    for (int i = 0; i < IS_HARDWARE_TYPE_COUNT; i++) {
-        if (hdwType == g_isHardwareTypeNames[i]) {
-            devInfo.hardwareType = i;
-            break;
+    while (!local_str.empty() && making_progress) {
+        making_progress = false;
+
+        for ( int i = 0, nc = componentPatterns.size(); i < nc; i++ ) {
+            std::smatch match;
+            if (std::regex_search(local_str, match, componentPatterns[i])) {
+                making_progress = true;         // we've matched and consumed something, let's make note of it.
+                switch (i) {
+                    case 0: // parse SN
+                        // serial number
+                        devInfo.serialNumber = stoi(match[1].str());
+                        componentsParsed |= DV_BIT_SERIALNO;
+                        break;
+                    case 1: // firmware version w/ optional release type
+                        // firmware version - typically 3 digits, but could be 4, seperated by decimal
+                        devInfo.buildType = 0;
+                        for (auto& e : devInfo.firmwareVer) e = 0;
+                        split_from_string<uint8_t, 4>(match[2].str(), devInfo.firmwareVer);
+                        if (match[3].matched) {
+                            if (match[4].str() == "alpha") devInfo.buildType = 'a';
+                            else if (match[4].str() == "beta") devInfo.buildType = 'b';
+                            else if (match[4].str() == "rc") devInfo.buildType = 'c';
+                            else if (match[4].str() == "devel") devInfo.buildType = 'd';
+                            else if (match[4].str() == "snap") devInfo.buildType = 's';
+
+                            if (match[5].matched) {
+                                devInfo.firmwareVer[3] = std::stoi(match[5].str());
+                            }
+                        }
+                        componentsParsed |= DV_BIT_FIRMWARE_VER;
+                        break;
+                    case 2: // build date
+                        strptime(match[0].str().c_str(), "%Y-%m-%d", &tm);
+                        devInfo.buildYear = tm.tm_year - 100;
+                        devInfo.buildMonth = tm.tm_mon + 1;
+                        devInfo.buildDay = tm.tm_mday;
+                        componentsParsed |= DV_BIT_BUILD_DATE;
+                        break;
+                    case 3: // build time
+                        if (match[4].matched) strptime(match[4].str().c_str(), "%H%M%S", &tm);
+                        else strptime(match[0].str().c_str(), "%H:%M:%S", &tm);
+                        devInfo.buildHour = tm.tm_hour;
+                        devInfo.buildMinute = tm.tm_min;
+                        devInfo.buildSecond = tm.tm_sec;
+                        devInfo.buildMillisecond = 0;
+                        componentsParsed |= DV_BIT_BUILD_TIME;
+                        break;
+                    case 4: // parse HDW type & version
+                        // hardware type
+                        for (ii = 0; ii < IS_HARDWARE_TYPE_COUNT; ii++) {
+                            if (match[2].str() == g_isHardwareTypeNames[ii]) {
+                                devInfo.hardwareType = ii;
+                                break;
+                            }
+                        }
+                        // hardware version
+                        for (auto& e : devInfo.hardwareVer) e = 0;
+                        split_from_string<uint8_t, 4>(match[3].str(), devInfo.hardwareVer);
+                        componentsParsed |= DV_BIT_HARDWARE_INFO;
+                        break;
+                    case 5: // build key and build number
+                        {
+                            int build_key = std::stoi(match[1].str(), NULL, 16);
+                            int build_num = std::stoi(match[3].str());
+                            devInfo.buildNumber = ((build_key << 12) & 0xFFFFF000) | (build_num & 0xFFF);
+                        }
+                        componentsParsed |= DV_BIT_BUILD_KEY;
+                        break;
+                    case 6:  // legacy build number and type
+                        devInfo.buildNumber = std::stol(match[1].str());
+                        devInfo.buildType = match[2].str()[0];
+                        componentsParsed |= DV_BIT_BUILD_KEY;
+                        break;
+                    case 7: // additional info
+                        strncpy(devInfo.addInfo, trim_copy(match[1].str(), "() ").c_str(), DEVINFO_ADDINFO_STRLEN-1);
+                        devInfo.addInfo[DEVINFO_ADDINFO_STRLEN-1] = 0;
+                        componentsParsed |= DV_BIT_ADDITIONAL_INFO;
+                        break;
+                    case 8:  // repo hash & build status
+                        devInfo.repoRevision = std::stol(match[1].str(), NULL, 16);
+                        if (match[2].matched && (match[2].str()[0] == '*')) {
+                            devInfo.buildType = '*';
+                        }
+                        componentsParsed |= DV_BIT_BUILD_COMMIT;
+                        break;
+                }
+
+                // don't remove the match string from the local_str until AFTER we parse it-- match[]es are an iterator into the searched string.
+                int pos = match.position(0);
+                int len = match.length(0);
+                local_str.erase(pos, len);
+                utils::trim(local_str);
+            }
         }
     }
 
-    // hardware version - either 1 or 2 digits, seperated by decimal
-    parseStringVersion(match[2].str(), devInfo.hardwareVer);
-
-    // image type (we don't really care)
-    std::string imgType = match[3];
-
-    // firmware version - typically 3 digits, but could be 4, seperated by decimal
-    parseStringVersion(match[4].str(), devInfo.firmwareVer);
-
-    // build number
-    devInfo.buildNumber = std::stol(match[5].str());
-
-    // build/release type
-    devInfo.buildType = match[6].str()[0];
-
-    std::tm tm = {};
-    std::string fwBuildDateTime = match[7].str() + " " + match[8].str();
-    strptime(fwBuildDateTime.c_str(), "%Y-%m-%d %H:%M:%S", &tm);
-    devInfo.buildYear = tm.tm_year;
-    devInfo.buildMonth = tm.tm_mon + 1;
-    devInfo.buildDay = tm.tm_mday;
-    devInfo.buildHour = tm.tm_hour;
-    devInfo.buildMinute = tm.tm_min;
-    devInfo.buildSecond = tm.tm_sec;
-    devInfo.buildMillisecond = 0;
-
-    return true;
+    return componentsParsed;
 }
 
-/**
- * simple utility to parse a version string of x.x.x.x (upto 4) and return descrete
- * values into an array of 4 bytes. If the string contains fewer than 4 numbers,
- * the remaining values are not assigned (you should initialize vOut before calling
- * this function).
- * @param vIn the string "1.2.3.4" to parse
- * @param vOut an array of 4 bytes, each bytes containing the parsed version number.
- * @return returns the number of elements parsed.
- */
-int utils::parseStringVersion(const std::string& vIn, uint8_t vOut[4]) {
-    long unsigned int start = 0, n = 0, end = 0;
-    while ((n < 3) && ((end = vIn.find_first_of('.', start)) != std::string::npos)){
-        vOut[n++] = stoi(vIn.substr(start, end - start));
-        start = end+1;
-    }
-    vOut[n++] = stoi(vIn.substr(start));
-    return n;
-}
-
-/**
- * Attempts to populate a dev_info_t struct with the firmware version and build info parsed
- * from either the filename or the file contents.
- * @param imageFile
- * @param devInfo
- * @return true if dev_info_t was populated, otherwise false
- */
-bool utils::fillDevInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo) {
-    // first, see what we can derive from the filename
-    // REGEX Patterns:
-    // -- IMX BL Firmware: IS_(\w+)-([\d\.]+)_(\w+)_(v[\d.]+)_(b[\d.]+)_([\d-]+)_([\d]+).*(\.hex)
-    // -- IMX/GPX App Firmware:  IS_(\w+)-([\d\.]+)_(\w+_|)(v[\d.]+)_(b[\d.]+)_([\d-]+)_([\d]+).*(\.[\w]+)$
-    // -- Firmware Package:  IS-(\w+)_(r[\d.]+)_([\d-]+)_([\d]+).*(\.[\w]+)$
-    std::regex fwPattern("IS_(\\w+)-([\\d\\.]+)_(\\w+_|)v([\\d.]+)_b([\\d.]+)([a-z]{0,1})_([\\d-]+)_([\\d]{6}).*(\\.[\\w]+)$");
-    std::smatch match;
-
-    if (!std::regex_match(imgFilename, match, fwPattern))
-        return false;
-
-    // match components are: (0) device-type, (1) hdw-version, (2) image-type, (3) firmware version, (4) build-number, (5) build-type, (6) build-date, (7) build-time, (8) file-type
-
-    // hardware type
-    const std::string hdwType = match[1];
-    for (int i = 0; i < IS_HARDWARE_TYPE_COUNT; i++) {
-        if (hdwType == g_isHardwareTypeNames[i]) {
-            devInfo.hardwareType = i;
-            break;
-        }
-    }
-
-    // hardware version - either 1 or 2 digits, seperated by decimal
-    const std::string hdwStr = match[2];
-    parseStringVersion(hdwStr, devInfo.hardwareVer);
-
-    // image type (we don't really care)
-    const std::string imgType = match[3];
-
-    // firmware version - typically 3 digits, but could be 4, seperated by decimal
-    const std::string fwVerStr = match[4];
-    parseStringVersion(match[4], devInfo.firmwareVer);
-
-    // build number
-    const std::string buildNumStr = match[5];
-    devInfo.buildNumber = std::stol(buildNumStr);
-
-    // build/release type
-    const std::string buildTypeStr = match[6];
-    if (buildTypeStr[0] == 0) devInfo.buildType = 'r';
-    else devInfo.buildType = buildTypeStr[0];
-
-    const std::string buildDateStr = match[7];
-    const std::string buildTimeStr = match[8];
-
-    std::tm tm = {};
-    std::string fwBuildDateTime = buildDateStr + " " + buildTimeStr;
-    strptime(fwBuildDateTime.c_str(), "%Y-%m-%d %H%M%S", &tm);
-    devInfo.buildYear = tm.tm_year - 100; // we use 2-digit years starting 2000, not 1900.
-    devInfo.buildMonth = tm.tm_mon + 1;
-    devInfo.buildDay = tm.tm_mday;
-    devInfo.buildHour = tm.tm_hour;
-    devInfo.buildMinute = tm.tm_min;
-    devInfo.buildSecond = tm.tm_sec;
-    devInfo.buildMillisecond = 0;
-
-/*
-    int fileType = -1;
-    const std::string filenameExtStr = match[9];
-    if (filenameExtStr == ".hex") fileType = 0;
-    else if (filenameExtStr == ".bin") fileType = 1;
-    else if (filenameExtStr == ".fpk") fileType = 2;
-*/
-
-    // second, parse the file, and see if we can find any additional details -- we do this second because A) its expensive, and B) is more reliable, so it will overwrite values parsed from the filename
-    return true;
-}
 
 /**
  * simple check if two dev_info_t structs indicate equivelent/compatible hardware

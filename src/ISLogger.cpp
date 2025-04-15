@@ -84,6 +84,13 @@ SimpleMutex myMutex;
 
 #endif
 
+const char* cISLogger::logTypeStrings[] = {
+    "dat",  // LOGTYPE_DAT
+    "raw",  // LOGTYPE_RAW
+    "csv",  // LOGTYPE_CSV
+    "kml",  // LOGTYPE_KML
+    "json"  // LOGTYPE_JSON
+};
 
 bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
 {
@@ -538,8 +545,8 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     }
 #if 1
     else
-    {   // Success
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
+    {	// Success
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id, ISB_HDR_TO_PACKET_SIZE(*dataHdr));
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -602,7 +609,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf));
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf), ISB_HDR_TO_PACKET_SIZE(data->hdr));
     }
     return data;
 }
@@ -860,6 +867,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 
 void cISLogger::PrintProgress()
 {
+/*
 #if (LOG_DEBUG_GEN == 2)
 #if 0
     advance_cursor();
@@ -872,35 +880,29 @@ void cISLogger::PrintProgress()
     }
 #endif
 #endif
+*/
 }
 
 void cISLogger::PrintStatistics()
 {
-    return;
-    
-    for (auto it : m_devices)
+/*
+    for (auto& [num, dev] : m_devices)
     {   // Print message statistics
-        std::shared_ptr<cDeviceLog> dev = it.second;
         if (dev==NULL)
             continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << dev->LogStatsString();
+        cout << "SN" << std::setw(6) << dev->SerialNumber() << " " << dev->LogStatsString();
     }
 
     PrintIsCommStatus();
+*/
 }
 
 void cISLogger::PrintIsCommStatus()
 {
-    for (auto it : m_devices)
+    for (auto& [sn, dev] : m_devices)
     {   // Print errors
-        std::shared_ptr<cDeviceLog> dev = it.second;
-        if (dev==NULL)
-            continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
+        if (dev && dev->IsCommInstance())
+            cout << "SN" << std::setw(6) << dev->SerialNumber() << " " << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
     }
 }
 

@@ -80,14 +80,14 @@ def setDataInformationDirectory(path, startMode=START_MODE_HOT):
         data['dataInfo']['subDirectories'] = [os.path.basename(path)]
         serialnumbers = []
         logtype = 'RAW'
-        for root, dirs, files in os.walk(path):
-            for filename in files:
-                if "LOG_SN" in filename:
-                    serialnum = re.search(r'\d+', filename).group()
-                    if serialnum not in serialnumbers:
-                        serialnumbers += [serialnum]
-                if ".dat" in filename.lower():
-                    logtype = "DAT"
+        for filename in os.listdir(path):
+            print(filename)
+            if "LOG_SN" in filename:
+                serialnum = re.search(r'\d+', filename).group()
+                if serialnum not in serialnumbers:
+                    serialnumbers += [serialnum]
+            if ".dat" in filename.lower():
+                logtype = "DAT"
 
         data['processData'] = {}
         data['processData']['datasets'] = [{}]
@@ -193,7 +193,7 @@ class FlashConfigDialog(QDialog):
         self.table.setHorizontalHeaderLabels([str(ser) for ser in log.serials])
         self.table.setVerticalHeaderLabels(field_names)
 
-        hex_fields = ['ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits']
+        hex_fields = ['ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits', 'gnssSatSigConst', 'sensorConfig']
         for d in range(log.numDev):
             for f, field in enumerate(field_names):
                 if field in hex_fields:
@@ -420,6 +420,7 @@ class LogInspectorWindow(QMainWindow):
     def createListSystem(self):
         self.addListItem('Flash Config', lambda: self.showFlashConfig())
         self.addListItem('Device Info', lambda: self.showDeviceInfo())
+        self.addListItem('IMU Status', 'imuStatus')
         self.addListItem('INS Status', 'insStatus')
         self.addListItem('HDW Status', 'hdwStatus')
 
@@ -435,9 +436,9 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Climb Rate', 'climbRate')
 
     def createListSensors(self):
-        self.addListItem('IMU PQR', 'imuPQR')
+        self.addListItem('IMU Gyro', 'imuPQR')
         self.addListItem('IMU Accel', 'imuAcc')
-        self.addListItem('PSD PQR', 'gyroPSD')
+        self.addListItem('PSD Gyro', 'gyroPSD')
         self.addListItem('PSD Accel', 'accelPSD')
         self.addListItem('Barometer', 'barometer')
         self.addListItem('Magnetometer', 'magnetometer')
@@ -829,12 +830,12 @@ class LogInspectorWindow(QMainWindow):
         directory = os.path.normpath(self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0]))
         menu = QMenu(self)
         copyAction                  = menu.addAction("Copy path")
-        nppActionHot                = menu.addAction("Run NPP, HOT start")
-        nppActionCold               = menu.addAction("Run NPP, COLD start")
-        nppActionFactory            = menu.addAction("Run NPP, FACTORY start")
-        setDataInfoDirHotAction     = menu.addAction("Set dataInfo.json directory, HOT start")
-        setDataInfoDirColdAction    = menu.addAction("Set dataInfo.json directory, COLD start")
-        setDataInfoDirFactoryAction = menu.addAction("Set dataInfo.json directory, FACTORY start")
+        nppActionHot                = menu.addAction("Run NPP, HOT")
+        nppActionCold               = menu.addAction("Run NPP, COLD")
+        nppActionFactory            = menu.addAction("Run NPP, FACTORY")
+        setDataInfoDirHotAction     = menu.addAction("Set dataInfo.json directory, HOT")
+        setDataInfoDirColdAction    = menu.addAction("Set dataInfo.json directory, COLD")
+        setDataInfoDirFactoryAction = menu.addAction("Set dataInfo.json directory, FACTORY")
         exploreAction               = menu.addAction("Explore folder")
         cleanFolderAction           = menu.addAction("Clean folder")
         deleteFolderAction          = menu.addAction("Delete folder")

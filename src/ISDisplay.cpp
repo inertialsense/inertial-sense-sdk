@@ -596,10 +596,10 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
     if (comm == NULL)
-        return "";
+        return "\n";
 
     std::stringstream ss;
-    ss << "is_comm stats:  Rx " << comm->rxPktCount;
+    ss << "is_comm stats:  Rx " << std::setw (10) << comm->rxPktCount;
 
     if (comm->rxErrorCount)
     {
@@ -631,7 +631,7 @@ string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
             }
         }
         ss << endl;
-        ss << HLINE_DIVIDER;
+        ss << HLINE_DIVIDER << endl;
     }
     else
     {
@@ -716,7 +716,6 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         return DataToStringPacket((const char *) data->ptr, data->hdr, 32, true);
     }
 
-
     string str;
     switch (data->hdr.id)
     {
@@ -755,6 +754,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;
         case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
         case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
+    	case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);    			break;
         default:
             if (m_showRawHex)
                 str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
@@ -809,7 +809,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tErrors    Rx parse %d, temperature %d, self-test %d\n",
         HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus),
         (hdwStatus & HDW_STATUS_ERR_TEMPERATURE) != 0,
-        (hdwStatus & HDW_STATUS_BIT_MASK) == HDW_STATUS_BIT_FAULT);
+        (hdwStatus & HDW_STATUS_BIT_MASK) == HDW_STATUS_BIT_FAILED);
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\thdwStatus (0x%08X)", hdwStatus);
     std::string statusStr;
@@ -1615,7 +1615,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
         case 'c': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-rc");        break;
         case 'd': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-devel");     break;
         case 's': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
-        case '*': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
+        case '^': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
         default : break;
     }
 
@@ -1624,8 +1624,8 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
     }
 
     char dirty = 0;
-    if (info.buildType == '*') {
-        dirty = '*';
+    if (info.buildType == '^') {
+        dirty = '^';
     }
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %08x%c (%05X.%d)",
@@ -1857,8 +1857,220 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "Port \'%s.%d\' [Status: 0x%02x]\n", portTypeNames[portTypeIdx], portId, portMon.port[pIdx].status);
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\trx:  %u Kbytes,  %u KB/s,  %u errors,  %u overflows\n",
                         portMon.port[pIdx].rxBytes / 1024, portMon.port[pIdx].rxBytesPerSec / 1024, portMon.port[pIdx].rxChecksumErrors, portMon.port[pIdx].rxOverflows);
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u overflows\n",
-                        portMon.port[pIdx].txBytes / 1024, portMon.port[pIdx].txBytesPerSec / 1024, portMon.port[pIdx].txBytesDropped, portMon.port[pIdx].txOverflows);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u drops\n",
+                        portMon.port[pIdx].txBytes / 1024, portMon.port[pIdx].txBytesPerSec / 1024, portMon.port[pIdx].txBytesDropped, portMon.port[pIdx].txDataDrops);
+    }
+
+    return buf;
+}
+
+string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    // Print DID
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+
+    // Print Time
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Dev upTime: %fs\n", event.time);
+
+    // print Serial number */
+    // event.senderSN;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Sender SN:%d\n", event.senderSN);
+  
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
+    // event.senderHdwId;
+    switch (event.senderHdwId)
+    {
+        case IS_HARDWARE_TYPE_IMX:  ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: IMX\n"); break;
+        case IS_HARDWARE_TYPE_GPX:  ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: GPX\n"); break;
+        default:                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: Other\n"); break;
+    }
+    
+    // print eEventPriority */
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Piority: %d\n", event.priority);
+
+    // print length
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Size: %d\n", event.length);
+    
+    // print the data
+    switch (event.msgTypeID)
+    {
+        case EVENT_MSG_TYPE_ID_ASCII:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "Data: %s\n", event.data);
+            break;
+        case EVENT_MSG_TYPE_ID_IMX_MEM_READ:
+        case EVENT_MSG_TYPE_ID_GPX_MEM_READ:
+            {
+                did_event_memResp_t* resp = (did_event_memResp_t*)event.data;
+
+                if (event.msgTypeID == EVENT_MSG_TYPE_ID_IMX_MEM_READ)
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "EVMI ");
+                else
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "EVMG ");
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "Addr: 0x%08x\n", resp->reqAddr);
+                
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "ADDR\t0x0\t0x01\t0x2\t0x3\t\t0x4\t0x5\t0x6\t0x7\n");
+                for (int i = 0; i < EVENT_MEM_REQ_SIZE; i+=8)
+                {
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "0x%02x:\t0x%02x\t0x%02x\t0x%02x\t0x%02x\t\t0x%02x\t0x%02x\t0x%02x\t0x%02x\n", i, resp->data[i], resp->data[i+1], resp->data[i+2], resp->data[i+3], resp->data[i+4], resp->data[i+5], resp->data[i+6], resp->data[i+7]);
+                }
+            }
+            break;
+		case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "IMX TDI EV:%d\n", EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CCR:\t0x%08x\n", *(uint32_t*)(&event.data[0]));
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CNDTR:\t0x%08x\n", *(uint32_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CPAR:\t0x%08x\n", *(uint32_t*)&event.data[8]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CMAR:\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_start:\t0x%08x\n", *(uint32_t*)&event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_end:\t0x%08x\n", *(uint32_t*)&event.data[20]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "active_tx_len:\t0x%04x\n", *(uint16_t*)&event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "done:\t0x%02x\n", event.data[26]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.dir:\t0x%02x\n", event.data[27]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.circular:\t0x%02x\n", event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.priority:\t0x%02x\n", event.data[29]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt:\t0x%02x\n", event.data[30]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt_priority:\t0x%02x\n", event.data[31]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.dma_chan_sel:\t0x%02x\n", event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.parent_type:\t0x%02x\n", event.data[33]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.parent:\t0x%08x\n", *(uint32_t*)&event.data[34]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.periph_reg:\t0x%08x\n", *(uint32_t*)&event.data[38]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf:\t0x%08x\n", *(uint32_t*)&event.data[42]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf_len:\t0x%04x\n", *(uint16_t*)&event.data[46]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.linear_buf:\t0x%02x\n", event.data[48]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg_tcie_handler:\t0x%08x\n", *(uint32_t*)&event.data[49]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lastDmaUsed:\t0x%08x\n", *(uint32_t*)&event.data[53]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "overflow:\t0x%02x\n", event.data[57]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_IMX_SER0_CFG:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "IMX SC EV:%d\n", EVENT_MSG_TYPE_ID_IMX_SER0_CFG);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.baud:\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.parity:\t0x%02x\n", event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.stopBits:\t0x%02x\n", event.data[5]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "interrupt:\t0x%02x\n", event.data[6]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX RDI EV:%d\n", EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CLBAR:\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            //res1 [2]
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CFCR:\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CSR:\t0x%08x\n", *(uint32_t*)&event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CCR:\t0x%08x\n", *(uint32_t*)&event.data[20]);
+            // res 2 [10]
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CTR1:\t0x%08x\n", *(uint32_t*)&event.data[64]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CTR2:\t0x%08x\n", *(uint32_t*)&event.data[68]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CBR1:\t0x%08x\n", *(uint32_t*)&event.data[72]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CSAR:\t0x%08x\n", *(uint32_t*)&event.data[76]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CDAR:\t0x%08x\n", *(uint32_t*)&event.data[80]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CTR3:\t0x%08x\n", *(uint32_t*)&event.data[84]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CBR2:\t0x%08x\n", *(uint32_t*)&event.data[88]);
+            // res 3 [8]
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CLLR:\t0x%08x\n", *(uint32_t*)&event.data[124]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_SER0_REG:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX SR EV:%d\n", EVENT_MSG_TYPE_ID_GPX_SER0_REG);
+            
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR1:\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR2:\t0x%08x\n", *(uint32_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR3:\t0x%08x\n", *(uint32_t*)&event.data[8]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "BRR:\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GTPR:\t0x%08x\n", *(uint32_t*)&event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTOR:\t0x%08x\n", *(uint32_t*)&event.data[20]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RQR:\t0x%08x\n", *(uint32_t*)&event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ISR:\t0x%08x\n", *(uint32_t*)&event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ICR:\t0x%08x\n", *(uint32_t*)&event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RDR:\t0x%08x\n", *(uint32_t*)&event.data[36]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "TDR:\t0x%08x\n", *(uint32_t*)&event.data[40]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "PRESC:\t0x%08x\n", *(uint32_t*)&event.data[44]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "AUTOCR:\t0x%08x\n", *(uint32_t*)&event.data[48]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_SER0_CFG:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX SC EV:%d\n", EVENT_MSG_TYPE_ID_GPX_SER0_CFG);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.baud:\t\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.parity:\t\t0x%02x\n", event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.stopBits:\t0x%02x\n", event.data[5]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "interrupt:\t\t0x%02x\n", event.data[6]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX DRC EV:%d\n", EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "instance:\t\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_start:\t\t0x%08x\n", *(uint32_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_end:\t\t0x%08x\n", *(uint32_t*)&event.data[8]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.parent:\t\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.mode:\t\t0x%02x\n", event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.tc_handler:\t\t0x%08x\n", *(uint32_t*)&event.data[17]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt:\t\t0x%02x\n", event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt_priority:\t0x%02x\n", event.data[25]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.priority:\t\t0x%02x\n", event.data[26]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.request_num:\t0x%02x\n", event.data[27]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.periph_reg:\t\t0x%08x\n", *(uint32_t*)&event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf:\t\t0x%08x\n", *(uint32_t*)&event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf_len:\t\t0x%04x\n", *(uint16_t*)&event.data[36]);
+    
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[38]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[42]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[46]);
+
+            //ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[52]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[56]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[60]);
+
+            //ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[64]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[68]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[72]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.active_tx_len:\t0x%04x\n", *(uint16_t*)&event.data[73]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.lli_head:\t0x%08x\n", *(uint32_t*)&event.data[77]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.lli_tail:\t0x%08x\n", *(uint32_t*)&event.data[81]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.dma_running:\t0x%02x\n", event.data[88]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lastDmaUsed:\t\t0x%08x\n", *(uint32_t*)&event.data[92]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "overflow:\t\t0x%02x\n", event.data[96]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX GPR EV:%d\n", EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "MODER:\t\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "OTYPER:\t\t0x%08x\n", *(uint32_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "OSPEEDR:\t0x%08x\n", *(uint32_t*)&event.data[8]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "PUPDR:\t\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "IDR:\t\t0x%08x\n", *(uint32_t*)&event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ODR:\t\t0x%08x\n", *(uint32_t*)&event.data[20]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "BSRR:\t\t0x%08x\n", *(uint32_t*)&event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "LCKR:\t\t0x%08x\n", *(uint32_t*)&event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "AFR[0]:\t\t0x%08x\n", *(uint32_t*)&event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "AFR[1]:\t\t0x%08x\n", *(uint32_t*)&event.data[36]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "BRR:\t\t0x%08x\n", *(uint32_t*)&event.data[40]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "HSLVR:\t\t0x%08x\n", *(uint32_t*)&event.data[44]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "SECCFGR:\t0x%08x\n", *(uint32_t*)&event.data[48]);
+            break;
+
+        default:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "MSG_ID: %d\n", event.msgTypeID);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t0x0\t0x01\t0x2\t0x3\t\t0x4\t0x5\t0x6\t0x7\n");
+            for (int i = 0; ((i < event.length) && (ptr < ptrEnd)); i+=8)
+            {
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "0x%02x:\t0x%02x\t0x%02x\t0x%02x\t0x%02x\t\t0x%02x\t0x%02x\t0x%02x\t0x%02x\n", i, event.data[i], event.data[i+1], event.data[i+2], event.data[i+3], event.data[i+4], event.data[i+5], event.data[i+6], event.data[i+7]);
+            }
+            break;
     }
 
     return buf;

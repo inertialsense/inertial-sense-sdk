@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
-#include "test_utils.h"
+#include "test_data_utils.h"
 
 #include "ISFileManager.h"
 #include "ISFirmwareUpdater.h"
