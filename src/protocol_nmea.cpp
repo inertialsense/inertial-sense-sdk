@@ -2910,8 +2910,6 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
  * @param pos  GPS position structure
  * @param vel  GPS velocity structure
  * 
- * @warning currently not used not supported by windows
- * 
  * @note
  *  0   Message ID $POWGPS
  *  1   GPS Time Quality (0=invalid, 1=valid)
