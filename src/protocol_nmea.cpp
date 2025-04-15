@@ -1269,7 +1269,7 @@ int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 1
     nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
-    nmea_sprint(a, aSize, n, "," PRIu64, ((uint64_t)pos.timeOfWeekMs)*1000); // 3
+    nmea_sprint(a, aSize, n, ",%" PRIu64, ((uint64_t)pos.timeOfWeekMs)*1000); // 3
     // nmea_sprint(a, aSize, n, ",%I64u", ((long)pos.timeOfWeekMs)*1000); // 3  
 
     valid = (pos.leapS > 10 && pos.leapS < 30) ? 1 : 0;     // should be ~18 so give a little leeway
