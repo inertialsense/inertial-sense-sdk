@@ -281,14 +281,9 @@ char *ASCII_to_u32(uint32_t *val, char *ptr)
 
 char *ASCII_to_u64(uint64_t *val, char *ptr)
 {
-// #if PLATFORM_IS_WINDOWS
-    char *endPtr = ptr;
+    char *endPtr = nullptr;
     val[0] = (uint64_t)std::strtoll(ptr, &endPtr, 10); 
     ptr = ASCII_find_next_field(ptr);
-// #else
-//     val[0] = (uint64_t)atol(ptr); 
-//     ptr = ASCII_find_next_field(ptr);
-// #endif
     return ptr;
 }
 
