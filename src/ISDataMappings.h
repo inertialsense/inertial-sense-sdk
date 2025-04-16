@@ -409,6 +409,7 @@ public:
 		int flags = 0)
     {
 		eDataType type = DATA_TYPE_F64;
+		flags &= ~DATA_FLAGS_FIXED_DECIMAL_MASK;
 		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, "°", description + " latitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
 		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, "°", description + " longitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
 		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, "m", description + " " + descriptionAltitude, flags | DATA_FLAGS_FIXED_DECIMAL_3);

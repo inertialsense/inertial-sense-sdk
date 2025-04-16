@@ -177,6 +177,7 @@ bool cISLogger::InitSave(const string &directory, const sSaveOptions &options)
     m_logType = options.logType;
     m_timeStamp = (options.timeStamp.empty() ? CreateCurrentTimestamp() : options.timeStamp);
     m_rootDirectory = m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
+    m_logStartTime = GetTime();
 
     // Drive usage limit
     m_maxDiskSpace = 0;                 // disable log file culling
@@ -819,9 +820,7 @@ void cISLogger::PrintStatistics()
         std::shared_ptr<cDeviceLog> dev = it.second;
         if (dev==NULL)
             continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << dev->LogStatsString();
+        cout << endl << "SN" << std::setw(6) << dev->SerialNumber() << " " << dev->LogStatsString();
     }
 
     PrintIsCommStatus();
@@ -834,19 +833,24 @@ void cISLogger::PrintIsCommStatus()
         std::shared_ptr<cDeviceLog> dev = it.second;
         if (dev==NULL)
             continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
+        // cout << endl << "SN" << std::setw(6) << dev->SerialNumber() << " " << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
     }
 }
 
 void cISLogger::PrintLogDiskUsage()
 {
     float logSize = LogSizeAll();
+
+    // Compute elapsed time since logging started
+    time_t elapsed = GetTime() - m_logStartTime;
+    int hours = elapsed / 3600;
+    int minutes = (elapsed % 3600) / 60;
+    int seconds = elapsed % 60;
+
     if (logSize < 0.5e6f)
-        printf("\nLogging %5.1f KB to: %s", logSize * 1.0e-3f, LogDirectory().c_str());
+        printf("\nLogging %d:%02d:%02ds %5.1f KB to: %s", hours, minutes, seconds, logSize * 1.0e-3f, LogDirectory().c_str());
     else
-        printf("\nLogging %5.2f MB to: %s", logSize * 1.0e-6f, LogDirectory().c_str());
+        printf("\nLogging %d:%02d:%02ds %5.2f MB to: %s", hours, minutes, seconds, logSize * 1.0e-6f, LogDirectory().c_str());
 
     // Disk usage
     if (MaxDiskSpaceMB() > 0.0f)

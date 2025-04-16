@@ -396,7 +396,7 @@ class logPlot:
                 towOffset = 0
                 timeGPS1 = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 if len(timeGPS1):
-                    towOffset = self.getGpsTowOffset(device)[-1]
+                    towOffset = self.getGpsTowOffset(d)[-1]
                     ax[0].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS1')
                     ax[1].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 1])
                     ax[2].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 2], label='GPS1')
@@ -969,8 +969,8 @@ class logPlot:
                 sumCount = 1
 
                 for d in self.active_devs:
-                    gpsTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
-                    gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
+                    gpsTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs'))
+                    gpsHdg = self.getData(d, DID_GPS2_RTK_CMP_REL, 'baseToRoverHeading')
                     if refRtkTime is None:
                         refRtkTime = gpsTime
                         refRtkHdg = np.copy(gpsHdg)
@@ -1011,10 +1011,10 @@ class logPlot:
 
         for d in self.active_devs:
             magTime = getTimeFromGpsTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'), True)
-            gpsTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
+            gpsTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs'))
             insTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
-            gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
+            gpsHdg = self.getData(d, DID_GPS2_RTK_CMP_REL, 'baseToRoverHeading')
             qn2b = self.getData(d, DID_INS_2, 'qn2b')
             if len(qn2b) == 0:
                 continue
@@ -1097,7 +1097,7 @@ class logPlot:
 
                 fig.suptitle(title + os.path.basename(os.path.normpath(self.log.directory)))
 
-                towOffset = self.getGpsTowOffset(device)
+                towOffset = self.getGpsTowOffset(d)
                 if len(towOffset) > 0:
                     time = getTimeFromGpsTow(time + np.mean(towOffset))
 
@@ -1733,7 +1733,7 @@ class logPlot:
         self.rtkStats("Position", DID_GPS1_RTK_POS_REL, fig=fig, axs=axs)
 
     def rtkCmpStats(self, fig=None, axs=None):
-        self.rtkStats("Compassing", DID_GPS1_RTK_CMP_REL, fig=fig, axs=axs)
+        self.rtkStats("Compassing", DID_GPS2_RTK_CMP_REL, fig=fig, axs=axs)
 
     def rtkStats(self, name, relDid, fig=None, axs=None):
         # try:
@@ -1754,7 +1754,7 @@ class logPlot:
             rtkRelTime = getTimeFromGpsTowMs(self.getData(d, relDid, 'timeOfWeekMs'))
             if len(rtkRelTime) == 0:
                 continue
-            # rtkMiscTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_RTK_CMP_MISC, 'timeOfWeekMs'))
+            # rtkMiscTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_MISC, 'timeOfWeekMs'))
             if not self.log.compassing:
                 gps1PosTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'), 1)
                 gps2PosTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'), 1)
@@ -1792,7 +1792,7 @@ class logPlot:
 
     def rtkBaselineVector(self, fig=None, axs=None):
         name = "Compassing"
-        relDid = DID_GPS1_RTK_CMP_REL
+        relDid = DID_GPS2_RTK_CMP_REL
 
         # try:
         n_plots = 2
@@ -1860,10 +1860,11 @@ class logPlot:
         for i, d in enumerate(self.active_devs):
             gps_data = self.log.data[d, relDid][0]
             N = len(gps_data)
+            j0 = 0 # skip a few samples that may be corrupted
 
             # Build satellite array
             sat = np.empty(0, dtype=int)
-            for j in range(N):
+            for j in range(j0, N):
                 obs = gps_data[j]
                 M = len(obs)
                 for k in range(M):
@@ -1885,7 +1886,7 @@ class logPlot:
             LLI[:]  = np.nan
 
             # Fill observation arrays
-            for j in range(N):
+            for j in range(j0, N):
                 obs = gps_data[j]
                 M = len(obs)
                 for k in range(M):
@@ -1910,22 +1911,33 @@ class logPlot:
                         LLI[:,j,inds]  = obs['LLI'][indo]
 
             for k in range(len(sat)):
-                ind = np.where(tgps[:,k] != 0.0)
+                ind = np.squeeze(np.where(tgps[:,k] != 0.0))
                 # Do not plot satellites with invalid L1 pseudorange
                 if np.isnan(P[0,ind,k]).all():
                     continue
                 # Do not plot satellites with invalid L1 phase
                 if np.isnan(L[0,ind,k]).all():
                     continue
+                dt = np.diff(tgps[ind,k])
                 t = np.squeeze(tgps[ind, k])
-                ax[0].plot(t, np.squeeze(P[0,ind,k]), label=('Sat %s' % sat[k]))
-                ax[1].plot(t, np.squeeze(P[1,ind,k]))
-                ax[2].plot(t, np.squeeze(L[0,ind,k]))
-                ax[3].plot(t, np.squeeze(L[1,ind,k]))
-                ax[4].plot(t, np.squeeze(D[0,ind,k]))
-                ax[5].plot(t, np.squeeze(D[1,ind,k]))
-                ax[6].plot(t, np.squeeze(LLI[0,ind,k]))
-                ax[7].plot(t, np.squeeze(LLI[1,ind,k]))
+                Pk = P[:,ind,k]
+                Lk = L[:,ind,k]
+                Dk = D[:,ind,k]
+                LLIk = LLI[:,ind,k]
+                ind1 = np.squeeze(np.where(dt > 10*dt[0])) # jump in time
+                if np.size(ind1) == 0:
+                    ind1 = 0
+                elif np.size(ind1) > 1:
+                    ind1 = ind1[-1]
+                ind1 = ind1 + 1
+                ax[0].plot(t[ind1:,], Pk[0,ind1:], label=('Sat %s' % sat[k]))
+                ax[1].plot(t[ind1:,], Pk[1,ind1:])
+                ax[2].plot(t[ind1:,], Lk[0,ind1:])
+                ax[3].plot(t[ind1:,], Lk[1,ind1:])
+                ax[4].plot(t[ind1:,], Dk[0,ind1:])
+                ax[5].plot(t[ind1:,], Dk[1,ind1:])
+                ax[6].plot(t[ind1:,], LLIk[0,ind1:])
+                ax[7].plot(t[ind1:,], LLIk[1,ind1:])
                 self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
@@ -1937,7 +1949,7 @@ class logPlot:
     def rtkObsSingleDiff(self, fig=None, axs=None):
         name = "Compassing"
         Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
-        n_plots = 4
+        n_plots = 8
         if fig is None:
             fig = plt.figure()
 
@@ -1947,6 +1959,10 @@ class logPlot:
         self.configureSubplot(ax[1], 'L5 Pseudorange difference', 'm')
         self.configureSubplot(ax[2], 'L1 Carier phase difference', 'cycles')
         self.configureSubplot(ax[3], 'L5 Carier phase difference', 'cycles')
+        self.configureSubplot(ax[4], 'L1 GPS1 SNR', 'dB*Hz')
+        self.configureSubplot(ax[5], 'L5 GPS1 SNR', 'dB*Hz')
+        self.configureSubplot(ax[6], 'L1 GPS2 SNR', 'dB*Hz')
+        self.configureSubplot(ax[7], 'L5 GPS2 SNR', 'dB*Hz')
 
         for id_, d in enumerate(self.active_devs):
 
@@ -1954,9 +1970,10 @@ class logPlot:
             gps2_data = self.log.data[d, DID_GPS2_RAW][0]
 
             # Reassemble multiple chunks of data by timestamp
+            j0 = 10 # skip a few first samples in case there is some odd data corruption
             t1 = np.empty(0)
-            del_ind = np.empty(0, dtype=int)
-            for j in range(len(gps1_data)):
+            del_ind = range(j0) #np.empty(0, dtype=int)
+            for j in range(j0, len(gps1_data)):
                 ind = np.flatnonzero(gps1_data[j]['time']['time'])
                 if len(ind) == 0:
                     # Empty chunk of data (all time stamps are zero)
@@ -1964,7 +1981,7 @@ class logPlot:
                     continue
                 ind = ind[0]
                 t_ = gps1_data[j]['time']['time'][ind] + gps1_data[j]['time']['sec'][ind]
-                if j > 0 and t_ == t1[-1]:
+                if j > j0 and t_ == t1[-1]:
                     # add chunk to the previous data and mark for deletion
                     gps1_data[j-1] = np.append(gps1_data[j-1], gps1_data[j])
                     del_ind = np.append(del_ind, j)
@@ -1976,8 +1993,8 @@ class logPlot:
             gps1_data = np.delete(gps1_data, del_ind)
 
             t2 = np.empty(0)
-            del_ind = np.empty(0, dtype=int)
-            for j in range(len(gps2_data)):
+            del_ind = range(j0) #np.empty(0, dtype=int)
+            for j in range(j0, len(gps2_data)):
                 ind = np.flatnonzero(gps2_data[j]['time']['time'])
                 if len(ind) == 0:
                     # Empty chunk of data (all time stamps are zero)
@@ -1985,7 +2002,7 @@ class logPlot:
                     continue
                 ind = ind[0]
                 t_ = gps2_data[j]['time']['time'][ind] + gps2_data[j]['time']['sec'][ind]
-                if j > 0 and t_ == t2[-1]:
+                if j > j0 and t_ == t2[-1]:
                     # add chunk to the previous data and mark for deletion
                     gps2_data[j-1] = np.append(gps2_data[j-1], gps2_data[j])
                     del_ind = np.append(del_ind, j)
@@ -2053,6 +2070,10 @@ class logPlot:
             delta_L = np.empty([Nf, N1, Nsat])
             delta_P[:] = np.nan
             delta_L[:] = np.nan
+            snr1 = np.empty([Nf, N1, Nsat])
+            snr2 = np.empty([Nf, N1, Nsat])
+            snr1[:] = np.nan
+            snr2[:] = np.nan
 
             # Compute single differences
             for j in range(N1):
@@ -2075,6 +2096,8 @@ class logPlot:
                     if np.size(indval1) > 0 and np.size(indval2) > 0:
                         delta_P[:,j,k] = obs1['P'][ind1][indval1] - obs2['P'][ind2][indval2]
                         delta_L[:,j,k] = obs1['L'][ind1][indval1] - obs2['L'][ind2][indval2]
+                        snr1[:,j,k] = obs1['SNR'][ind1][indval1] * 0.25
+                        snr2[:,j,k] = obs2['SNR'][ind2][indval2] * 0.25
 
             for k in range(Nsat):
                 # Do not plot satellites that appeared only for a short time
@@ -2085,6 +2108,10 @@ class logPlot:
                 ax[1].plot(t1, delta_P[1,:,k])
                 ax[2].plot(t1, delta_L[0,:,k])
                 ax[3].plot(t1, delta_L[1,:,k])
+                ax[4].plot(t1, snr1[0,:,k])
+                ax[5].plot(t1, snr1[1,:,k])
+                ax[6].plot(t1, snr2[0,:,k])
+                ax[7].plot(t1, snr2[1,:,k])
 
                 self.legends_add(ax[0].legend(ncol=2))
 
@@ -2098,7 +2125,7 @@ class logPlot:
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig, axs=axs)
 
     def rtkCmpMisc(self, fig=None, axs=None):
-        self.rtkMisc("Position", DID_GPS1_RTK_CMP_MISC, fig=fig, axs=axs)
+        self.rtkMisc("Position", DID_GPS2_RTK_CMP_MISC, fig=fig, axs=axs)
 
     def rtkMisc(self, name, miscDid, fig=None, axs=None):
         # try:
@@ -2819,7 +2846,7 @@ class logPlot:
         
         for d in self.active_devs:
             timeBar = self.getData(d, DID_BAROMETER, 'time')
-            towOffset = self.getGpsTowOffset(device)
+            towOffset = self.getGpsTowOffset(d)
             timeGps = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             llaGps = self.getData(d, DID_GPS1_POS, 'lla')
             if len(llaGps) > 0:
@@ -2879,7 +2906,7 @@ class logPlot:
                 altIns = llaIns[:, 2]
             else:
                 altIns = []
-            towOffset = self.getGpsTowOffset(device)
+            towOffset = self.getGpsTowOffset(d)
             if len(towOffset) > 0:
                 timeBar = timeBar + towOffset[-1]
             if len(timeBar) > 2:
@@ -2909,7 +2936,7 @@ class logPlot:
         for d in self.active_devs:
             if 1:
                 time = self.getData(d, DID_BAROMETER, 'time')
-                towOffset = self.getGpsTowOffset(device)
+                towOffset = self.getGpsTowOffset(d)
                 if np.shape(towOffset)[0] != 0:
                     time = getTimeFromGpsTow(time + np.mean(towOffset))
                 mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
@@ -2936,7 +2963,7 @@ class logPlot:
         for d in self.active_devs:
             if 1:
                 time = self.getData(d, DID_MAGNETOMETER, 'time')
-                towOffset = self.getGpsTowOffset(device)
+                towOffset = self.getGpsTowOffset(d)
                 if np.shape(towOffset)[0] != 0:
                     time = getTimeFromGpsTow(time + np.mean(towOffset))
                 mag = self.getData(d, DID_MAGNETOMETER, 'mag')
@@ -2984,7 +3011,7 @@ class logPlot:
                 tempImu = self.getData(d, DID_SYS_PARAMS, 'imuTemp')
                 tempBar = self.getData(d, DID_SYS_PARAMS, 'baroTemp')
                 tempMcu = self.getData(d, DID_SYS_PARAMS, 'mcuTemp')
-                towOffset = self.getGpsTowOffset(device)
+                towOffset = self.getGpsTowOffset(d)
                 if np.shape(towOffset)[0] != 0:
                     tempImu = getTimeFromGpsTow(tempImu + np.mean(towOffset))
                     tempBar = getTimeFromGpsTow(tempBar + np.mean(towOffset))
@@ -3108,7 +3135,7 @@ class logPlot:
             if np.any(timeRef):
                 refImuPresent = True
 
-        N = 5
+        N = 6
         if refImuPresent:
             N = N + 2
         ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
@@ -3117,8 +3144,9 @@ class logPlot:
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS1 dt', 's')
         self.configureSubplot(ax[2], 'GPS2 dt', 's')
-        self.configureSubplot(ax[3], 'IMU Integration Period', 's')
-        self.configureSubplot(ax[4], 'IMU Delta Timestamp', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week' )
+        self.configureSubplot(ax[3], 'IMU3 Delta Timestamp', 's')
+        self.configureSubplot(ax[4], 'PIMU Delta Timestamp', 's')
+        self.configureSubplot(ax[5], 'PIMU Integration Period', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         for d in self.active_devs_no_ref:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
@@ -3134,16 +3162,16 @@ class logPlot:
             timeGps1 = getTimeFromGpsTowMs(towMsGps1)
             timeGps2 = getTimeFromGpsTowMs(towMsGps2)
 
-            towOffset = self.getGpsTowOffset(device)
+            towOffset = self.getGpsTowOffset(d)
             if np.size(towOffset) > 0:
                 towOffset = towOffset[-1]
             else:
                 towOffset = 0
 
             deltaTimestamp = 0
-            timeImu = 0
+            timeImu  = 0
             timePimu = self.getData(d, DID_PIMU, 'time')
-            timeIMU = self.getData(d, DID_IMU, 'time')
+            timeIMU  = self.getData(d, DID_IMU, 'time')
             timeImu3 = self.getData(d, DID_IMU3_RAW, 'time')
             if timePimu.size:
                 deltaTimestamp = timePimu[1:] - timePimu[0:-1]
@@ -3154,37 +3182,47 @@ class logPlot:
                 deltaTimestamp = timeIMU[1:] - timeIMU[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromGpsTow(timeIMU[1:] + towOffset)
-            elif timeImu3.size:
-                deltaTimestamp = timeImu3[1:] - timeImu3[0:-1]
-                deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromGpsTow(timeImu3[1:] + towOffset)
+            if timeImu3.size:
+                deltaImu3Timestamp = timeImu3[1:] - timeImu3[0:-1]
+                deltaImu3Timestamp = deltaImu3Timestamp / self.d
+                timeImu3 = getTimeFromGpsTow(timeImu3[1:] + towOffset)
 
             if self.xAxisSample:
-                xIns = np.arange(0, np.shape(dtIns)[0])
+                xIns  = np.arange(0, np.shape(dtIns)[0])
                 xGps1 = np.arange(0, np.shape(dtGps1)[0])
                 xGps2 = np.arange(0, np.shape(dtGps2)[0])
-                xImu = np.arange(0, np.shape(deltaTimestamp)[0])
+                xImu3 = np.arange(0, np.shape(deltaImu3Timestamp)[0])
+                xImu  = np.arange(0, np.shape(deltaTimestamp)[0])
             else:
-                xIns = timeIns
+                xIns  = timeIns
                 xGps1 = timeGps1
                 xGps2 = timeGps2
-                xImu = timeImu
+                xImu3 = timeImu3
+                xImu  = timeImu
 
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
             ax[1].plot(xGps1, dtGps1)
             ax[2].plot(xGps2, dtGps2)
-            if 'dtPimu' in locals():
-                if dtPimu.size:
-                    ax[3].plot(xImu, dtPimu)
+            ax[3].plot(xImu3, deltaImu3Timestamp)
             ax[4].plot(xImu, deltaTimestamp)
+            if 'dtPimu' in locals() and dtPimu.size:
+                ax[5].plot(xImu, dtPimu)
+
+            self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
+            self.configureSubplot(ax[1], f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
+            self.configureSubplot(ax[2], f'GPS2 dt: {np.mean(dtGps2):.3f}s', 's')
+            self.configureSubplot(ax[3], f'IMU3 Delta Timestamp: {np.mean(deltaImu3Timestamp):.3f}s', 's')
+            self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.3f}s', 's')
+            if 'dtPimu' in locals() and dtPimu.size:
+                self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.3f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
         for i in range(len(ax)):
             self.setPlotYSpanMin(ax[i], 0.005)
 
         if refImuPresent:
-            self.configureSubplot(ax[5], 'Reference IMU Integration Period', 's')
-            self.configureSubplot(ax[6], 'Reference IMU Delta Timestamp', 's')
+            self.configureSubplot(ax[6], 'Reference IMU Integration Period', 's')
+            self.configureSubplot(ax[7], 'Reference IMU Delta Timestamp', 's')
             for d in self.active_devs:
                 deltaTimestampRef = 0
                 timeImuRef = 0
@@ -4142,7 +4180,7 @@ class logPlot:
 if __name__ == '__main__':
     np.set_printoptions(linewidth=200)
     home = expanduser("~")
-    file = open(home + "/Documents/Inertial_Sense/config.yaml", 'r')
+    file = open(home + "/Documents/Inertial_Sense/log_inspector.yaml", 'r')
     config = yaml.load(file)
     directory = config["directory"]
     directory = "/home/superjax/Code/IS-src/cpp/SDK/cltool/build/IS_logs"

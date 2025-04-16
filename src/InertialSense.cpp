@@ -638,7 +638,7 @@ void InertialSense::Close()
     EnableLogger(false);
     if (m_disableBroadcastsOnClose)
     {
-        StopBroadcasts();
+        StopBroadcasts(false);
         SLEEP_MS(100);
     }
     CloseSerialPorts(true); // allow all opened ports to transmit all buffered data

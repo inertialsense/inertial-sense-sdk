@@ -878,6 +878,159 @@ TEST(protocol_nmea, INTEL)
     }
 }
 
+/**
+ * @brief Test creation and parsing of the POWTLV message.
+ */
+TEST(protocol_nmea, POWTLV)
+{
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2361;
+    pos.leapS = 18;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+    pos.hMSL = 1438.2f;
+
+    gps_vel_t vel = {};
+    vel.vel[0] = 1.0;
+    vel.vel[1] = 2.0;
+    vel.vel[2] = 3.0;
+    
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_powtlv(abuf, ASCII_BUF_LEN, pos, vel);
+    printf("%s\n", abuf);
+
+    gps_pos_t resultPos = {};
+    gps_vel_t resultVel = {};
+
+    nmea_parse_powtlv(abuf, n, resultPos, resultVel);
+
+    // Checks time valid bit set field 1
+    ASSERT_EQ(abuf[8], '1');
+
+    for (int i=0; i<3; i++)
+    {
+        // test field 13,14,15
+        ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
+        // test field 7,8,9,10,11
+        ASSERT_NEAR(pos.lla[i], resultPos.lla[i], 0.02f);
+    }
+    
+    // test field 1,2
+    ASSERT_EQ(pos.week, resultPos.week);
+
+    // test field 1,3
+    ASSERT_EQ(pos.timeOfWeekMs, resultPos.timeOfWeekMs);
+
+    // test field 4,5
+    ASSERT_EQ(pos.leapS, resultPos.leapS);
+
+    // tests field 12
+    ASSERT_EQ(pos.hMSL, resultPos.hMSL);
+}
+
+/**
+ * @brief Test creation and parsing of the POWGPS message.
+ */
+TEST(protocol_nmea, POWGPS_valid)
+{
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2361;
+    pos.leapS = 18;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+    pos.hMSL = 1438.2f;
+    
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
+    printf("%s\n", abuf);
+
+    gps_pos_t resultPos = {};
+
+    nmea_parse_powgps(abuf, n, resultPos);
+
+    // test field 1
+    ASSERT_EQ(abuf[8], '1');
+
+    // test field 1,2
+    ASSERT_EQ(pos.week, resultPos.week);
+    // test field 1,3
+    ASSERT_EQ(pos.timeOfWeekMs, resultPos.timeOfWeekMs);
+
+    // test field 4,5
+    ASSERT_EQ(pos.leapS, resultPos.leapS);
+}
+
+/**
+ * @brief Test creation and parsing of the POWGPS message with invalid time * 
+ */
+TEST(protocol_nmea, POWGPS_gps_time_invalid)
+{
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2270;
+    pos.leapS = 18;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+    pos.hMSL = 1438.2f;
+    
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
+    printf("%s\n", abuf);
+
+    gps_pos_t resultPos = {};
+
+    nmea_parse_powgps(abuf, n, resultPos);
+
+    // test field 1
+    ASSERT_EQ(abuf[8], '0');
+
+    // test field 1,2
+    ASSERT_EQ(0, resultPos.week);
+    // test field 1,3
+    ASSERT_EQ(0, resultPos.timeOfWeekMs);
+
+    // test field 4,5
+    ASSERT_EQ(pos.leapS, resultPos.leapS);
+}
+
+/**
+ * @brief Test creation and parsing of the POWGPS message with invalid leap second
+ */
+TEST(protocol_nmea, POWGPS_leap_invalid)
+{
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2361;
+    pos.leapS = 9;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+    pos.hMSL = 1438.2f;
+    
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
+    printf("%s\n", abuf);
+
+    gps_pos_t resultPos = {};
+
+    nmea_parse_powgps(abuf, n, resultPos);
+
+    // test field 1
+    ASSERT_EQ(abuf[8], '1');
+
+    // test field 1,2
+    ASSERT_EQ(pos.week, resultPos.week);
+    // test field 1,3
+    ASSERT_EQ(pos.timeOfWeekMs, resultPos.timeOfWeekMs);
+    // test field 4,5
+    ASSERT_EQ(0, resultPos.leapS);
+}
+
 #define ASCII_BUF2  2048
 
 void clear_GSV_values()
