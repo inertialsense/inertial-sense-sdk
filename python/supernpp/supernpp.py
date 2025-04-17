@@ -186,10 +186,7 @@ class SuperNPP():
                 results.append("[NODATA] " + rel_dir)
             ### Compute Performance report ##################################################
         with open(self.results_filename, "w") as f:
-            f.write("\n".join(results))
-            if self.params["blacklist_logs"]:
-                for log in self.params["blacklist_logs"]:
-                    f.write("[blacklist] " + log + "\n")
+            f.write("\n".join(results + [f"Blacklisted: {log}" for log in self.params["blacklist_logs"]]) + "\n")
 
         output = '-------------------------------------------------------------\n'
         output += os.path.basename(self.results_filename) + "\n"
@@ -320,7 +317,7 @@ if __name__ == "__main__":
         output += string_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
         output += string_case(testSummaryFilename, "  Tests FAILED:", "[FAILED]")
         output += string_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
-        output += string_case(testSummaryFilename, "  Excluded from Reprocessing:", "[blacklist]")
+        output += string_case(testSummaryFilename, "  Excluded from Reprocessing:", "Blacklisted:")
         output += "============================================================="
         print(output)
 
