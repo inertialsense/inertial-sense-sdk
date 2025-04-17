@@ -289,6 +289,10 @@ if __name__ == "__main__":
     npp_build_folder = "../../../cpp/NavPostProcess/build"
     # buildNPP(npp_build_folder)
 
+    print("Arguments passed to the script:")
+    for i, arg in enumerate(sys.argv):
+        print(f"arg[{i}] = {arg}")
+        
     # 2nd argument: Log directory list file
     if len(sys.argv) < 2:
         exit(1)

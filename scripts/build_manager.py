@@ -177,7 +177,7 @@ class BuildTestManager:
         result = 0
         if self.run_test:
             self.test_header(project_name)
-            result = callback()
+            result = callback(self.test_name)
             self.test_footer(result)
         if result:
             self.result = result
