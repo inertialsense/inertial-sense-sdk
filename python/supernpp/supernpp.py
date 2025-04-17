@@ -177,6 +177,7 @@ class SuperNPP():
                     results.append("[FAILED] " + rel_dir)
                     if isinstance(failures, list):
                         results.append("\n".join("         " + line for line in failures))
+                    results.append("\n")
                     self.failResults.append(rel_dir)
                 else:
                     results.append("[PASSED] " + rel_dir)
@@ -186,6 +187,9 @@ class SuperNPP():
             ### Compute Performance report ##################################################
         with open(self.results_filename, "w") as f:
             f.write("\n".join(results))
+            if self.params["blacklist_logs"]:
+                for log in self.params["blacklist_logs"]:
+                    f.write("[blacklist] " + log + "\n")
 
         output = '-------------------------------------------------------------\n'
         output += os.path.basename(self.results_filename) + "\n"
@@ -279,7 +283,7 @@ def string_case(filename, title_string, search_string):
     output = ""
     count = file_contains_string_count(filename, search_string)
     if count:
-        output += title_string + " " + str(count)
+        output += title_string + " " + str(count) + "\n"
         output += lines_with_string(filename, search_string)
     return output
 
@@ -316,7 +320,7 @@ if __name__ == "__main__":
         output += string_case(testSummaryFilename, "  Tests PASSED:", "[PASSED]")
         output += string_case(testSummaryFilename, "  Tests FAILED:", "[FAILED]")
         output += string_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
-        output += "\n"
+        output += string_case(testSummaryFilename, "  Excluded from Reprocessing:", "[blacklist]")
         output += "============================================================="
         print(output)
 
