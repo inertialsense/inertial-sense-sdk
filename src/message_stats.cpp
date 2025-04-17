@@ -97,12 +97,12 @@ static msg_stats_t createNewMsgStats(int timeMs, string description = "")
 
 static void updateTimeMs(msg_stats_t &s, int timeMs, int bytes)
 {
-	s.count++;
-	s.prevTimeMs = s.timeMs;
-	s.timeMs = timeMs;
+    s.count++;
+    s.prevTimeMs = s.timeMs;
+    s.timeMs = timeMs;
 
-	// Compute data rate (Bytes/s)
-	s.bytes += bytes;
+    // Compute data rate (Bytes/s)
+    s.bytes += bytes;
     if (s.startTimeMs == 0)
     {   // Initialize time
         s.startTimeMs = timeMs;
@@ -111,7 +111,7 @@ static void updateTimeMs(msg_stats_t &s, int timeMs, int bytes)
     {
         uint32_t dtMs = timeMs - s.startTimeMs;
         if (dtMs >= 1000)
-        {	// Update ever second
+        {    // Update ever second
             s.bytesPerSec = (1000 * s.bytes) / dtMs;
             s.bytes = 0;
             s.startTimeMs = timeMs;
@@ -130,10 +130,10 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
             msgStats.isb[id] = createNewMsgStats(timeMs, cISDataMappings::DataName(id));
         }
 
-		{	// Update count and timestamps
-			updateTimeMs(msgStats.isb[id], timeMs, bytes);
-		}
-		break;
+        {    // Update count and timestamps
+            updateTimeMs(msgStats.isb[id], timeMs, bytes);
+        }
+        break;
 
     case _PTYPE_NMEA:
         if (msgStats.nmea.find(id) == msgStats.nmea.end())
@@ -141,10 +141,10 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
             msgStats.nmea[id] = createNewMsgStats(timeMs);
         }
 
-		{	// Update count and timestamps
-			updateTimeMs(msgStats.nmea[id], timeMs, bytes);
-		}
-		break;
+        {    // Update count and timestamps
+            updateTimeMs(msgStats.nmea[id], timeMs, bytes);
+        }
+        break;
 
     case _PTYPE_UBLOX:
         if (msgStats.ublox.find(id) == msgStats.ublox.end())
@@ -154,10 +154,10 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
             msgStats.ublox[id] = createNewMsgStats(timeMs, messageDescriptionUblox(msgClass, msgID));
         }
 
-		{	// Update count and timestamps
-			updateTimeMs(msgStats.ublox[id], timeMs, bytes);
-		}
-		break;
+        {    // Update count and timestamps
+            updateTimeMs(msgStats.ublox[id], timeMs, bytes);
+        }
+        break;
 
     case _PTYPE_RTCM3:
         if (msgStats.rtcm3.find(id) == msgStats.rtcm3.end())
@@ -165,8 +165,8 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
             msgStats.rtcm3[id] = createNewMsgStats(timeMs, messageDescriptionRtcm3(id));
         }
 
-		{	// Update count and timestamps
-			msg_stats_t &s = msgStats.rtcm3[id];
+        {    // Update count and timestamps
+            msg_stats_t &s = msgStats.rtcm3[id];
             updateTimeMs(s, timeMs, bytes);
 
             if (id == 1029)
@@ -176,19 +176,19 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
         }
         break;
 
-	case _PTYPE_INERTIAL_SENSE_ACK:
-		{
-			updateTimeMs(msgStats.ack, timeMs, bytes);
-		}
-		break;
+    case _PTYPE_INERTIAL_SENSE_ACK:
+        {
+            updateTimeMs(msgStats.ack, timeMs, bytes);
+        }
+        break;
 
-	default:
-	case _PTYPE_PARSE_ERROR:
-		{
-			updateTimeMs(msgStats.parseError, timeMs, bytes);
-		}
-		break;
-	}
+    default:
+    case _PTYPE_PARSE_ERROR:
+        {
+            updateTimeMs(msgStats.parseError, timeMs, bytes);
+        }
+        break;
+    }
 }
 
 string messageStatsSummary(mul_msg_stats_t &msgStats)
@@ -197,94 +197,94 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 #define BUF_SIZE 512
     char buf[BUF_SIZE];
 
-	if (!msgStats.isb.empty())
-	{
-		str.append("Inertial Sense Binary: __________________\n");
-		str.append(" DID   Count  dtMs   Bps  Description\n");
-		std::map<int, msg_stats_t>::iterator it;
-		for (it = msgStats.isb.begin(); it != msgStats.isb.end(); it++)
-		{
-			int did = it->first;
-			msg_stats_t &s = it->second;
-			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
+    if (!msgStats.isb.empty())
+    {
+        str.append("Inertial Sense Binary: __________________\n");
+        str.append(" DID   Count  dtMs   Bps  Description\n");
+        std::map<int, msg_stats_t>::iterator it;
+        for (it = msgStats.isb.begin(); it != msgStats.isb.end(); it++)
+        {
+            int did = it->first;
+            msg_stats_t &s = it->second;
+            int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 
             SNPRINTF(buf, BUF_SIZE, "%4d %7d %5d %5d  %s\n", did, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
         }
     }
 
-	if (!msgStats.nmea.empty())
-	{
-		str.append("NMEA: __________________________________\n");
-		str.append("  ID   Count  dtMs   Bps  Description\n");
-		std::map<int, msg_stats_t>::iterator it;
-		for (it = msgStats.nmea.begin(); it != msgStats.nmea.end(); it++)
-		{
-			msg_stats_t &s = it->second;
-			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
-			union
-			{
-				int id;
-				char str[8];
-			} val = {};
-			val.id = it->first;
+    if (!msgStats.nmea.empty())
+    {
+        str.append("NMEA: __________________________________\n");
+        str.append("  ID   Count  dtMs   Bps  Description\n");
+        std::map<int, msg_stats_t>::iterator it;
+        for (it = msgStats.nmea.begin(); it != msgStats.nmea.end(); it++)
+        {
+            msg_stats_t &s = it->second;
+            int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
+            union
+            {
+                int id;
+                char str[8];
+            } val = {};
+            val.id = it->first;
             SNPRINTF(buf, BUF_SIZE, "%4s %7d %5d %5d  %s\n", val.str, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
         }
     }
 
-	if (!msgStats.ublox.empty())
-	{
-		str.append("Ublox: __________________________________\n");
-		str.append("(Class  ID)   Count  dtMs   Bps  Description\n");
-		std::map<int, msg_stats_t>::iterator it;
-		for (it = msgStats.ublox.begin(); it != msgStats.ublox.end(); it++)
-		{
-			int id = it->first;
-			msg_stats_t &s = it->second;
-			uint8_t msgClass = (uint8_t)id;
-			uint8_t msgID = (uint8_t)(id >> 8);
-			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
+    if (!msgStats.ublox.empty())
+    {
+        str.append("Ublox: __________________________________\n");
+        str.append("(Class  ID)   Count  dtMs   Bps  Description\n");
+        std::map<int, msg_stats_t>::iterator it;
+        for (it = msgStats.ublox.begin(); it != msgStats.ublox.end(); it++)
+        {
+            int id = it->first;
+            msg_stats_t &s = it->second;
+            uint8_t msgClass = (uint8_t)id;
+            uint8_t msgID = (uint8_t)(id >> 8);
+            int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
             SNPRINTF(buf, BUF_SIZE, "(0x%02x 0x%02x) %7d %5d %5d  %s\n", msgClass, msgID, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
         }
     }
 
-	if (!msgStats.rtcm3.empty())
-	{
-		str.append("RTCM3: __________________________________\n");
-		str.append("  ID   Count  dtMs   Bps  Description\n");
-		std::map<int, msg_stats_t>::iterator it;
-		for (it = msgStats.rtcm3.begin(); it != msgStats.rtcm3.end(); it++)
-		{
-			int id = it->first;
-			msg_stats_t &s = it->second;
-			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
+    if (!msgStats.rtcm3.empty())
+    {
+        str.append("RTCM3: __________________________________\n");
+        str.append("  ID   Count  dtMs   Bps  Description\n");
+        std::map<int, msg_stats_t>::iterator it;
+        for (it = msgStats.rtcm3.begin(); it != msgStats.rtcm3.end(); it++)
+        {
+            int id = it->first;
+            msg_stats_t &s = it->second;
+            int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
             SNPRINTF(buf, BUF_SIZE, "%3d %7d %5d %5d  %s\n", id, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
         }
     }
 
-	if (msgStats.ack.count>5)
-	{
-		str.append("Acknowledge: ____________________________\n");
+    if (msgStats.ack.count>5)
+    {
+        str.append("Acknowledge: ____________________________\n");
         str.append("   Count  dtMs   Bps\n");
-		msg_stats_t &s = msgStats.ack;
-		int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
+        msg_stats_t &s = msgStats.ack;
+        int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
         SNPRINTF(buf, BUF_SIZE, "%8d %5d %5d\n", s.count, dtMs, s.bytesPerSec);
-		str.append(string(buf));
-	}
+        str.append(string(buf));
+    }
 
 #ifdef DEBUG
-	if (msgStats.parseError.count>5)
-	{
-		str.append("Parse Error: ____________________________\n");
-		str.append("   Count   dtMs   Bps\n");
-		msg_stats_t &s = msgStats.parseError;
-		int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
-		SNPRINTF(buf, BUF_SIZE, "%8d %5d\n", s.count, dtMs, s.bytesPerSec);
-		str.append(string(buf));
-	}
+    if (msgStats.parseError.count>5)
+    {
+        str.append("Parse Error: ____________________________\n");
+        str.append("   Count   dtMs   Bps\n");
+        msg_stats_t &s = msgStats.parseError;
+        int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
+        SNPRINTF(buf, BUF_SIZE, "%8d %5d\n", s.count, dtMs, s.bytesPerSec);
+        str.append(string(buf));
+    }
 #endif
     return str;
 }

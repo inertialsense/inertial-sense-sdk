@@ -74,10 +74,10 @@ typedef struct
 
 typedef struct
 {
-	std::string inFile;
-	std::string outFile;
-	std::string logType;
-	bool extractEv;
+    std::string inFile;
+    std::string outFile;
+    std::string logType;
+    bool extractEv;
 } EVOContainer_t;
 
 typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
@@ -125,11 +125,11 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     int32_t platformType;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
-	uint32_t runDurationMs = 0;				// Run for this many millis before exiting (0 = indefinitely)
-	bool list_devices = false;				// if true, dumps results of findDevices() including port name.
-	EVFContainer_t evFCont = {0};
+    uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
+    bool list_devices = false;              // if true, dumps results of findDevices() including port name.
+    EVFContainer_t evFCont = {0};
     EVMContainer_t evMCont = {0};
-	EVOContainer_t evOCont;
+    EVOContainer_t evOCont;
 
     bool disableDeviceValidation = false;   // Keep port(s) open even if no devices response is received.
     bool listenMode = false;                // Disable device verification and don't send stop-broadcast command on start.

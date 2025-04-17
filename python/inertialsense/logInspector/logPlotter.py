@@ -224,7 +224,7 @@ class logPlot:
             ax[1,0].plot(time, ned[:,1])
             ax[2,0].plot(time, ned[:,2])
 
-            if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
+            if (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
                 if not self.isEmpty(timeGPS):
                     nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
@@ -232,7 +232,7 @@ class logPlot:
                     ax[1,0].plot(timeGPS, nedGps[:, 1])
                     ax[2,0].plot(timeGPS, nedGps[:, 2])
 
-            if(np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
+            if (np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs', True))
                 if not self.isEmpty(timeGPS):
                     nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla', True))
@@ -378,7 +378,7 @@ class logPlot:
             ax[1].plot(time, lla[:,1])
             ax[2].plot(time, lla[:,2])
 
-            if(np.shape(self.active_devs)[0]==1):
+            if (np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 ax[0].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS1')
                 ax[1].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 1])

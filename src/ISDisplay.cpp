@@ -754,7 +754,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;
         case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
         case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
-    	case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);    			break;
+        case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);                break;
         default:
             if (m_showRawHex)
                 str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
@@ -1920,7 +1920,7 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
                 }
             }
             break;
-		case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
+        case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "IMX TDI EV:%d\n", EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST);
 
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CCR:\t0x%08x\n", *(uint32_t*)(&event.data[0]));
