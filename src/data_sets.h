@@ -3709,9 +3709,6 @@ typedef struct
     /** dynamics model (0:none,1:velociy,2:accel) */
     int32_t dynamics;
 
-    /** number of filter iteration */
-    int32_t niter;
-
     /** interpolate reference obs (for post mission) */
     int32_t intpref;
 
@@ -3731,7 +3728,7 @@ typedef struct
     double std[3];
 
     /** process-noise std [0]bias,[1]iono [2]trop [3]acch [4]accv [5] pos */
-    double prn[6];
+    float prn[6];
 
     /** satellite clock stability (sec/sec) */
     double sclkstab;
@@ -3773,9 +3770,9 @@ typedef struct
     double maxgdop;
 
     /** baseline length constraint {const,sigma before fix, sigma after fix} (m) */
-    double baseline[3];
-    double max_baseline_error;
-    double reset_baseline_error;
+    float baseline[3];
+    float max_baseline_error;
+    float reset_baseline_error;
 
     /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
     float max_ubx_error;
