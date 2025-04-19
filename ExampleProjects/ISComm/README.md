@@ -1,12 +1,12 @@
 # SDK: Binary Communications Example Project
 
-This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Communications) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISCommExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISComm) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (IMX and GPX) using the Inertial Sense SDK.
 
 ## Files
 
 #### Project Files
 
-* [ISCommunicationsExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Communications/ISCommunicationsExample.cpp)
+* [ISCommExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISComm/ISCommExample.cpp)
 
 #### SDK Files
 
@@ -165,7 +165,7 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
    ```
 2. Create build directory
    ``` bash
-   cd inertial-sense-sdk/ExampleProjects/Communications
+   cd inertial-sense-sdk/ExampleProjects/ISComm
    mkdir build
    ```
 3. Run cmake from within build directory
@@ -186,15 +186,15 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
    ```
 6. Run executable
    ``` bash
-   ./bin/ISCommunicationsExample /dev/ttyUSB0
+   ./bin/ISCommExample /dev/ttyUSB0
    ```
 ## Compile & Run (Windows MS Visual Studio)
 
-1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\Communications\VS_project\ISCommunicationsExample.sln)
+1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\Communications\VS_project\ISCommExample.sln)
 2. Build (F7)
 3. Run executable
    ``` bash
-   C:\inertial-sense-sdk\ExampleProjects\Communications\VS_project\Release\ISCommunicationsExample.exe COM3
+   C:\inertial-sense-sdk\ExampleProjects\Communications\VS_project\Release\ISCommExample.exe COM3
    ```
 
 ## Summary

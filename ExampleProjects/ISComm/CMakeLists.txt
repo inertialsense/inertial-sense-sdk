@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
-project(ISCommunicationsExample)
+project(ISCommExample)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
@@ -15,7 +15,7 @@ include_directories(
 link_directories(${IS_SDK_DIR})
 
 # Define the executable
-add_executable(${PROJECT_NAME} ISCommunicationsExample.cpp)
+add_executable(${PROJECT_NAME} ISCommExample.cpp)
 
 # Link InertialSenseSDK static library to the executable
 target_link_libraries(${PROJECT_NAME} InertialSenseSDK)
