@@ -37,7 +37,7 @@
 // <i> The SPI data transfer rate
 // <id> spi_master_baud_rate
 #ifndef CONF_SERCOM_0_SPI_BAUD
-#define CONF_SERCOM_0_SPI_BAUD 50000
+#define CONF_SERCOM_0_SPI_BAUD 2000000
 #endif
 
 // </h>
@@ -220,7 +220,7 @@
 // <i> USART baud rate setting
 // <id> usart_baud_rate
 #ifndef CONF_SERCOM_1_USART_BAUD
-#define CONF_SERCOM_1_USART_BAUD 57600
+#define CONF_SERCOM_1_USART_BAUD 230400
 #endif
 
 // </h>
