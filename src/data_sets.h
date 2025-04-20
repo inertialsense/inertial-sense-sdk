@@ -3655,7 +3655,7 @@ typedef struct
     int32_t navsys;
 
     /** elevation mask angle (rad) */
-    double elmin;
+    float elmin;
 
     /** Min snr to consider satellite for rtk */
     int32_t snrmin;
