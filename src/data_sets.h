@@ -3719,10 +3719,10 @@ typedef struct
     int32_t refpos;
 
     /** code/phase error ratio */
-    double eratio[NFREQ];
+    float eratio[NFREQ];
 
     /** measurement error factor */
-    double err[7];
+    float err[7];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
     double std[3];
