@@ -3763,8 +3763,8 @@ typedef struct
     /** reject threshold of innovation for phase [0] and code [1] (m) */
     double maxinno[2];
     /** reject thresholds of NIS for phase [0] and code [1] */
-    double maxnis_lo[2];
-    double maxnis_hi[2];
+    float maxnis_lo[2];
+    float maxnis_hi[2];
 
     /** reject threshold of gdop */
     double maxgdop;
