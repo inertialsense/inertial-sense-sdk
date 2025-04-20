@@ -3749,10 +3749,10 @@ typedef struct
     double thresdop;
 
     /** variance for fix-and-hold pseudo measurements (cycle^2) */
-    double varholdamb;
+    float varholdamb;
 
     /** gain used for GLO and SBAS sats to adjust ambiguity */
-    double gainholdamb;
+    float gainholdamb;
 
     /** max difference of time (sec) */
     double maxtdiff;
