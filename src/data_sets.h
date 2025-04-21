@@ -3761,7 +3761,7 @@ typedef struct
     int fix_reset_base_msgs;
 
     /** reject threshold of innovation for phase [0] and code [1] (m) */
-    double maxinno[2];
+    float maxinno[2];
     /** reject thresholds of NIS for phase [0] and code [1] */
     float maxnis_lo[2];
     float maxnis_hi[2];
