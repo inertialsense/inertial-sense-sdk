@@ -27,60 +27,23 @@
 	pause
 
 :found_msbuild_executable
-	:: Locate nmake.exe
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
 
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.42.34433\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+	:: Locate latest nmake.exe
+	set "VC_ROOT=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC"
+	if exist "%VC_ROOT%" (
+		for /f "delims=" %%D in ('dir "%VC_ROOT%" /b /ad-h /o-n') do (
+			if exist "%VC_ROOT%\%%D\bin\Hostx64\x64\nmake.exe" (
+				set "NMAKE_EXECUTABLE=%VC_ROOT%\%%D\bin\Hostx64\x64\nmake.exe"
+				goto found_nmake_executable
+			)
+		)
+	)
 
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.43.34808\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.42.34433\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.41.34120\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.40.33807\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.39.33519\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.38.33130\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.36.32532\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.33.31629\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.32.31326\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+	:: Fallback to default PATH search
+	for /F "tokens* USEBACKQ" %%i in (nmake.exe) do (
+		set "NMAKE_EXECUTABLE=%%~$PATH:i"
+		if exist "%%~$PATH:i" goto found_nmake_executable
+	)
 
 	echo Failed to locate nmake.exe!!!
 	pause
