@@ -28,6 +28,9 @@
 
 :found_msbuild_executable
 	:: Locate nmake.exe
+	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\bin\Hostx64\x64\nmake.exe"
+    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+
 	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.42.34433\bin\Hostx64\x64\nmake.exe"
     if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
 
@@ -50,6 +53,9 @@
     if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
 
 	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\bin\Hostx64\x64\nmake.exe"
+    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+
+	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.43.34808\bin\Hostx64\x64\nmake.exe"
     if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
 
 	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.42.34433\bin\Hostx64\x64\nmake.exe"
