@@ -3725,7 +3725,7 @@ typedef struct
     float err[7];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
-    double std[3];
+    float std[3];
 
     /** process-noise std [0]bias,[1]iono [2]trop [3]acch [4]accv [5] pos */
     float prn[6];
@@ -3734,19 +3734,19 @@ typedef struct
     double sclkstab;
 
     /** AR validation threshold */
-    double thresar[8];
+    float thresar[8];
 
     /** elevation mask of AR for rising satellite (rad) */
-    double elmaskar;
+    float elmaskar;
 
     /** elevation mask to hold ambiguity (rad) */
-    double elmaskhold;
+    float elmaskhold;
 
     /** slip threshold of geometry-free phase (m) */
-    double thresslip;
+    float thresslip;
 
     /* slip threshold of doppler (m) */
-    double thresdop;
+    float thresdop;
 
     /** variance for fix-and-hold pseudo measurements (cycle^2) */
     float varholdamb;
@@ -3755,7 +3755,7 @@ typedef struct
     float gainholdamb;
 
     /** max difference of time (sec) */
-    double maxtdiff;
+    float maxtdiff;
 
     /** reset sat biases after this long trying to get fix if not acquired */
     int fix_reset_base_msgs;
