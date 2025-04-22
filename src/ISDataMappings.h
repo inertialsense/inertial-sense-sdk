@@ -202,10 +202,14 @@ public:
     {
         data_set[did].size = structSize = sizeof(MAP_TYPE);
     }
+    int aa=0;
 
     ~DataMapper()
     {
-        assert((totalSize == structSize) && "Size of mapped fields does not match struct size");
+        if (totalSize != structSize) {
+            aa++;
+            assert((totalSize == structSize) && "Size of mapped fields does not match struct size");
+        }
 	}
 
     template <typename MemberType>
