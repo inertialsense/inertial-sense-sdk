@@ -40,7 +40,7 @@ bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
  */
 fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int flags, int progressRate)
 {
-    srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
+    srand((unsigned int)time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
     srcFile = new std::ifstream(filename, std::ios::binary);
@@ -65,7 +65,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 //        return fwUpdate::ERR_UNKNOWN;
 //    }
 
-    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
+    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, 0, chunkSize, (uint32_t)fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
     if (pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Requested firmware update with Image '%s', md5: %s", fwUpdate_getSessionTargetName(), filename.c_str(), md5_to_string(session_md5).c_str());
     return result;
@@ -74,7 +74,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 
 fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, int flags, bool forceUpdate, int chunkSize, int progressRate)
 {
-    srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
+    srand((unsigned int)time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
     if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
@@ -101,7 +101,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
 
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
-    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
+    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, (uint32_t)fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
     if (pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Initiating update with image '%s' to target slot %d (%d bytes, md5: %s)", filename.c_str(), slot, fileSize, md5_to_string(session_md5).c_str());
     return result;
@@ -147,7 +147,7 @@ int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, voi
         srcFile->seekg((std::streampos)offset);
         len = _MIN(len, session_image_size - (uint32_t)srcFile->tellg());
         srcFile->read((char *)*buffer, len);
-        return srcFile->gcount();
+        return (int)srcFile->gcount();
     }
     return -1;
 }

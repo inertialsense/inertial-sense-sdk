@@ -125,7 +125,7 @@ public:
 
     std::vector<std::tuple<std::string, std::string, std::string>> getStepErrors() { return stepErrors; }
 
-    int getPendingCommands() { return commands.size(); }
+    int getPendingCommands() { return (int)commands.size(); }
     int getPendingUploads() {
         int count = 0;
         for (auto cmd: commands) {
