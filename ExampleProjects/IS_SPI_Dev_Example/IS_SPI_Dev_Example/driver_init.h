@@ -33,7 +33,7 @@ extern struct spi_m_sync_descriptor SPI_0;
 extern struct usart_sync_descriptor UART_0;
 extern struct timer_descriptor      TIMER_0;
 
-#define BUFF_SIZE	4096
+#define BUFF_SIZE	2048
 
 void SPI_0_PORT_init(void);
 void SPI_0_CLOCK_init(void);

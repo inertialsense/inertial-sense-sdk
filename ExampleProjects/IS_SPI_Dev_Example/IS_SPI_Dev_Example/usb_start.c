@@ -31,8 +31,6 @@ static struct usbd_descriptors single_desc[]
 #endif
 };
 
-/** Buffers to receive and echo the communication bytes. */
-static uint32_t usbd_cdc_buffer[CDCD_ECHO_BUF_SIZ / 4];
 
 /** Ctrl endpoint buffer */
 static uint8_t ctrl_buffer[64];
@@ -54,6 +52,12 @@ uint8_t UARTOutBuff[BUFF_SIZE];
 uint16_t UARTOutSize = 0;
 uint16_t UARTOutLoadIdx = 0;
 uint16_t UARTOutWriteIdx = 0;
+
+uint8_t USBInBuff[CDCD_ECHO_BUF_SIZ];
+uint8_t USBOutBuff[BUFF_SIZE];
+
+uint8_t spiInBuff[BUFF_SIZE*2];
+uint32_t spiInBuffIdx = 0;
 
 
 int SPI_0_transfer(uint8_t* buf, uint32_t len)
@@ -158,8 +162,9 @@ void passThroughNoDR()
 		readSPI = false;
 	}
 	
-	if (memcmp(spiRxBuff, allZeros, READ_ONLY_SIZE) != 0 )
-	UART_0_write(spiRxBuff, readAmt);
+	loadSPIInBuffer(spiRxBuff,readAmt);
+	//if (memcmp(spiRxBuff, allZeros, READ_ONLY_SIZE) != 0 )
+	//UART_0_write(spiRxBuff, readAmt);
 	
 	SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
 }
@@ -187,7 +192,7 @@ void readEvery10ms()
  */
 static bool usb_device_cb_bulk_out(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
 {
-	cdcdf_acm_write((uint8_t *)usbd_cdc_buffer, count);
+	cdcdf_acm_write((uint8_t *)USBOutBuff, count);
 
 	/* No error. */
 	return false;
@@ -199,7 +204,7 @@ static bool usb_device_cb_bulk_out(const uint8_t ep, const enum usb_xfer_code rc
 static bool usb_device_cb_bulk_in(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
 {
 	/* Echo data. */
-	cdcdf_acm_read((uint8_t *)usbd_cdc_buffer, sizeof(usbd_cdc_buffer));
+	cdcdf_acm_read((uint8_t *)USBInBuff, sizeof(USBInBuff));
 
 	/* No error. */
 	return false;
@@ -215,11 +220,20 @@ static bool usb_device_cb_state_c(usb_cdc_control_signal_t state)
 		cdcdf_acm_register_callback(CDCDF_ACM_CB_READ, (FUNC_PTR)usb_device_cb_bulk_out);
 		cdcdf_acm_register_callback(CDCDF_ACM_CB_WRITE, (FUNC_PTR)usb_device_cb_bulk_in);
 		/* Start Rx */
-		cdcdf_acm_read((uint8_t *)usbd_cdc_buffer, sizeof(usbd_cdc_buffer));
+		cdcdf_acm_read((uint8_t *)USBInBuff, sizeof(USBInBuff));
 	}
 
 	/* No error. */
 	return false;
+}
+
+void loadSPIInBuffer(uint8_t* buff, uint32_t size)
+{
+	for (int i = 0; (i < size) && (spiInBuffIdx < sizeof(spiInBuff)); i++,spiInBuffIdx++)
+	{
+		spiInBuff[spiInBuffIdx] = buff[i];
+	}
+	
 }
 
 /**
@@ -235,6 +249,25 @@ void cdc_device_acm_init(void)
 
 	usbdc_start(single_desc);
 	usbdc_attach();
+}
+
+void checkUSB()
+{
+	uint8_t readLen = cdcdf_acm_read((uint8_t *)USBInBuff, CDCD_ECHO_BUF_SIZ);
+	
+	if(USBInBuff[0] != 0 && USBInBuff[0] != 98)
+	{
+		memcpy(spiTxBuff, USBInBuff, CDCD_ECHO_BUF_SIZ);
+		spi_xfer_data.size = CDCD_ECHO_BUF_SIZ;
+		gpio_set_pin_level(SPI_CS, false);
+		spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
+		gpio_set_pin_level(SPI_CS, true);
+		
+		loadSPIInBuffer(spiRxBuff, CDCD_ECHO_BUF_SIZ);
+	}
+	
+	USBInBuff[0] = 0x00;
+	USBInBuff[1] = 0x00;
 }
 
 /**
@@ -263,16 +296,15 @@ void cdcd_acm_example(void)
 	
 	// enable the interupt
 	SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
-	
-	while (!cdcdf_acm_is_enabled()) {
-		// wait cdc acm to be installed
-	};
 
 	cdcdf_acm_register_callback(CDCDF_ACM_CB_STATE_C, (FUNC_PTR)usb_device_cb_state_c);
 
-	while (1) {
+	while (1) 
+	{
 		passThroughNoDR();
-		//readEvery10ms();		
+		//readEvery10ms();	
+		
+		checkUSB();	
 	}
 }
 
