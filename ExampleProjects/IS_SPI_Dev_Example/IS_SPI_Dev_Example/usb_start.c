@@ -15,12 +15,12 @@ static uint8_t single_desc_bytes[] = {
 static uint8_t single_desc_bytes_hs[] = {
     /* Device descriptors and Configuration descriptors list. */
     CDCD_ACM_HS_DESCES_HS};
-#define CDCD_ECHO_BUF_SIZ CONF_USB_CDCD_ACM_DATA_BULKIN_MAXPKSZ_HS
+//#define CDCD_ECHO_BUF_SIZ CONF_USB_CDCD_ACM_DATA_BULKIN_MAXPKSZ_HS
 #else
 static uint8_t single_desc_bytes[] = {
     /* Device descriptors and Configuration descriptors list. */
     CDCD_ACM_DESCES_LS_FS};
-#define CDCD_ECHO_BUF_SIZ CONF_USB_CDCD_ACM_DATA_BULKIN_MAXPKSZ
+//#define CDCD_ECHO_BUF_SIZ CONF_USB_CDCD_ACM_DATA_BULKIN_MAXPKSZ
 #endif
 
 static struct usbd_descriptors single_desc[]
@@ -53,8 +53,11 @@ uint16_t UARTOutSize = 0;
 uint16_t UARTOutLoadIdx = 0;
 uint16_t UARTOutWriteIdx = 0;
 
+#define CDCD_ECHO_BUF_SIZ	256
+
 uint8_t USBInBuff[CDCD_ECHO_BUF_SIZ];
 uint8_t USBOutBuff[BUFF_SIZE];
+bool USBReady = false;
 
 uint8_t spiInBuff[BUFF_SIZE*2];
 uint32_t spiInBuffIdx = 0;
@@ -186,13 +189,17 @@ void readEvery10ms()
 	}
 }
 
+uint32_t total=0;
 
 /**
  * \brief Callback invoked when bulk OUT data received
  */
 static bool usb_device_cb_bulk_out(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
 {
-	cdcdf_acm_write((uint8_t *)USBOutBuff, count);
+	//cdcdf_acm_write((uint8_t *)USBOutBuff, count);
+	total += count;
+	
+	USBReady = true;
 
 	/* No error. */
 	return false;
@@ -204,7 +211,7 @@ static bool usb_device_cb_bulk_out(const uint8_t ep, const enum usb_xfer_code rc
 static bool usb_device_cb_bulk_in(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
 {
 	/* Echo data. */
-	cdcdf_acm_read((uint8_t *)USBInBuff, sizeof(USBInBuff));
+	//cdcdf_acm_read((uint8_t *)USBInBuff, sizeof(USBInBuff));
 
 	/* No error. */
 	return false;
@@ -233,7 +240,6 @@ void loadSPIInBuffer(uint8_t* buff, uint32_t size)
 	{
 		spiInBuff[spiInBuffIdx] = buff[i];
 	}
-	
 }
 
 /**
@@ -255,19 +261,34 @@ void checkUSB()
 {
 	uint8_t readLen = cdcdf_acm_read((uint8_t *)USBInBuff, CDCD_ECHO_BUF_SIZ);
 	
-	if(USBInBuff[0] != 0 && USBInBuff[0] != 98)
+	if (USBReady)//USBInBuff[0] != 0xff && USBInBuff[0] != 98)
 	{
 		memcpy(spiTxBuff, USBInBuff, CDCD_ECHO_BUF_SIZ);
+		//for (int i = 0; i < CDCD_ECHO_BUF_SIZ; i++) { spiTxBuff[i] = USBInBuff[i]; }
+		//spi_xfer_data.txbuf = USBInBuff; 
+			
 		spi_xfer_data.size = CDCD_ECHO_BUF_SIZ;
 		gpio_set_pin_level(SPI_CS, false);
 		spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
 		gpio_set_pin_level(SPI_CS, true);
 		
 		loadSPIInBuffer(spiRxBuff, CDCD_ECHO_BUF_SIZ);
+		
+		USBReady = false;
+		
+		memset(USBInBuff, 0xff, CDCD_ECHO_BUF_SIZ);
 	}
+}
+
+void unloadSpiInBuff()
+{
+	memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
+	cdcdf_acm_write((uint8_t *)USBOutBuff, spiInBuffIdx);
+	UART_0_write(spiInBuff,spiInBuffIdx);
 	
-	USBInBuff[0] = 0x00;
-	USBInBuff[1] = 0x00;
+	// SDK?
+	
+	spiInBuffIdx=0;
 }
 
 /**
@@ -301,10 +322,13 @@ void cdcd_acm_example(void)
 
 	while (1) 
 	{
+		spi_xfer_data.txbuf = spiTxBuff; 
 		passThroughNoDR();
 		//readEvery10ms();	
 		
 		checkUSB();	
+		
+		unloadSpiInBuff();
 	}
 }
 
