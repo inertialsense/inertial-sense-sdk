@@ -869,15 +869,14 @@ typedef struct PACKED
     /** IMU Status (eImuStatus) */
     uint32_t                status;
 
-    /** Shock detected on IMU level */
-    uint32_t                shock;
-
     /** IMU delta theta (gyroscope {p,q,r} integral) in radians in sensor frame */
     float                   theta[3];
 
     /** IMU delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
     float                   vel[3];
 
+    /** Shock detected on IMU level */
+    uint32_t                shock;
 } pimu_t;
 
 

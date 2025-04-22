@@ -438,6 +438,7 @@ static void PopulateMapPimu(data_set_t data_set[DID_COUNT], uint32_t did, string
     mapper.AddMember("status", &pimu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("theta", &pimu_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "IMU delta theta coning and sculling integrals in body/IMU frame.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddArray("vel", &pimu_t::vel, DATA_TYPE_F32, 3, "m/s", "IMU delta velocity coning and sculling integrals in body/IMU frame.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
+    mapper.AddMember("shock", &pimu_t::shock, DATA_TYPE_UINT32, "", "Shock detected.", DATA_FLAGS_DISPLAY_HEX);
 }
 
 static void PopulateMapPimuMag(data_set_t data_set[DID_COUNT], uint32_t did)
