@@ -121,6 +121,11 @@ extern uint8_t UARTInBuff[];
 extern uint16_t UARTInSize;
 extern uint16_t UARTInPtr;
 
+extern uint8_t UARTOutBuff[];
+extern uint16_t UARTOutSize;
+extern uint16_t UARTOutLoadIdx;
+extern uint16_t UARTOutWriteIdx;
+
 void SERCOM1_Handler()
 {
 	// CHECK ERROR
@@ -140,6 +145,20 @@ void SERCOM1_Handler()
 		UARTInBuff[UARTInSize] = SERCOM1->USART.DATA.reg;
 		UARTInSize++;
 	}
+	
+	if (SERCOM1->USART.INTFLAG.bit.DRE && SERCOM1->USART.INTENSET.bit.DRE) 
+	{
+        if (UARTOutWriteIdx != UARTOutLoadIdx) {
+            SERCOM1->USART.DATA.reg = UARTOutBuff[UARTOutWriteIdx];
+            UARTOutWriteIdx++;
+			
+			if (UARTOutWriteIdx >= BUFF_SIZE)
+				UARTOutWriteIdx = UARTOutWriteIdx - BUFF_SIZE;
+        } else {
+            // No more data, disable DRE interrupt
+            SERCOM1->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+        }
+    }
 	
 	SERCOM1->USART.INTFLAG.reg |= SERCOM_USART_INTENSET_RXS;
 	SERCOM1->USART.INTFLAG.reg |= SERCOM_USART_INTENSET_RXC;

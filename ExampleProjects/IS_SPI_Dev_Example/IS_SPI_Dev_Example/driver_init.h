@@ -26,10 +26,14 @@ extern "C" {
 #include <hal_usart_sync.h>
 #include <hal_timer.h>
 
+#include "hal_usb_device.h"
+
 extern struct spi_m_sync_descriptor SPI_0;
 
 extern struct usart_sync_descriptor UART_0;
 extern struct timer_descriptor      TIMER_0;
+
+#define BUFF_SIZE	4096
 
 void SPI_0_PORT_init(void);
 void SPI_0_CLOCK_init(void);
@@ -39,8 +43,8 @@ void UART_0_PORT_init(void);
 void UART_0_CLOCK_init(void);
 void UART_0_init(void);
 
-
-#define BUFF_SIZE	4096
+void TARGET_USB_CLOCK_init(void);
+void TARGET_USB_init(void);
 
 /**
  * \brief Perform system initialization, initialize pins and clocks for

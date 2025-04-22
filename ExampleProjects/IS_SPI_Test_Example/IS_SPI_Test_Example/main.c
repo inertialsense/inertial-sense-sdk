@@ -3,8 +3,6 @@
 #include "driver_init.h"
 #include "utils.h"
 
-
-#define BUFF_SIZE	4096
 #define READ_ONLY_SIZE	5
 uint8_t spiRxBuff[BUFF_SIZE];
 uint8_t spiTxBuff[BUFF_SIZE];
@@ -18,6 +16,11 @@ uint32_t g_timeMs = 0;
 uint8_t UARTInBuff[BUFF_SIZE];
 uint16_t UARTInSize = 0;
 
+uint8_t UARTOutBuff[BUFF_SIZE];
+uint16_t UARTOutSize = 0;
+uint16_t UARTOutLoadIdx = 0;
+uint16_t UARTOutWriteIdx = 0;
+
 
 int SPI_0_transfer(uint8_t* buf, uint32_t len)
 {
@@ -28,15 +31,40 @@ int SPI_0_transfer(uint8_t* buf, uint32_t len)
 	return io_write(io, buf, len);
 }
 
+bool uart_que_byte(uint8_t data) 
+{
+    uint8_t nextLoad = (UARTOutLoadIdx + 1);
+	
+	if (nextLoad >= BUFF_SIZE)
+		nextLoad = nextLoad - BUFF_SIZE;
+
+    if (nextLoad == UARTOutWriteIdx) return false;
+
+    UARTOutBuff[UARTOutLoadIdx] = data;
+    UARTOutLoadIdx = nextLoad;
+
+    // Enable DRE interrupt
+    SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_DRE;
+	
+	return true;
+}
+
 void UART_0_write(uint8_t* buf, uint32_t len)
 {
-	if (len == 0) return; 
 	
-	struct io_descriptor *io;
-	usart_sync_get_io_descriptor(&UART_0, &io);
-	usart_sync_enable(&UART_0);
+	for (int i = 0; i < len; i++)
+	{
+		if (!uart_que_byte(buf[i]))
+			return;
+	}
+	
+	//if (len == 0) return; 
+	
+	//struct io_descriptor *io;
+	//usart_sync_get_io_descriptor(&UART_0, &io);
+	//usart_sync_enable(&UART_0);
 
-	io_write(io, buf, len);
+	//io_write(io, buf, len);
 }
 
 int lastUARTInSize = 0;
@@ -142,7 +170,7 @@ int main(void)
 	/* Replace with your application code */
 	while (1) 
 	{
-		//passThroughNoDR();
-		readEvery10ms();
+		passThroughNoDR();
+		//readEvery10ms();
 	}
 }
