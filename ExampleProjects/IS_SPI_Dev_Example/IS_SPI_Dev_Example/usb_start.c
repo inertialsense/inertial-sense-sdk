@@ -166,7 +166,7 @@ uint32_t total=0;
 /**
  * \brief Callback invoked when bulk OUT data received
  */
-static bool usb_device_cb_bulk_out(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
+static bool usb_device_cb_bulk_in(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
 {
 	//cdcdf_acm_write((uint8_t *)USBOutBuff, count);
 	total += count;
@@ -180,7 +180,7 @@ static bool usb_device_cb_bulk_out(const uint8_t ep, const enum usb_xfer_code rc
 /**
  * \brief Callback invoked when bulk IN data received
  */
-static bool usb_device_cb_bulk_in(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
+static bool usb_device_cb_bulk_out(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
 {
 	/* Echo data. */
 	//cdcdf_acm_read((uint8_t *)USBInBuff, sizeof(USBInBuff));
@@ -196,8 +196,8 @@ static bool usb_device_cb_state_c(usb_cdc_control_signal_t state)
 {
 	if (state.rs232.DTR) {
 		/* Callbacks must be registered after endpoint allocation */
-		cdcdf_acm_register_callback(CDCDF_ACM_CB_READ, (FUNC_PTR)usb_device_cb_bulk_out);
-		cdcdf_acm_register_callback(CDCDF_ACM_CB_WRITE, (FUNC_PTR)usb_device_cb_bulk_in);
+		cdcdf_acm_register_callback(CDCDF_ACM_CB_READ, (FUNC_PTR)usb_device_cb_bulk_in);
+		cdcdf_acm_register_callback(CDCDF_ACM_CB_WRITE, (FUNC_PTR)usb_device_cb_bulk_out);
 		/* Start Rx */
 		cdcdf_acm_read((uint8_t *)USBInBuff, sizeof(USBInBuff));
 	}
@@ -336,9 +336,8 @@ void cdcd_acm_example(void)
 	while (1) 
 	{
 		spi_xfer_data.txbuf = spiTxBuff; 
-		//passThroughNoDR();
-		//readEvery10ms();	
 		
+		checkUART();
 		checkUSB();	
 		
 		// read more if needed
