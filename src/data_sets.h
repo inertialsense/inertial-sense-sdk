@@ -3460,8 +3460,15 @@ typedef struct PACKED
     /** IMU gyro fault rejection threshold high */
     uint8_t                 imuRejectThreshGyroHigh;
 
+    /** (ms/10) IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.  */
+    uint8_t                 imuShockDetectLatencyMsDiv10;
+
+    /** (ms/10) IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.  */
+    uint8_t                 imuShockRejectLatchMsDiv10;
+
     /** Reserved */
-    uint32_t                reserved2[2];
+    uint16_t                reserved1;
+    uint32_t                reserved2;
 
 } nvm_flash_cfg_t;
 
