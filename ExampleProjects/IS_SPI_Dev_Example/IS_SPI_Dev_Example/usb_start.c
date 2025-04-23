@@ -57,7 +57,10 @@ uint16_t UARTOutWriteIdx = 0;
 
 uint8_t USBInBuff[CDCD_ECHO_BUF_SIZ];
 uint8_t USBOutBuff[BUFF_SIZE];
+uint32_t USBReadySetMs = 0;
+int USBInCnt = 0;
 bool USBReady = false;
+bool USBIsInit = false;
 
 uint8_t spiInBuff[BUFF_SIZE*2];
 int spiInBuffIdx = 0;
@@ -94,7 +97,6 @@ bool uart_que_byte(uint8_t data)
 
 void UART_0_write(uint8_t* buf, uint32_t len)
 {
-	
 	for (int i = 0; i < len; i++)
 	{
 		if (!uart_que_byte(buf[i]))
@@ -124,33 +126,6 @@ void SPIReadNoDR()
 {
 	int readAmt = 0;
 	
-	memset(spiRxBuff, 0x00, READ_ONLY_SIZE);
-	if (UARTInSize > 0)
-	{
-		if (UARTInSize > lastUARTInSize)
-		{
-			lastSizeChangeMs = g_timeMs;
-			lastUARTInSize = UARTInSize;
-		}
-		else if (g_timeMs > (lastSizeChangeMs+2))
-		{
-			//SERCOM1->USART.INTENCLR.reg = SERCOM_USART_INTENSET_RXC;
-			CRITICAL_SECTION_ENTER();
-			memcpy(spiTxBuff, UARTInBuff, UARTInSize);
-			spi_xfer_data.size = UARTInSize;
-			UARTInSize = 0;
-			lastUARTInSize = 0;
-			CRITICAL_SECTION_LEAVE();
-			//SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
-			
-			//readAmt = SPI_0_transfer(transferBuff, readAmt);
-			gpio_set_pin_level(SPI_CS, false);
-			readAmt = spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
-			gpio_set_pin_level(SPI_CS, true);
-		}
-	}
-	//if (readSPI)
-	else{
 		spi_xfer_data.size = READ_ONLY_SIZE;
 		memset(spiTxBuff, 0xff, READ_ONLY_SIZE);
 		readAmt = 0;
@@ -165,13 +140,8 @@ void SPIReadNoDR()
 		gpio_set_pin_level(SPI_CS, true);
 		
 		readSPI = false;
-	}
 	
 	loadSPIInBuffer(spiRxBuff,readAmt);
-	//if (memcmp(spiRxBuff, allZeros, READ_ONLY_SIZE) != 0 )
-	//UART_0_write(spiRxBuff, readAmt);
-	
-	SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
 }
 
 
