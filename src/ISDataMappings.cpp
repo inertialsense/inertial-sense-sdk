@@ -438,7 +438,6 @@ static void PopulateMapPimu(data_set_t data_set[DID_COUNT], uint32_t did, string
     mapper.AddMember("status", &pimu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("theta", &pimu_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "IMU delta theta coning and sculling integrals in body/IMU frame.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddArray("vel", &pimu_t::vel, DATA_TYPE_F32, 3, "m/s", "IMU delta velocity coning and sculling integrals in body/IMU frame.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
-    mapper.AddMember("shock", &pimu_t::shock, DATA_TYPE_UINT32, "", "Shock detected.", DATA_FLAGS_DISPLAY_HEX);
 }
 
 static void PopulateMapPimuMag(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -449,7 +448,6 @@ static void PopulateMapPimuMag(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray2("vel", offsetof(pimu_mag_t, pimu.vel), DATA_TYPE_F32, 3, "m/s", "IMU delta velocity coning and sculling integrals in body/IMU frame.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
     mapper.AddMember2("dt", offsetof(pimu_mag_t, pimu.dt), DATA_TYPE_F32, "s", "Integration period.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember2("imustatus", offsetof(pimu_mag_t, pimu.status), DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("shock", offsetof(pimu_mag_t, pimu.shock), DATA_TYPE_UINT32, "", "Shock detected.", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("magtime", offsetof(pimu_mag_t, mag.time), DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray2("mag", offsetof(pimu_mag_t, mag.mag), DATA_TYPE_F32, 3, "", "Normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
