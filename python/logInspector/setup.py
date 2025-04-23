@@ -31,7 +31,7 @@ ext_modules = [
         ] + (['../../src/libusb/libusb'] if platform.system() == 'Windows' else ['/usr/include/libusb-1.0']),
         extra_link_args=[] if platform.system() == 'Windows' else ['-lusb-1.0'],
         # Link to the prebuilt static library
-        extra_objects=['../../build/Release/InertialSenseSDK.lib'] if platform.system() == 'Windows' else ['../../build/libInertialSenseSDK.a'],
+        extra_objects=['../../build-release/InertialSenseSDK.lib'] if platform.system() == 'Windows' else ['../../build/libInertialSenseSDK.a'],
         language='c++',
     ),
 ]
