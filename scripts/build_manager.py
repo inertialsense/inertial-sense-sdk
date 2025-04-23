@@ -245,7 +245,12 @@ class BuildTestManager:
                 num_proc = os.cpu_count()
                 num_proc = int(max(num_proc - num_proc/10, 6))
                 subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
+                start_time = time.time()                
                 subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
+                # subprocess.check_call(["cmake", "--build", "build", "--config", build_type, "--parallel", str(num_proc)], cwd=str(project_dir))
+                duration = int(time.time() - start_time)
+                minutes, seconds = divmod(duration, 60)
+                print(f"Build completed in {minutes}:{seconds:02d}s")
             except subprocess.CalledProcessError as e:
                 print(f"Error building {project_name}!")
                 result = e.returncode
