@@ -60,8 +60,10 @@ uint8_t USBOutBuff[BUFF_SIZE];
 bool USBReady = false;
 
 uint8_t spiInBuff[BUFF_SIZE*2];
-uint32_t spiInBuffIdx = 0;
+int spiInBuffIdx = 0;
 
+uint8_t spiOutBuff[BUFF_SIZE*2];
+int spiOutBuffIdx = 0;
 
 int SPI_0_transfer(uint8_t* buf, uint32_t len)
 {
@@ -118,7 +120,7 @@ struct spi_xfer spi_xfer_data = {
 	.size = BUFF_SIZE,
 };
 
-void passThroughNoDR()
+void SPIReadNoDR()
 {
 	int readAmt = 0;
 	
@@ -242,6 +244,14 @@ void loadSPIInBuffer(uint8_t* buff, uint32_t size)
 	}
 }
 
+void loadSPIOutBuffer(uint8_t* buff, uint32_t size)
+{
+	for (int i = 0; (i < size) && (spiOutBuffIdx < sizeof(spiOutBuff)); i++,spiOutBuffIdx++)
+	{
+		spiOutBuff[spiOutBuffIdx] = buff[i];
+	}
+}
+
 /**
  * \brief CDC ACM Init
  */
@@ -263,16 +273,7 @@ void checkUSB()
 	
 	if (USBReady)//USBInBuff[0] != 0xff && USBInBuff[0] != 98)
 	{
-		memcpy(spiTxBuff, USBInBuff, CDCD_ECHO_BUF_SIZ);
-		//for (int i = 0; i < CDCD_ECHO_BUF_SIZ; i++) { spiTxBuff[i] = USBInBuff[i]; }
-		//spi_xfer_data.txbuf = USBInBuff; 
-			
-		spi_xfer_data.size = CDCD_ECHO_BUF_SIZ;
-		gpio_set_pin_level(SPI_CS, false);
-		spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
-		gpio_set_pin_level(SPI_CS, true);
-		
-		loadSPIInBuffer(spiRxBuff, CDCD_ECHO_BUF_SIZ);
+		loadSPIOutBuffer(USBInBuff, CDCD_ECHO_BUF_SIZ);
 		
 		USBReady = false;
 		
@@ -280,13 +281,33 @@ void checkUSB()
 	}
 }
 
+void unloadSpiOutBuff()
+{
+	if (spiOutBuffIdx > 0)
+	{
+		memcpy(spiTxBuff, spiOutBuff, spiOutBuffIdx);
+		spi_xfer_data.txbuf = spiTxBuff;
+		spi_xfer_data.size = spiOutBuffIdx;
+		gpio_set_pin_level(SPI_CS, false);
+		uint32_t readAmt = spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
+		gpio_set_pin_level(SPI_CS, true);
+		
+		loadSPIInBuffer(spiRxBuff, readAmt);
+	}
+	
+	spiOutBuffIdx = 0;
+}
+
 void unloadSpiInBuff()
 {
-	memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
-	cdcdf_acm_write((uint8_t *)USBOutBuff, spiInBuffIdx);
-	UART_0_write(spiInBuff,spiInBuffIdx);
+	if (spiInBuffIdx > 0)
+	{
+		memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
+		cdcdf_acm_write((uint8_t *)USBOutBuff, spiInBuffIdx);
+		//UART_0_write(spiInBuff,spiInBuffIdx);
 	
-	// SDK?
+		// SDK?
+	}
 	
 	spiInBuffIdx=0;
 }
@@ -323,11 +344,26 @@ void cdcd_acm_example(void)
 	while (1) 
 	{
 		spi_xfer_data.txbuf = spiTxBuff; 
-		passThroughNoDR();
+		//passThroughNoDR();
 		//readEvery10ms();	
 		
 		checkUSB();	
 		
+		// read more if needed
+		if (gpio_get_pin_level(MODE_SELECT))
+		{
+			SPIReadNoDR();
+			//readEvery10ms();
+		}
+		else 
+		{
+			if (gpio_get_pin_level(DATA_READY))
+			{
+				// data ready implimentation	
+			}
+		}
+		
+		unloadSpiOutBuff();
 		unloadSpiInBuff();
 	}
 }
