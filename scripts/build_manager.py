@@ -278,11 +278,10 @@ class BuildTestManager:
     def test_exec(self, test_name, test_dir, exec_name=""):
         if not self.run_test:
             return
-        test_dir = str(test_dir) + "/build"
+        test_dir = str(test_dir) + "/build-release"
         if not exec_name:
             exec_name = test_name
         if self.is_windows:
-            test_dir = test_dir + "/Release"
             exec_name = exec_name + ".exe"
         else:
             exec_name = "./" + exec_name
