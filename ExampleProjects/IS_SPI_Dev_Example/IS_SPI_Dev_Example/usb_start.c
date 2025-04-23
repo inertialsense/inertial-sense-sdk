@@ -267,6 +267,28 @@ void cdc_device_acm_init(void)
 	usbdc_attach();
 }
 
+void checkUART()
+{
+	if (UARTInSize > 0)
+	{
+		if (UARTInSize > lastUARTInSize)
+		{
+			lastSizeChangeMs = g_timeMs;
+			lastUARTInSize = UARTInSize;
+		}
+		else if (g_timeMs > (lastSizeChangeMs+2))
+		{
+			CRITICAL_SECTION_ENTER();
+			loadSPIOutBuffer(UARTInBuff, UARTInSize);
+			UARTInSize = 0;
+			lastUARTInSize = 0;
+			CRITICAL_SECTION_LEAVE();
+		}
+	}
+	
+	SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
+}
+
 void checkUSB()
 {
 	uint8_t readLen = cdcdf_acm_read((uint8_t *)USBInBuff, CDCD_ECHO_BUF_SIZ);
