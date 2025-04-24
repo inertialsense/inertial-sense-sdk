@@ -55,7 +55,8 @@ uint16_t UARTOutWriteIdx = 0;
 
 #define CDCD_ECHO_BUF_SIZ	256
 
-uint8_t USBInBuff[CDCD_ECHO_BUF_SIZ];
+uint8_t USBIntBuff[CDCD_ECHO_BUF_SIZ];
+uint8_t USBInBuff[BUFF_SIZE];
 uint8_t USBOutBuff[BUFF_SIZE];
 uint32_t USBReadySetMs = 0;
 int USBInCnt = 0;
@@ -167,8 +168,9 @@ void readEvery10ms()
 static bool usb_device_cb_bulk_in(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
 {
 	//cdcdf_acm_write((uint8_t *)USBOutBuff, count);
+	cdcdf_acm_read((uint8_t *)USBIntBuff, sizeof(USBInBuff));
+	memcpy(&USBInBuff[USBInCnt],USBIntBuff,count);
 	USBInCnt += count;
-	
 	USBReady = true;
 
 	/* No error. */
@@ -260,7 +262,7 @@ void checkUART()
 void checkUSB()
 {
 	CRITICAL_SECTION_ENTER();
-	cdcdf_acm_read((uint8_t *)USBInBuff, CDCD_ECHO_BUF_SIZ);
+	//cdcdf_acm_read((uint8_t *)USBInBuff, CDCD_ECHO_BUF_SIZ);
 	
 	if (USBReady)//USBInBuff[0] != 0xff && USBInBuff[0] != 98)
 	{
