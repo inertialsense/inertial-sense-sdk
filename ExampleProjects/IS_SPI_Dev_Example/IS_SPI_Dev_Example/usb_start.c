@@ -161,15 +161,13 @@ void readEvery10ms()
 	}
 }
 
-uint32_t total=0;
-
 /**
  * \brief Callback invoked when bulk OUT data received
  */
 static bool usb_device_cb_bulk_in(const uint8_t ep, const enum usb_xfer_code rc, const uint32_t count)
 {
 	//cdcdf_acm_write((uint8_t *)USBOutBuff, count);
-	total += count;
+	USBInCnt += count;
 	
 	USBReady = true;
 
@@ -261,16 +259,19 @@ void checkUART()
 
 void checkUSB()
 {
-	uint8_t readLen = cdcdf_acm_read((uint8_t *)USBInBuff, CDCD_ECHO_BUF_SIZ);
+	CRITICAL_SECTION_ENTER();
+	cdcdf_acm_read((uint8_t *)USBInBuff, CDCD_ECHO_BUF_SIZ);
 	
 	if (USBReady)//USBInBuff[0] != 0xff && USBInBuff[0] != 98)
 	{
-		loadSPIOutBuffer(USBInBuff, CDCD_ECHO_BUF_SIZ);
+		loadSPIOutBuffer(USBInBuff, USBInCnt);
 		
 		USBReady = false;
+		USBInCnt = 0;
 		
 		memset(USBInBuff, 0xff, CDCD_ECHO_BUF_SIZ);
 	}
+	CRITICAL_SECTION_LEAVE();
 }
 
 void unloadSpiOutBuff()
