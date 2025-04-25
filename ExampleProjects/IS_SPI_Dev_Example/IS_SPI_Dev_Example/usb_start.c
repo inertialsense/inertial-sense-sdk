@@ -184,26 +184,53 @@ void SPIReadNoDR()
 			break;
 		}
 		gpio_set_pin_level(SPI_CS, true);
-		
-		readSPI = false;
 	
 	loadSPIInBuffer(spiRxBuff,readAmt);
 }
 
+void SPIReadDR()
+{
+	int readAmt = 0;
+	
+	spi_xfer_data.size = READ_ONLY_SIZE;
+	memset(spiTxBuff, 0xff, READ_ONLY_SIZE);
+	readAmt = 0;
 
-void readEvery10ms()
+	gpio_set_pin_level(SPI_CS, false);
+	while ((gpio_get_pin_level(DATA_READY)) && ((readAmt+READ_ONLY_SIZE) < BUFF_SIZE))
+	{
+		spi_xfer_data.rxbuf = &spiRxBuff[readAmt];
+		readAmt += spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
+	}
+
+	// make sure there is still room in buffer
+	if ((readAmt+READ_ONLY_SIZE) < BUFF_SIZE)
+	{
+		// read one more since data ready will have data read go low one byte early 
+		spi_xfer_data.rxbuf = &spiRxBuff[readAmt];
+		readAmt += spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
+	}
+
+	gpio_set_pin_level(SPI_CS, true);
+	
+	loadSPIInBuffer(spiRxBuff, readAmt);
+}
+
+
+void readEvery20ms()
 {
 	SERCOM1->USART.INTENCLR.reg = SERCOM_USART_INTENSET_RXC;
 	if (readSPI)
 	{
 		spi_xfer_data.size = 150;
 		spi_xfer_data.rxbuf = spiRxBuff;
+		spi_xfer_data.txbuf = spiTxBuff;
 		gpio_set_pin_level(SPI_CS, false);
 		spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
 		gpio_set_pin_level(SPI_CS, true);
 		
 		readSPI = false;
-		UART_0_write(spiRxBuff, spi_xfer_data.size);
+		loadSPIInBuffer(spiRxBuff, spi_xfer_data.size);
 	}
 }
 
@@ -396,14 +423,16 @@ void cdcd_acm_example(void)
 		// read more if needed
 		if (gpio_get_pin_level(MODE_SELECT))
 		{
-			SPIReadNoDR();
-			//readEvery10ms();
+			//SPIReadNoDR();
+			readEvery20ms();
 		}
 		else 
 		{
 			if (gpio_get_pin_level(DATA_READY))
 			{
-				// data ready implimentation	
+				// data ready implimentation
+				SPIReadDR();
+					
 			}
 		}
 		
