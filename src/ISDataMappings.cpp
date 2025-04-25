@@ -1073,9 +1073,61 @@ static void PopulateMapGpxRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<can_config_t> mapper(data_set, did);
-    mapper.AddArray("can_period_mult", &can_config_t::can_period_mult, DATA_TYPE_UINT16, NUM_CIDS, " ", "Broadcast Period Multiple for CID_INS_TIME Messages");
-    mapper.AddArray("can_transmit_address", &can_config_t::can_transmit_address, DATA_TYPE_UINT32, NUM_CIDS, "", "CAN Address CID_INS_TIME Messages", DATA_FLAGS_DISPLAY_HEX);
-
+    
+    mapper.AddMember2("can_period_mult[CID_INS_TIME]", offsetof(can_config_t, can_period_mult) + CID_INS_TIME * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_STATUS]",  offsetof(can_config_t, can_period_mult) + CID_INS_STATUS * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_EULER]",  offsetof(can_config_t, can_period_mult) + CID_INS_EULER * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_QUATN2B]",  offsetof(can_config_t, can_period_mult) + CID_INS_QUATN2B * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_QUATE2B]",  offsetof(can_config_t, can_period_mult) + CID_INS_QUATE2B * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_UVW]",  offsetof(can_config_t, can_period_mult) + CID_INS_UVW * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_VE]",  offsetof(can_config_t, can_period_mult) + CID_INS_VE * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_LAT]",  offsetof(can_config_t, can_period_mult) + CID_INS_LAT * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_LON]",  offsetof(can_config_t, can_period_mult) + CID_INS_LON * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_ALT]",  offsetof(can_config_t, can_period_mult) + CID_INS_ALT * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_NORTH_EAST]",  offsetof(can_config_t, can_period_mult) + CID_INS_NORTH_EAST * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_DOWN]",  offsetof(can_config_t, can_period_mult) + CID_INS_DOWN * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_ECEF_X]",  offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_X * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_ECEF_Y]",  offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_Y * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_ECEF_Z]",  offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_Z * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDINS_L]",  offsetof(can_config_t, can_period_mult) + CID_INS_MSL * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDPREINT_PX]",  offsetof(can_config_t, can_period_mult) + CID_PREINT_PX * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDPREINT_QY]",  offsetof(can_config_t, can_period_mult) + CID_PREINT_QY * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDPREINT_RZ]",  offsetof(can_config_t, can_period_mult) + CID_PREINT_RZ * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDDUAL_PX]",  offsetof(can_config_t, can_period_mult) + CID_DUAL_PX * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDDUAL_QY]",  offsetof(can_config_t, can_period_mult) + CID_DUAL_QY * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDDUAL_RZ]",  offsetof(can_config_t, can_period_mult) + CID_DUAL_RZ * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDGPS1_POS]",  offsetof(can_config_t, can_period_mult) + CID_GPS1_POS * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDGPS2_POS]",  offsetof(can_config_t, can_period_mult) + CID_GPS2_POS * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDGPS1_RTK_POS_REL]",  offsetof(can_config_t, can_period_mult) + CID_GPS1_RTK_POS_REL * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDGPS2_RTK_CMP_REL]",  offsetof(can_config_t, can_period_mult) + CID_GPS2_RTK_CMP_REL * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("can_period_mult[CIDROLL_ROLLRATE]",  offsetof(can_config_t, can_period_mult) + CID_ROLL_ROLLRATE * sizeof(uint16_t), DATA_TYPE_UINT16, "", "");
+    mapper.AddMember2("cantransmit_address[CID_INS_TIME]", offsetof(can_config_t, can_period_mult) + CID_INS_TIME * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_STATUS]", offsetof(can_config_t, can_period_mult) + CID_INS_STATUS * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_EULER]", offsetof(can_config_t, can_period_mult) + CID_INS_EULER * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_QUATN2B]", offsetof(can_config_t, can_period_mult) + CID_INS_QUATN2B * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_QUATE2B]", offsetof(can_config_t, can_period_mult) + CID_INS_QUATE2B * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_UVW]", offsetof(can_config_t, can_period_mult) + CID_INS_UVW * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_VE]", offsetof(can_config_t, can_period_mult) + CID_INS_VE * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_LAT]", offsetof(can_config_t, can_period_mult) + CID_INS_LAT * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_LON]", offsetof(can_config_t, can_period_mult) + CID_INS_LON * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_ALT]", offsetof(can_config_t, can_period_mult) + CID_INS_ALT * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_NORTH_EAST]", offsetof(can_config_t, can_period_mult) + CID_INS_NORTH_EAST * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_DOWN]", offsetof(can_config_t, can_period_mult) + CID_INS_DOWN * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_X]", offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_X * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_Y]", offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_Y * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_Z]", offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_Z * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_MSL]", offsetof(can_config_t, can_period_mult) + CID_INS_MSL * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_PREINT_PX]", offsetof(can_config_t, can_period_mult) + CID_PREINT_PX * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_PREINT_QY]", offsetof(can_config_t, can_period_mult) + CID_PREINT_QY * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_PREINT_RZ]", offsetof(can_config_t, can_period_mult) + CID_PREINT_RZ * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_DUAL_PX]", offsetof(can_config_t, can_period_mult) + CID_DUAL_PX * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_DUAL_QY]", offsetof(can_config_t, can_period_mult) + CID_DUAL_QY * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_DUAL_RZ]", offsetof(can_config_t, can_period_mult) + CID_DUAL_RZ * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GPS1_POS]", offsetof(can_config_t, can_period_mult) + CID_GPS1_POS * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GPS2_POS]", offsetof(can_config_t, can_period_mult) + CID_GPS2_POS * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GPS1_RTK_POS_REL]", offsetof(can_config_t, can_period_mult) + CID_GPS1_RTK_POS_REL * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GPS2_RTK_CMP_REL]", offsetof(can_config_t, can_period_mult) + CID_GPS2_RTK_CMP_REL * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]", offsetof(can_config_t, can_period_mult) + CID_ROLL_ROLLRATE * sizeof(uint16_t), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate");
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
 }
