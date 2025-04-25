@@ -327,6 +327,8 @@
   <armgcc.compiler.symbols.DefSymbols>
     <ListValues>
       <Value>DEBUG</Value>
+      <Value>ARM</Value>
+      <Value>SAMD_ZERO</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>
@@ -358,6 +360,7 @@
   <armgcc.compiler.optimization.PrepareFunctionsForGarbageCollection>True</armgcc.compiler.optimization.PrepareFunctionsForGarbageCollection>
   <armgcc.compiler.optimization.DebugLevel>Maximum (-g3)</armgcc.compiler.optimization.DebugLevel>
   <armgcc.compiler.warnings.AllWarnings>True</armgcc.compiler.warnings.AllWarnings>
+  <armgcc.compiler.miscellaneous.OtherFlags>-std=c11</armgcc.compiler.miscellaneous.OtherFlags>
   <armgcc.linker.general.UseNewlibNano>True</armgcc.linker.general.UseNewlibNano>
   <armgcc.linker.libraries.Libraries>
     <ListValues>
@@ -370,6 +373,7 @@
     </ListValues>
   </armgcc.linker.libraries.LibrarySearchPaths>
   <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
+  <armgcc.linker.memorysettings.ExternalRAM />
   <armgcc.linker.miscellaneous.LinkerFlags>-Tsamd21j18a_flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
   <armgcc.assembler.general.IncludePaths>
     <ListValues>
@@ -464,6 +468,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Config\usbd_config.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="data_sets.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="data_sets.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Device_Startup\startup_samd21.c">
@@ -800,6 +810,18 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="hri\hri_wdt_d21.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ISComm.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ISComm.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ISConstants.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="rtk_defines.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="usb\class\cdc\device\cdcdf_acm.c">
