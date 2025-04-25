@@ -112,8 +112,8 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
     static uint32_t enabledMaskBackup=0;
     if (enabledMaskBackup==0)
     {   
-        enabledMaskBackup = comm.config.enabledMask;
-        comm.config.enabledMask = ENABLE_PROTOCOL_ISB;      // Disable all protocols except ISB to prevent delays in parsing that could cause data drop
+        enabledMaskBackup = comm.cb.protocolMask;
+        comm.cb.protocolMask = ENABLE_PROTOCOL_ISB;      // Disable all protocols except ISB to prevent delays in parsing that could cause data drop
     }
     protocol_type_t ptype;
     while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
@@ -137,7 +137,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
                         serialPortBridge = 0;
 
                         // Restore enabled protocol mask
-                        comm.config.enabledMask = enabledMaskBackup;
+                        comm.cb.protocolMask = enabledMaskBackup;
                         enabledMaskBackup = 0;
                         testMode = 0;
                         break;

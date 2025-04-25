@@ -566,12 +566,6 @@ typedef enum {
 
 typedef struct  
 {
-    /** See eProtocolMask */
-    uint32_t enabledMask;
-} is_comm_config_t;
-
-typedef struct  
-{
     int16_t     state;
     uint16_t    size;
     uint32_t    timeMs;        // Time of last parse
@@ -698,15 +692,6 @@ uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance);
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);
 void is_comm_port_parse_messages(port_handle_t port);
-
-#if defined(IMX_5) || defined(GPX_1)
-/**
-* Check that simple communications interface is valid and if not re-initializes.
-* @param instance communications instance, please ensure that you have set the buffer and bufferSize
-* @return 0 if parameters match, -1 if there are mismatches and is_comm is not valid.
-*/
-int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, uint8_t forceInit);
-#endif
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.

@@ -51,8 +51,8 @@ using namespace std;
 #define BUF_SIZE 8192
 
 #define DATASET_VIEW_NUM_ROWS   25
-#define DISPLAY_DELTA_TIME      0    // show delta time instead of time
-#define SNPRINTF_ID_NAME(id)    SNPRINTF(ptr, ptrEnd - ptr, "(%3d) %s:", id, cISDataMappings::DataName(id))
+#define DISPLAY_DELTA_TIME	    0    // show delta time instead of time
+#define SNPRINTF_ID_NAME(id)    SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", id, cISDataMappings::DataName(id))
 
 static bool s_exitProgram;
 
@@ -244,28 +244,23 @@ string cInertialSenseDisplay::Connected()
 
     unsigned int timeMs = current_timeMs();
 
-    // cltool runtime
-    double runtime = 0.001 * (timeMs - m_startMs);
+    // cltool elapsed
+    unsigned int elapsedMs = timeMs - m_startMs;
+    unsigned int totalSeconds = elapsedMs / 1000;
+    unsigned int hours = totalSeconds / 3600;
+    unsigned int minutes = (totalSeconds % 3600) / 60;
+    unsigned int seconds = totalSeconds % 60;
 
     std::ostringstream stream;
     stream << Header() << "Connected.  ";
-    stream << std::fixed << std::setprecision(1) << runtime << "s";
-
+    stream << hours << ':'
+        << std::setw(2) << std::setfill('0') << minutes << ':'
+        << std::setw(2) << std::setfill('0') << seconds << 's';
     if (m_device && m_device->port && ((portType(m_device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM)) {
         comm_port_t* comPort = COMM_PORT(m_device->port);
         stream << ", Tx " << std::to_string(comPort->comm.txPktCount);
         stream << ", Rx " << std::to_string(comPort->comm.rxPktCount);
         if (comPort->stats) {
-            // TODO: This can probably go away after confirming that it works as expected after the merge
-//            static unsigned int lastUpdateMs = timeMs;
-//            static int bytesLast = 0;
-//            static int bytesPerS = 0;
-//            if (timeMs - lastUpdateMs >= 1000)
-//            {
-//                bytesPerS = m_port->rxBytes - bytesLast;
-//                bytesLast = m_port->rxBytes;
-//                lastUpdateMs = timeMs;
-//            }
             stream << " (" << (comPort->stats->rxBytesPerSec ? std::to_string(comPort->stats->rxBytesPerSec) : "--") << " bytes/s)";
         }
     }
@@ -596,7 +591,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
     if (comm == NULL)
-        return "\n";
+		return "";
 
     std::stringstream ss;
     ss << "is_comm stats:  Rx " << std::setw (10) << comm->rxPktCount;
@@ -708,67 +703,69 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 
     uDatasets d = {};
 
-    // Copy only new data
-    copyDataPToStructP(&d, data, sizeof(uDatasets));
+	// Copy only new data
+	copyDataPToStructP(&d, data, sizeof(uDatasets));
 
-    if (m_displayMode == DMODE_RAW_PARSE)
+	if (m_displayMode == DMODE_RAW_PARSE)
     {
-        return DataToStringPacket((const char *) data->ptr, data->hdr, 32, true);
-    }
+		return DataToStringPacket((const char *) data->ptr, data->hdr, 32, true);
+	}
+
 
     string str;
     switch (data->hdr.id)
     {
-        case DID_EVB_DEV_INFO:      // FALL THROUGH
-        case DID_GPX_DEV_INFO:      // FALL THROUGH
-        case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);            break;
-        case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                    break;
-        case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);      break;
-        case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);                  break;
-        case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);                  break;
-        case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);                  break;
-        case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);                  break;
-        case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);             break;
-        case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);           break;
-        case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);              break;
-        case DID_GPS1_VERSION:      // FALL THROUGH
-        case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);          break;
-        case DID_GPS1_POS:          // FALL THROUGH
-        case DID_GPS2_POS:          // FALL THROUGH
-        case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);              break;
-        case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
-        case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
-        case DID_GPS1_RAW:          // FALL THROUGH
-        case DID_GPS2_RAW:          // FALL THROUGH
-        case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
-        case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
-        case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
-        case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;
-        case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);              break;
-        case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);      break;
-        case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr);  break;
-        case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr);        break;
-        case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr);   break;
-        case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;
-        case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
-        case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
-    	case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);    			break;
-        default:
-            if (m_showRawHex)
-                str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
-            else if (m_editData.did == data->hdr.id)
-            {   // Default view
-                str = DatasetToString(&m_editData.pData);
-            }
-            else
-            {
-                std::ostringstream oss;
-                oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id)) << std::endl;
-                str = oss.str();
-            }
-            break;
+    case DID_EVB_DEV_INFO:      // FALL THROUGH
+    case DID_GPX_DEV_INFO:      // FALL THROUGH
+    case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
+    case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
+    case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
+    case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
+    case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
+    case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
+    case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
+    case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
+    case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
+    case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
+    case DID_GPS1_VERSION:      // FALL THROUGH
+    case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);      break;
+    case DID_GPS1_POS:          // FALL THROUGH
+    case DID_GPS2_POS:          // FALL THROUGH
+    case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+    case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
+    case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
+    case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
+    case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
+    case DID_GPS1_RAW:          // FALL THROUGH
+    case DID_GPS2_RAW:          // FALL THROUGH
+    case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
+    case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
+    case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
+    case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;
+    case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);              break;
+    case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);      break;
+    case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr);  break;
+    case DID_GPX_RTOS_INFO:     str = DataToStringGRTOS(d.gRtosInfo, data->hdr);            break;
+    case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr);        break;
+    case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr);   break;
+    case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;
+    case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
+    case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
+    case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);    			break;
+    default:
+        if (m_showRawHex)
+            str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
+        else if (m_editData.did == data->hdr.id)
+        {   // Default view
+            str = DatasetToString(&m_editData.pData);
+        }
+        else
+        {
+            std::ostringstream oss;
+            oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id)) << std::endl;
+            str = oss.str();
+        }
+        break;
     }
 
     return str;
@@ -778,7 +775,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 {
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tSTATUS\n");
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     Aiding: Mag %d, GPS (Hdg %d, Pos %d)\n",
-        (hdwStatus & HDW_STATUS_GPS_SATELLITE_RX) != 0,
+        (hdwStatus & HDW_STATUS_GPS_SATELLITE_RX_VALID) != 0,
         (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_POS) != 0);
@@ -1564,6 +1561,15 @@ string cInertialSenseDisplay::DataToStringRTOS(const rtos_info_t& info, const p_
     return string("RTOS: ") + csvString + terminator;
 }
 
+string cInertialSenseDisplay::DataToStringGRTOS(const gpx_rtos_info_t& info, const p_data_hdr_t& hdr)
+{
+    cDataCSV csv;
+    string csvString;
+    csv.DataToStringCSV(hdr, (const uint8_t*)&info, csvString);
+    const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
+    return string("RTOS: ") + csvString + terminator;
+}
+
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr)
 {
     (void)hdr;
@@ -1577,7 +1583,6 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
 {
-
     char buf[BUF_SIZE];
     sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
     return string(buf);
@@ -1920,7 +1925,7 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
                 }
             }
             break;
-		case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
+        case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "IMX TDI EV:%d\n", EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST);
 
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CCR:\t0x%08x\n", *(uint32_t*)(&event.data[0]));

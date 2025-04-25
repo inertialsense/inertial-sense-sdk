@@ -770,7 +770,7 @@ void InertialSense::Close()
     EnableLogger(false);
     if (m_disableBroadcastsOnClose)
     {
-        StopBroadcasts();
+        StopBroadcasts(false);
         SLEEP_MS(100);
     }
 //    for (auto& device : m_comManagerState.devices)

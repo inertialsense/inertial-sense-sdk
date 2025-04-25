@@ -602,7 +602,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("debug", &nvm_flash_cfg_t::debug, DATA_TYPE_UINT8);
     mapper.AddMember("gnssCn0Minimum", &nvm_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
     mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
-    mapper.AddArray("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
+    mapper.AddMember("imuRejectThreshGyroLow", &nvm_flash_cfg_t::imuRejectThreshGyroLow, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
+    mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
 
     // Keep at end
@@ -653,7 +654,8 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0Minimum", &gpx_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
     mapper.AddMember("gnssCn0DynMinOffset", &gpx_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddArray("reserved1", &gpx_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
-    mapper.AddArray("reserved2", &gpx_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
+    mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("reserved2", &gpx_flash_cfg_t::reserved2, DATA_TYPE_UINT32);
 
     // Keep at end
     mapper.AddMember("size", &gpx_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
@@ -1034,20 +1036,45 @@ static void PopulateMapRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("freeSize", &rtos_info_t::freeSize, DATA_TYPE_UINT32, "", "Total memory freed using free()", DATA_FLAGS_READ_ONLY);
 
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".name",                 i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].name), DATA_TYPE_STRING, "", "Task name", 0, 1.0, MAX_TASK_NAME_LEN); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".cpuUsage",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].cpuUsage), DATA_TYPE_F32, "%", "CPU usage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".cpuUsage",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].cpuUsage), DATA_TYPE_F32, "%", "CPU usage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".stackUnused",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].stackUnused), DATA_TYPE_UINT32, "", "Task stack unused bytes (high-water mark)"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_2); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_2); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_2); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long twice in a row"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8, "", "", DATA_FLAGS_HIDDEN); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32); }
+}
+
+static void PopulateMapGpxRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<gpx_rtos_info_t> mapper(data_set, did);
+    mapper.AddMember("freeHeapSize", &gpx_rtos_info_t::freeHeapSize, DATA_TYPE_UINT32, "", "Heap unused bytes (high-water mark)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("mallocSize", &gpx_rtos_info_t::mallocSize, DATA_TYPE_UINT32, "", "Total memory allocated using malloc()", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("freeSize", &gpx_rtos_info_t::freeSize, DATA_TYPE_UINT32, "", "Total memory freed using free()", DATA_FLAGS_READ_ONLY);
+
+
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".name",                 i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].name), DATA_TYPE_STRING, "", "Task name", 0, 1.0, MAX_TASK_NAME_LEN); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".cpuUsage",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].cpuUsage), DATA_TYPE_F32, "%", "CPU usage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".stackUnused",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].stackUnused), DATA_TYPE_UINT32, "", "Task stack unused bytes (high-water mark)"); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority"); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time"); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time"); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long twice in a row"); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8, "", "", DATA_FLAGS_HIDDEN); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32); }
 }
 
 static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1480,14 +1507,14 @@ cISDataMappings::cISDataMappings()
     PopulateMapDeviceInfo(m_data_set, DID_DEV_INFO);
     PopulateMapDeviceInfo(m_data_set, DID_GPX_DEV_INFO);
 
-    PopulateMapSystemCommand(m_data_set, DID_SYS_CMD);
-    PopulateMapBit(m_data_set, DID_BIT);
-    PopulateMapGpxBit(m_data_set, DID_GPX_BIT);
-    PopulateMapGpxStatus(m_data_set, DID_GPX_STATUS);
-    PopulateMapSurveyIn(m_data_set, DID_SURVEY_IN);
-    PopulateMapRtosInfo(m_data_set, DID_RTOS_INFO);
-    // m_data_set[DID_GPX_RTOS_INFO].size = sizeof(gpx_rtos_info_t);
-    PopulateMapSystemFault(m_data_set, DID_SYS_FAULT);
+    PopulateMapSystemCommand(       m_data_set, DID_SYS_CMD);
+    PopulateMapBit(                 m_data_set, DID_BIT);
+    PopulateMapGpxBit(              m_data_set, DID_GPX_BIT);
+    PopulateMapGpxStatus(           m_data_set, DID_GPX_STATUS);
+    PopulateMapSurveyIn(            m_data_set, DID_SURVEY_IN);
+    PopulateMapRtosInfo(            m_data_set, DID_RTOS_INFO);
+    PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
+    PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
@@ -1869,10 +1896,12 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
         valuef32 = (*(float*)dataBuffer) * conversion;
         if (precision)
         {
+            precision -= 1;
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, valuef32);
         }
         else
         {
+            precision -= 1;
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", valuef32);
         }
         break;
