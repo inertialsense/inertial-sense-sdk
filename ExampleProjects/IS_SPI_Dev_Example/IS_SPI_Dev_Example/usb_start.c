@@ -8,6 +8,8 @@
 #include "atmel_start.h"
 #include "usb_start.h"
 
+#include "../../../src/ISComm.h"
+
 #if CONF_USBD_HS_SP
 static uint8_t single_desc_bytes[] = {
     /* Device descriptors and Configuration descriptors list. */
@@ -31,6 +33,8 @@ static struct usbd_descriptors single_desc[]
 #endif
 };
 
+
+is_comm_instance_t comm;
 
 /** Ctrl endpoint buffer */
 static uint8_t ctrl_buffer[64];
@@ -68,6 +72,47 @@ int spiInBuffIdx = 0;
 
 uint8_t spiOutBuff[BUFF_SIZE*2];
 int spiOutBuffIdx = 0;
+
+typedef struct parserStats
+{
+	uint32_t isbPktCount[DID_COUNT];
+	uint32_t nmeaPktCount[NMEA_MSG_ID_COUNT];
+	uint32_t errorCnt;
+}parserStats_t;
+
+parserStats_t stats;
+uint32_t tmpPktType = 0;
+uint32_t ioobErrCnt = 0;
+
+void parseISPacket()
+{
+	for (int i = 0; i < spiInBuffIdx; i++)
+	{
+		switch (is_comm_parse_byte(&comm, spiInBuff[i]))
+		{
+			case _PTYPE_INERTIAL_SENSE_DATA:
+				if (comm.rxPkt.hdr.id < DID_COUNT )
+					stats.isbPktCount[comm.rxPkt.hdr.id]++;
+				else
+					ioobErrCnt++;
+				break;
+
+			case _PTYPE_NMEA:
+				tmpPktType = getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.dataHdr.size);
+				
+				if (tmpPktType < NMEA_MSG_ID_COUNT)
+					stats.nmeaPktCount[tmpPktType]++;
+				else
+					ioobErrCnt++;
+				break;
+			case _PTYPE_PARSE_ERROR:
+				stats.errorCnt++;
+				break;
+			default:
+				break;
+		}
+	}
+}
 
 int SPI_0_transfer(uint8_t* buf, uint32_t len)
 {
@@ -302,6 +347,7 @@ void unloadSpiInBuff()
 		//UART_0_write(spiInBuff,spiInBuffIdx);
 	
 		// SDK?
+		parseISPacket();
 	}
 	
 	spiInBuffIdx=0;
@@ -319,6 +365,10 @@ void unloadSpiInBuff()
  */
 void cdcd_acm_example(void)
 {
+	// Init comm instance
+	uint8_t buffer[2048];
+	is_comm_init(&comm, buffer, sizeof(buffer));
+	
 	TIMER_0_example();
 	
 	struct io_descriptor *io;
