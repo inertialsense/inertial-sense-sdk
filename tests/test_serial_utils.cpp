@@ -11,7 +11,6 @@
 #include <stdexcept>
 
 #include "ISComm.h"
-#include "util/util.h"
 #include "com_manager.h"
 #include "test_serial_utils.h"
 
@@ -24,6 +23,7 @@
 #define TIME_USEC()             time_usec()
 #define TIME_DELAY_USEC(us)     time_delay_usec(us)
 #else
+#include "util/util.h"
 #include "../src/ISUtilities.h"
 #define TIME_USEC()             current_timeUs()
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
@@ -161,9 +161,9 @@ static int loopbackPortWrite(port_handle_t port, const unsigned char* buf, unsig
     if (ringBufWrite(&((test_port_t*)port)->loopbackPortBuf, (unsigned char*)buf, len))
     {   
         // Buffer overflow
-        #if !defined(GPX_1)
-            throw new std::out_of_range(utils::string_format("loopbackPortWrite ring buffer overflow: %d !!!\n", ringBufUsed(&((test_port_t*)port)->loopbackPortBuf) + len));
-        #endif
+#if !defined(IMX_5) && !defined(GPX_1)
+        throw new std::out_of_range(utils::string_format("loopbackPortWrite ring buffer overflow: %d !!!\n", ringBufUsed(&((test_port_t*)port)->loopbackPortBuf) + len));
+#endif
     }
     return len;
 }
