@@ -216,21 +216,37 @@ void SPIReadDR()
 	loadSPIInBuffer(spiRxBuff, readAmt);
 }
 
+uint16_t portWriteBuffSize = 0;
 
-void readEvery20ms()
+int portWriteCom(unsigned int port, const unsigned char* buf, int len )
+{
+	if ((len+portWriteBuffSize) < BUFF_SIZE)
+	{
+		memcpy(&spiTxBuff[portWriteBuffSize], buf, len);
+		portWriteBuffSize += len;
+	}
+}
+
+void readEvery50ms()
 {
 	SERCOM1->USART.INTENCLR.reg = SERCOM_USART_INTENSET_RXC;
 	if (readSPI)
 	{
 		spi_xfer_data.size = 150;
+		memset(spiTxBuff, 0xff, 150);
+		is_comm_get_data(portWriteCom, 0, &comm, DID_INS_1, sizeof(ins_1_t), 0, 0);
+		is_comm_get_data(portWriteCom, 0, &comm, DID_PIMU, sizeof(pimu_t), 0, 0);
 		spi_xfer_data.rxbuf = spiRxBuff;
 		spi_xfer_data.txbuf = spiTxBuff;
+
 		gpio_set_pin_level(SPI_CS, false);
 		spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
 		gpio_set_pin_level(SPI_CS, true);
-		
-		readSPI = false;
+
 		loadSPIInBuffer(spiRxBuff, spi_xfer_data.size);
+
+		portWriteBuffSize = 0;
+		readSPI = false;
 	}
 }
 
@@ -424,7 +440,7 @@ void cdcd_acm_example(void)
 		if (gpio_get_pin_level(MODE_SELECT))
 		{
 			//SPIReadNoDR();
-			readEvery20ms();
+			readEvery50ms();
 		}
 		else 
 		{
