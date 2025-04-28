@@ -241,33 +241,24 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformCo
     }
 
     // GPS timepulse source
-    *ioConfig &= ~IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK;
+    *ioConfig &= ~IO_CFG_GNSS1_PPS_SOURCE_BITMASK;
     switch (type)
     {
         // Disabled
-    case PLATFORM_CFG_TYPE_RUG2_1_G0:
     case PLATFORM_CFG_TYPE_RUG3_G0:               
     case PLATFORM_CFG_TYPE_NONE:
         break;
         // G8
-    case PLATFORM_CFG_TYPE_EVB2_G2:
-    case PLATFORM_CFG_TYPE_RUG2_0_G1:
-    case PLATFORM_CFG_TYPE_RUG2_0_G2:
     case PLATFORM_CFG_TYPE_IG1_0_G2:
-        *ioConfig |= IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET;
+        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_STROBE_G8_PIN12<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
         // G5
     case PLATFORM_CFG_TYPE_TBED3:
-        *ioConfig |= IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G5_PIN9<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET;
+        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_STROBE_G5_PIN9<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
-        // G9
-    case PLATFORM_CFG_TYPE_RUG2_1_G1:
-    case PLATFORM_CFG_TYPE_RUG2_1_G2:
-        *ioConfig |= IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G9_PIN13<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET;
-        break;
-        // GPS1 PPS (pin 20)
+        // G15 (GPS1 PPS)
     default:
-        *ioConfig |= IO_CFG_GPS_TIMEPUSE_SOURCE_GNSS_PPS_PIN20<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET;
+        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_GNSS_PPS_PIN20<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
     }
 }
