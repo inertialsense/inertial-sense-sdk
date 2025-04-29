@@ -3126,16 +3126,18 @@ enum ePPS2Config
 {
     /** G11 (SWDIO) - (ePPS2Config[0]) */
     IO_CFG_G11_OFFSET                       = (int)0,
-    IO_CFG_G11_MASK                         = (int)0x1,
+    IO_CFG_G11_MASK                         = (int)0x01,
     IO_CFG_G11_BITMASK                      = (int)(IO_CFG_G11_MASK<<IO_CFG_G11_OFFSET),
-    IO_CONFIG_G11_SWDIO                     = (int)0x0,
-    IO_CONFIG_G11_STROBE_INPUT              = (int)0x1,
-    IO_CONFIG_G11_SWDIO_val                 = (int)0x0,
-    IO_CONFIG_G11_STROBE_INPUT_val          = (int)0x1,
+    IO_CFG_G11_SWDIO                        = (int)0x00,
+    IO_CFG_G11_STROBE_INPUT                 = (int)0x01,
+    IO_CFG_G11_SWDIO_val                    = (int)0x00,
+    IO_CFG_G11_STROBE_INPUT_val             = (int)0x01,
+    IO_CFG_G11_DEFAULT                      = (int)0x00,
+
 
     /** G12 (SWO) - (ePPS2Config[2-1]) */
     IO_CFG_G12_OFFSET                       = (int)1,
-    IO_CFG_G12_MASK                         = (int)0x3,
+    IO_CFG_G12_MASK                         = (int)0x03,
     IO_CFG_G12_BITMASK                      = (int)(IO_CFG_G12_MASK<<IO_CFG_G12_OFFSET),
     IO_CFG_G12_SWO                          = (int)0x00,
     IO_CFG_G12_XSCL                         = (int)0x01,
@@ -3143,10 +3145,11 @@ enum ePPS2Config
     IO_CFG_G12_SWO_val                      = (int)0x00,
     IO_CFG_G12_XSCL_val                     = (int)0x02,
     IO_CFG_G12_STROBE_INPUT_val             = (int)0x04,
+    IO_CFG_G12_DEFAULT                      = (int)0x00,
 
     /** G13 (DRDY) - (ePPS2Config[4-3]) */
     IO_CFG_G13_OFFSET                       = (int)3,
-    IO_CFG_G13_MASK                         = (int)0x3,
+    IO_CFG_G13_MASK                         = (int)0x03,
     IO_CFG_G13_BITMASK                      = (int)(IO_CFG_G13_MASK<<IO_CFG_G13_OFFSET),
     IO_CFG_G13_DRDY                         = (int)0x00,
     IO_CFG_G13_XSDA                         = (int)0x01,
@@ -3154,12 +3157,13 @@ enum ePPS2Config
     IO_CFG_G13_DRDY_val                     = (int)0x00,
     IO_CFG_G13_XSDA_val                     = (int)0x08,
     IO_CFG_G13_STROBE_INPUT_val             = (int)0x10,
+    IO_CFG_G13_DEFAULT                      = (int)0x00,
 
     /** UNUSED (ePPS2Config[5]) */
 
     /** GNSS2 TIMEPULSE source (ePPS2Config[7-6]) */
     IO_CFG_GNSS2_PPS_SOURCE_OFFSET          = (int)1,
-    IO_CFG_GNSS2_PPS_SOURCE_MASK            = (int)0x3,
+    IO_CFG_GNSS2_PPS_SOURCE_MASK            = (int)0x03,
     IO_CFG_GNSS2_PPS_SOURCE_BITMASK         = (int)(IO_CFG_GNSS2_PPS_SOURCE_MASK<<IO_CFG_GNSS2_PPS_SOURCE_OFFSET),    
     IO_CFG_GNSS2_PPS_SOURCE_DISABLED        = (int)0x00,
     IO_CFG_GNSS2_PPS_SOURCE_G11             = (int)0x01,
