@@ -60,7 +60,7 @@ typedef uint32_t eDataIDs;
 #define DID_SENSORS_UCAL                (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
 #define DID_SENSORS_TCAL                (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
-#define DID_IO                          (eDataIDs)27 /** (io_t) I/O */
+#define DID_UNUSED_27                   (eDataIDs)27 /** UNUSED */
 #define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SCOMP                       (eDataIDs)29 /** INTERNAL USE ONLY (sensor_compensation_t) */
 #define DID_GPS1_VEL                    (eDataIDs)30 /** (gps_vel_t) GPS 1 velocity data */
@@ -2183,16 +2183,6 @@ typedef struct PACKED
     rmcNmea_t rmcNmea;
 } grmci_t;
 
-/** (DID_IO) Input/Output */
-typedef struct PACKED
-{
-    /** GPS time of week (since Sunday morning) in milliseconds */
-    uint32_t                timeOfWeekMs;
-
-    /** General purpose I/O status */
-    uint32_t				gpioStatus;
-} io_t;
-
 enum eMagCalState
 {
     MAG_CAL_STATE_DO_NOTHING		= (int)0, 
@@ -3059,15 +3049,15 @@ enum eIoConfig
     IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
 
     /** GPS TIMEPULSE source (ioConfig[15-13]) */
-    IO_CFG_GNSS1_PPS_SOURCE_OFFSET           = (int)13,
-    IO_CFG_GNSS1_PPS_SOURCE_MASK             = (int)0x00000007,
-    IO_CFG_GNSS1_PPS_SOURCE_BITMASK          = (int)(IO_CFG_GNSS1_PPS_SOURCE_MASK<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET),    
-    IO_CFG_GNSS1_PPS_SOURCE_DISABLED         = (int)0,
-    IO_CFG_GNSS1_PPS_SOURCE_G15              = (int)1,
-    IO_CFG_GNSS1_PPS_SOURCE_STROBE_G2_PIN6   = (int)3,
-    IO_CFG_GNSS1_PPS_SOURCE_STROBE_G5_PIN9   = (int)4,
-    IO_CFG_GNSS1_PPS_SOURCE_STROBE_G8_PIN12  = (int)5,
-    IO_CFG_GNSS1_PPS_SOURCE_STROBE_G9_PIN13  = (int)6,
+    IO_CFG_GNSS1_PPS_SOURCE_OFFSET              = (int)13,
+    IO_CFG_GNSS1_PPS_SOURCE_MASK                = (int)0x00000007,
+    IO_CFG_GNSS1_PPS_SOURCE_BITMASK             = (int)(IO_CFG_GNSS1_PPS_SOURCE_MASK<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET),    
+    IO_CFG_GNSS1_PPS_SOURCE_DISABLED            = (int)0,
+    IO_CFG_GNSS1_PPS_SOURCE_G15                 = (int)1,
+    IO_CFG_GNSS1_PPS_SOURCE_G2                  = (int)3,
+    IO_CFG_GNSS1_PPS_SOURCE_G5                  = (int)4,
+    IO_CFG_GNSS1_PPS_SOURCE_G8                  = (int)5,
+    IO_CFG_GNSS1_PPS_SOURCE_G9                  = (int)6,
 
  #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)    { (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }    
  #define IO_CFG_GNSS1_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG_GNSS1_PPS_SOURCE_OFFSET)&IO_CFG_GNSS1_PPS_SOURCE_MASK)
@@ -3140,6 +3130,8 @@ enum ePPS2Config
     IO_CFG_G11_BITMASK                      = (int)(IO_CFG_G11_MASK<<IO_CFG_G11_OFFSET),
     IO_CONFIG_G11_SWDIO                     = (int)0x0,
     IO_CONFIG_G11_STROBE_INPUT              = (int)0x1,
+    IO_CONFIG_G11_SWDIO_val                 = (int)0x0,
+    IO_CONFIG_G11_STROBE_INPUT_val          = (int)0x1,
 
     /** G12 (SWO) - (ePPS2Config[2-1]) */
     IO_CFG_G12_OFFSET                       = (int)1,
@@ -3148,6 +3140,9 @@ enum ePPS2Config
     IO_CFG_G12_SWO                          = (int)0x00,
     IO_CFG_G12_XSCL                         = (int)0x01,
     IO_CFG_G12_STROBE_INPUT                 = (int)0x02,
+    IO_CFG_G12_SWO_val                      = (int)0x00,
+    IO_CFG_G12_XSCL_val                     = (int)0x02,
+    IO_CFG_G12_STROBE_INPUT_val             = (int)0x04,
 
     /** G13 (DRDY) - (ePPS2Config[4-3]) */
     IO_CFG_G13_OFFSET                       = (int)3,
@@ -3156,15 +3151,24 @@ enum ePPS2Config
     IO_CFG_G13_DRDY                         = (int)0x00,
     IO_CFG_G13_XSDA                         = (int)0x01,
     IO_CFG_G13_STROBE_INPUT                 = (int)0x02,
+    IO_CFG_G13_DRDY_val                     = (int)0x00,
+    IO_CFG_G13_XSDA_val                     = (int)0x08,
+    IO_CFG_G13_STROBE_INPUT_val             = (int)0x10,
 
-    /** GNSS2 TIMEPULSE source (ioConfig[7-6]) */
+    /** UNUSED (ePPS2Config[5]) */
+
+    /** GNSS2 TIMEPULSE source (ePPS2Config[7-6]) */
     IO_CFG_GNSS2_PPS_SOURCE_OFFSET          = (int)1,
     IO_CFG_GNSS2_PPS_SOURCE_MASK            = (int)0x3,
     IO_CFG_GNSS2_PPS_SOURCE_BITMASK         = (int)(IO_CFG_GNSS2_PPS_SOURCE_MASK<<IO_CFG_GNSS2_PPS_SOURCE_OFFSET),    
-    IO_CFG_GNSS2_PPS_SOURCE_DISABLED        = (int)0,
-    IO_CFG_GNSS2_PPS_SOURCE_G11             = (int)1,
-    IO_CFG_GNSS2_PPS_SOURCE_G12             = (int)2,
-    IO_CFG_GNSS2_PPS_SOURCE_G13             = (int)3,
+    IO_CFG_GNSS2_PPS_SOURCE_DISABLED        = (int)0x00,
+    IO_CFG_GNSS2_PPS_SOURCE_G11             = (int)0x01,
+    IO_CFG_GNSS2_PPS_SOURCE_G12             = (int)0x02,
+    IO_CFG_GNSS2_PPS_SOURCE_G13             = (int)0x03,    
+    IO_CFG_GNSS2_PPS_SOURCE_DISABLED_val    = (int)0x00,
+    IO_CFG_GNSS2_PPS_SOURCE_G11_val         = (int)0x40,
+    IO_CFG_GNSS2_PPS_SOURCE_G12_val         = (int)0x80,
+    IO_CFG_GNSS2_PPS_SOURCE_G13_val         = (int)0xC0,
 };
 
 #define IO_CFG_GNSS2_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG_GNSS2_PPS_SOURCE_MASK)
@@ -3522,7 +3526,7 @@ typedef struct PACKED
     /** GPS time of week (since Sunday morning) in milliseconds */
     uint32_t				timeOfWeekMs;
 
-    /** Strobe input pin (i.e. G1, G2, G5, or G9) */
+    /** Strobe input pin (i.e. G1, G2, G5, G9, G11, G12, G13, G15) */
     uint16_t				pin;
 
     /** Strobe serial index number */

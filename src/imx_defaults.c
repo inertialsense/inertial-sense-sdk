@@ -250,11 +250,11 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformCo
         break;
         // G8
     case PLATFORM_CFG_TYPE_IG1_0_G2:
-        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_STROBE_G8_PIN12<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G8<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
         // G5
     case PLATFORM_CFG_TYPE_TBED3:
-        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_STROBE_G5_PIN9<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G5<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
         // G15 (GPS1 PPS)
     default:
