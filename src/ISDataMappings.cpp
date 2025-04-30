@@ -114,13 +114,6 @@ static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_
     mapper.AddArray("uid", &manufacturing_info_t::uid, DATA_TYPE_UINT32, 4, "", "Unique microcontroller identifier", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapIO(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<io_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &io_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("gpioStatus", &io_t::gpioStatus, DATA_TYPE_UINT32, "", "Use to read and control GPIO input and output.", DATA_FLAGS_DISPLAY_HEX);
-}
-
 static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<bit_t> mapper(data_set, did);
@@ -1568,7 +1561,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapCanConfig(           m_data_set, DID_CAN_CONFIG);
     PopulateMapRmc(                 m_data_set, DID_RMC);
     PopulateMapRmc(                 m_data_set, DID_GPX_RMC);
-    PopulateMapIO(                  m_data_set, DID_IO);
     PopulateMapISEvent(             m_data_set, DID_EVENT);
 
     // EVB
@@ -1706,7 +1698,6 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_RMC:
     case DID_DEBUG_STRING:
     case DID_DEBUG_ARRAY:
-    case DID_IO:
     case DID_MAG_CAL:
     case DID_COMMUNICATIONS_LOOPBACK:
     case DID_BIT:

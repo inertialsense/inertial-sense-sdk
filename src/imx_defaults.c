@@ -38,7 +38,6 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     uint32_t type = platformConfig&PLATFORM_CFG_TYPE_MASK;
     uint32_t preset = (platformConfig&PLATFORM_CFG_PRESET_MASK)>>PLATFORM_CFG_PRESET_OFFSET;
 
-    todo this also need be looked like;
     // is platform R3?
     if (type != PLATFORM_CFG_TYPE_RUG3_G0 &&
         type != PLATFORM_CFG_TYPE_RUG3_G1 &&
@@ -113,11 +112,10 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
 }
 
-void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig)
+void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *pps2cfg, uint32_t platformConfig)
 {
     uint32_t type = platformConfig&PLATFORM_CFG_TYPE_MASK;
 
-    todo defaults pps2;
     switch (type)
     {
     default:    // No GPS 
@@ -201,11 +199,13 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformCo
         *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G15<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
     }
+    
+    *pps2cfg = 0;
 }
 
-void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformType)
+void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t* pps2Cfg, uint32_t platformType)
 {
-    imxPlatformConfigToFlashCfgIoConfig(ioConfig, imxPlatformConfigTypeToDefaultPlatformConfig(platformType));
+    imxPlatformConfigToFlashCfgIoConfig(ioConfig, pps2Cfg, imxPlatformConfigTypeToDefaultPlatformConfig(platformType));
 }
 
 // Return default platformConfig based on platformType
