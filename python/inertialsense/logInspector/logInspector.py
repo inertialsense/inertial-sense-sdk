@@ -809,8 +809,8 @@ class LogInspectorWindow(QMainWindow):
         # Insert it at the beginning
         root_path_hist.insert(0, directory)
 
-        # Keep only the first 5 entries (most recent)
-        self.config["root_path_hist"] = root_path_hist[:5]
+        # Keep only the first X entries (most recent)
+        self.config["root_path_hist"] = root_path_hist[:8]
 
         self.dirLineEdit.setText(directory)
 

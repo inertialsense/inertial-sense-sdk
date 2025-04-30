@@ -712,40 +712,40 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	}
 
 
-    string str;
-    switch (data->hdr.id)
-    {
+	string str;
+	switch (data->hdr.id)
+	{
     case DID_EVB_DEV_INFO:      // FALL THROUGH
     case DID_GPX_DEV_INFO:      // FALL THROUGH
-    case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
-    case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
-    case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
-    case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
-    case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
-    case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
-    case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
-    case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
-    case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
-    case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
+	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
+	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
+	case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
+	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
+	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
+	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
+	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
+	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
+	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
+	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
     case DID_GPS1_VERSION:      // FALL THROUGH
-    case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);      break;
+	case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);      break;
     case DID_GPS1_POS:          // FALL THROUGH
     case DID_GPS2_POS:          // FALL THROUGH
-    case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
-    case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
-    case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
-    case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
-    case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
+	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
+	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
+	case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
+	case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
     case DID_GPS1_RAW:          // FALL THROUGH
     case DID_GPS2_RAW:          // FALL THROUGH
-    case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
-    case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
-    case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
-    case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;
-    case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);              break;
-    case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);      break;
-    case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr);  break;
-    case DID_GPX_RTOS_INFO:     str = DataToStringGRTOS(d.gRtosInfo, data->hdr);            break;
+	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
+	case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
+	case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
+	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;
+	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);              break;
+	case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);      break;
+	case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr);  break;
+	case DID_GPX_RTOS_INFO:     str = DataToStringGRTOS(d.gRtosInfo, data->hdr);            break;
     case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr);        break;
     case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr);   break;
     case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;

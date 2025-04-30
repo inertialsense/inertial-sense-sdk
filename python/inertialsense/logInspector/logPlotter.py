@@ -3348,24 +3348,29 @@ class logPlot:
             if np.any(timeRef):
                 refImuPresent = True
 
-        N = 4
+        N = 5
         ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
 
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'GPS1 dt', 's')
         self.configureSubplot(ax[1], 'GPS2 dt', 's')
-        self.configureSubplot(ax[2], 'GPS1 TOW Offset', 's')
-        self.configureSubplot(ax[3], 'GPS2 TOW Offset', 's')
+        self.configureSubplot(ax[2], 'RTK Compassing dt', 's')
+        self.configureSubplot(ax[3], 'GPS1 TOW Offset', 's')
+        self.configureSubplot(ax[4], 'GPS2 TOW Offset', 's')
 
         for d in self.active_devs_no_ref:
             towMsGps1 = self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:]
             towMsGps2 = self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[1:]
+            towMsRtk2 = self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs')[1:]
             dtGps1 = 0.001*(towMsGps1 - self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[0:-1])
             dtGps2 = 0.001*(towMsGps2 - self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[0:-1])
+            dtRtk2 = 0.001*(towMsRtk2 - self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs')[0:-1])
             dtGps1 = dtGps1 / self.d
             dtGps2 = dtGps2 / self.d
+            dtRtk2 = dtRtk2 / self.d
             timeGps1 = getTimeFromGpsTowMs(towMsGps1)
             timeGps2 = getTimeFromGpsTowMs(towMsGps2)
+            timeRtk2 = getTimeFromGpsTowMs(towMsRtk2)
 
             towOffsetGps1 = self.getData(d, DID_GPS1_POS, 'towOffset')[1:]
             towOffsetGps2 = self.getData(d, DID_GPS2_POS, 'towOffset')[1:]
@@ -3373,14 +3378,22 @@ class logPlot:
             if self.xAxisSample:
                 xGps1 = np.arange(0, np.shape(dtGps1)[0])
                 xGps2 = np.arange(0, np.shape(dtGps2)[0])
+                xRtk2 = np.arange(0, np.shape(dtRtk2)[0])
             else:
                 xGps1 = timeGps1
                 xGps2 = timeGps2
+                xRtk2 = timeRtk2
 
             ax[0].plot(xGps1, dtGps1)
             ax[1].plot(xGps2, dtGps2)
-            ax[2].plot(xGps1, towOffsetGps1)
-            ax[3].plot(xGps2, towOffsetGps2)
+            ax[2].plot(xRtk2, dtRtk2)
+            ax[3].plot(xGps1, towOffsetGps1)
+            ax[4].plot(xGps2, towOffsetGps2)
+
+            self.configureSubplot(ax[0],  f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
+            self.configureSubplot(ax[1],  f'GPS2 dt: {np.mean(dtGps2):.3f}s', 's')
+            self.configureSubplot(ax[2],  f'RTK Compassing dt: {np.mean(dtRtk2):.3f}s', 's')
+
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
         for i in range(len(ax)):
@@ -3391,7 +3404,7 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        return self.saveFigJoinAxes(ax, axs, fig, 'deltatime')
+        return self.saveFigJoinAxes(ax, axs, fig, 'gpstime')
 
     def gpsRawTime(self, fig=None, axs=None):
         if fig is None:

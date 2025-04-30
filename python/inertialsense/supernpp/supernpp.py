@@ -1,24 +1,22 @@
 #!/usr/bin/python3
 
-import os, sys, re, time, threading
+import os
+import re
 from subprocess import Popen
+from os.path import normpath, basename
 from threading import Thread
+import time
 from pathlib import Path
 import shutil
 import sys
 import threading
 import yaml
 
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
+sys.path.insert(1, '../../SDK/python/logInspector')
+sys.path.insert(1, '../logInspector')
+sys.path.insert(1, '..')
 
-eprint(Path().resolve())
-
-file_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, os.path.normpath(file_path + '/..'))
-sys.path.insert(0, os.path.normpath(file_path + '/../..'))
-
-from inertialsense.logs.logReader import Log
+from logReader import Log
 
 class SuperNPP():
     def __init__(self, params_filename=None, serials=['ALL'], startMode=0):		# start mode 0=hot, 1=cold, 2=factory
@@ -219,8 +217,7 @@ class SuperNPP():
             serials = config_serials
 
         file_path = os.path.dirname(os.path.realpath(__file__))
-        npp_build_folder = os.path.normpath(file_path + '../../../../../cpp/NavPostProcess/build')
-
+        npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
         if os.name == 'posix':  # Linux
             exename = './navpp'
         else:                   # Windows
@@ -260,7 +257,7 @@ def buildNPP(npp_build_folder):
     process.wait()
  
 def nppPrint(str):
-    print(str)    # Comment out to disable output
+    print(str)	# Comment out to disable output
     pass
 
 def file_contains_string_count(file_path, search_string):
@@ -286,11 +283,16 @@ def string_case(filename, title_string, search_string):
         output += lines_with_string(filename, search_string)
     return output
 
-def main():
+if __name__ == "__main__":
+
     print("Running SuperNPP")
     npp_build_folder = "../../../cpp/NavPostProcess/build"
     # buildNPP(npp_build_folder)
 
+    print("Arguments passed to the script:")
+    for i, arg in enumerate(sys.argv):
+        print(f"arg[{i}] = {arg}")
+        
     # 2nd argument: Log directory list file
     if len(sys.argv) < 2:
         exit(1)
@@ -324,5 +326,3 @@ def main():
 
     snpp.exitHack()
 
-if __name__ == "__main__":
-    main()

@@ -76,12 +76,6 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
 int nmea_powgps(char a[], const int aSize, gps_pos_t &pos);
 int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel);
 
-/**
- * Converts NMEA message ID (eNmeaMsgIdInx) to talker string.
- * Returns the talker string on success, or an an empty string on error
-*/
-std::string nmeaMsgIdToTalker(int msgId);
-
 //////////////////////////////////////////////////////////////////////////
 // NMEA to Binary
 //////////////////////////////////////////////////////////////////////////

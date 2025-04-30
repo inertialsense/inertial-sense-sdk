@@ -264,49 +264,45 @@ int nmea_sprint_footer(char* a, int aSize, int &n)
 
 char *ASCII_to_u8(uint8_t *val, char *ptr)
 {
-    val[0] = (uint8_t)atoi(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    val[0] = (uint8_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_u16(uint16_t *val, char *ptr)
 {
-    val[0] = (uint16_t)atoi(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    val[0] = (uint16_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_u32(uint32_t *val, char *ptr)
 {
-    val[0] = (uint32_t)atoi(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    val[0] = (uint32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_u64(uint64_t *val, char *ptr)
 {
-    val[0] = (uint64_t)atol(ptr);	ptr = ASCII_find_next_field(ptr);
+    char *endPtr = nullptr;
+    val[0] = (uint64_t)std::strtoll(ptr, &endPtr, 10); 
+    ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_i32(int32_t *val, char *ptr)
 {
-    val[0] = (int32_t)atoi(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    val[0] = (int32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_f32(float *vec, char *ptr)
 {
-    vec[0] = (float)atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_f64(double *vec, char *ptr)
 {
-    vec[0] = atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
@@ -324,43 +320,26 @@ char *ASCII_to_ver4u8(uint8_t vec[], char *ptr)
 
 char *ASCII_to_vec3f(float vec[], char *ptr)
 {
-    vec[0] = (float)atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[1] = (float)atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[2] = (float)atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[1] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[2] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_vec4f(float vec[], char *ptr)
 {
-    vec[0] = (float)atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[1] = (float)atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[2] = (float)atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[3] = (float)atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[1] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[2] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[3] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_vec3d(double vec[], char *ptr)
 {
-    vec[0] = atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[1] = atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[2] = atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+    vec[1] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+    vec[2] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
@@ -374,34 +353,26 @@ char *ASCII_to_MD5(uint32_t md5hash[4], char *ptr)
 char *ASCII_DegMin_to_Lat(double *vec, char *ptr)
 {
     int degrees;
-    SSCANF(ptr, "%02d", &degrees);    
-    ptr += 2;
-
-    double minutes = atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
+    SSCANF(ptr, "%02d", &degrees);	ptr += 2;
+    double minutes = atof(ptr);		ptr = ASCII_find_next_field(ptr);
     double decdegrees = ((double)degrees) + (minutes*0.01666666666666666666666666666666666);
     if (ptr[0] == 'S')  { vec[0] = -decdegrees; } // south
     else                { vec[0] =  decdegrees; } // north
-    
     ptr += 2;
+    
     return ptr;
 }
 
 char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
 {
     int degrees;
-    SSCANF(ptr, "%03d", &degrees);    
-    ptr += 3;
-
-    double minutes = atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
+    SSCANF(ptr, "%03d", &degrees);	ptr += 3;
+    double minutes = atof(ptr);		ptr = ASCII_find_next_field(ptr);
     double decdegrees = ((double)degrees) + (minutes*0.01666666666666666666666666666666666);
     if (ptr[0] == 'W')  { vec[0] = -decdegrees; } // west
     else                { vec[0] =  decdegrees; } // east
-
     ptr += 2;
+
     return ptr;
 }
 
@@ -881,10 +852,7 @@ static void nmea_GPSDateOfLastFix(char* a, int aSize, int &offset, gps_pos_t &po
     offset += ssnprintf(a, aSize, ",%02u%02u%02u", (unsigned int)day, (unsigned int)month, (unsigned int)(year-2000));
 }
 
-/**
- * Comma Separated Values
- */
-static void nmea_GPSDateOfLastFixCSV(char* a, int aSize, int &offset, gps_pos_t &pos)
+static void nmea_GPSDateOfLastFixCSV(char* a, int aSize, int &offset, gps_pos_t &pos)	//Comma Separated Values
 {
     aSize -= offset;
     a += offset;
@@ -900,18 +868,18 @@ int nmea_gga(char a[], const int aSize, gps_pos_t &pos)
     int fixQuality = 0;
     switch((pos.status&GPS_STATUS_FIX_MASK))
     {
-        default:                                    // FALL THROUGH
-        case GPS_STATUS_FIX_NONE:                   fixQuality = 0;    break;
-        case GPS_STATUS_FIX_SBAS:                   // FALL THROUGH
-        case GPS_STATUS_FIX_2D:                     // FALL THROUGH
-        case GPS_STATUS_FIX_RTK_SINGLE:             // FALL THROUGH
-        case GPS_STATUS_FIX_3D:                     fixQuality = 1;    break;
-        case GPS_STATUS_FIX_DGPS:                   fixQuality = 2;    break;
-        case GPS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;    break;   
-        case GPS_STATUS_FIX_RTK_FIX:                fixQuality = 4;    break;
-        case GPS_STATUS_FIX_RTK_FLOAT:              fixQuality = 5;    break;
-        case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:    // FALL THROUGH
-        case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:     fixQuality = 6;    break;
+    default:
+    case GPS_STATUS_FIX_NONE:                   fixQuality = 0;    break;
+    case GPS_STATUS_FIX_SBAS:
+    case GPS_STATUS_FIX_2D:
+    case GPS_STATUS_FIX_RTK_SINGLE:
+    case GPS_STATUS_FIX_3D:                     fixQuality = 1;    break;
+    case GPS_STATUS_FIX_DGPS:                   fixQuality = 2;    break;
+    case GPS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;    break;   
+    case GPS_STATUS_FIX_RTK_FIX:                fixQuality = 4;    break;
+    case GPS_STATUS_FIX_RTK_FLOAT:              fixQuality = 5;    break;
+    case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
+    case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:     fixQuality = 6;    break;
     }
         
     // NMEA GGA line - http://www.gpsinformation.org/dale/nmea.htm#GGA
@@ -1062,12 +1030,14 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "RMC");
     nmea_GPSTimeToUTCTime(a, aSize, n, pos);    // 1 - UTC time of last fix
-    
     if ((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
+    {
         nmea_sprint(a, aSize, n, ",A");         // 2 - A=active (good)
+    }
     else
+    {
         nmea_sprint(a, aSize, n, ",V");         // 2 - V=void (bad,warning)
-    
+    }
     nmea_latToDegMin(a, aSize, n, pos.lla[0]);  // 3,4 - lat (degrees minutes)
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);  // 5,6 - lon (degrees minutes)
     
@@ -1298,7 +1268,7 @@ int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 1
     nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
-    nmea_sprint(a, aSize, n, ",%lu", ((uint64_t)pos.timeOfWeekMs)*1000); // 3 
+    nmea_sprint(a, aSize, n, ",%" PRIu64, ((uint64_t)pos.timeOfWeekMs)*1000); // 3
 
     valid = (pos.leapS > 10 && pos.leapS < 30) ? 1 : 0;     // should be ~18 so give a little leeway
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 4
@@ -1981,34 +1951,24 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 {
     (void)aSize;
-    char *startPtr = (char *)&a[6];     // $INFO,
-    char *ptr = startPtr;
-
-    if (ptr >= (a + aSize - 5)) // '5' is the length of the trailing checksum and line terminator
-        return 1;   // this message has no data in it...
+    char *ptr = (char *)&a[6];	// $INFO,
     
     // uint32_t        serialNumber;
-    if (ptr < a + aSize)
         ptr = ASCII_to_u32(&info.serialNumber, ptr);
 
     // uint8_t         hardwareVer[4];
-    if (ptr < a + aSize)
         ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
 
     // uint8_t         firmwareVer[4];
-    if (ptr < a + aSize)
         ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
 
     // uint32_t        buildNumber;
-    if (ptr < a + aSize)
         ptr = ASCII_to_u32(&info.buildNumber, ptr);
 
     // uint8_t         protocolVer[4];
-    if (ptr < a + aSize)
         ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
 
     // uint32_t        repoRevision;
-    if (ptr < a + aSize)
         ptr = ASCII_to_u32(&info.repoRevision, ptr);
 
     // char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];

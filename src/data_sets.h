@@ -1485,7 +1485,7 @@ enum eGenFaultCodes
     /*! System Fault: CRITICAL system fault (see DID_SYS_FAULT) */
     GFC_SYS_FAULT_CRITICAL                  = 0x00020000,
     /*! Sensor(s) saturated */
-    GFC_SENSOR_SATURATION                   = 0x00040000,
+    GFC_SENSOR_SATURATION 				= 0x00040000,
 
     /*! Fault: IMU initialization */
     GFC_INIT_IMU                            = 0x00100000,
@@ -3136,9 +3136,9 @@ enum eIoConfig
     /** GPS type - NMEA */
     IO_CONFIG_GPS_TYPE_NMEA                     = (int)2,
     /** GPS type - InertialSense GPX */
-    IO_CONFIG_GPS_TYPE_GPX                      = (int)3,
+    IO_CONFIG_GPS_TYPE_GPX						= (int)3,
     /** GPS type - last type */
-    IO_CONFIG_GPS_TYPE_LAST                     = IO_CONFIG_GPS_TYPE_GPX,		// Set to last type
+    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_GPX,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
