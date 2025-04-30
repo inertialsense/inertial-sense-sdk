@@ -2276,7 +2276,7 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
             nmea_enable_stream(rmci[portId(port)]->rmcNmea.nmeaBits, rmci[portId(port)]->rmcNmea.nmeaPeriod, id, period);
             break;
         case RMC_OPTIONS_PORT_ALL:
-            for (int i=0; i < NUM_SERIAL_PORTS; i++) {
+            for (int i=0; i < NUM_COM_PORTS; i++) {
                 nmea_enable_stream(rmci[i]->rmcNmea.nmeaBits, rmci[i]->rmcNmea.nmeaPeriod, id,  period);
             }
             if (id == NMEA_MSG_ID_GNGSV && period == 0)

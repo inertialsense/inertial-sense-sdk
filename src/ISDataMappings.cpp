@@ -182,7 +182,7 @@ void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<port_monitor_t> mapper(data_set, did);
     mapper.AddMember("activePorts", &port_monitor_t::activePorts, DATA_TYPE_UINT8, "", "Number of active ports", DATA_FLAGS_READ_ONLY);    
-    for (int i=0; i<NUM_SERIAL_PORTS; i++)
+    for (int i=0; i<NUM_COM_PORTS; i++)
     {
         mapper.AddMember2("[" + std::to_string(i) + "].portInfo",           i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, portInfo), DATA_TYPE_UINT8, "", "High nib port type (see ePortMonPortType) low nib index.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
         mapper.AddMember2("[" + std::to_string(i) + "].status",             i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, status), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);

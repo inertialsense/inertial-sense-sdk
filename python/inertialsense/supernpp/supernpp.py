@@ -12,9 +12,9 @@ import sys
 import threading
 import yaml
 
-sys.path.insert(1, '../../SDK/python/logInspector')
+sys.path.insert(1, '../../SDK/python/inertialsense/logInspector')
 sys.path.insert(1, '../logInspector')
-sys.path.insert(1, '..')
+sys.path.insert(1, '../logs')
 
 from logReader import Log
 
@@ -217,7 +217,7 @@ class SuperNPP():
             serials = config_serials
 
         file_path = os.path.dirname(os.path.realpath(__file__))
-        npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
+        npp_build_folder = os.path.normpath(file_path + '../../../../../cpp/NavPostProcess/build')
         if os.name == 'posix':  # Linux
             exename = './navpp'
         else:                   # Windows

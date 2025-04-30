@@ -1749,17 +1749,17 @@ typedef struct PACKED
 } sys_sensors_adc_t;
 
 #if defined(IMX_5)
-    #define NUM_COM_PORTS           4    // Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
+    #define NUM_COM_PORTS           4
 #elif defined(GPX_1)
     #define NUM_COM_PORTS           6
     #define NUM_USR_PORTS           4
     #define NUM_GPS_PORTS           2
-#else
-    #define NUM_COM_PORTS           6
+#else   // NPP and Unit Tests
+    #define NUM_COM_PORTS           1
 #endif
 
-#ifndef NUM_SERIAL_PORTS
-#define NUM_SERIAL_PORTS        NUM_COM_PORTS
+#ifndef NUM_USR_PORTS
+#define NUM_USR_PORTS           NUM_COM_PORTS
 #endif
 
 /** Realtime Message Controller (used in rmc_t). 
@@ -5135,7 +5135,7 @@ typedef struct
 typedef struct
 {
     /** Port monitor set */
-    port_monitor_set_t port[NUM_SERIAL_PORTS];
+    port_monitor_set_t port[NUM_COM_PORTS];
 
     uint8_t activePorts;
         

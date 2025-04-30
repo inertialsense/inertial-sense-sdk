@@ -175,7 +175,6 @@ typedef union
     uint8_t bytes[BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE]; // any additional bytes are reserved space
 } bootloader_header_t;
 
-// #define NUM_COM_PORTS   4
 typedef struct {
     base_port_t base;
 } bl_port_t;
