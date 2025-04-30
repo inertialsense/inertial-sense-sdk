@@ -190,7 +190,7 @@ void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
         mapper.AddMember2("[" + std::to_string(i) + "].rxBytesPerSec",      i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Rx data rate", DATA_FLAGS_READ_ONLY);
         mapper.AddMember2("[" + std::to_string(i) + "].txBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytes), DATA_TYPE_UINT32, "bytes", "Tx byte count");
         mapper.AddMember2("[" + std::to_string(i) + "].rxBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytes), DATA_TYPE_UINT32, "bytes", "Rx byte count");
-        mapper.AddMember2("[" + std::to_string(i) + "].txDataDrops",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txDataDrops), DATA_TYPE_UINT32, "", "Tx buffer data drop occurrences");			
+        mapper.AddMember2("[" + std::to_string(i) + "].txDataDrops",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txDataDrops), DATA_TYPE_UINT32, "", "Tx buffer data drop occurrences");            
         mapper.AddMember2("[" + std::to_string(i) + "].rxOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxOverflows), DATA_TYPE_UINT32, "", "Rx buffer overflow occurrences");        
         mapper.AddMember2("[" + std::to_string(i) + "].txBytesDropped",     i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytesDropped), DATA_TYPE_UINT32, "bytes", "Tx number of bytes that were not sent");
         mapper.AddMember2("[" + std::to_string(i) + "].rxChecksumErrors",   i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxChecksumErrors), DATA_TYPE_UINT32, "", "Rx number of checksum failures");
@@ -566,10 +566,10 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GPS], ";
     str += "0x10000=enZeroVel, 0x100000=enNavStrobeOutput";
     mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
-    str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
-    str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
-    str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
+    str = "(see eRTKConfigBits) [0xedcba](";
+    str += "a=[POS=0x2,COMP=0x8], ";
+    str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";
+    str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("ioConfig", &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
@@ -646,10 +646,10 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gpsTimeSyncPeriodMs", &gpx_flash_cfg_t::gpsTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.");
     mapper.AddMember("gpsTimeUserDelay", &gpx_flash_cfg_t::gpsTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("gpsMinimumElevation", &gpx_flash_cfg_t::gpsMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
-    str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
-    str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
-    str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
-    str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
+    str = "(see eRTKConfigBits) [0xedcba](";
+    str += "a=[POS=0x2,COMP=0x8], ";
+    str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";
+    str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";
     mapper.AddMember("RTKCfgBits", &gpx_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("gnssCn0Minimum", &gpx_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
     mapper.AddMember("gnssCn0DynMinOffset", &gpx_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
@@ -683,10 +683,10 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("navOutputPeriodMs", &gpx_status_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Nav output period (ms)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("flashCfgChecksum", &gpx_status_t::flashCfgChecksum, DATA_TYPE_UINT32, "", "Flash config validation", DATA_FLAGS_READ_ONLY);
  
-    string str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
-    str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
-    str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
-    str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
+    string str = "(see eRTKConfigBits) [0xedcba](";
+    str += "a=[POS=0x2,COMP=0x8], ";
+    str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";
+    str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";
     mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     for (int i=0; i<GNSS_RECEIVER_COUNT; i++)
     {

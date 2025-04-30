@@ -363,7 +363,7 @@ typedef struct
     uint16_t            offset;
 } p_data_hdr_t;
 
-#define ISB_MIN_PACKET_SIZE             (sizeof(packet_hdr_t) + 2)		                                // Packet header + checksum, no payload
+#define ISB_MIN_PACKET_SIZE             (sizeof(packet_hdr_t) + 2)                                      // Packet header + checksum, no payload
 #define ISB_HDR_TO_PACKET_SIZE(hdr)     ((hdr).size + ISB_MIN_PACKET_SIZE + ((hdr).offset ? 2 : 0))     // Convert ISB header to packet size
 
 /** Represents a packet header and body */

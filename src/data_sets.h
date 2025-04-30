@@ -470,7 +470,7 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING  = (int)0x02000000,      // GPS1 RTK error: base position moved when it should be stationary
     GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID = (int)0x03000000,      // GPS1 RTK error: base position is invalid or not surveyed well
     GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MASK    = (int)0x03000000,      // GPS1 RTK error: base position error bitmask
-    GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR|
+    GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR |
                                                        GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MASK),
     GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID        = (int)0x04000000,      // GPS1 RTK precision position and carrier phase range solution with fixed ambiguities (i.e. < 6cm horizontal accuracy).  The carrier phase range solution with floating ambiguities occurs if GPS_STATUS_FIX_RTK_FIX is set and GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID is not set (i.e. > 6cm horizontal accuracy).
     GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID         = (int)0x08000000,      // GPS2 RTK moving base heading.  Indicates RTK fix and hold with single band RTK compassing.
@@ -2783,22 +2783,22 @@ enum eGnssSatSigConst
 enum eRTKConfigBits
 {
     /** Enable onboard RTK GNSS precision positioning (GPS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING             = (int)0x00000001,
+    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED  = (int)0x00000001,
 
     /** Enable external RTK GNSS positioning (GPS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL    = (int)0x00000002,
-
-    /** Enable external RTK GNSS compassing on uBlox F9P (GPS2) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P          = (int)0x00000004,
-
+    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING             = (int)0x00000002,
+    
     /** Enable dual GNSS RTK compassing (GPS2 to GPS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING              = (int)0x00000008,    
+    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING              = (int)0x00000004,    
+
+    /** Enable dual GNSS RTK compassing (GPS2 to GPS1) DECPRECATED*/
+    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED   = (int)0x00000008,
 
     /** Mask of RTK GNSS positioning types */
-    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK        = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING|RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL),
+    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK        = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED | RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING),
 
     /** Mask of dual GNSS RTK compassing types */
-    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK         = (RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING|RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P),
+    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK         = (RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED),
 
     /** Mask of RTK position, heading, and base modes */
     RTK_CFG_BITS_ROVER_MODE_MASK                        = (int)0x0000000F,
@@ -2863,6 +2863,15 @@ enum eRTKConfigBits
     /** Forward all messages between the selected GPS and serial port.  Disable for RTK base use (to forward only GPS raw messages and use the surveyed location refLLA instead of current GPS position).  */
     RTK_CFG_BITS_GPS_PORT_PASS_THROUGH                  = (int)0x00800000,
 
+    /** Enable RTK base and output RTCM3 data from GPS 1 on the current serial port */
+    RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_CUR_PORT        = (int)0x01000000,
+
+    /** Enable RTK base and output RTCM3 data from GPS 2 on the current serial port */
+    RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT        = (int)0x02000000,
+
+    /** Mask of RTK base and output RTCM3 data on the current serial ports */
+    RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CUR_PORT_MASK        = (RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_CUR_PORT | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT),
+
     /** All base station bits */
     RTK_CFG_BITS_BASE_MODE = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
@@ -2918,7 +2927,7 @@ enum eRTKConfigBits
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB),
 
     /** Rover on-board RTK engine used */
-    RTK_CFG_BITS_ROVER_MODE_ONBOARD_MASK = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING),
+    RTK_CFG_BITS_ROVER_MODE_ONBOARD_MASK = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED),
 
     /** Mask of Rover, Compassing, and Base modes */
     RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),    
@@ -2976,7 +2985,7 @@ enum eSensorConfig
     /** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
     SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x001F0000,
     SENSOR_CFG_SENSOR_ROTATION_OFFSET           = (int)16,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,	// roll, pitch, yaw rotation (deg).
+    SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,    // roll, pitch, yaw rotation (deg).
     SENSOR_CFG_SENSOR_ROTATION_0_0_90           = (int)1,
     SENSOR_CFG_SENSOR_ROTATION_0_0_180          = (int)2,
     SENSOR_CFG_SENSOR_ROTATION_0_0_N90          = (int)3,
@@ -3114,10 +3123,6 @@ enum eIoConfig
     IO_CONFIG_GPS_SOURCE_MASK                   = (int)0x00000007,
     /** GPS source - Disable */
     IO_CONFIG_GPS_SOURCE_DISABLE                = (int)0,
-    /** GPS source - GNSS receiver 1 onboard uINS */
-    IO_CONFIG_GPS_SOURCE_ONBOARD_1              = (int)1,
-    /** GPS source - GNSS receiver 2 onboard uINS */
-    IO_CONFIG_GPS_SOURCE_ONBOARD_2              = (int)2,
     /** GPS source - Serial 0 */
     IO_CONFIG_GPS_SOURCE_SER0                   = (int)3,
     /** GPS source - Serial 1 */

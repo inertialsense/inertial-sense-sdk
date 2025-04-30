@@ -408,7 +408,7 @@ char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, utc_time_t *utcTime, ch
     // HHMMSS.sss
     float fsecond;
     SSCANF(ptr, "%02d%02d%f", &utcTime->hour, &utcTime->minute, &fsecond);
-    fsecond += 0.00005f;	/// add a 0.05ms to address float-conversion aliasing
+    fsecond += 0.00005f;    /// add a 0.05ms to address float-conversion aliasing
     utcTime->second = (uint32_t)fsecond;
     fsecond *= 1000.0f;
     utcTime->millisecond = (uint32_t)fsecond;

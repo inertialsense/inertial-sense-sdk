@@ -26,24 +26,24 @@ typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timeMs);
 class cLogStatMsgId
 {
 public:
-	unsigned int count;         // count for this data id
-	unsigned int errors;        // error count for this data id
-	unsigned int meanDtMs;    	// average time delta for the data id
-	unsigned int accumDtMs;     // sum of all time deltas
-	unsigned int lastTimeMs;
-	unsigned int lastDtMs;
-	unsigned int minDtMs;
-	unsigned int maxDtMs;
-	unsigned int dtMsCount;
-	unsigned int timeIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
+    unsigned int count;         // count for this data id
+    unsigned int errors;        // error count for this data id
+    unsigned int meanDtMs;      // average time delta for the data id
+    unsigned int accumDtMs;     // sum of all time deltas
+    unsigned int lastTimeMs;
+    unsigned int lastDtMs;
+    unsigned int minDtMs;
+    unsigned int maxDtMs;
+    unsigned int dtMsCount;
+    unsigned int timeIrregCount; // count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
 
-	unsigned int bpsBytes;
-	unsigned int bpsStartTimeMs;
-	unsigned int bytesPerSec;
+    unsigned int bpsBytes;
+    unsigned int bpsStartTimeMs;
+    unsigned int bytesPerSec;
 
-	cLogStatMsgId();
-	void LogTimestamp(unsigned int timeMs);
-	void LogByteSize(unsigned int timeMs, int bytes);
+    cLogStatMsgId();
+    void LogTimestamp(unsigned int timeMs);
+    void LogByteSize(unsigned int timeMs, int bytes);
 };
 
 struct sLogStatPType
@@ -59,15 +59,15 @@ public:
     std::map<protocol_type_t, sLogStatPType> msgs;
     cISLogFileBase* statsFile;
 
-	cLogStats();
-	void Clear();
-	void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+    cLogStats();
+    void Clear();
+    void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
     void LogData(protocol_type_t ptype, int id, int bytes, double timeMs=0.0);
-	unsigned int Count();
-	unsigned int Errors();
-	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
-	std::string Stats();
-	void WriteToFile(const std::string& fileName);
+    unsigned int Count();
+    unsigned int Errors();
+    std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
+    std::string Stats();
+    void WriteToFile(const std::string& fileName);
 };
 
 
