@@ -139,7 +139,7 @@ std::string utils::getCurrentTimestamp() {
 
     char buffer[80];
     strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
-        sprintf(buffer + strlen(buffer), ".%03d", (int) millis);
+    sprintf(buffer + strlen(buffer), ".%03d", (int) millis);
 
     return std::string(buffer);
 }
@@ -436,6 +436,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         break;
                     case 7: // additional info
                         strncpy(devInfo.addInfo, trim_copy(match[1].str(), "() ").c_str(), DEVINFO_ADDINFO_STRLEN-1);
+                        devInfo.addInfo[DEVINFO_ADDINFO_STRLEN-1] = 0;
                         componentsParsed |= DV_BIT_ADDITIONAL_INFO;
                         break;
                     case 8:  // repo hash & build status

@@ -52,7 +52,7 @@ using namespace std;
 
 #define DATASET_VIEW_NUM_ROWS   25
 #define DISPLAY_DELTA_TIME      0    // show delta time instead of time
-#define SNPRINTF_ID_NAME(id)    SNPRINTF(ptr, ptrEnd - ptr, "(%3d) %s:", id, cISDataMappings::DataName(id))
+#define SNPRINTF_ID_NAME(id)    SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", id, cISDataMappings::DataName(id))
 
 static bool s_exitProgram;
 
@@ -244,28 +244,23 @@ string cInertialSenseDisplay::Connected()
 
     unsigned int timeMs = current_timeMs();
 
-    // cltool runtime
-    double runtime = 0.001 * (timeMs - m_startMs);
+    // cltool elapsed
+    unsigned int elapsedMs = timeMs - m_startMs;
+    unsigned int totalSeconds = elapsedMs / 1000;
+    unsigned int hours = totalSeconds / 3600;
+    unsigned int minutes = (totalSeconds % 3600) / 60;
+    unsigned int seconds = totalSeconds % 60;
 
     std::ostringstream stream;
     stream << Header() << "Connected.  ";
-    stream << std::fixed << std::setprecision(1) << runtime << "s";
-
+    stream << hours << ':'
+        << std::setw(2) << std::setfill('0') << minutes << ':'
+        << std::setw(2) << std::setfill('0') << seconds << 's';
     if (m_device && m_device->port && ((portType(m_device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM)) {
         comm_port_t* comPort = COMM_PORT(m_device->port);
         stream << ", Tx " << std::to_string(comPort->comm.txPktCount);
         stream << ", Rx " << std::to_string(comPort->comm.rxPktCount);
         if (comPort->stats) {
-            // TODO: This can probably go away after confirming that it works as expected after the merge
-//            static unsigned int lastUpdateMs = timeMs;
-//            static int bytesLast = 0;
-//            static int bytesPerS = 0;
-//            if (timeMs - lastUpdateMs >= 1000)
-//            {
-//                bytesPerS = m_port->rxBytes - bytesLast;
-//                bytesLast = m_port->rxBytes;
-//                lastUpdateMs = timeMs;
-//            }
             stream << " (" << (comPort->stats->rxBytesPerSec ? std::to_string(comPort->stats->rxBytesPerSec) : "--") << " bytes/s)";
         }
     }
@@ -438,32 +433,32 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
             isTowMode = true;
             break;
 
-		case DID_GPS1_RTK_POS_MISC:
-			msgTimeMs = d.gpsPos.timeOfWeekMs;
-			gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
-			isTowMode = false;
-			break;
-
-		// Time since boot - double
-		case DID_MAGNETOMETER:
-		case DID_BAROMETER:
-		case DID_SYS_SENSORS:
-		case DID_PIMU:
-		case DID_IMU:
-		case DID_INL2_STATES:
-		case DID_GPS_BASE_RAW:
-			if (isTowMode)
-				msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
-			else
-				msgTimeMs = (unsigned int)(1000.0 * d.imu.time);
-			break;
+        case DID_GPS1_RTK_POS_MISC:
+            msgTimeMs = d.gpsPos.timeOfWeekMs;
+            gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
+            isTowMode = false;
+            break;
+        
+        // Time since boot - double
+        case DID_MAGNETOMETER:
+        case DID_BAROMETER:
+        case DID_SYS_SENSORS:
+        case DID_PIMU:
+        case DID_IMU:
+        case DID_INL2_STATES:
+        case DID_GPS_BASE_RAW:
+            if (isTowMode)
+                msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
+            else
+                msgTimeMs = (unsigned int)(1000.0 * d.imu.time);
+            break;
 
         case DID_EVENT:
 
             break;
 
             // Unidentified data type
-//         default: printf("Unknown DID %d\t", data->hdr.id);    return;
+//         default: printf("Unknown DID %d\t", data->hdr.id);    return;            
         }
 
 
@@ -586,7 +581,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
         PrintStats();
         return true;
 
-    case DMODE_SCROLL:    // Scroll display
+    case DMODE_SCROLL:    // Scroll display 
         break;
     }
 
@@ -596,7 +591,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
     if (comm == NULL)
-        return "\n";
+        return "";
 
     std::stringstream ss;
     ss << "is_comm stats:  Rx " << std::setw (10) << comm->rxPktCount;
@@ -750,11 +745,13 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);              break;
         case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);      break;
         case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr);  break;
+        case DID_GPX_RTOS_INFO:     str = DataToStringGRTOS(d.gRtosInfo, data->hdr);            break;
         case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr);        break;
         case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr);   break;
         case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;
         case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
         case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
+        case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);                break;
         default:
             if (m_showRawHex)
                 str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
@@ -778,7 +775,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 {
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tSTATUS\n");
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     Aiding: Mag %d, GPS (Hdg %d, Pos %d)\n",
-        (hdwStatus & HDW_STATUS_GPS_SATELLITE_RX) != 0,
+        (hdwStatus & HDW_STATUS_GPS_SATELLITE_RX_VALID) != 0,
         (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_POS) != 0);
@@ -809,7 +806,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tErrors    Rx parse %d, temperature %d, self-test %d\n",
         HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus),
         (hdwStatus & HDW_STATUS_ERR_TEMPERATURE) != 0,
-        (hdwStatus & HDW_STATUS_BIT_MASK) == HDW_STATUS_BIT_FAULT);
+        (hdwStatus & HDW_STATUS_BIT_MASK) == HDW_STATUS_BIT_FAILED);
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\thdwStatus (0x%08X)", hdwStatus);
     std::string statusStr;
@@ -1564,6 +1561,15 @@ string cInertialSenseDisplay::DataToStringRTOS(const rtos_info_t& info, const p_
     return string("RTOS: ") + csvString + terminator;
 }
 
+string cInertialSenseDisplay::DataToStringGRTOS(const gpx_rtos_info_t& info, const p_data_hdr_t& hdr)
+{
+    cDataCSV csv;
+    string csvString;
+    csv.DataToStringCSV(hdr, (const uint8_t*)&info, csvString);
+    const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
+    return string("RTOS: ") + csvString + terminator;
+}
+
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr)
 {
     (void)hdr;
@@ -1577,7 +1583,6 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
 {
-
     char buf[BUF_SIZE];
     sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
     return string(buf);
@@ -1657,8 +1662,7 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
         wheel.omega_r,          // Right wheel angular velocity
         wheel.wrap_count_l,     // Left wheel angle wrap
         wheel.wrap_count_r      // Right wheel angle wrap
-);
-
+    );
     return buf;
 }
 
@@ -1686,11 +1690,11 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
 #endif
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, ",  status 0x%08x,  hdwStatus 0x%08x\n", gpxStatus.status, gpxStatus.hdwStatus);
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    gnss1/2:  runState %d/%d,  FwUpState %d/%d,  initState %d/%d\n",
-		gpxStatus.gnssStatus[0].runState,       gpxStatus.gnssStatus[1].runState,
-		gpxStatus.gnssStatus[0].fwUpdateState,  gpxStatus.gnssStatus[1].fwUpdateState,
-		gpxStatus.gnssStatus[0].initState,      gpxStatus.gnssStatus[1].initState);
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    mcuTemp %0.2lf,  upTime %0.3lf\n", gpxStatus.mcuTemp, gpxStatus.upTime);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "    gnss1/2:  runState %d/%d,  FwUpState %d/%d,  initState %d/%d\n", 
+        gpxStatus.gnssStatus[0].runState,       gpxStatus.gnssStatus[1].runState,
+        gpxStatus.gnssStatus[0].fwUpdateState,  gpxStatus.gnssStatus[1].fwUpdateState,
+        gpxStatus.gnssStatus[0].initState,      gpxStatus.gnssStatus[1].initState);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "    mcuTemp %0.2lf,  upTime %0.3lf\n", gpxStatus.mcuTemp, gpxStatus.upTime);
 
     return buf;
 }
@@ -1776,8 +1780,220 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "Port \'%s.%d\' [Status: 0x%02x]\n", portTypeNames[portTypeIdx], portId, portMon.port[pIdx].status);
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\trx:  %u Kbytes,  %u KB/s,  %u errors,  %u overflows\n",
                         portMon.port[pIdx].rxBytes / 1024, portMon.port[pIdx].rxBytesPerSec / 1024, portMon.port[pIdx].rxChecksumErrors, portMon.port[pIdx].rxOverflows);
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u overflows\n",
-                        portMon.port[pIdx].txBytes / 1024, portMon.port[pIdx].txBytesPerSec / 1024, portMon.port[pIdx].txBytesDropped, portMon.port[pIdx].txOverflows);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u drops\n",
+                        portMon.port[pIdx].txBytes / 1024, portMon.port[pIdx].txBytesPerSec / 1024, portMon.port[pIdx].txBytesDropped, portMon.port[pIdx].txDataDrops);
+    }
+
+    return buf;
+}
+
+string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    // Print DID
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+
+    // Print Time
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Dev upTime: %fs\n", event.time);
+
+    // print Serial number */
+    // event.senderSN;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Sender SN:%d\n", event.senderSN);
+
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
+    // event.senderHdwId;
+    switch (event.senderHdwId)
+    {
+        case IS_HARDWARE_TYPE_IMX:  ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: IMX\n"); break;
+        case IS_HARDWARE_TYPE_GPX:  ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: GPX\n"); break;
+        default:                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: Other\n"); break;
+    }
+
+    // print eEventPriority */
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Piority: %d\n", event.priority);
+
+    // print length
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Size: %d\n", event.length);
+
+    // print the data
+    switch (event.msgTypeID)
+    {
+        case EVENT_MSG_TYPE_ID_ASCII:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "Data: %s\n", event.data);
+            break;
+        case EVENT_MSG_TYPE_ID_IMX_MEM_READ:
+        case EVENT_MSG_TYPE_ID_GPX_MEM_READ:
+            {
+                did_event_memResp_t* resp = (did_event_memResp_t*)event.data;
+
+                if (event.msgTypeID == EVENT_MSG_TYPE_ID_IMX_MEM_READ)
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "EVMI ");
+                else
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "EVMG ");
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "Addr: 0x%08x\n", resp->reqAddr);
+
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "ADDR\t0x0\t0x01\t0x2\t0x3\t\t0x4\t0x5\t0x6\t0x7\n");
+                for (int i = 0; i < EVENT_MEM_REQ_SIZE; i+=8)
+                {
+                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "0x%02x:\t0x%02x\t0x%02x\t0x%02x\t0x%02x\t\t0x%02x\t0x%02x\t0x%02x\t0x%02x\n", i, resp->data[i], resp->data[i+1], resp->data[i+2], resp->data[i+3], resp->data[i+4], resp->data[i+5], resp->data[i+6], resp->data[i+7]);
+                }
+            }
+            break;
+        case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "IMX TDI EV:%d\n", EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CCR:\t0x%08x\n", *(uint32_t*)(&event.data[0]));
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CNDTR:\t0x%08x\n", *(uint32_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CPAR:\t0x%08x\n", *(uint32_t*)&event.data[8]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "inst.CMAR:\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_start:\t0x%08x\n", *(uint32_t*)&event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_end:\t0x%08x\n", *(uint32_t*)&event.data[20]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "active_tx_len:\t0x%04x\n", *(uint16_t*)&event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "done:\t0x%02x\n", event.data[26]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.dir:\t0x%02x\n", event.data[27]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.circular:\t0x%02x\n", event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.priority:\t0x%02x\n", event.data[29]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt:\t0x%02x\n", event.data[30]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt_priority:\t0x%02x\n", event.data[31]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.dma_chan_sel:\t0x%02x\n", event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.parent_type:\t0x%02x\n", event.data[33]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.parent:\t0x%08x\n", *(uint32_t*)&event.data[34]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.periph_reg:\t0x%08x\n", *(uint32_t*)&event.data[38]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf:\t0x%08x\n", *(uint32_t*)&event.data[42]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf_len:\t0x%04x\n", *(uint16_t*)&event.data[46]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.linear_buf:\t0x%02x\n", event.data[48]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg_tcie_handler:\t0x%08x\n", *(uint32_t*)&event.data[49]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lastDmaUsed:\t0x%08x\n", *(uint32_t*)&event.data[53]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "overflow:\t0x%02x\n", event.data[57]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_IMX_SER0_CFG:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "IMX SC EV:%d\n", EVENT_MSG_TYPE_ID_IMX_SER0_CFG);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.baud:\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.parity:\t0x%02x\n", event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.stopBits:\t0x%02x\n", event.data[5]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "interrupt:\t0x%02x\n", event.data[6]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX RDI EV:%d\n", EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_INST);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CLBAR:\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            //res1 [2]
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CFCR:\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CSR:\t0x%08x\n", *(uint32_t*)&event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CCR:\t0x%08x\n", *(uint32_t*)&event.data[20]);
+            // res 2 [10]
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CTR1:\t0x%08x\n", *(uint32_t*)&event.data[64]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CTR2:\t0x%08x\n", *(uint32_t*)&event.data[68]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CBR1:\t0x%08x\n", *(uint32_t*)&event.data[72]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CSAR:\t0x%08x\n", *(uint32_t*)&event.data[76]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CDAR:\t0x%08x\n", *(uint32_t*)&event.data[80]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CTR3:\t0x%08x\n", *(uint32_t*)&event.data[84]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CBR2:\t0x%08x\n", *(uint32_t*)&event.data[88]);
+            // res 3 [8]
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CLLR:\t0x%08x\n", *(uint32_t*)&event.data[124]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_SER0_REG:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX SR EV:%d\n", EVENT_MSG_TYPE_ID_GPX_SER0_REG);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR1:\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR2:\t0x%08x\n", *(uint32_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR3:\t0x%08x\n", *(uint32_t*)&event.data[8]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "BRR:\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GTPR:\t0x%08x\n", *(uint32_t*)&event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTOR:\t0x%08x\n", *(uint32_t*)&event.data[20]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RQR:\t0x%08x\n", *(uint32_t*)&event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ISR:\t0x%08x\n", *(uint32_t*)&event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ICR:\t0x%08x\n", *(uint32_t*)&event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RDR:\t0x%08x\n", *(uint32_t*)&event.data[36]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "TDR:\t0x%08x\n", *(uint32_t*)&event.data[40]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "PRESC:\t0x%08x\n", *(uint32_t*)&event.data[44]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "AUTOCR:\t0x%08x\n", *(uint32_t*)&event.data[48]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_SER0_CFG:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX SC EV:%d\n", EVENT_MSG_TYPE_ID_GPX_SER0_CFG);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.baud:\t\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.parity:\t\t0x%02x\n", event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "coding.stopBits:\t0x%02x\n", event.data[5]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "interrupt:\t\t0x%02x\n", event.data[6]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX DRC EV:%d\n", EVENT_MSG_TYPE_ID_GPX_DMA_RX_0_CHAN);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "instance:\t\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_start:\t\t0x%08x\n", *(uint32_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ptr_end:\t\t0x%08x\n", *(uint32_t*)&event.data[8]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.parent:\t\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.mode:\t\t0x%02x\n", event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.tc_handler:\t\t0x%08x\n", *(uint32_t*)&event.data[17]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt:\t\t0x%02x\n", event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.interrupt_priority:\t0x%02x\n", event.data[25]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.priority:\t\t0x%02x\n", event.data[26]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.request_num:\t0x%02x\n", event.data[27]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.periph_reg:\t\t0x%08x\n", *(uint32_t*)&event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf:\t\t0x%08x\n", *(uint32_t*)&event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf_len:\t\t0x%04x\n", *(uint16_t*)&event.data[36]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[38]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[42]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[46]);
+
+            //ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[52]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[56]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[60]);
+
+            //ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[64]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[68]);
+            // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[72]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.active_tx_len:\t0x%04x\n", *(uint16_t*)&event.data[73]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.lli_head:\t0x%08x\n", *(uint32_t*)&event.data[77]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.lli_tail:\t0x%08x\n", *(uint32_t*)&event.data[81]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "txState.dma_running:\t0x%02x\n", event.data[88]);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "lastDmaUsed:\t\t0x%08x\n", *(uint32_t*)&event.data[92]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "overflow:\t\t0x%02x\n", event.data[96]);
+            break;
+
+        case EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX GPR EV:%d\n", EVENT_MSG_TYPE_ID_GPX_GPIO_RX_0_REG);
+
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "MODER:\t\t0x%08x\n", *(uint32_t*)&event.data[0]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "OTYPER:\t\t0x%08x\n", *(uint32_t*)&event.data[4]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "OSPEEDR:\t0x%08x\n", *(uint32_t*)&event.data[8]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "PUPDR:\t\t0x%08x\n", *(uint32_t*)&event.data[12]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "IDR:\t\t0x%08x\n", *(uint32_t*)&event.data[16]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "ODR:\t\t0x%08x\n", *(uint32_t*)&event.data[20]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "BSRR:\t\t0x%08x\n", *(uint32_t*)&event.data[24]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "LCKR:\t\t0x%08x\n", *(uint32_t*)&event.data[28]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "AFR[0]:\t\t0x%08x\n", *(uint32_t*)&event.data[32]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "AFR[1]:\t\t0x%08x\n", *(uint32_t*)&event.data[36]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "BRR:\t\t0x%08x\n", *(uint32_t*)&event.data[40]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "HSLVR:\t\t0x%08x\n", *(uint32_t*)&event.data[44]);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "SECCFGR:\t0x%08x\n", *(uint32_t*)&event.data[48]);
+            break;
+
+        default:
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "MSG_ID: %d\n", event.msgTypeID);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t0x0\t0x01\t0x2\t0x3\t\t0x4\t0x5\t0x6\t0x7\n");
+            for (int i = 0; ((i < event.length) && (ptr < ptrEnd)); i+=8)
+            {
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "0x%02x:\t0x%02x\t0x%02x\t0x%02x\t0x%02x\t\t0x%02x\t0x%02x\t0x%02x\t0x%02x\n", i, event.data[i], event.data[i+1], event.data[i+2], event.data[i+3], event.data[i+4], event.data[i+5], event.data[i+6], event.data[i+7]);
+            }
+            break;
     }
 
     return buf;
@@ -2028,8 +2244,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
     // printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
     // return;
 
-    if ((c >= '0' && c <= '9') ||
-        (c >= 'a' && c <= 'f') || c == '.' || c == '-')
+    if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || c == '.' || c == '-')
     {   // Number
         if (!m_editData.readOnlyMode)
         {
@@ -2124,30 +2339,30 @@ void cInertialSenseDisplay::VarSelectIncrement()
         return;
     }
 
-	const data_info_t& info = m_editData.mapInfoSelection->second;
-	if (info.arraySize)
-	{	// Array
-		if (m_editData.selectionArrayIdx < (info.arraySize-1))
-		{
-			m_editData.selectionArrayIdx++;
-			return;
-		}
-	}
-
-	map_name_to_info_t::const_iterator mapInfoEnd = m_editData.mapInfoEnd;
-	if (m_editData.mapInfoSelection != --(mapInfoEnd))
-	{
-		m_editData.mapInfoSelection++;
-		m_editData.selectionArrayIdx = 0;
-	}
-	else if (m_editData.mapInfoEnd != m_editData.mapInfo->end())
-	{
-		m_editData.mapInfoBegin++;
-		m_editData.mapInfoEnd++;
-		m_editData.mapInfoSelection++;
-		m_editData.selectionArrayIdx = 0;
-		Clear();
-	}
+    const data_info_t& info = m_editData.mapInfoSelection->second;
+    if (info.arraySize)
+    {   // Array
+        if (m_editData.selectionArrayIdx < (info.arraySize-1))
+        {
+            m_editData.selectionArrayIdx++;
+            return;
+        }        
+    }
+    
+    map_name_to_info_t::const_iterator mapInfoEnd = m_editData.mapInfoEnd;
+    if (m_editData.mapInfoSelection != --(mapInfoEnd))
+    {
+        m_editData.mapInfoSelection++;
+        m_editData.selectionArrayIdx = 0;
+    }
+    else if (m_editData.mapInfoEnd != m_editData.mapInfo->end())
+    {
+        m_editData.mapInfoBegin++;
+        m_editData.mapInfoEnd++;
+        m_editData.mapInfoSelection++;
+        m_editData.selectionArrayIdx = 0;
+        Clear();
+    }
 
     m_editData.editEnabled = false;
 }
@@ -2160,15 +2375,15 @@ void cInertialSenseDisplay::VarSelectDecrement()
         return;
     }
 
-	const data_info_t& info = m_editData.mapInfoSelection->second;
-	if (info.arraySize)
-	{	// Array
-		if (m_editData.selectionArrayIdx > 0)
-		{
-			m_editData.selectionArrayIdx--;
-			return;
-		}
-	}
+    const data_info_t& info = m_editData.mapInfoSelection->second;
+    if (info.arraySize)
+    {   // Array
+        if (m_editData.selectionArrayIdx > 0)
+        {
+            m_editData.selectionArrayIdx--;
+            return;
+        }        
+    }
 
     if (m_editData.mapInfoSelection != m_editData.mapInfoBegin)
     {

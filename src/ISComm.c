@@ -138,9 +138,18 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 
 int validateBaudRate(unsigned int baudRate)
 {
+#if 1   // TODO: Remove after debug.  Used to debug possible cause of GPX no Rx comms.
+
+    // Allow arbitrary baud rates within acceptable range
+    if (baudRate >= IS_BAUDRATE_STANDARD_MIN && baudRate <= IS_BAUDRATE_MAX)
+    {   // Valid baud rate
+        return 0;
+    }
+    
+#else
+
     if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
-    {
-        // Valid baudrates for InertialSense hardware
+    {   // Valid baudrates for InertialSense hardware
         for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
         {
             if (g_validBaudRates[i] == baudRate)
@@ -154,7 +163,10 @@ int validateBaudRate(unsigned int baudRate)
         return 0;
     }
 
-    return -1;
+#endif
+
+    // Invalid baud rate
+    return -1;    
 }
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler)
@@ -167,7 +179,10 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsC
     c->rxBuf.start = buffer;
     c->rxBuf.end = buffer + bufferSize;
     c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
-
+    
+    // Set parse enable flags
+    c->cb.protocolMask = DEFAULT_PROTO_MASK;
+    
     c->rxPkt.data.ptr = c->rxBuf.start;
     c->rxErrorState = 1;
 
@@ -246,7 +261,6 @@ pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int
     return NULL;
 }
 
-
 void is_comm_register_callbacks(is_comm_instance_t* c, is_comm_callbacks_t *callbacks) {
     if (callbacks)
         c->cb = *callbacks;
@@ -283,35 +297,6 @@ uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance) {
     }
 
     return protocols;
-}
-
-int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
-{
-    // Clear buffer and initialize buffer pointers
-    if (c->rxBuf.size != (uint32_t)bufferSize) { return -1; }
-    if (c->rxBuf.start != buffer) { return -1; }
-    if (c->rxBuf.end != buffer + bufferSize) { return -1; }
-    if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -1; }
-    if (c->rxBuf.tail < c->rxBuf.start || c->rxBuf.tail > c->rxBuf.end) { return -1; }
-    if (c->rxBuf.scan < c->rxBuf.start || c->rxBuf.scan > c->rxBuf.end) { return -1; }
-
-    if (c->rxPkt.data.ptr != NULL && (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end)) { return -1; }
-
-    // Everything matches
-    return 0;
-}
-
-int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, uint8_t forceInit)
-{
-    int result = is_comm_check(c, buffer, bufferSize);
-
-    if (result || forceInit)
-    {   // Mismatch or forced init
-        is_comm_init(c, buffer, bufferSize, c->cb.all);
-    }
-
-    // 0 on match, -1 on mismatch
-    return result;
 }
 
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
@@ -1271,34 +1256,71 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
-    {
-        return -1;  // can't write if we don't have a valid port, or the port isn't an ISComm
+    {   // can't write if we don't have a valid port, or the port isn't an ISComm
+        return -1;  
+    }
+
+    if (pkt->data.size + sizeof(packet_hdr_t) + 4 > PKT_BUF_SIZE)
+    {    // Packet size + offset + payload + footer is too large
+        return -1;
     }
 
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
+#ifdef GPX_1
+    // Write packet to port in multiple write calls
+
     // Write packet to port
     int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
-    if (n == sizeof(packet_hdr_t)) {
-        // only send the rest of the packet if we were able to send the header...
 
-        if (pkt->offset) {
-            n += portWrite(port, (uint8_t *) &(pkt->offset), 2);                 // Offset (optional)
-        }
-
-        if (pkt->data.size) {
-            // Include payload in checksum calculation
-            pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t *) pkt->data.ptr, pkt->data.size);
-
-            n += portWrite(port, (uint8_t *) pkt->data.ptr, pkt->data.size);     // Payload
-        }
-
-        n += portWrite(port, (uint8_t *) &(pkt->checksum), 2);                   // Footer (checksum)
-
-        // Increment Tx count
-        COMM_PORT(port)->comm.txPktCount++;
+    if (pkt->offset)
+    {
+        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
     }
+
+    if (pkt->data.size)
+    {
+        // Include payload in checksum calculation
+        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
+
+        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
+    }
+
+    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
+#else
+    // Write packet to port in a single write call
+
+    uint8_t buf[PKT_BUF_SIZE];
+    uint8_t *ptr = buf;
+
+    memcpy(ptr, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));       // Header
+    ptr += sizeof(packet_hdr_t);
+
+    if (pkt->offset)
+    {
+        memcpy(ptr, (uint8_t*)&(pkt->offset), 2);                   // Offset (optional)
+        ptr += 2;
+    }
+
+    if (pkt->data.size)
+    {
+        // Include payload in checksum calculation
+        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
+
+        memcpy(ptr, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
+        ptr += pkt->data.size;
+    }
+
+    memcpy(ptr, (uint8_t*)&(pkt->checksum), 2);                     // Footer (checksum)
+    ptr += 2;
+
+    // Write packet to port (all in one write)
+    int n = portWrite(port, buf, ptr - buf);
+#endif
+
+    // Increment Tx count
+    COMM_PORT(port)->comm.txPktCount++;
 
     // Check that number of bytes sent matches packet size.  Return number of bytes written on success or -1 on failure.
     return (n == pkt->size) ? n : -1;

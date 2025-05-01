@@ -124,6 +124,7 @@ public:
     std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
     std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
     std::string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
+    std::string DataToStringGRTOS(const gpx_rtos_info_t& info, const p_data_hdr_t& hdr);
     std::string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
     static std::string DataToStringDevInfo(const dev_info_t &info, bool full=false);
     std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
@@ -131,6 +132,7 @@ public:
     std::string DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr);
     std::string DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr);
     std::string DataToStringPortMonitor(const port_monitor_t &portMon, const p_data_hdr_t& hdr);
+    std::string DataToStringEvent(const did_event_t &event, const p_data_hdr_t& hdr);
     std::string DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
     std::string DataToStringPacket(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine, bool colorize);
     std::string DataToStringGeneric(const p_data_t* data);

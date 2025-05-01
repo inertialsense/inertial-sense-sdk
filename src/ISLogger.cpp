@@ -84,6 +84,13 @@ SimpleMutex myMutex;
 
 #endif
 
+const char* cISLogger::logTypeStrings[] = {
+    "dat",  // LOGTYPE_DAT
+    "raw",  // LOGTYPE_RAW
+    "csv",  // LOGTYPE_CSV
+    "kml",  // LOGTYPE_KML
+    "json"  // LOGTYPE_JSON
+};
 
 bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
 {
@@ -170,6 +177,7 @@ bool cISLogger::InitSave(const string &directory, const sSaveOptions &options)
     m_logType = options.logType;
     m_timeStamp = (options.timeStamp.empty() ? CreateCurrentTimestamp() : options.timeStamp);
     m_rootDirectory = m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
+    m_logStartTime = GetTime();
 
     // Drive usage limit
     m_maxDiskSpace = 0;                 // disable log file culling
@@ -538,8 +546,8 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     }
 #if 1
     else
-    {   // Success
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
+    {    // Success
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id, ISB_HDR_TO_PACKET_SIZE(*dataHdr));
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -603,7 +611,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf));
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf), ISB_HDR_TO_PACKET_SIZE(data->hdr));
     }
     return data;
 }
@@ -884,7 +892,7 @@ void cISLogger::PrintStatistics()
     {   // Print message statistics
         if (dev==NULL)
             continue;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " " << dev->LogStatsString();
+        cout << endl << "SN" << std::setw(6) << dev->SerialNumber() << " " << dev->LogStatsString();
     }
 
     PrintIsCommStatus();
@@ -895,18 +903,26 @@ void cISLogger::PrintIsCommStatus()
 {
     for (auto& [sn, dev] : m_devices)
     {   // Print errors
-        if (dev && dev->IsCommInstance())
-            cout << "SN" << std::setw(6) << dev->SerialNumber() << " " << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
+        if (dev==NULL)
+            continue;
+        // cout << endl << "SN" << std::setw(6) << dev->SerialNumber() << " " << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
     }
 }
 
 void cISLogger::PrintLogDiskUsage()
 {
     float logSize = LogSizeAll();
+
+    // Compute elapsed time since logging started
+    time_t elapsed = GetTime() - m_logStartTime;
+    int hours = elapsed / 3600;
+    int minutes = (elapsed % 3600) / 60;
+    int seconds = elapsed % 60;
+
     if (logSize < 0.5e6f)
-        printf("\nLogging %5.1f KB to: %s", logSize * 1.0e-3f, LogDirectory().c_str());
+        printf("\nLogging %d:%02d:%02ds %5.1f KB to: %s", hours, minutes, seconds, logSize * 1.0e-3f, LogDirectory().c_str());
     else
-        printf("\nLogging %5.2f MB to: %s", logSize * 1.0e-6f, LogDirectory().c_str());
+        printf("\nLogging %d:%02d:%02ds %5.2f MB to: %s", hours, minutes, seconds, logSize * 1.0e-6f, LogDirectory().c_str());
 
     // Disk usage
     if (MaxDiskSpaceMB() > 0.0f)

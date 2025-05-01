@@ -53,23 +53,23 @@ typedef enum
 typedef enum
 {
     DATA_FLAGS_FIXED_DECIMAL_MASK        = 0x0000000F,
-    DATA_FLAGS_FIXED_DECIMAL_1           = 0x00000001,
-    DATA_FLAGS_FIXED_DECIMAL_2           = 0x00000002,
-    DATA_FLAGS_FIXED_DECIMAL_3           = 0x00000003,
-    DATA_FLAGS_FIXED_DECIMAL_4           = 0x00000004,
-    DATA_FLAGS_FIXED_DECIMAL_5           = 0x00000005,
-    DATA_FLAGS_FIXED_DECIMAL_6           = 0x00000006,
-    DATA_FLAGS_FIXED_DECIMAL_7           = 0x00000007,
-    DATA_FLAGS_FIXED_DECIMAL_8           = 0x00000008,
-    DATA_FLAGS_FIXED_DECIMAL_9           = 0x00000009,
-    DATA_FLAGS_FIXED_DECIMAL_10          = 0x0000000A,
-    DATA_FLAGS_FIXED_DECIMAL_11          = 0x0000000B,
-    DATA_FLAGS_FIXED_DECIMAL_12          = 0x0000000C,
-    DATA_FLAGS_FIXED_DECIMAL_13          = 0x0000000D,
-    DATA_FLAGS_FIXED_DECIMAL_14          = 0x0000000E,
-    DATA_FLAGS_FIXED_DECIMAL_15          = 0x0000000F,
+    DATA_FLAGS_FIXED_DECIMAL_0           = 0x00000001,
+    DATA_FLAGS_FIXED_DECIMAL_1           = 0x00000002,
+    DATA_FLAGS_FIXED_DECIMAL_2           = 0x00000003,
+    DATA_FLAGS_FIXED_DECIMAL_3           = 0x00000004,
+    DATA_FLAGS_FIXED_DECIMAL_4           = 0x00000005,
+    DATA_FLAGS_FIXED_DECIMAL_5           = 0x00000006,
+    DATA_FLAGS_FIXED_DECIMAL_6           = 0x00000007,
+    DATA_FLAGS_FIXED_DECIMAL_7           = 0x00000008,
+    DATA_FLAGS_FIXED_DECIMAL_8           = 0x00000009,
+    DATA_FLAGS_FIXED_DECIMAL_9           = 0x0000000A,
+    DATA_FLAGS_FIXED_DECIMAL_10          = 0x0000000B,
+    DATA_FLAGS_FIXED_DECIMAL_11          = 0x0000000C,
+    DATA_FLAGS_FIXED_DECIMAL_12          = 0x0000000D,
+    DATA_FLAGS_FIXED_DECIMAL_13          = 0x0000000E,
+    DATA_FLAGS_FIXED_DECIMAL_14          = 0x0000000F,
     DATA_FLAGS_READ_ONLY                 = 0x00000010,
-    DATA_FLAGS_HIDDEN                    = 0x00000020, // Do not print to screen
+    DATA_FLAGS_HIDDEN                    = 0x00000020,	// Do not print to screen
     DATA_FLAGS_DISPLAY_HEX               = 0x00000100,
     DATA_FLAGS_ANGLE                     = 0x00000200,  // Supports unwrapping angle
     DATA_FLAGS_DECOR_ROLL_MASK           = 0x000F0000,  // Decoration roll
@@ -409,6 +409,7 @@ public:
         int flags = 0)
     {
         eDataType type = DATA_TYPE_F64;
+        flags &= ~DATA_FLAGS_FIXED_DECIMAL_MASK;
         AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, "°", description + " latitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
         AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, "°", description + " longitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
         AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, "m", description + " " + descriptionAltitude, flags | DATA_FLAGS_FIXED_DECIMAL_3);

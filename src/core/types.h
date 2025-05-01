@@ -106,6 +106,8 @@ static inline uint16_t portType(port_handle_t port) {
     return (port) ? ((base_port_t*)port)->ptype : 0xFFFF;
 }
 
+#define NOT_GNSS_PORT(port) ((portType(port) & PORT_TYPE__GNSS) == 0)
+
 /**
  * returns true if the port's ptype's has the PORT_FLAG__VALID bit set
  * @param port the port handle

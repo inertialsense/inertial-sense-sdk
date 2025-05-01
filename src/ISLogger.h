@@ -54,8 +54,12 @@ public:
         LOGTYPE_RAW,        // packetized serial.  Supports multiple packet types
         LOGTYPE_CSV,
         LOGTYPE_KML,
-        LOGTYPE_JSON
+        LOGTYPE_JSON,
+        LOGTYPE_COUNT
     };
+
+    // Static array of strings for log type names
+    static const char* logTypeStrings[LOGTYPE_COUNT];
 
     struct sSaveOptions
     {
@@ -300,6 +304,7 @@ private:
     bool            m_showPath = false;
     bool            m_showTimeStamp = false;
     double          m_iconUpdatePeriodSec = false;
+    time_t          m_logStartTime = 0;
     time_t          m_lastCommTime = 0;
     time_t          m_timeoutFlushSeconds = 0;
     time_t          m_timeoutFileCullingSeconds = 10;

@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
-project(ISCommunicationsExample)
+project(ISCommExample)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
@@ -15,7 +15,7 @@ include_directories(
 link_directories(${IS_SDK_DIR})
 
 # Define the executable
-add_executable(${PROJECT_NAME} ISCommunicationsExample.cpp)
+add_executable(${PROJECT_NAME} ISCommExample.cpp)
 
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)

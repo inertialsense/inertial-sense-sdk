@@ -47,6 +47,8 @@ static bool g_killThreadsNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 
+static void sendNmea(serial_port_t &port, string nmeaMsg);
+
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
 {
     if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
@@ -288,11 +290,17 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
     for (stream_did_t& dataItem : datasets)
     {   // Datasets to stream
         inertialSenseInterface.BroadcastBinaryData(dataItem.did, dataItem.periodMultiple);
+        
+        system_command_t cfg;
         switch (dataItem.did)
         {
             case DID_RTOS_INFO:
-                system_command_t cfg;
                 cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+                cfg.invCommand = ~cfg.command;
+                inertialSenseInterface.SendData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+                break;
+            case DID_GPX_RTOS_INFO:
+                cfg.command = SYS_CMD_GPX_ENABLE_RTOS_STATS;
                 cfg.invCommand = ~cfg.command;
                 inertialSenseInterface.SendData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
                 break;
@@ -309,8 +317,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
     if (!g_commandLineOptions.listenMode)
-    {
-        inertialSenseInterface.StopBroadcasts();
+    {   
+        inertialSenseInterface.StopBroadcasts(false);
     }
     SLEEP_MS(100);
     g_enableDataCallback = true;
@@ -777,6 +785,52 @@ static int cltool_createHost()
     return 0;
 }
 
+
+//void testtesty(unsigned int pHandle, p_data_t* data)
+// int testtesty(p_data_t* data, port_handle_t port)
+// {
+//     printf("AAAAAAAAASSSSSSSSSSSSV");
+//     return 0;
+// }
+
+void getMemoryEvent(InertialSense& inertialSenseInterface, uint32_t addrs, const std::string& destFolder, uint8_t addrCnts, bool IMX)
+{
+#define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
+    uint8_t data[EVENT_MAX_SIZE] = { 0 };
+
+    did_event_t event;
+
+    event.time = 123;
+    event.senderSN = 0;
+    event.senderHdwId = 0;
+    event.length = sizeof(did_event_memReq_t);
+
+    did_event_memReq_t memReq;
+
+    //comManagerRegister(DID_EVENT, 0, testtesty, 0, 0, EVENT_MAX_SIZE, 0);
+
+    if (IMX)
+        event.msgTypeID = EVENT_MSG_TYPE_ID_IMX_MEM_READ;
+    else
+        event.msgTypeID = EVENT_MSG_TYPE_ID_GPX_MEM_READ;
+
+    memcpy(data, &event, DID_EVENT_HEADER_SIZE);
+
+    // Send STPB
+    inertialSenseInterface.StopBroadcasts(true);
+    
+    // Set DID_EVENT
+    inertialSenseInterface.GetData(DID_EVENT, 0, 0, 1);
+
+    memReq.reqAddr = addrs;
+    memcpy((void*)(data + DID_EVENT_HEADER_SIZE), &memReq, _MIN(sizeof(memReq), EVENT_MAX_SIZE - DID_EVENT_HEADER_SIZE));
+
+    // if (!port)
+    inertialSenseInterface.SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+
+    SLEEP_MS(100);
+}
+
 static int cltool_dataStreaming()
 {
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
@@ -831,6 +885,7 @@ static int cltool_dataStreaming()
             // No need to Close() the InertialSense class interface; It will be closed when destroyed.
             return -1;
         }
+
         try
         {
             if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
@@ -862,10 +917,11 @@ static int cltool_dataStreaming()
             // yield to allow comms
             SLEEP_MS(1);
 
+            uint8_t loopCnt = 0;
+
             // [C++ COMM INSTRUCTION] STEP 4: Read data
             while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
-
                 if (!inertialSenseInterface.Update())
                 {   // device disconnected, exit
                     exitCode = -2;
@@ -898,6 +954,15 @@ static int cltool_dataStreaming()
                     // Re-request data every 1s
                     requestDataSetsTimeMs = current_timeMs();
                     cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
+                }
+
+                if (g_commandLineOptions.evMCont.sendEVM && loopCnt < 10)
+                {
+                    getMemoryEvent(inertialSenseInterface, g_commandLineOptions.evMCont.Addrs[loopCnt],
+                        g_commandLineOptions.evMCont.outDir.c_str(),
+                        g_commandLineOptions.evMCont.addrCnt,
+                        g_commandLineOptions.evMCont.IMX);
+                    loopCnt++;
                 }
 
                 // Prevent processor overload
