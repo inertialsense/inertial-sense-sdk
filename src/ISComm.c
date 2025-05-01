@@ -138,9 +138,18 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 
 int validateBaudRate(unsigned int baudRate)
 {
+#if 1   // TODO: Remove after debug.  Used to debug possible cause of GPX no Rx comms.
+
+    // Allow arbitrary baud rates within acceptable range
+    if (baudRate >= IS_BAUDRATE_STANDARD_MIN && baudRate <= IS_BAUDRATE_MAX)
+    {   // Valid baud rate
+        return 0;
+    }
+    
+#else
+
     if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
-    {
-        // Valid baudrates for InertialSense hardware
+    {   // Valid baudrates for InertialSense hardware
         for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
         {
             if (g_validBaudRates[i] == baudRate)
@@ -154,7 +163,10 @@ int validateBaudRate(unsigned int baudRate)
         return 0;
     }
 
-    return -1;
+#endif
+
+    // Invalid baud rate
+    return -1;    
 }
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler)
@@ -249,7 +261,6 @@ pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int
     return NULL;
 }
 
-
 void is_comm_register_callbacks(is_comm_instance_t* c, is_comm_callbacks_t *callbacks) {
     if (callbacks)
         c->cb = *callbacks;
@@ -287,40 +298,6 @@ uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance) {
 
     return protocols;
 }
-
-#if defined(IMX_5) || defined(GPX_1)
-int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
-{
-    // Clear buffer and initialize buffer pointers
-    if (c->rxBuf.size != (uint32_t)bufferSize) { return -1; }
-    if (c->rxBuf.start != buffer) { return -2; }
-    if (c->rxBuf.end != buffer + bufferSize) { return -3; }
-    if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -4; }
-    if (c->rxBuf.tail < c->rxBuf.start || c->rxBuf.tail > c->rxBuf.end) { return -5; }
-    if (c->rxBuf.scan < c->rxBuf.start || c->rxBuf.scan > c->rxBuf.end) { return -6; }
-
-    // Set parse enable flags - Only called for non GPS ports (not Ublox ports), so we can assume default protocols are enabled
-    if ((c->cb.protocolMask & DEFAULT_PROTO_MASK) != DEFAULT_PROTO_MASK) { return -7; }
-
-    if (c->rxPkt.data.ptr != NULL && (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end)) { return -8; }
-
-    // Everything matches
-    return 0;
-}
-
-int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, uint8_t forceInit)
-{
-    int result = is_comm_check(c, buffer, bufferSize);
-
-    if (result || forceInit)
-    {   // Mismatch or forced init
-        is_comm_init(c, buffer, bufferSize, c->cb.all);
-    }
-
-    // 0 on match, -1 on mismatch
-    return result;
-}
-#endif
 
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {
@@ -1276,33 +1253,22 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     }
 
     if (pkt->data.size + sizeof(packet_hdr_t) + 4 > PKT_BUF_SIZE)
-    {	// Packet size + offset + payload + footer is too large
+    {    // Packet size + offset + payload + footer is too large
         return -1;
     }
 
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-#if 1
+#ifdef GPX_1
     // Write packet to port in multiple write calls
 
     // Write packet to port
     int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
-    if (n == sizeof(packet_hdr_t)) {
-        // only send the rest of the packet if we were able to send the header...
 
-        if (pkt->offset) {
-            n += portWrite(port, (uint8_t *) &(pkt->offset), 2);                 // Offset (optional)
-        }
-
-        if (pkt->data.size) {
-            // Include payload in checksum calculation
-            pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t *) pkt->data.ptr, pkt->data.size);
-
-            n += portWrite(port, (uint8_t *) pkt->data.ptr, pkt->data.size);     // Payload
-        }
-
-        n += portWrite(port, (uint8_t *) &(pkt->checksum), 2);                   // Footer (checksum)
+    if (pkt->offset)
+    {
+        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
     }
 
     if (pkt->data.size)

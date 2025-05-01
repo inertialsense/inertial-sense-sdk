@@ -282,11 +282,17 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
     for (stream_did_t& dataItem : datasets)
     {   // Datasets to stream
         inertialSenseInterface.BroadcastBinaryData(dataItem.did, dataItem.periodMultiple);
+        
+        system_command_t cfg;
         switch (dataItem.did)
         {
             case DID_RTOS_INFO:
-                system_command_t cfg;
                 cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+                cfg.invCommand = ~cfg.command;
+                inertialSenseInterface.SendData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+                break;
+            case DID_GPX_RTOS_INFO:
+                cfg.command = SYS_CMD_GPX_ENABLE_RTOS_STATS;
                 cfg.invCommand = ~cfg.command;
                 inertialSenseInterface.SendData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
                 break;
@@ -301,8 +307,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
     if (!g_commandLineOptions.listenMode)
-    {
-        inertialSenseInterface.StopBroadcasts();
+    {   
+        inertialSenseInterface.StopBroadcasts(false);
     }
     SLEEP_MS(100);
     g_enableDataCallback = true;

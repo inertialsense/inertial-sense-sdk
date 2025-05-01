@@ -46,7 +46,7 @@ private:
     uint16_t resent_chunkid_count = 0;  //! the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
     uint32_t resent_chunkid_time = 0;   //! time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
 
-    uint16_t chunkDelay = 15;           //! provides a throttling mechanism
+    uint16_t chunkDelay = 25;           //! provides a throttling mechanism
     uint16_t nextChunkDelay = 250;      //! provides a throttling mechanism
     uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
     uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)

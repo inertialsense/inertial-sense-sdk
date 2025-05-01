@@ -658,7 +658,7 @@ bool InertialSense::UpdateServer()
             }
 
             if (ptype != _PTYPE_NONE)
-            {	// Record message info
+            {    // Record message info
                 messageStatsAppend(str, m_serverMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
             }
         }
@@ -727,7 +727,7 @@ bool InertialSense::UpdateClient()
             }
 
             if (ptype != _PTYPE_NONE)
-            {	// Record message info
+            {    // Record message info
                 messageStatsAppend(str, m_clientMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
             }
         }
@@ -770,7 +770,7 @@ void InertialSense::Close()
     EnableLogger(false);
     if (m_disableBroadcastsOnClose)
     {
-        StopBroadcasts();
+        StopBroadcasts(false);
         SLEEP_MS(100);
     }
 //    for (auto& device : m_comManagerState.devices)

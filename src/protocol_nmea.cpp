@@ -264,43 +264,45 @@ int nmea_sprint_footer(char* a, int aSize, int &n)
 
 char *ASCII_to_u8(uint8_t *val, char *ptr)
 {
-    val[0] = (uint8_t)atoi(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    val[0] = (uint8_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_u16(uint16_t *val, char *ptr)
 {
-    val[0] = (uint16_t)atoi(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    val[0] = (uint16_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_u32(uint32_t *val, char *ptr)
 {
-    val[0] = (uint32_t)atoi(ptr);
+    val[0] = (uint32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
+    return ptr;
+}
+
+char *ASCII_to_u64(uint64_t *val, char *ptr)
+{
+    char *endPtr = nullptr;
+    val[0] = (uint64_t)std::strtoll(ptr, &endPtr, 10); 
     ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_i32(int32_t *val, char *ptr)
 {
-    val[0] = (int32_t)atoi(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    val[0] = (int32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_f32(float *vec, char *ptr)
 {
-    vec[0] = (float)atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_f64(double *vec, char *ptr)
 {
-    vec[0] = atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
@@ -318,43 +320,26 @@ char *ASCII_to_ver4u8(uint8_t vec[], char *ptr)
 
 char *ASCII_to_vec3f(float vec[], char *ptr)
 {
-    vec[0] = (float)atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[1] = (float)atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[2] = (float)atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[1] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[2] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_vec4f(float vec[], char *ptr)
 {
-    vec[0] = (float)atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[1] = (float)atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[2] = (float)atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[3] = (float)atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[1] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[2] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+    vec[3] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_vec3d(double vec[], char *ptr)
 {
-    vec[0] = atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[1] = atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
-
-    vec[2] = atof(ptr);
-    ptr = ASCII_find_next_field(ptr);
+    vec[0] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+    vec[1] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+    vec[2] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
@@ -368,34 +353,26 @@ char *ASCII_to_MD5(uint32_t md5hash[4], char *ptr)
 char *ASCII_DegMin_to_Lat(double *vec, char *ptr)
 {
     int degrees;
-    SSCANF(ptr, "%02d", &degrees);    
-    ptr += 2;
-
-    double minutes = atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
+    SSCANF(ptr, "%02d", &degrees);	ptr += 2;
+    double minutes = atof(ptr);		ptr = ASCII_find_next_field(ptr);
     double decdegrees = ((double)degrees) + (minutes*0.01666666666666666666666666666666666);
     if (ptr[0] == 'S')  { vec[0] = -decdegrees; } // south
     else                { vec[0] =  decdegrees; } // north
-    
     ptr += 2;
+    
     return ptr;
 }
 
 char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
 {
     int degrees;
-    SSCANF(ptr, "%03d", &degrees);    
-    ptr += 3;
-
-    double minutes = atof(ptr);        
-    ptr = ASCII_find_next_field(ptr);
-
+    SSCANF(ptr, "%03d", &degrees);	ptr += 3;
+    double minutes = atof(ptr);		ptr = ASCII_find_next_field(ptr);
     double decdegrees = ((double)degrees) + (minutes*0.01666666666666666666666666666666666);
     if (ptr[0] == 'W')  { vec[0] = -decdegrees; } // west
     else                { vec[0] =  decdegrees; } // east
-
     ptr += 2;
+
     return ptr;
 }
 
@@ -431,7 +408,7 @@ char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, utc_time_t *utcTime, ch
     // HHMMSS.sss
     float fsecond;
     SSCANF(ptr, "%02d%02d%f", &utcTime->hour, &utcTime->minute, &fsecond);
-    fsecond += 0.00005f;	/// add a 0.05ms to address float-conversion aliasing
+    fsecond += 0.00005f;    /// add a 0.05ms to address float-conversion aliasing
     utcTime->second = (uint32_t)fsecond;
     fsecond *= 1000.0f;
     utcTime->millisecond = (uint32_t)fsecond;
@@ -471,7 +448,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
     period[nmeaId] = periodMultiple;
 
     if (periodMultiple)
-        bits |=  (nmeaBits);
+        bits |= (nmeaBits);
     else
         bits &= ~(nmeaBits);
 }
@@ -875,10 +852,7 @@ static void nmea_GPSDateOfLastFix(char* a, int aSize, int &offset, gps_pos_t &po
     offset += ssnprintf(a, aSize, ",%02u%02u%02u", (unsigned int)day, (unsigned int)month, (unsigned int)(year-2000));
 }
 
-/**
- * Comma Separated Values
- */
-static void nmea_GPSDateOfLastFixCSV(char* a, int aSize, int &offset, gps_pos_t &pos)
+static void nmea_GPSDateOfLastFixCSV(char* a, int aSize, int &offset, gps_pos_t &pos)	//Comma Separated Values
 {
     aSize -= offset;
     a += offset;
@@ -894,18 +868,18 @@ int nmea_gga(char a[], const int aSize, gps_pos_t &pos)
     int fixQuality = 0;
     switch((pos.status&GPS_STATUS_FIX_MASK))
     {
-        default:                                    // FALL THROUGH
-        case GPS_STATUS_FIX_NONE:                   fixQuality = 0;    break;
-        case GPS_STATUS_FIX_SBAS:                   // FALL THROUGH
-        case GPS_STATUS_FIX_2D:                     // FALL THROUGH
-        case GPS_STATUS_FIX_RTK_SINGLE:             // FALL THROUGH
-        case GPS_STATUS_FIX_3D:                     fixQuality = 1;    break;
-        case GPS_STATUS_FIX_DGPS:                   fixQuality = 2;    break;
-        case GPS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;    break;   
-        case GPS_STATUS_FIX_RTK_FIX:                fixQuality = 4;    break;
-        case GPS_STATUS_FIX_RTK_FLOAT:              fixQuality = 5;    break;
-        case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:    // FALL THROUGH
-        case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:     fixQuality = 6;    break;
+    default:
+    case GPS_STATUS_FIX_NONE:                   fixQuality = 0;    break;
+    case GPS_STATUS_FIX_SBAS:
+    case GPS_STATUS_FIX_2D:
+    case GPS_STATUS_FIX_RTK_SINGLE:
+    case GPS_STATUS_FIX_3D:                     fixQuality = 1;    break;
+    case GPS_STATUS_FIX_DGPS:                   fixQuality = 2;    break;
+    case GPS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;    break;   
+    case GPS_STATUS_FIX_RTK_FIX:                fixQuality = 4;    break;
+    case GPS_STATUS_FIX_RTK_FLOAT:              fixQuality = 5;    break;
+    case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
+    case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:     fixQuality = 6;    break;
     }
         
     // NMEA GGA line - http://www.gpsinformation.org/dale/nmea.htm#GGA
@@ -1056,12 +1030,14 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "RMC");
     nmea_GPSTimeToUTCTime(a, aSize, n, pos);    // 1 - UTC time of last fix
-    
     if ((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
+    {
         nmea_sprint(a, aSize, n, ",A");         // 2 - A=active (good)
+    }
     else
+    {
         nmea_sprint(a, aSize, n, ",V");         // 2 - V=void (bad,warning)
-    
+    }
     nmea_latToDegMin(a, aSize, n, pos.lla[0]);  // 3,4 - lat (degrees minutes)
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);  // 5,6 - lon (degrees minutes)
     
@@ -1269,6 +1245,119 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
     return nmea_sprint_footer(a, aSize, n);
 }
 
+/**
+ * @brief Preps fields 1-6 of $POWxxx prorietary NMEA message
+ * 
+ * @param a[] - output buffer
+ * @param startN - starting index in output buffer
+ * @param aSize - size of output buffer
+ * @param pos - gps position data
+ * 
+ * @note output message format: 
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ */
+int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
+{  
+    int n = startN;
+    int valid = (pos.week > 2359) ? 1 : 0; // assume time is valid if week > 2359 (03/23/2025)
+
+    nmea_sprint(a, aSize, n, ",%d", valid);                 // 1
+    nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
+    nmea_sprint(a, aSize, n, ",%" PRIu64, ((uint64_t)pos.timeOfWeekMs)*1000); // 3
+
+    valid = (pos.leapS > 10 && pos.leapS < 30) ? 1 : 0;     // should be ~18 so give a little leeway
+    nmea_sprint(a, aSize, n, ",%d", valid);                 // 4
+    nmea_sprint(a, aSize, n, ",%d", pos.leapS);             // 5
+
+    nmea_sprint(a, aSize, n, ",%d", 0);                     // 6
+
+    return n;
+}
+
+/**
+ * @brief creates $POWGPS prorietary NMEA message
+ * 
+ * @param a[] - output buffer
+ * @param aSize - size of output buffer
+ * @param pos - gps position data
+ * 
+ * @note output message format:
+ *  0   Message ID $POWGPS
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ *  7   Checksum, begins with *
+ */
+int nmea_powgps(char a[], const int aSize, gps_pos_t &pos)
+{
+    int n = ssnprintf(a, aSize, "$POWGPS");     // 0
+
+    n = nmea_powPrep(a, n, aSize, pos);         // 1-6
+
+    return nmea_sprint_footer(a, aSize, n);
+}
+
+/**
+ * @brief $POWTLV prorietary NMEA message
+ * 
+ * @param a[] - output buffer
+ * @param aSize - size of output buffer
+ * @param pos - gps position data
+ * @param vel - gps velocity data
+ * 
+ * @note output message format: 
+ *  0   Message ID $POWGPS
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ *  7   Latitude ddmm.mmmm
+ *  8   North/South indicator (N/S)
+ *  9   Longitude dddmm.mmmm
+ *  10  East/West indicator (E/W)
+ *  11  Altitude (x.xxx meters)
+ *  12  Mean Sea Level (MSL) (x.xxx meters)
+ *  13  Horizontal Speed (x.xxx m/s)
+ *  14  Vertical Speed (x.xxx m/s)
+ *  15  Heading (x.xxx degrees)
+ *  16  Checksum, begins with *
+ */
+int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
+{    
+    float horVel = MAG_VEC2(vel.vel);
+    float groundTrackHeading = 0;
+
+    int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
+    
+    update_nmea_speed(pos, vel);
+
+    n = nmea_powPrep(a, n, aSize, pos);                         // 1-6
+
+    nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8
+    nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
+
+    nmea_sprint(a, aSize, n, ",%.3f", pos.lla[2]);              // 11
+    nmea_sprint(a, aSize, n, ",%.3f", pos.hMSL);                // 12
+
+    nmea_sprint(a, aSize, n, ",%.3f", horVel);                  // 13
+
+    nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);              // 14
+
+    groundTrackHeading = C_RAD2DEG_F * atan2f(vel.vel[1], vel.vel[0]);
+    nmea_sprint(a, aSize, n, ",%.3f", groundTrackHeading);      // 15
+
+    return nmea_sprint_footer(a, aSize, n);                     // 16
+}
 
 void print_string_n(char a[], int n)
 {
@@ -1862,34 +1951,24 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 {
     (void)aSize;
-    char *startPtr = (char *)&a[6];     // $INFO,
-    char *ptr = startPtr;
-
-    if (ptr >= (a + aSize - 5)) // '5' is the length of the trailing checksum and line terminator
-        return 1;   // this message has no data in it...
+    char *ptr = (char *)&a[6];	// $INFO,
     
     // uint32_t        serialNumber;
-    if (ptr < a + aSize)
         ptr = ASCII_to_u32(&info.serialNumber, ptr);
 
     // uint8_t         hardwareVer[4];
-    if (ptr < a + aSize)
         ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
 
     // uint8_t         firmwareVer[4];
-    if (ptr < a + aSize)
         ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
 
     // uint32_t        buildNumber;
-    if (ptr < a + aSize)
         ptr = ASCII_to_u32(&info.buildNumber, ptr);
 
     // uint8_t         protocolVer[4];
-    if (ptr < a + aSize)
         ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
 
     // uint32_t        repoRevision;
-    if (ptr < a + aSize)
         ptr = ASCII_to_u32(&info.repoRevision, ptr);
 
     // char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
@@ -2197,7 +2276,7 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
             nmea_enable_stream(rmci[portId(port)]->rmcNmea.nmeaBits, rmci[portId(port)]->rmcNmea.nmeaPeriod, id, period);
             break;
         case RMC_OPTIONS_PORT_ALL:
-            for (int i=0; i < NUM_SERIAL_PORTS; i++) {
+            for (int i=0; i < NUM_COM_PORTS; i++) {
                 nmea_enable_stream(rmci[i]->rmcNmea.nmeaBits, rmci[i]->rmcNmea.nmeaPeriod, id,  period);
             }
             if (id == NMEA_MSG_ID_GNGSV && period == 0)
@@ -2763,6 +2842,153 @@ int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_
     // 12-14 - NED veocity (m/s)
     // float velNed[3];
     // ptr = ASCII_to_vec3f(velNed, ptr);
+
+    return 0;
+}
+
+/**
+ * @brief $POWGPS prorietary NMEA message
+ * 
+ * @param a[]  NMEA string
+ * @param aSize  NMEA string size
+ * @param pos  GPS position structure
+ * 
+ * @note
+ *  0   Message ID $POWGPS
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ *  7  Checksum, begins with *
+ */
+int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos)
+{
+    /*  $POWGPS prorietary NMEA message
+            0   Message ID $POWGPS
+            1   GPS Time Quality (0=invalid, 1=valid)
+            2   GPS Week Number
+            3   GPS Time of Week (micro seconds)
+            4   GPS leap seconds validity (0=invalid, 1=valid)
+            5   GPS leap seconds
+            6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+            7   Checksum, begins with *
+    */
+    (void)aSize;
+    uint64_t TOWus;
+    char *ptr = (char *)&a[8];	// $POWGPS,
+    uint32_t timeValid;
+    uint32_t lsValid;
+    
+    // 1 -	GPS Time valid
+    ptr = ASCII_to_u32(&timeValid, ptr);
+
+    // 2 -	GPS week number
+    ptr = ASCII_to_u32(&(pos.week), ptr);
+
+    // 3 -	GPS Time of Week (us)
+    ptr = ASCII_to_u64(&TOWus, ptr);
+    pos.timeOfWeekMs = TOWus/1000;
+    
+    // 4 -	GPS leap seconds valid
+    ptr = ASCII_to_u32(&lsValid, ptr);
+    
+    // 5 -	GPS leap seconds
+    ptr = ASCII_to_u8(&(pos.leapS), ptr);
+
+    // 6 -	Holdover flag (0=no holdover, 1=EGR is in holdover)
+
+    if (lsValid == 0) { pos.leapS = 0; }
+    if (timeValid == 0) { pos.timeOfWeekMs = 0; pos.week = 0; }
+
+    return 0;
+}
+
+/**
+ * @brief $POWTLV prorietary NMEA message
+ * 
+ * @param a[]  NMEA string
+ * @param aSize  NMEA string size
+ * @param pos  GPS position structure
+ * @param vel  GPS velocity structure
+ * 
+ * @note
+ *  0   Message ID $POWGPS
+ *  1   GPS Time Quality (0=invalid, 1=valid)
+ *  2   GPS Week Number
+ *  3   GPS Time of Week (micro seconds)
+ *  4   GPS leap seconds validity (0=invalid, 1=valid)
+ *  5   GPS leap seconds
+ *  6   Holdover flag (0=no holdover, 1=EGR is in holdover)
+ *  7   Latitude ddmm.mmmm
+ *  8   North/South indicator (N/S)
+ *  9   Longitude dddmm.mmmm
+ *  10  East/West indicator (E/W)
+ *  11  Altitude (x.xxx meters)
+ *  12  Mean Sea Level (MSL) (x.xxx meters)
+ *  13  Horizontal Speed (x.xxx m/s)
+ *  14  Vertical Speed (x.xxx m/s)
+ *  15  Heading (x.xxx degrees)
+ *  16  Checksum, begins with *
+ */
+int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
+{
+    (void)aSize;
+    uint64_t TOWus;
+    char *ptr = (char *)&a[8];	// $POWGPS,
+    uint32_t temp;
+    float horVel, courseMadeTrue;
+    
+    // 1 -	GPS Time valid
+    ptr = ASCII_to_u32(&temp, ptr);
+
+    // 2 -	GPS week number
+    ptr = ASCII_to_u32(&(pos.week), ptr);
+
+    // 3 -	GPS Time of Week (us)
+    ptr = ASCII_to_u64(&TOWus, ptr);
+    pos.timeOfWeekMs = TOWus/1000;	// convert to seconds
+
+    // if time is not valid, set time to 0
+    if (temp == 0) { pos.timeOfWeekMs = 0; pos.week = 0; }
+    
+    // 4 -	GPS leap seconds valid
+    ptr = ASCII_to_u32(&temp, ptr);
+    
+    // 5 -	GPS leap seconds
+    ptr = ASCII_to_u8(&(pos.leapS), ptr);
+
+    // if LS not valid, set to 0
+    if (temp == 0) { pos.leapS = 0; }
+
+    // 6 -	Holdover flag (0=no holdover, 1=EGR is in holdover)
+    ptr = ASCII_to_u32(&temp, ptr);
+
+    // 7,8 -  Latitude ddmm.mmmm, North/South indicator (N/S)
+    ptr = ASCII_DegMin_to_Lat(&(pos.lla[0]), ptr);
+    
+    // 9,10 -  Longitude dddmm.mmmm, East/West indicator (E/W)
+    ptr = ASCII_DegMin_to_Lon(&(pos.lla[1]), ptr);
+
+    // 11 - Altitude (x.xxx meters)
+    ptr = ASCII_to_f64(&(pos.lla[2]), ptr);
+
+    // 12 - Mean Sea Level (MSL) (x.xxx meters)
+    ptr = ASCII_to_f32(&(pos.hMSL), ptr);
+
+    // 13 - Horizontal Speed (x.xxx m/s)
+    ptr = ASCII_to_f32(&horVel, ptr);
+
+    // 14 - Vertical Speed (x.xxx m/s)
+    ptr = ASCII_to_f32(&vel.vel[2], ptr);
+
+    // 15 - Heading (x.xxx degrees)
+    ptr = ASCII_to_f32(&courseMadeTrue, ptr);
+    courseMadeTrue *= C_DEG2RAD_F;
+
+    vel.vel[0] = horVel * cosf(courseMadeTrue);
+    vel.vel[1] = horVel * sinf(courseMadeTrue);
 
     return 0;
 }
