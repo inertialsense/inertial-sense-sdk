@@ -291,7 +291,7 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t& devInfo, int detail, eHd
             case 'c': out +="-rc";          break;
             case 'd': out +="-devel";       break;
             case 's': out +="-snap";        break;
-            case '*': out +="-snap";        break;
+            case '^': out +="-snap";        break;
             default : out +="";             break;
         }
         if (devInfo.firmwareVer[3] != 0)
@@ -299,8 +299,8 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t& devInfo, int detail, eHd
 
         if (detail > 0) {
             out += utils::string_format(" %08x", devInfo.repoRevision);
-            if (devInfo.buildType == '*') {
-                out += "*";
+            if (devInfo.buildType == '^') {
+                out += "^";
             }
 
             if (detail > 1) {
