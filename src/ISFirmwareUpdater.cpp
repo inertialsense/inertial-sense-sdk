@@ -287,7 +287,7 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
 
     progress_total = msg.data.progress.totl_chunks;
     progress_num = msg.data.progress.num_chunks;
-    percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
+    // percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char* message = (msg.data.progress.msg_len > 0) ? (const char*)&msg.data.progress.message : "";
     if (pfnStatus_cb != nullptr)
         pfnStatus_cb(this, static_cast<eLogLevel>(msg.data.progress.msg_level), message);
@@ -312,6 +312,7 @@ bool ISFirmwareUpdater::fwUpdate_isDone()
 void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
     // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
     const int toHost_size = toHost.size();
+
     uint8_t* toHostBuf = new uint8_t[toHost_size];
     uint8_t* p = toHostBuf;
     while (toHost.size()) {
@@ -323,11 +324,10 @@ void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
         fwUpdate::payload_t *msg;
         void *aux_data = nullptr;
         int msg_len = fwUpdate_mapBufferToPayload(p, &msg, &aux_data);
-        if (fwUpdate_processMessage(p, msg_len))
+        if (fwUpdate_processMessage(*msg))
             p += msg_len;
     }
     delete [] toHostBuf;
-    // return result;
 }
 
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed)
@@ -337,7 +337,9 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
 
     if (deviceUpdater) {
         deviceUpdater->fwUpdate_step(msg_type, processed);
-        fwUpdate_handleLocalDevice();
+        // we need to handle local data exchange through our byte stream to the device
+        if (!toHost.empty())
+            fwUpdate_handleLocalDevice();
     }
 
     if ((pfnStatus_cb != nullptr) && (lastStatus != session_status)) {
@@ -444,7 +446,8 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     if (deviceUpdater != nullptr) {
         bool result = deviceUpdater->fwUpdate_processMessage(buffer, buff_len);
-        fwUpdate_handleLocalDevice();
+        if (!toHost.empty()) // check for any responses
+            fwUpdate_handleLocalDevice();
         return result;
     }
 

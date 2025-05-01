@@ -112,10 +112,12 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, int total_chu
 bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
     static int nextStep = 0;
 
-    if (fwUpdate_getSessionStatus() == fwUpdate::NOT_STARTED)
+    if (session_status == fwUpdate::NOT_STARTED)
         return false;
 
-    if (fwUpdate_getSessionStatus() == fwUpdate::INITIALIZING) {
+    // printf("fwUpdate_step(): %s\n", fwUpdate_getStatusName(session_status)); fflush(stdout);
+
+    if (session_status == fwUpdate::INITIALIZING) {
         // if we are INITIALIZING, we've successfully issued a RESET_INTO_BOOTLOADER, and we're waiting
         // for this device to become available again, but in ISbootloader mode.  Its possible, if we are
         // connected via a USB port, that we will get a new port id, so we need to scan ports to see if
@@ -123,11 +125,11 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // is reporting as running in HDW_STATE_BOOTLOADER, then we can advance to ready. The InertialSense
         // class should handle most of this for us, we just need to tell it to look for new ISDevices.
 
-        // one strategy is to setup a second InertialSense instance, and have it query devices;
-        // our challenge is that we have to inform our primary InertialSense instance of the newly discovered port
 
-        SLEEP_MS(2000);
+        SLEEP_MS(1000);
         InertialSense* is = InertialSense::getLastInstance();
+        if (!is)
+            is = new InertialSense();
 
         // Wait upto 15 seconds this device to reboot into bootloader mode.
         bool foundIt = false;
@@ -160,8 +162,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         }
     }
 
-    if ((fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) || (fwUpdate_getSessionStatus() == fwUpdate::FINALIZING)) {
-        // fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Finalizing Update: %d", updateStage);
+    if ((session_status == fwUpdate::IN_PROGRESS) || (session_status == fwUpdate::FINALIZING)) {
         switch (updateState) {
             case UPLOADING: // transfer
                 if (transferProgress >= 1.0f)
@@ -216,6 +217,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     if (session_status < fwUpdate::NOT_STARTED)
         fwUpdate_sendProgress();
 
+    // printf(" %s\n", fwUpdate_getStatusName(session_status)); fflush(stdout);
     return true;
 }
 
@@ -654,7 +656,7 @@ bool ISBFirmwareUpdater::sendCmd(const std::string& cmd, int chksumPos) {
 /**
  * Helper functions which waits for a particular acknowledgement response from the remote device, and generates periodic status
  * reports while it waits.  This function calculates (and returns via 'progress') a percentage progress as an indication of
- * time elapsed between timeout and maxTimeout. The implementation for progress is non-linear (exponential).
+ * time elapsed between elasped and maxTimeout. The implementation for progress is non-linear (exponential).
  * @param ackStr the string to look for, which indicates an acknowledgement
  * @param progressMsg a message to report when sending periodic status updates
  * @param maxTimeout the maximum number of milliseconds to wait for the acknowledgement
@@ -705,7 +707,6 @@ ISBFirmwareUpdater::eraseState_t ISBFirmwareUpdater::eraseFlash_step(uint32_t ti
     static const std::string ERASE_FLASH = ":0200000400FFFBCC";
 
     float setLocProgress = 0.0f;  // use this instead of eraseProgress in ERASE_INITIALIZE, so it doesn't 'glitch' our progress
-
     switch (eraseState) {
         default:
             eraseElapsed = 0;
@@ -715,14 +716,14 @@ ISBFirmwareUpdater::eraseState_t ISBFirmwareUpdater::eraseFlash_step(uint32_t ti
         case ERASE_INITIALIZE:
             // load erase location
             if (eraseStartedMs == 0) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initializing flash erase location.");
+                fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initializing flash erase.");
                 if (sendCmd(SET_LOCATION))
                     eraseStartedMs = current_timeMs();
-                SLEEP_MS(100); // give a moment for the device to respond to the command (but not too long).
+                SLEEP_MS(30); // give a moment for the device to respond to the command (but not too long).
             }
 
             eraseElapsed = current_timeMs() - eraseStartedMs;
-            if (!waitForAck(".\r\n", "Erasing Flash", timeout, eraseElapsed, setLocProgress)) {
+            if (!waitForAck(".\r\n", "Erasing flash", timeout, eraseElapsed, setLocProgress)) {
                 if (eraseElapsed > timeout) {
                     fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "Error while erasing flash (timeout after set_location)");
                     session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
@@ -737,19 +738,18 @@ ISBFirmwareUpdater::eraseState_t ISBFirmwareUpdater::eraseFlash_step(uint32_t ti
         case ERASE:
             // load erase location
             if (eraseStartedMs == 0) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Performing flash erase.");
+                fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initiating flash erase.");
                 if (sendCmd(ERASE_FLASH))
                     eraseStartedMs = current_timeMs();
-                SLEEP_MS(100); // give a moment for the device to respond to the command (but not too long).
+                SLEEP_MS(30); // give a moment for the device to respond to the command (but not too long).
             }
 
             eraseElapsed = current_timeMs() - eraseStartedMs;
-            if (!waitForAck(".\r\n", "Erasing Flash", timeout, eraseElapsed, eraseProgress)) {
+            if (!waitForAck(".\r\n", "Erasing flash", timeout, eraseElapsed, eraseProgress)) {
                 if (eraseElapsed > timeout) {
                     fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "Error while erasing flash (timeout after erase_flash)");
                     session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
                     eraseState = ERASE_TIMEOUT;
-                    return eraseState;
                 }
             } else {
                 eraseState = ERASE_FINALIZE;
@@ -889,7 +889,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
         }
 
         unsigned char buf[5] = { 0 };
-        int count = portReadTimeout(device->port, buf, 3, 1000);
+        int count = portReadTimeout(device->port, buf, 3, 100);
         if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
         {
             break;
@@ -993,6 +993,14 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
             break;
         case WRITE:
         {
+            // if (writeStartedMs == 0) {
+            //    fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initiating flash write.");
+            //    if (sendCmd(WRITE_FLASH))
+            //       writeStartedMs = current_timeMs();
+            //       SLEEP_MS(100); // give a moment for the device to respond to the command (but not too long).
+            //    }
+            // }
+
             switch (process_hex_stream(*imgStream)) {
                 case IS_OP_OK:  // normal operation, and still more data to process
                     writeState = WRITE;
@@ -1006,7 +1014,7 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
                     session_status = fwUpdate::ERR_UPDATER_CLOSED;
                     return writeState;
                 case IS_OP_RETRY:   // something requested that we start over again??
-                    SLEEP_MS(1000);
+                    SLEEP_MS(200);
                     writeState = WRITE_INITIALIZE;
                     break;
                 case IS_OP_INCOMPATIBLE:    // data is valid, but not for this device (should not happen at this point)

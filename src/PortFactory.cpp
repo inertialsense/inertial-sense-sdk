@@ -23,9 +23,6 @@
 #include "serialPortPlatform.h"
 
 port_handle_t SerialPortFactory::bindPort(u_int16_t pType, std::string pName) {
-    // TODO :: TRYING SOMETHING DIFFERENT
-    //   -- rather than using new, m_serialPorts will allocate a new port using a copy constructor.
-    //   Can we dereference the internal copy in the vector to a port_handle_t? -- this avoids us using new/delete or malloc/free
     serial_port_t* serialPort = new serial_port_t;
     *serialPort = {};
     serialPort->base.pnum = (uint16_t)PortManager::getInstance().getPortCount();
@@ -37,6 +34,7 @@ port_handle_t SerialPortFactory::bindPort(u_int16_t pType, std::string pName) {
     port_handle_t port = (port_handle_t)serialPort;
     serialPortPlatformInit(port);
 
+    debug_message("[DBG] Allocated new serial port '%s'\n", portName(port));
     return port;
 }
 
@@ -44,25 +42,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
 
-    // its annoying that its not "easy" to remove a vector element by value, especially when the value is complex
-    //    auto p = std::find(begin(), end(), port);
-    //    if ((p == end()) || (*p != port))
-    //        return false;
-
-    // TODO: there should be some kind of a callback/notify system where a port can directly notify listeners that its being closed/destroyed
-    // serialPortClose(port);
-
-    /*
-     -- We don't do ANYTHING with the device at this level... that should be handle by the port callback.
-    ISDevice* device = getDevice(port);
-    if (device && releaseDevice) {
-        device->port = NULL;    // so port to NULL so releaseDevice() below won't double-free it.
-        InertialSense::releaseDevice(device, false);
-    }
-    // PortManager::erase(port);
-    */
-
-    // TODO: Don't need this, if we stick with the vector/copy allocation/initialization
+    debug_message("[DBG] Releasing serial port '%s'\n", ((serial_port_t*)port)->portName);
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 

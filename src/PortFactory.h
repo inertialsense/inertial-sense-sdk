@@ -15,6 +15,7 @@
 #include <cctype>
 
 #include "core/types.h"
+#include "core/msg_logger.h"
 #include "ISConstants.h"
 
 /**

@@ -142,17 +142,43 @@ bool cltool_extractEventData();
 void cltool_outputUsage();
 void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
-void cltool_bootloadUpdateInfo(std::any obj, eLogLevel level, const char* str, ...);
-void cltool_firmwareUpdateInfo(std::any obj, eLogLevel level, const char* str, ...);
+void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
+void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 
+/**
+ * Override the ISDevice class so we can implement our own data handlers
+ */
 class CltoolDevice : ISDevice {
     public:
-    CltoolDevice(port_handle_t _port, const dev_info_t& _devInfo) : ISDevice(_port, _devInfo) { }
+    CltoolDevice(const dev_info_t& _devInfo, port_handle_t _port) : ISDevice(_devInfo, _port) { }
     ~CltoolDevice() override = default;
 
     int onIsbDataHandler(p_data_t *data, port_handle_t port) override;
     int onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) override;
 };
+
+/**
+ * Implement a new CltoolDeviceFactory to create our CltoolDevice
+ */
+class CltoolDeviceFactory : public DeviceFactory {
+public:
+    static DeviceFactory& getInstance() {
+        static CltoolDeviceFactory instance;
+        return instance;
+    }
+
+private:
+    CltoolDeviceFactory() = default;
+    ~CltoolDeviceFactory() override = default;
+
+    /**
+     * Instantiate/allocate a new ISDevice (note that there is no distinction between IMX vs GPX devices at this point -- TODO??
+     * @param devInfo
+     * @return
+     */
+    virtual ISDevice* allocateDevice(const dev_info_t &devInfo) override { return (ISDevice*) new CltoolDevice(devInfo, nullptr); };
+};
+
 #endif // __CLTOOL_H__
 

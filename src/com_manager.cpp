@@ -209,8 +209,7 @@ void ISComManager::stepTimeout(uint32_t timeMs)
 
 void comManagerStep()
 {
-    s_cm.stepRx();
-    s_cm.stepTx();
+    s_cm.step();
 }
 
 void ISComManager::step()
@@ -353,7 +352,13 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
         // FIXME: we really should be more selective with which errors we actually close the port for.
         if (SERIAL_PORT(port)->errorCode > 0) {
     #ifndef IMX_5
-            serialPortClose(port);
+            switch (SERIAL_PORT(port)->errorCode) {
+                case ENODEV:        // no such device, so no need to close it
+                    break;
+                default:
+                    serialPortClose(port);
+                    break;
+            }
             // removePort(port);
             // memset(SERIAL_PORT(port), 0, sizeof(serial_port_s));
             // TODO: we still haven't deleted all references to the port, and this will likely cause problems (ie, InertialSense class, etc).

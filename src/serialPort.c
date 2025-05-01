@@ -22,7 +22,7 @@ int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
 void serialPortInit(port_handle_t port, int id, int type) {
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPort->base.pnum = id;
-    serialPort->base.ptype = type;
+    serialPort->base.ptype = type | PORT_FLAG__VALID;
 
     serialPort->pfnOpen = serialPortOpen;
     serialPort->pfnClose = serialPortClose;
@@ -69,6 +69,7 @@ int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int b
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
+    serialPort->base.ptype |= PORT_FLAG__OPENED;
     return 1;
 }
 

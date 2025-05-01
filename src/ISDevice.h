@@ -12,6 +12,7 @@
 #include <memory>
 #include <functional>
 
+#include "core/msg_logger.h"
 #include "DeviceLog.h"
 #include "ISBootloaderBase.h"
 #include "protocol/FirmwareUpdate.h"
@@ -47,18 +48,14 @@ public:
     static std::string getName(const dev_info_t& devInfo);
     static std::string getFirmwareInfo(const dev_info_t &devInfo, int detail = 1);
 
-    ISDevice() {
-        //std::cout << "Creating empty ISDevice: " << this << std::endl;
-        flashCfg.checksum = (uint32_t)-1;
-    }
-
-    explicit ISDevice(port_handle_t _port) {
+    explicit ISDevice(u_int16_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
         flashCfg.checksum = (uint32_t)-1;
+        hdwId = _hdwId;
         assignPort(_port);
     }
 
-    explicit ISDevice(port_handle_t _port, const dev_info_t& _devInfo) {
+    explicit ISDevice(const dev_info_t& _devInfo, port_handle_t _port = nullptr) {
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
         hdwId = ENCODE_DEV_INFO_TO_HDW_ID(_devInfo);
         devInfo = _devInfo;
@@ -90,20 +87,22 @@ public:
     }
 
     virtual ~ISDevice() {
-//        if (((hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY)) || (devInfo.serialNumber != 0))
-//            std::cout << "Destroying ISDevice " << getDescription() << ". " << this << std::endl;
+        //        if (hdwId != IS_HARDWARE_ANY) {
+        //            debug_message("Destroying ISDevice %s.\n", getDescription().c_str());
+        //        }
 
-        //if (port && serialPortIsOpen(port))
-        //    serialPortClose(port);
         devInfo = {};
+
         if (port) {
+            // NOTE: DO NOT CLOSE or otherwise modify the associated port.  The only thing we should be doing with the port,
+            // is making sure its callbacks don't call back into this instance.
             if (portType(port) & PORT_TYPE__COMM) {
                 if (COMM_PORT(port)->comm.cb.context == this) {
                     COMM_PORT(port)->comm.cb = originalCbs; // return the original callbacks/contexts, but only if the context matches us
                 }
             }
+            port = nullptr;
         }
-        port = 0;
     }
 
     ISDevice& operator=(const ISDevice& src) {
@@ -119,6 +118,15 @@ public:
         closeStatus = src.closeStatus;
         return *this;
     }
+
+    /**
+     * Generates a uint64_t which encodes the hardware type, hardware version, and hardware serial number, representing a unique device
+     * @param devInfo
+     * @return a uint16_t
+     */
+    static uint64_t getUniqueId(const dev_info_t& devInfo) { return ((uint64_t)ENCODE_DEV_INFO_TO_HDW_ID(devInfo) << 48) | devInfo.serialNumber; }
+
+    uint64_t getUniqueId() { return getUniqueId(this->devInfo); }
 
     /**
      * Binds the specified port to this device. Reconfigures the port handler to call back
@@ -140,8 +148,8 @@ public:
     }
 
     /**
-     * @return true if the device has valid, minimal required devInfo values sufficient to indicate
-     * that it genuinely identifies an Inertial Sense device.
+     * @return true if the device has valid, minimal required devInfo values sufficient to indicate that it genuinely
+     * identifies an Inertial Sense device.
      */
     bool hasDeviceInfo() { return (hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY) && (devInfo.hdwRunState != HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0); }
 
@@ -183,7 +191,7 @@ public:
     /**
      * @returns the name of the currently bound port, or an empty string if none.
      */
-    std::string getPortName() {  std::lock_guard<std::recursive_mutex> lock(portMutex); return (port ? portName(port) : ""); }
+    std::string getPortName() {  std::lock_guard<std::recursive_mutex> lock(portMutex); return (port && portIsValid(port) && portName(port) ? portName(port) : ""); }
 
     /**
      * @returns a formatted string which can be used to uniquely identify the hardware associated with this device. The
@@ -244,20 +252,30 @@ public:
     bool isResetPending() { return current_timeMs() < nextResetTime; }
 
     // Convenience Functions
+    /**
+     * Requests that this device broadcast the requested DID are the specified period
+     * @param dataId the DID to be broadcast at periodic intervals
+     * @param periodMultiple the period multiple (NOT a frequency). If 0, this will request a one-shot, also effectively stopping any existing broadcasts
+     * @return true if the request was successfully sent, otherwise false (ie, port invalid, invalid device, etc)
+     */
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
+
+
     void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::recursive_mutex> lock(portMutex); comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
     void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); comManagerGetData(port, dataId, length, offset, period); }
-    int SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSendData(port, data, dataId, length, offset); }
-    int SendRaw(const uint8_t* data, uint32_t length) {  std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSendRaw(port, data, length); }
+
+    int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSend(port, pktInfo, data, did, size, offset); }
+    int SendRaw(const void* data, uint32_t length) { std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSendRaw(port, data, length); }
+    int SendData(eDataIDs dataId, const void* data, uint32_t length, uint32_t offset = 0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSendData(port, data, dataId, length, offset); }
 
     int SendNmea(const std::string& nmeaMsg);
-    int QueryDeviceInfo() { return SendRaw((uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
-    int SavePersistent() { return SendRaw((uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
-    int SoftwareReset() { return SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
+    int QueryDeviceInfo() { return SendRaw(NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
+    int SavePersistent() { return SendRaw(NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
+    int SoftwareReset() { return SendRaw(NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
 
     int SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
     int SetSysCmd(const uint32_t command);
-    int StopBroadcasts(bool allPorts = false) { return SendRaw((uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
+    int StopBroadcasts(bool allPorts = false) { return SendRaw((allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
     bool hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite);
 
@@ -354,6 +372,10 @@ public:
 
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
 
+    void SaveFlashConfigFile(std::string path);
+
+    int LoadFlashConfig(std::string path);
+
     /**
     * Gets current update status for selected device index
     * @param deviceIndex
@@ -384,7 +406,6 @@ public:
 
     // TODO: make these private or protected
     ISFirmwareUpdater* fwUpdater = NULLPTR;
-    float fwPercent = 0;
     bool fwHasError = false;
     std::vector<std::tuple<std::string, std::string, std::string>> fwErrors;
     uint16_t fwLastSlot = 0;
@@ -398,6 +419,7 @@ public:
 
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)());
     bool fwUpdateInProgress();
+    float fwUpdatePercentCompleted();
     bool fwUpdate();
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
@@ -405,6 +427,7 @@ public:
     bool handshakeISbl();
     bool queryDeviceInfoISbl();
     bool validateDevice(uint32_t timeout);
+    bool validateDeviceAlt(uint32_t timeout = 15000);
 
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);
@@ -413,15 +436,19 @@ public:
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
-    enum queryTypes {
+    enum queryTypes : uint8_t {
         QUERYTYPE_NMEA = 0,
         QUERYTYPE_ISB,
         QUERYTYPE_ISbootloader,
         QUERYTYPE_mcuBoot,
         QUERYTYPE_MAX = QUERYTYPE_mcuBoot,
     };
+    queryTypes previousQueryType = QUERYTYPE_NMEA;                      //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
 
 private:
+
+    uint32_t validationStartMs = 0;                                     //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
+
     pfnIsCommHandler packetHandler = nullptr;
     pfnIsCommIsbDataHandler defaultISBHandler = nullptr;
     std::map<int, pfnIsCommIsbDataHandler> didHandlers;

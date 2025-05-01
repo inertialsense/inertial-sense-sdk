@@ -6,6 +6,7 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
+#include "core/msg_logger.h"
 #include "ISDevice.h"
 #include "ISBootloaderBase.h"
 #include "ISFirmwareUpdater.h"
@@ -60,16 +61,16 @@ bool ISDevice::Update() {
 bool ISDevice::step() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!port)
+    if (!port || !portIsValid(port))
         return false;
 
     if (portType(port) & PORT_TYPE__COMM)
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-    // comManagerStep(port);
 
     if (!hasDeviceInfo()) {
-        QueryDeviceInfo();
-        GetData(DID_DEV_INFO);
+        validateDeviceAlt(30000);
+    } else if (fwUpdater) {
+        fwUpdate();
     } else {
         if (sysParams.flashCfgChecksum == 0)
             GetData(DID_SYS_PARAMS);
@@ -77,8 +78,6 @@ bool ISDevice::step() {
             GetData(DID_FLASH_CONFIG);
 
         SyncFlashConfig();
-        if (fwUpdater)
-            fwUpdate();
     }
 
     return true;
@@ -98,6 +97,11 @@ is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, st
  * False is returned regardless of whether the update was successful or not.
  */
 bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
+
+/**
+ * @return as percentage (0-1.0) the completion progress for the current fwUpdate, or 0.0 if not update is in progress.
+ */
+float ISDevice::fwUpdatePercentCompleted() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()) ? fwUpdater->fwUpdate_getProgressPercent() : 0.0f; }
 
 /**
  * Instructs the device to continue performing its actions.  This should be called regularly to ensure that the update process
@@ -132,12 +136,6 @@ bool ISDevice::fwUpdate() {
                 }
             }
 
-            // update our upload progress
-            if ((fwLastStatus == fwUpdate::IN_PROGRESS)) {
-                fwPercent = ((float) fwUpdater->fwUpdate_getNextChunkID() / (float) fwUpdater->fwUpdate_getTotalChunks()) * 100.f;
-            } else {
-                fwPercent = fwLastStatus <= fwUpdate::READY ? 0.f : 100.f;
-            }
         } else if (fwUpdater->getActiveCommand() == "waitfor") {
             fwLastMessage = "Waiting for response from device.";
         } else if (fwUpdater->getActiveCommand() == "reset") {
@@ -169,8 +167,6 @@ bool ISDevice::fwUpdate() {
             delete fwUpdater;
             fwUpdater = nullptr;
         }
-    } else {
-        fwPercent = 0.0;
     }
 
     return fwUpdateInProgress();
@@ -257,7 +253,6 @@ bool ISDevice::queryDeviceInfoISbl() {
 
 bool ISDevice::validateDevice(uint32_t timeout) {
     unsigned int startTime = current_timeMs();
-    int queryType = 0;  // we cycle through different types of queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
 
     if (!isConnected())
         return false;
@@ -267,7 +262,7 @@ bool ISDevice::validateDevice(uint32_t timeout) {
         if (SERIAL_PORT(port)->errorCode == ENOENT)
             return false;
 
-        switch (queryType) {
+        switch (previousQueryType) {
             case QUERYTYPE_NMEA:
                 SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
                 break;
@@ -291,7 +286,7 @@ bool ISDevice::validateDevice(uint32_t timeout) {
         if ((current_timeMs() - startTime) > timeout)
             return false;
 
-        queryType = static_cast<queryTypes>((int)queryType + 1 % (int)QUERYTYPE_MAX);
+        previousQueryType = static_cast<queryTypes>((int)previousQueryType + 1 % (int)QUERYTYPE_MAX);
     } while ((hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (devInfo.serialNumber != 0));
 
     if ((hdwId != IS_HARDWARE_TYPE_UNKNOWN) &&
@@ -303,6 +298,64 @@ bool ISDevice::validateDevice(uint32_t timeout) {
     }
 
     return true;
+}
+
+/**
+ * Non-blocking, internal(ish) method to validate a device.  Will be called repeatedly from step() as long as "isValidating" is true.
+ * @param timeout the maximum number of milliseconds that must pass without a validating response from the device, before giving up.
+ * @return true if the device has been validated, otherwise false
+ */
+bool ISDevice::validateDeviceAlt(uint32_t timeout) {
+    if (!isConnected())
+        return false;
+
+    if (hasDeviceInfo()) {
+        validationStartMs = 0;
+        return true;
+    }
+
+    // uint64_t nanos = current_timeUs();
+
+    if (!validationStartMs) {
+        validationStartMs = current_timeMs();
+    }
+
+    // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
+    if ((current_timeMs() - validationStartMs) > timeout) {
+        debug_message("ISDevice::validateDeviceAlt() timed out after %dms.\n", current_timeMs() - validationStartMs);
+        validationStartMs = 0;
+        return false;
+    }
+
+    switch (previousQueryType) {
+        case ISDevice::queryTypes::QUERYTYPE_NMEA :
+            // debug_message("[DBG] Querying serial port '%s' using NMEA protocol.\n", SERIAL_PORT(port)->portName);
+            // comManagerSendRaw(port, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
+            SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
+            break;
+        case ISDevice::queryTypes::QUERYTYPE_ISB :
+            // debug_message("[DBG] Querying serial port '%s' using ISB protocol.\n", SERIAL_PORT(port)->portName);
+            // comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
+            GetData(DID_DEV_INFO);
+            break;
+        case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
+            // debug_message("[DBG] Querying serial port '%s' using ISbootloader protocol.\n", SERIAL_PORT(port)->portName);
+            queryDeviceInfoISbl();
+            break;
+        case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
+            // debug_message("[DBG] Querying serial port '%s' mcuBoot/SMP protocol.\n", SERIAL_PORT(port)->portName);
+            // comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
+            break;
+    }
+
+//    uint64_t dt = current_timeUs() - nanos;
+//    if (dt > 20000)
+//        debug_message("ISDevice::validateDeviceAlt() executed for %ld nanos, for device %s.\n", current_timeUs() - nanos, getDescription().c_str());
+
+    SLEEP_MS(5); // give just enough time for the device to receive, process and respond to the query
+
+    previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
+    return false;
 }
 
 /**
@@ -411,7 +464,7 @@ std::string ISDevice::getFirmwareInfo(int detail) {
 }
 
 std::string ISDevice::getDescription() {
-    return utils::string_format("%-12s [ %s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), getPortName().c_str());
+    return utils::string_format("%-12s [ %-12s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), getPortName().c_str());
 }
 
 void ISDevice::registerWithLogger(cISLogger *logger) {
@@ -420,6 +473,12 @@ void ISDevice::registerWithLogger(cISLogger *logger) {
     }
 }
 
+/**
+ * Requests that this device broadcast the requested DID are the specified period
+ * @param dataId the DID to be broadcast at periodic intervals
+ * @param periodMultiple the period multiple (NOT a frequency). If 0, this will request a one-shot, also effectively stopping any existing broadcasts
+ * @return true if the request was successfully sent, otherwise false (ie, port invalid, invalid device, etc)
+ */
 bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
 {
     if (!port)
@@ -454,7 +513,7 @@ bool ISDevice::verifyFlashConfigUpload() {
         printf(".");
         fflush(stdout);
 
-        comManagerStep(port);
+        step(); // comManagerStep(port); // FIXME:  we shouldn't be making comManager calls...
         success = (memcmp(&(flashCfg), &(flashCfgUpload), sizeof(nvm_flash_cfg_t)) == 0); // Flash config matches
     } while (!success && ((current_timeMs() - startTimeMs) < 5000));
     return success;
@@ -845,6 +904,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
         // stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
     }
 
+    // printf("DID: %d\n", data->hdr.id);
     switch (data->hdr.id) {
         case DID_DEV_INFO:
             devInfo = *(dev_info_t*)data->ptr;
@@ -931,11 +991,13 @@ void ISDevice::stepLogger(void* ctx, const p_data_t* data, port_handle_t port)
 bool ISDevice::assignPort(port_handle_t newPort) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!newPort)
-        return false;
-
     if (port) {
         // releaseSerialPort()  TODO: I'm sure there is something we probably need to do before we can just assign the new port - close, flush, delete, etc?
+    }
+
+    port = newPort;
+    if (!portIsValid(port)) {
+        return false;   // nothing more to do if the port is invalid
     }
 
     if ((portType(newPort) & PORT_TYPE__COMM)) {
@@ -946,7 +1008,6 @@ bool ISDevice::assignPort(port_handle_t newPort) {
     registerIsbDataHandler(processIsbMsgs);
     registerProtocolHandler(_PTYPE_NMEA, processNmeaMsgs);
 
-    port = newPort;
     is_comm_callbacks_t portCbs = defaultCbs;
 
     // Initialize IScomm instance, for serial reads / writes
@@ -961,6 +1022,8 @@ bool ISDevice::assignPort(port_handle_t newPort) {
         memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
 #endif
     }
+//    if ((hdwId != IS_HARDWARE_ANY) || devInfo.serialNumber)
+//        debug_message("[DBG] Device %s bound to port %s.\n", getIdAsString().c_str(), getPortName().c_str());
     return true;
 }
 
@@ -1000,4 +1063,234 @@ pfnIsCommGenMsgHandler ISDevice::registerProtocolHandler(int ptype, pfnIsCommGen
     }
 
     return oldHandler;
+}
+
+void ISDevice::SaveFlashConfigFile(std::string path)
+{
+    nvm_flash_cfg_t* outData = &flashCfg;
+
+    YAML::Node map = YAML::Node(YAML::NodeType::Map);
+
+    map["size"]             = outData->size;
+    map["checksum"]         = outData->checksum;
+    map["key"]              = outData->key;
+    map["startupImuDtMs"]   = outData->startupImuDtMs;
+    map["startupNavDtMs"]   = outData->startupNavDtMs;
+    map["ser0BaudRate"]     = outData->ser0BaudRate;
+    map["ser1BaudRate"]     = outData->ser1BaudRate;
+
+    YAML::Node insRotation = YAML::Node(YAML::NodeType::Sequence);
+    insRotation.push_back(outData->insRotation[0]);
+    insRotation.push_back(outData->insRotation[1]);
+    insRotation.push_back(outData->insRotation[2]);
+    map["insRotation"]                 = insRotation;
+
+    YAML::Node insOffset = YAML::Node(YAML::NodeType::Sequence);
+    insOffset.push_back(outData->insOffset[0]);
+    insOffset.push_back(outData->insOffset[1]);
+    insOffset.push_back(outData->insOffset[2]);
+    map["insOffset"]                 = insOffset;
+
+    YAML::Node gps1AntOffset = YAML::Node(YAML::NodeType::Sequence);
+    gps1AntOffset.push_back(outData->gps1AntOffset[0]);
+    gps1AntOffset.push_back(outData->gps1AntOffset[1]);
+    gps1AntOffset.push_back(outData->gps1AntOffset[2]);
+    map["gps1AntOffset"]    = gps1AntOffset;
+
+    map["dynamicModel"]     = (uint16_t)outData->dynamicModel;
+    map["debug"]            = (uint16_t)outData->debug;
+    map["gnssSatSigConst"]  = outData->gnssSatSigConst;
+    map["sysCfgBits"]       = outData->sysCfgBits;
+
+    YAML::Node refLla = YAML::Node(YAML::NodeType::Sequence);
+    refLla.push_back(outData->refLla[0]);
+    refLla.push_back(outData->refLla[1]);
+    refLla.push_back(outData->refLla[2]);
+    map["refLla"]                     = refLla;
+
+    YAML::Node lastLla = YAML::Node(YAML::NodeType::Sequence);
+    lastLla.push_back(outData->lastLla[0]);
+    lastLla.push_back(outData->lastLla[1]);
+    lastLla.push_back(outData->lastLla[2]);
+    map["lastLla"]                     = lastLla;
+
+    map["lastLlaTimeOfWeekMs"]      = outData->lastLlaTimeOfWeekMs;
+    map["lastLlaWeek"]              = outData->lastLlaWeek;
+    map["lastLlaUpdateDistance"]    = outData->lastLlaUpdateDistance;
+    map["ioConfig"]                 = outData->ioConfig;
+    map["platformConfig"]           = outData->platformConfig;
+
+    YAML::Node gps2AntOffset = YAML::Node(YAML::NodeType::Sequence);
+    gps2AntOffset.push_back(outData->gps2AntOffset[0]);
+    gps2AntOffset.push_back(outData->gps2AntOffset[1]);
+    gps2AntOffset.push_back(outData->gps2AntOffset[2]);
+    map["gps2AntOffset"]            = gps2AntOffset;
+
+    YAML::Node zeroVelRotation = YAML::Node(YAML::NodeType::Sequence);
+    zeroVelRotation.push_back(outData->zeroVelRotation[0]);
+    zeroVelRotation.push_back(outData->zeroVelRotation[1]);
+    zeroVelRotation.push_back(outData->zeroVelRotation[2]);
+    map["zeroVelRotation"]          = zeroVelRotation;
+
+    YAML::Node zeroVelOffset = YAML::Node(YAML::NodeType::Sequence);
+    zeroVelOffset.push_back(outData->zeroVelOffset[0]);
+    zeroVelOffset.push_back(outData->zeroVelOffset[1]);
+    zeroVelOffset.push_back(outData->zeroVelOffset[2]);
+    map["zeroVelOffset"]            = zeroVelOffset;
+
+    map["gpsTimeUserDelay"]         = outData->gpsTimeUserDelay;
+    map["magDeclination"]           = outData->magDeclination;
+    map["gpsTimeSyncPeriodMs"]      = outData->gpsTimeSyncPeriodMs;
+    map["startupGPSDtMs"]           = outData->startupGPSDtMs;
+    map["RTKCfgBits"]               = outData->RTKCfgBits;
+    map["sensorConfig"]             = outData->sensorConfig;
+    map["gpsMinimumElevation"]      = outData->gpsMinimumElevation;
+    map["ser2BaudRate"]             = outData->ser2BaudRate;
+
+    YAML::Node wheelCfgTransE_b2w   = YAML::Node(YAML::NodeType::Sequence);
+    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[0]);
+    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[1]);
+    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[2]);
+    map["wheelCfgTransE_b2w"]       = wheelCfgTransE_b2w;
+
+    YAML::Node wheelCfgTransE_b2wsig = YAML::Node(YAML::NodeType::Sequence);
+    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[0]);
+    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[1]);
+    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[2]);
+    map["wheelCfgTransE_b2wsig"]    = wheelCfgTransE_b2wsig;
+
+    YAML::Node wheelCfgTransT_b2w = YAML::Node(YAML::NodeType::Sequence);
+    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[0]);
+    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[1]);
+    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[2]);
+    map["wheelCfgTransT_b2w"]       = wheelCfgTransT_b2w;
+
+    YAML::Node wheelCfgTransT_b2wsig = YAML::Node(YAML::NodeType::Sequence);
+    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[0]);
+    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[1]);
+    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[2]);
+    map["wheelCfgTransT_b2wsig"]    = wheelCfgTransT_b2wsig;
+
+    map["wheelConfigTrackWidth"]    = outData->wheelConfig.track_width;
+    map["wheelConfigRadius"]        = outData->wheelConfig.radius;
+    map["wheelConfigBits"]          = outData->wheelConfig.bits;
+
+    std::ofstream fout(path);
+
+    YAML::Emitter emitter;
+    emitter.SetSeqFormat(YAML::Flow);
+    emitter << map;
+    fout << emitter.c_str();
+    fout.close();
+}
+
+int ISDevice::LoadFlashConfig(std::string path)
+{
+    try
+    {
+        nvm_flash_cfg_t loaded_flash;
+        FlashConfig(loaded_flash);
+
+        YAML::Node inData = YAML::LoadFile(path);
+        loaded_flash.size                     = inData["size"].as<uint32_t>();
+        loaded_flash.checksum                 = inData["checksum"].as<uint32_t>();
+        loaded_flash.key                      = inData["key"].as<uint32_t>();
+        loaded_flash.startupImuDtMs           = inData["startupImuDtMs"].as<uint32_t>();
+        loaded_flash.startupNavDtMs           = inData["startupNavDtMs"].as<uint32_t>();
+        loaded_flash.ser0BaudRate             = inData["ser0BaudRate"].as<uint32_t>();
+        loaded_flash.ser1BaudRate             = inData["ser1BaudRate"].as<uint32_t>();
+
+        YAML::Node insRotation                = inData["insRotation"];
+        loaded_flash.insRotation[0]           = insRotation[0].as<float>();
+        loaded_flash.insRotation[1]           = insRotation[1].as<float>();
+        loaded_flash.insRotation[2]           = insRotation[2].as<float>();
+
+        YAML::Node insOffset                  = inData["insOffset"];
+        loaded_flash.insOffset[0]             = insOffset[0].as<float>();
+        loaded_flash.insOffset[1]             = insOffset[1].as<float>();
+        loaded_flash.insOffset[2]             = insOffset[2].as<float>();
+
+        YAML::Node gps1AntOffset              = inData["gps1AntOffset"];
+        loaded_flash.gps1AntOffset[0]         = gps1AntOffset[0].as<float>();
+        loaded_flash.gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
+        loaded_flash.gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
+
+        loaded_flash.dynamicModel             = (uint8_t)inData["dynamicModel"].as<uint16_t>();
+        loaded_flash.debug                    = (uint8_t)inData["debug"].as<uint16_t>();
+        loaded_flash.gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
+        loaded_flash.sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();
+
+        YAML::Node refLla                     = inData["refLla"];
+        loaded_flash.refLla[0]                = refLla[0].as<double>();
+        loaded_flash.refLla[1]                = refLla[1].as<double>();
+        loaded_flash.refLla[2]                = refLla[2].as<double>();
+
+        YAML::Node lastLla                    = inData["lastLla"];
+        loaded_flash.lastLla[0]               = lastLla[0].as<double>();
+        loaded_flash.lastLla[1]               = lastLla[1].as<double>();
+        loaded_flash.lastLla[2]               = lastLla[2].as<double>();
+
+        loaded_flash.lastLlaTimeOfWeekMs      = inData["lastLlaTimeOfWeekMs"].as<uint32_t>();
+        loaded_flash.lastLlaWeek              = inData["lastLlaWeek"].as<uint32_t>();
+        loaded_flash.lastLlaUpdateDistance    = inData["lastLlaUpdateDistance"].as<float>();
+        loaded_flash.ioConfig                 = inData["ioConfig"].as<uint32_t>();
+        loaded_flash.platformConfig           = inData["platformConfig"].as<uint32_t>();
+
+        YAML::Node gps2AntOffset              = inData["gps2AntOffset"];
+        loaded_flash.gps2AntOffset[0]         = gps2AntOffset[0].as<float>();
+        loaded_flash.gps2AntOffset[1]         = gps2AntOffset[1].as<float>();
+        loaded_flash.gps2AntOffset[2]         = gps2AntOffset[2].as<float>();
+
+        YAML::Node zeroVelRotation            = inData["zeroVelRotation"];
+        loaded_flash.zeroVelRotation[0]       = zeroVelRotation[0].as<float>();
+        loaded_flash.zeroVelRotation[1]       = zeroVelRotation[1].as<float>();
+        loaded_flash.zeroVelRotation[2]       = zeroVelRotation[2].as<float>();
+
+        YAML::Node zeroVelOffset              = inData["zeroVelOffset"];
+        loaded_flash.zeroVelOffset[0]         = zeroVelOffset[0].as<float>();
+        loaded_flash.zeroVelOffset[1]         = zeroVelOffset[1].as<float>();
+        loaded_flash.zeroVelOffset[2]         = zeroVelOffset[2].as<float>();
+
+        loaded_flash.gpsTimeUserDelay         = inData["gpsTimeUserDelay"].as<float>();
+        loaded_flash.magDeclination           = inData["magDeclination"].as<float>();
+        loaded_flash.gpsTimeSyncPeriodMs      = inData["gpsTimeSyncPeriodMs"].as<uint32_t>();
+        loaded_flash.startupGPSDtMs           = inData["startupGPSDtMs"].as<uint32_t>();
+        loaded_flash.RTKCfgBits               = inData["RTKCfgBits"].as<uint32_t>();
+        loaded_flash.sensorConfig             = inData["sensorConfig"].as<uint32_t>();
+        loaded_flash.gpsMinimumElevation      = inData["gpsMinimumElevation"].as<float>();
+        loaded_flash.ser2BaudRate             = inData["ser2BaudRate"].as<uint32_t>();
+
+        loaded_flash.wheelConfig.bits         = inData["wheelConfigBits"].as<uint32_t>();
+        loaded_flash.wheelConfig.radius       = inData["wheelConfigRadius"].as<float>();
+        loaded_flash.wheelConfig.track_width  = inData["wheelConfigTrackWidth"].as<float>();
+
+        YAML::Node wheelCfgTransE_b2w                       = inData["wheelCfgTransE_b2w"];
+        loaded_flash.wheelConfig.transform.e_b2w[0]         = wheelCfgTransE_b2w[0].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w[1]         = wheelCfgTransE_b2w[1].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w[2]         = wheelCfgTransE_b2w[2].as<float>();
+
+        YAML::Node wheelCfgTransE_b2wsig                    = inData["wheelCfgTransE_b2wsig"];
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[0]   = wheelCfgTransE_b2wsig[0].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[1]   = wheelCfgTransE_b2wsig[1].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[2]   = wheelCfgTransE_b2wsig[2].as<float>();
+
+        YAML::Node wheelCfgTransT_b2w                       = inData["wheelCfgTransT_b2wsig"];
+        loaded_flash.wheelConfig.transform.t_b2w[0]         = wheelCfgTransT_b2w[0].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w[1]         = wheelCfgTransT_b2w[1].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w[2]         = wheelCfgTransT_b2w[2].as<float>();
+
+        YAML::Node wheelCfgTransT_b2wsig                    = inData["wheelCfgTransT_b2wsig"];
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[0]   = wheelCfgTransT_b2wsig[0].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[1]   = wheelCfgTransT_b2wsig[1].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[2]   = wheelCfgTransT_b2wsig[2].as<float>();
+
+        SetFlashConfig(loaded_flash);
+    }
+    catch (const YAML::Exception& ex)
+    {
+        printf("[ERROR] --- There was an error parsing the YAML file: %s", ex.what());
+        return -1;
+    }
+
+    return 0;
 }

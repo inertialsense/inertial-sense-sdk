@@ -269,6 +269,7 @@ int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
 }
 
 int CltoolDevice::onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) {
+    ISDevice::onNmeaHandler(msg, msgSize, port);
     return 0;   // do something special, if we need to...
 }
 
@@ -299,9 +300,11 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
     }
 }
 
-// Where we tell the IMX what data to send and at what rate.
-// "cltool_dataCallback()" is registered as the callback functions for all received data.
-// All DID messages are found in data_sets.h
+/**
+ * Configure communications for each connected device, send initial data or command requests, validating devices, etc.
+ * @param inertialSenseInterface
+ * @return true if successful, and further processing of any received data should occur, or false if the application should exit.
+ */
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
@@ -315,20 +318,28 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (inertialSenseInterface.DeviceCount() <= 0)
         return false;
 
-    for (auto device : inertialSenseInterface.getDevices()) {
-        // FIXME: don't assign a commInstance, but assign a device or port
-        g_inertialSenseDisplay.setDevice(device);
-    }
-
     if (g_commandLineOptions.nmeaMessage.size() != 0)
     {
-        ISDevice* device = inertialSenseInterface.getDevices().front();
-        serialPortWriteAscii(device->port, g_commandLineOptions.nmeaMessage.c_str(), (int) g_commandLineOptions.nmeaMessage.size());
+        /**
+         * Send the specified NMEA message to all connected devices, and exit
+         */
+        // TODO: This should probably be a function in InertialSense class to send a NMEA string to all available devices
+        for (auto device : inertialSenseInterface.getDevices()) {
+            serialPortWriteAscii(device->port, g_commandLineOptions.nmeaMessage.c_str(), (int) g_commandLineOptions.nmeaMessage.size());
+        }
         return true;
     }
 
+
+    // we can only display a single device at a time; so use the first available device.  - FIXME: This should be selectable while running
+    ISDevice* activeDevice = inertialSenseInterface.getDevices().front();
+    g_inertialSenseDisplay.setDevice(activeDevice);
+
     if (!g_commandLineOptions.disableDeviceValidation)
     {   // check for any compatible (protocol version 2) devices
+        // FIXME: Device Validation Disabled would be performing a PortManager::discoverPorts, and then creating ISDevices from each directly
+        //  IT WILL NOT involve calling DeviceManager::discoverDevices
+/*
         for (auto device : inertialSenseInterface.getDevices()) {
             if ((device->hdwId == IS_HARDWARE_TYPE_UNKNOWN) ||
                 (device->devInfo.hdwRunState != HDW_STATE_APP) ||
@@ -353,6 +364,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
                     return false; // only return false (and exit) if we are NOT performing an firmware update.
             }
         }
+*/
     }
 
     // ask for device info every 2 seconds
@@ -497,8 +509,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 std::vector<ISBootloader::cISBootloaderBase*> firmwareProgressContexts;
 
-is_operation_result bootloadUpdateCallback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
-is_operation_result bootloadVerifyCallback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+is_operation_result bootloadUpdateCallback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+is_operation_result bootloadVerifyCallback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
 
 static int cltool_updateFirmware()
 {
@@ -585,7 +597,7 @@ void printProgress()
     print_mutex.unlock();
 }
 
-is_operation_result bootloadUpdateCallback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
+is_operation_result bootloadUpdateCallback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
     static std::string lastMsg;
     std::string msg;
@@ -599,7 +611,7 @@ is_operation_result bootloadUpdateCallback(std::any obj, float percent, const st
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-is_operation_result bootloadVerifyCallback(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
+is_operation_result bootloadVerifyCallback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
     static std::string lastMsg;
     std::string msg;
@@ -613,7 +625,7 @@ is_operation_result bootloadVerifyCallback(std::any obj, float percent, const st
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-void cltool_bootloadUpdateInfo(std::any obj, eLogLevel level, const char* str, ...)
+void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...)
 {
     if (level > g_commandLineOptions.verboseLevel)
         return;
@@ -666,7 +678,7 @@ void cltool_bootloadUpdateInfo(std::any obj, eLogLevel level, const char* str, .
     print_mutex.unlock();
 }
 
-void cltool_firmwareUpdateInfo(std::any obj, eLogLevel level, const char* str, ...)
+void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...)
 {
     print_mutex.lock();
     static char buffer[256];
@@ -769,13 +781,10 @@ static int cltool_dataStreaming()
 {
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface;
+    InertialSense inertialSenseInterface({}, {&CltoolDeviceFactory::getInstance()});
+    //inertialSenseInterface.setDeviceFactory(&CltoolDeviceFactory::getInstance());   // use the CltoolDevice && CltoolDeviceFactory
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
-    inertialSenseInterface.registerNewDeviceHandler( [] (port_handle_t port, const dev_info_t& devInfo) -> ISDevice* {
-        CltoolDevice* newDevice = new CltoolDevice(port, devInfo);
-        return (ISDevice*)newDevice;
-    });
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
@@ -785,6 +794,9 @@ static int cltool_dataStreaming()
     }
 
     if (g_commandLineOptions.list_devices) {
+        /**
+         * List discovered devices and exit
+         */
         struct nat_cmp {
             bool operator()(const std::string& s1, const std::string& s2) const {
                 return (utils::natcmp(s1, s2) <= 0);
@@ -922,6 +934,7 @@ static void sigint_cb(int sig)
 }
 
 // Create and send full NMEA message with terminator w/ checksum trailer
+//TODO - deprecate this.  There should be functions in ISDevice and InertialSense class to do the same thing...
 static void sendNmea(port_handle_t port, string nmeaMsg)
 {
     char buf[1024] = {0};

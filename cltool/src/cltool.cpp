@@ -40,12 +40,18 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
     options.maxFileSize = g_commandLineOptions.maxLogFileSize;                          // each log file will be no larger than this in bytes
     options.useSubFolderTimestamp = g_commandLineOptions.logSubFolder != cISLogger::g_emptyString;
     options.timeStamp = g_commandLineOptions.logSubFolder;                              // log sub folder name
-    return inertialSenseInterface.EnableLogger(
+
+    bool result = inertialSenseInterface.EnableLogger(
         g_commandLineOptions.enableLogging,
         g_commandLineOptions.logPath,
         options,
         g_commandLineOptions.rmcPreset,
         RMC_OPTIONS_PRESERVE_CTRL);
+
+    for (ISDevice* d : inertialSenseInterface.getDevices())
+        inertialSenseInterface.Logger()->registerDevice(d);
+
+    return result;
 }
 
 static bool startsWith(const char* str, const char* pre)

@@ -8,9 +8,8 @@
 
 #include "DeviceManager.h"
 
-
 /**
- * Registers a previously created ISDevice instance with the internal m_comManager instance.
+ * Registers a previously created ISDevice instance
  * @param device
  * @return
  */
@@ -137,31 +136,64 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
     uint64_t devId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
     devId = (devId << 48) | devInfo.serialNumber;
-    std::pair<DeviceFactory*, uint64_t> deviceId(factory, devId);
+    if (!devId)
+        return; // this is an invalid device Id -- no hdwId and no serialNo
+
+    device_entry_t deviceEntry(factory, devId, nullptr);
 
     // check if Device is previously known
-    for (auto& kp : knownDevices) {
-        if ((kp.first == deviceId.first) && (kp.second == deviceId.second)) {
+    for (auto& kd : knownDevices) {
+        if ((kd.factory == deviceEntry.factory) && (kd.hdwId == deviceEntry.hdwId)) {
+            // We've re-discovered an old device, but we don't know the status of its port... we should try and figure that out, before we just blindly return...
+            debug_message("[DBG] Rediscovered previously known device [%s] on serial port '%s'.\n", ISDevice::getIdAsString(devInfo).c_str(), SERIAL_PORT(port)->portName);
+            ISDevice* device = getDevice(port);
+            if (!device) {
+                device = getDevice(devInfo.serialNumber, ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
+            }
+
+            if (device && portIsValid(port)) {
+                device->assignPort(port);
+            } else {
+                debug_message("[DBG] -- Device or port is invalid. Unable to rebind to port '%s'.\n", SERIAL_PORT(port)->portName);
+            }
             return;
         }
     }
 
     // if not, then do we need to allocate it?
-    ISDevice* device = factory->allocateDevice(devInfo);
-    if (!device)
+    deviceEntry.device = factory->allocateDevice(devInfo);
+    if (!deviceEntry.device)
         return;
 
-    knownDevices.push_back(deviceId);
-    push_back(device);
+    // debug_message("[DBG] Allocated new device: %s.\n", device->getDescription().c_str());
+    knownDevices.push_back(deviceEntry);
+    push_back(deviceEntry.device);
 
     if (portIsValid(port))
-        device->assignPort(port);
+        deviceEntry.device->assignPort(port);
 
     // finally, call our handler
     for (device_listener& l : listeners) {
-        l(DEVICE_ADDED, device);
+        l(DEVICE_ADDED, deviceEntry.device);
     }
 }
+
+
+void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port) {
+    switch ((PortManager::port_event_e)event) {
+        case PortManager::PORT_ADDED:
+            debug_message("[DBG] DeviceManager-->PortManager::PORT_ADDED '%s'\n", pName.c_str());
+            break;
+        case PortManager::PORT_REMOVED:
+            debug_message("[DBG] DeviceManager-->PortManager::PORT_REMOVED '%s'.\n", pName.c_str());
+            ISDevice* device = getDevice(port);
+            if (device) {
+                device->assignPort(nullptr); // revoke the removed port from the device...
+            }
+            break;
+    }
+}
+
 
 std::vector<ISDevice *> DeviceManager::getDevicesAsVector() {
     std::vector<ISDevice*> vecOut;
@@ -196,141 +228,6 @@ std::vector<std::string> DeviceManager::GetPortNames()
 }
 
 */
-void DeviceManager::QueryDeviceInfo()
-{
-    for (auto device : *this) { device->QueryDeviceInfo(); }
-}
-
-void DeviceManager::StopBroadcasts(bool allPorts)
-{
-    for (auto device : *this) { device->StopBroadcasts(allPorts); }
-}
-
-void DeviceManager::SavePersistent()
-{
-    for (auto device : *this) { device->SavePersistent(); }
-}
-
-void DeviceManager::SoftwareReset()
-{
-    for (auto device : *this) { device->SoftwareReset(); }
-}
-
-void DeviceManager::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)
-{
-    for (auto device : *this) { device->GetData(dataId, length, offset, period); }
-}
-
-void DeviceManager::SendData(eDataIDs dataId, void* data, uint32_t length, uint32_t offset)
-{
-    for (auto device : *this) { device->SendData(dataId, data, length, offset); }
-}
-
-void DeviceManager::SendRaw(void* data, uint32_t length)
-{
-    for (auto device : *this) { device->SendRaw(data, length); }
-}
-
-void DeviceManager::Send(uint8_t pktInfo, void *data, uint16_t did, uint16_t size, uint16_t offset)
-{
-    for (auto device : *this) { device->Send(pktInfo, data, did, size, offset); }
-}
-
-void DeviceManager::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
-{
-    for (auto device : *this) { device->BroadcastBinaryData(dataId, periodMultiple); }
-}
-
-void DeviceManager::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions)
-{
-    for (auto device : *this) { device->BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions); }
-}
-
-void DeviceManager::SetSysCmd(const uint32_t command, port_handle_t port)
-{
-    if (port == nullptr) {   // Send to all
-        for (auto device : *this) { device->SetSysCmd(command); }
-    } else {                 // Send to specific port
-        ISDevice* device = DeviceByPort(port);
-        if (device) device->SetSysCmd(command);
-    }
-}
-
-/**
-* Get current device system command
-* @param port the port to get sysCmd for
-* @return current device system command
-*/
-system_command_t DeviceManager::GetSysCmd(port_handle_t port)
-{
-    ISDevice* device = DeviceByPort(port);
-    if (device)
-        return device->sysCmd;
-
-    return { 0, 0 };    // nothing...
-}
-
-/**
- * Sends message to device to set devices Event Filter
- * param Target: 0 = device,
- *               1 = forward to device GNSS 1 port (ie GPX),
- *               2 = forward to device GNSS 2 port (ie GPX),
- *               else will return
- *       port: Send in target COM port.
- *                If arg is < 0 default port will be used
-*/
-void DeviceManager::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port)
-{
-    #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
-    uint8_t data[EVENT_MAX_SIZE] = {0};
-
-    did_event_t event = {
-            .time = 123,
-            .senderSN = 0,
-            .senderHdwId = 0,
-            .length = sizeof(did_event_filter_t),
-    };
-
-    did_event_filter_t filter = {
-            .portMask = portMask,
-    };
-
-    filter.eventMask.priorityLevel = priorityLevel;
-    filter.eventMask.msgTypeIdMask = msgTypeIdMask;
-
-    if (target == 0)
-        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_FILTER;
-    else if (target == 1)
-        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER;
-    else if (target == 2)
-        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
-    else
-        return;
-
-    memcpy(data, &event, DID_EVENT_HEADER_SIZE);
-    memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
-
-    if (!port) {
-        SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
-    } else {
-        ISDevice *device = DeviceByPort(port);
-        if (device) device->SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
-    }
-}
-
-bool DeviceManager::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port) {
-    ISDevice* device = port ? DeviceByPort(port) : front();
-    return (device ? device->FlashConfig(flashCfg) : false);
-}
-
-bool DeviceManager::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port) {
-    ISDevice* device = port ? DeviceByPort(port) : front();
-    return (device ? device->SetFlashConfig(flashCfg) : false);}
-
-bool DeviceManager::WaitForFlashSynced(port_handle_t port) {
-    ISDevice* device = port ? DeviceByPort(port) : front();
-    return (device ? device->WaitForFlashSynced() : false);
-}
 
 /**
  * Returns a subset of connected devices filtered by the passed devInfo and filterFlags.
@@ -390,3 +287,4 @@ std::vector<ISDevice *> DeviceManager::selectByHdwId(const uint16_t hdwId) {
 
     return selectByDevInfo(devInfo, filterFlags);
 }
+

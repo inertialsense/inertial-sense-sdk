@@ -17,10 +17,9 @@
 #include "core/msg_logger.h"
 #include "core/types.h"
 #include "ISConstants.h"
-#include "PortManager.h"
-
 #include "ISDevice.h"
-
+#include "PortManager.h"
+// #include "DeviceManager.h"
 
 typedef ISDevice* (*ISDeviceFactoryMethod)();
 
@@ -52,9 +51,9 @@ public:
     /**
      * @param deviceCallback - A function to be called when this Factory identifies a possible Inertial Sense device; callback parameters are factory and the device information
      */
-    virtual void locateDevices(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)> deviceCallback, const PortManager& portManager, uint16_t hdwId = IS_HARDWARE_ANY);
+    virtual void locateDevices(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)> deviceCallback, uint16_t hdwId);
 
-    virtual void locateDevice(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)> deviceCallback, port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY);
+    virtual void locateDevice(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)> deviceCallback, port_handle_t port, uint16_t hdwId);
 
 
     uint32_t discoveryTimeout = 10000;
@@ -69,7 +68,7 @@ public:
 
 private:
     ImxDeviceFactory() = default;
-    ~ImxDeviceFactory() override = default;
+    // ~ImxDeviceFactory() override = default;
 
     virtual ISDevice* allocateDevice(const dev_info_t &devInfo) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
@@ -88,7 +87,7 @@ public:
 
 private:
     GpxDeviceFactory() = default;
-    ~GpxDeviceFactory() override = default;
+    // ~GpxDeviceFactory() override = default;
 
     ISDevice* allocateDevice(const dev_info_t &devInfo) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_GPX_1_0)

@@ -53,7 +53,7 @@ private:
     uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
     uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)
 
-    float percentComplete = 0.f;        //! the current percent complete as reported by the device
+    // float percentComplete = 0.f;        //! the current percent complete as reported by the device
 
     fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
     std::deque<uint8_t> toHost;           //! a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
@@ -121,8 +121,6 @@ public:
     void setTarget(fwUpdate::target_t _target);
 
     bool setCommands(std::vector<std::string> cmds);
-
-    float getPercentComplete() { return percentComplete; }
 
     bool addCommands(std::vector<std::string> cmds);
 

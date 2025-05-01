@@ -137,6 +137,7 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
     if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
     {
+        m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);
         serialPortClose(port);
         m_serial_thread_mutex.lock();
         thread_info->done = true;
@@ -170,6 +171,7 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
     if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
     {
+        m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);
         serialPortClose(port);
         m_serial_thread_mutex.lock();
         thread_info->done = true;
@@ -204,6 +206,7 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
     if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
     {
+        m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);
         serialPortClose(port);
         m_serial_thread_mutex.lock();
         thread_info->done = true;
@@ -246,6 +249,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
     serialPortSetPort(port, serial_name);
     if (!serialPortOpenRetry(port, serial_name, BAUDRATE_115200, 1))
     {
+        m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);
         serialPortClose(port);
         m_serial_thread_mutex.lock();
         thread_info->done = true;
@@ -932,6 +936,7 @@ is_operation_result cISBootloaderThread::update(
             }
         }
     }
+    m_serial_thread_mutex.unlock();
 
     // Clear the ctx list
     for (auto& cur_ctx : ctx)

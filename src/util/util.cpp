@@ -233,8 +233,8 @@ std::string utils::getHardwareAsString(const dev_info_t& devInfo) {
     return out;
 }
 
-std::string utils::getFirmwareAsString(const dev_info_t& devInfo) {
-    std::string out = utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
+std::string utils::getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix) {
+    std::string out = utils::string_format("%s%u.%u.%u", prefix.c_str(), devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
     switch(devInfo.buildType) {
         case 'a': out +="-alpha";       break;
         case 'b': out +="-beta";        break;
@@ -250,7 +250,7 @@ std::string utils::getFirmwareAsString(const dev_info_t& devInfo) {
     return out;
 }
 
-std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags) {
+std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags, const std::string& sep) {
     std::string out;
 
     if ((flags & DV_BIT_BUILD_COMMIT) && devInfo.repoRevision) {
@@ -262,7 +262,7 @@ std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags) {
 
     if (flags & DV_BIT_BUILD_KEY) {  // include build key/number
         // build number/type
-        if (!out.empty()) out += " ";
+        if (!out.empty()) out += sep;
         if (((devInfo.buildNumber >> 12) & 0xFFFFF) > 0) {
             out += utils::string_format("%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
         } else {
@@ -273,11 +273,12 @@ std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags) {
     }
 
     if (flags & DV_BIT_BUILD_DATE) {
-        out += (out.empty() ? "" : " ") + utils::string_format("%04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
+        out += (out.empty() ? "" : sep) + utils::string_format( (flags & DV_BIT_COMPACT_DATE ? "%04u%02u%02u" : "%04u-%02u-%02u"), devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
     }
 
     if (flags & DV_BIT_BUILD_TIME) {
-        out += (out.empty() ? "" : " ") + utils::string_format("%02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+        out += (out.empty() ? "" : sep) + utils::string_format( (flags & DV_BIT_COMPACT_TIME ?  "%02u%02u%02u" : "%02u:%02u:%02u"), devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+
         if (devInfo.buildMillisecond)
             out += utils::string_format(".%03u", devInfo.buildMillisecond);
     }
@@ -340,7 +341,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
         std::regex(R"(SN(\d+)[:]?)"),                           //!< 0, serial number
         std::regex(R"((fw|v)([\d.]+)(-([\w]+)\.([\d]+))?)"),    //!< 1, firmware version w/ optional release type
         std::regex(R"((\d){4}-(\d){1,2}-(\d){1,2})"),           //!< 2, build date
-        std::regex(R"((\d){1,2}:(\d){2}:(\d){2}|_(\d{6}))"),    //!< 3, build time
+        std::regex(R"((\d){1,2}:(\d){2}:(\d){2}|[_-](\d{6}))"), //!< 3, build time
         std::regex(R"((IS_)?([\w]+)-([\d\.]+)[,]?)"),           //!< 4, hdw type & version
         std::regex(R"(([0-9A-F]{5})(\.(\d+)))"),                //!< 5, build key and build number
         std::regex(R"(b(\d{1}[\d.]*)([a-z]?))"),                //!< 6, legacy build number and type -- note that this MUST be tested before 5, because 5 CAN catch it...
@@ -409,6 +410,11 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                                 devInfo.hardwareType = ii;
                                 break;
                             }
+                            if ((str.find("bootloader") != std::string::npos) || (str.find("mcuboot") != std::string::npos)) {
+                                devInfo.hdwRunState = 1;    // Bootloader firmware?
+                            } else {
+                                devInfo.hdwRunState = 2;    // APP firmware??
+                            }
                         }
                         // hardware version
                         for (auto& e : devInfo.hardwareVer) e = 0;
@@ -429,7 +435,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         componentsParsed |= DV_BIT_BUILD_KEY;
                         break;
                     case 7: // additional info
-                        strncpy(devInfo.addInfo, trim_copy(match[1].str(), "() ").c_str(), DEVINFO_ADDINFO_STRLEN);
+                        strncpy(devInfo.addInfo, trim_copy(match[1].str(), "() ").c_str(), DEVINFO_ADDINFO_STRLEN-1);
                         componentsParsed |= DV_BIT_ADDITIONAL_INFO;
                         break;
                     case 8:  // repo hash & build status
@@ -453,7 +459,6 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
     return componentsParsed;
 }
 
-
 /**
  * simple check if two dev_info_t structs indicate equivelent/compatible hardware
  * Used primarily to determine if a firmware is compatible with a target device.
@@ -467,6 +472,8 @@ bool utils::isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b) {
     if (a.hardwareVer[0] != b.hardwareVer[0])
         return false;
     if (a.hardwareVer[1] != b.hardwareVer[1])
+        return false;
+    if (a.hdwRunState != b.hdwRunState)         // don't forget to also confirm the run state - APP firmware is NOT THE SAME as Bootloader Firmware
         return false;
     return true;
 }
@@ -489,6 +496,54 @@ uint64_t utils::intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis) {
     if (useMillis)
         aDateTime = (aDateTime * 10000) + a.buildMillisecond;
     return aDateTime;
+}
+
+
+bool utils::devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2)
+{
+    if (info1.serialNumber != info2.serialNumber)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (info1.hardwareVer[i] != info2.hardwareVer[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, bool checkTime) {
+    if ((info1.firmwareVer[0] != info2.firmwareVer[0]) ||
+        (info1.firmwareVer[1] != info2.firmwareVer[1]) ||
+        (info1.firmwareVer[2] != info2.firmwareVer[2]) ||
+        (info1.buildYear != info2.buildYear) ||
+        (info1.buildMonth != info2.buildMonth) ||
+        (info1.buildDay != info2.buildDay) ||
+        (info1.buildNumber != info2.buildNumber) ||
+        (info1.buildType != info2.buildType) ||
+        (info1.protocolVer[0] != info2.protocolVer[0]) ||
+        (info1.protocolVer[1] != info2.protocolVer[1]) ||
+        (info1.protocolVer[2] != info2.protocolVer[2]) ||
+        (info1.protocolVer[3] != info2.protocolVer[3]) ||
+        (info1.repoRevision != info2.repoRevision)) {
+        return false;
+    }
+
+    if (checkTime) {
+        int minutes1 = info1.buildHour * 60 + info1.buildMinute;
+        int minutes2 = info2.buildHour * 60 + info2.buildMinute;
+        int dtMinutes = abs(minutes1 - minutes2);
+        if (dtMinutes > 30) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**

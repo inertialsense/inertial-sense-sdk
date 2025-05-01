@@ -9,7 +9,7 @@
 #ifndef IS_CORE__MSG_LOGGER_H
 #define IS_CORE__MSG_LOGGER_H
 
-#define DEBUG_LOGGING
+// #define DEBUG_LOGGING
 #ifndef DEBUG_LOGGING
     #define debug_message(...)
 #else

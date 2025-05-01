@@ -152,7 +152,7 @@ static inline uint16_t portFlags(port_handle_t port) {
  * @return
  */
 static inline const char *portName(port_handle_t port) {
-    if (!portIsValid(port)) return (const char *)0;
+    // if (!portIsValid(port)) return (const char *)0;
     return (port && ((base_port_t*)port)->portName) ? ((base_port_t*)port)->portName(port) : (const char *)0;
 }
 

@@ -16,6 +16,7 @@
 #define EVALTOOL_PORTMANAGER_H
 
 #include <unordered_set>
+#include <map>
 #include <functional>
 #include <string>
 
@@ -46,12 +47,7 @@ public:
      * @param pType a PORT_TYPE__ value indicating that only ports matching the specified type will be discovered, default
      * value of PORT_TYPE__UNKNOWN will match all port types
      */
-    void discoverPorts(const std::string& pattern = "(.+)", uint16_t pType = PORT_TYPE__UNKNOWN) {
-        for (auto l : factories) {
-            auto cb = std::bind(&PortManager::portHandler, this, std::placeholders::_1, std::placeholders::_2);
-            l->locatePorts(cb, pattern, pType);
-        }
-    }
+    void discoverPorts(const std::string& pattern = "(.+)", uint16_t pType = PORT_TYPE__UNKNOWN);
 
     void addPortFactory(PortFactory* pl) {
         factories.push_back(pl);
@@ -98,22 +94,27 @@ protected:
      */
     void portHandler(PortFactory* factory, std::string portName);
 
-    void checkForNewPorts() {
-        for (auto l : factories) {
-            auto cb = std::bind(&PortManager::portHandler, this, std::placeholders::_1, std::placeholders::_2);
-            l->locatePorts(cb);
-        }
-    }
+    void checkForNewPorts() { }
 
 
 private:
     PortManager(PortManager const &) = delete;
     PortManager& operator=(PortManager const&) = delete;
 
-    std::vector<PortFactory*> factories;                             //!< list of port factories responsible for detecting, allocating and freeing ports of different types.
-    std::vector<port_listener> listeners;                            //!< list of listeners who should be notified when ports are discovered, lost, opened, closed, etc
-    std::vector<std::pair<PortFactory*, std::string>> knownPorts;    //!< list of previously discovered port names with associated factory and name - different than actual, allocated port handles
+    struct port_entry_t {
+        PortFactory* factory;
+        std::string name;
+        // port_handle_t port;
 
+        port_entry_t(PortFactory* f, const std::string& n) { // , port_handle_t* p) {
+            factory = f, name = n; // , port = p;
+        }
+        bool operator< (port_entry_t const& op) const { return name.compare(op.name) < 0; }
+    };
+
+    std::vector<PortFactory*> factories;                         //!< list of port factories responsible for detecting, allocating and freeing ports of different types.
+    std::vector<port_listener> listeners;                        //!< list of listeners who should be notified when ports are discovered, lost, opened, closed, etc
+    std::map<port_entry_t, port_handle_t> knownPorts;            //!< a map previously discovered ports keyed on factory + name (some string identifier)
 };
 
 

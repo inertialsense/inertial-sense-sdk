@@ -168,7 +168,8 @@ namespace utils {
             vOut[n++] = lambda(s.substr(start, end - start));
             start = end + 1;
         }
-        vOut[n++] = lambda(s.substr(start));
+        if (start < s.length())
+            vOut[n++] = lambda(s.substr(start));
         return n;
     }
 
@@ -185,24 +186,29 @@ namespace utils {
     std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
 
     enum dev_info_fmt_e : uint16_t {
-        DV_BIT_SERIALNO         = 0x001,        //!< serial number
-        DV_BIT_FIRMWARE_VER     = 0x002,        //!< firmware version w/ optional release type
-        DV_BIT_HARDWARE_INFO    = 0x004,        //!< hdw type & version
-        DV_BIT_BUILD_KEY        = 0x008,        //!< build key and build number
-        DV_BIT_BUILD_DATE       = 0x010,        //!< build date
-        DV_BIT_BUILD_TIME       = 0x020,        //!< build time
-        DV_BIT_BUILD_COMMIT     = 0x040,        //!< repo hash & build status (dirty)
-        DV_BIT_ADDITIONAL_INFO  = 0x100,        //!< additional info
+        DV_BIT_SERIALNO         = 0x0001,        //!< serial number
+        DV_BIT_FIRMWARE_VER     = 0x0002,        //!< firmware version w/ optional release type
+        DV_BIT_HARDWARE_INFO    = 0x0004,        //!< hdw type & version
+        DV_BIT_BUILD_KEY        = 0x0008,        //!< build key and build number
+        DV_BIT_BUILD_DATE       = 0x0010,        //!< build date
+        DV_BIT_BUILD_TIME       = 0x0020,        //!< build time
+        DV_BIT_BUILD_COMMIT     = 0x0040,        //!< repo hash & build status (dirty)
+        DV_BIT_ADDITIONAL_INFO  = 0x0100,        //!< additional info
+        DV_BIT_COMPACT_DATE     = 0x1000,        //!< compact date formatting
+        DV_BIT_COMPACT_TIME     = 0x2000,        //!< compact time formatting
     };
 
     std::string getHardwareAsString(const dev_info_t& devInfo);
-    std::string getFirmwareAsString(const dev_info_t& devInfo);
-    std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1);
+    std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
+    std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1, const std::string& sep = " ");
+    // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
 
     std::string getCurrentTimestamp();
     std::string devInfoToString(const dev_info_t& devInfo, uint16_t flags = -1);
     uint16_t devInfoFromString(const std::string& str, dev_info_t& devInfo);
     uint64_t intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis = false);
+    bool devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2);
+    bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, bool checkTime = false);
     bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
     bool compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
 

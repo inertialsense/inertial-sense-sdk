@@ -102,8 +102,8 @@ namespace fwUpdate {
  *
  */
 
-    typedef is_operation_result (*pfnProgressCb)(std::any obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
-    typedef void (*pfnStatusCb)(std::any obj, eLogLevel level, const char* infoString, ...);
+    typedef is_operation_result (*pfnProgressCb)(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+    typedef void (*pfnStatusCb)(const std::any& obj, eLogLevel level, const char* infoString, ...);
 
 
 #define FWUPDATE__MAX_CHUNK_SIZE   512
@@ -805,7 +805,11 @@ namespace fwUpdate {
         /**
          * @return the calculated progress as a percentage (0-1.0) from progressNum() / progressTotal()
          */
-        float fwUpdate_getProgressPercent() { return (float)fwUpdate_getProgressNum() / (float)fwUpdate_getProgressTotal(); }
+        float fwUpdate_getProgressPercent() {
+            /// return (session_status < fwUpdate::READY) ? 0.f : (session_status >=  fwUpdate::FINALIZING) ? 100.f : percentComplete;
+            /// return msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f
+            return (session_status < fwUpdate::READY) ? 0.f : (session_status >=  fwUpdate::FINALIZING) ? 1.f : (float)fwUpdate_getProgressNum() / (float)fwUpdate_getProgressTotal();
+        }
 
 
     protected:
