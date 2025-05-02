@@ -3493,7 +3493,7 @@ typedef struct PACKED
     /** Reserved */
     uint32_t                reserved2[1];
 
-    /** Hardware interface configuration bits (see ePPS2Config). */
+    /** Hardware interface configuration bits for GNSS2 PPS (see ePPS2Config). */
     uint8_t				    gnss2PPSConfig;  
 
     uint8_t                 reserved1[3];
