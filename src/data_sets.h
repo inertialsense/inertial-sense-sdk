@@ -3124,6 +3124,9 @@ enum eIoConfig
 
 enum ePPS2Config
 {
+    // NOTE IO_CFG_G11_STROBE_INPUT and IO_CFG_G12_STROBE_INPUT
+    // cannot be set at the same time. If this is attemped 
+    // IO_CFG_G12_STROBE_INPUT will be set to IO_CFG_G12_SWO
     /** G11 (SWDIO) - (ePPS2Config[0]) */
     IO_CFG_G11_OFFSET                       = (int)0,
     IO_CFG_G11_MASK                         = (int)0x01,
