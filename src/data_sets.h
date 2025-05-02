@@ -3162,7 +3162,7 @@ enum ePPS2Config
     /** UNUSED (ePPS2Config[5]) */
 
     /** GNSS2 TIMEPULSE source (ePPS2Config[7-6]) */
-    IO_CFG_GNSS2_PPS_SOURCE_OFFSET          = (int)1,
+    IO_CFG_GNSS2_PPS_SOURCE_OFFSET          = (int)6,
     IO_CFG_GNSS2_PPS_SOURCE_MASK            = (int)0x03,
     IO_CFG_GNSS2_PPS_SOURCE_BITMASK         = (int)(IO_CFG_GNSS2_PPS_SOURCE_MASK<<IO_CFG_GNSS2_PPS_SOURCE_OFFSET),    
     IO_CFG_GNSS2_PPS_SOURCE_DISABLED        = (int)0x00,
