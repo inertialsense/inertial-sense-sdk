@@ -1762,7 +1762,7 @@ typedef struct PACKED
     #define NUM_USR_PORTS           4
     #define NUM_GPS_PORTS           2
 #else   // NPP and Unit Tests
-    #define NUM_COM_PORTS           1
+    #define NUM_COM_PORTS           6
 #endif
 
 #ifndef NUM_USR_PORTS
