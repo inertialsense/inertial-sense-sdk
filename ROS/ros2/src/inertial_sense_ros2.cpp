@@ -706,7 +706,7 @@ bool InertialSenseROS::firmware_compatiblity_check()
     char diff_protocol[4] = { 0, 0, 0, 0 };
     for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.DeviceInfo().protocolVer[i];
 
-    char local_firmware[3] = { REPO_VERSION_MAJOR, REPO_VERSION_MINOR, REPO_VERSION_REVIS };
+    char local_firmware[3] = { IS_SDK_VERSION_MAJOR, IS_SDK_VERSION_MINOR, IS_SDK_VERSION_REVIS };
     char diff_firmware[3] = { 0, 0 ,0 };
     for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.DeviceInfo().firmwareVer[i];
 
@@ -730,9 +730,9 @@ bool InertialSenseROS::firmware_compatiblity_check()
   //         PROTOCOL_VERSION_CHAR1,
   //         PROTOCOL_VERSION_CHAR2,
   //         PROTOCOL_VERSION_CHAR3,
-  //         REPO_VERSION_MAJOR,
-  //         REPO_VERSION_MINOR,
-  //         REPO_VERSION_REVIS,
+  //         IS_SDK_VERSION_MAJOR,
+  //         IS_SDK_VERSION_MINOR,
+  //         IS_SDK_VERSION_REVIS,
   //         IS_.DeviceInfo().protocolVer[0],
   //         IS_.DeviceInfo().protocolVer[1],
   //         IS_.DeviceInfo().protocolVer[2],
@@ -749,9 +749,9 @@ bool InertialSenseROS::firmware_compatiblity_check()
             PROTOCOL_VERSION_CHAR1,
             PROTOCOL_VERSION_CHAR2,
             PROTOCOL_VERSION_CHAR3,
-            REPO_VERSION_MAJOR,
-            REPO_VERSION_MINOR,
-            REPO_VERSION_REVIS,
+            IS_SDK_VERSION_MAJOR,
+            IS_SDK_VERSION_MINOR,
+            IS_SDK_VERSION_REVIS,
             IS_.DeviceInfo().protocolVer[0],
             IS_.DeviceInfo().protocolVer[1],
             IS_.DeviceInfo().protocolVer[2],
