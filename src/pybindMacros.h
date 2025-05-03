@@ -68,7 +68,7 @@ PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTim
 // PYBIND11_NUMPY_DTYPE(port_monitor_t, port);
 // PYBIND11_NUMPY_DTYPE(evb2_t, week, timeOfWeekMs, firmwareVer, comBridgeCfg, loggerMode, loggerElapsedTimeMs, wifiSSID, wifiPSK, wifiIpAddr, serverIpAddr, serverPort);
 // PYBIND11_NUMPY_DTYPE(evb_status_t, week, timeOfWeekMs, firmwareVer, evbStatus, loggerMode, loggerElapsedTimeMs, wifiIpAddr, sysCommand);
-// PYBIND11_NUMPY_DTYPE(evb_flash_cfg_t, size, checksum, key, cbPreset, reserved1, cbf, cbOptions, bits, radioPID, radioNID, radioPowerLevel, wifi, server, encoderTickToWheelRad, CANbaud_kbps, can_receive_address, uinsComPort, uinsAuxPort, reserved2, portOptions, h3sp330BaudRate, h4xRadioBaudRate, h8gpioBaudRate);
+// PYBIND11_NUMPY_DTYPE(evb_flash_cfg_t, size, checksum, key, cbPreset, reserved1, cbf, cbOptions, bits, radioPID, radioNID, radioPowerLevel, wifi, server, encoderTickToWheelRad, CANbaud_kbps, can_receive_address, uinsComPort, uinsAuxPort, rtkd_unused24, portOptions, h3sp330BaudRate, h4xRadioBaudRate, h8gpioBaudRate);
 PYBIND11_NUMPY_DTYPE(debug_array_t, i, f, lf);
 PYBIND11_NUMPY_DTYPE(debug_string_t, s);
 // PYBIND11_NUMPY_DTYPE(imu_mag_t, imu, mag);
@@ -80,20 +80,27 @@ PYBIND11_NUMPY_DTYPE(gpx_status_t, timeOfWeekMs, status, grmcBitsSer0, grmcBitsS
 
 PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);
 PYBIND11_NUMPY_DTYPE(rtk_state_t, time, rp_ecef, rv_ecef, ra_ecef, bp_ecef, bv_ecef, qr, b, qb, sat_id);
-PYBIND11_NUMPY_DTYPE(rtk_residual_t, time, nv, sat_id_i, sat_id_j, type, v);
-PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, code_large_residual, 
-                        phase_large_residual, invalid_base_position, bad_baseline_holdamb, base_position_error, 
-                        outc_ovfl, reset_timer, use_ubx_position, large_v2b, base_position_update, rover_position_error, 
-                        reset_bias, start_relpos, end_relpos, start_rtkpos, pnt_pos_error, no_base_obs_data, diff_age_error, 
-                        moveb_time_sync_error, waiting_for_rover_packet, waiting_for_base_packet, lsq_error, 
-                        lack_of_valid_sats, divergent_pnt_pos_iteration, chi_square_error, cycle_slips, ubx_error, 
-                        solStatus, rescode_err_marker, error_count, error_code, dist2base, reserved1, gdop_error, 
-                        warning_count, warning_code, double_debug, debug, obs_count_bas, obs_count_rov, 
-                        /*obs_pairs_filtered*/ reserved2, raw_ptr_queue_limited, raw_dat_queue_limited, 
-                        obs_unhealthy, obs_rover_avail, obs_base_avail, obs_pairs_used_float, obs_pairs_used_ar, 
-                        obs_eph_avail, obs_low_snr_rover, obs_low_snr_base, obs_high_snr_parity, obs_zero_L1_rover, 
-                        obs_zero_L1_base, obs_low_elev_rover, obs_low_elev_base, eph1RxCnt, eph2RxCnt, reserved);
-
+PYBIND11_NUMPY_DTYPE(rtk_residual_t, time, nv, sat_id_i, sat_id_j, type, v);                    
+PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rtkd_unused8_1, code_outlier, phase_outlier, rtkd_unused8_2, 
+                        rtkd_unused8_3, rtkd_unused8_4, bad_baseline_holdamb, rtkd_unused8_5, 
+                        outc_ovfl, rtkd_unused8_6, rtkd_unused8_7, large_v2b, 
+                        base_position_update, rover_position_error, reset_bias, rtkd_unused8_8, 
+                        rtkd_unused32_1, 
+                        diff_age_error, rtkd_unused8_9, rover_packet_age_ms, base_packet_age_ms, 
+                        rtkd_unused32_2, 
+                        cycle_slips, 
+                        rtk_to_rcvr_pos_error, 
+                        rtkd_unused8_10, rtkd_unused8_11, error_count, error_code, 
+                        rtkd_unused32_3, 
+                        rtkd_unused8_12, rtkd_unused8_13, warning_count, warning_code, 
+                        double_debug, 
+                        debug, obs_base_unfiltered, obs_rover_unfiltered, 
+                        rtkd_unused8_14, rtkd_unused8_15, rtkd_unused8_16, 
+                        obs_unhealthy, obs_rover_relpos, obs_base_relpos, obs_pairs_used_float, obs_pairs_used_fixed, 
+                        obs_eph_relpos, obs_low_snr_rover, obs_low_snr_base, rtkd_unused8_17, 
+                        obs_zero_L1_rover, obs_zero_L1_base, obs_low_elev, rtkd_unused8_18, 
+                        rtkd_unused8_19, rtkd_unused8_20, reserved
+                    );
 PYBIND11_NUMPY_DTYPE(obsd_t, time, sat, rcv, SNR, LLI, code, qualL, qualP, reserved, L, P, D);
 
 PYBIND11_NUMPY_DTYPE(eph_t, sat, iode, iodc, sva, svh, week, code, flag, toe, toc, ttr, A, e, i0, OMG0, omg, M0, deln, OMGd, idot, crc, crs, cuc, cus, cic, cis, toes, fit, f0, f1, f2, tgd, Adot, ndot);
