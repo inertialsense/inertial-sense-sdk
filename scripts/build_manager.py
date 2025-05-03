@@ -250,8 +250,16 @@ class BuildTestManager:
 
                 if is_windows:
                     arch = "x64"
-                    vcvars_path = r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
                     vcpkg_toolchain = r"C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+                    candidate_vcvars_paths = [
+                        r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
+                        r"C:\Program Files\Microsoft Visual Studio\2022\VC\Auxiliary\Build\vcvarsall.bat",
+                    ]
+                    # Find the first valid vcvarsall.bat path
+                    vcvars_path = next((p for p in candidate_vcvars_paths if os.path.exists(p)), None)
+                    if not vcvars_path:
+                        print("vcvarsall.bat path not found!!!")
+                        return -1
 
                     # Configure with Ninja
                     # cmd_configure = f'"{vcvars_path}" {arch} && cmake -G Ninja -B "{build_dir}" -S . -DCMAKE_BUILD_TYPE={build_type}'
