@@ -2165,15 +2165,6 @@ class logPlot:
             ax[3,1].plot(rtkMiscTime, self.getData(d, miscDid, 'baseSbasCount'))
             ax[4,1].plot(rtkMiscTime, self.getData(d, miscDid, 'baseAntennaCount'))
 
-            # # ax[0].plot(rtkRelTime, self.getData(d, DID_GPS1_RTK_POS_REL, 'differentialAge'))
-            # if i == 0:
-            #     ax[2].semilogy(rtkRelTime, np.ones_like(rtkRelTime)*3.0, 'k--')
-            # ax[2].semilogy(rtkRelTime, self.getData(d, DID_GPS1_RTK_POS_REL, 'arRatio'))
-            # dist2base = self.getData(d, DID_GPS1_RTK_POS_REL, 'distanceToBase')
-            # dist2base[dist2base > 1e5] = np.nan
-            # ax[3].plot(rtkRelTime, dist2base)
-            # ax[4].plot(rtkMiscTime, self.getData(d, miscDid, 'cycleSlipCount'))
-            # self.legends_add(ax[0].legend(ncol=2))
             for a in ax:
                 for b in a:
                     b.grid(True)
