@@ -1756,7 +1756,7 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
     int radix = ((stringBuffer[0] == '0' && stringBuffer[1] == 'x') == 0 ? 16 : 10);
 #endif
 
-    double conversion = useConversion ? info.conversion : 1.0;      // Don't convert units.  Used for CSV logs. (WHJ)
+    double conversion = useConversion ? info.conversion : 1.0;      // When useConversion is false, don't convert units.  Used for CSV logs. (WHJ)
 
     return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, conversion, json);
 }
