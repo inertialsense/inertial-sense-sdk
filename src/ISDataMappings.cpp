@@ -1742,7 +1742,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex, bool json)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex, bool json, bool useConversion)
 {
     const uint8_t* ptr = FieldData(info, arrayIndex, hdr, datasetBuffer);
     if (ptr == NULL)
@@ -1756,7 +1756,9 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
     int radix = ((stringBuffer[0] == '0' && stringBuffer[1] == 'x') == 0 ? 16 : 10);
 #endif
 
-    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, info.conversion, json);
+    double conversion = useConversion ? info.conversion : 1.0;      // Don't convert units.  Used for CSV logs. (WHJ)
+
+    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, conversion, json);
 }
 
 bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, double conversion, bool json)
@@ -1860,7 +1862,7 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
 }
 
 
-bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex, bool json)
+bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex, bool json, bool useConversion)
 {
     const uint8_t* ptr = FieldData(info, arrayIndex, hdr, datasetBuffer);
     if (ptr == NULL)
@@ -1893,7 +1895,15 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
         return false;
     }
 
-    return VariableToString(info.type, info.flags, ptr, info.size, stringBuffer, info.conversion, json);
+    double conversion = info.conversion;
+    uint32_t flags = (uint32_t)info.flags;
+    if (!useConversion)
+    {   // Don't convert units or reduce precision.  Used for CSV logs. (WHJ)
+        conversion = 1.0;
+        flags &= (~DATA_FLAGS_FIXED_DECIMAL_MASK);
+    }
+
+    return VariableToString(info.type, (eDataFlags)flags, ptr, info.size, stringBuffer, conversion, json);
 }
 
 
