@@ -3091,7 +3091,7 @@ enum eIoConfig
 
     /** GPS type MASK */
     IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000007,
-    /** GPS type - Unused this should be USE THIS FIRST if we add GNSS Rcvr */
+    /** GPS type - Unused.  USE this when adding a new GNSS Receiver */
     IO_CONFIG_GPS_TYPE_UNUSED					= (int)0,
     /** GPS type - ublox ZED-F9P w/ RTK */
     IO_CONFIG_GPS_TYPE_UBX_F9P					= (int)1,
