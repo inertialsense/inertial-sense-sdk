@@ -226,12 +226,6 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	hdrCopy.offset = 0;
 	hdrCopy.size = size;
 
-    if (hdr.id == DID_IMU3_RAW)
-    {
-        int k = 0;
-        k++;
-    }
-
 	for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
 	{
 		const data_info_t &info = offset->second;
