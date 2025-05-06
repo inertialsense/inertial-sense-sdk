@@ -229,7 +229,6 @@ class BuildTestManager:
     @staticmethod
     def static_build_cmake(project_name, project_dir, build_type="Release", clean=False, is_windows=False):
         result = 0
-        # build_dir = project_dir / "build"
         build_dir = project_dir / f"build-{build_type.lower()}"
 
         if clean:
@@ -271,9 +270,10 @@ class BuildTestManager:
                     subprocess.check_call(cmd_build, shell=True, cwd=str(project_dir))
                 
                 else:   # Linux
-                    subprocess.check_call(["cmake", "-B", f"{build_dir}", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
-                    # subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
-                    subprocess.check_call(["cmake", "--build", f"{build_dir}", "--config", build_type, "--parallel", str(num_proc)], cwd=str(project_dir))
+                    # subprocess.check_call(["cmake", "-B", f"{build_dir}", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
+                    # subprocess.check_call(["cmake", "--build", f"{build_dir}", "--config", build_type, "--parallel", str(num_proc)], cwd=str(project_dir))
+                    subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
+                    subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
 
                 duration = int(time.time() - start_time)
                 minutes, seconds = divmod(duration, 60)
