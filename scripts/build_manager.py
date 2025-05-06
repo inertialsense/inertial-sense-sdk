@@ -229,7 +229,6 @@ class BuildTestManager:
     @staticmethod
     def static_build_cmake(project_name, project_dir, build_type="Release", clean=False, is_windows=False):
         result = 0
-        # build_dir = project_dir / "build"
         build_dir = project_dir / f"build-{build_type.lower()}"
 
         if clean:
@@ -287,10 +286,11 @@ class BuildTestManager:
     def test_exec(self, test_name, test_dir, exec_name=""):
         if not self.run_test:
             return
-        test_dir = str(test_dir) + "/build-release"
+        test_dir = str(test_dir) + "/build"
         if not exec_name:
             exec_name = test_name
         if self.is_windows:
+            test_dir = test_dir + "-release"
             exec_name = exec_name + ".exe"
         else:
             exec_name = "./" + exec_name
