@@ -246,8 +246,39 @@ class BuildTestManager:
             try:
                 num_proc = os.cpu_count()
                 num_proc = int(max(num_proc - num_proc/10, 6))
-                subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
-                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
+                start_time = time.time()                
+
+                if is_windows:
+                    arch = "x64"
+                    vcpkg_toolchain = r"C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+                    candidate_vcvars_paths = [
+                        r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
+                        r"C:\Program Files\Microsoft Visual Studio\2022\VC\Auxiliary\Build\vcvarsall.bat",
+                    ]
+                    # Find the first valid vcvarsall.bat path
+                    vcvars_path = next((p for p in candidate_vcvars_paths if os.path.exists(p)), None)
+                    if not vcvars_path:
+                        print("vcvarsall.bat path not found!!!")
+                        return -1
+
+                    # Configure with Ninja
+                    # cmd_configure = f'"{vcvars_path}" {arch} && cmake -G Ninja -B "{build_dir}" -S . -DCMAKE_BUILD_TYPE={build_type}'
+                    cmd_configure = f'"{vcvars_path}" {arch} && cmake -G Ninja -B "{build_dir}" -S . -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_TOOLCHAIN_FILE="{vcpkg_toolchain}"'
+                    subprocess.check_call(cmd_configure, shell=True, cwd=str(project_dir))
+
+                    # Build with Ninja
+                    cmd_build = f'"{vcvars_path}" {arch} && cmake --build "{build_dir}" --parallel {num_proc}'
+                    subprocess.check_call(cmd_build, shell=True, cwd=str(project_dir))
+                
+                else:   # Linux
+                    # subprocess.check_call(["cmake", "-B", f"{build_dir}", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
+                    # subprocess.check_call(["cmake", "--build", f"{build_dir}", "--config", build_type, "--parallel", str(num_proc)], cwd=str(project_dir))
+                    subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
+                    subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
+
+                duration = int(time.time() - start_time)
+                minutes, seconds = divmod(duration, 60)
+                print(f"Build completed in {minutes}:{seconds:02d}s using {num_proc} threads.")
             except subprocess.CalledProcessError as e:
                 print(f"Error building {project_name}!")
                 result = e.returncode
