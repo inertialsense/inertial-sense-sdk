@@ -217,11 +217,12 @@ class SuperNPP():
             serials = config_serials
 
         file_path = os.path.dirname(os.path.realpath(__file__))
-        npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build-release')
+        npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
         if os.name == 'posix':  # Linux
             exename = './navpp'
         else:                   # Windows
             exename = 'navpp.exe'
+            npp_build_folder += '-release'
         cmds = [exename + ' -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
 
         mode_suffix = {1: ' -mode COLD', 2: ' -mode FACTORY'}.get(self.startMode, '')
