@@ -626,6 +626,14 @@ protected:
 
 	data_set_t m_data_set[DID_COUNT];
 
+#if PLATFORM_IS_EMBEDDED
+	// on embedded we cannot new up C++ runtime until after free rtos has started
+	static cISDataMappings* s_map;
+#else
+	static cISDataMappings s_map;
+#endif
+
+private:
     #define PROTECT_UNALIGNED_ASSIGNS
     template<typename T>
     static inline void protectUnalignedAssign(void* out, T in) {
@@ -651,13 +659,6 @@ protected:
         return *(T*)in;
     #endif
     }
-
-#if PLATFORM_IS_EMBEDDED
-	// on embedded we cannot new up C++ runtime until after free rtos has started
-	static cISDataMappings* s_map;
-#else
-	static cISDataMappings s_map;
-#endif
 
 };
 

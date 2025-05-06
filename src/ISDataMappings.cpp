@@ -1763,6 +1763,9 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
 
 bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, double conversion, bool json)
 {
+    // Reset errno before calling strtol/strtoul/strtod.  There are cases in which it only gets set and not reset.
+    errno = 0;
+
     float valuef32;
     double valuef64;
     switch (dataType)
