@@ -290,8 +290,8 @@ class BuildTestManager:
         if not exec_name:
             exec_name = test_name
         if self.is_windows:
-            exec_name = exec_name + ".exe"
             test_dir += "-release"
+            exec_name = exec_name + ".exe"
         else:
             exec_name = "./" + exec_name
 
