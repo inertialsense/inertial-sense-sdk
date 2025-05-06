@@ -109,7 +109,7 @@ jobs:
   ros1-bridge-tests:
     name: "ROS1 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker, focal]
-    # if: false  # disable this job
+    if: false  # disable this job
 
     env:
       ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
