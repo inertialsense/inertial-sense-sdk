@@ -215,7 +215,7 @@ class BuildTestManager:
         project_dir = Path(project_dir)
 
         self.build_header(project_name)
-        result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean)
+        result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean, self.is_windows)
         self.build_footer(result)
         if result:
             self.result = result
@@ -227,10 +227,12 @@ class BuildTestManager:
             return len(os.listdir(directory)) == 0    
     
     @staticmethod
-    def static_build_cmake(project_name, project_dir, build_type="Release", clean=False):
+    def static_build_cmake(project_name, project_dir, build_type="Release", clean=False, is_windows=False):
         result = 0
+        # build_dir = project_dir / "build"
+        build_dir = project_dir / f"build-{build_type.lower()}"
+
         if clean:
-            build_dir = project_dir / "build"
             print(f"=== Running make clean... ===")
             try:
                 if os.path.exists(build_dir):
@@ -254,11 +256,10 @@ class BuildTestManager:
     def test_exec(self, test_name, test_dir, exec_name=""):
         if not self.run_test:
             return
-        test_dir = str(test_dir) + "/build"
+        test_dir = str(test_dir) + "/build-release"
         if not exec_name:
             exec_name = test_name
         if self.is_windows:
-            test_dir = test_dir + "/Release"
             exec_name = exec_name + ".exe"
         else:
             exec_name = "./" + exec_name
