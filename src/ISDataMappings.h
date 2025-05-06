@@ -567,7 +567,19 @@ public:
     * @param json true if json, false if csv
     * @return true if success, false if error
     */
-    static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, bool json = false);
+    static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, bool json = false, bool useConversion = true);
+
+    /**
+    * Convert dataset field to a string
+    * @param info metadata about the field to convert
+    * @param hdr packet header, NULL means dataBuffer is the entire data structure
+    * @param datasetBuffer packet buffer
+    * @param stringBuffer the buffer to hold the converted string
+    * @param arrayIndex index into array
+    * @param json true if json, false if csv
+    * @return true if success, false if error
+    */
+    static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex = 0, bool json = false, bool useConversion = true);
 
     /**
     * Convert a string to a variable.
@@ -581,18 +593,6 @@ public:
     * @return true if success, false if error
     */
     static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, double conversion = 1.0, bool json = false);
-
-    /**
-    * Convert dataset field to a string
-    * @param info metadata about the field to convert
-    * @param hdr packet header, NULL means dataBuffer is the entire data structure
-    * @param datasetBuffer packet buffer
-    * @param stringBuffer the buffer to hold the converted string
-    * @param arrayIndex index into array
-    * @param json true if json, false if csv
-    * @return true if success, false if error
-    */
-    static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex = 0, bool json = false);
 
     /**
     * Convert a variable to a string
@@ -647,6 +647,14 @@ protected:
 
     data_set_t m_data_set[DID_COUNT];
 
+#if PLATFORM_IS_EMBEDDED
+    // on embedded we cannot new up C++ runtime until after free rtos has started
+    static cISDataMappings* s_map;
+#else
+    static cISDataMappings s_map;
+#endif
+
+private:
     #define PROTECT_UNALIGNED_ASSIGNS
     template<typename T>
     static inline void protectUnalignedAssign(void* out, T in) {
@@ -672,13 +680,6 @@ protected:
         return *(T*)in;
     #endif
     }
-
-#if PLATFORM_IS_EMBEDDED
-    // on embedded we cannot new up C++ runtime until after free rtos has started
-    static cISDataMappings* s_map;
-#else
-    static cISDataMappings s_map;
-#endif
 
 };
 

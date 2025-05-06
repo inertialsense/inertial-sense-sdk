@@ -25,6 +25,7 @@
 cmake-build-*/
 .cmake/
 build/
+build-*/
 obj/
 x64
 Release/
