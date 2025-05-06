@@ -182,8 +182,8 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint3
 			// end field
 			columnData = string(start + foundQuotes, i - foundQuotes);
 			start = i + 1;
-			const data_info_t& data = columnHeaders[index++];
-            if (data.offset < MAX_DATASET_SIZE && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, data))
+			const data_info_t& info = columnHeaders[index++];
+            if (info.offset < MAX_DATASET_SIZE && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, info, 0, false, false))
 			{
 				return false;
 			}
@@ -233,14 +233,14 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 		{	// Array
 			for (uint32_t i=0; i<info.arraySize; i++)
 			{
-				cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp, i);
+				cISDataMappings::DataToString(info, &hdrCopy, bufPtr, tmp, i, false, false);
 				csv += ",";
 				csv += tmp;
 			}
 		}
 		else
 		{	// Single element
-			cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp);
+			cISDataMappings::DataToString(info, &hdrCopy, bufPtr, tmp, 0, false, false);
 			csv += ",";
 			csv += tmp;
 		}
