@@ -55,7 +55,7 @@ TEST(test_utils, Format_devInfo) {
     EXPECT_EQ(devInfoStr, "2024-09-18 15:35:43");
 
     devInfoStr = utils::devInfoToString(devInfo);
-    EXPECT_EQ(devInfoStr, "SN102934: IMX-5.0 fw2.1.7-devel.128 deadbeaf e753c.83 2024-09-18 15:35:43 (p12 cmp)");
+    EXPECT_EQ(devInfoStr, "SN102934: IMX-5.0 fw2.1.7-devel.128 deadbeaf e753c.83 20240918 153543 (p12 cmp)");
 }
 
 

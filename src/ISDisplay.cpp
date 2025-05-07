@@ -1584,7 +1584,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
 {
     char buf[BUF_SIZE];
-    sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
+    sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, (full ? 2 : 1)).c_str());
     return string(buf);
 }
 

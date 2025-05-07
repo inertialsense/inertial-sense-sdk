@@ -11,6 +11,9 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <format>
+
+#include "util/util.h"
 
 #if PLATFORM_IS_LINUX
 
@@ -22,7 +25,7 @@
 #include "serialPort.h"
 #include "serialPortPlatform.h"
 
-port_handle_t SerialPortFactory::bindPort(u_int16_t pType, std::string pName) {
+port_handle_t SerialPortFactory::bindPort(u_int16_t pType, const std::string& pName) {
     serial_port_t* serialPort = new serial_port_t;
     *serialPort = {};
     serialPort->base.pnum = (uint16_t)PortManager::getInstance().getPortCount();
@@ -49,19 +52,59 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     return true;
 }
 
-void SerialPortFactory::locatePorts(std::function<void(PortFactory*, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
+bool SerialPortFactory::validatePort(u_int16_t pType, const std::string& pName) {
+#if PLATFORM_IS_WINDOWS
+#else   // Linux
+    return validate_port__linux(pType, pName);
+#endif
+}
+
+void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     std::regex matchPattern(pattern);
     getComPorts(ports);
     for (auto& np : ports) {
         auto match = std::regex_match(np, matchPattern);
-        if (match)
-            portCallback(this, np);
+        if (validatePort(PORT_TYPE__UART, np) && match)
+            portCallback(this, PORT_TYPE__UART, np);
     }
 }
 
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
-    printf("%s\n", errMsg);
+    printf("%s :: Error %d : %s\n", portName(port), errCode, errMsg);
     return 0;
+}
+
+/**
+ * Performs an Linux OS-level check to determine the validity of a port, by checking for existence
+ *  in /dev and in /sys/class/tty and that it has the correct driver attributes, and that the
+ *  associate devices has correct file permissions, etc.
+ * @param pName
+ * @return
+ */
+bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& pName) {
+    struct stat st;
+    char buffer[1024];
+
+    // check first for /dev/<pName> and that its a character device
+    if (! (!stat(pName.c_str(), &st) && S_ISCHR(st.st_mode) && st.st_rdev))
+        return false;
+
+    std::string devdir = std::format("/sys/class/tty/{}/device/driver", basename(pName.c_str()));
+    if (! (!lstat(devdir.c_str(), &st) && S_ISLNK(st.st_mode) && st.st_nlink))
+        return false;
+
+    memset(buffer, 0, sizeof(buffer));
+    if (readlink(devdir.c_str(), buffer, sizeof(buffer)) <= 0)
+        return false;
+
+    std::string driver = std::string(basename(buffer));
+    if (driver == "port")
+        return false;   // these are not valid ports
+
+    if (driver == "serial8250") {
+        // do additional validation
+    }
+    return true;
 }
 
 std::string SerialPortFactory::get_driver__linux(const std::string& tty)

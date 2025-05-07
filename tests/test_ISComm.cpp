@@ -681,8 +681,7 @@ TEST(ISComm, BasicTxBufferRxByteTest)
         {
         default:    // IS binary
             uint8_t buf[COM_BUFFER_SIZE];
-            n = is_comm_data_to_buf(buf, sizeof(buf), &COMM_PORT(TEST0_PORT)->comm, td.did, td.size, 0, td.data.buf);
-            portWrite(TEST0_PORT, buf, n);
+            n = is_comm_data(TEST0_PORT, td.did, td.size, 0, td.data.buf);
             break;
 
         case _PTYPE_NMEA:
@@ -699,7 +698,7 @@ TEST(ISComm, BasicTxBufferRxByteTest)
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&TEST0_PORT->portRingBuf) == 0);
+	EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif

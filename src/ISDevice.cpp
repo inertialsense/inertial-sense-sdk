@@ -525,6 +525,7 @@ int ISDevice::SetSysCmd(const uint32_t command) {
     sysCmd.command = command;
     sysCmd.invCommand = ~command;
     // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
+    debug_message("Issuing SYS_CMD %d to %s (%s)\n", command, getIdAsString().c_str(), getPortName().c_str());
     return comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 }
 
@@ -880,7 +881,7 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
 bool ISDevice::reset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (current_timeMs() > nextResetTime) {
+    if (!portIsValid(port) || (current_timeMs() > nextResetTime)) {
         for (int i = 0; i < 3; i++) {
             SetSysCmd(SYS_CMD_SOFTWARE_RESET);
             SLEEP_MS(10);

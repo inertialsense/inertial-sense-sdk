@@ -74,7 +74,7 @@ void enable_message_streaming(serial_port_t *serialPort, is_comm_instance_t *com
 }
 
 // Handle InertialSense binary (ISB) messages
-int parse_isb(p_data_t* data, port_handle_t port)
+int parse_isb(void* ctx, p_data_t* data, port_handle_t port)
 {
 	uDatasets *d = (uDatasets *)(data->ptr);
 
@@ -112,7 +112,7 @@ int parse_isb(p_data_t* data, port_handle_t port)
 }
 
 // Handle NMEA messages
-int parse_nmea(const unsigned char* msg, int msgSize, port_handle_t port)
+int parse_nmea(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port)
 {
 	return 0;
 }

@@ -151,11 +151,22 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
 }
 #endif  // PLATFORM_IS_EMBEDDED
 
+// These only need to be defined/initialized if we're not building for embedded
 static test_port_t* boundPorts[NUM_COM_PORTS] {
-        TEST0_PORT, TEST1_PORT, // loopbacks
-        TEST3_PORT, TEST2_PORT, // PORT2 <-> PORT3
-        TEST5_PORT, TEST4_PORT, // PORT4 <-> PORT5
+        #if (NUM_COM_PORTS > 0)
+            TEST0_PORT, // loopback
+        #endif
+        #if (NUM_COM_PORTS > 1)
+            TEST1_PORT, // loopback
+        #endif
+        #if (NUM_COM_PORTS > 3)
+            TEST3_PORT, TEST2_PORT, // PORT2 <-> PORT3
+        #endif
+        #if (NUM_COM_PORTS > 5)
+            TEST5_PORT, TEST4_PORT, // PORT4 <-> PORT5
+        #endif
 };
+
 
 static int testPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
@@ -193,7 +204,9 @@ void initTestPorts() {
     int portNum = 0;
     for (test_port_t& port : g_testPorts) {
         port.base.pnum = portNum;
-        port.base.ptype = (portNum <= 1) ? PORT_TYPE__LOOPBACK | PORT_TYPE__COMM : PORT_TYPE__COMM; // only PORT0 and PORT1 are Loopbacks
+        port.base.ptype = (PORT_FLAG__VALID | PORT_TYPE__COMM);
+        if (portNum <= 1)
+            port.base.ptype |= PORT_TYPE__LOOPBACK;  // only PORT0 and PORT1 are Loopbacks
         port.base.portRead = testPortRead;
         port.base.portWrite = testPortWrite;
         port.base.portFree = testPortFree;

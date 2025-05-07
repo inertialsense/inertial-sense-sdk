@@ -518,33 +518,38 @@ bool utils::devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2)
     return true;
 }
 
-bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, bool checkTime) {
-    if ((info1.firmwareVer[0] != info2.firmwareVer[0]) ||
-        (info1.firmwareVer[1] != info2.firmwareVer[1]) ||
-        (info1.firmwareVer[2] != info2.firmwareVer[2]) ||
-        (info1.buildYear != info2.buildYear) ||
-        (info1.buildMonth != info2.buildMonth) ||
-        (info1.buildDay != info2.buildDay) ||
-        (info1.buildNumber != info2.buildNumber) ||
-        (info1.buildType != info2.buildType) ||
-        (info1.protocolVer[0] != info2.protocolVer[0]) ||
-        (info1.protocolVer[1] != info2.protocolVer[1]) ||
-        (info1.protocolVer[2] != info2.protocolVer[2]) ||
-        (info1.protocolVer[3] != info2.protocolVer[3]) ||
-        (info1.repoRevision != info2.repoRevision)) {
-        return false;
+bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags) {
+    bool match = true;
+    match = match && (info1.buildType == info2.buildType);              // release type
+    match = match && (info1.firmwareVer[0] == info2.firmwareVer[0]);
+    match = match && (info1.firmwareVer[1] == info2.firmwareVer[1]);
+    match = match && (info1.firmwareVer[2] == info2.firmwareVer[2]);
+    match = match && (flags & DV_BIT_EXACT_MATCH) && (info1.firmwareVer[3] == info2.firmwareVer[3]);
+
+    if (match && (flags & DV_BIT_PROTOCOL_VER)) {
+        match = match && (info1.protocolVer[0] == info2.protocolVer[0]);
+        match = match && (info1.protocolVer[1] == info2.protocolVer[1]);
+        match = match && (info1.protocolVer[2] == info2.protocolVer[2]);
+        match = match && (flags & DV_BIT_EXACT_MATCH) && (info1.protocolVer[3] == info2.protocolVer[3]);
     }
 
-    if (checkTime) {
+    match = match && (flags & DV_BIT_BUILD_COMMIT) && (info1.repoRevision == info2.repoRevision);
+    match = match && (flags & DV_BIT_BUILD_KEY) && (info1.buildNumber == info2.buildNumber);
+
+    if (match && (flags & DV_BIT_BUILD_DATE)) {
+        match = match && (info1.buildYear == info2.buildYear);
+        match = match && (info1.buildMonth == info2.buildMonth);
+        match = match && (info1.buildDay == info2.buildDay);
+    }
+
+    if (match && (flags & DV_BIT_BUILD_TIME)) {
         int minutes1 = info1.buildHour * 60 + info1.buildMinute;
         int minutes2 = info2.buildHour * 60 + info2.buildMinute;
         int dtMinutes = abs(minutes1 - minutes2);
-        if (dtMinutes > 30) {
-            return false;
-        }
+        match = match && (dtMinutes > ( (flags & DV_BIT_EXACT_MATCH) ? 0 : 30 ));
     }
 
-    return true;
+    return match;
 }
 
 /**

@@ -19,7 +19,10 @@
 void PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
     // look for ports which are no longer valid and remove them
     for (auto& [entry, port] : knownPorts) {
-        if (port && !portIsValid(port)) {
+        bool invalid = !(portIsValid(port) && entry.factory->validatePort(entry.type, entry.name));
+
+        // check if port still exists...
+        if (invalid) {
             erase(port);    // remove the port from our primary set of ports
             // notify listeners before we actually invalidate the port
             for (port_listener& l : listeners) {
@@ -32,14 +35,14 @@ void PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
 
     // now look for new ports
     for (auto l : factories) {
-        auto cb = std::bind(&PortManager::portHandler, this, std::placeholders::_1, std::placeholders::_2);
+        auto cb = std::bind(&PortManager::portHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
         l->locatePorts(cb, pattern, pType);
     }
 }
 
 /**
  * Called by the PortFactories when a port is identified.
- * This is a low-level callback indicating that port identified by portName was detected as a
+ * This is a low-level callback indicating that a port identified by portName was detected as a
  * type of portType.  This handler is responsible for making further determinations and callbacks
  * for specifics events such as whether the port is a new port, or if an old port no longer
  * exists.  NOTE: this function will likely be called frequently, since it will be called once
@@ -47,8 +50,8 @@ void PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
  * @param portType
  * @param portName
  */
-void PortManager::portHandler(PortFactory* factory, std::string portName) {
-    port_entry_t portEntry(factory, portName);
+void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std::string& portName) {
+    port_entry_t portEntry(factory, portType, portName);
 
     // check if port is previously known
     for (auto& [entry, port] : knownPorts) {
@@ -66,13 +69,13 @@ void PortManager::portHandler(PortFactory* factory, std::string portName) {
     }
 
     // if not, then do we need to allocate it?
-    port_handle_t port = factory->bindPort(PORT_TYPE__UART, portName);
+    port_handle_t port = factory->bindPort(portType, portName);
     knownPorts[portEntry] = port;
     insert(port);
 
     // finally, call our handler
     for (port_listener& l : listeners) {
-        l(PORT_ADDED, PORT_TYPE__UART, portName, port);
+        l(PORT_ADDED, portType, portName, port);
     }
 }
 

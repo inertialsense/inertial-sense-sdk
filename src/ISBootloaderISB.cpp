@@ -68,7 +68,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
     handshake_sync(m_port);
 
-    logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Querying device bootloader version.");
+    logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Checking for ISB compatibility.");
 
     SLEEP_MS(100);
 

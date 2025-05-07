@@ -1669,6 +1669,7 @@ ISDevice* InertialSense::DeviceByPortName(const std::string& port_name) {
 /**
  * @return a list of discovered ports which are not currently associated with a open device
  */
+[[deprecated("Use InertialSense.portManager.discoverPorts() instead.")]]
 std::vector<std::string> InertialSense::checkForNewPorts(std::vector<std::string>& oldPorts) {
     std::vector<std::string> new_ports, all_ports;
     cISSerialPort::GetComPorts(all_ports);
@@ -1755,6 +1756,15 @@ std::vector<ISDevice*> InertialSense::selectByHdwId(const uint16_t hdwId) {
 }
 #endif
 
+/**
+ * Handles port management for the InertialSense class. Specifically, defaults to opening newly discovered ports. This function can be
+ * overridden to provide additional functionality is extending classes.
+ * @param event the type of event for the specified port, typically either PORT_ADDED or PORT_REMOVED
+ * @param pType the type of port that this event is associated with - together with the pName, this *should* uniquely identify the port
+ * @param pName the name of the port this event is associated with - together with the pType, this *should* uniquely identify the port
+ * @param port the port handle that is associated with this event - this maybe null if the port is being removed since this handler is called
+ *   after the port has already been identified as having been removed.
+ */
 void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port) {
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
@@ -1774,10 +1784,16 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
     }
 }
 
+/**
+ * Handles device management for the InertialSense class. Specifically, this is called when the device is successfully
+ * validated and the port is assigned.  This is used with the portManagerHandler() to complete the device validation phase
+ * @param event the type of event for the associated device, typically either DEVICE_ADDED or DEVICE_REMOVED
+ * @param device an ISDevice pointer to the associated device.
+ */
 void InertialSense::deviceManagerHandler(uint8_t event, ISDevice* device) {
     switch ((DeviceManager::device_event_e)event) {
         case DeviceManager::DEVICE_ADDED: {
-            // debug_message("[DBG] Device %s added on port %s\n", device->getIdAsString().c_str(), portIsValid(device->port) ? portName(device->port) : "(None)");
+            debug_message("[DBG] Device %s added on port %s\n", device->getIdAsString().c_str(), portIsValid(device->port) ? portName(device->port) : "(None)");
 
             // since we've validated, we can remove this from the "portsToValidate" set
             auto removeMe = portsToValidate.find(device->port);
@@ -1788,7 +1804,7 @@ void InertialSense::deviceManagerHandler(uint8_t event, ISDevice* device) {
         }
             break;
         case DeviceManager::DEVICE_REMOVED:
-            // debug_message("[DBG] Device %s removed\n", device->getIdAsString().c_str());
+            debug_message("[DBG] Device %s removed\n", device->getIdAsString().c_str());
             break;
     }
 }

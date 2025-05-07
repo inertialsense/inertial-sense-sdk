@@ -179,9 +179,11 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 }
 
 
+#define debug_message printf
 void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port) {
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
+            // TODO: If "automatic device validation" is true, we should use this event to automatically open the port and validate the device.
             debug_message("[DBG] DeviceManager-->PortManager::PORT_ADDED '%s'\n", pName.c_str());
             break;
         case PortManager::PORT_REMOVED:
@@ -193,6 +195,7 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
             break;
     }
 }
+#undef debug_message
 
 
 std::vector<ISDevice *> DeviceManager::getDevicesAsVector() {

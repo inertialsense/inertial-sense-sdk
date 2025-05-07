@@ -202,8 +202,10 @@ namespace utils {
         DV_BIT_BUILD_TIME       = 0x0020,        //!< build time
         DV_BIT_BUILD_COMMIT     = 0x0040,        //!< repo hash & build status (dirty)
         DV_BIT_ADDITIONAL_INFO  = 0x0100,        //!< additional info
+        DV_BIT_PROTOCOL_VER     = 0x0200,        //!< protocol version
         DV_BIT_COMPACT_DATE     = 0x1000,        //!< compact date formatting
         DV_BIT_COMPACT_TIME     = 0x2000,        //!< compact time formatting
+        DV_BIT_EXACT_MATCH      = 0x4000,        //!< when matching/comparing, match exactly (version & time)
     };
 
     std::string getHardwareAsString(const dev_info_t& devInfo);
@@ -216,7 +218,7 @@ namespace utils {
     uint16_t devInfoFromString(const std::string& str, dev_info_t& devInfo);
     uint64_t intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis = false);
     bool devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2);
-    bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, bool checkTime = false);
+    bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags = DV_BIT_FIRMWARE_VER | DV_BIT_BUILD_COMMIT | DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME);
     bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
     bool compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
 

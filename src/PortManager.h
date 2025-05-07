@@ -90,9 +90,10 @@ protected:
     /**
      * Callback handler used by factories when a port is located (but not yet allocated)
      * @param factory - the factory which discovered this port
+     * @oaram portType - the type of port (as determined by the factory)
      * @param portName - the name of the port (as determined by the factory, should be unique)
      */
-    void portHandler(PortFactory* factory, std::string portName);
+    void portHandler(PortFactory* factory, uint16_t portType, const std::string& portName);
 
     void checkForNewPorts() { }
 
@@ -103,11 +104,12 @@ private:
 
     struct port_entry_t {
         PortFactory* factory;
+        uint16_t type;
         std::string name;
         // port_handle_t port;
 
-        port_entry_t(PortFactory* f, const std::string& n) { // , port_handle_t* p) {
-            factory = f, name = n; // , port = p;
+        port_entry_t(PortFactory* f, uint16_t t, const std::string& n) { // , port_handle_t* p) {
+            factory = f, type = t, name = n; // , port = p;
         }
         bool operator< (port_entry_t const& op) const { return name.compare(op.name) < 0; }
     };

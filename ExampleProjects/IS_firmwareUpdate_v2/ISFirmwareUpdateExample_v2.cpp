@@ -83,7 +83,7 @@ static is_operation_result verifyProgress(std::any obj, float pct, const std::st
     return IS_OP_OK;
 }
 
-static void statusText(std::any obj, int level, const char* info, ...)
+static void statusText(const std::any& obj, int level, const char* info, ...)
 {
     ISBootloader::cISBootloaderBase* isblPtr = NULL;
     ISFirmwareUpdater* fwPtr = NULL;
@@ -133,7 +133,7 @@ static void example_dataCallback(InertialSense* i, p_data_t* data, port_handle_t
 
 }
 
-static is_operation_result fwUpdateProgress(std::any obj, float pct, const std::string& stepName, int step, int steps) {
+static is_operation_result fwUpdateProgress(const std::any& obj, float pct, const std::string& stepName, int step, int steps) {
 
     if (!obj.has_value()) return IS_OP_OK;
 
@@ -158,7 +158,7 @@ static is_operation_result fwUpdateProgress(std::any obj, float pct, const std::
     return IS_OP_OK;
 }
 
-static void fwUpdateStatus(std::any obj, eLogLevel level, const char* info, ...) {
+static void fwUpdateStatus(const std::any& obj, eLogLevel level, const char* info, ...) {
     static char buffer[256];
 
     va_list ap;

@@ -27,7 +27,7 @@ using namespace ISBootloader;
 using namespace std;
 
 // print out upload progress
-static is_operation_result bootloaderUploadProgress(std::any obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
+static is_operation_result bootloaderUploadProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
     int percent = (int)(pct * 100.0f);
     printf("\rUpload Progress: %d%%\r", percent);
@@ -45,7 +45,7 @@ static is_operation_result bootloaderUploadProgress(std::any obj, float pct, con
 }
 
 // print out verify progress
-static is_operation_result bootloaderVerifyProgress(std::any obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
+static is_operation_result bootloaderVerifyProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
     int percent = (int)(pct * 100.0f);
     printf("\rVerify Progress: %d%%\r", percent);
@@ -62,7 +62,7 @@ static is_operation_result bootloaderVerifyProgress(std::any obj, float pct, con
     return IS_OP_OK;
 }
 
-static void bootloaderStatusText(std::any obj, eLogLevel level, const char* str, ...)
+static void bootloaderStatusText(const std::any& obj, eLogLevel level, const char* str, ...)
 {
 
     static char buffer[256];
