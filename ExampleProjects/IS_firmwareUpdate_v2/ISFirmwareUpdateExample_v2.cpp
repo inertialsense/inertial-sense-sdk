@@ -46,7 +46,7 @@ bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 }
 
 // print out upload progress
-static is_operation_result uploadProgress(std::any obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
+static is_operation_result uploadProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
     int percent = (int)(pct * 100.0f);
     printf("\rUpload Progress: %d%%\r", percent);
@@ -65,7 +65,7 @@ static is_operation_result uploadProgress(std::any obj, float pct, const std::st
 }
 
 // print out verify progress
-static is_operation_result verifyProgress(std::any obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
+static is_operation_result verifyProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
     int percent = (int)(pct * 100.0f);
     printf("\rVerify Progress: %d%%\r", percent);
