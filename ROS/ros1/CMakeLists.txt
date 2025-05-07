@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.21.0)
 add_definitions(-DROS1)
 project(inertial_sense_ros)
 

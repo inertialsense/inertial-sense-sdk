@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 #include <regex>
-#include <format>
 
 #include "util/util.h"
 
@@ -89,7 +88,7 @@ bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& 
     if (! (!stat(pName.c_str(), &st) && S_ISCHR(st.st_mode) && st.st_rdev))
         return false;
 
-    std::string devdir = std::format("/sys/class/tty/{}/device/driver", basename(pName.c_str()));
+    std::string devdir = utils::string_format("/sys/class/tty/%s/device/driver", basename(pName.c_str()));
     if (! (!lstat(devdir.c_str(), &st) && S_ISLNK(st.st_mode) && st.st_nlink))
         return false;
 
