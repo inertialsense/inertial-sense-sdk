@@ -44,7 +44,7 @@ public:
      * @param pName the string identifier of the port
      * @return true if the port is viable/valid, otherwise false
      */
-    virtual bool validatePort(u_int16_t pType, const std::string& pName) = 0;
+    virtual bool validatePort(uint16_t pType, const std::string& pName) = 0;
 
     /**
      * A function responsible for allocating the underlying port type and returning a port_handle_t to it
@@ -53,7 +53,7 @@ public:
      * @param pName the binding name of the port to be allocated.
      * @return a port_handle_t to the allocated port
      */
-    virtual port_handle_t bindPort(u_int16_t pType, const std::string& pName) = 0;
+    virtual port_handle_t bindPort(uint16_t pType, const std::string& pName) = 0;
 
     /**
      * A function responsible for freeing the allocated memory of the underlying port.
@@ -87,7 +87,7 @@ private:
     static void register_comport__linux(std::vector<std::string>& comList, std::vector<std::string>& comList8250, const std::string& dir);
     static void probe_serial8250_comports__linux(std::vector<std::string>& comList, std::vector<std::string> comList8250);
 
-    static bool validate_port__linux(u_int16_t pType, const std::string& pName);
+    static bool validate_port__linux(uint16_t pType, const std::string& pName);
 
 #elif PLATFORM_IS_WINDOWS
 #endif
@@ -96,9 +96,9 @@ private:
 
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
 
-    bool validatePort(u_int16_t pType, const std::string& pName) override;
+    bool validatePort(uint16_t pType, const std::string& pName) override;
 
-    port_handle_t bindPort(u_int16_t pType, const std::string& pName) override;
+    port_handle_t bindPort(uint16_t pType, const std::string& pName) override;
 
     bool releasePort(port_handle_t port) override;
 
@@ -110,15 +110,15 @@ private:
 
 /*
 class DfuPortLocator : PortLocator {
-    void locatePorts(std::function<void(u_int16_t, std::string)> portCallback) override;
+    void locatePorts(std::function<void(uint16_t, std::string)> portCallback) override;
 };
 
 class TcpPortLocator : PortLocator {
-    void locatePorts(std::function<void(u_int16_t, std::string)> portCallback) override;
+    void locatePorts(std::function<void(uint16_t, std::string)> portCallback) override;
 };
 
 class UdpPortLocator : PortLocator {
-    void locatePorts(std::function<void(u_int16_t, std::string)> portCallback) override;
+    void locatePorts(std::function<void(uint16_t, std::string)> portCallback) override;
 };
 */
 

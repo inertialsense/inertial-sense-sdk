@@ -25,7 +25,7 @@
 #include "serialPort.h"
 #include "serialPortPlatform.h"
 
-port_handle_t SerialPortFactory::bindPort(u_int16_t pType, const std::string& pName) {
+port_handle_t SerialPortFactory::bindPort(uint16_t pType, const std::string& pName) {
     serial_port_t* serialPort = new serial_port_t;
     *serialPort = {};
     serialPort->base.pnum = (uint16_t)PortManager::getInstance().getPortCount();
@@ -52,7 +52,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     return true;
 }
 
-bool SerialPortFactory::validatePort(u_int16_t pType, const std::string& pName) {
+bool SerialPortFactory::validatePort(uint16_t pType, const std::string& pName) {
 #if PLATFORM_IS_WINDOWS
 #else   // Linux
     return validate_port__linux(pType, pName);
