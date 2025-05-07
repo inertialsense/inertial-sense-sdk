@@ -178,7 +178,7 @@ int validateBaudRate(unsigned int baudRate)
  * @param bufferSize Size of the buffer
  * @return returns the size of the buffer
  */
-int resetBuffer(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+int is_comm_reset_buffer(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
     c->rxBuf.size = bufferSize;
     c->rxBuf.start = buffer;
@@ -194,7 +194,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 
     // Clear buffer and initialize buffer pointers
     memset(buffer, 0, bufferSize);
-    resetBuffer(c, buffer, bufferSize);
+    is_comm_reset_buffer(c, buffer, bufferSize);
     
     // Set parse enable flags
     c->config.enabledMask = DEFAULT_PROTO_MASK;
@@ -899,7 +899,7 @@ int is_comm_free(is_comm_instance_t* c)
             // we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
             // will need to resend the data
             parseErrorResetState(c, EPARSE_RXBUFFER_FLUSHED);
-            return resetBuffer(c, buf->start, buf->size);
+            return is_comm_reset_buffer(c, buf->start, buf->size);
         }
         else
         {	// Shift current data to start of buffer
@@ -916,7 +916,7 @@ int is_comm_free(is_comm_instance_t* c)
     {   // We are not currently parsing a packet
         // and buff is out of new data to scan. 
         // RESET pointers to start of the buffer.
-        return resetBuffer(c, buf->start, buf->size);
+        return is_comm_reset_buffer(c, buf->start, buf->size);
     }
 
     return bytesFree;
