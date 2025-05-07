@@ -241,7 +241,7 @@ std::string utils::getFirmwareAsString(const dev_info_t& devInfo, const std::str
         case 'c': out +="-rc";          break;
         case 'd': out +="-devel";       break;
         case 's': out +="-snap";        break;
-        case '*': out +="-snap";        break;
+        case '^': out +="-snap";        break;
         default : out +="";             break;
     }
     if (devInfo.firmwareVer[3] != 0)
@@ -255,8 +255,8 @@ std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags, c
 
     if ((flags & DV_BIT_BUILD_COMMIT) && devInfo.repoRevision) {
         out += utils::string_format("%08x", devInfo.repoRevision);
-        if (devInfo.buildType == '*') {
-            out += "*";
+        if (devInfo.buildType == '^') {
+            out += "^";
         }
     }
 
@@ -441,8 +441,8 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         break;
                     case 8:  // repo hash & build status
                         devInfo.repoRevision = std::stol(match[1].str(), NULL, 16);
-                        if (match[2].matched && (match[2].str()[0] == '*')) {
-                            devInfo.buildType = '*';
+                        if (match[2].matched && (match[2].str()[0] == '^')) {
+                            devInfo.buildType = '^';
                         }
                         componentsParsed |= DV_BIT_BUILD_COMMIT;
                         break;
