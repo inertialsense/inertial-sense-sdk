@@ -48,9 +48,9 @@ public:
     static std::string getName(const dev_info_t& devInfo);
     static std::string getFirmwareInfo(const dev_info_t &devInfo, int detail = 1);
 
-    explicit ISDevice(u_int16_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
+    explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
-        flashCfg.checksum = (uint32_t)-1;
+        flashCfg.checksum = (uint32_t)-1; // 0xFFFFFFFF
         hdwId = _hdwId;
         assignPort(_port);
     }

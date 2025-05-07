@@ -93,8 +93,8 @@ namespace utils {
      * @param args
      * @return
      */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wformat-security"
     template<typename ... Args>
     std::string string_format(const std::string& format, Args ... args) {
         if constexpr (sizeof...(args) == 0) {
@@ -110,7 +110,7 @@ namespace utils {
         std::snprintf(buf.get(), size, format.c_str(), args ...);
         return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
     }
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 
     /**
      * Combine all elements of a container denoted by the start and ending iterators, to join into a
