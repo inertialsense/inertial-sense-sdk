@@ -24,7 +24,3 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Link IS-SDK libraries to the executable
 include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
-
-if(NOT WIN32)
-    target_link_libraries(${PROJECT_NAME} m)
-endif()

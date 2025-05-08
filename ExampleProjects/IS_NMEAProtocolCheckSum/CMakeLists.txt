@@ -22,10 +22,5 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-# Find pthread package
-find_package(Threads REQUIRED)
-
 # Link IS-SDK libraries to the executable
 include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
-
-
