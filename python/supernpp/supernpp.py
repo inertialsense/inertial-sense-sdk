@@ -286,8 +286,6 @@ def string_case(filename, title_string, search_string):
 if __name__ == "__main__":
 
     print("Running SuperNPP")
-    npp_build_folder = "../../../cpp/NavPostProcess/build-release"
-    # buildNPP(npp_build_folder)
 
     print("Arguments passed to the script:")
     for i, arg in enumerate(sys.argv):
