@@ -14,9 +14,6 @@
 
 #include "util/util.h"
 
-#include <fcntl.h>
-#include <sys/ioctl.h>
-
 #include "PortManager.h"
 #include "serialPort.h"
 #include "serialPortPlatform.h"
@@ -144,6 +141,8 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
 
 
 #if PLATFORM_IS_LINUX
+#include <fcntl.h>
+#include <sys/ioctl.h>
 #include <linux/serial.h>
 
 /**
