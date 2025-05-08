@@ -169,16 +169,31 @@ int validateBaudRate(unsigned int baudRate)
     return -1;    
 }
 
+/**
+ * @brief Sets buffer to inital state
+ * 
+ * @param c is_comm_instance_t*
+ * @param buffer uint8_t*
+ * @param bufferSize Size of the buffer
+ * @return returns the size of the buffer
+ */
+int is_comm_reset_buffer(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+{
+    c->rxBuf.size = bufferSize;
+    c->rxBuf.start = buffer;
+    c->rxBuf.end = buffer + bufferSize;
+    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = buffer;
+
+    return bufferSize;
+}
+
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
     memset(c, 0, sizeof(is_comm_instance_t));
 
     // Clear buffer and initialize buffer pointers
     memset(buffer, 0, bufferSize);
-    c->rxBuf.size = bufferSize;
-    c->rxBuf.start = buffer;
-    c->rxBuf.end = buffer + bufferSize;
-    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
+    is_comm_reset_buffer(c, buffer, bufferSize);
     
     // Set parse enable flags
     c->config.enabledMask = DEFAULT_PROTO_MASK;
@@ -885,9 +900,7 @@ int is_comm_free(is_comm_instance_t* c)
             // we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
             // will need to resend the data
             parseErrorResetState(c, EPARSE_RXBUFFER_FLUSHED);
-            buf->head =
-            buf->tail =
-            buf->scan = buf->start;
+            return is_comm_reset_buffer(c, buf->start, buf->size);
         }
         else
         {	// Shift current data to start of buffer
@@ -895,10 +908,14 @@ int is_comm_free(is_comm_instance_t* c)
             buf->head = buf->start;
             buf->tail -= shift;
             buf->scan -= shift;
+			
+            // re-calculate free byte count
+            bytesFree = (int)(buf->end - buf->tail);
         }
-
-        // re-calculate free byte count
-        bytesFree = (int)(buf->end - buf->tail);
+    }
+    else if (c->processPkt == NULL && buf->scan >= buf->tail)
+    {   // Not currently parsing a packet and no data left to scan in buffer. RESET pointers to start of the buffer.
+	    return is_comm_reset_buffer(c, buf->start, buf->size);
     }
 
     return bytesFree;
