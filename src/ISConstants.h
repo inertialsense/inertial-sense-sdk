@@ -47,7 +47,9 @@ extern "C" {
     #include <WS2tcpip.h>
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
-    #define is_socket_t SOCKET
+
+    // #define is_socket_t SOCKET
+    typedef SOCKET is_socket_t;
 
     #define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
