@@ -9,29 +9,31 @@
 #ifndef IS_DFU_FIRMWAREUPDATER_H
 #define IS_DFU_FIRMWAREUPDATER_H
 
+#include "protocol/FirmwareUpdate.h"
+
 #include <mutex>
 #include <queue>
 
-#include "libusb.h"
-
-#include "protocol/FirmwareUpdate.h"
 #include "ihex.h"
 #include "ISUtilities.h"
 #include "util/md5.h"
 #include "util/util.h"
 
+#include "libusb.h"
+
+
 #ifdef _MSC_VER
 # pragma pack(push)
 # pragma pack(1)
 #endif /* _MSC_VER */
-struct usb_dfu_func_descriptor {
-    uint8_t bLength;
-    uint8_t bDescriptorType;
-    uint8_t bmAttributes;
 #define USB_DFU_CAN_DOWNLOAD    (1 << 0)
 #define USB_DFU_CAN_UPLOAD    (1 << 1)
 #define USB_DFU_MANIFEST_TOL    (1 << 2)
 #define USB_DFU_WILL_DETACH    (1 << 3)
+struct usb_dfu_func_descriptor {
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint8_t bmAttributes;
     uint16_t wDetachTimeOut;
     uint16_t wTransferSize;
     uint16_t bcdDFUVersion;
