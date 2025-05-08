@@ -91,7 +91,7 @@
 					<Attribute>template</Attribute>
 					<Category>source</Category>
 					<Condition>C Exe</Condition>
-					<FileContentHash>uFpJCboyhRf1MCXTa8NelA==</FileContentHash>
+					<FileContentHash>bVtz6/s2nKLwVTITbJPLlQ==</FileContentHash>
 					<FileVersion></FileVersion>
 					<Name>samd21a/templates/main.c</Name>
 					<SelectString>Main file (.c)</SelectString>
@@ -131,24 +131,24 @@
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMD21_DFP\1.3.395\samd21a\gcc\gcc\samd21j18a_flash.ld</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMD21_DFP\1.3.395\samd21a\gcc\gcc\samd21g18a_flash.ld</AbsolutePath>
 					<Attribute>config</Attribute>
 					<Category>linkerScript</Category>
 					<Condition>GCC Exe</Condition>
-					<FileContentHash>OPHuaTs/jUfTRcBNegNOZg==</FileContentHash>
+					<FileContentHash>CiXUy2YS8BIZsTiSpg7Aog==</FileContentHash>
 					<FileVersion></FileVersion>
-					<Name>samd21a/gcc/gcc/samd21j18a_flash.ld</Name>
+					<Name>samd21a/gcc/gcc/samd21g18a_flash.ld</Name>
 					<SelectString></SelectString>
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMD21_DFP\1.3.395\samd21a\gcc\gcc\samd21j18a_sram.ld</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMD21_DFP\1.3.395\samd21a\gcc\gcc\samd21g18a_sram.ld</AbsolutePath>
 					<Attribute>config</Attribute>
 					<Category>other</Category>
 					<Condition>GCC Exe</Condition>
-					<FileContentHash>b2DINim/KCXjF+uFxnw75Q==</FileContentHash>
+					<FileContentHash>MOnU95AbiumSnD11XWUbmg==</FileContentHash>
 					<FileVersion></FileVersion>
-					<Name>samd21a/gcc/gcc/samd21j18a_sram.ld</Name>
+					<Name>samd21a/gcc/gcc/samd21g18a_sram.ld</Name>
 					<SelectString></SelectString>
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
@@ -157,7 +157,7 @@
 			<PackPath>C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/SAMD21_DFP/1.3.395/Atmel.SAMD21_DFP.pdsc</PackPath>
 			<PackVersion>1.3.395</PackVersion>
 			<PresentInProject>true</PresentInProject>
-			<ReferenceConditionId>ATSAMD21J18A</ReferenceConditionId>
+			<ReferenceConditionId>ATSAMD21G18A</ReferenceConditionId>
 			<RteComponents xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
 				<d4p1:string></d4p1:string>
 			</RteComponents>

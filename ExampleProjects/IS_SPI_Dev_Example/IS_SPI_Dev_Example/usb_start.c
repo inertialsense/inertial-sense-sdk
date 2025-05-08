@@ -49,14 +49,6 @@ int bytesInBuff = 0;
 bool readSPI;
 uint32_t g_timeMs = 0;
 
-uint8_t UARTInBuff[BUFF_SIZE];
-uint16_t UARTInSize = 0;
-
-uint8_t UARTOutBuff[BUFF_SIZE];
-uint16_t UARTOutSize = 0;
-uint16_t UARTOutLoadIdx = 0;
-uint16_t UARTOutWriteIdx = 0;
-
 #define CDCD_ECHO_BUF_SIZ	256
 
 uint8_t USBIntBuff[CDCD_ECHO_BUF_SIZ];
@@ -83,6 +75,23 @@ typedef struct parserStats
 parserStats_t stats;
 uint32_t tmpPktType = 0;
 uint32_t ioobErrCnt = 0;
+
+int parse_isb(unsigned int port, p_data_t* data)
+{
+	uDatasets* d = (uDatasets*)(data->ptr);
+	
+	
+	cdcdf_acm_write(data->ptr,data->hdr.size);
+
+}
+
+// Handle NMEA messages
+int parse_nmea(unsigned int port, const unsigned char* msg, int msgSize)
+{
+	return cdcdf_acm_write(msg,msgSize);;
+}
+
+is_comm_callbacks_t s_callbacks = {};
 
 void parseISPacket()
 {
@@ -123,42 +132,6 @@ int SPI_0_transfer(uint8_t* buf, uint32_t len)
 	return io_write(io, buf, len);
 }
 
-bool uart_que_byte(uint8_t data)
-{
-	uint8_t nextLoad = (UARTOutLoadIdx + 1);
-	
-	if (nextLoad >= BUFF_SIZE)
-	nextLoad = nextLoad - BUFF_SIZE;
-
-	if (nextLoad == UARTOutWriteIdx) return false;
-
-	UARTOutBuff[UARTOutLoadIdx] = data;
-	UARTOutLoadIdx = nextLoad;
-
-	// Enable DRE interrupt
-	SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_DRE;
-	
-	return true;
-}
-
-void UART_0_write(uint8_t* buf, uint32_t len)
-{
-	for (int i = 0; i < len; i++)
-	{
-		if (!uart_que_byte(buf[i]))
-		return;
-	}
-	
-	//if (len == 0) return;
-	
-	//struct io_descriptor *io;
-	//usart_sync_get_io_descriptor(&UART_0, &io);
-	//usart_sync_enable(&UART_0);
-
-	//io_write(io, buf, len);
-}
-
-int lastUARTInSize = 0;
 uint32_t lastSizeChangeMs = 0;
 uint32_t lastReadTimeMs = 0;
 
@@ -229,7 +202,6 @@ int portWriteCom(unsigned int port, const unsigned char* buf, int len )
 
 void readEvery50ms()
 {
-	SERCOM1->USART.INTENCLR.reg = SERCOM_USART_INTENSET_RXC;
 	if (readSPI)
 	{
 		spi_xfer_data.size = 150;
@@ -325,28 +297,6 @@ void cdc_device_acm_init(void)
 	usbdc_attach();
 }
 
-void checkUART()
-{
-	if (UARTInSize > 0)
-	{
-		if (UARTInSize > lastUARTInSize)
-		{
-			lastSizeChangeMs = g_timeMs;
-			lastUARTInSize = UARTInSize;
-		}
-		else if (g_timeMs > (lastSizeChangeMs+2))
-		{
-			CRITICAL_SECTION_ENTER();
-			loadSPIOutBuffer(UARTInBuff, UARTInSize);
-			UARTInSize = 0;
-			lastUARTInSize = 0;
-			CRITICAL_SECTION_LEAVE();
-		}
-	}
-	
-	SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
-}
-
 void checkUSB()
 {
 	CRITICAL_SECTION_ENTER();
@@ -385,12 +335,12 @@ void unloadSpiInBuff()
 {
 	if (spiInBuffIdx > 0)
 	{
-		memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
-		cdcdf_acm_write((uint8_t *)USBOutBuff, spiInBuffIdx);
-		//UART_0_write(spiInBuff,spiInBuffIdx);
+		//memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
+		//cdcdf_acm_write((uint8_t *)USBOutBuff, spiInBuffIdx);
 	
 		// SDK?
-		parseISPacket();
+		//parseISPacket();
+		is_comm_buffer_parse_messages(spiInBuff, spiInBuffIdx, &comm, &s_callbacks);
 	}
 	
 	spiInBuffIdx=0;
@@ -414,9 +364,10 @@ void cdcd_acm_example(void)
 	
 	TIMER_0_example();
 	
+	s_callbacks.isbData = parse_isb;
+	s_callbacks.nmea = parse_nmea;
+	
 	struct io_descriptor *io;
-	usart_sync_get_io_descriptor(&UART_0, &io);
-	usart_sync_enable(&UART_0);
 	
 	spi_m_sync_get_io_descriptor(&SPI_0, &io);
 	spi_m_sync_enable(&SPI_0);
@@ -424,16 +375,12 @@ void cdcd_acm_example(void)
 	memset(allZeros, 0x00, READ_ONLY_SIZE);
 	memset(spiTxBuff, 0xff, BUFF_SIZE);
 	
-	// enable the interupt
-	SERCOM1->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
-
 	cdcdf_acm_register_callback(CDCDF_ACM_CB_STATE_C, (FUNC_PTR)usb_device_cb_state_c);
 
 	while (1) 
 	{
 		spi_xfer_data.txbuf = spiTxBuff; 
 		
-		checkUART();
 		checkUSB();	
 		
 		// read more if needed
