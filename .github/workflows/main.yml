@@ -115,7 +115,7 @@ jobs:
     name: "ROS1 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker, focal]
     timeout-minutes: 5
-    # if: false  # disable this job
+    if: false  # disable this job -- ROS1 has been EOL'd and will be phased out.  We can no longer support it.
 
     env:
       ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
