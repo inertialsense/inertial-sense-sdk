@@ -14,8 +14,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define _ISTCPSERVER__H__
 
 #include <string>
-#include <inttypes.h>
 #include <vector>
+#include <cinttypes>
 
 #include "ISTcpClient.h"
 

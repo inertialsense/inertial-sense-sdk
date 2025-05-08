@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __ISTCPCLIENT__H__
 
 #include <string>
-#include <inttypes.h>
+#include <cinttypes>
 
 #include "ISConstants.h"
 #include "ISStream.h"

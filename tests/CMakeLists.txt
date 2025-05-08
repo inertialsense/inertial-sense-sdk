@@ -55,7 +55,7 @@ if(WIN32)   # Windows
     set(GTEST_LIBRARY "${VCPKG_PATH}/installed/x64-windows/lib/gtest.lib")
     set(GTEST_MAIN_LIBRARY "${VCPKG_PATH}/installed/x64-windows/lib/manual-link/gtest_main.lib")
     target_link_directories(${PROJECT_NAME} PRIVATE "${VCPKG_PATH}/installed/x64-windows/lib/manual-link")
-    set(PROJECT_PLATFORM_LIBS ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} GTest::GTest GTest::Main)
+    set(PROJECT_PLATFORM_LIBS ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} GTest::GTest GTest::Main wsock32 ws2_32)
 else()      # Linux
     set(PROJECT_PLATFORM_LIBS gtest_main ${GTEST_LIBRARIES} udev pthread m)
 endif()
