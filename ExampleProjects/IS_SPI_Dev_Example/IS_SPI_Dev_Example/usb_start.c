@@ -367,12 +367,18 @@ void unloadSpiInBuff()
 {
 	if (spiInBuffIdx > 0)
 	{
-		//memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
-		//cdcdf_acm_write((uint8_t *)USBOutBuff, spiInBuffIdx);
+		memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
+		cdcdf_acm_write((uint8_t *)USBOutBuff, spiInBuffIdx);
 	
 		// SDK?
 		//parseISPacket();
-		is_comm_buffer_parse_messages(spiInBuff, spiInBuffIdx, &comm, &s_callbacks);
+		
+		if (spiInBuff[0] == '$')
+		{
+			sdfa++;
+		}
+		
+		//is_comm_buffer_parse_messages(spiInBuff, spiInBuffIdx, &comm, &s_callbacks);
 	}
 	
 	spiInBuffIdx=0;
@@ -418,9 +424,9 @@ void cdcd_acm_example(void)
 		// read more if needed
 		if (gpio_get_pin_level(MODE_SELECT))
 		{
-			//SPIReadNoDR();
+			SPIReadNoDR();
 			//readEvery50ms_ZIV();
-			readEvery();
+			//readEvery();
 		}
 		else 
 		{

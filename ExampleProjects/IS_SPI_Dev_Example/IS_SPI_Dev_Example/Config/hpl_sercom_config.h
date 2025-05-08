@@ -145,7 +145,7 @@
 // <0x3=>PAD[3]
 // <id> spi_master_rxpo
 #ifndef CONF_SERCOM_1_SPI_RXPO
-#define CONF_SERCOM_1_SPI_RXPO 2
+#define CONF_SERCOM_1_SPI_RXPO 3
 #endif
 
 // <o> Transmit Data Pinout
@@ -160,7 +160,7 @@
 
 // Calculate baud register value from requested baudrate value
 #ifndef CONF_SERCOM_1_SPI_BAUD_RATE
-#define CONF_SERCOM_1_SPI_BAUD_RATE ((float)CONF_GCLK_SERCOM0_CORE_FREQUENCY / (float)(2 * CONF_SERCOM_1_SPI_BAUD)) - 1
+#define CONF_SERCOM_1_SPI_BAUD_RATE ((float)CONF_GCLK_SERCOM1_CORE_FREQUENCY / (float)(2 * CONF_SERCOM_1_SPI_BAUD)) - 1
 #endif
 
 // <<< end of configuration section >>>
