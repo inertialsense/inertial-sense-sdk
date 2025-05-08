@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(ISCommCallbackExample)
 
@@ -16,6 +16,11 @@ link_directories(${IS_SDK_DIR})
 
 # Define the executable
 add_executable(${PROJECT_NAME} ISCommCallbackExample.cpp)
+
+# Build using C11 and CXX20
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Link InertialSenseSDK static library to the executable
 target_link_libraries(${PROJECT_NAME} InertialSenseSDK)
