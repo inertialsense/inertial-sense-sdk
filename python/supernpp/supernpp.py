@@ -222,7 +222,7 @@ class SuperNPP():
             exename = './navpp'
         else:                   # Windows
             exename = 'navpp.exe'
-            npp_build_folder += '/Release'
+            npp_build_folder += '-release'
         cmds = [exename + ' -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
 
         mode_suffix = {1: ' -mode COLD', 2: ' -mode FACTORY'}.get(self.startMode, '')
@@ -286,8 +286,6 @@ def string_case(filename, title_string, search_string):
 if __name__ == "__main__":
 
     print("Running SuperNPP")
-    npp_build_folder = "../../../cpp/NavPostProcess/build"
-    # buildNPP(npp_build_folder)
 
     print("Arguments passed to the script:")
     for i, arg in enumerate(sys.argv):
