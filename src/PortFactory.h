@@ -31,7 +31,7 @@ public:
     /**
      * @param portCallback - A function to be called when this Factory identifies a possible port; callback parameters are port-type and name
      */
-    virtual void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern = "", uint16_t pType = PORT_TYPE__UNKNOWN) { };
+    virtual void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern = "", uint16_t pType = PORT_TYPE__UNKNOWN) = 0;
 
     /**
      * Checks to determine if "the essense" of a port is valid. This should probably not perform any operation on the port
@@ -43,7 +43,7 @@ public:
      * @param pName the string identifier of the port
      * @return true if the port is viable/valid, otherwise false
      */
-    virtual bool validatePort(uint16_t pType, const std::string& pName) { return false; };
+    virtual bool validatePort(uint16_t pType, const std::string& pName) = 0;
 
     /**
      * A function responsible for allocating the underlying port type and returning a port_handle_t to it
@@ -52,7 +52,7 @@ public:
      * @param pName the binding name of the port to be allocated.
      * @return a port_handle_t to the allocated port
      */
-    virtual port_handle_t bindPort(uint16_t pType, const std::string& pName) { return nullptr; };
+    virtual port_handle_t bindPort(uint16_t pType, const std::string& pName) = 0;
 
     /**
      * A function responsible for freeing the allocated memory of the underlying port.
@@ -60,7 +60,7 @@ public:
      * @param port the handle of the port to release
      * @return true if the port specified was a valid port, and it was successfully released, otherwise false.
      */
-    virtual bool releasePort(port_handle_t port) { return false; };
+    virtual bool releasePort(port_handle_t port) = 0;
 };
 
 class SerialPortFactory : public PortFactory {

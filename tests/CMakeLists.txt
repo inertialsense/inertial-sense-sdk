@@ -34,14 +34,6 @@ endif()
 add_executable(${PROJECT_NAME} 
     ${TESTS_SOURCES}
     runtime/device_runtime_tests.cpp
-
-    # test_ISLogger.cpp
-    # test_data_utils.cpp
-
-    # test_protocol_nmea.cpp
-    # test_time_conversion.cpp    
-    # test_runtime_tests.cpp
-    # test_data_utils.cpp
 )
 
 if(WIN32)   # Windows
@@ -60,10 +52,12 @@ else()      # Linux
     set(PROJECT_PLATFORM_LIBS gtest_main ${GTEST_LIBRARIES} udev pthread m)
 endif()
 
-# Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} ${PROJECT_PLATFORM_LIBS} InertialSenseSDK)
-
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Link IS-SDK libraries to the executable
+include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
+
+# Link InertialSenseSDK static library to the executable
+target_link_libraries(${PROJECT_NAME} ${PROJECT_PLATFORM_LIBS})
