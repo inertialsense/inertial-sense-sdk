@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <inttypes.h>
 
+#include "ISConstants.h"
 #include "ISStream.h"
 
 #define IS_SOCKET_DEFAULT_TIMEOUT_MS 5000

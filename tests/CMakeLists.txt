@@ -47,7 +47,7 @@ add_executable(${PROJECT_NAME}
 if(WIN32)   # Windows
     # Check if VCPKG_ROOT is defined
     if(NOT DEFINED ENV{VCPKG_ROOT})
-        message(FATAL_ERROR "The environment variable VCPKG_ROOT is not defined. Please run install_buiild_tools.bat or set it to the path of your vcpkg installation.")
+        message(FATAL_ERROR "The environment variable VCPKG_ROOT is not defined. Please run install_build_tools.bat or set it to the path of your vcpkg installation.")
     endif()
 
     # Use the VCPKG_ROOT system variable
