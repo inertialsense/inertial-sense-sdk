@@ -45,6 +45,7 @@ extern "C" {
     #define _WINSOCKAPI_
     #include <winsock2.h>
     #include <WS2tcpip.h>
+    #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
     #define is_socket_t SOCKET
 
