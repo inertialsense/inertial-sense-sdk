@@ -36,7 +36,7 @@ extern "C"
 
 // FIXME:: This struct is effectively redundant now to ISDevice and the Serial port refactor (that moves ISComm, etc into the port_handle_t)
 //  We should also be able to implement a "virtual serial port" that provides serial emulation, without the need for ring-buffers, etc.
-typedef struct
+typedef struct test_data_s
 {
     ISComManager            cm;
     com_manager_status_t    cmBufStatus[NUM_COM_PORTS] = { 0 };
