@@ -15,11 +15,6 @@ include_directories(
 # Link the InertialSenseSDK static library 
 link_directories(${IS_SDK_DIR})
 
-if(WIN32)
-    # yamlcpp needs to know it's a static lib
-    add_definitions(-DYAML_CPP_STATIC_DEFINE)
-endif()
-
 # Define the executable
 add_executable(${PROJECT_NAME} 
     src/cltool_main.cpp

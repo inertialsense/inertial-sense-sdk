@@ -13,12 +13,6 @@ file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/hw-libs/bootloader/bootloaderShared.c"
     "${CMAKE_CURRENT_LIST_DIR}/tests/runtime/*.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/tests/runtime/*.h"
-	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/*.cpp"
-	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/*.h"
-	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/contrib/*.cpp"
-	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/contrib/*.h"
-	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.cpp"
-	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.h"
 )
 
 # Compile libusb from source
@@ -56,7 +50,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         src/protocol
         src/libusb
         src/libusb/libusb
-        src/yaml-cpp
         tests/runtime
         external
 )
@@ -68,8 +61,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Other settings
 if (WIN32)
-    # yamlcpp needs to know it's a static lib.
-    add_definitions(-DYAML_CPP_STATIC_DEFINE)
+	find_package(yaml-cpp CONFIG REQUIRED)
 
     # Windows specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
@@ -88,7 +80,7 @@ if (WIN32)
 	add_dependencies(${PROJECT_NAME} gen_files)
 
     # We need to ensure windows static libs are found
-    target_link_libraries(${PROJECT_NAME} Ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} Ws2_32.lib yaml-cpp::yaml-cpp)
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
