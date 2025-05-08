@@ -33,7 +33,6 @@ public:
      */
     virtual void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern = "", uint16_t pType = PORT_TYPE__UNKNOWN) = 0;
 
-
     /**
      * Checks to determine if "the essense" of a port is valid. This should probably not perform any operation on the port
      * that could impact the ability of the port to operate. Rather, perform any reasonable checks to confirm if the port
@@ -79,7 +78,6 @@ private:
     SerialPortFactory(SerialPortFactory const &) = delete;
     SerialPortFactory& operator=(SerialPortFactory const&) = delete;
 
-
     std::vector<std::string> ports;
 
 #if PLATFORM_IS_LINUX
@@ -88,7 +86,6 @@ private:
     static void probe_serial8250_comports__linux(std::vector<std::string>& comList, std::vector<std::string> comList8250);
 
     static bool validate_port__linux(uint16_t pType, const std::string& pName);
-
 #elif PLATFORM_IS_WINDOWS
 #endif
 
@@ -101,9 +98,6 @@ private:
     port_handle_t bindPort(uint16_t pType, const std::string& pName) override;
 
     bool releasePort(port_handle_t port) override;
-
-
-
 
     static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 };
