@@ -6,8 +6,8 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef EVALTOOL_PORTLOCATOR_H
-#define EVALTOOL_PORTLOCATOR_H
+#ifndef IS_SDK__PORT_FACTORY_H
+#define IS_SDK__PORT_FACTORY_H
 
 #include <unordered_set>
 #include <functional>
@@ -103,19 +103,5 @@ private:
     static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 };
 
-/*
-class DfuPortLocator : PortLocator {
-    void locatePorts(std::function<void(uint16_t, std::string)> portCallback) override;
-};
 
-class TcpPortLocator : PortLocator {
-    void locatePorts(std::function<void(uint16_t, std::string)> portCallback) override;
-};
-
-class UdpPortLocator : PortLocator {
-    void locatePorts(std::function<void(uint16_t, std::string)> portCallback) override;
-};
-*/
-
-
-#endif //EVALTOOL_PORTLOCATOR_H
+#endif // IS_SDK__PORT_FACTORY_H

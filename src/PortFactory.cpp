@@ -14,11 +14,8 @@
 
 #include "util/util.h"
 
-#if PLATFORM_IS_LINUX
-
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <linux/serial.h>
 
 #include "PortManager.h"
 #include "serialPort.h"
@@ -72,6 +69,82 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
     printf("%s :: Error %d : %s\n", portName(port), errCode, errMsg);
     return 0;
 }
+
+/**
+ * Populates a vector of string identifiers for all available Serial/TTY/UART devices on the host system.
+ * This does not open, access, or configure the devices, nor does it make any guarantee about the availability
+ * of the ports (only that the OS has registered/enumerated it).
+ * @param ports a reference to a vector of strings, which will be populated with available serial ports
+ * @return the number of ports found on the host
+ */
+int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
+{
+    ports.clear();
+
+#if PLATFORM_IS_WINDOWS
+
+    char comPort[64];
+    char targetPath[256];
+
+    for (int i = 0; i < 256; i++) // checking ports from COM0 to COM255
+    {
+        snprintf(comPort, sizeof(comPort), "COM%d", i);
+        if (QueryDosDeviceA(comPort, targetPath, 256))
+        {
+            ports.push_back(comPort);
+        }
+    }
+
+#else   // Linux
+
+    struct dirent **namelist;
+    std::vector<std::string> comList8250;
+    const char* sysdir = "/sys/class/tty/";
+
+    // Scan through /sys/class/tty - it contains all tty-devices in the system
+    int n = scandir(sysdir, &namelist, NULL, NULL);
+    if (n < 0)
+    {
+        perror("scandir");
+    }
+    else
+    {
+        while (n--)
+        {
+            if (strcmp(namelist[n]->d_name,"..") && strcmp(namelist[n]->d_name,"."))
+            {   // Construct full absolute file path
+                std::string devicedir = sysdir;
+                devicedir += namelist[n]->d_name;
+
+                // Register the device
+                register_comport__linux(ports, comList8250, devicedir);
+            }
+            free(namelist[n]);
+            namelist[n] = nullptr;
+        }
+        free(namelist);
+        namelist = nullptr;
+    }
+
+    // Only non-serial8250 has been added to comList without any further testing
+    // serial8250-devices must be probe to check for validity
+    probe_serial8250_comports__linux(ports, comList8250);
+
+#endif
+
+#if 0
+    cout << "Available ports: " << endl;
+    for (int i = 0; i < ports.size(); i++)
+    {
+        cout << ports[i] << endl;
+    }
+#endif
+    return ports.size();
+}
+
+
+#if PLATFORM_IS_LINUX
+#include <linux/serial.h>
 
 /**
  * Performs an Linux OS-level check to determine the validity of a port, by checking for existence
@@ -174,78 +247,5 @@ void SerialPortFactory::probe_serial8250_comports__linux(std::vector<std::string
         it ++;
     }
 }
-
-/**
- * Populates a vector of string identifiers for all available Serial/TTY/UART devices on the host system.
- * This does not open, access, or configure the devices, nor does it make any guarantee about the availability
- * of the ports (only that the OS has registered/enumerated it).
- * @param ports a reference to a vector of strings, which will be populated with available serial ports
- * @return the number of ports found on the host
- */
-int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
-{
-    ports.clear();
-
-#if PLATFORM_IS_WINDOWS
-
-    char comPort[64];
-    char targetPath[256];
-
-    for (int i = 0; i < 256; i++) // checking ports from COM0 to COM255
-    {
-        snprintf(comPort, sizeof(comPort), "COM%d", i);
-        if (QueryDosDeviceA(comPort, targetPath, 256))
-        {
-            ports.push_back(comPort);
-        }
-    }
-
-#else   // Linux
-
-    struct dirent **namelist;
-    std::vector<std::string> comList8250;
-    const char* sysdir = "/sys/class/tty/";
-
-    // Scan through /sys/class/tty - it contains all tty-devices in the system
-    int n = scandir(sysdir, &namelist, NULL, NULL);
-    if (n < 0)
-    {
-        perror("scandir");
-    }
-    else
-    {
-        while (n--)
-        {
-            if (strcmp(namelist[n]->d_name,"..") && strcmp(namelist[n]->d_name,"."))
-            {   // Construct full absolute file path
-                std::string devicedir = sysdir;
-                devicedir += namelist[n]->d_name;
-
-                // Register the device
-                register_comport__linux(ports, comList8250, devicedir);
-            }
-            free(namelist[n]);
-            namelist[n] = nullptr;
-        }
-        free(namelist);
-        namelist = nullptr;
-    }
-
-    // Only non-serial8250 has been added to comList without any further testing
-    // serial8250-devices must be probe to check for validity
-    probe_serial8250_comports__linux(ports, comList8250);
-
-#endif
-
-#if 0
-    cout << "Available ports: " << endl;
-    for (int i = 0; i < ports.size(); i++)
-    {
-        cout << ports[i] << endl;
-    }
-#endif
-    return ports.size();
-}
-
 
 #endif // #if PLATFORM_IS_LINUX
