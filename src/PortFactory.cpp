@@ -48,7 +48,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
 bool SerialPortFactory::validatePort(uint16_t pType, const std::string& pName) {
 #if PLATFORM_IS_WINDOWS
     char targetPath[256];
-    return QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath));
+    return (QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath)) != 0);
 #else   // Linux
     return validate_port__linux(pType, pName);
 #endif
