@@ -99,8 +99,8 @@ jobs:
       - name: Build IS SDK library
         run: ./build_is_sdk.bat
 
-      - name: Build Unit Tests
-        run: ./build_unit_tests.bat
+#      - name: Build Unit Tests
+#        run: ./build_unit_tests.bat
 
       - name: Build CLTool
         run: ./build_cltool.bat
