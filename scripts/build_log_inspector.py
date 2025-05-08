@@ -84,7 +84,8 @@ def run_build(args=[]):
         return run_clean()
     else:
         print("Building IS-SDK")
-        result = BuildTestManager.static_build_cmake("IS_SDK_lib", sdk_dir)
+        is_windows = os.name == 'nt' or platform.system() == 'Windows'
+        result = BuildTestManager.static_build_cmake("IS_SDK_lib", sdk_dir, is_windows=is_windows)
         if result: 
             sys.exit(result)
 
