@@ -145,18 +145,18 @@ void SPIReadNoDR()
 {
 	int readAmt = 0;
 	
-		spi_xfer_data.size = READ_ONLY_SIZE;
-		memset(spiTxBuff, 0xff, READ_ONLY_SIZE);
-		readAmt = 0;
-		gpio_set_pin_level(SPI_CS, false);
-		while (readAmt+READ_ONLY_SIZE < BUFF_SIZE)
-		{
-			spi_xfer_data.rxbuf = &spiRxBuff[readAmt];
-			readAmt += spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
-			if (memcmp(&spiRxBuff[readAmt-READ_ONLY_SIZE], allZeros, READ_ONLY_SIZE) == 0)
-			break;
-		}
-		gpio_set_pin_level(SPI_CS, true);
+	spi_xfer_data.size = READ_ONLY_SIZE;
+	memset(spiTxBuff, 0xff, READ_ONLY_SIZE);
+	readAmt = 0;
+	gpio_set_pin_level(SPI_CS, false);
+	while (readAmt+READ_ONLY_SIZE < BUFF_SIZE)
+	{
+		spi_xfer_data.rxbuf = &spiRxBuff[readAmt];
+		readAmt += spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
+		if (memcmp(&spiRxBuff[readAmt-READ_ONLY_SIZE], allZeros, READ_ONLY_SIZE) == 0)
+		break;
+	}
+	gpio_set_pin_level(SPI_CS, true);
 	
 	loadSPIInBuffer(spiRxBuff,readAmt);
 }
@@ -200,7 +200,7 @@ int portWriteCom(unsigned int port, const unsigned char* buf, int len )
 	}
 }
 
-void readEvery50ms()
+void readEvery50ms_ZIV()
 {
 	if (readSPI)
 	{
@@ -218,6 +218,38 @@ void readEvery50ms()
 		loadSPIInBuffer(spiRxBuff, spi_xfer_data.size);
 
 		portWriteBuffSize = 0;
+		readSPI = false;
+	}
+}
+
+int sdfa = 0;
+
+void readEvery()
+{
+	if (readSPI)
+	{
+		int readAmt = 0;
+		
+		spi_xfer_data.size = READ_ONLY_SIZE;
+		memset(spiTxBuff, 0xff, READ_ONLY_SIZE);
+		readAmt = 0;
+		gpio_set_pin_level(SPI_CS, false);
+		while (readAmt+READ_ONLY_SIZE < BUFF_SIZE)
+		{
+			spi_xfer_data.rxbuf = &spiRxBuff[readAmt];
+			readAmt += spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
+			if (memcmp(&spiRxBuff[readAmt-READ_ONLY_SIZE], allZeros, READ_ONLY_SIZE) == 0)
+			break;
+		}
+		gpio_set_pin_level(SPI_CS, true);
+		
+		if (spiRxBuff[0] != 0)
+		{
+			sdfa++;
+		}
+		
+		loadSPIInBuffer(spiRxBuff,readAmt);
+		
 		readSPI = false;
 	}
 }
@@ -387,7 +419,8 @@ void cdcd_acm_example(void)
 		if (gpio_get_pin_level(MODE_SELECT))
 		{
 			//SPIReadNoDR();
-			readEvery50ms();
+			//readEvery50ms_ZIV();
+			readEvery();
 		}
 		else 
 		{

@@ -15,8 +15,9 @@
 
 #include <hpl_rtc_base.h>
 
-struct spi_m_sync_descriptor SPI_0;
 struct timer_descriptor      TIMER_0;
+
+struct spi_m_sync_descriptor SPI_0;
 
 void SPI_0_PORT_init(void)
 {
@@ -71,7 +72,6 @@ void SPI_0_init(void)
 	spi_m_sync_init(&SPI_0, SERCOM1);
 	SPI_0_PORT_init();
 }
-
 
 /**
  * \brief Timer initialization function
@@ -217,7 +217,7 @@ void system_init(void)
 	                       // <GPIO_PULL_OFF"> Off
 	                       // <GPIO_PULL_UP"> Pull-up
 	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_UP);
+	                       GPIO_PULL_DOWN);
 
 	gpio_set_pin_function(MODE_SELECT, GPIO_PIN_FUNCTION_OFF);
 
