@@ -73,6 +73,14 @@ public:
     SerialPortFactory(SerialPortFactory const &) = delete;
     SerialPortFactory& operator=(SerialPortFactory const&) = delete;
 
+    void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
+
+    bool validatePort(uint16_t pType, const std::string& pName) override;
+
+    port_handle_t bindPort(uint16_t pType, const std::string& pName) override;
+
+    bool releasePort(port_handle_t port) override;
+
 private:
     SerialPortFactory() = default;
     ~SerialPortFactory() = default;
@@ -91,13 +99,6 @@ private:
 
     int getComPorts(std::vector<std::string>& ports);
 
-    void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
-
-    bool validatePort(uint16_t pType, const std::string& pName) override;
-
-    port_handle_t bindPort(uint16_t pType, const std::string& pName) override;
-
-    bool releasePort(port_handle_t port) override;
 
     static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 };
