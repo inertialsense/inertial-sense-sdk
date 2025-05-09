@@ -912,7 +912,7 @@ int is_comm_free(is_comm_instance_t* c)
             bytesFree = (int)(buf->end - buf->tail);
         }
     }
-    else if (c->processPkt == NULL && buf->scan == buf->tail)
+    else if (c->processPkt == NULL && buf->scan >= buf->tail)
     {   // Not currently parsing a packet and no data left to scan in buffer. RESET pointers to start of the buffer.
         return is_comm_reset_buffer(c, buf->start, buf->size);
     }
