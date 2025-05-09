@@ -496,14 +496,11 @@ void* threadCreateAndStart(void(*function)(void* info), void* info, const char* 
 #elif CPP11_IS_ENABLED
 
     auto new_thread = new thread(function, info);
+    #if defined(PLATFORM_IS_LINUX) && defined(HAVE_PTHREAD_SETNAME_NP)
     if (threadName) {
-    #if PLATFORM_IS_LINUX
-        auto thandle = new_thread->native_handle();
-        #if defined(HAVE_PTHREAD_SETNAME_NP)
-        pthread_setname_np(thandle, threadName);
-        #endif
-    #endif
+        pthread_setname_np(new_thread->native_handle(), threadName);
     }
+    #endif
     return new_thread;
 
 #elif PLATFORM_IS_WINDOWS

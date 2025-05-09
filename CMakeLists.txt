@@ -6,6 +6,7 @@ file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/core/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/core/*.cpp"
 	"${CMAKE_CURRENT_LIST_DIR}/src/core/*.h"
 	"${CMAKE_CURRENT_LIST_DIR}/src/protocol/*.cpp"

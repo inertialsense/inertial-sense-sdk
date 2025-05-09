@@ -178,11 +178,11 @@ bool ISDevice::handshakeISbl() {
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++) {
-        if (serialPortWrite(port, &handshakerChar, 1) != 1) {
+        if (portWrite(port, &handshakerChar, 1) != 1) {
             return false;
         }
 
-        if (serialPortWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY)) {
+        if (portWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY)) {
             return true;           // Success
         }
     }
@@ -196,17 +196,17 @@ bool ISDevice::queryDeviceInfoISbl() {
     handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
 
     for (int i = 0; i < 5; i++) {
-        serialPortWrite(port, (uint8_t*)"\n", 1);
+        portWrite(port, (uint8_t*)"\n", 1);
         SLEEP_MS(10);
-        serialPortFlush(port);
-        serialPortRead(port, buf, sizeof(buf));    // empty Rx buffer
+        portFlush(port);
+        portRead(port, buf, sizeof(buf));    // empty Rx buffer
     }
 
     // Query device
-    serialPortWrite(port, (uint8_t*)":020000041000EA", 18);
+    portWrite(port, (uint8_t*)":020000041000EA", 18);
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-    int count = serialPortReadTimeout(port, buf, 14, 1000);
+    int count = portReadTimeout(port, buf, 14, 1000);
     if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
     {   // expected response
         devInfo.firmwareVer[0] = buf[2];
@@ -680,7 +680,7 @@ bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_)
     flashCfg_ = ISDevice::flashCfg;
 
     // Indicate whether the port connection is valid, open, and the flash config is synchronized; otherwise false
-    return (port && serialPortIsOpen(port) && (sysParams.flashCfgChecksum == flashCfg.checksum));
+    return (port && portIsValid(port) && (sysParams.flashCfgChecksum == flashCfg.checksum));
 }
 
 /**
@@ -843,7 +843,7 @@ bool ISDevice::WaitForFlashSynced(uint32_t timeout)
 bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!port || !serialPortIsOpen(port))
+    if (!port || !portIsOpened(port))
         return false;
 
     return ((sysParams.hdwStatus & HDW_STATUS_FLASH_WRITE_PENDING) || (sysParams.hdwStatus == 0));

@@ -24,7 +24,7 @@ extern "C"
     // [C COMM INSTRUCTION]  Include data_sets.h and com_manager.h
     #include "data_sets.h"
     #include "com_manager.h"
-    #include "serialPortPlatform.h"
+    #include "core/base_port.h"
 }
 
 #define BOOTLOADER_RETRIES          10
@@ -141,8 +141,8 @@ public:
      * @return true is this ISDevice has a valid, and open port
      */
     bool isConnected() {
-        if (port && (portType(port) & PORT_TYPE__COMM))
-            return serialPortIsOpen(port);
+        if (portIsValid(port) && (portType(port) & PORT_TYPE__COMM))
+            return portIsOpened(port);
 
         return false;
     }

@@ -310,7 +310,7 @@ bool ISBFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t
 uint32_t ISBFirmwareUpdater::get_device_info()
 {
     sync();
-    serialPortFlush(device->port);
+    portFlush(device->port);
 
     // Send command
     portWrite(device->port, (uint8_t*)":020000041000EA", 15);
@@ -385,7 +385,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
     if (portType(device->port) & PORT_TYPE__COMM) {
         COMM_PORT(device->port)->flags |= COMM_PORT_FLAG__EXPLICIT_READ;
     }
-    serialPortFlush(device->port);
+    portFlush(device->port);
     portRead(device->port, buf, sizeof(buf));    // empty Rx buffer
     sync();
 
@@ -394,7 +394,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
     for (int retry=0;; retry++)
     {
         // Send command
-        serialPortFlush(device->port);
+        portFlush(device->port);
         portRead(device->port, buf, sizeof(buf));    // empty Rx buffer
         portWrite(device->port, (uint8_t*)":020000041000EA", 15);
 
@@ -488,7 +488,7 @@ is_operation_result ISBFirmwareUpdater::sync()
             return IS_OP_ERROR;
         }
 
-        if (serialPortWaitForTimeout(device->port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        if (portWaitForTimeout(device->port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
             return IS_OP_OK;
         }
@@ -500,7 +500,7 @@ is_operation_result ISBFirmwareUpdater::sync()
     // Attempt handshake using extended string for bootloader v5a
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
-        if (serialPortWriteAndWaitForTimeout(device->port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        if (portWriteAndWaitForTimeout(device->port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
             return IS_OP_OK;
         }
@@ -524,21 +524,21 @@ bool ISBFirmwareUpdater::rebootToRomDfu()
     if (device->devInfo.hdwRunState == HDW_STATE_APP) {
         // In case we are in program mode, try and send the commands to go into bootloader mode
         for (size_t loop = 0; loop < 10; loop++) {
-            if (!serialPortWriteAscii(device->port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
-            if (!serialPortWriteAscii(device->port, "BLEN", 4)) break;
+            if (!portWriteAscii(device->port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
+            if (!portWriteAscii(device->port, "BLEN", 4)) break;
             uint8_t c = 0;
-            if (serialPortReadCharTimeout(device->port, &c, 13) == 1) {
+            if (portReadCharTimeout(device->port, &c, 13) == 1) {
                 if (c == '$') {
                     // done, we got into bootloader mode
                     return true;
                 }
             }
-            else serialPortFlush(device->port);
+            else portFlush(device->port);
         }
     } else if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-        if (serialPortWrite(device->port, (unsigned char*)":020000040700F3", 15) == 15)
+        if (portWrite(device->port, (unsigned char*)":020000040700F3", 15) == 15)
             return true;
-        if (serialPortWrite(device->port, (unsigned char*)":020000040500F5", 15) == 15)
+        if (portWrite(device->port, (unsigned char*)":020000040500F5", 15) == 15)
             return true;
     }
 
@@ -559,19 +559,19 @@ bool ISBFirmwareUpdater::rebootToISB()
     if (device->devInfo.hdwRunState == HDW_STATE_APP) {
         // In case we are in program mode, try and send the commands to go into bootloader mode
         for (size_t loop = 0; loop < 10; loop++) {
-            if (!serialPortWriteAscii(device->port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
-            if (!serialPortWriteAscii(device->port, "BLEN", 4)) break;
+            if (!portWriteAscii(device->port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
+            if (!portWriteAscii(device->port, "BLEN", 4)) break;
             uint8_t c = 0;
-            if (serialPortReadCharTimeout(device->port, &c, 13) == 1) {
+            if (portReadCharTimeout(device->port, &c, 13) == 1) {
                 if (c == '$') {
                     // done, we got into bootloader mode
                     return true;
                 }
             }
-            else serialPortFlush(device->port);
+            else portFlush(device->port);
         }
     } else if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-        if (serialPortWrite(device->port, (unsigned char*)":020000040500F5", 15) == 15)
+        if (portWrite(device->port, (unsigned char*)":020000040500F5", 15) == 15)
             return true;
     }
 
@@ -588,17 +588,17 @@ bool ISBFirmwareUpdater::rebootToISB()
  * @return true if successful, otherwise false
  */
 bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
-    if (!serialPortIsOpen(device->port))
+    if (!portIsOpened(device->port))
         return false;
 
     fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
     portWrite(device->port, (unsigned char*)":020000040300F7", 15);
-    serialPortFlush(device->port);
+    portFlush(device->port);
     if (!keepPortOpen) {
         SLEEP_MS(100);
-        serialPortClose(device->port);
+        portClose(device->port);
     }
     return true;
 }
@@ -776,7 +776,7 @@ is_operation_result ISBFirmwareUpdater::select_page(int page)
     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "Selecting flash page %d.", page);
     SNPRINTF((char*)changePage, 24, ":040000060301%04XCC", page);
     checksum(0, changePage, 1, 17, 17, 1);
-    if (serialPortWriteAndWaitForTimeout(device->port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
+    if (portWriteAndWaitForTimeout(device->port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
         fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "Failed to select page");
         return IS_OP_ERROR;
@@ -797,7 +797,7 @@ is_operation_result ISBFirmwareUpdater::begin_program_for_current_page(int start
     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "Setting \"Begin Program\" for current flash page (%d, %04X >= %04X).", currentPage, startOffset, endOffset);
     SNPRINTF((char*)programPage, 24, ":0500000100%04X%04XCC", startOffset, endOffset);
     checksum(0, programPage, 1, 19, 19, 1);
-    if (serialPortWriteAndWaitForTimeout(device->port, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
+    if (portWriteAndWaitForTimeout(device->port, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
         fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to start programming page");
         return IS_OP_ERROR;
@@ -879,7 +879,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     SNPRINTF((char*)checkSumHex, 3, "%02X", checkSum);
 
     // For some reason, the checksum doesn't always make it through to the IMX-5. Re-send until we get a response or timeout.
-    // Update 8/25/22: Increasing the serialPortReadTimeout from 10 to 100 seems to have fixed this. Still needs to be proven.
+    // Update 8/25/22: Increasing the portReadTimeout from 10 to 100 seems to have fixed this. Still needs to be proven.
     for (int i = 0; i < 10; i++)
     {
         if (portWrite(device->port, checkSumHex, 2) != 2)

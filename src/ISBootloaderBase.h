@@ -18,7 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <mutex>
 
-#include "core/types.h"
+#include "core/base_port.h"
 #include "ISConstants.h"
 #include "ISSerialPort.h"
 #include "libusb.h"

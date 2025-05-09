@@ -15,7 +15,7 @@
 #include <cctype>
 
 #include "core/msg_logger.h"
-#include "core/types.h"
+#include "core/base_port.h"
 #include "ISConstants.h"
 #include "ISDevice.h"
 #include "PortManager.h"

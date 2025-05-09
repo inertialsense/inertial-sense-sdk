@@ -20,16 +20,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 cmd_options_t g_commandLineOptions = {};
-port_handle_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
-
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend)
-{
-    (void)cmHandle;
-    (void)port;
-    return serialPortWrite(g_serialPort, bufferToSend->buf, bufferToSend->size);
-}
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 {   // Enable logging in continuous background mode

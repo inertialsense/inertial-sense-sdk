@@ -109,8 +109,8 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
     // auto dl = Logger()->getDeviceLogByPort(device->port);
     // if (dl) dl->CloseAllFiles();
 
-    if (closePort && device->port) {
-        serialPortClose(device->port);
+    if (closePort && portIsValid(device->port) && portIsOpened(device->port)) {
+        portClose(device->port);
         // portManager.releasePort(device->port);
     }
 

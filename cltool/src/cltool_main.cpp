@@ -333,7 +333,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
          */
         // TODO: This should probably be a function in InertialSense class to send a NMEA string to all available devices
         for (auto device : inertialSenseInterface.getDevices()) {
-            serialPortWriteAscii(device->port, g_commandLineOptions.nmeaMessage.c_str(), (int) g_commandLineOptions.nmeaMessage.size());
+            device->SendNmea(g_commandLineOptions.nmeaMessage);
         }
         return true;
     }
@@ -1053,31 +1053,28 @@ static int inertialSenseMain()
     }
     else if (!g_commandLineOptions.nmeaMessage.empty() || g_commandLineOptions.nmeaRx)
     {
-        serial_port_t nmeaSerialPort;
-        port_handle_t nmeaPort = (port_handle_t)&nmeaSerialPort;
+        // serial_port_t nmeaSerialPort;
+        // port_handle_t nmeaPort = (port_handle_t)&nmeaSerialPort;
 
-        serialPortPlatformInit(nmeaPort);
-        if (!serialPortOpen(nmeaPort, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0))
-        {   // Failed to open port
-            return -1;
-        }
-
-        if (!g_commandLineOptions.nmeaMessage.empty()) {
-            sendNmea(nmeaPort, "STPB");
-            sendNmea(nmeaPort, g_commandLineOptions.nmeaMessage);
-        }
-
-        unsigned char line[512];
-        unsigned char* asciiData;
-        while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
-        {
-            if (serialPortReadAsciiTimeout(&nmeaPort, line, sizeof(line), 10, &asciiData) > 0)
-            {
-                printf("%s\r\n", (char*)asciiData);
+        auto ports = InertialSense::getLastInstance()->portManager.getPorts();
+        for (auto port : ports) {
+            if ( portValidate(port) && portOpen(port) ) {
+                sendNmea(port, "STPB");
+                sendNmea(port, g_commandLineOptions.nmeaMessage);
             }
 
-            // Scan for "q" press to exit program
-            g_inertialSenseDisplay.GetKeyboardInput();
+            unsigned char line[512];
+            unsigned char* asciiData;
+            while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
+            {
+                if (portReadAsciiTimeout(&port, line, sizeof(line), 10, &asciiData) > 0)
+                {
+                    printf("%s\r\n", (char*)asciiData);
+                }
+
+                // Scan for "q" press to exit program
+                g_inertialSenseDisplay.GetKeyboardInput();
+            }
         }
     }
     else

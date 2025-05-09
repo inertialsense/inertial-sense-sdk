@@ -3,7 +3,7 @@
 #ifndef TEST_SERIAL_UTILS_H
 #define TEST_SERIAL_UTILS_H
 
-#include "core/types.h"
+#include "core/base_port.h"
 #include "ring_buffer.h"
 #include "com_manager.h"
 

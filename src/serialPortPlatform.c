@@ -10,6 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "core/base_port.h"
 #include "serialPort.h"
 #include "serialPortPlatform.h"
 #include "ISConstants.h"
@@ -949,13 +950,13 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     serialPort->base.portWrite = serialPortWritePlatform;
     serialPort->base.portAvailable = serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
     serialPort->base.portFree = serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
+    serialPort->base.portFlush = serialPort->pfnFlush = serialPortFlushPlatform;
+    serialPort->base.portDrain = serialPort->pfnDrain = serialPortDrainPlatform;
+    serialPort->base.portClose = serialPort->pfnClose = serialPortClosePlatform;
 
     if (portType(port) & PORT_TYPE__COMM)
         is_comm_port_init(COMM_PORT(port), NULL);
 
-    serialPort->pfnClose = serialPortClosePlatform;
-    serialPort->pfnFlush = serialPortFlushPlatform;
-    serialPort->pfnDrain = serialPortDrainPlatform;
     serialPort->pfnOpen = serialPortOpenPlatform;
     serialPort->pfnIsOpen = serialPortIsOpenPlatform;
     serialPort->pfnReadTimeout = serialPortReadTimeoutPlatform;

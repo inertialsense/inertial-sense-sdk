@@ -21,11 +21,12 @@ void DeviceFactory::locateDevice(std::function<void(DeviceFactory*, const dev_in
         return;     // TODO: Should we do anything special if the port is invalid?  Really, we should never get here with an invalid port...
 
     // can we open the port?
-    if (!serialPortIsOpen(port)) {
+    if (!portIsOpened(port)) {
         debug_message("[DBG] Opening serial port '%s'\n", portName(port));
-        if (serialPortOpen(port, portName(port), SERIAL_PORT(port)->baudRate, SERIAL_PORT(port)->blocking) == 0) {
+        if (portValidate(port) && portOpen(port) != PORT_ERROR__NONE) {
+        // if (serialPortOpen(port, portName(port), SERIAL_PORT(port)->baudRate, SERIAL_PORT(port)->blocking) == 0) {
             debug_message("[DBG] Error opening serial port '%s'.  Ignoring.  Error was: %s\n", portName(port), SERIAL_PORT(port)->error);
-            serialPortClose(port);              // failed to open
+            portClose(port);              // failed to open
             portInvalidate(port);
             return;
             // m_ignoredPorts.push_back(curPortName);     // record this port name as bad, so we don't try and reopen it again

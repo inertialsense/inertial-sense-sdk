@@ -393,7 +393,7 @@ is_operation_result cISBootloaderISB::erase_flash()
     
     // Check for response and allow quit (up to 60 seconds)
     uint8_t buf[128];
-    uint8_t *bufPtr = buf;
+    uint8_t *bufPtr = buf, *bufScan = buf;
     int count = 0;
     for (size_t i = 0; i < 600; i++)
     {   
@@ -405,9 +405,22 @@ is_operation_result cISBootloaderISB::erase_flash()
         {
             return IS_OP_CANCELLED;
         }
-        if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
+        while (count >= 3)
         {
-            return IS_OP_OK;
+            bufScan = (uint8_t*)memchr(buf, '.', count);
+            if (bufScan) {
+                if (memcmp(bufScan, ".\r\n", 3) == 0)
+                    return IS_OP_OK;
+                int mvCnt = bufScan - buf;
+                if (mvCnt > 0) {
+                    memmove(buf, bufScan, sizeof(buf) - mvCnt);
+                    count -= mvCnt;
+                    bufPtr = buf + count;
+                }
+            } else {
+                count = 0;
+                bufPtr = buf;
+            }
         }
     } 
 

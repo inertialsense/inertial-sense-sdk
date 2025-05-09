@@ -13,7 +13,8 @@
 #include <iostream>
 #include <map>
 
-#include "types.h"
+#include "core/types.h"
+#include "core/base_port.h"
 
 class ISStreamPort : base_port_t {
 private:

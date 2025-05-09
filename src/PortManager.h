@@ -20,7 +20,7 @@
 #include <functional>
 #include <string>
 
-#include "core/types.h"
+#include "core/base_port.h"
 
 #include "PortFactory.h"
 

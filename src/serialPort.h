@@ -358,10 +358,6 @@ void serialPortSetOptions(port_handle_t port, uint32_t options);
 int serialPortSetErrorCB(port_handle_t port, pfnSerialPortOnErrorCB onErrorCb);
 
 
-int portReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
-int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength, int timeoutMilliseconds);
-int portWaitFor(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength);
-
 #ifdef __cplusplus
 }
 #endif

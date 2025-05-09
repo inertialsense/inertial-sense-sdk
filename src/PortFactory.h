@@ -9,12 +9,14 @@
 #ifndef IS_SDK__PORT_FACTORY_H
 #define IS_SDK__PORT_FACTORY_H
 
+#ifdef __cplusplus
+
 #include <unordered_set>
 #include <functional>
 #include <string>
 #include <cctype>
 
-#include "core/types.h"
+#include "core/base_port.h"
 #include "core/msg_logger.h"
 #include "ISConstants.h"
 
@@ -77,6 +79,8 @@ public:
 
     bool validatePort(uint16_t pType, const std::string& pName) override;
 
+    static int validate(port_handle_t port) { return SerialPortFactory::getInstance().validatePort(portType(port), portName(port)); }
+
     port_handle_t bindPort(uint16_t pType, const std::string& pName) override;
 
     bool releasePort(port_handle_t port) override;
@@ -103,5 +107,7 @@ private:
     static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 };
 
+
+#endif
 
 #endif // IS_SDK__PORT_FACTORY_H
