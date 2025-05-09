@@ -229,7 +229,8 @@ class BuildTestManager:
     @staticmethod
     def static_build_cmake(project_name, project_dir, build_type="Release", clean=False, is_windows=False):
         result = 0
-        build_dir = project_dir / f"build-{build_type.lower()}"
+        suffix = f"-{build_type.lower()}" if is_windows else ""
+        build_dir = project_dir / f"build{suffix}"
 
         if clean:
             print(f"=== Running make clean... ===")
