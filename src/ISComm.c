@@ -907,15 +907,13 @@ int is_comm_free(is_comm_instance_t* c)
             buf->head = buf->start;
             buf->tail -= shift;
             buf->scan -= shift;
-        }
 
-        // re-calculate free byte count
-        bytesFree = (int)(buf->end - buf->tail);
+            // re-calculate free byte count
+            bytesFree = (int)(buf->end - buf->tail);
+        }
     }
     else if (c->processPkt == NULL && buf->scan == buf->tail)
-    {   // We are not currently parsing a packet
-        // and buff is out of new data to scan. 
-        // RESET pointers to start of the buffer.
+    {   // Not currently parsing a packet and no data left to scan in buffer. RESET pointers to start of the buffer.
         return is_comm_reset_buffer(c, buf->start, buf->size);
     }
 
