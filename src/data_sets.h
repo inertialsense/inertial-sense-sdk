@@ -3520,7 +3520,7 @@ typedef struct PACKED
     uint8_t				    ioConfig2;
 
     /** Reserved */
-    uint8_t                 reserved1[2];
+    uint16_t                reserved1;
 
 } nvm_flash_cfg_t;
 

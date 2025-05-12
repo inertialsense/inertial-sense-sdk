@@ -557,7 +557,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
     str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("ioConfig", &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";
@@ -592,11 +593,10 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddMember("imuShockDetectLatencyMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.");
     mapper.AddMember("imuShockRejectLatchMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.");
-    mapper.AddMember("imuShockOptions", &nvm_flash_cfg_t::imuShockOptions, DATA_TYPE_UINT8, "", "IMU shock rejection options (see eImuShockOptions).");
+    mapper.AddMember("imuShockOptions", &nvm_flash_cfg_t::imuShockOptions, DATA_TYPE_UINT8, "", "IMU shock rejection options (see eImuShockOptions).", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("imuShockDeltaAccPerMsHighThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsHighThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Min acceleration change in 1 ms to detect start of a shock.");
     mapper.AddMember("imuShockDeltaAccPerMsLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsLowThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Max acceleration change in 1 ms within the latch time to detect end of a shock.");
-    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)");
-    mapper.AddArray("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
+    mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT16);
  
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
