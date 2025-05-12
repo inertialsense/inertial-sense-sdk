@@ -179,7 +179,6 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 }
 
 
-#define debug_message printf
 void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port) {
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
@@ -195,7 +194,6 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
             break;
     }
 }
-#undef debug_message
 
 
 std::vector<ISDevice *> DeviceManager::getDevicesAsVector() {

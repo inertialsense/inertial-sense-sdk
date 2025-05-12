@@ -538,11 +538,12 @@ bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2
         uint64_t bDateTime = intDateTimeFromDevInfo(info2);
 
         if (!(flags & DV_BIT_BUILD_TIME)) {
-            dev_info_t tmpInfo = info2;
+            dev_info_t tmpInfo = info2; // make a copy we can modify
+            // then set the time equal to the time of info1, so the times match
             tmpInfo.buildHour = info1.buildHour;
             tmpInfo.buildMinute = info1.buildMinute;
             tmpInfo.buildSecond = info1.buildSecond;
-            bDateTime = intDateTimeFromDevInfo(info2);
+            bDateTime = intDateTimeFromDevInfo(tmpInfo);
         }
 
         // if NOT exact match, we'll allow upto a 5-minute difference between timestamps

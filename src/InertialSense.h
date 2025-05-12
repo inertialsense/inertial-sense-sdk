@@ -32,7 +32,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogger.h"
 #include "ISDisplay.h"
 #include "ISUtilities.h"
-#include "ISSerialPort.h"
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISDevice.h"

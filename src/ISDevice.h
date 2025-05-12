@@ -141,17 +141,16 @@ public:
      * @return true is this ISDevice has a valid, and open port
      */
     bool isConnected() {
-        if (portIsValid(port) && (portType(port) & PORT_TYPE__COMM))
-            return portIsOpened(port);
-
-        return false;
+        return (portIsValid(port) && (portType(port) & PORT_TYPE__COMM)) && portIsOpened(port);
     }
 
     /**
      * @return true if the device has valid, minimal required devInfo values sufficient to indicate that it genuinely
      * identifies an Inertial Sense device.
      */
-    bool hasDeviceInfo() { return (hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY) && (devInfo.hdwRunState != HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0); }
+    bool hasDeviceInfo() {
+        return (hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY) && (devInfo.hdwRunState != HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0) && (devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0);
+    }
 
     /**
      * Specifies an alternate handler for Inertial Sense "Data" binary protocol messages, which will be called when
@@ -427,7 +426,7 @@ public:
     bool handshakeISbl();
     bool queryDeviceInfoISbl();
     bool validateDevice(uint32_t timeout);
-    bool validateDeviceAlt(uint32_t timeout = 15000);
+    bool validateDeviceNoBlock(uint32_t timeout = 15000);
 
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);

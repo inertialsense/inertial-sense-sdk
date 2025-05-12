@@ -40,14 +40,15 @@ void DeviceFactory::locateDevice(std::function<void(DeviceFactory*, const dev_in
         ISDevice localDev(hdwId, port);
         for (int i = 0; i < 5; i++) {
             localDev.step();
-            if (localDev.hasDeviceInfo()) {
+            if (localDev.hasDeviceInfo() && ((hdwId == IS_HARDWARE_ANY) || ((localDev.hdwId & hdwId) == localDev.hdwId))) {
                 deviceCallback(this, localDev.devInfo, port);
                 return;
             }
             SLEEP_MS(5);
         }
-    } else {
+    } else if ((hdwId == IS_HARDWARE_ANY) || ((dev->hdwId & hdwId) == dev->hdwId)) {
         // a device exists associated with this port already, there isn't anything to do.
-        printf("");
+        printf("Rediscovered previously identified device %s on port %s.\n", dev->getIdAsString().c_str(), dev->getPortName().c_str());
+        dev->validateDevice(3000);
     }
 }

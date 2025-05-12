@@ -20,15 +20,18 @@
 
 port_handle_t SerialPortFactory::bindPort(uint16_t pType, const std::string& pName) {
     serial_port_t* serialPort = new serial_port_t;
+    port_handle_t port = (port_handle_t)serialPort;
+
     *serialPort = {};
     serialPort->base.pnum = (uint16_t)PortManager::getInstance().getPortCount();
     serialPort->base.ptype = (pType | PORT_TYPE__UART | PORT_TYPE__COMM | PORT_FLAG__VALID);
     strncpy(serialPort->portName, pName.c_str(), pName.length());
 
-    serialPort->pfnError = SerialPortFactory::onPortError;
-
-    port_handle_t port = (port_handle_t)serialPort;
     serialPortPlatformInit(port);
+
+    serialPort->base.portOpen = SerialPortFactory::open_port;
+    serialPort->base.portValidate = SerialPortFactory::validate_port;
+    serialPort->pfnError = SerialPortFactory::onPortError;
 
     debug_message("[DBG] Allocated new serial port '%s'\n", portName(port));
     return port;

@@ -68,7 +68,7 @@ bool ISDevice::step() {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
 
     if (!hasDeviceInfo()) {
-        validateDeviceAlt(30000);
+        validateDeviceNoBlock(30000);
     } else if (fwUpdater) {
         fwUpdate();
     } else {
@@ -238,7 +238,7 @@ bool ISDevice::queryDeviceInfoISbl() {
                     break;
             }
             // m_isb_props.is_evb = buf[6];
-            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo) ;
+            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
             memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
             return true;
@@ -252,13 +252,15 @@ bool ISDevice::queryDeviceInfoISbl() {
 
 
 bool ISDevice::validateDevice(uint32_t timeout) {
-    unsigned int startTime = current_timeMs();
-
     if (!isConnected())
         return false;
 
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
+    hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
+
+    unsigned int startTime = current_timeMs();
     do {
+        // REMOVE - Don't tolerate SERIAL_PORT specific conditions in ISDevice
         if (SERIAL_PORT(port)->errorCode == ENOENT)
             return false;
 
@@ -276,7 +278,8 @@ bool ISDevice::validateDevice(uint32_t timeout) {
                 break;
 
         }
-        // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+        // FIXME - there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+        // REMOVE - Don't tolerate SERIAL_PORT specific conditions in ISDevice
         if (SERIAL_PORT(port)->errorCode != 0)
             return false;
 
@@ -287,11 +290,9 @@ bool ISDevice::validateDevice(uint32_t timeout) {
             return false;
 
         previousQueryType = static_cast<queryTypes>((int)previousQueryType + 1 % (int)QUERYTYPE_MAX);
-    } while ((hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (devInfo.serialNumber != 0));
+    } while ((hdwId == IS_HARDWARE_TYPE_UNKNOWN) && (devInfo.serialNumber == 0));
 
-    if ((hdwId != IS_HARDWARE_TYPE_UNKNOWN) &&
-        (devInfo.hdwRunState != HDW_STATE_UNKNOWN) &&
-        (devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0)) {
+    if (hasDeviceInfo()) {
         comManagerGetData(this, DID_SYS_CMD, 0, 0, 0);
         comManagerGetData(this, DID_FLASH_CONFIG, 0, 0, 0);
         comManagerGetData(this, DID_EVB_FLASH_CFG, 0, 0, 0);
@@ -305,7 +306,7 @@ bool ISDevice::validateDevice(uint32_t timeout) {
  * @param timeout the maximum number of milliseconds that must pass without a validating response from the device, before giving up.
  * @return true if the device has been validated, otherwise false
  */
-bool ISDevice::validateDeviceAlt(uint32_t timeout) {
+bool ISDevice::validateDeviceNoBlock(uint32_t timeout) {
     if (!isConnected())
         return false;
 
@@ -322,7 +323,7 @@ bool ISDevice::validateDeviceAlt(uint32_t timeout) {
 
     // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
     if ((current_timeMs() - validationStartMs) > timeout) {
-        debug_message("ISDevice::validateDeviceAlt() timed out after %dms.\n", current_timeMs() - validationStartMs);
+        debug_message("ISDevice::validateDeviceNoBlock() timed out after %dms.\n", current_timeMs() - validationStartMs);
         validationStartMs = 0;
         return false;
     }
@@ -350,7 +351,7 @@ bool ISDevice::validateDeviceAlt(uint32_t timeout) {
 
 //    uint64_t dt = current_timeUs() - nanos;
 //    if (dt > 20000)
-//        debug_message("ISDevice::validateDeviceAlt() executed for %ld nanos, for device %s.\n", current_timeUs() - nanos, getDescription().c_str());
+//        debug_message("ISDevice::validateDeviceNoBlock() executed for %ld nanos, for device %s.\n", current_timeUs() - nanos, getDescription().c_str());
 
     SLEEP_MS(5); // give just enough time for the device to receive, process and respond to the query
 
@@ -910,8 +911,8 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
         case DID_DEV_INFO:
             devInfo = *(dev_info_t*)data->ptr;
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-            if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)
-                devInfo.hdwRunState = HDW_STATE_APP;   // since this is ISB, its pretty safe to assume that we are in APP mode.
+            if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
+                devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
             break;
         case DID_SYS_CMD:
             sysCmd = *(system_command_t*)data->ptr;

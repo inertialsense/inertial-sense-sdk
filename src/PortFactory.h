@@ -20,6 +20,8 @@
 #include "core/msg_logger.h"
 #include "ISConstants.h"
 
+#include "serialPort.h"
+
 /**
  * PortFactory is an abstract class that is responsible for discovery available ports of a particular type.
  * There should be one implementation for each type of discoverable port.  This does NOT return a port,
@@ -79,8 +81,6 @@ public:
 
     bool validatePort(uint16_t pType, const std::string& pName) override;
 
-    static int validate(port_handle_t port) { return SerialPortFactory::getInstance().validatePort(portType(port), portName(port)); }
-
     port_handle_t bindPort(uint16_t pType, const std::string& pName) override;
 
     bool releasePort(port_handle_t port) override;
@@ -89,6 +89,12 @@ private:
     SerialPortFactory() = default;
     ~SerialPortFactory() = default;
 
+    static int validate_port(port_handle_t port) { return SerialPortFactory::getInstance().validatePort(portType(port), portName(port)); }
+    static int open_port(port_handle_t port) {
+        if (!portIsValid(port)) return PORT_ERROR__INVALID;
+        serial_port_t* serialPort = (serial_port_t*)port;
+        return serialPortOpen(port, serialPort->portName, serialPort->baudRate, serialPort->blocking);
+    }
 
     std::vector<std::string> ports = {};
 
