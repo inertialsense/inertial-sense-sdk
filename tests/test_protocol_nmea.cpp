@@ -47,7 +47,7 @@ void compareGpsPos(gps_pos_t &g1, gps_pos_t &g2)
     EXPECT_EQ(g1.leapS, g2.leapS);
     EXPECT_EQ(g1.satsUsed, g2.satsUsed);
     EXPECT_EQ(g1.cnoMeanSigma, g2.cnoMeanSigma);
-    EXPECT_EQ(g1.reserved, g2.reserved);
+    EXPECT_EQ(g1.status2, g2.status2);
 }
 
 void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
