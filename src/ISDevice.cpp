@@ -504,7 +504,7 @@ void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
 
     if (platformCfgUpdateIoConfig)
     {   // Update ioConfig
-        imxPlatformConfigToFlashCfgIoConfig(&flashCfg_.ioConfig, flashCfg_.platformConfig);
+        imxPlatformConfigToFlashCfgIoConfig(&flashCfg_.ioConfig, &flashCfg_.ioConfig2, flashCfg_.platformConfig);
     }
 
     // Update checksum

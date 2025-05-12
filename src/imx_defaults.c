@@ -1,8 +1,5 @@
 #include "imx_defaults.h"
 
-
-
-
 // Return 0 if not valid.  Zero is not a valid platform type.
 int imxPlatformConfigTypeValid(uint32_t platformConfig)
 {
@@ -15,32 +12,21 @@ void imxPlatformConfigErrorCheck(uint32_t *platformConfig)
     uint32_t type = *platformConfig & PLATFORM_CFG_TYPE_MASK;
     uint32_t preset = (*platformConfig & PLATFORM_CFG_PRESET_MASK) >> PLATFORM_CFG_PRESET_OFFSET;
 
-    // Error check type
+    // Error check type and rugged preset
     if (type > PLATFORM_CFG_TYPE_COUNT)
     {
         type = PLATFORM_CFG_TYPE_NONE;
     }
-
-    // Error check preset
-    switch (type)
+    else if (type == PLATFORM_CFG_TYPE_RUG3_G0 && preset > PLATFORM_CFG_RUG3_PRESET__COUNT)
     {
-    case PLATFORM_CFG_TYPE_RUG2_1_G0:
-    case PLATFORM_CFG_TYPE_RUG3_G0:
-        if (preset > PLATFORM_CFG_RUG3_PRESET__COUNT)
-        {
-            preset = PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT;
-        }
-        break;
-    case PLATFORM_CFG_TYPE_RUG2_1_G1:
-    case PLATFORM_CFG_TYPE_RUG2_1_G2:
-    case PLATFORM_CFG_TYPE_RUG3_G1:
-    case PLATFORM_CFG_TYPE_RUG3_G2:
-        if (preset > PLATFORM_CFG_RUG3_PRESET__COUNT)
-        {
-            preset = PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT;
-        }
-        break;
+        preset = PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT;
     }
+    else if ((type == PLATFORM_CFG_TYPE_RUG3_G1 || type == PLATFORM_CFG_TYPE_RUG3_G2) && 
+            (preset > PLATFORM_CFG_RUG3_PRESET__COUNT))
+    {
+        preset = PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT;
+    }
+    
 
     *platformConfig &= (PLATFORM_CFG_TYPE_MASK | PLATFORM_CFG_PRESET_MASK);
     *platformConfig |= type | preset << PLATFORM_CFG_PRESET_OFFSET;
@@ -52,19 +38,10 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     uint32_t type = platformConfig&PLATFORM_CFG_TYPE_MASK;
     uint32_t preset = (platformConfig&PLATFORM_CFG_PRESET_MASK)>>PLATFORM_CFG_PRESET_OFFSET;
 
-    switch (type)
-    {
-    default:    // Not RUG-3
-        return;
-
-    case PLATFORM_CFG_TYPE_RUG2_1_G0:
-    case PLATFORM_CFG_TYPE_RUG2_1_G1:
-    case PLATFORM_CFG_TYPE_RUG2_1_G2:
-    case PLATFORM_CFG_TYPE_RUG3_G0:
-    case PLATFORM_CFG_TYPE_RUG3_G1:
-    case PLATFORM_CFG_TYPE_RUG3_G2:
-        break;  // RUG-3
-    }
+    // is platform R3?
+    if (type != PLATFORM_CFG_TYPE_RUG3_G0 &&
+        type != PLATFORM_CFG_TYPE_RUG3_G1 &&
+        type != PLATFORM_CFG_TYPE_RUG3_G2)  { return; }
 
     // ioConfig - P8,P10 (G1,G2)
     *ioConfig &= ~IO_CONFIG_G1G2_MASK;
@@ -120,21 +97,14 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     }
 
     // Disable GPS if not available
-    switch(type)
+    if (type == PLATFORM_CFG_TYPE_RUG3_G0)
     {
-    case PLATFORM_CFG_TYPE_RUG2_1_G0:
-    case PLATFORM_CFG_TYPE_RUG3_G0:   
         SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        break;
-    }
-    switch(type)
-    {
-    case PLATFORM_CFG_TYPE_RUG2_1_G0:
-    case PLATFORM_CFG_TYPE_RUG3_G0:
-    case PLATFORM_CFG_TYPE_RUG2_1_G1:
-    case PLATFORM_CFG_TYPE_RUG3_G1:   
         SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        break;
+    }
+    else if (type == PLATFORM_CFG_TYPE_RUG3_G1)
+    {
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
     }
 
     // GPS type: ZED-F9P
@@ -142,7 +112,7 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
 }
 
-void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig)
+void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *pps2cfg, uint32_t platformConfig)
 {
     uint32_t type = platformConfig&PLATFORM_CFG_TYPE_MASK;
 
@@ -152,41 +122,9 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformCo
     case PLATFORM_CFG_TYPE_NONE:
         SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
         SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_M8);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_M8);
+        SET_IO_CFG_GPS1_TYPE(  *ioConfig, IO_CONFIG_GPS_TYPE_UNUSED);
+        SET_IO_CFG_GPS2_TYPE(  *ioConfig, IO_CONFIG_GPS_TYPE_UNUSED);
         break;
-
-    case PLATFORM_CFG_TYPE_NONE_ONBOARD_G2:
-    case PLATFORM_CFG_TYPE_RUG1:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_M8);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_M8);
-        break;
-
-    case PLATFORM_CFG_TYPE_EVB2_G2:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER1);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER2);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        break;
-
-    case PLATFORM_CFG_TYPE_RUG2_0_G1:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER1);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        break;
-
-    case PLATFORM_CFG_TYPE_RUG2_0_G2:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER1);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        break;
-
-    case PLATFORM_CFG_TYPE_RUG2_1_G1:
-    case PLATFORM_CFG_TYPE_RUG2_1_G2:
     case PLATFORM_CFG_TYPE_RUG3_G1:
     case PLATFORM_CFG_TYPE_RUG3_G2:
         imxPlatformConfigToRug3FlashCfgIoConfig(ioConfig, platformConfig);
@@ -241,40 +179,33 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformCo
     }
 
     // GPS timepulse source
-    *ioConfig &= ~IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK;
+    *ioConfig &= ~IO_CFG_GNSS1_PPS_SOURCE_BITMASK;
     switch (type)
     {
         // Disabled
-    case PLATFORM_CFG_TYPE_RUG2_1_G0:
     case PLATFORM_CFG_TYPE_RUG3_G0:               
     case PLATFORM_CFG_TYPE_NONE:
         break;
         // G8
-    case PLATFORM_CFG_TYPE_EVB2_G2:
-    case PLATFORM_CFG_TYPE_RUG2_0_G1:
-    case PLATFORM_CFG_TYPE_RUG2_0_G2:
     case PLATFORM_CFG_TYPE_IG1_0_G2:
-        *ioConfig |= IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET;
+        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G8<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
         // G5
     case PLATFORM_CFG_TYPE_TBED3:
-        *ioConfig |= IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G5_PIN9<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET;
+        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G5<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
-        // G9
-    case PLATFORM_CFG_TYPE_RUG2_1_G1:
-    case PLATFORM_CFG_TYPE_RUG2_1_G2:
-        *ioConfig |= IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G9_PIN13<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET;
-        break;
-        // GPS1 PPS (pin 20)
+        // G15 (GPS1 PPS)
     default:
-        *ioConfig |= IO_CFG_GPS_TIMEPUSE_SOURCE_GNSS_PPS_PIN20<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET;
+        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G15<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
     }
+    
+    *pps2cfg = 0;
 }
 
-void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformType)
+void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t* pps2Cfg, uint32_t platformType)
 {
-    imxPlatformConfigToFlashCfgIoConfig(ioConfig, imxPlatformConfigTypeToDefaultPlatformConfig(platformType));
+    imxPlatformConfigToFlashCfgIoConfig(ioConfig, pps2Cfg, imxPlatformConfigTypeToDefaultPlatformConfig(platformType));
 }
 
 // Return default platformConfig based on platformType
@@ -286,21 +217,13 @@ uint32_t imxPlatformConfigTypeToDefaultPlatformConfig(uint32_t platformType)
 // Return default platform preset based on platformType
 uint32_t imxPlatformConfigTypeToDefaultPlatformPreset(uint32_t platformType)
 {
-    switch (platformType)
-    {
-    case PLATFORM_CFG_TYPE_RUG2_1_G0:
-    case PLATFORM_CFG_TYPE_RUG3_G0:
+    if (platformType == PLATFORM_CFG_TYPE_RUG3_G0)
         return PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT;
-        break;
-    case PLATFORM_CFG_TYPE_RUG2_1_G1:
-    case PLATFORM_CFG_TYPE_RUG2_1_G2:
-    case PLATFORM_CFG_TYPE_RUG3_G1:
-    case PLATFORM_CFG_TYPE_RUG3_G2:
+    else if (platformType == PLATFORM_CFG_TYPE_RUG3_G1 ||
+             platformType == PLATFORM_CFG_TYPE_RUG3_G2)
         return PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT;
-        break;
-    default:
+    else
         return 0;
-    }
 }
 
 uint32_t imxMinNavOutputMs(nvm_flash_cfg_t *cfg)

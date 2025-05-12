@@ -30,7 +30,7 @@ DID_FEATURE_BITS                = 23
 DID_SENSORS_UCAL                = 24
 DID_SENSORS_TCAL                = 25
 DID_SENSORS_TC_BIAS             = 26
-DID_IO                          = 27
+DID_UNUSED_27                   = 27
 DID_SENSORS_ADC                 = 28
 DID_SCOMP                       = 29
 DID_GPS1_VEL                    = 30
@@ -142,7 +142,6 @@ did_name_lookup = {
  DID_SENSORS_TCAL : "sensorsTcal",
  DID_SENSORS_MCAL : "sensorsMcal",
  DID_SENSORS_TC_BIAS : "sensorsTcBias",
- DID_IO : "io",
  DID_SENSORS_ADC : "sensorsAdc",
  DID_SCOMP : "scomp",
  DID_GPS1_VEL : "gps1Vel",

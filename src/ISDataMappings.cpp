@@ -121,13 +121,6 @@ static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_
     mapper.AddArray("uid", &manufacturing_info_t::uid, DATA_TYPE_UINT32, 4, "", "Unique microcontroller identifier", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapIO(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<io_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &io_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("gpioStatus", &io_t::gpioStatus, DATA_TYPE_UINT32, "", "Use to read and control GPIO input and output.", DATA_FLAGS_DISPLAY_HEX);
-}
-
 static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<bit_t> mapper(data_set, did);
@@ -571,7 +564,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";
     str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("ioConfig", &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";
@@ -604,8 +598,13 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddMember("imuRejectThreshGyroLow", &nvm_flash_cfg_t::imuRejectThreshGyroLow, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
-    mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
-
+    mapper.AddMember("imuShockDetectLatencyMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.");
+    mapper.AddMember("imuShockRejectLatchMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.");
+    mapper.AddMember("imuShockOptions", &nvm_flash_cfg_t::imuShockOptions, DATA_TYPE_UINT8, "", "IMU shock rejection options (see eImuShockOptions).", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("imuShockDeltaAccPerMsHighThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsHighThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Min acceleration change in 1 ms to detect start of a shock.");
+    mapper.AddMember("imuShockDeltaAccPerMsLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsLowThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Max acceleration change in 1 ms within the latch time to detect end of a shock.");
+    mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT16);
+ 
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
     mapper.AddMember("checksum", &nvm_flash_cfg_t::checksum, DATA_TYPE_UINT32, "", "Flash checksum");
@@ -1362,7 +1361,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_SENSORS_UCAL",                 // 24
     "DID_SENSORS_TCAL",                 // 25
     "DID_SENSORS_TC_BIAS",              // 26
-    "DID_IO",                           // 27
+    "DID_UNUSED_27",                    // 27
     "DID_SENSORS_ADC",                  // 28
     "DID_SCOMP",                        // 29
     "DID_GPS1_VEL",                     // 30
@@ -1575,7 +1574,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapCanConfig(m_data_set, DID_CAN_CONFIG);
     PopulateMapRmc(m_data_set, DID_RMC);
     PopulateMapRmc(m_data_set, DID_GPX_RMC);
-    PopulateMapIO(m_data_set, DID_IO);
     PopulateMapISEvent(m_data_set, DID_EVENT);
 
     // EVB
@@ -1713,7 +1711,6 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_RMC:
     case DID_DEBUG_STRING:
     case DID_DEBUG_ARRAY:
-    case DID_IO:
     case DID_MAG_CAL:
     case DID_COMMUNICATIONS_LOOPBACK:
     case DID_BIT:
