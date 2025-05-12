@@ -885,7 +885,6 @@ typedef struct PACKED
 
     /** IMU delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
     float                   vel[3];
-
 } pimu_t;
 
 
@@ -929,7 +928,10 @@ enum eImuStatus
     /** Sensor saturation mask */
     IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
 
-    /** Magnetometer sample ocurred */
+    /** Sensor shock detected */
+    IMU_STATUS_SHOCK_PRESENT                    = (int)0x00000040,
+
+    /** Magnetometer sample occurred */
     IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
     /** Data was received at least once from Reference IMU */
     IMU_STATUS_REFERENCE_IMU_PRESENT			= (int)0x00000200,
@@ -3379,6 +3381,12 @@ typedef enum
     DYNAMIC_MODEL_COUNT    // Must be last
 } eDynamicModel;
 
+typedef enum
+{
+    SHOCK_OPTIONS_ENABLE            = 0x01,
+    SHOCK_OPTIONS_FAST_RECOVERY     = 0x02
+} eImuShockOptions;
+
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
  * or new fields added to the end.  
@@ -3504,13 +3512,26 @@ typedef struct PACKED
     /** IMU gyro fault rejection threshold high */
     uint8_t                 imuRejectThreshGyroHigh;
 
-    /** Reserved */
-    uint32_t                reserved2[1];
+    /** (ms/10) IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.  */
+    uint8_t                 imuShockDetectLatencyMsDiv10;
+
+    /** (ms/10) IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.  */
+    uint8_t                 imuShockRejectLatchMsDiv10;
+
+    /* IMU shock rejection options (see eImuShockOptions) */
+    uint8_t                 imuShockOptions;
+
+    /* (m/s^2/ms) IMU shock detection. Min acceleration change in 1 ms to detect start of a shock */
+    uint8_t                 imuShockDeltaAccPerMsHighThreshold;
+
+    /* (m/s^2/ms) IMU shock detection. Max acceleration change in 1 ms within the latch time to detect end of a shock */
+    uint8_t                 imuShockDeltaAccPerMsLowThreshold;
 
     /** Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2). */
-    uint8_t				    ioConfig2;  
+    uint8_t				    ioConfig2;
 
-    uint8_t                 reserved1[3];
+    /** Reserved */
+    uint16_t                reserved1;
 
 } nvm_flash_cfg_t;
 
