@@ -126,6 +126,15 @@ cISLogger::~cISLogger()
 void cISLogger::Cleanup()
 {
     LOCK_MUTEX();
+    // cleanup any loggers bound to ports, etc.
+    for (auto& [serialno, devicelog] : m_devices) {
+        ISDevice* device = devicelog->Device();
+        if (device) {
+            device->devLogger.reset();
+            if (device->port)
+                setPortLogger(device->port, nullptr, nullptr);
+        }
+    }
     m_devices.clear();
     m_logStats.Clear();
     UNLOCK_MUTEX();
@@ -952,7 +961,7 @@ std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs()
 
 std::shared_ptr<cDeviceLog> cISLogger::getDeviceLogByPort(port_handle_t port) {
     for (auto& [serialNo, devLog] : m_devices) {
-        if (devLog->getDevice() && devLog->getDevice()->port == port)
+        if ((devLog.use_count() > 0) && devLog->getDevice() && devLog->getDevice()->port == port)
             return devLog;
     }
     return nullptr;
