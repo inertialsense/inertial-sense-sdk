@@ -39,11 +39,10 @@ is_comm_instance_t comm;
 /** Ctrl endpoint buffer */
 static uint8_t ctrl_buffer[64];
 
-#define READ_ONLY_SIZE	100
+#define NO_DR_READ_SIZE	100
+#define DR_READ_SIZE	10
 uint8_t spiRxBuff[BUFF_SIZE];
 uint8_t spiTxBuff[BUFF_SIZE];
-
-uint8_t allZeros[READ_ONLY_SIZE];
 
 int bytesInBuff = 0;
 bool readSPI;
@@ -184,6 +183,7 @@ struct spi_xfer spi_xfer_data = {
 	.size = BUFF_SIZE,
 };
 
+uint16_t spiPortWriteBuffSize = 0;
 
 int SPI_0_transfer(uint8_t* buf, uint32_t len)
 {
@@ -193,8 +193,6 @@ int SPI_0_transfer(uint8_t* buf, uint32_t len)
 	spi_m_sync_enable(&SPI_0);
 	return io_write(io, buf, len);
 }
-
-uint16_t spiPortWriteBuffSize = 0;
 
 int spiPortWriteCom(unsigned int port, const unsigned char* buf, int len )
 {
@@ -209,9 +207,12 @@ void SPIReadNoDR()
 {
 	int readAmt = 0;
 	
-	spi_xfer_data.size = READ_ONLY_SIZE;
-	spiTxBuff[READ_ONLY_SIZE-1] = 0xff;
-	readAmt = 0;
+	// dont send old messages
+	spiTxBuff[0] = 0xff;
+	spiTxBuff[1] = 0xff;
+	spiTxBuff[2] = 0xff;
+	
+	spi_xfer_data.size = NO_DR_READ_SIZE;
 	
 	gpio_set_pin_level(SPI_CS, false);
 	
@@ -227,20 +228,23 @@ void SPIReadDR()
 {
 	int readAmt = 0;
 	
-	spi_xfer_data.size = READ_ONLY_SIZE;
-	memset(spiTxBuff, 0xff, READ_ONLY_SIZE);
-	readAmt = 0;
+	// dont send old messages
+	spiTxBuff[0] = 0xff;
+	spiTxBuff[1] = 0xff;
+	spiTxBuff[2] = 0xff;
+	
+	spi_xfer_data.size = DR_READ_SIZE;
 
 	// while data ready line is active read
 	gpio_set_pin_level(SPI_CS, false);
-	while ((gpio_get_pin_level(DATA_READY)) && ((readAmt+READ_ONLY_SIZE) < BUFF_SIZE))
+	while ((gpio_get_pin_level(DATA_READY)) && ((readAmt+DR_READ_SIZE) < BUFF_SIZE))
 	{
 		spi_xfer_data.rxbuf = &spiRxBuff[readAmt];
 		readAmt += spi_m_sync_transfer(&SPI_0, &spi_xfer_data);
 	}
 
 	// make sure there is still room in buffer
-	if ((readAmt+READ_ONLY_SIZE) < BUFF_SIZE)
+	if ((readAmt+DR_READ_SIZE) < BUFF_SIZE)
 	{
 		// read one more since data ready will have data read go low one byte early 
 		spi_xfer_data.rxbuf = &spiRxBuff[readAmt];
@@ -362,7 +366,6 @@ void IS_SPI_Example(void)
 	spi_m_sync_get_io_descriptor(&SPI_0, &io);
 	spi_m_sync_enable(&SPI_0);
 	
-	memset(allZeros, 0x00, READ_ONLY_SIZE);
 	memset(spiTxBuff, 0xff, BUFF_SIZE);
 	
 	cdcdf_acm_register_callback(CDCDF_ACM_CB_STATE_C, (FUNC_PTR)usb_device_cb_state_c);
@@ -376,7 +379,7 @@ void IS_SPI_Example(void)
 		checkUSB();	
 		
 		// read more if needed
-		if (gpio_get_pin_level(MODE_SELECT))
+		if (!(gpio_get_pin_level(MODE_SELECT)))
 		{
 			SPIReadNoDR();
 			//readEveryXms_requestDIDs();
