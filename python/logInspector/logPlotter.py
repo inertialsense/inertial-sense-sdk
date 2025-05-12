@@ -1122,6 +1122,11 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
+                ax.plot(time, -cnt * 1.5 + ((status & 0x00000040) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Shock Detection')
+                cnt += 1
+                cnt += 1
+
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000100) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Mag Update')
                 cnt += 1
