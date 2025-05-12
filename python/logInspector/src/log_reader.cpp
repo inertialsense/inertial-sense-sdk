@@ -186,7 +186,6 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_SENSORS_TCAL, dev_log_->sensorsTcal );
         HANDLE_MSG( DID_SENSORS_MCAL, dev_log_->sensorsMcal );
         HANDLE_MSG( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias );
-        HANDLE_MSG( DID_IO, dev_log_->io );
         // HANDLE_MSG( DID_SENSORS_ADC, dev_log_->sensorsAdc );
         HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
         HANDLE_MSG( DID_REFERENCE_IMU, dev_log_->refImu );
@@ -279,7 +278,6 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_SENSORS_TCAL, dev_log_->sensorsTcal, device_id );
     forward_message( DID_SENSORS_MCAL, dev_log_->sensorsMcal, device_id );
     forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, device_id );
-    forward_message( DID_IO, dev_log_->io, device_id );
     // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, device_id );
     forward_message( DID_SCOMP, dev_log_->scomp, device_id );
     forward_message( DID_REFERENCE_IMU, dev_log_->refImu, device_id );
