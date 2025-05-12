@@ -425,8 +425,8 @@ public:
 
     bool handshakeISbl();
     bool queryDeviceInfoISbl();
-    bool validate(uint32_t timeout);
-    bool validateAsync(uint32_t timeout = 15000);
+    bool validate(uint32_t timeout = 3000);
+    bool validateAsync(uint32_t timeout = 3000);
 
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);
