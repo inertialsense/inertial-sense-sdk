@@ -40,5 +40,5 @@
 int main(void)
 {
 	atmel_start_init();
-	cdcd_acm_example();
+	IS_SPI_READ();
 }

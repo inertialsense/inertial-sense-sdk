@@ -54,6 +54,7 @@ uint32_t g_timeMs = 0;
 uint8_t USBIntBuff[CDCD_ECHO_BUF_SIZ];
 uint8_t USBInBuff[BUFF_SIZE];
 uint8_t USBOutBuff[BUFF_SIZE];
+uint32_t USBOutSize = 0;
 uint32_t USBReadySetMs = 0;
 int USBInCnt = 0;
 bool USBReady = false;
@@ -76,19 +77,29 @@ parserStats_t stats;
 uint32_t tmpPktType = 0;
 uint32_t ioobErrCnt = 0;
 
+int usbPortWriteCom(unsigned int port, const unsigned char* buf, int len )
+{
+	memcpy(&USBOutBuff[USBOutSize], buf, len);
+	USBOutSize += len;
+}
+
+
+
+int sdfa = 0;
+
 int parse_isb(unsigned int port, p_data_t* data)
 {
-	uDatasets* d = (uDatasets*)(data->ptr);
+	if (data->hdr.id == 0x34)
+		sdfa++;
 	
-	
-	cdcdf_acm_write(data->ptr,data->hdr.size);
-
+	is_comm_write(usbPortWriteCom, 0, &comm, PKT_TYPE_DATA, data->hdr.id, data->hdr.size, data->hdr.offset, data->ptr);
 }
 
 // Handle NMEA messages
 int parse_nmea(unsigned int port, const unsigned char* msg, int msgSize)
 {
-	return cdcdf_acm_write(msg,msgSize);;
+	memcpy(&USBOutBuff[USBOutSize], msg, msgSize);
+	USBOutSize += msgSize;
 }
 
 is_comm_callbacks_t s_callbacks = {};
@@ -189,14 +200,14 @@ void SPIReadDR()
 	loadSPIInBuffer(spiRxBuff, readAmt);
 }
 
-uint16_t portWriteBuffSize = 0;
+uint16_t spiPortWriteBuffSize = 0;
 
-int portWriteCom(unsigned int port, const unsigned char* buf, int len )
+int spiPortWriteCom(unsigned int port, const unsigned char* buf, int len )
 {
-	if ((len+portWriteBuffSize) < BUFF_SIZE)
+	if ((len+spiPortWriteBuffSize) < BUFF_SIZE)
 	{
-		memcpy(&spiTxBuff[portWriteBuffSize], buf, len);
-		portWriteBuffSize += len;
+		memcpy(&spiTxBuff[spiPortWriteBuffSize], buf, len);
+		spiPortWriteBuffSize += len;
 	}
 }
 
@@ -206,8 +217,8 @@ void readEvery50ms_ZIV()
 	{
 		spi_xfer_data.size = 150;
 		memset(spiTxBuff, 0xff, 150);
-		is_comm_get_data(portWriteCom, 0, &comm, DID_INS_1, sizeof(ins_1_t), 0, 0);
-		is_comm_get_data(portWriteCom, 0, &comm, DID_PIMU, sizeof(pimu_t), 0, 0);
+		is_comm_get_data(spiPortWriteCom, 0, &comm, DID_INS_1, sizeof(ins_1_t), 0, 0);
+		is_comm_get_data(spiPortWriteCom, 0, &comm, DID_PIMU, sizeof(pimu_t), 0, 0);
 		spi_xfer_data.rxbuf = spiRxBuff;
 		spi_xfer_data.txbuf = spiTxBuff;
 
@@ -217,12 +228,10 @@ void readEvery50ms_ZIV()
 
 		loadSPIInBuffer(spiRxBuff, spi_xfer_data.size);
 
-		portWriteBuffSize = 0;
+		spiPortWriteBuffSize = 0;
 		readSPI = false;
 	}
 }
-
-int sdfa = 0;
 
 void readEvery()
 {
@@ -367,6 +376,30 @@ void unloadSpiInBuff()
 {
 	if (spiInBuffIdx > 0)
 	{
+		if (spiInBuff[0] == '$')
+		{
+			sdfa++;
+		}
+
+		#if 0
+			memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
+			USBOutSize = spiInBuffIdx;
+		#else		
+			is_comm_buffer_parse_messages(spiInBuff, spiInBuffIdx, &comm, &s_callbacks);
+		#endif
+		
+		cdcdf_acm_write((uint8_t *)USBOutBuff, USBOutSize);
+		//memset(USBOutBuff, 0x00, USBOutSize);
+	}
+	
+	spiInBuffIdx=0;
+	USBOutSize = 0;
+}
+ /*
+void unloadSpiInBuff()
+{
+	if (spiInBuffIdx > 0)
+	{
 		memcpy(USBOutBuff, spiInBuff, spiInBuffIdx);
 		cdcdf_acm_write((uint8_t *)USBOutBuff, spiInBuffIdx);
 	
@@ -382,25 +415,18 @@ void unloadSpiInBuff()
 	}
 	
 	spiInBuffIdx=0;
-}
+}*/
 
 /**
- * Example of using CDC ACM Function.
- * \note
- * In this example, we will use a PC as a USB host:
- * - Connect the DEBUG USB on XPLAINED board to PC for program download.
- * - Connect the TARGET USB on XPLAINED board to PC for running program.
- * The application will behave as a virtual COM.
- * - Open a HyperTerminal or other COM tools in PC side.
- * - Send out a character or string and it will echo the content received.
- */
-void cdcd_acm_example(void)
+* Example of how to use SPI and ISCOMM BUFF
+*/
+void IS_SPI_READ(void)
 {
 	// Init comm instance
 	uint8_t buffer[2048];
 	is_comm_init(&comm, buffer, sizeof(buffer));
 	
-	TIMER_0_example();
+	msTimerInit();
 	
 	s_callbacks.isbData = parse_isb;
 	s_callbacks.nmea = parse_nmea;
@@ -414,6 +440,8 @@ void cdcd_acm_example(void)
 	memset(spiTxBuff, 0xff, BUFF_SIZE);
 	
 	cdcdf_acm_register_callback(CDCDF_ACM_CB_STATE_C, (FUNC_PTR)usb_device_cb_state_c);
+
+	memset(USBOutBuff, 0x00, sizeof(USBOutSize));
 
 	while (1) 
 	{

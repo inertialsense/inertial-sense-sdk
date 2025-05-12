@@ -1188,7 +1188,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
 
     uint8_t buf[PKT_BUF_SIZE];
     uint8_t *ptr = buf;
-
+ 
     memcpy(ptr, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));       // Header
     ptr += sizeof(packet_hdr_t);
 

@@ -12,9 +12,7 @@
 extern "C" {
 #endif
 
-void UART_0_example(void);
-
-void TIMER_0_example(void);
+void msTimerInit(void);
 
 #ifdef __cplusplus
 }
