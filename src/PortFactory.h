@@ -93,7 +93,7 @@ private:
     static int open_port(port_handle_t port) {
         if (!portIsValid(port)) return PORT_ERROR__INVALID;
         serial_port_t* serialPort = (serial_port_t*)port;
-        return serialPortOpen(port, serialPort->portName, serialPort->baudRate, serialPort->blocking);
+        return serialPortOpen(port, serialPort->portName, serialPort->baudRate, serialPort->blocking) == 1 ? PORT_ERROR__NONE : PORT_ERROR__OPEN_FAILURE;
     }
 
     std::vector<std::string> ports = {};

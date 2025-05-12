@@ -251,7 +251,7 @@ bool ISDevice::queryDeviceInfoISbl() {
 }
 
 
-bool ISDevice::validateDevice(uint32_t timeout) {
+bool ISDevice::validate(uint32_t timeout) {
     if (!isConnected())
         return false;
 
@@ -269,7 +269,7 @@ bool ISDevice::validateDevice(uint32_t timeout) {
                 SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
                 break;
             case QUERYTYPE_ISB:
-                SendRaw((uint8_t *) DID_DEV_INFO, sizeof(dev_info_t));
+                GetData(DID_DEV_INFO);
                 break;
             case QUERYTYPE_ISbootloader:
                 queryDeviceInfoISbl();
@@ -280,8 +280,8 @@ bool ISDevice::validateDevice(uint32_t timeout) {
         }
         // FIXME - there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
         // REMOVE - Don't tolerate SERIAL_PORT specific conditions in ISDevice
-        if (SERIAL_PORT(port)->errorCode != 0)
-            return false;
+        // if (SERIAL_PORT(port)->errorCode != 0)
+        //   return false;
 
         SLEEP_MS(100);
         step();
@@ -306,7 +306,7 @@ bool ISDevice::validateDevice(uint32_t timeout) {
  * @param timeout the maximum number of milliseconds that must pass without a validating response from the device, before giving up.
  * @return true if the device has been validated, otherwise false
  */
-bool ISDevice::validateDeviceNoBlock(uint32_t timeout) {
+bool ISDevice::validateAsync(uint32_t timeout) {
     if (!isConnected())
         return false;
 

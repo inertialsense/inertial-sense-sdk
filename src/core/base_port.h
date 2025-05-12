@@ -35,6 +35,7 @@
 #define PORT_ERROR__NOT_SUPPORTED       -1
 #define PORT_ERROR__INVALID             -2
 #define PORT_ERROR__WRITE_FAILURE       -3
+#define PORT_ERROR__OPEN_FAILURE        -4
 
 #define PORT_OP__READ               0x00
 #define PORT_OP__WRITE              0x01

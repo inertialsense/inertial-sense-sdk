@@ -48,7 +48,7 @@ void DeviceFactory::locateDevice(std::function<void(DeviceFactory*, const dev_in
         }
     } else if ((hdwId == IS_HARDWARE_ANY) || ((dev->hdwId & hdwId) == dev->hdwId)) {
         // a device exists associated with this port already, there isn't anything to do.
-        printf("Rediscovered previously identified device %s on port %s.\n", dev->getIdAsString().c_str(), dev->getPortName().c_str());
-        dev->validateDevice(3000);
+        dev->validate(3000);
+        // printf("Rediscovered previously identified device %s on port %s.\n", dev->getIdAsString().c_str(), dev->getPortName().c_str());
     }
 }
