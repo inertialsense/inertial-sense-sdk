@@ -33,20 +33,11 @@ static struct usbd_descriptors single_desc[]
 #endif
 };
 
-
+// Inertial Sense is_comm_instance_t
 is_comm_instance_t comm;
 
 /** Ctrl endpoint buffer */
 static uint8_t ctrl_buffer[64];
-
-#define NO_DR_READ_SIZE	100
-#define DR_READ_SIZE	10
-uint8_t spiRxBuff[BUFF_SIZE];
-uint8_t spiTxBuff[BUFF_SIZE];
-
-int bytesInBuff = 0;
-bool readSPI;
-uint32_t g_timeMs = 0;
 
 #define CDCD_ECHO_BUF_SIZ	256
 
@@ -54,16 +45,21 @@ uint8_t USBIntBuff[CDCD_ECHO_BUF_SIZ];
 uint8_t USBInBuff[BUFF_SIZE];
 uint8_t USBOutBuff[BUFF_SIZE];
 uint32_t USBOutSize = 0;
-uint32_t USBReadySetMs = 0;
 int USBInCnt = 0;
 bool USBReady = false;
-bool USBIsInit = false;
 
+#define NO_DR_READ_SIZE	100
+#define DR_READ_SIZE	10
+uint8_t spiRxBuff[BUFF_SIZE];
+uint8_t spiTxBuff[BUFF_SIZE];
 uint8_t spiInBuff[BUFF_SIZE*2];
-int spiInBuffIdx = 0;
-
 uint8_t spiOutBuff[BUFF_SIZE*2];
 int spiOutBuffIdx = 0;
+int spiInBuffIdx = 0;
+
+bool readSPI;
+
+uint32_t g_timeMs = 0;
 
 is_comm_callbacks_t s_callbacks = {};
 	
