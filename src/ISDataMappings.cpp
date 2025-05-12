@@ -336,7 +336,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("leapS", &gps_pos_t::leapS, DATA_TYPE_UINT8, "", "GPS leap seconds (GPS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GPS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gps_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gps_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("reserved", &gps_pos_t::reserved, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("status2", &gps_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGpsStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
 }
 
 static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
