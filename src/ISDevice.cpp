@@ -68,7 +68,7 @@ bool ISDevice::step() {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
 
     if (!hasDeviceInfo()) {
-        validateDeviceNoBlock(30000);
+        validateAsync(30000);
     } else if (fwUpdater) {
         fwUpdate();
     } else {
@@ -323,7 +323,7 @@ bool ISDevice::validateAsync(uint32_t timeout) {
 
     // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
     if ((current_timeMs() - validationStartMs) > timeout) {
-        debug_message("ISDevice::validateDeviceNoBlock() timed out after %dms.\n", current_timeMs() - validationStartMs);
+        debug_message("ISDevice::validateAsync() timed out after %dms.\n", current_timeMs() - validationStartMs);
         validationStartMs = 0;
         return false;
     }
@@ -351,7 +351,7 @@ bool ISDevice::validateAsync(uint32_t timeout) {
 
 //    uint64_t dt = current_timeUs() - nanos;
 //    if (dt > 20000)
-//        debug_message("ISDevice::validateDeviceNoBlock() executed for %ld nanos, for device %s.\n", current_timeUs() - nanos, getDescription().c_str());
+//        debug_message("ISDevice::validateAsync() executed for %ld nanos, for device %s.\n", current_timeUs() - nanos, getDescription().c_str());
 
     SLEEP_MS(5); // give just enough time for the device to receive, process and respond to the query
 
