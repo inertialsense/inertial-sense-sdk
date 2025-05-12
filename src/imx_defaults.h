@@ -25,8 +25,8 @@ extern "C" {
 
 int imxPlatformConfigTypeValid(uint32_t platformConfig);
 void imxPlatformConfigErrorCheck(uint32_t *platformConfig);
-void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *pps2cfg, uint32_t platformConfig);
-void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t* pps2Cfg, uint32_t platformType);
+void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2, uint32_t platformConfig);
+void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t* ioConfig2, uint32_t platformType);
 uint32_t imxPlatformConfigTypeToDefaultPlatformConfig(uint32_t platformType);
 uint32_t imxPlatformConfigTypeToDefaultPlatformPreset(uint32_t platformType);
 
