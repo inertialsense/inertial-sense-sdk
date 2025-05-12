@@ -312,7 +312,7 @@ int32_t cdcdf_acm_read(uint8_t *buf, uint32_t size)
 /**
  * \brief USB CDC ACM Function Write Data
  */
-int32_t cdcdf_acm_write(uint8_t *buf, uint32_t size)
+int32_t USB_write(uint8_t *buf, uint32_t size)
 {
 	if (!cdcdf_acm_is_enabled()) {
 		return ERR_DENIED;

@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "driver_init.h"
-#include "usb_start.h"
+#include "IS_SPI_Example.h"
 
 /**
  * Initializes MCU, drivers and middleware in the project

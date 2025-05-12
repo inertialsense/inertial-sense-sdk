@@ -15,7 +15,7 @@ extern "C" {
 #include "cdcdf_acm.h"
 #include "cdcdf_acm_desc.h"
 
-void IS_SPI_READ(void);
+void IS_SPI_Example(void);
 void cdc_device_acm_init(void);
 
 /**

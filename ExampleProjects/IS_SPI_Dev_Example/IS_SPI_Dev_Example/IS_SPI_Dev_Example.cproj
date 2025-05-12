@@ -868,13 +868,13 @@
     <Compile Include="usb\usb_protocol.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="usb_cdc_echo_main.c">
+    <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="usb_start.c">
+    <Compile Include="IS_SPI_Example.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="usb_start.h">
+    <Compile Include="IS_SPI_Example.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

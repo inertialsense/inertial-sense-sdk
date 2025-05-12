@@ -71,7 +71,7 @@ int32_t cdcdf_acm_read(uint8_t *buf, uint32_t size);
  * \param[in] size the size of data to be sent
  * \return Operation status.
  */
-int32_t cdcdf_acm_write(uint8_t *buf, uint32_t size);
+int32_t USB_write(uint8_t *buf, uint32_t size);
 
 /**
  * \brief USB CDC ACM Stop the currnet data transfer
