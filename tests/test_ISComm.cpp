@@ -1478,7 +1478,7 @@ TEST(ISComm, BufferParse)
                 outBufSize++;
                 if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)
                 {  
-                    tmpBufSize = tmpBufSize - j;
+                    tmpBufSize = tmpBufSize - (j+1);
                     memmove(tmpBuf, &tmpBuf[j+1], tmpBufSize);
                     break;
                 }
