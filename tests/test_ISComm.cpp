@@ -24,6 +24,7 @@ extern "C"
 #define BLAST_RX_TEST                        	1
 #define TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS  1
 #define TEST_TRUNCATED_PACKETS                  1
+#define TEST_BUFF_PARSE_MSG						1
 
 // Protocols
 #define TEST_PROTO_ISB		1
@@ -73,8 +74,6 @@ typedef struct
 static test_data_t tcm = {};
 static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
-
-
 
 static int portRead(int pHandle, unsigned char* buf, int len)
 {
@@ -1319,3 +1318,224 @@ TEST(ISComm, TruncatedPackets)
 	EXPECT_EQ(g_comm.rxErrorCount, badPktCount);
 }
 #endif
+
+
+#if TEST_BUFF_PARSE_MSG
+
+#define BUFF_PARSE_PASSES 500
+#define BUFF_PARSE_OUT_BUF_SIZE 600  
+#define BUFF_PARSE_DEV          0  
+#define BUFF_PARSE_DEV_NMEA     1  
+#define BUFF_PARSE_GPS          2  
+#define BUFF_PARSE_IMU          3  
+#define BUFF_PARSE_INS          4  
+
+
+static uint8_t s_buffParseMsgInCnt[5] = {0};
+
+// Handle InertialSense binary (ISB) messages
+int BufferParse_isb(unsigned int port, p_data_t* data)
+{
+	switch (data->hdr.id)
+	{
+        case DID_DEV_INFO:  s_buffParseMsgInCnt[BUFF_PARSE_DEV]++;  break;
+        case DID_INS_2:     s_buffParseMsgInCnt[BUFF_PARSE_INS]++;  break;
+        case DID_GPS1_POS:  s_buffParseMsgInCnt[BUFF_PARSE_GPS]++;  break;
+        case DID_IMU:       s_buffParseMsgInCnt[BUFF_PARSE_IMU]++;  break;
+	}
+
+	return 0;
+}
+
+// Handle NMEA messages
+int BufferParse_nmea(unsigned int port, const unsigned char* msg, int msgSize)
+{
+	switch (getNmeaMsgId(msg, msgSize))
+    {
+        case NMEA_MSG_ID_INFO:  s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]++;  break;
+    }
+    return 0;
+}
+
+TEST(ISComm, BufferParse)
+{
+    is_comm_instance_t comm;
+
+    is_comm_callbacks_t callbacks = {};
+	callbacks.isbData = BufferParse_isb;
+	callbacks.nmea = BufferParse_nmea;
+
+    uint8_t msgOutCnt[5] = {0};
+    uint8_t randomBuf[16] = {0xe0,0x63,0xa4,0x17,0x95,0xb1,0x26,0xd2,0xe0,0x63,0xa4,0x17,0x95,0xb1,0x26,0xd2};
+    uint8_t tmpBuf[BUFF_PARSE_OUT_BUF_SIZE] = {0};
+    uint8_t outBuf[BUFF_PARSE_OUT_BUF_SIZE] = {0};
+    uint8_t commBuf[2048] = {0};
+
+    dev_info_t dev;
+    gps_pos_t gps;
+    imu_t imu;
+    ins_2_t ins;
+
+    uint32_t randomIdx = 22;
+    uint32_t outBufSize = 0;
+    uint32_t tmpBufSize = 0;
+
+    // Dev Info
+    dev.hardwareType = 4;
+    dev.serialNumber = 234532;
+    dev.hardwareVer[0] = 1;
+    dev.hardwareVer[1] = 0;
+    dev.hardwareVer[2] = 0;
+    dev.hardwareVer[3] = 0;
+    dev.firmwareVer[1] = 2;
+    dev.firmwareVer[2] = 4;
+    dev.firmwareVer[3] = 2;
+    dev.firmwareVer[4] = 125;
+    dev.buildNumber = 4532345;
+    dev.protocolVer[0] = 2;
+    dev.protocolVer[1] = 0;
+    dev.protocolVer[2] = 0;
+    dev.protocolVer[3] = 0;
+    dev.repoRevision = 0x65682a70;
+    dev.buildType = c;
+    dev.buildYear = 25;
+    dev.buildMonth = 5;
+    dev.buildDay = 13;
+    dev.buildHour = 14;
+    dev.buildMinute = 19;
+    dev.buildSecond = 55;
+    dev.buildMillisecond = 134;
+
+    strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
+    strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
+
+    // GPS
+    gps.week = 2270;
+    gps.timeOfWeekMs = 12345678;
+    gps.status = 0x03457834;
+    gps.ecef[0] = 2345.967;
+    gps.ecef[1] = 134.0687;
+    gps.ecef[2] = -8657.2345;
+    gps.lla[0] = 40.330565516;
+    gps.lla[1] = -111.725787806;
+    gps.lla[2] = 1408.565264;
+    gps.hMSL = 1408.565264;
+    gps.hAcc = 0.16546;
+    gps.vAcc = 2.3423;
+    gps.pDop = 1.053;
+    gps.cnoMean = 38.928;
+    gps.towOffset = 7254.0982;
+    gps.leapS = 18;
+    gps.satsUsed = 25;
+    gps.cnoMeanSigma = 2;
+    gps.status2 = 0x05;
+
+    // IMU
+    imu.time = 25670.98;
+    imu.status = 0x9876543;
+    imu.I.pqr[0] = 1234.;
+    imu.I.pqr[1] = 5643.;
+    imu.I.pqr[2] = -93.5678;
+    imu.I.acc[0] = -321.567;
+    imu.I.acc[1] = 2134.456;
+    imu.I.acc[2] = 4123.856;
+    
+    // INS2
+    ins.week = 2270;
+    ins.timeOfWeek = 12345678;
+    ins.insStatus = 0x12345678;
+    ins.hdwStatus = 0x87654321;
+    ins.qn2b[0] = 173.895;
+    ins.qn2b[1] = 762.54;
+    ins.qn2b[2] = 93.267;
+    ins.qn2b[3] = 5.45;
+    ins.uvw[0] = 2.23;
+    ins.uvw[1] = 789.543;
+    ins.uvw[2] = 123.546;
+    ins.lla[0] = 40.330565516;
+    ins.lla[1] = -111.725787806;
+    ins.lla[2] = 1408.565264;
+
+    // create comm instance
+    is_comm_init(&comm, commBuf, sizeof(commBuf));
+
+	// Enable/disable protocols
+	g_comm.config.enabledMask = 0;
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB    * TEST_PROTO_ISB);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA   * TEST_PROTO_NMEA);
+    
+
+    for (int ii = 0; ii < BUFF_PARSE_PASSES; ii++)
+    {
+        memset(outBuf, 0, sizeof(outBuf));
+
+        for (int i = 0 i < 16; i++)
+        {
+            for (int j = 0; j < tmpBufSize; j++)
+            {
+                outBuf[outBufSize] = tmpBuf[j];
+                outBufSize++;
+                if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)
+                {  
+                    tmpBufSize = tmpBufSize - j;
+                    memmove(tmpBuf, &tmpBuf[j+1], tmpBufSize);
+                    break;
+                }
+            }
+
+            if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)  
+                break;
+
+            // fill next read
+            switch (randomBuf[i]&0x7)
+            {
+                case BUFF_PARSE_DEV: // Dev Info
+                    tmpBufSize += is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_DEV_INFO, sizeof(dev_info_t), 0, &dev);
+                    msgOutCnt[BUFF_PARSE_DEV]++;
+                    break;
+                case BUFF_PARSE_DEV_NMEA: // Dev Info NMEA 
+                    msgOutCnt[BUFF_PARSE_DEV_NMEA]++;
+                    break;
+                case BUFF_PARSE_GPS: // GPS
+                    tmpBufSize += is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
+                    msgOutCnt[BUFF_PARSE_GPS]++;
+                    break;
+                case BUFF_PARSE_IMU: // IMU
+                    tmpBufSize += is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_IMU, sizeof(imu_t), 0, &imu);
+                    msgOutCnt[BUFF_PARSE_IMU]++;
+                    break;
+                case BUFF_PARSE_INS: // INS
+                    tmpBufSize += is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_INS_2, sizeof(ins_2_t), 0, &ins);
+                    msgOutCnt[BUFF_PARSE_INS]++;
+                    break;
+                case 5: // 0 up to 16
+                    memset(tmpBuf, 0, 16);
+                    tmpBufSize = ((randomBuf[i]&0xf0) >> 4);
+                    break;
+                case 6: // 0 up to 64
+                    memset(tmpBuf, 0, 64);
+                    tmpBufSize = ((randomBuf[i]&0x7e) >> 1);
+                    break;
+                default:
+
+                    break;
+            }
+        }
+
+        is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
+
+        memcpy(randomBuf, &outBuf[(randomIdx&0x1ff)], 8);
+        randomIdx++;
+    }
+
+	// Check good and bad packet count
+	EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
+	EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
+	EXPECT_EQ(msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
+	EXPECT_EQ(msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
+	EXPECT_EQ(msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
+}
+#endif
+
+
+
