@@ -1491,22 +1491,23 @@ TEST(ISComm, BufferParse)
             switch (randomBuf[i]&0x7)
             {
                 case BUFF_PARSE_DEV: // Dev Info
-                    tmpBufSize += is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_DEV_INFO, sizeof(dev_info_t), 0, &dev);
+                    tmpBufSize = is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_DEV_INFO, sizeof(dev_info_t), 0, &dev);
                     msgOutCnt[BUFF_PARSE_DEV]++;
                     break;
-                case BUFF_PARSE_DEV_NMEA: // Dev Info NMEA 
+                case BUFF_PARSE_DEV_NMEA: // Dev Info NMEA
+                    tmpBufSize = nmea_dev_info((char*)tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, dev);  
                     msgOutCnt[BUFF_PARSE_DEV_NMEA]++;
                     break;
                 case BUFF_PARSE_GPS: // GPS
-                    tmpBufSize += is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
+                    tmpBufSize = is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
                     msgOutCnt[BUFF_PARSE_GPS]++;
                     break;
                 case BUFF_PARSE_IMU: // IMU
-                    tmpBufSize += is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_IMU, sizeof(imu_t), 0, &imu);
+                    tmpBufSize = is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_IMU, sizeof(imu_t), 0, &imu);
                     msgOutCnt[BUFF_PARSE_IMU]++;
                     break;
                 case BUFF_PARSE_INS: // INS
-                    tmpBufSize += is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_INS_2, sizeof(ins_2_t), 0, &ins);
+                    tmpBufSize = is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_INS_2, sizeof(ins_2_t), 0, &ins);
                     msgOutCnt[BUFF_PARSE_INS]++;
                     break;
                 case 5: // 0 up to 16
