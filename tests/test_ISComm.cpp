@@ -1397,7 +1397,7 @@ TEST(ISComm, BufferParse)
     dev.protocolVer[2] = 0;
     dev.protocolVer[3] = 0;
     dev.repoRevision = 0x65682a70;
-    dev.buildType = c;
+    dev.buildType = 'c';
     dev.buildYear = 25;
     dev.buildMonth = 5;
     dev.buildDay = 13;
@@ -1469,7 +1469,7 @@ TEST(ISComm, BufferParse)
     {
         memset(outBuf, 0, sizeof(outBuf));
 
-        for (int i = 0 i < 16; i++)
+        for (int i = 0; i < 16; i++)
         {
             for (int j = 0; j < tmpBufSize; j++)
             {
