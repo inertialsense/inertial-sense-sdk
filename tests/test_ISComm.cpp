@@ -1468,6 +1468,7 @@ TEST(ISComm, BufferParse)
     for (int ii = 0; ii < BUFF_PARSE_PASSES; ii++)
     {
         memset(outBuf, 0, sizeof(outBuf));
+        outBufSize = 0;
 
         for (int i = 0; i < 16; i++)
         {
