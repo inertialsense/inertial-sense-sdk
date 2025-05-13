@@ -3387,8 +3387,8 @@ typedef enum
 
 typedef enum
 {
-    SHOCK_OPTIONS_ENABLE            = 0x01,
-    SHOCK_OPTIONS_FAST_RECOVERY     = 0x02
+    IMU_SHOCK_OPTIONS_ENABLE            = 0x01,
+    IMU_SHOCK_OPTIONS_FAST_RECOVERY     = 0x02
 } eImuShockOptions;
 
 /** (DID_FLASH_CONFIG) Configuration data
