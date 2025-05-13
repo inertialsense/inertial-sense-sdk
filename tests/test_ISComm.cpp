@@ -1331,7 +1331,7 @@ TEST(ISComm, TruncatedPackets)
 #define BUFF_PARSE_INS          4  
 
 
-static uint8_t s_buffParseMsgInCnt[5] = {0};
+static uint32_t s_buffParseMsgInCnt[5] = {0};
 
 // Handle InertialSense binary (ISB) messages
 int BufferParse_isb(unsigned int port, p_data_t* data)
@@ -1365,7 +1365,7 @@ TEST(ISComm, BufferParse)
 	callbacks.isbData = BufferParse_isb;
 	callbacks.nmea = BufferParse_nmea;
 
-    uint8_t msgOutCnt[5] = {0};
+    uint32_t msgOutCnt[5] = {0};
     uint8_t randomBuf[16] = {0xe0,0x63,0xa4,0x17,0x95,0xb1,0x26,0xd2,0xe0,0x63,0xa4,0x17,0x95,0xb1,0x26,0xd2};
     uint8_t tmpBuf[BUFF_PARSE_OUT_BUF_SIZE] = {0};
     uint8_t outBuf[BUFF_PARSE_OUT_BUF_SIZE] = {0};
@@ -1527,6 +1527,12 @@ TEST(ISComm, BufferParse)
         memcpy(randomBuf, &outBuf[(randomIdx&0x1ff)], 8);
         randomIdx++;
     }
+
+    printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
+    printf("NMEA_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
+    printf("DID_GPS1_POS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
+    printf("DID_IMU: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
+    printf("DID_INS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
 
 	// Check good and bad packet count
 	EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
