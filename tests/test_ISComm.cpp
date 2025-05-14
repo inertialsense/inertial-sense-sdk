@@ -821,40 +821,6 @@ static int generate_ISBPkt_imu(is_comm_instance_t* comm, uint8_t* buf, int buffS
 	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_IMU, sizeof(imu_t), 0, &imu);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #if BASIC_TX_BUFFER_RX_BYTE_TEST
 TEST(ISComm, BasicTxBufferRxByteTest)
 {
