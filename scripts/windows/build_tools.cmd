@@ -22,8 +22,8 @@
 		"C:\Program Files\Microsoft Visual Studio\2022\Msbuild\Current\Bin\MSBuild.exe"
 
 	if not defined FOUND_EXECUTABLE (
-	echo Failed to locate MSBuild.exe!!!
-	pause
+		echo Failed to locate MSBuild.exe!!!
+		pause
 		exit /b 1
 	)
 	set "MSBUILD_EXECUTABLE=%FOUND_EXECUTABLE%"
