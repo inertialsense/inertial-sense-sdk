@@ -1337,15 +1337,15 @@ static uint32_t s_buffParseMsgInCnt[5] = { 0 };
  */
 int BufferParse_isb(unsigned int port, p_data_t* data)
 {
-	switch (data->hdr.id)
-	{
+    switch (data->hdr.id)
+    {
         case DID_DEV_INFO:  s_buffParseMsgInCnt[BUFF_PARSE_DEV]++;  break;
         case DID_INS_2:     s_buffParseMsgInCnt[BUFF_PARSE_INS]++;  break;
         case DID_GPS1_POS:  s_buffParseMsgInCnt[BUFF_PARSE_GPS]++;  break;
         case DID_IMU:       s_buffParseMsgInCnt[BUFF_PARSE_IMU]++;  break;
-	}
+    }
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -1368,8 +1368,8 @@ TEST(ISComm, BufferParse)
     is_comm_instance_t comm;
 
     is_comm_callbacks_t callbacks = {};
-	callbacks.isbData = BufferParse_isb;
-	callbacks.nmea = BufferParse_nmea;
+    callbacks.isbData = BufferParse_isb;
+    callbacks.nmea = BufferParse_nmea;
 
     uint32_t msgOutCnt[5] = {0};
     uint8_t randomBuf[16] = {0xe0,0x63,0xa4,0x17,0x95,0xb1,0x26,0xd2,0xe0,0x63,0xa4,0x17,0x95,0xb1,0x26,0xd2};
@@ -1466,13 +1466,13 @@ TEST(ISComm, BufferParse)
     // create comm instance
     is_comm_init(&comm, commBuf, sizeof(commBuf));
 
-	// Enable/disable protocols
-	g_comm.config.enabledMask = 0;
-	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB    * TEST_PROTO_ISB);
-	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA   * TEST_PROTO_NMEA);
+    // Enable/disable protocols
+    g_comm.config.enabledMask = 0;
+    g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB    * TEST_PROTO_ISB);
+    g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA   * TEST_PROTO_NMEA);
     
 
-	// Load com buffer BUFF_PARSE_PASSES times
+    // Load com buffer BUFF_PARSE_PASSES times
     for (int ii = 0; ii < BUFF_PARSE_PASSES; ii++)
     {
         memset(outBuf, 0, sizeof(outBuf));
@@ -1495,8 +1495,8 @@ TEST(ISComm, BufferParse)
             if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)  
                 break;
 
-			// clear tmp for ez debug
-			memset(tmpBuf, 0, BUFF_PARSE_OUT_BUF_SIZE);
+            // clear tmp for ez debug
+            memset(tmpBuf, 0, BUFF_PARSE_OUT_BUF_SIZE);
 
             // fill next read
             switch (randomBuf[i]&0x7)
@@ -1528,43 +1528,44 @@ TEST(ISComm, BufferParse)
                     tmpBufSize = ((randomBuf[i]&0x7e) >> 1);
                     break;
                 default: // 0's up  to 7 
-					tmpBufSize = ((randomBuf[i] & 0x70) >> 4);
+                    tmpBufSize = ((randomBuf[i] & 0x70) >> 4);
                     break;
             }
         }
 
-		// load current batch into comm buffer
+        // load current batch into comm buffer
         is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
-		totalBytes += outBufSize;
+        totalBytes += outBufSize;
 
         memcpy(randomBuf, &outBuf[(randomIdx&0x1ff)], 8);
         randomIdx++;
     }
 
-	// load any remaining bytes into comm buffer
-	for (int j = 0, outBufSize = 0; j < tmpBufSize; j++)
-	{
-		outBuf[outBufSize] = tmpBuf[j];
-		outBufSize++;
-	}
+    // load any remaining bytes into comm buffer
+    outBufSize = 0;
+    for (int j = 0; j < tmpBufSize; j++)
+    {
+        outBuf[outBufSize] = tmpBuf[j];
+        outBufSize++;
+    }
 
-	is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
-	totalBytes += outBufSize;
+    is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
+    totalBytes += outBufSize;  
 
-	// print stats
-	printf("Bytes parsed: %d\r\n", totalBytes);
-	printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
+    // print stats
+    printf("Bytes parsed: %d\r\n", totalBytes);
+    printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
     printf("NMEA_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
     printf("DID_GPS1_POS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
     printf("DID_IMU: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
     printf("DID_INS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
 
-	// Check good and bad packet count
-	EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
-	EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
-	EXPECT_EQ(msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
-	EXPECT_EQ(msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
-	EXPECT_EQ(msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
+    // Check good and bad packet count
+    EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
+    EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
+    EXPECT_EQ(msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
+    EXPECT_EQ(msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
+    EXPECT_EQ(msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
 }
 #endif
 
