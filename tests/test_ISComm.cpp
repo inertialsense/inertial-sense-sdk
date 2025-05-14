@@ -1331,7 +1331,12 @@ TEST(ISComm, TruncatedPackets)
 #define BUFF_PARSE_INS          4  
 
 
-static uint32_t s_buffParseMsgInCnt[5] = {0};
+static uint32_t s_buffParseMsgInCnt[5] = { 0 };
+static uint8_t s_buffTestOut[500000] = { 0 };
+static uint8_t s_buffTestIn[500000] = { 0 };
+
+int testOutSize = 0;
+int testInSize = 0;
 
 // Handle InertialSense binary (ISB) messages
 int BufferParse_isb(unsigned int port, p_data_t* data)
@@ -1467,6 +1472,19 @@ TEST(ISComm, BufferParse)
 
     for (int ii = 0; ii < BUFF_PARSE_PASSES; ii++)
     {
+		if (testInSize + 700 > sizeof(s_buffTestIn) ||
+			testOutSize + 700 > sizeof(s_buffTestOut))
+		{
+			int min = _MIN(testInSize, testOutSize);
+			for (int i = 0; i < min; i++)
+			{
+				if (s_buffTestIn[i] != s_buffTestOut[i])
+				{
+					testOutSize++;
+				}
+			}
+		}
+
         memset(outBuf, 0, sizeof(outBuf));
         outBufSize = 0;
 
@@ -1486,6 +1504,8 @@ TEST(ISComm, BufferParse)
 
             if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)  
                 break;
+
+			memset(tmpBuf, 0, BUFF_PARSE_OUT_BUF_SIZE);
 
             // fill next read
             switch (randomBuf[i]&0x7)
@@ -1510,25 +1530,51 @@ TEST(ISComm, BufferParse)
                     tmpBufSize = is_comm_write_to_buf(tmpBuf, BUFF_PARSE_OUT_BUF_SIZE, &comm, PKT_TYPE_DATA, DID_INS_2, sizeof(ins_2_t), 0, &ins);
                     msgOutCnt[BUFF_PARSE_INS]++;
                     break;
-                case 5: // 0 up to 16
-                    memset(tmpBuf, 0, 16);
+                case 5: // 0's up to 15
                     tmpBufSize = ((randomBuf[i]&0xf0) >> 4);
                     break;
-                case 6: // 0 up to 64
-                    memset(tmpBuf, 0, 64);
+                case 6: // 0's up to 63
                     tmpBufSize = ((randomBuf[i]&0x7e) >> 1);
                     break;
-                default:
-
+                default: // 0's up  to 7 
+					tmpBufSize = ((randomBuf[i] & 0x70) >> 4);
                     break;
             }
+
+			memcpy(&s_buffTestOut[testOutSize], tmpBuf, tmpBufSize);
+			testOutSize += tmpBufSize;
         }
 
-        is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
+		memcpy(&s_buffTestIn[testInSize], outBuf, outBufSize);
+		testInSize += outBufSize;
+
+        is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);	
 
         memcpy(randomBuf, &outBuf[(randomIdx&0x1ff)], 8);
         randomIdx++;
     }
+
+	outBufSize = 0;
+
+	for (int j = 0; j < tmpBufSize; j++)
+	{
+		outBuf[outBufSize] = tmpBuf[j];
+		outBufSize++;
+	}
+
+	is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
+
+	memcpy(&s_buffTestIn[testInSize], outBuf, outBufSize);
+	testInSize += outBufSize;
+
+	int min = _MIN(testInSize, testOutSize);
+	for (int i = 0; i < min; i++)
+	{
+		if (s_buffTestIn[i] != s_buffTestOut[i])
+		{
+			testOutSize++;
+		}
+	}
 
     printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
     printf("NMEA_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);

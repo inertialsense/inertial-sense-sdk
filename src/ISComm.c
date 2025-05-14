@@ -889,32 +889,33 @@ int is_comm_free(is_comm_instance_t* c)
 
     int bytesFree = (int)(buf->end - buf->tail);
 
-    // if we are out of free space, we need to either move bytes over or start over
-    if (bytesFree == 0)
-    {
-        int shift = (int)(buf->head - buf->start);
+    // If the buff has any data try to free space
+    if (bytesFree < buf->size)
+    {   // Buffer contains data
+        if (c->processPkt != NULL)
+        {   // Currently parsing a packet.
+            if (buf->head != buf->start)
+            {   // Data is not at the beginning of the buffer. Move current parse to the front.
+                int shift = (int)(buf->head - buf->start);
+                // Shift current data to start of buffer
+                memmove(buf->start, buf->head, buf->tail - buf->head);
+                buf->head = buf->start;
+                buf->tail -= shift;
+                buf->scan -= shift;
 
-        if (shift < (int)(buf->size / 3))
-        {	// If the buffer is mostly full and can only be shifted less than 1/3 of the buffer
-            // we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
-            // will need to resend the data
-            parseErrorResetState(c, EPARSE_RXBUFFER_FLUSHED);
-            return is_comm_reset_buffer(c, buf->start, buf->size);
+                // re-calculate free byte count
+                bytesFree = (int)(buf->end - buf->tail);
+            }
+            else if (bytesFree == 0)
+            {   // The current packet if too big to parse.
+                return is_comm_reset_buffer(c, buf->start, buf->size);
+            }
         }
         else
-        {	// Shift current data to start of buffer
-            memmove(buf->start, buf->head, buf->tail - buf->head);
-            buf->head = buf->start;
-            buf->tail -= shift;
-            buf->scan -= shift;
-
-            // re-calculate free byte count
-            bytesFree = (int)(buf->end - buf->tail);
+        {   // Not currently parsing a packet
+            if (buf->scan >= buf->tail) // No data left to scan in buffer. RESET pointers to start of the buffer.
+                return is_comm_reset_buffer(c, buf->start, buf->size);
         }
-    }
-    else if (c->processPkt == NULL && buf->scan >= buf->tail)
-    {   // Not currently parsing a packet and no data left to scan in buffer. RESET pointers to start of the buffer.
-        return is_comm_reset_buffer(c, buf->start, buf->size);
     }
 
     return bytesFree;
