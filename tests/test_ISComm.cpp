@@ -1322,7 +1322,7 @@ TEST(ISComm, TruncatedPackets)
 
 #if TEST_BUFF_PARSE_MSG
 
-#define BUFF_PARSE_PASSES 500
+#define BUFF_PARSE_PASSES		50000
 #define BUFF_PARSE_OUT_BUF_SIZE 600  
 #define BUFF_PARSE_DEV          0  
 #define BUFF_PARSE_DEV_NMEA     1  
@@ -1332,11 +1332,6 @@ TEST(ISComm, TruncatedPackets)
 
 
 static uint32_t s_buffParseMsgInCnt[5] = { 0 };
-static uint8_t s_buffTestOut[500000] = { 0 };
-static uint8_t s_buffTestIn[500000] = { 0 };
-
-int testOutSize = 0;
-int testInSize = 0;
 
 // Handle InertialSense binary (ISB) messages
 int BufferParse_isb(unsigned int port, p_data_t* data)
@@ -1384,6 +1379,7 @@ TEST(ISComm, BufferParse)
     uint32_t randomIdx = 22;
     uint32_t outBufSize = 0;
     uint32_t tmpBufSize = 0;
+	uint32_t totalBytes = 0;
 
     // Dev Info
     dev.hardwareType = 4;
@@ -1472,19 +1468,6 @@ TEST(ISComm, BufferParse)
 
     for (int ii = 0; ii < BUFF_PARSE_PASSES; ii++)
     {
-		if (testInSize + 700 > sizeof(s_buffTestIn) ||
-			testOutSize + 700 > sizeof(s_buffTestOut))
-		{
-			int min = _MIN(testInSize, testOutSize);
-			for (int i = 0; i < min; i++)
-			{
-				if (s_buffTestIn[i] != s_buffTestOut[i])
-				{
-					testOutSize++;
-				}
-			}
-		}
-
         memset(outBuf, 0, sizeof(outBuf));
         outBufSize = 0;
 
@@ -1540,15 +1523,10 @@ TEST(ISComm, BufferParse)
 					tmpBufSize = ((randomBuf[i] & 0x70) >> 4);
                     break;
             }
-
-			memcpy(&s_buffTestOut[testOutSize], tmpBuf, tmpBufSize);
-			testOutSize += tmpBufSize;
         }
 
-		memcpy(&s_buffTestIn[testInSize], outBuf, outBufSize);
-		testInSize += outBufSize;
-
-        is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);	
+        is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
+		totalBytes += outBufSize;
 
         memcpy(randomBuf, &outBuf[(randomIdx&0x1ff)], 8);
         randomIdx++;
@@ -1563,20 +1541,10 @@ TEST(ISComm, BufferParse)
 	}
 
 	is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
+	totalBytes += outBufSize;
 
-	memcpy(&s_buffTestIn[testInSize], outBuf, outBufSize);
-	testInSize += outBufSize;
-
-	int min = _MIN(testInSize, testOutSize);
-	for (int i = 0; i < min; i++)
-	{
-		if (s_buffTestIn[i] != s_buffTestOut[i])
-		{
-			testOutSize++;
-		}
-	}
-
-    printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
+	printf("Bytes parsed: %d\r\n", totalBytes);
+	printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
     printf("NMEA_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
     printf("DID_GPS1_POS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
     printf("DID_IMU: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
