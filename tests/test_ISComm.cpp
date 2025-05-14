@@ -1545,19 +1545,14 @@ TEST(ISComm, BufferParse)
     callbacks.nmea = BufferParse_nmea;
 
     uint32_t msgOutCnt[5] = {0};
-    uint8_t randomBuf[16] = {0xe0,0x63,0xa4,0x17,0x95,0xb1,0x26,0xd2,0xe0,0x63,0xa4,0x17,0x95,0xb1,0x26,0xd2};
+
     uint8_t tmpBuf[BUFF_PARSE_OUT_BUF_SIZE] = {0};
     uint8_t outBuf[BUFF_PARSE_OUT_BUF_SIZE] = {0};
     uint8_t commBuf[2048] = {0};
 
-
-    uint32_t randomIdx = 22;
     uint32_t outBufSize = 0;
     uint32_t tmpBufSize = 0;
 	uint32_t totalBytes = 0;
-
-
-
 
     // create comm instance
     is_comm_init(&comm, commBuf, sizeof(commBuf));
@@ -1569,12 +1564,12 @@ TEST(ISComm, BufferParse)
     
 
     // Load com buffer BUFF_PARSE_PASSES times
-    for (int ii = 0; ii < BUFF_PARSE_PASSES; ii++)
+    for (int i = 0; i < BUFF_PARSE_PASSES; i++)
     {
         memset(outBuf, 0, sizeof(outBuf));
         outBufSize = 0;
 
-        for (int i = 0; i < 16; i++)
+        while (outBufSize < BUFF_PARSE_OUT_BUF_SIZE)
         {
             for (int j = 0; j < tmpBufSize; j++)
             {
@@ -1591,11 +1586,12 @@ TEST(ISComm, BufferParse)
             if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)  
                 break;
 
-            // clear tmp for ez debug
+			// prep for next message
+			uint8_t randByte = (uint8_t)rand();
             memset(tmpBuf, 0, BUFF_PARSE_OUT_BUF_SIZE);
 
             // fill next read
-            switch (randomBuf[i]&0x7)
+            switch (randByte&0x7)
             {
                 case BUFF_PARSE_DEV: // Dev Info
 					tmpBufSize = generate_ISBPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
@@ -1618,23 +1614,39 @@ TEST(ISComm, BufferParse)
                     msgOutCnt[BUFF_PARSE_INS]++;
                     break;
                 case 5: // 0's up to 15
-                    tmpBufSize = ((randomBuf[i]&0xf0) >> 4);
+                    tmpBufSize = ((randByte&0xf0) >> 4);
                     break;
                 case 6: // 0's up to 63
-                    tmpBufSize = ((randomBuf[i]&0x7e) >> 1);
+                    tmpBufSize = ((randByte&0x7e) >> 1);
                     break;
-                default: // 0's up  to 7 
-                    tmpBufSize = ((randomBuf[i] & 0x70) >> 4);
-                    break;
+                default: // fill with upto 64 random values
+				{
+					tmpBufSize = ((randByte & 0xfc) >> 2);
+					
+					for (int j = 0; j < tmpBufSize; j++)
+					{
+						tmpBuf[j] = (uint8_t)rand();
+
+						// CHEAT A LITTLE. Dont allow packet start bytes.
+						if (tmpBuf[j] == PSC_NMEA_START_BYTE ||
+							tmpBuf[j] == PSC_ISB_PREAMBLE_BYTE1 ||
+							tmpBuf[j] == UBLOX_START_BYTE1 ||
+							tmpBuf[j] == RTCM3_START_BYTE ||
+							tmpBuf[j] == SPARTN_START_BYTE ||
+							tmpBuf[j] == SONY_START_BYTE)
+						{
+							tmpBuf[j] = 0x00;
+						}
+					}
+
+					break;
+				}
             }
         }
 
         // load current batch into comm buffer
         is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
         totalBytes += outBufSize;
-
-        memcpy(randomBuf, &outBuf[(randomIdx&0x1ff)], 8);
-        randomIdx++;
     }
 
     // load any remaining bytes into comm buffer
