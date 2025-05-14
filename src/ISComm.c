@@ -876,10 +876,8 @@ static protocol_type_t processSpartnByte(void* v)
  *
  * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.
  * Specifically, if the buffer is empty, it will reset all pointers to the start of the buffer.
- * If the buffer pointers are at the end of the buffer, and there is free space at the beginning, it will
- * move the buffer contents back to start, and realign the buffer pointers to maximize free space at the end.
- * If the buffer is mostly (2/3rds) full and cannot be shifted, it will be cleared (reinitialized, dropping
- * old data).
+ * Will shift active packet to the front of the buffer. If there is an active but the buffer is full 
+ * the active packet will be dropped.
  * @param c the comm instance associated with the port
  * @return the number of free bytes available in the buffer (for subsequent reads)
  */
@@ -907,7 +905,7 @@ int is_comm_free(is_comm_instance_t* c)
                 bytesFree = (int)(buf->end - buf->tail);
             }
             else if (bytesFree == 0)
-            {   // The current packet if too big to parse.
+            {   // The current packet if too big to parse. Dump and restart!
                 return is_comm_reset_buffer(c, buf->start, buf->size);
             }
         }

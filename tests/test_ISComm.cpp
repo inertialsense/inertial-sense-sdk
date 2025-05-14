@@ -1330,10 +1330,11 @@ TEST(ISComm, TruncatedPackets)
 #define BUFF_PARSE_IMU          3  
 #define BUFF_PARSE_INS          4  
 
-
 static uint32_t s_buffParseMsgInCnt[5] = { 0 };
 
-// Handle InertialSense binary (ISB) messages
+/**
+ * @brief ISB callback for testing the function is_comm_buffer_parse_messages()
+ */
 int BufferParse_isb(unsigned int port, p_data_t* data)
 {
 	switch (data->hdr.id)
@@ -1347,7 +1348,9 @@ int BufferParse_isb(unsigned int port, p_data_t* data)
 	return 0;
 }
 
-// Handle NMEA messages
+/**
+ * @brief NMEA callback for testing the function is_comm_buffer_parse_messages()
+ */
 int BufferParse_nmea(unsigned int port, const unsigned char* msg, int msgSize)
 {
 	switch (getNmeaMsgId(msg, msgSize))
@@ -1357,6 +1360,9 @@ int BufferParse_nmea(unsigned int port, const unsigned char* msg, int msgSize)
     return 0;
 }
 
+/**
+ * @brief Tests and exercises the function is_comm_buffer_parse_messages()
+ */
 TEST(ISComm, BufferParse)
 {
     is_comm_instance_t comm;
@@ -1466,6 +1472,7 @@ TEST(ISComm, BufferParse)
 	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA   * TEST_PROTO_NMEA);
     
 
+	// Load com buffer BUFF_PARSE_PASSES times
     for (int ii = 0; ii < BUFF_PARSE_PASSES; ii++)
     {
         memset(outBuf, 0, sizeof(outBuf));
@@ -1488,6 +1495,7 @@ TEST(ISComm, BufferParse)
             if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)  
                 break;
 
+			// clear tmp for ez debug
 			memset(tmpBuf, 0, BUFF_PARSE_OUT_BUF_SIZE);
 
             // fill next read
@@ -1525,6 +1533,7 @@ TEST(ISComm, BufferParse)
             }
         }
 
+		// load current batch into comm buffer
         is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
 		totalBytes += outBufSize;
 
@@ -1532,9 +1541,8 @@ TEST(ISComm, BufferParse)
         randomIdx++;
     }
 
-	outBufSize = 0;
-
-	for (int j = 0; j < tmpBufSize; j++)
+	// load any remaining bytes into comm buffer
+	for (int j = 0, outBufSize = 0; j < tmpBufSize; j++)
 	{
 		outBuf[outBufSize] = tmpBuf[j];
 		outBufSize++;
@@ -1543,6 +1551,7 @@ TEST(ISComm, BufferParse)
 	is_comm_buffer_parse_messages(outBuf, outBufSize, &comm, &callbacks);
 	totalBytes += outBufSize;
 
+	// print stats
 	printf("Bytes parsed: %d\r\n", totalBytes);
 	printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
     printf("NMEA_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
