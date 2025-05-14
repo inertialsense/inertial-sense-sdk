@@ -1322,7 +1322,7 @@ TEST(ISComm, TruncatedPackets)
 
 #if TEST_BUFF_PARSE_MSG
 
-#define BUFF_PARSE_PASSES		50000
+#define BUFF_PARSE_PASSES		1000000
 #define BUFF_PARSE_OUT_BUF_SIZE 600  
 #define BUFF_PARSE_DEV          0  
 #define BUFF_PARSE_DEV_NMEA     1  
