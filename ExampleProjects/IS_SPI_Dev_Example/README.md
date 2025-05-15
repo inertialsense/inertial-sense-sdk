@@ -6,9 +6,9 @@
 
 ## Hardware Requirements
 
-- IMX-5
-- Sparkfun SAMD21 Mini Breakout (https://www.sparkfun.com/sparkfun-samd21-mini-breakout.html?gad_campaignid=17479024039&gad_source=1&gbraid=0AAAAADsj4ER3PNTf-q2T8ZxgVC8GTlCD2)
-- Atmel Ice (https://www.microchip.com/en-us/development-tool/atatmel-ice)
+* [IMX-5] (https://docs.inertialsense.com/user-manual/hardware/module_imx5/)
+* [Sparkfun SAMD21 Mini Breakout](https://www.sparkfun.com/sparkfun-samd21-mini-breakout.html?gad_campaignid=17479024039&gad_source=1&gbraid=0AAAAADsj4ER3PNTf-q2T8ZxgVC8GTlCD2)
+* [Atmel Ice](https://www.microchip.com/en-us/development-tool/atatmel-ice)
 
 ## Files
 
