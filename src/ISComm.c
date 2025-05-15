@@ -871,10 +871,6 @@ static protocol_type_t processSpartnByte(void* v)
     return _PTYPE_NONE;
 }
 
-#if PLATFORM_IS_EMBEDDED
-#include "config/conf_debug.h"
-#endif
-
 /**
  * Move a buffer of data from src to dest.  This function is used to move data between buffers 
  * that are not aligned to 32-bit boundaries.  Equivalent to memmove() but more efficient on 
@@ -925,10 +921,6 @@ int is_comm_free(is_comm_instance_t* c)
 
     int bytesFree = (int)(buf->end - buf->tail);
 
-#if PLATFORM_IS_EMBEDDED
-    DBGPIO_TOGGLE(GPIO_8_PIN);
-#endif
-
     // If the buff has any data try to free space
     if (bytesFree < buf->size)
     {   // Buffer contains data
@@ -938,9 +930,7 @@ int is_comm_free(is_comm_instance_t* c)
             {   // Data is not at the beginning of the buffer. Move current parse to the front.
                 int shift = (int)(buf->head - buf->start);
                 // Shift current data to start of buffer
-#if PLATFORM_IS_EMBEDDED
-                DBGPIO_START(GPIO_5_PIN);
-#endif
+
                 // memmove(buf->start, buf->head, buf->tail - buf->head);
                 move_buffer_32bit(buf->start, buf->head, buf->tail - buf->head);
 
@@ -950,9 +940,6 @@ int is_comm_free(is_comm_instance_t* c)
 
                 // re-calculate free byte count
                 bytesFree = (int)(buf->end - buf->tail);
-#if PLATFORM_IS_EMBEDDED
-                DBGPIO_END(GPIO_5_PIN);
-#endif
             }
             else if (bytesFree == 0)
             {   // The current packet if too big to parse. Dump and restart!
