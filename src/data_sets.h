@@ -434,6 +434,8 @@ enum eSysStatusFlags
 /** GPS Status */
 enum eGpsStatus
 {
+    // TODO: THIS FIELD WILL END OF LIFE IN PROTOCOL 3
+    // PLEASE USE gps_pos_t.satsUsed for all new development
     GPS_STATUS_NUM_SATS_USED_MASK                   = (int)0x000000FF,
 
     /** Fix */
@@ -457,8 +459,7 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,      // within limits (e.g. DOP & accuracy)
     GPS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,      // Differential GPS (DGPS) used.
     GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
-// 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
-// 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
+	GPS_STATUS_FLAGS_UNUSED_1                       = (int)0x00080000,
 	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
 	GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
 	GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GPS2 RTK moving base mode enabled
@@ -478,11 +479,25 @@ enum eGpsStatus
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET),
 	GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message. GPS velocity is NED (not ECEF).
-	GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS. 
+	GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS.
 
-    GPS_STATUS_FLAGS_MASK                           = (int)0xFFFFE000,    
+    GPS_STATUS_FLAGS_MASK                           = (int)0x1FFFE000,    
     GPS_STATUS_FLAGS_BIT_OFFSET                     = (int)16,
-    
+
+    GPS_STATUS_FLAGS_UNUSED_2                       = (int)0x20000000,
+    GPS_STATUS_FLAGS_UNUSED_3                       = (int)0x40000000,
+    GPS_STATUS_FLAGS_UNUSED_4                       = (int)0x80000000,
+};
+
+enum eGpsStatus2
+{
+    GPS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT      = (uint8_t) 0x01,
+    GPS_STATUS2_FLAGS_GNSS_JAM_DETECTED             = (uint8_t) 0x02,
+    GPS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT    = (uint8_t) 0x04,
+    GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED           = (uint8_t) 0x08,
+    GPS_STATUS2_FLAGS_JAM_SPOOF_MASK                = (uint8_t) 0x0F,
+
+    GPS_STATUS2_FLAGS_UNUSED                        = 0xF0,
 };
 
 PUSH_PACK_1
@@ -874,7 +889,6 @@ typedef struct PACKED
 
     /** IMU delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
     float                   vel[3];
-
 } pimu_t;
 
 
@@ -918,7 +932,10 @@ enum eImuStatus
     /** Sensor saturation mask */
     IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
 
-    /** Magnetometer sample ocurred */
+    /** Sensor shock detected */
+    IMU_STATUS_SHOCK_PRESENT                    = (int)0x00000040,
+
+    /** Magnetometer sample occurred */
     IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
     /** Data was received at least once from Reference IMU */
     IMU_STATUS_REFERENCE_IMU_PRESENT			= (int)0x00000200,
@@ -1002,8 +1019,8 @@ typedef struct PACKED
     /** Standard deviation of cnoMean over past 5 seconds (dBHz x10) */
     uint8_t					cnoMeanSigma;
 
-    /** Reserved for future use */
-    uint8_t					reserved;
+    /** (see eGpsStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused */
+    uint8_t					status2;
 
 } gps_pos_t;
 
@@ -3368,6 +3385,12 @@ typedef enum
     DYNAMIC_MODEL_COUNT    // Must be last
 } eDynamicModel;
 
+typedef enum
+{
+    IMU_SHOCK_OPTIONS_ENABLE            = 0x01,
+    IMU_SHOCK_OPTIONS_FAST_RECOVERY     = 0x02
+} eImuShockOptions;
+
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
  * or new fields added to the end.  
@@ -3493,13 +3516,26 @@ typedef struct PACKED
     /** IMU gyro fault rejection threshold high */
     uint8_t                 imuRejectThreshGyroHigh;
 
-    /** Reserved */
-    uint32_t                reserved2[1];
+    /** (ms/10) IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.  */
+    uint8_t                 imuShockDetectLatencyMsDiv10;
+
+    /** (ms/10) IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.  */
+    uint8_t                 imuShockRejectLatchMsDiv10;
+
+    /* IMU shock rejection options (see eImuShockOptions) */
+    uint8_t                 imuShockOptions;
+
+    /* (m/s^2/ms) IMU shock detection. Min acceleration change in 1 ms to detect the start of a shock. */
+    uint8_t                 imuShockDeltaAccPerMsHighThreshold;
+
+    /* (m/s^2/ms) IMU shock detection. Max acceleration change in 1 ms within the latch time to detect the end of a shock. */
+    uint8_t                 imuShockDeltaAccPerMsLowThreshold;
 
     /** Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2). */
-    uint8_t				    ioConfig2;  
+    uint8_t				    ioConfig2;
 
-    uint8_t                 reserved1[3];
+    /** Reserved */
+    uint16_t                reserved1;
 
 } nvm_flash_cfg_t;
 
@@ -5870,3 +5906,25 @@ void profiler_maintenance_1s(runtime_profiler_t *p);
 #endif
 
 #endif // DATA_SETS_H
+
+
+
+/****************************************
+ * PROPOSED CHANGES FOR PROTOCOL IS V3.0
+ * 
+ * - Remove GPS_STATUS_NUM_SATS_USED_MASK bits in eGpsStatus this is reported in satsUsed in gps_pos_t.
+ * - Move spoofing/jamming status into gps_pos_t.status and reclaim gps_pos_t.status2 as resevered.
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ ****************************************/
