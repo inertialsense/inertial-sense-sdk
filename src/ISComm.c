@@ -885,8 +885,8 @@ void move_buffer_32bit(void* dest, void* src, size_t size)
     uint32_t* dest32 = (uint32_t*)dest;
     uint32_t* src32 = (uint32_t*)src;
 
-    size_t size32 = size / 4;
-    size_t remaining = size % 4;
+    size_t size32 = size>>2;
+    size_t remaining = size&0x3;
 
     // Copy 32-bit chunks
     for (size_t i = 0; i < size32; i++)
