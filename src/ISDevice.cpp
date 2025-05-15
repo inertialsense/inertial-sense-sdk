@@ -669,19 +669,26 @@ void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
 
 /**
  * Populates the passed reference to a nvm_flash_cfg_t struct with the contents of this device's last known flash config
- * @param flashCfg
+ * @param flashCfg a struct which will be populated with a copy of the current flash configuration for this device
+ * @param timeout if > 0 will block for timeout milliseconds, attempting to synchronize the flash config. If == 0, returns
+ *    the current flashConfig value is memory, and does not attempt to synchronize (though it have have been previously).
  * @return true if flashCfg was populated, and the flash checksum matches the remote device's checksum (they are synchronized).
- *    False indicates that the resulting flash config cannot be trusted due to an inability to confirm synchronization
+ *    False indicates that the resulting flash config cannot be trusted due to mismatched synchronization checksum or
  */
-bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_)
+bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout)
 {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    // attempt to synchronize, if requested
+    if (timeout > 0) {
+        WaitForFlashSynced(timeout);
+    }
 
     // Copy flash config
     flashCfg_ = ISDevice::flashCfg;
 
     // Indicate whether the port connection is valid, open, and the flash config is synchronized; otherwise false
-    return (port && portIsValid(port) && (sysParams.flashCfgChecksum == flashCfg.checksum));
+    return (isConnected() && (sysParams.flashCfgChecksum == flashCfg.checksum));
 }
 
 /**

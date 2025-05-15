@@ -540,8 +540,9 @@ typedef struct PACKED
 #define HDW_MINOR__SHIFT                       0
 #define DECODE_HDW_MINOR(x)                    (((x) & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
 
-#define ENCODE_HDW_ID(type, major, minor)    ((((uint8_t)(type) << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | (((uint8_t)(major) << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | (((uint8_t)(minor) << HDW_MINOR__SHIFT) & HDW_MINOR__MASK))
-#define ENCODE_DEV_INFO_TO_HDW_ID(devinfo)   (((devinfo.hardwareType << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((devinfo.hardwareVer[0] << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((devinfo.hardwareVer[1] << HDW_MINOR__SHIFT) & HDW_MINOR__MASK))
+#define ENCODE_HDW_ID(type, major, minor)      ((((uint8_t)(type) << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | (((uint8_t)(major) << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | (((uint8_t)(minor) << HDW_MINOR__SHIFT) & HDW_MINOR__MASK))
+#define ENCODE_DEV_INFO_TO_HDW_ID(devinfo)     (((devinfo.hardwareType << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((devinfo.hardwareVer[0] << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((devinfo.hardwareVer[1] << HDW_MINOR__SHIFT) & HDW_MINOR__MASK))
+#define ENCODE_DEV_INFO_TO_UNIQUE_ID(devinfo)  (((uint64_t)(ENCODE_DEV_INFO_TO_HDW_ID(devinfo)) << 48) | (uint64_t)devinfo.serialNumber)
 
 enum eIsHardwareType
 {

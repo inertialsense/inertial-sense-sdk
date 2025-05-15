@@ -134,8 +134,7 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
  */
 void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devInfo, port_handle_t port) {
 
-    uint64_t devId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-    devId = (devId << 48) | devInfo.serialNumber;
+    uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(devInfo);
     if (!devId)
         return; // this is an invalid device Id -- no hdwId and no serialNo
 
@@ -145,7 +144,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     for (auto& kd : knownDevices) {
         if ((kd.factory == deviceEntry.factory) && (kd.hdwId == deviceEntry.hdwId)) {
             // We've re-discovered an old device, but we don't know the status of its port... we should try and figure that out, before we just blindly return...
-            debug_message("[DBG] Rediscovered previously known device [%s] on serial port '%s'.\n", ISDevice::getIdAsString(devInfo).c_str(), SERIAL_PORT(port)->portName);
+            debug_message("[DBG] Rediscovered previously known device [%s] on serial port '%s'.\n", ISDevice::getIdAsString(devInfo).c_str(), portName(port));
             ISDevice* device = getDevice(port);
             if (!device) {
                 device = getDevice(devInfo.serialNumber, ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
@@ -154,7 +153,12 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
             if (device && portIsValid(port)) {
                 device->assignPort(port);
             } else {
-                debug_message("[DBG] -- Device or port is invalid. Unable to rebind to port '%s'.\n", SERIAL_PORT(port)->portName);
+                // FIXME: if we're here, it means we had a deviceEntry that matched the discovered device, but its associated device is invalid.
+                //  we don't want to reallocate the device, since there is already one there, but just need to reassign the devInfo, etc.
+                debug_message("[DBG] -- Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.\n", portName(port));
+                delete deviceEntry.device;
+                deviceEntry.device = nullptr;
+                break;
             }
             return;
         }

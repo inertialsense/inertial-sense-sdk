@@ -81,6 +81,11 @@ public:
                 return;
     }
 
+    void clear() {
+        std::unordered_set<port_handle_t>::clear();
+        knownPorts.clear();
+    }
+
 protected:
     PortManager() = default;
     ~PortManager() {
@@ -112,6 +117,7 @@ private:
             factory = f, type = t, name = n; // , port = p;
         }
         bool operator< (port_entry_t const& op) const { return name.compare(op.name) < 0; }
+        bool operator== (port_entry_t const& op) const { return name == op.name; }
     };
 
     std::vector<PortFactory*> factories;                         //!< list of port factories responsible for detecting, allocating and freeing ports of different types.

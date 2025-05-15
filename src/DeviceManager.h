@@ -214,6 +214,11 @@ public:
      */
     std::vector<ISDevice*> selectByHdwId(const uint16_t hdwId = 0xFFFF);
 
+    void clear() {
+        std::list<ISDevice*>::clear();
+        knownDevices.clear();
+    }
+
 protected:
     void portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port);
 

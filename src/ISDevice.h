@@ -291,7 +291,7 @@ public:
      * @param flashCfg_ a reference to a nvm_flash_cfg_t struct to be populated
      * @returns true if the flashCfg has been synchronized with the device (and can thus be trusted), otherwise false.
      */
-    bool FlashConfig(nvm_flash_cfg_t& flashCfg_);
+    bool FlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
 
     /**
      * Uploads the provided flashCfg to the remove device, but makes NO checks that it was successfully synchronized.

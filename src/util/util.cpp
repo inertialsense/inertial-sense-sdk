@@ -164,7 +164,7 @@ std::string utils::raw_hexdump(const char* raw_data, int bytesLen, int bytesPerL
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
 #endif
-    int lines = bytesLen / bytesPerLine;
+    int lines = (bytesLen / bytesPerLine) + (bytesLen % bytesPerLine > 0 ? 1 : 0);
     for (int j = 0; j < lines; j++) {
         int linelen = (j == lines-1) ? bytesLen % bytesPerLine : bytesPerLine;
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "    ");

@@ -18,30 +18,39 @@
  */
 void PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
     // look for ports which are no longer valid and remove them
+    std::vector<const port_entry_t*> lostPorts; // a vector of ports which no longer are available and need to be cleaned up
     for (auto& [entry, port] : knownPorts) {
         bool invalid = !(portIsValid(port) && entry.factory->validatePort(entry.type, entry.name));
 
         // check if port still exists...
         if (invalid) {
             erase(port);    // remove the port from our primary set of ports
+            lostPorts.push_back(&entry);
             // notify listeners before we actually invalidate the port
-            for (port_listener& l : listeners) {
-                l(PORT_REMOVED, portType(port), entry.name, port);
+            for (port_listener& listener : listeners) {
+                listener(PORT_REMOVED, portType(port), entry.name, port);
             }
             entry.factory->releasePort(port);
             port = nullptr;
         }
     }
+    for (auto entry : lostPorts) knownPorts.erase(*entry);
 
     // now look for new ports
-    for (auto l : factories) {
+    for (auto factory : factories) {
         auto cb = std::bind(&PortManager::portHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-        l->locatePorts(cb, pattern, pType);
+        factory->locatePorts(cb, pattern, pType);
+    }
+
+    // check to make sure all knownPorts are also representing in the top-level PortManager's set
+    for (auto& [entry, port] : knownPorts ) {
+        if (!this->contains(port))
+            this->insert(port);
     }
 }
 
 /**
- * Called by the PortFactories when a port is identified.
+ * Called by individual PortFactories when a port is identified.
  * This is a low-level callback indicating that a port identified by portName was detected as a
  * type of portType.  This handler is responsible for making further determinations and callbacks
  * for specifics events such as whether the port is a new port, or if an old port no longer
