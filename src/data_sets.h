@@ -5743,6 +5743,7 @@ typedef union PACKED
     gps_pos_t                   gpsPos;
     gps_vel_t                   gpsVel;
     gps_sat_t                   gpsSat;
+    gps_sig_t                   gpsSig;
     gps_version_t               gpsVer;
     gps_rtk_rel_t               gpsRtkRel;
     gps_rtk_misc_t              gpsRtkMisc;
@@ -5764,6 +5765,8 @@ typedef union PACKED
     debug_array_t               gpxDebugArray;
     port_monitor_t              portMonitor;
     did_event_t                 event;
+    manufacturing_info_t        manfInfo;
+    bit_t                       bit;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t wheelController;
