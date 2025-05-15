@@ -343,6 +343,35 @@ void unloadSpiInBuff()
 /***************************************************** SPI END *****************************************************/
 /*******************************************************************************************************************/
 
+static struct timer_task msTimer_task1, msTimer_task2;
+/**
+ * Example of using TIMER_0.
+ */
+static void msTimer_task1_cb(const struct timer_task *const timer_task)
+{
+	readSPI = true;
+}
+
+static void msTimer_task2_cb(const struct timer_task *const timer_task)
+{
+	g_timeMs++;
+}
+
+void msTimerInit(void)
+{
+	msTimer_task1.interval = 10;
+	msTimer_task1.cb       = msTimer_task1_cb;
+	msTimer_task1.mode     = TIMER_TASK_REPEAT;
+	msTimer_task2.interval = 1;
+	msTimer_task2.cb       = msTimer_task2_cb;
+	msTimer_task2.mode     = TIMER_TASK_REPEAT;
+
+	timer_add_task(&TIMER_0, &msTimer_task1);
+	timer_add_task(&TIMER_0, &msTimer_task2);
+	timer_start(&TIMER_0);
+}
+
+
 /**
 * Example of how to use SPI and ISCOMM BUFF
 */
