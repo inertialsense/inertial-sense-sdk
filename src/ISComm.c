@@ -178,14 +178,11 @@ int validateBaudRate(unsigned int baudRate)
  * @param bufferSize Size of the buffer
  * @return returns the size of the buffer
  */
-int is_comm_reset_buffer(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+int is_comm_reset_buffer(is_comm_instance_t* c)
 {
-    c->rxBuf.size = bufferSize;
-    c->rxBuf.start = buffer;
-    c->rxBuf.end = buffer + bufferSize;
-    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = buffer;
+    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = c->rxBuf.start;
 
-    return bufferSize;
+    return c->rxBuf.size;
 }
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
@@ -194,7 +191,12 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 
     // Clear buffer and initialize buffer pointers
     memset(buffer, 0, bufferSize);
-    is_comm_reset_buffer(c, buffer, bufferSize);
+    
+    c->rxBuf.size = bufferSize;
+    c->rxBuf.start = buffer;
+    c->rxBuf.end = buffer + bufferSize;
+
+    is_comm_reset_buffer(c);
     
     // Set parse enable flags
     c->config.enabledMask = DEFAULT_PROTO_MASK;
@@ -943,13 +945,13 @@ int is_comm_free(is_comm_instance_t* c)
             }
             else if (bytesFree == 0)
             {   // The current packet if too big to parse. Dump and restart!
-                return is_comm_reset_buffer(c, buf->start, buf->size);
+                return is_comm_reset_buffer(c);
             }
         }
         else
         {   // Not currently parsing a packet
             if (buf->scan >= buf->tail) // No data left to scan in buffer. RESET pointers to start of the buffer.
-                return is_comm_reset_buffer(c, buf->start, buf->size);
+                return is_comm_reset_buffer(c);
         }
     }
 

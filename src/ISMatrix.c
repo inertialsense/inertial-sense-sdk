@@ -318,7 +318,6 @@ void trans_MatMxN( f_t *result, const f_t *M, int m, int n )
 	}
 }
 
-
 void mul_Mat3x3_Mat3x3( ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2 )
 {
 	// Row 1
