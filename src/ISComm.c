@@ -171,11 +171,9 @@ int validateBaudRate(unsigned int baudRate)
 
 
 /**
- * @brief Sets buffer to inital state
+ * @brief Sets buffer to initial state
  * 
  * @param c is_comm_instance_t*
- * @param buffer uint8_t*
- * @param bufferSize Size of the buffer
  * @return returns the size of the buffer
  */
 int is_comm_reset_buffer(is_comm_instance_t* c)
