@@ -180,7 +180,9 @@ int validateBaudRate(unsigned int baudRate)
  */
 int is_comm_reset_buffer(is_comm_instance_t* c)
 {
+    c->parser.state = 0;
     c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = c->rxBuf.start;
+    c->processPkt = NULL;
 
     return c->rxBuf.size;
 }
@@ -951,7 +953,7 @@ int is_comm_free(is_comm_instance_t* c)
         else
         {   // Not currently parsing a packet
             if (buf->scan >= buf->tail) // No data left to scan in buffer. RESET pointers to start of the buffer.
-                return is_comm_reset_buffer(c);
+                 return is_comm_reset_buffer(c);
         }
     }
 
