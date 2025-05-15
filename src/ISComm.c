@@ -871,21 +871,63 @@ static protocol_type_t processSpartnByte(void* v)
     return _PTYPE_NONE;
 }
 
+#if PLATFORM_IS_EMBEDDED
+#include "config/conf_debug.h"
+#endif
+
+/**
+ * Move a buffer of data from src to dest.  This function is used to move data between buffers 
+ * that are not aligned to 32-bit boundaries.  Equivalent to memmove() but more efficient on 
+ * 32-bit processors.  Requires src and dest do not overlap such that dest will overwrite src 
+ * data not yet copied (i.e. ideal use is dest < src).
+ * @param dest the destination buffer
+ * @param src the source buffer
+ * @param size the number of bytes to move
+ */
+void move_buffer_32bit(void* dest, void* src, size_t size)
+{
+    uint32_t* dest32 = (uint32_t*)dest;
+    uint32_t* src32 = (uint32_t*)src;
+
+    size_t size32 = size / 4;
+    size_t remaining = size % 4;
+
+    // Copy 32-bit chunks
+    for (size_t i = 0; i < size32; i++)
+    {
+        dest32[i] = src32[i];
+    }
+
+    // Copy remaining bytes
+    uint8_t* dest8 = (uint8_t*)(dest32 + size32);
+    uint8_t* src8 = (uint8_t*)(src32 + size32);
+
+    for (size_t i = 0; i < remaining; i++)
+    {
+        dest8[i] = src8[i];
+    }
+}
+
 /**
  *            *** MAKE SURE YOU UNDERSTAND THIS FUNCTION BEFORE YOU USE IT ***
  *
- * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.
- * Specifically, if the buffer is empty, it will reset all pointers to the start of the buffer.
- * Will shift active packet to the front of the buffer. If there is an active but the buffer is full 
- * the active packet will be dropped.
+ * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.  
+ * This function should be called before adding data to the is_comm buffer and calling 
+ * is_comm_parse_timeout() or related parse functions.  
+ * - Reset buffer pointers to the start of the buffer if 1.) parsing is done or 2.) the buffer is full.
+ * - Free up buffer space by shifting partial/incomplete packets to the beginning of the buffer. 
  * @param c the comm instance associated with the port
- * @return the number of free bytes available in the buffer (for subsequent reads)
+ * @return the number of free bytes available in the buffer
  */
 int is_comm_free(is_comm_instance_t* c)
 {
     is_comm_buffer_t *buf = &(c->rxBuf);
 
     int bytesFree = (int)(buf->end - buf->tail);
+
+#if PLATFORM_IS_EMBEDDED
+    DBGPIO_TOGGLE(GPIO_8_PIN);
+#endif
 
     // If the buff has any data try to free space
     if (bytesFree < buf->size)
@@ -896,13 +938,21 @@ int is_comm_free(is_comm_instance_t* c)
             {   // Data is not at the beginning of the buffer. Move current parse to the front.
                 int shift = (int)(buf->head - buf->start);
                 // Shift current data to start of buffer
-                memmove(buf->start, buf->head, buf->tail - buf->head);
+#if PLATFORM_IS_EMBEDDED
+                DBGPIO_START(GPIO_5_PIN);
+#endif
+                // memmove(buf->start, buf->head, buf->tail - buf->head);
+                move_buffer_32bit(buf->start, buf->head, buf->tail - buf->head);
+
                 buf->head = buf->start;
                 buf->tail -= shift;
                 buf->scan -= shift;
 
                 // re-calculate free byte count
                 bytesFree = (int)(buf->end - buf->tail);
+#if PLATFORM_IS_EMBEDDED
+                DBGPIO_END(GPIO_5_PIN);
+#endif
             }
             else if (bytesFree == 0)
             {   // The current packet if too big to parse. Dump and restart!
