@@ -3,21 +3,20 @@
 #include "../com_manager.h"
 #include "../protocol_nmea.h"
 
-static imu_t                g_imu;
-static ins_1_t              g_ins1;
-static ins_2_t              g_ins2;
-dev_info_t                  g_devInfo;
-static sys_sensors_t        g_sensor_sys;
-static sys_sensors_adc_t    g_sensor_adc;
-static sys_sensors_adc_t    g_sensor_lsb;
-static sys_sensors_adc_t    g_adcSigma;
-static sys_params_t         g_sysParams;
-static nvm_flash_cfg_t      g_nvmFlashCfg;
-static rtos_info_t          g_rtos;
-static system_command_t     g_sysCmd;
-static debug_array_t        g_debug;
-static io_t                 g_IO;
-static mag_cal_t            g_magCal;
+static imu_t g_imu;
+static ins_1_t g_ins1;
+static ins_2_t g_ins2;
+dev_info_t g_devInfo;
+static sys_sensors_t g_sensor_sys;
+static sys_sensors_adc_t g_sensor_adc;
+static sys_sensors_adc_t g_sensor_lsb;
+static sys_sensors_adc_t g_adcSigma;
+static sys_params_t	g_sysParams;
+static nvm_flash_cfg_t g_nvmFlashCfg;
+static rtos_info_t g_rtos;
+static system_command_t g_sysCmd;
+static debug_array_t g_debug;
+static mag_cal_t g_magCal;
 
 #define BUFFER_SIZE         8192
 
@@ -162,7 +161,6 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
     comManagerRegisterInstance(&(cm2->cm), DID_SYS_CMD, 0, 0, &g_sysCmd, &g_sysCmd, sizeof(system_command_t), 0);
     comManagerRegisterInstance(&(cm2->cm), DID_DEBUG_ARRAY, 0, 0, &g_debug, &g_debug, sizeof(debug_array_t), 0);
 //     comManagerRegisterInstance(&(cm2->cm), DID_FEATURE_BITS, 0, 0, 0, 0, sizeof(feature_bits_t), 0);
-    comManagerRegisterInstance(&(cm2->cm), DID_IO, 0, 0, &g_IO, &g_IO, sizeof(io_t), 0);
     comManagerRegisterInstance(&(cm2->cm), DID_MAG_CAL, 0, 0, &g_magCal, &g_magCal, sizeof(mag_cal_t), 0);
 }
 

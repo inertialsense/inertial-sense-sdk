@@ -291,7 +291,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 24: DID_SENSORS_UCAL
         0,                      // 25: DID_SENSORS_TCAL
         0,                      // 26: DID_SENSORS_TC_BIAS
-        0,                      // 27: DID_IO
+        0,                      // 27: DID_UNUSED_27
         offsetsOnlyTimeFirst,   // 28: DID_SENSORS_ADC
         0,                      // 29: DID_SCOMP
         0,                      // 30: DID_GPS1_VEL
@@ -481,7 +481,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 24: DID_SENSORS_UCAL
         0,                      // 25: DID_SENSORS_TCAL
         0,                      // 26: DID_SENSORS_TC_BIAS
-        0,                      // 27: DID_IO
+        0,                      // 27: DID_UNUSED_27
         0,                      // 28: DID_SENSORS_ADC
         0,                      // 29: DID_SCOMP
         0,                      // 30: DID_GPS1_VEL

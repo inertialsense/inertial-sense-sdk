@@ -121,19 +121,12 @@ static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_
     mapper.AddArray("uid", &manufacturing_info_t::uid, DATA_TYPE_UINT32, 4, "", "Unique microcontroller identifier", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapIO(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<io_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &io_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("gpioStatus", &io_t::gpioStatus, DATA_TYPE_UINT32, "", "Use to read and control GPIO input and output.", DATA_FLAGS_DISPLAY_HEX);
-}
-
 static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<bit_t> mapper(data_set, did);
-    mapper.AddMember("command", &bit_t::command, DATA_TYPE_UINT8, "", "[cmd: " TOSTRING(BIT_CMD_FULL_STATIONARY) "=start full, " TOSTRING(BIT_CMD_BASIC_MOVING) "=start basic, " TOSTRING(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) "=start full HA, " TOSTRING(BIT_CMD_OFF) "=off]");
+    mapper.AddMember("command", &bit_t::command, DATA_TYPE_UINT8, "", "[cmd: " + std::to_string(BIT_CMD_FULL_STATIONARY) + "=start full, " + std::to_string(BIT_CMD_BASIC_MOVING) + "=start basic, " + std::to_string(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) + "=start full HA, " + std::to_string(BIT_CMD_OFF) + "=off]");
     mapper.AddMember("lastCommand", &bit_t::lastCommand, DATA_TYPE_UINT8, "", "Last input command", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " TOSTRING(BIT_STATE_RUNNING) "=running " TOSTRING(BIT_STATE_DONE) "=done]", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " + std::to_string(BIT_STATE_RUNNING) + "=running " + std::to_string(BIT_STATE_DONE) + "=done]", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &bit_t::reserved, DATA_TYPE_UINT8);
     mapper.AddMember("hdwBitStatus", &bit_t::hdwBitStatus, DATA_TYPE_UINT32, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("calBitStatus", &bit_t::calBitStatus, DATA_TYPE_UINT32, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
@@ -147,7 +140,7 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("acc", &bit_t::acc, DATA_TYPE_F32, SYM_M_PER_S, "Acceleration error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("pqrSigma", &bit_t::pqrSigma, DATA_TYPE_F32, SYM_DEG_PER_S, "Angular rate standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("accSigma", &bit_t::accSigma, DATA_TYPE_F32, SYM_M_PER_S, "Acceleration standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " TOSTRING(BIT_TEST_MODE_SIM_GPS_NOISE) "=GPS noise, " TOSTRING(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) "=Rx overflow, " TOSTRING(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) "=Tx overflow");
+    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " + std::to_string(BIT_TEST_MODE_SIM_GPS_NOISE) + "=GPS noise, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow");
     mapper.AddMember("testVar", &bit_t::testVar, DATA_TYPE_UINT8, "", "Test Mode variable (port number)");
     mapper.AddMember("detectedHardwareId", &bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
@@ -350,7 +343,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("leapS", &gps_pos_t::leapS, DATA_TYPE_UINT8, "", "GPS leap seconds (GPS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GPS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gps_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gps_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("reserved", &gps_pos_t::reserved, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("status2", &gps_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGpsStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
 }
 
 static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -571,7 +564,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";
     str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("ioConfig", &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";
@@ -604,8 +598,13 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddMember("imuRejectThreshGyroLow", &nvm_flash_cfg_t::imuRejectThreshGyroLow, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
-    mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
-
+    mapper.AddMember("imuShockDetectLatencyMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.");
+    mapper.AddMember("imuShockRejectLatchMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.");
+    mapper.AddMember("imuShockOptions", &nvm_flash_cfg_t::imuShockOptions, DATA_TYPE_UINT8, "", "IMU shock rejection options (see eImuShockOptions).", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("imuShockDeltaAccPerMsHighThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsHighThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Min acceleration change in 1 ms to detect start of a shock.");
+    mapper.AddMember("imuShockDeltaAccPerMsLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsLowThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Max acceleration change in 1 ms within the latch time to detect end of a shock.");
+    mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT16);
+ 
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
     mapper.AddMember("checksum", &nvm_flash_cfg_t::checksum, DATA_TYPE_UINT32, "", "Flash checksum");
@@ -720,7 +719,7 @@ static void PopulateMapEvbStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs", &evb_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
     mapper.AddArray("firmwareVer", &evb_status_t::firmwareVer, DATA_TYPE_UINT8, 4, "", "Firmware version", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("evbStatus", &evb_status_t::evbStatus, DATA_TYPE_UINT32, "", "EVB status bits", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("loggerMode", &evb_status_t::loggerMode, DATA_TYPE_UINT32, "", TOSTRING(EVB2_LOG_CMD_START) "=start, " TOSTRING(EVB2_LOG_CMD_STOP) "=stop");
+    mapper.AddMember("loggerMode", &evb_status_t::loggerMode, DATA_TYPE_UINT32, "", std::to_string(EVB2_LOG_CMD_START) + "=start, " + std::to_string(EVB2_LOG_CMD_STOP) + "=stop");
     mapper.AddMember("loggerElapsedTimeMs", &evb_status_t::loggerElapsedTimeMs, DATA_TYPE_UINT32, "ms", "Elapsed time of the current data log.");
     mapper.AddMember("wifiIpAddr", &evb_status_t::wifiIpAddr, DATA_TYPE_UINT32, "", "WiFi IP address", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("sysCommand", &evb_status_t::sysCommand, DATA_TYPE_UINT32, "", "99=software reset, 1122334455=unlock, 1357924681=chip erase");
@@ -1198,73 +1197,6 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
     }
 }
 
-static void PopulateMapSensorCompensation(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<sensor_compensation_t> mapper(data_set, did);
-    int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4;
-    string str = 
-        TOSTRING(SC_RUNTIME) "=Runtime, Tcal["
-        TOSTRING(SC_TCAL_INIT) "=Init, "
-        TOSTRING(SC_TCAL_RUNNING) "=Running, "
-        TOSTRING(SC_TCAL_STOP) "=Stop, "
-        TOSTRING(SC_TCAL_DONE) "=Done], MCAL["
-        TOSTRING(SC_MCAL_SAMPLE_INIT) "=Init, "
-        TOSTRING(SC_MCAL_SAMPLE_MEAN_UCAL) "=UCAL, "
-        TOSTRING(SC_MCAL_SAMPLE_MEAN_TCAL) "=TCAL, "
-        TOSTRING(SC_MCAL_SAMPLE_MEAN_MCAL) "=MCAL, "
-        TOSTRING(SC_LPF_SAMPLE) "=LPF 0.01Hz, "
-        TOSTRING(SC_LPF_SAMPLE_FAST) "=LPF 1Hz ";
-
-    mapper.AddMember("timeMs", &sensor_compensation_t::timeMs, DATA_TYPE_UINT32, "ms", "Time since boot up", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("calState", &sensor_compensation_t::calState, DATA_TYPE_UINT32, "", str);
-    mapper.AddMember("status", &sensor_compensation_t::status, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("sampleCount", &sensor_compensation_t::sampleCount, DATA_TYPE_UINT32, "", "Used in averaging");
-    mapper.AddArray("alignAccel", &sensor_compensation_t::alignAccel, DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Alignment acceleration", flags);
-    // Gyros
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
-    {
-        mapper.AddArray2 ("pqr" + to_string(i) + ".lpfLsb",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].lpfLsb), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Low-pass filtered LSB", flags, C_RAD2DEG);
-        mapper.AddMember2("pqr" + to_string(i) + ".lpfTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
-        mapper.AddArray2 ("pqr" + to_string(i) + ".k",              i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].k), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Slope", flags, C_RAD2DEG);
-        mapper.AddMember2("pqr" + to_string(i) + ".temp",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("pqr" + to_string(i) + ".tempRampRate",   i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].tempRampRate), DATA_TYPE_F32, SYM_DEG_C_PER_S, "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-        mapper.AddMember2("pqr" + to_string(i) + ".tci",            i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("pqr" + to_string(i) + ".numTcPts",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("pqr" + to_string(i) + ".dtTemp",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    }
-    // Accels
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
-    {
-        mapper.AddArray2 ("acc" + to_string(i) + ".lpfLsb",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].lpfLsb), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Low-pass filtered LSB", flags);
-        mapper.AddMember2("acc" + to_string(i) + ".lpfTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
-        mapper.AddArray2 ("acc" + to_string(i) + ".k",              i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].k), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Slope", flags);
-        mapper.AddMember2("acc" + to_string(i) + ".temp",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("acc" + to_string(i) + ".tempRampRate",   i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].tempRampRate), DATA_TYPE_F32, SYM_M_PER_S_2, "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-        mapper.AddMember2("acc" + to_string(i) + ".tci",            i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("acc" + to_string(i) + ".numTcPts",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("acc" + to_string(i) + ".dtTemp",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    }
-
-    // Magnetometers
-    for (int i=0; i<NUM_MAG_DEVICES; i++)
-    {
-        mapper.AddArray2 ("mag" + to_string(i) + ".lpfLsb",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].lpfLsb), DATA_TYPE_F32, 3, "", "Low-pass filtered LSB", flags);
-        mapper.AddMember2("mag" + to_string(i) + ".lpfTemp",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
-        mapper.AddArray2 ("mag" + to_string(i) + ".k",             i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].k), DATA_TYPE_F32, 3, "", "Slope", flags);
-        mapper.AddMember2("mag" + to_string(i) + ".temp",          i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("mag" + to_string(i) + ".tempRampRate",  i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].tempRampRate), DATA_TYPE_F32, "", "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-        mapper.AddMember2("mag" + to_string(i) + ".tci",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("mag" + to_string(i) + ".numTcPts",      i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("mag" + to_string(i) + ".dtTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    }
-
-    // Reference IMU
-    mapper.AddArray2("referenceImu.pqr", offsetof(sensor_compensation_t, referenceImu.pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Reference IMU angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
-    mapper.AddArray2("referenceImu.acc", offsetof(sensor_compensation_t, referenceImu.acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Reference IMU linear acceleration", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    // Reference Mag
-    mapper.AddArray("referenceMag", &sensor_compensation_t::referenceMag, DATA_TYPE_F32, 3, "", "Reference magnetometer", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-}
-
 static void PopulateMapInl2MagObsInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<inl2_mag_obs_info_t> mapper(data_set, did);
@@ -1362,7 +1294,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_SENSORS_UCAL",                 // 24
     "DID_SENSORS_TCAL",                 // 25
     "DID_SENSORS_TC_BIAS",              // 26
-    "DID_IO",                           // 27
+    "DID_UNUSED_27",                    // 27
     "DID_SENSORS_ADC",                  // 28
     "DID_SCOMP",                        // 29
     "DID_GPS1_VEL",                     // 30
@@ -1575,7 +1507,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapCanConfig(m_data_set, DID_CAN_CONFIG);
     PopulateMapRmc(m_data_set, DID_RMC);
     PopulateMapRmc(m_data_set, DID_GPX_RMC);
-    PopulateMapIO(m_data_set, DID_IO);
     PopulateMapISEvent(m_data_set, DID_EVENT);
 
     // EVB
@@ -1586,12 +1517,11 @@ cISDataMappings::cISDataMappings()
     PopulateMapDeviceInfo(m_data_set, DID_EVB_DEV_INFO);
 
     // MANUFACTURING
-    PopulateMapManufacturingInfo(m_data_set, DID_MANUFACTURING_INFO);
-    PopulateMapSensorsWTemp(m_data_set, DID_SENSORS_UCAL);
-    PopulateMapSensorsWTemp(m_data_set, DID_SENSORS_TCAL);
-    PopulateMapSensorsWTemp(m_data_set, DID_SENSORS_MCAL);
-    PopulateMapSensors(m_data_set, DID_SENSORS_TC_BIAS);
-    PopulateMapSensorCompensation(m_data_set, DID_SCOMP);
+    PopulateMapManufacturingInfo(   m_data_set, DID_MANUFACTURING_INFO);
+    PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_UCAL);
+    PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_TCAL);
+    PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
+    PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
 
     // This must come last
     for (uint32_t did = 0; did < DID_COUNT; did++)
@@ -1713,7 +1643,6 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_RMC:
     case DID_DEBUG_STRING:
     case DID_DEBUG_ARRAY:
-    case DID_IO:
     case DID_MAG_CAL:
     case DID_COMMUNICATIONS_LOOPBACK:
     case DID_BIT:
