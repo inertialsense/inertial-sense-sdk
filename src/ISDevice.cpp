@@ -74,7 +74,7 @@ bool ISDevice::step() {
     } else {
         if (sysParams.flashCfgChecksum == 0)
             GetData(DID_SYS_PARAMS);
-        if ((flashCfg.checksum == 0) || (flashCfg.checksum == -1))
+        if ((flashCfg.checksum == 0) || (flashCfg.checksum == (uint32_t)-1))
             GetData(DID_FLASH_CONFIG);
 
         SyncFlashConfig();
