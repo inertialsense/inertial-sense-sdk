@@ -284,8 +284,8 @@ void cDeviceLog::UpdateStatsFromFile(protocol_type_t ptype, int id, double times
 ISDevice* cDeviceLog::Device() {
     return (ISDevice*)device;
 }
-const dev_info_t* cDeviceLog::DeviceInfo() {
-    return (dev_info_t*)&(device->devInfo);
+dev_info_t cDeviceLog::DeviceInfo() {
+    return device->devInfo;
 }
 
 void cDeviceLog::OnReadPacket(packet_t* pkt, protocol_type_t ptype) {

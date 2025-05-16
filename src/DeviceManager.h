@@ -176,16 +176,20 @@ public:
     std::vector<ISDevice*> getDevicesAsVector();
 
     /**
-     * Returns a reference to an is_device_t struct that contains information about the specified device
-     * @return
+     * @return an ISDevice* instance associated with the specified port, or NULL if not found
      */
-    // ISDevice* getDevice(uint32_t index);
     ISDevice* getDevice(port_handle_t port);
 
     /**
-     * Returns the ISDevice instance associated with the specified port, or NULL if there is no associated device
-     * @param port
-     * @return
+     * @return an ISDevice* instance identified by the specified UID, or NULL if not found
+     */
+    ISDevice* getDevice(uint64_t uid);
+
+    /**
+     * Returns the first ISDevice instance matching the specified criteria
+     * @param serialNum the serial number of the device to return
+     * @param hdwId an optional hdwId to further filter on
+     * @return an ISDevice* instance or NULL of not found
      */
     ISDevice* getDevice(uint32_t serialNum, is_hardware_t hdwId = IS_HARDWARE_ANY);
 

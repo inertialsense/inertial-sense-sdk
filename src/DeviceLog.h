@@ -76,7 +76,7 @@ public:
 
     ISDevice* Device();
 
-    const dev_info_t *DeviceInfo();
+    dev_info_t DeviceInfo();
 
     uint16_t HardwareId() { return m_devHdwId; }
     uint32_t SerialNumber() { return m_devSerialNo; }

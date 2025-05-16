@@ -216,6 +216,14 @@ ISDevice *DeviceManager::getDevice(port_handle_t port) {
     return NULL;
 }
 
+ISDevice *DeviceManager::getDevice(uint64_t uid) {
+    for (auto device : *this) {
+        if (device && (ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo) == uid))
+            return device;
+    }
+    return NULL;
+}
+
 ISDevice *DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
     for (auto device : *this) {
         if ((device->hdwId == hdwId) && (device->devInfo.serialNumber == serialNum))

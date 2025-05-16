@@ -560,7 +560,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
-            cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(deviceLog->DeviceInfo()->serialNumber) + ".txt", "a");
+            cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(deviceLog->DeviceInfo().serialNumber) + ".txt", "a");
             std::string msg = (((diag_msg_t *)dataBuf)->message);
             outfile->write(msg.c_str(), msg.length());
             if (msg.length() > 0 && *msg.end() != '\n')

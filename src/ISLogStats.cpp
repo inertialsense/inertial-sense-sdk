@@ -221,9 +221,9 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
 unsigned int cLogStats::Count()
 {
     unsigned int count = 0;
-    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
+    for (auto [ptype, stats] : msgs)
     {
-        count += it->second.count;
+        count += stats.count;
     }
     return count;
 }
@@ -231,9 +231,9 @@ unsigned int cLogStats::Count()
 unsigned int cLogStats::Errors()
 {
     unsigned int errors = 0;
-    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
+    for (auto [ptype, stats] : msgs)
     {
-        errors += it->second.errors;
+        errors += stats.errors;
     }    
     return errors;
 }
@@ -243,10 +243,8 @@ string cLogStats::Stats()
     std::stringstream ss;
     unsigned int count = Count();
     ss << "Total: count " << count << endl;
-    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it)
+    for (auto [ptype, stats] : msgs)
     {
-        protocol_type_t ptype = it->first;
-        sLogStatPType& msg = it->second;
         switch (ptype)
         {   // Skip these
         case _PTYPE_PARSE_ERROR:
@@ -255,7 +253,7 @@ string cLogStats::Stats()
         default: break;
         }
 
-        ss << MessageStats(ptype, msg);
+        ss << MessageStats(ptype, stats);
     }
     return ss.str();
 }

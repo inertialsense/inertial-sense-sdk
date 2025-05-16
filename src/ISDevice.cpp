@@ -74,7 +74,7 @@ bool ISDevice::step() {
     } else {
         if (sysParams.flashCfgChecksum == 0)
             GetData(DID_SYS_PARAMS);
-        if (flashCfg.checksum == 0)
+        if ((flashCfg.checksum == 0) || (flashCfg.checksum == -1))
             GetData(DID_FLASH_CONFIG);
 
         SyncFlashConfig();
@@ -258,13 +258,17 @@ bool ISDevice::validate(uint32_t timeout) {
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
     hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
 
+    queryTypes nextQueryType = QUERYTYPE_NMEA;
     unsigned int startTime = current_timeMs();
     do {
+        if ((current_timeMs() - startTime) > timeout)
+            return false;
+
         // REMOVE - Don't tolerate SERIAL_PORT specific conditions in ISDevice
         if (SERIAL_PORT(port)->errorCode == ENOENT)
             return false;
 
-        switch (previousQueryType) {
+        switch (nextQueryType) {
             case QUERYTYPE_NMEA:
                 SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
                 break;
@@ -286,11 +290,8 @@ bool ISDevice::validate(uint32_t timeout) {
         SLEEP_MS(100);
         step();
 
-        if ((current_timeMs() - startTime) > timeout)
-            return false;
-
-        previousQueryType = static_cast<queryTypes>((int)previousQueryType + 1 % (int)QUERYTYPE_MAX);
-    } while ((hdwId == IS_HARDWARE_TYPE_UNKNOWN) && (devInfo.serialNumber == 0));
+        nextQueryType = static_cast<queryTypes>((int)nextQueryType + 1 % (int)QUERYTYPE_MAX);
+    } while (!hasDeviceInfo());
 
     if (hasDeviceInfo()) {
         comManagerGetData(this, DID_SYS_CMD, 0, 0, 0);
@@ -298,6 +299,7 @@ bool ISDevice::validate(uint32_t timeout) {
         comManagerGetData(this, DID_EVB_FLASH_CFG, 0, 0, 0);
     }
 
+    previousQueryType = QUERYTYPE_NMEA;
     return true;
 }
 
@@ -311,20 +313,23 @@ bool ISDevice::validateAsync(uint32_t timeout) {
         return false;
 
     if (hasDeviceInfo()) {
+        // we got out Device Info, so reset our timer (stop trying) and return true
         validationStartMs = 0;
+        previousQueryType = QUERYTYPE_NMEA;
         return true;
     }
 
-    // uint64_t nanos = current_timeUs();
-
+    // if this is non-zero, it means we're actively validating; this helps us know when to give up/timeout
     if (!validationStartMs) {
         validationStartMs = current_timeMs();
     }
 
     // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
     if ((current_timeMs() - validationStartMs) > timeout) {
+        // We failed to get a response before the timeout occurred, so reset the timer (stop trying) and return false
         debug_message("ISDevice::validateAsync() timed out after %dms.\n", current_timeMs() - validationStartMs);
         validationStartMs = 0;
+        previousQueryType = QUERYTYPE_NMEA;
         return false;
     }
 
@@ -348,10 +353,6 @@ bool ISDevice::validateAsync(uint32_t timeout) {
             // comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
             break;
     }
-
-//    uint64_t dt = current_timeUs() - nanos;
-//    if (dt > 20000)
-//        debug_message("ISDevice::validateAsync() executed for %ld nanos, for device %s.\n", current_timeUs() - nanos, getDescription().c_str());
 
     SLEEP_MS(5); // give just enough time for the device to receive, process and respond to the query
 

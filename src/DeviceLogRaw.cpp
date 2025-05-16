@@ -128,6 +128,9 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                             int start = m_comm.rxPkt.dataHdr.offset;
                             int end = m_comm.rxPkt.dataHdr.offset + m_comm.rxPkt.dataHdr.size;
 
+                            if (!devInfo->hdwRunState)
+                                devInfo->hdwRunState = HDW_STATE_APP;   // FIXME: this should go away once the DEV_INFO from the device correctly reports the runState
+
                             // Did we really get the protocol version?
                             int protOffset = offsetof(dev_info_t, protocolVer);
                             if (start <= protOffset && (int) (protOffset + sizeof(uint32_t)) <= end) {
