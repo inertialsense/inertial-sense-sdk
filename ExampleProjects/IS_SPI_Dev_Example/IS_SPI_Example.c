@@ -40,6 +40,7 @@ is_comm_instance_t comm;
 static uint8_t ctrl_buffer[64];
 
 #define CDCD_ECHO_BUF_SIZ	256
+#define BUFF_SIZE	2048
 
 uint8_t USBIntBuff[CDCD_ECHO_BUF_SIZ];
 uint8_t USBInBuff[BUFF_SIZE];
@@ -332,7 +333,7 @@ void unloadSpiInBuff()
 			is_comm_buffer_parse_messages(spiInBuff, spiInBuffIdx, &comm, &s_callbacks);
 		#endif
 		
-		USB_write((uint8_t *)USBOutBuff, USBOutSize);
+		cdcdf_acm_write((uint8_t *)USBOutBuff, USBOutSize);
 	}
 	
 	spiInBuffIdx=0;
