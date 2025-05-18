@@ -924,7 +924,7 @@ int is_comm_free(is_comm_instance_t* c)
     int bytesFree = (int)(buf->end - buf->tail);
 
     // If the buff has any data try to free space
-    if (bytesFree < buf->size)
+    if (bytesFree < (int)(buf->size))
     {   // Buffer contains data
         if (c->processPkt != NULL)
         {   // Currently parsing a packet.
