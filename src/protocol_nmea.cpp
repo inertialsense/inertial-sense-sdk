@@ -935,8 +935,8 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "GLL");
 
-    if (((pos.lla[0] >= 0.000000000001) && (pos.lla[0] <= -0.000000000001)) &&
-        ((pos.lla[1] >= 0.000000000001) && (pos.lla[1] <= -0.000000000001))
+    if (((pos.lla[0] >= 0.000000000001) || (pos.lla[0] <= -0.000000000001)) &&
+        ((pos.lla[1] >= 0.000000000001) || (pos.lla[1] <= -0.000000000001))
         && (pos.status&GPS_STATUS_FIX_MASK))
     {   // Valid lat/lon
         nmea_latToDegMin(a, aSize, n, pos.lla[0]);      // 1,2
@@ -947,7 +947,7 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
         
     nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos); // 5
 
-    if (pos.week > 2270) // Time is valid so set to active
+    if (pos.week > 2269) // Time is valid so set to active
         nmea_sprint(a, aSize, n, ",A");                 // 6
     else // Time is invalid so set to void
         nmea_sprint(a, aSize, n, ",V");                 // 6
@@ -2647,16 +2647,42 @@ int nmea_parse_gll(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
     (void)aSize;
     char *ptr = (char *)&a[7];	// $GxGLL,
     
-    // 1,2 - Latitude (deg)
-    ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
-    // 3,4 - Longitude (deg)
-    ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
+    if (*ptr == ',')
+    {   // pos has no value 
+        // 1,2 - Latitude (deg)
+        gpsPos.lla[0] = 0;
+        // 3,4 - Longitude (deg)
+        gpsPos.lla[1] = 0;
+
+        ptr += 4;
+    }
+    else
+    {   // pos has a value
+        // 1,2 - Latitude (deg)
+        ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
+        // 3,4 - Longitude (deg)
+        ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
+    }
+
     // 5 - UTC time HHMMSS.sss
     ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &utcTime, ptr, utcWeekday, gpsPos.leapS);
     
     // 6 - Valid (A=active, V=void)
-    if (*ptr == 'A')    gpsPos.status |= GPS_STATUS_FIX_2D;
-    else                gpsPos.status &= ~GPS_STATUS_FIX_MASK;
+    if (*ptr == 'A')    
+    {
+        if (((gpsPos.status & GPS_STATUS_FIX_MASK) == GPS_STATUS_FIX_NONE) && 
+            ((gpsPos.lla[0] >= 0.000000000001) || (gpsPos.lla[0] <= -0.000000000001)))
+        {   // No fix currently set to 2D
+            gpsPos.status |= GPS_STATUS_FIX_2D;
+        }
+    }
+    else               
+    {
+        gpsPos.status &= ~GPS_STATUS_FIX_MASK;
+        gpsPos.timeOfWeekMs = 0;
+        gpsPos.lla[0] = 0.0;
+        gpsPos.lla[1] = 0.0;
+    }
 
     return 0;
 }
