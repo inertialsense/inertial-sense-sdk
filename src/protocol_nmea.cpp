@@ -931,13 +931,26 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
          A            Data Active or V (void)
          *iD          checksum data
     */
-
+    
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "GLL");
-    nmea_latToDegMin(a, aSize, n, pos.lla[0]);                      // 1,2
-    nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                      // 3,4
-    nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);                        // 5
-    nmea_sprint(a, aSize, n, ",A");                                 // 6
+
+    if (((pos.lla[0] >= 0.000000000001) && (pos.lla[0] <= -0.000000000001)) &&
+        ((pos.lla[1] >= 0.000000000001) && (pos.lla[1] <= -0.000000000001)))
+    {   // Valid lat/lon
+        nmea_latToDegMin(a, aSize, n, pos.lla[0]);      // 1,2
+        nmea_lonToDegMin(a, aSize, n, pos.lla[1]);      // 3,4
+    }
+    else // Invalid lat/lon
+        nmea_sprint(a, aSize, n, ",,,,");               // 1,2,3,4
+        
+    nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos); // 5
+
+    if (pos.week > 2270) // Time is valid so set to active
+        nmea_sprint(a, aSize, n, ",A");                 // 6
+    else // Time is invalid so set to void
+        nmea_sprint(a, aSize, n, ",V");                 // 6
+
     return nmea_sprint_footer(a, aSize, n);
 }
 
