@@ -936,7 +936,8 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
     nmea_sprint(a, aSize, n, "GLL");
 
     if (((pos.lla[0] >= 0.000000000001) && (pos.lla[0] <= -0.000000000001)) &&
-        ((pos.lla[1] >= 0.000000000001) && (pos.lla[1] <= -0.000000000001)))
+        ((pos.lla[1] >= 0.000000000001) && (pos.lla[1] <= -0.000000000001))
+        && (pos.status&GPS_STATUS_FIX_MASK))
     {   // Valid lat/lon
         nmea_latToDegMin(a, aSize, n, pos.lla[0]);      // 1,2
         nmea_lonToDegMin(a, aSize, n, pos.lla[1]);      // 3,4
@@ -2652,7 +2653,10 @@ int nmea_parse_gll(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
     ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
     // 5 - UTC time HHMMSS.sss
     ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &utcTime, ptr, utcWeekday, gpsPos.leapS);
+    
     // 6 - Valid (A=active, V=void)
+    if (*ptr == 'A')    gpsPos.status |= GPS_STATUS_FIX_2D;
+    else                gpsPos.status &= ~GPS_STATUS_FIX_MASK;
 
     return 0;
 }
