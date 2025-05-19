@@ -13,7 +13,7 @@
 #include "globals.h"
 #endif
 
-static int s_protocol_version = 0;
+static int s_protocol_version = NMEA_PROTOCOL_2P3;	// Default to protocol version 2.3
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
 static struct  
@@ -928,7 +928,7 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
          4916.46,N    Latitude 49 deg. 16.45 min. North
          12311.12,W   Longitude 123 deg. 11.12 min. West
          225444.800   Fix taken at 22:54:44.8 UTC
-         A            Data Active or V (void)
+         A            Data status: A (active) or V (void)
          *iD          checksum data
     */
     

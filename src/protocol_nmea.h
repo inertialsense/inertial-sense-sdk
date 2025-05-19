@@ -17,7 +17,7 @@ extern uint32_t g_cpu_msec;
 
 enum eNmeaProtocolVersion
 {
-    NMEA_PROTOCOL_2P3 		= 0,	// <4.10
+    NMEA_PROTOCOL_2P3 		= 230,	// 2.3 (Default version)
     NMEA_PROTOCOL_4P10 		= 410,	// 4.10
 };
 

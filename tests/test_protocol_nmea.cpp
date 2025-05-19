@@ -706,7 +706,70 @@ TEST(protocol_nmea, GGA4)
 TEST(protocol_nmea, GLL)
 {
     gps_pos_t pos = {};
-    // pos.week = 12;
+    pos.week = 2270;
+    pos.timeOfWeekMs = 370659600;
+    pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+    pos.lla[0] = POS_LAT_DEG;
+    pos.lla[1] = POS_LON_DEG;
+    pos.leapS = LEAP_SEC;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
+    gps_pos_t result = {};
+    result.leapS = pos.leapS;
+    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
+    utc_time_t t;
+    nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
+    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+}
+
+TEST(protocol_nmea, GLL_noLat)
+{
+    gps_pos_t pos = {};
+    pos.week = 2270;
+    pos.timeOfWeekMs = 370659600;
+    pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+    pos.lla[0] = POS_LAT_DEG;
+    pos.lla[1] = 0;
+    pos.leapS = LEAP_SEC;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
+    gps_pos_t result = {};
+    result.leapS = pos.leapS;
+    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
+    utc_time_t t;
+    nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
+    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+}
+
+TEST(protocol_nmea, GLL_noLon )
+{
+    gps_pos_t pos = {};
+    pos.week = 2270;
+    pos.timeOfWeekMs = 370659600;
+    pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+    pos.lla[0] = 0;
+    pos.lla[1] = POS_LON_DEG;
+    pos.leapS = LEAP_SEC;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
+    gps_pos_t result = {};
+    result.leapS = pos.leapS;
+    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
+    utc_time_t t;
+    nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
+    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+}
+
+TEST(protocol_nmea, GLL_void)
+{
+    gps_pos_t pos = {};
+    pos.week = 0;
     pos.timeOfWeekMs = 370659600;
     pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
     pos.lla[0] = POS_LAT_DEG;
