@@ -294,9 +294,9 @@ bool ISDevice::validate(uint32_t timeout) {
     } while (!hasDeviceInfo());
 
     if (hasDeviceInfo()) {
-        comManagerGetData(this, DID_SYS_CMD, 0, 0, 0);
-        comManagerGetData(this, DID_FLASH_CONFIG, 0, 0, 0);
-        comManagerGetData(this, DID_EVB_FLASH_CFG, 0, 0, 0);
+        GetData(DID_SYS_CMD, 0, 0, 0);
+        GetData(DID_FLASH_CONFIG, 0, 0, 0);
+        GetData(DID_EVB_FLASH_CFG, 0, 0, 0);
     }
 
     previousQueryType = QUERYTYPE_NMEA;
@@ -336,12 +336,10 @@ bool ISDevice::validateAsync(uint32_t timeout) {
     switch (previousQueryType) {
         case ISDevice::queryTypes::QUERYTYPE_NMEA :
             // debug_message("[DBG] Querying serial port '%s' using NMEA protocol.\n", SERIAL_PORT(port)->portName);
-            // comManagerSendRaw(port, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
             SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISB :
             // debug_message("[DBG] Querying serial port '%s' using ISB protocol.\n", SERIAL_PORT(port)->portName);
-            // comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
             GetData(DID_DEV_INFO);
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
@@ -350,7 +348,6 @@ bool ISDevice::validateAsync(uint32_t timeout) {
             break;
         case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
             // debug_message("[DBG] Querying serial port '%s' mcuBoot/SMP protocol.\n", SERIAL_PORT(port)->portName);
-            // comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
             break;
     }
 
@@ -382,9 +379,9 @@ std::string ISDevice::getIdAsString() {
     return getIdAsString(devInfo);
 }
 
-std::string ISDevice::getName(const dev_info_t &devInfo) {
+std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
     // device serial no
-    std::string out = utils::string_format("SN%09d (", devInfo.serialNumber);
+    std::string out = utils::string_format( !(flags & COMPACT_SERIALNO) ? "SN%09d (" : "SN%d (", devInfo.serialNumber);
 
     // hardware type & version
     const char *typeName = "\?\?\?";
@@ -395,31 +392,33 @@ std::string ISDevice::getName(const dev_info_t &devInfo) {
         default: typeName = "\?\?\?"; break;
     }
     out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
-    if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
-        out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-        if (devInfo.hardwareVer[3] != 0)
-            out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+    if (!(flags & COMPACT_HARDWARE_VER)) {
+        if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+            out += utils::string_format(".%u", devInfo.hardwareVer[2]);
+            if (devInfo.hardwareVer[3] != 0)
+                out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+        }
     }
     out += ")";
-    // return utils::string_format("%s-%d.%d::SN%ld", typeName, dev.devInfo.hardwareVer[0], dev.devInfo.hardwareVer[1], dev.devInfo.serialNumber);
+
     return out;
 }
 
-std::string ISDevice::getName() {
-    return getName(devInfo);
+std::string ISDevice::getName(int flags) {
+    return getName(devInfo, flags);
 }
 
 /**
  * Generates a single string representing the firmware version & build information for this specified device.
  * @param dev the dev_data_s device for which to format the version info
- * @param detail an indicator for the amount of detail that should be provided in the resulting string.
- *      a value of 0 will output only the firmware version only.
+ * @param flags an indicator for the amount of detail that should be provided in the resulting string.
+ *      a value of 0 will output the firmware version only.
  *      a value of 1 will output the firmware version and build number.
  *      a value of 2 will output the firmware version, build number, and build date/time.
  * @return the resulting string
  */
 
-std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int detail) {
+std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
     std::string out;
 
     if (devInfo.hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
@@ -427,33 +426,42 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int detail) {
     } else {
         // firmware version
         out += utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
-        switch(devInfo.buildType) {
-            case 'a': out +="-alpha";       break;
-            case 'b': out +="-beta";        break;
-            case 'c': out +="-rc";          break;
-            case 'd': out +="-devel";       break;
-            case 's': out +="-snap";        break;
-            case '^': out +="-snap";        break;
-            default : out +="";             break;
+        if (!(flags & COMPACT_BUILD_TYPE)) {
+            switch (devInfo.buildType) {
+                case 'a': out += "-alpha";  break;
+                case 'b': out += "-beta";   break;
+                case 'c': out += "-rc";     break;
+                case 'd': out += "-devel";  break;
+                case 's': out += "-snap";   break;
+                case '^': out += "-snap";   break;
+                default : out += "";        break;
+            }
+        } else {
+            out += (char)devInfo.buildType;
         }
         if (devInfo.firmwareVer[3] != 0)
             out += utils::string_format(".%u", devInfo.firmwareVer[3]);
 
-        if (detail > 0) {
+        if (!(flags & OMIT_COMMIT_HASH)) {
             out += utils::string_format(" %08x", devInfo.repoRevision);
             if (devInfo.buildType == '^') {
                 out += "^";
             }
 
-            if (detail > 1) {
+            if (!(flags & OMIT_BUILD_DATE)) {
                 // build number/type
                 out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
 
-                // build date/time
-                out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
-                out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
-                if (devInfo.buildMillisecond)
-                    out += utils::string_format(".%03u", devInfo.buildMillisecond);
+                if (!(flags & OMIT_BUILD_TIME)) {
+                    // build date/time
+                    out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
+                    out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+                    if (!(flags & OMIT_BUILD_MILLIS)) {
+
+                        if (devInfo.buildMillisecond)
+                            out += utils::string_format(".%03u", devInfo.buildMillisecond);
+                    }
+                }
             }
         }
     }
@@ -461,12 +469,18 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int detail) {
     return out;
 }
 
-std::string ISDevice::getFirmwareInfo(int detail) {
-    return getFirmwareInfo(devInfo, detail);
+std::string ISDevice::getFirmwareInfo(int flags) {
+    return getFirmwareInfo(devInfo, flags);
 }
 
-std::string ISDevice::getDescription() {
-    return utils::string_format("%-12s [ %-12s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), getPortName().c_str());
+std::string ISDevice::getDescription(int flags) {
+    std::string desc = getName(flags);
+    if (!(flags & OMIT_FIRMWARE_VERSION)) {
+        desc += " " + getFirmwareInfo(flags);
+        if (!(flags & OMIT_PORT_NAME))
+            desc += ", " + getPortName();
+    }
+    return desc;
 }
 
 void ISDevice::registerWithLogger(cISLogger *logger) {
@@ -492,9 +506,9 @@ bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
 
     std::lock_guard<std::recursive_mutex> lock(portMutex);
     if (periodMultiple < 0) {
-        comManagerDisableData(port, dataId);
+        DisableData(dataId);
     } else {
-        comManagerGetData(port, dataId, 0, 0, periodMultiple);
+        GetData(dataId, 0, 0, periodMultiple);
     }
     return true;
 }

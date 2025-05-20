@@ -165,16 +165,13 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     }
 
     // if not, then do we need to allocate it?
-    deviceEntry.device = factory->allocateDevice(devInfo);
+    deviceEntry.device = factory->allocateDevice(devInfo, port);
     if (!deviceEntry.device)
         return;
 
     // debug_message("[DBG] Allocated new device: %s.\n", device->getDescription().c_str());
     knownDevices.push_back(deviceEntry);
     push_back(deviceEntry.device);
-
-    if (portIsValid(port))
-        deviceEntry.device->assignPort(port);
 
     // finally, call our handler
     for (device_listener& l : listeners) {

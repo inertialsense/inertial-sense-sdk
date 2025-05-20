@@ -124,7 +124,10 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
     deviceManager.addDeviceListener([this](auto && PH1, auto && PH2) { deviceManagerHandler(PH1, PH2); });
 
     if (pFactories.empty()) {
-        portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
+        SerialPortFactory& spf = SerialPortFactory::getInstance();
+        spf.portOptions.defaultBaudRate = BAUDRATE_921600;
+        spf.portOptions.defaultBlocking = false;
+        portManager.addPortFactory(&spf);
     } else {
         for (auto f : pFactories) portManager.addPortFactory(f);
     }
@@ -1769,13 +1772,22 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
             debug_message("[DBG] PortManager::PORT_ADDED '%s'\n", pName.c_str());
-            if (!serialPortIsOpen(port)) {
+            if (!portIsOpened(port)) {
                 // debug_message("[DBG] Opening serial port '%s'\n", curPortName.c_str());
-                if (serialPortOpen(port, pName.c_str(), m_baudRate, 0) == 0) {
+
+                // FIXME: the portManagerHandler shouldn't ever open/close the port - it can, but it shouldn't.
+                //  This is because the portManager should not ever "do anything" with the port, other than
+                //  manage it for others.  So, for device discovery, etc. those services should operate on the
+                //  port, but only when they need to do so.  Yes, its "nice" that this could validate that a
+                //  port can be opened, if a port is busy elsewhere, that doesn't make it invalid.  Besides,
+                //  its the PortFactory's job to validate the port, not the listener... usually.
+/*
+                if (portOpen(port) == PORT_ERROR__OPEN_FAILURE) {
                     debug_message("[DBG] Error opening serial port '%s'.  Ignoring.  Error was: %s\n", pName.c_str(), SERIAL_PORT(port)->error);
                     serialPortClose(port);           // failed to open
                     m_ignoredPorts.push_back(pName);     // record this port name as bad, so we don't try and reopen it again
                 }
+*/
             }
             break;
         case PortManager::PORT_REMOVED:

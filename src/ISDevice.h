@@ -43,10 +43,25 @@ class cISLogger;
 class ISDevice {
 public:
 
+    enum DevInfoFormatFlags : uint16_t {
+        // Description Options
+        OMIT_FIRMWARE_VERSION    = 0x0001,      //! suppresses output of the firmware version
+        OMIT_PORT_NAME           = 0x0002,      //! suppresses output of the device port
+        COMPACT_HARDWARE_VER     = 0x0004,      //! forces hiding digits 3 & 4 of the hardware version number, digits 1 & 2 are always shown
+        COMPACT_SERIALNO         = 0x0008,      //! disables zero-padding of the serial number
+        COMPACT_BUILD_TYPE       = 0x0010,      //! formats the build-type (when the firmware version is show) as a single character
+
+        // Version Options
+        OMIT_COMMIT_HASH         = 0x0100,      //! suppresses the output of the commit hash/dirty status
+        OMIT_BUILD_DATE          = 0x0200,      //! suppresses the output of the build date
+        OMIT_BUILD_TIME          = 0x0400,      //! suppresses the output of the build time
+        OMIT_BUILD_MILLIS        = 0x0800,      //! suppresses the output of the build milliseconds when not zero
+    };
+
     static ISDevice invalidRef;
     static std::string getIdAsString(const dev_info_t& devInfo);
-    static std::string getName(const dev_info_t& devInfo);
-    static std::string getFirmwareInfo(const dev_info_t &devInfo, int detail = 1);
+    static std::string getName(const dev_info_t& devInfo, int flags = 0);
+    static std::string getFirmwareInfo(const dev_info_t &devInfo, int flags = 0);
 
     explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
@@ -203,24 +218,21 @@ public:
      * @returns a formatted string similar to getIdAsString(), but slightly more human-friendly.  The formatted string
      * appears as "SN<SerialNo> (<HdwType>-<HdwVer[0]>.<HdrVer[1]>[.<HdrVer[2]>.<HdrVer[3]>])"
      */
-    std::string getName();
+    std::string getName(int flags = 0);
 
     /**
      * Returns a string representing the device firmware, as reported by its devInfo struct, with varying levels of
-     * detail. The 'detail' parameter includes additional information into the resulting string:
-     *      detail = 0 returns "fw#.#.#-<relType>.<relNum>"
-     *      detail = 1 appends to the above " <git commit><dirtyFlag>"
-     *      detail = 2 appends to the above " <buildKey>.<buildNum> <buildDate> <buildTime>"
-     * @param detail an integer indicating the level of detail to include in the resulting string (default is 1)
+     * detail, depending on the format flags specified.
+     * @param flags an integer bitmask derived from DevInfoFormatFlags which alters the output format
      * @return the formatted Firmware Information string
      */
-    std::string getFirmwareInfo(int detail = 1);
+    std::string getFirmwareInfo(int flags = 0);
 
     /**
      * @returns a formatted string that completely describes the device as a concatenation of the following calls:
      *   getName() + getFirmwareInfo(1) + portName()
      */
-    std::string getDescription();
+    std::string getDescription(int flags = 0);
 
     /**
      * Registers this device with the specified ISLogger instance, allowing the logger instance to capture and
@@ -262,6 +274,7 @@ public:
 
     void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::recursive_mutex> lock(portMutex); comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
     void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); comManagerGetData(port, dataId, length, offset, period); }
+    void DisableData(eDataIDs dataId) { std::lock_guard<std::recursive_mutex> lock(portMutex); comManagerDisableData(port, dataId); }
 
     int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSend(port, pktInfo, data, did, size, offset); }
     int SendRaw(const void* data, uint32_t length) { std::lock_guard<std::recursive_mutex> lock(portMutex); return comManagerSendRaw(port, data, length); }

@@ -24,6 +24,8 @@ void serialPortInit(port_handle_t port, int id, int type) {
     serialPort->base.pnum = id;
     serialPort->base.ptype = type | PORT_FLAG__VALID;
 
+    serialPort->base.stats = (port_stats_t*)&(serialPort->stats);
+
     serialPort->pfnOpen = serialPortOpen;
     serialPort->pfnClose = serialPortClose;
     serialPort->pfnReadTimeout = serialPortReadTimeout;
@@ -182,6 +184,7 @@ int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount)
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
+
     return count;
 }
 
@@ -201,7 +204,6 @@ int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned in
         return 0;
     }
 
-    //serialPort->rxBytes += count; // FIXME: this should already be handled internally by the port
     return count;
 }
 
@@ -220,7 +222,6 @@ int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, unsign
         return 0;
     }
 
-    //serialPort->rxBytes += count; // FIXME: this should already be handled internally by the port
     return count;
 }
 

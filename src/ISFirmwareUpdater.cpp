@@ -187,7 +187,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     target_devInfo = &remoteDevInfo;
 
     if(pfnStatus_cb != nullptr) {
-        pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo, 0).c_str());
+        pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo).c_str());
     }
 
     return true;

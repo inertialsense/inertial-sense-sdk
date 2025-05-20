@@ -146,7 +146,7 @@ std::unordered_set<port_handle_t>& comManagerGetPorts() {
 bool ISComManager::removePort(port_handle_t port) {
     auto found = std::find(ports->begin(), ports->end(), port);
     if (found != ports->end()) {
-        serialPortClose(*found);
+        portClose(*found);
         ports->erase(found);
         return true;
     }
@@ -316,8 +316,7 @@ is_comm_instance_t* comManagerGetIsComm(port_handle_t port)
 
 is_comm_instance_t* ISComManager::getIsComm(port_handle_t port)
 {
-    if (!port) return NULL;
-    return &((comm_port_t*)port)->comm;
+    return (!port || ((portType(port) & PORT_TYPE__COMM) != PORT_TYPE__COMM)) ? nullptr : &COMM_PORT(port)->comm;
 }
 
 /**
@@ -356,7 +355,7 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
                 case ENODEV:        // no such device, so no need to close it
                     break;
                 default:
-                    serialPortClose(port);
+                    portClose(port);
                     break;
             }
             // removePort(port);

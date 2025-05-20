@@ -34,9 +34,10 @@ public:
      * A function to be implemented in the factory responsible for allocating the underlying device type and returning a pointer to it
      * This function should NOT manipulate the underlying port, such as opening, etc.
      * @param devInfo the device information uniquely identifying the specific device
+     * @param port an associated port (optional) that this device should be bound to.
      * @return a ISDevice pointer to the newly allocated ISDevice or null of not allocated
      */
-    virtual ISDevice* allocateDevice(const dev_info_t &devInfo) = 0;
+    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) = 0;
 
     /**
      * A function responsible for freeing the allocated memory of the ISDevice instance.
@@ -70,9 +71,9 @@ private:
     ImxDeviceFactory() = default;
     // ~ImxDeviceFactory() override = default;
 
-    virtual ISDevice* allocateDevice(const dev_info_t &devInfo) override {
+    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
-            return new ISDevice(devInfo, nullptr);
+            return new ISDevice(devInfo, port);
 
         return nullptr;
     }
@@ -89,9 +90,9 @@ private:
     GpxDeviceFactory() = default;
     // ~GpxDeviceFactory() override = default;
 
-    ISDevice* allocateDevice(const dev_info_t &devInfo) override {
+    ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_GPX_1_0)
-            return new ISDevice(devInfo, nullptr);
+            return new ISDevice(devInfo, port);
 
         return nullptr;
     }

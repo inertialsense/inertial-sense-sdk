@@ -728,10 +728,6 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         serialPort->error = NULL;
     }
 
-    if ((portType(port) & PORT_TYPE__COMM) && (COMM_PORT(port)->stats)) {
-        COMM_PORT(port)->stats->rxBytes += result;
-    }
-
     debugDumpBuffer("{{ ", buffer, result);
     return result;
 }
@@ -860,10 +856,6 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         }
     }
 
-    if ((portType(port) & PORT_TYPE__COMM) && (COMM_PORT(port)->stats)) {
-        COMM_PORT(port)->stats->txBytes += bytes_written;
-    }
-
     debugDumpBuffer(">> ", buffer, bytes_written);
     return bytes_written;
 
@@ -953,6 +945,8 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     serialPort->base.portFlush = serialPort->pfnFlush = serialPortFlushPlatform;
     serialPort->base.portDrain = serialPort->pfnDrain = serialPortDrainPlatform;
     serialPort->base.portClose = serialPort->pfnClose = serialPortClosePlatform;
+
+    serialPort->base.stats = (port_stats_t*)&serialPort->stats;
 
     if (portType(port) & PORT_TYPE__COMM)
         is_comm_port_init(COMM_PORT(port), NULL);

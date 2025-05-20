@@ -260,8 +260,8 @@ string cInertialSenseDisplay::Connected()
         comm_port_t* comPort = COMM_PORT(m_device->port);
         stream << ", Tx " << std::to_string(comPort->comm.txPktCount);
         stream << ", Rx " << std::to_string(comPort->comm.rxPktCount);
-        if (comPort->stats) {
-            stream << " (" << (comPort->stats->rxBytesPerSec ? std::to_string(comPort->stats->rxBytesPerSec) : "--") << " bytes/s)";
+        if (comPort->base.stats) {
+            stream << " (" << (comPort->base.stats->rxBytesPerSec ? std::to_string(comPort->base.stats->rxBytesPerSec) : "--") << " bytes/s)";
         }
     }
     stream << "     " << endl;
@@ -1587,11 +1587,9 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
     return string(buf) + DataToStringDevInfo(info, m_displayMode!=DMODE_SCROLL) + (m_displayMode!=DMODE_SCROLL ? "\n" : "");
 }
 
-string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
+string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, int flags)
 {
-    char buf[BUF_SIZE];
-    sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, (full ? 2 : 1)).c_str());
-    return string(buf);
+    return "" + ISDevice::getName(info, flags) + ISDevice::getFirmwareInfo(info, flags);
 }
 
 string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {

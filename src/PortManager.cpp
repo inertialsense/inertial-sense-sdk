@@ -12,11 +12,13 @@
  * Queries all factories to identify and enumerate all ports which can be discovered by all registered factories
  * Note that only newly discovered ports which have not been previously discovered will trigger a port_listener callback.
  * @param pattern a regex name pattern; any discovered port which matches this regex will be discovered, default pattern
- * will match all ports.
+ *  will match all ports.
  * @param pType a PORT_TYPE__ value indicating that only ports matching the specified type will be discovered, default
- * value of PORT_TYPE__UNKNOWN will match all port types
+ *  value of PORT_TYPE__UNKNOWN will match all port types
+ * @param openPort if true, indicates that any discovered port should be opened at discovery. Opened ports will remain
+ *  open until explicitly closed.
  */
-void PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
+void PortManager::discoverPorts(const std::string& pattern, uint16_t pType, bool openPorts) {
     // look for ports which are no longer valid and remove them
     std::vector<const port_entry_t*> lostPorts; // a vector of ports which no longer are available and need to be cleaned up
     for (auto& [entry, port] : knownPorts) {

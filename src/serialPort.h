@@ -82,6 +82,8 @@ struct serial_port_s
         comm_port_t comm;
     };
 
+    port_monitor_set_t stats;
+
     rmci_t rmci;
     uint8_t rmciUPMcnt[DID_COUNT];
     uint8_t rmciNMEAcnt[NMEA_MSG_ID_COUNT];

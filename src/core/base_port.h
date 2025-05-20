@@ -61,10 +61,30 @@ typedef int(*pfnPortReadTimeout)(port_handle_t port, uint8_t* buf, unsigned int 
 typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int len);
 typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData);
 
+typedef struct
+{
+    uint8_t         portInfo;               //! High nib port type (see ePortMonPortType) low nib index
+    uint32_t        status;                 //! Status
+
+    uint32_t        txBytesPerSec;          //! Tx data rate (bytes/s)
+    uint32_t        rxBytesPerSec;          //! Rx data rate (bytes/s)
+
+    uint32_t        txBytes;                //! Tx byte count
+    uint32_t        rxBytes;                //! Rx byte count
+
+    uint32_t        txDataDrops;            //! Tx buffer data drop occurrences, times portWrite could not send all data */
+    uint32_t        rxOverflows;            //! Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
+
+    uint32_t        txBytesDropped;         //! Tx number of bytes that were not sent
+    uint32_t        rxChecksumErrors;       //! Rx number of errors while reading (not bytes)
+} port_stats_t;
+
+
 typedef struct base_port_s {
     uint16_t pnum;                          //! an identifier for a specific port that belongs to this device
     uint16_t ptype;                         //! an indicator of the type of port
     uint16_t pflags;                        //! a bitmask of flags, incidating state of special capabilities for this port
+    uint16_t perror;                        //! a non-zero value indicating an error for the last operation attempted for this port
 
     pfnPortName portName;                   //! a function which returns an optional name to (ideally) uniquely identify this port
     pfnPortValidate portValidate;           //! a function which confirms the viability of the port - this does not open or connect the port
@@ -78,8 +98,13 @@ typedef struct base_port_s {
     pfnPortReadTimeout portReadTimeout;     //! a function to return copy some number of bytes available for reading into a local buffer (and removed from the ports read buffer), but will only block at most timeout milliseconds
     pfnPortWrite portWrite;                 //! a function to copy some number of bytes from a local buffer into the ports write buffer (when and how this data is actually "sent" is implementation specific)
     pfnPortLogger portLogger;               //! a function, if set, to be called anytime a portRead or portWrite call is made; used to monitor/copy all data that goes through the port
+
     void *portLoggerData;                   //! an opaque pointer of "user data" associated with the portLogger that is passed whenever the portLogger() callback function is called
+    port_stats_t* stats;                    //! if not-null, contains the stats associated with this port (bytes sent/received, etc)
+
 } base_port_t;
+
+#define BASE_PORT(n)        ((base_port_t*)(n))
 
 
 #ifdef __cplusplus
@@ -111,7 +136,7 @@ int portWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, unsigne
  * @return the port ID
  */
 static inline uint16_t portId(port_handle_t port) {
-    return (port) ? ((base_port_t*)port)->pnum : 0xFFFF;
+    return (port) ? BASE_PORT(port)->pnum : 0xFFFF;
 }
 
 /**
@@ -124,7 +149,7 @@ static inline uint16_t portId(port_handle_t port) {
  * @return the port type
  */
 static inline uint16_t portType(port_handle_t port) {
-    return (port) ? ((base_port_t*)port)->ptype : 0xFFFF;
+    return (port) ? BASE_PORT(port)->ptype : 0xFFFF;
 }
 
 #define NOT_GNSS_PORT(port) ((portType(port) & PORT_TYPE__GNSS) == 0)
@@ -135,7 +160,7 @@ static inline uint16_t portType(port_handle_t port) {
  * @return the port type
  */
 static inline uint8_t portIsValid(port_handle_t port) {
-    return (port && ((((base_port_t *)port)->ptype & PORT_FLAG__VALID) == PORT_FLAG__VALID));
+    return (port && ((BASE_PORT(port)->ptype & PORT_FLAG__VALID) == PORT_FLAG__VALID));
 }
 
 /**
@@ -147,7 +172,7 @@ static inline uint8_t portIsValid(port_handle_t port) {
  * @return the port type
  */
 static inline void portInvalidate(port_handle_t port) {
-    if (port) { ((base_port_t *)port)->ptype &= ~PORT_FLAG__VALID; }
+    if (port) { BASE_PORT(port)->ptype &= ~PORT_FLAG__VALID; }
 }
 
 /**
@@ -160,9 +185,9 @@ static inline void portInvalidate(port_handle_t port) {
  */
 static inline int portValidate(port_handle_t port) {
     if (!port) return PORT_ERROR__INVALID;
-    ((base_port_t *)port)->ptype &= ~PORT_FLAG__VALID;
-    ((base_port_t*)port)->ptype |= ((base_port_t*)port)->portValidate ? ( ((base_port_t*)port)->portValidate(port) ? PORT_FLAG__VALID : 0 ) : 0;
-    return ((((base_port_t*)port)->ptype & PORT_FLAG__VALID) == PORT_FLAG__VALID) ? 1 : 0;
+    BASE_PORT(port)->ptype &= ~PORT_FLAG__VALID;
+    BASE_PORT(port)->ptype |= BASE_PORT(port)->portValidate ? ( BASE_PORT(port)->portValidate(port) ? PORT_FLAG__VALID : 0 ) : 0;
+    return ((BASE_PORT(port)->ptype & PORT_FLAG__VALID) == PORT_FLAG__VALID) ? 1 : 0;
 }
 
 /**
@@ -171,7 +196,7 @@ static inline int portValidate(port_handle_t port) {
  * @return the port type
  */
 static inline uint8_t portIsOpened(port_handle_t port) {
-    return (port && ((((base_port_t *)port)->ptype & PORT_FLAG__OPENED) == PORT_FLAG__OPENED));
+    return (portIsValid(port) && ((BASE_PORT(port)->ptype & PORT_FLAG__OPENED) == PORT_FLAG__OPENED));
 }
 
 /**
@@ -181,7 +206,16 @@ static inline uint8_t portIsOpened(port_handle_t port) {
  * @return the port flags
  */
 static inline uint16_t portFlags(port_handle_t port) {
-    return (port) ? ((base_port_t*)port)->pflags : 0;
+    return (port) ? BASE_PORT(port)->pflags : 0;
+}
+
+/**
+ * returns the most recent operational error number (typically errno) for this port, or 0 if successful.
+ * @param port the port handle
+ * @return the error number, or 0 if there is no error
+ */
+static inline uint16_t portError(port_handle_t port) {
+    return (port) ? BASE_PORT(port)->perror : 0;
 }
 
 /**
@@ -191,7 +225,7 @@ static inline uint16_t portFlags(port_handle_t port) {
  */
 static inline const char *portName(port_handle_t port) {
     // if (!portIsValid(port)) return (const char *)0;
-    return (port && ((base_port_t*)port)->portName) ? ((base_port_t*)port)->portName(port) : (const char *)0;
+    return (port && BASE_PORT(port)->portName) ? BASE_PORT(port)->portName(port) : (const char *)0;
 }
 
 /**
@@ -201,7 +235,7 @@ static inline const char *portName(port_handle_t port) {
  */
 static inline int portOpen(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    return (port && ((base_port_t*)port)->portOpen) ? ((base_port_t*)port)->portOpen(port) : PORT_ERROR__NOT_SUPPORTED;
+    return (BASE_PORT(port)->portOpen) ? BASE_PORT(port)->portOpen(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
 /**
@@ -211,7 +245,7 @@ static inline int portOpen(port_handle_t port) {
  */
 static inline int portClose(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    return (port && ((base_port_t*)port)->portClose) ? ((base_port_t*)port)->portClose(port) : PORT_ERROR__NOT_SUPPORTED;
+    return (BASE_PORT(port)->portClose) ? BASE_PORT(port)->portClose(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
 /**
@@ -224,7 +258,7 @@ static inline int portClose(port_handle_t port) {
  */
 static inline int portFree(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    return (port && ((base_port_t*)port)->portFree) ? ((base_port_t*)port)->portFree(port) : PORT_ERROR__NOT_SUPPORTED;
+    return (BASE_PORT(port)->portFree) ? BASE_PORT(port)->portFree(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
 /**
@@ -234,7 +268,7 @@ static inline int portFree(port_handle_t port) {
  */
 static inline int portAvailable(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    return (port && ((base_port_t*)port)->portAvailable) ? ((base_port_t*)port)->portAvailable(port) : PORT_ERROR__NOT_SUPPORTED;
+    return (BASE_PORT(port)->portAvailable) ? BASE_PORT(port)->portAvailable(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
 /**
@@ -244,7 +278,7 @@ static inline int portAvailable(port_handle_t port) {
  */
 static inline int portFlush(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    return (port && ((base_port_t*)port)->portFlush) ? ((base_port_t*)port)->portFlush(port) : PORT_ERROR__NOT_SUPPORTED;
+    return (BASE_PORT(port)->portFlush) ? BASE_PORT(port)->portFlush(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
 /**
@@ -253,7 +287,7 @@ static inline int portFlush(port_handle_t port) {
  * @return the pointer to the pfnPortLogger function, or NULL if none.
  */
 static inline pfnPortLogger portLogger(port_handle_t port) {
-    return (port && ((base_port_t*)port)->portLogger) ? ((base_port_t*)port)->portLogger : 0;
+    return (BASE_PORT(port)->portLogger) ? BASE_PORT(port)->portLogger : 0;
 }
 
 /**
@@ -263,9 +297,9 @@ static inline pfnPortLogger portLogger(port_handle_t port) {
  * @param loggerData an opaque "user data" pointer that will be passed to future calls to the portLogger function
  */
 static inline void setPortLogger(port_handle_t port, pfnPortLogger portLogger, void* loggerData) {
-    if (port) {
-        ((base_port_t *) port)->portLogger = portLogger;
-        ((base_port_t *) port)->portLoggerData = loggerData;
+    if (portIsValid(port)) {
+        BASE_PORT(port)->portLogger = portLogger;
+        BASE_PORT(port)->portLoggerData = loggerData;
     }
 }
 
@@ -282,7 +316,7 @@ static inline void setPortLogger(port_handle_t port, pfnPortLogger portLogger, v
  */
 static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void *userData) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    return (port && ((base_port_t*)port)->portLogger) ? ((base_port_t*)port)->portLogger(port, op, buf, len, userData) : PORT_ERROR__NOT_SUPPORTED;
+    return (BASE_PORT(port)->portLogger) ? BASE_PORT(port)->portLogger(port, op, buf, len, userData) : PORT_ERROR__NOT_SUPPORTED;
 }
 
 /**
@@ -295,9 +329,10 @@ static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, un
  */
 static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    if (!port && !((base_port_t*)port)->portRead) return PORT_ERROR__NOT_SUPPORTED;
-    int bytesRead =  ((base_port_t*)port)->portRead(port, buf, len);
-    if (port && ((base_port_t*)port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, ((base_port_t*)port)->portLoggerData);
+    if (!BASE_PORT(port)->portRead) return PORT_ERROR__NOT_SUPPORTED;
+    int bytesRead = BASE_PORT(port)->portRead(port, buf, len);
+    if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, BASE_PORT(port)->portLoggerData);
+    if (BASE_PORT(port)->stats) BASE_PORT(port)->stats->rxBytes += bytesRead;
     return bytesRead;
 }
 
@@ -312,9 +347,10 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
  */
 static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, unsigned int timeout) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    if (!((base_port_t*)port)->portReadTimeout) return portReadTimeout_internal(port, buf, len, timeout); // PORT_ERROR__NOT_SUPPORTED;
-    int bytesRead =  ((base_port_t*)port)->portReadTimeout(port, buf, len, timeout);
-    if (port && ((base_port_t*)port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, ((base_port_t*)port)->portLoggerData);
+    if (!BASE_PORT(port)->portReadTimeout) return portReadTimeout_internal(port, buf, len, timeout); // PORT_ERROR__NOT_SUPPORTED;
+    int bytesRead =  BASE_PORT(port)->portReadTimeout(port, buf, len, timeout);
+    if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, BASE_PORT(port)->portLoggerData);
+    if (BASE_PORT(port)->stats) BASE_PORT(port)->stats->rxBytes += bytesRead;
     return bytesRead;
 }
 
@@ -327,8 +363,10 @@ static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int
  */
 static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    if (port && ((base_port_t*)port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, ((base_port_t*)port)->portLoggerData);
-    return (port && ((base_port_t*)port)->portWrite) ? ((base_port_t*)port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
+    if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, BASE_PORT(port)->portLoggerData);
+    int bytesWritten = (BASE_PORT(port)->portWrite) ? BASE_PORT(port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
+    if ((bytesWritten > 0) && BASE_PORT(port)->stats) BASE_PORT(port)->stats->txBytes += bytesWritten;
+    return bytesWritten;
 }
 
 #ifdef __cplusplus

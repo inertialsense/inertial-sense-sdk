@@ -69,6 +69,11 @@ public:
 
 class SerialPortFactory : public PortFactory {
 public:
+    struct {
+        int defaultBaudRate = BAUDRATE_921600;
+        bool defaultBlocking = false;
+    } portOptions = {};
+
     static SerialPortFactory& getInstance() {
         static SerialPortFactory instance;
         return instance;
