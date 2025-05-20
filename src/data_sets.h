@@ -328,7 +328,7 @@ enum eHdwStatusFlags
     HDW_STATUS_IMU_FAULT_REJECT_MASK            = (int)0x0000000C,
 
     /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
-    HDW_STATUS_GPS_SATELLITE_RX_VALID                 = (int)0x00000010,
+    HDW_STATUS_GPS_SATELLITE_RX_VALID           = (int)0x00000010,
     /** Event occurred on strobe input pin */
     HDW_STATUS_STROBE_IN_EVENT                  = (int)0x00000020,
     /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
@@ -4686,8 +4686,8 @@ enum eGPXHdwStatusFlags
 
     /** GNSS is faulting firmware update REQUIRED */
     GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
-    /**  */
-    GPX_HDW_STATUS_UNUSED                               = (int)0x00002000,
+    /** Enables LED in Manufacturing TBed */
+    GPX_HDW_STATUS_LED_ENABLED                          = (int)0x00002000,
     /** System Reset is Required for proper function */
     GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
