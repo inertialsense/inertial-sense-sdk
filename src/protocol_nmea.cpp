@@ -935,9 +935,7 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "GLL");
 
-    if (((pos.lla[0] >= 0.000000000001) || (pos.lla[0] <= -0.000000000001)) &&
-        ((pos.lla[1] >= 0.000000000001) || (pos.lla[1] <= -0.000000000001))
-        && (pos.status&GPS_STATUS_FIX_MASK))
+    if (pos.status&GPS_STATUS_FIX_MASK)
     {   // Valid lat/lon
         nmea_latToDegMin(a, aSize, n, pos.lla[0]);      // 1,2
         nmea_lonToDegMin(a, aSize, n, pos.lla[1]);      // 3,4
