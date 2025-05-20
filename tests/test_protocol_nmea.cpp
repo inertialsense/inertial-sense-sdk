@@ -802,8 +802,8 @@ TEST(protocol_nmea, GLL_noLat)
     nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
 
     // alter for test results 
-    pos.lla[0] = 0;
-    pos.lla[1] = 0;
+    // pos.lla[0] = 0;
+    // pos.lla[1] = 0;
     pos.status &= ~(GPS_STATUS_FIX_MASK);
 
     int comValue = memcmp(&pos, &result, sizeof(result));
@@ -841,8 +841,8 @@ TEST(protocol_nmea, GLL_noLon)
     nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
 
     // alter for test results 
-    pos.lla[0] = 0;
-    pos.lla[1] = 0;
+    // pos.lla[0] = 0;
+    // pos.lla[1] = 0;
     pos.status &= ~(GPS_STATUS_FIX_MASK);
 
     int comValue = memcmp(&pos, &result, sizeof(result));
