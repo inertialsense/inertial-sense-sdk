@@ -2668,8 +2668,9 @@ int nmea_parse_gll(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
     // 6 - Valid (A=active, V=void)
     if (*ptr == 'A')    
     {
-        if (((gpsPos.status & GPS_STATUS_FIX_MASK) == GPS_STATUS_FIX_NONE) && 
-            ((gpsPos.lla[0] >= 0.000000000001) || (gpsPos.lla[0] <= -0.000000000001)))
+        if (((gpsPos.status & GPS_STATUS_FIX_MASK) == GPS_STATUS_FIX_NONE) &&
+            ((gpsPos.lla[0] >= 0.000000000001) || (gpsPos.lla[0] <= -0.000000000001)) ||
+            ((gpsPos.lla[1] >= 0.000000000001) || (gpsPos.lla[1] <= -0.000000000001)))
         {   // No fix currently set to 2D
             gpsPos.status |= GPS_STATUS_FIX_2D;
         }
