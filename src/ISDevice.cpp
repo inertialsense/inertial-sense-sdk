@@ -61,7 +61,7 @@ bool ISDevice::Update() {
 bool ISDevice::step() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!port || !portIsValid(port))
+    if (!isConnected())
         return false;
 
     if (portType(port) & PORT_TYPE__COMM)
@@ -204,6 +204,7 @@ bool ISDevice::queryDeviceInfoISbl() {
 
     // Query device
     portWrite(port, (uint8_t*)":020000041000EA", 18);
+    SLEEP_MS(10);
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
     int count = portReadTimeout(port, buf, 14, 1000);
@@ -240,6 +241,9 @@ bool ISDevice::queryDeviceInfoISbl() {
             // m_isb_props.is_evb = buf[6];
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
+            devInfo.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
+            devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
+            devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
             memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
             return true;
         }
@@ -306,17 +310,17 @@ bool ISDevice::validate(uint32_t timeout) {
 /**
  * Non-blocking, internal(ish) method to validate a device.  Will be called repeatedly from step() as long as "isValidating" is true.
  * @param timeout the maximum number of milliseconds that must pass without a validating response from the device, before giving up.
- * @return true if the device has been validated, otherwise false
+ * @return -1 if the default fails to validate, 0 if the device is still validating, 1 if the device successfully validated
  */
-bool ISDevice::validateAsync(uint32_t timeout) {
+int ISDevice::validateAsync(uint32_t timeout) {
     if (!isConnected())
-        return false;
+        return -1;
 
     if (hasDeviceInfo()) {
         // we got out Device Info, so reset our timer (stop trying) and return true
         validationStartMs = 0;
         previousQueryType = QUERYTYPE_NMEA;
-        return true;
+        return 1;
     }
 
     // if this is non-zero, it means we're actively validating; this helps us know when to give up/timeout
@@ -330,7 +334,7 @@ bool ISDevice::validateAsync(uint32_t timeout) {
         debug_message("ISDevice::validateAsync() timed out after %dms.\n", current_timeMs() - validationStartMs);
         validationStartMs = 0;
         previousQueryType = QUERYTYPE_NMEA;
-        return false;
+        return -1;
     }
 
     switch (previousQueryType) {
@@ -354,7 +358,7 @@ bool ISDevice::validateAsync(uint32_t timeout) {
     SLEEP_MS(5); // give just enough time for the device to receive, process and respond to the query
 
     previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
-    return false;
+    return 0;
 }
 
 /**
@@ -545,6 +549,12 @@ int ISDevice::SetSysCmd(const uint32_t command) {
     return comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 }
 
+/**
+ * Send the specified string as a NMEA sentence.  This function will insert the prefix and calculate the checksum if they
+ * are not already provided.
+ * @param nmeaMsg
+ * @return 0 on success, -1 on failure
+ */
 int ISDevice::SendNmea(const std::string& nmeaMsg)
 {
     std::lock_guard<std::recursive_mutex> lock(portMutex);

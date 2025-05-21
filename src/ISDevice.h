@@ -160,6 +160,26 @@ public:
     }
 
     /**
+     * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
+     * @return true if the connection is made, otherwise false
+     */
+    bool connect() {
+        if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
+            return false;
+        if (portIsOpened(port))
+            return true;
+        return (portOpen(port) == PORT_ERROR__NONE);
+    }
+
+    /**
+     * Disconnects/closes the bound port to the device, if the port is VALID
+     * @return
+     */
+    bool disconnect() {
+        return (portClose(port) == PORT_ERROR__NONE);
+    }
+
+    /**
      * @return true if the device has valid, minimal required devInfo values sufficient to indicate that it genuinely
      * identifies an Inertial Sense device.
      */
@@ -439,7 +459,7 @@ public:
     bool handshakeISbl();
     bool queryDeviceInfoISbl();
     bool validate(uint32_t timeout = 3000);
-    bool validateAsync(uint32_t timeout = 3000);
+    int validateAsync(uint32_t timeout = 3000);
 
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);

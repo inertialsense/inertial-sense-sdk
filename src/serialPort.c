@@ -142,6 +142,7 @@ int serialPortClose(port_handle_t port)
             serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
+    serialPort->base.ptype &= ~PORT_FLAG__OPENED;       // safe to do before closing - because if the close fails, its fair the say the port is still invalid
     return serialPort->pfnClose(port);
 }
 
@@ -168,16 +169,17 @@ int serialPortDrain(port_handle_t port)
 }
 
 
-int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount)
+int serialPortRead(port_handle_t port, unsigned char* buffer, unsigned int readCount)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (buffer == 0) || (readCount < 1))
+    if (!serialPort || !buffer || (readCount <= 0))
     {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
+        // don't report an error if readCount == 0; just return 0
+        if (serialPort && serialPort->pfnError && (readCount > 0)) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
 
-    int count = portRead(port, buffer, readCount);
+    int count = serialPort->pfnRead(port, buffer, readCount);
 
     if (count < 0)
     {
@@ -325,7 +327,7 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned in
         return 0;
     }
 
-    int count = portWrite(port, buffer, writeCount);
+    int count = serialPort->pfnWrite(port, buffer, writeCount);
     if (count < 0)
     {
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, ENODATA, strerror(ENODATA));

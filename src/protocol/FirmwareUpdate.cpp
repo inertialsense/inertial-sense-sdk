@@ -359,6 +359,7 @@ namespace fwUpdate {
         fwUpdate_step(payload.hdr.msg_type, result); // TODO: we should probably do something with the step() result, but not sure what just yet
         return result;
     }
+
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
         fwUpdate::payload_t *payload = nullptr;
         void *aux_data = nullptr;

@@ -125,7 +125,7 @@ struct serial_port_s
     pfnSerialPortIsOpen pfnIsOpen;
 
     // read data synchronously
-    // pfnSerialPortRead pfnRead;
+    pfnSerialPortRead pfnRead;
 
     // read data synchronously w/ timeout
     pfnSerialPortReadTimeout pfnReadTimeout;
@@ -134,7 +134,7 @@ struct serial_port_s
     pfnSerialPortAsyncRead pfnAsyncRead;
 
     // write data synchronously
-    //pfnSerialPortWrite pfnWrite;
+    pfnSerialPortWrite pfnWrite;
 
     // close the serial port
     pfnSerialPortClose pfnClose;
@@ -251,7 +251,7 @@ int serialPortDrain(port_handle_t port);
  * @param readCount
  * @return number of bytes read which is less than or equal to readCount.
  */
-int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount);
+int serialPortRead(port_handle_t port, unsigned char* buffer, unsigned int readCount);
 
 /**
  * read up to thue number of bytes requested

@@ -327,7 +327,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
     statusfn(std::any(), eLogLevel::IS_LOG_LEVEL_DEBUG, "    | %s: Switching context to IS-bootloader mode.", portName(port));
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
-    if (!obj->check_is_compatible())
+    if (!(device = obj->check_is_compatible()))
     {
         delete obj;
         return IS_OP_INCOMPATIBLE;

@@ -105,9 +105,9 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
 
     debug_message("[DBG] Releasing device '%s' on port '%s'\n", device->getIdAsString().c_str(), device->getPortName().c_str());
 
-    // FIXME: where does Logger()
-    // auto dl = Logger()->getDeviceLogByPort(device->port);
-    // if (dl) dl->CloseAllFiles();
+    if (device->devLogger) {
+        device->devLogger->CloseAllFiles();
+    }
 
     if (closePort && portIsValid(device->port) && portIsOpened(device->port)) {
         portClose(device->port);
@@ -116,7 +116,14 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
 
     erase(deviceIter); // erase only remove the ISDevice* from the list, but doesn't release/free the instance itself
     device->port = NULL;
-    // delete device; // causes a double free?? -- FIXME This maybe problematic, since there may be external references to this device, which likely won't be notified of it being deleted (DeviceCollector, etc)
+
+    // also remove from known devices
+    uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo);
+    device_entry_t deviceEntry(nullptr, devId, nullptr);
+    auto knownIter = std::remove_if(knownDevices.begin(), knownDevices.end(), [&devId](const device_entry_t& e) { return e.hdwId == devId;});
+    knownDevices.erase(knownIter);
+
+    delete device; // FIXME This maybe problematic, since there may be external references to this device, which likely won't be notified of it being deleted (DeviceCollector, etc)
 
     return true;
 }
@@ -135,8 +142,11 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
 void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devInfo, port_handle_t port) {
 
     uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(devInfo);
-    if (!devId)
+    if (!devId) {
+        if (option_closePortOnError)
+            portClose(port);
         return; // this is an invalid device Id -- no hdwId and no serialNo
+    }
 
     device_entry_t deviceEntry(factory, devId, nullptr);
 
@@ -158,6 +168,8 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                 debug_message("[DBG] -- Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.\n", portName(port));
                 delete deviceEntry.device;
                 deviceEntry.device = nullptr;
+                if (option_closePortOnError)
+                    portClose(port);
                 break;
             }
             return;
@@ -166,8 +178,11 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
     // if not, then do we need to allocate it?
     deviceEntry.device = factory->allocateDevice(devInfo, port);
-    if (!deviceEntry.device)
+    if (!deviceEntry.device) {
+        if (option_closePortOnError)
+            portClose(port);
         return;
+    }
 
     // debug_message("[DBG] Allocated new device: %s.\n", device->getDescription().c_str());
     knownDevices.push_back(deviceEntry);
@@ -177,6 +192,9 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     for (device_listener& l : listeners) {
         l(DEVICE_ADDED, deviceEntry.device);
     }
+
+    if (option_closePortOnDiscovery)
+        portClose(port);
 }
 
 

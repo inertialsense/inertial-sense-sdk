@@ -192,7 +192,7 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
             m_update_progress = (float)offset / (float)SAMBA_BOOTLOADER_SIZE_24K;
             if (m_update_callback != 0)
             {
-                m_update_callback(this, m_update_progress, "Writing Flash", 0, 0);
+                m_update_callback(std::make_any<cISBootloaderBase*>(this), m_update_progress, "Writing Flash", 0, 0);
             }
         }
         fclose(file);

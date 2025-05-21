@@ -51,6 +51,23 @@ public:
         return instance;
     }
 
+    // TODO: we need a mechanism to manage ports when discovering devices.  The following options need to be implemented; there maybe more options still undetermined
+    //  - IgnoreClosedPorts - don't attempt to discover devices for ports which are not actively open.
+    //  - ClosePortsOnDiscovery - if the discovery succeeds, and a device is validated, if set, close the port regardless
+    //  - ClosePortsOnError - if the discovery fails to validate a device on the current port (for any reason), close the port
+    //  - ClosePortAfterDiscovery - essentially the combination of "ClosePortsOn" because, if set, the port will always be closed after attempting to discover, regardless of success/failure.
+    //  - rediscoverKnownDevices - if true, will force ports known to belong to an existing device to be rediscovered; if false, ports already bound to a device, and validated will be ignored
+
+    bool getOption_IgnoreClosedPorts() { return option_ignoreClosedPorts; }
+    void setOption_IgnoreClosedPorts(bool v) { option_ignoreClosedPorts = v; }
+
+
+    bool getOption_ClosePortOnError() { return option_closePortOnError; }
+    void setOption_ClosePortOnFault(bool v) { option_closePortOnError = v; }
+
+    bool getOption_ClosePortOnDiscovery() { return option_closePortOnDiscovery; }
+    void setOption_ClosePortOnDiscovery(bool v) { option_closePortOnDiscovery = v; }
+
     /**
      * Queries all factories to identify and enumerate all ports which can be discovered by all registered factories
      * Note that only newly discovered devices which have not been previously discovered will trigger a device_listener callback.
@@ -60,9 +77,8 @@ public:
      * will match all device types.
      */
     void discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY) {
-        for (auto l : factories) {
-            auto cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-            l->locateDevices(cb, hdwId);
+        for (auto& port : portManager) {
+            discoverDevice(port, hdwId);
         }
     }
 
@@ -75,12 +91,16 @@ public:
      * will match all device types.
      */
     void discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY) {
-        if (!port)
+        if (!portIsValid(port))
+            return;
+
+        // If the port isn't opened, do we ignore it, or attempt to open it?
+        if (!portIsOpened(port) && (option_ignoreClosedPorts || (portOpen(port) != PORT_ERROR__NONE)))
             return;
 
         // first check if this port is already associated with another device
         for (auto d: *this) {
-            if (d && d->port == port)
+            if (d && d->hasDeviceInfo() && (d->port == port))
                 return;
         }
 
@@ -240,8 +260,6 @@ protected:
      */
     void deviceHandler(DeviceFactory* factory, const dev_info_t& devInfo, port_handle_t port);
 
-    void checkForNewDevices(uint16_t hdwId = IS_HARDWARE_ANY) { }
-
 
 private:
     struct device_entry_t {
@@ -254,9 +272,15 @@ private:
         };
     };
 
+    PortManager& portManager = PortManager::getInstance();
+
     std::vector<DeviceFactory*> factories;                              //!< list of device factories responsible for detecting, allocating and freeing ports of different types. -- Note that DeviceFactories should always be static singletons, DO NOT FREE/DELETE the factory!
     std::vector<device_listener> listeners;                             //!< list of listeners who should be notified when new devices are discovered, lost, opened, closed, etc
     std::vector<device_entry_t> knownDevices;                           //!< vector of previously discovered devices, by factory & hdwid (bits 47-63) + serial (bits 0-31) - different than actual, allocated devices
+
+    bool option_ignoreClosedPorts = true;                               //!< option indicating whether to attempt to discovery of devices on ports which are closed - if true, only currently opened ports will be used for discovery; if false, closed ports will be opened before attempting to discover
+    bool option_closePortOnError = true;                                //!< option indicating whether to close a port when the discovery fails - if true, ports would be closed after a failure to discovery; if true, ports would remain open (or fall through to closePortOnDiscovery)
+    bool option_closePortOnDiscovery = false;                           //!< option indicating whether to close a port when the discovery succeeds - if true, ports would be closed after successful discovery, and would need to be reopened explicitly, if false ports are left open after discovery
 };
 
 

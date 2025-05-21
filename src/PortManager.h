@@ -48,8 +48,9 @@ public:
      *  value of PORT_TYPE__UNKNOWN will match all port types
      * @param openPort if true, indicates that any discovered port should be opened at discovery. Opened ports will remain
      *  open until explicitly closed.
+     * @returns true if one or more ports were added or removed from the list of managed ports
      */
-    void discoverPorts(const std::string& pattern = "(.+)", uint16_t pType = PORT_TYPE__UNKNOWN, bool openPort=false);
+    bool discoverPorts(const std::string& pattern = "(.+)", uint16_t pType = PORT_TYPE__UNKNOWN, bool openPort=false);
 
     void addPortFactory(PortFactory* pl) {
         factories.push_back(pl);
@@ -102,9 +103,6 @@ protected:
      */
     void portHandler(PortFactory* factory, uint16_t portType, const std::string& portName);
 
-    void checkForNewPorts() { }
-
-
 private:
     PortManager(PortManager const &) = delete;
     PortManager& operator=(PortManager const&) = delete;
@@ -125,6 +123,8 @@ private:
     std::vector<PortFactory*> factories;                         //!< list of port factories responsible for detecting, allocating and freeing ports of different types.
     std::vector<port_listener> listeners;                        //!< list of listeners who should be notified when ports are discovered, lost, opened, closed, etc
     std::map<port_entry_t, port_handle_t> knownPorts;            //!< a map previously discovered ports keyed on factory + name (some string identifier)
+    bool portsChanged = false;                                   //!< a flag indicating (true) that list of managed ports has changed, either ports added or removed during the last call to discoverPorts()
+
 };
 
 

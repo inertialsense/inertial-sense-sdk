@@ -295,10 +295,9 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     serial_port_t* serialPort = (serial_port_t*)port;
     if (serialPort->handle != 0)
     {
-        // FIXME: Should we be closing the port and then reopen??
+        // already open --  FIXME: Should we be closing the port and then reopen??
         // serialPortClose(serialPort);
-        // already open
-        return 0;
+        return 1;
     }
 
     serialPortSetPort(port, portName);
@@ -433,7 +432,6 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
 #endif
 
-    serialPort->base.ptype |= PORT_FLAG__OPENED;
     return 1;    // success
 }
 
@@ -504,7 +502,6 @@ static int serialPortClosePlatform(port_handle_t port)
 
     free(serialPort->handle);
     serialPort->handle = 0;
-    serialPort->base.ptype &= ~PORT_FLAG__OPENED;
 
     return 1;
 }
@@ -938,24 +935,35 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     memcpy(serialPort->portName, tmpName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
 
     serialPort->base = tmp;
-    serialPort->base.portRead = serialPortReadPlatform;
-    serialPort->base.portWrite = serialPortWritePlatform;
-    serialPort->base.portAvailable = serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
-    serialPort->base.portFree = serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
-    serialPort->base.portFlush = serialPort->pfnFlush = serialPortFlushPlatform;
-    serialPort->base.portDrain = serialPort->pfnDrain = serialPortDrainPlatform;
-    serialPort->base.portClose = serialPort->pfnClose = serialPortClosePlatform;
+
+    serialPort->base.portName = serialPortName;
+    // serialPort->base.portValidate = serialPortValidate;
+    // serialPort->base.portOpen = serialPortOpen;
+    serialPort->base.portClose = serialPortClose;
+    serialPort->base.portFree = serialPortGetByteCountAvailableToWrite;
+    serialPort->base.portAvailable = serialPortGetByteCountAvailableToRead;
+    serialPort->base.portFlush = serialPortFlush;
+    serialPort->base.portDrain = serialPortDrain;
+    serialPort->base.portRead = serialPortRead;
+    serialPort->base.portWrite = serialPortWrite;
 
     serialPort->base.stats = (port_stats_t*)&serialPort->stats;
 
     if (portType(port) & PORT_TYPE__COMM)
         is_comm_port_init(COMM_PORT(port), NULL);
 
+    // platform specific functions
     serialPort->pfnOpen = serialPortOpenPlatform;
     serialPort->pfnIsOpen = serialPortIsOpenPlatform;
     serialPort->pfnReadTimeout = serialPortReadTimeoutPlatform;
     serialPort->pfnAsyncRead = serialPortAsyncReadPlatform;
-    serialPort->base.portName = serialPortName;
+    serialPort->pfnFlush = serialPortFlushPlatform;
+    serialPort->pfnDrain = serialPortDrainPlatform;
+    serialPort->pfnClose = serialPortClosePlatform;
+    serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
+    serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
+    serialPort->pfnRead = serialPortReadPlatform;
+    serialPort->pfnWrite = serialPortWritePlatform;
     serialPort->pfnSleep = serialPortSleepPlatform;
     return 0;
 }

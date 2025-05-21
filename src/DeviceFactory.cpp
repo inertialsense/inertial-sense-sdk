@@ -33,22 +33,27 @@ void DeviceFactory::locateDevice(std::function<void(DeviceFactory*, const dev_in
         }
     }
 
-    // at this point, the port should be opened...
-    ISDevice* dev = DeviceManager::getInstance().getDevice(port);
-    if (!dev) {
-        // no previous device exists, so identify the device and then register it with the manager
-        ISDevice localDev(hdwId, port);
-        for (int i = 0; i < 5; i++) {
-            localDev.step();
+    // We can only validate devices connected on COMM ports, since ISComm is needed to parse/communicate with the device
+    if (portType(port) & PORT_TYPE__COMM) {
+
+        // at this point, the port should be opened...
+        ISDevice *dev = DeviceManager::getInstance().getDevice(port);
+        if (!dev) {
+            // no previous device exists, so identify the device and then register it with the manager
+            ISDevice localDev(hdwId, port);
+            do {
+                is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+                SLEEP_MS(5);
+            } while (!localDev.validateAsync(deviceTimeout));
+
             if (localDev.hasDeviceInfo() && ((hdwId == IS_HARDWARE_ANY) || ((localDev.hdwId & hdwId) == localDev.hdwId))) {
                 deviceCallback(this, localDev.devInfo, port);
                 return;
             }
-            SLEEP_MS(5);
+        } else if ((hdwId == IS_HARDWARE_ANY) || ((dev->hdwId & hdwId) == dev->hdwId)) {
+            // a device exists associated with this port already, there isn't anything to do.
+            dev->validate(deviceTimeout);
+            // printf("Rediscovered previously identified device %s on port %s.\n", dev->getIdAsString().c_str(), dev->getPortName().c_str());
         }
-    } else if ((hdwId == IS_HARDWARE_ANY) || ((dev->hdwId & hdwId) == dev->hdwId)) {
-        // a device exists associated with this port already, there isn't anything to do.
-        dev->validate(3000);
-        // printf("Rediscovered previously identified device %s on port %s.\n", dev->getIdAsString().c_str(), dev->getPortName().c_str());
     }
 }

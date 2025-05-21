@@ -401,7 +401,7 @@ is_operation_result cISBootloaderISB::erase_flash()
         bufPtr = buf + count;
 
         float factor = pow(i / 600, 3);
-        if (m_update_callback(this, factor, "Erasing Flash", 0, 0) != IS_OP_OK)
+        if (m_update_callback(std::make_any<cISBootloaderBase*>(this), factor, "Erasing Flash", 0, 0) != IS_OP_OK)
         {
             return IS_OP_CANCELLED;
         }
@@ -623,7 +623,7 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
 
             if (upload_hex_page(hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
             {
-                logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to fill page with bytes");
+                logStatus(IS_LOG_LEVEL_DEBUG, "(ISB) Failed to fill page with bytes");
                 return IS_OP_OK; // FIXME - this should actually be an error
             }
         }
@@ -997,7 +997,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // Try catch added m_update_callback being correupted
             try
             {
-                if (m_update_callback(this, m_update_progress, "Writing Flash", 0, 0) != IS_OP_OK)
+                if (m_update_callback(std::make_any<cISBootloaderBase*>(this), m_update_progress, "Writing Flash", 0, 0) != IS_OP_OK)
                 {
                     logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Firmware update cancelled");
                     return IS_OP_CANCELLED;
@@ -1014,7 +1014,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
     if (m_update_callback != 0 && m_update_progress != 1.0f)
     {
         m_update_progress = 1.0f;
-        m_update_callback(this, m_update_progress, "Writing Flash", 0, 0);
+        m_update_callback(std::make_any<cISBootloaderBase*>(this), m_update_progress, "Writing Flash", 0, 0);
     }
 
     // Set the verify function up

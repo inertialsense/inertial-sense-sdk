@@ -57,7 +57,10 @@ public:
     virtual void locateDevice(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)> deviceCallback, port_handle_t port, uint16_t hdwId);
 
 
-    uint32_t discoveryTimeout = 10000;
+    void setDeviceTimeout(uint32_t timeout) { deviceTimeout = timeout; };
+
+private:
+    uint32_t deviceTimeout = 3000;
 };
 
 class ImxDeviceFactory : public DeviceFactory {

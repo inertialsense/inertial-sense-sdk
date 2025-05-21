@@ -18,7 +18,9 @@
  * @param openPort if true, indicates that any discovered port should be opened at discovery. Opened ports will remain
  *  open until explicitly closed.
  */
-void PortManager::discoverPorts(const std::string& pattern, uint16_t pType, bool openPorts) {
+bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType, bool openPorts) {
+    portsChanged = false;   // always clear this flag every time we call discoverPorts - the process will set it back, if needed.
+
     // look for ports which are no longer valid and remove them
     std::vector<const port_entry_t*> lostPorts; // a vector of ports which no longer are available and need to be cleaned up
     for (auto& [entry, port] : knownPorts) {
@@ -34,6 +36,7 @@ void PortManager::discoverPorts(const std::string& pattern, uint16_t pType, bool
             }
             entry.factory->releasePort(port);
             port = nullptr;
+            portsChanged = true;   // note that we removed/update the list of ports
         }
     }
     for (auto entry : lostPorts) knownPorts.erase(*entry);
@@ -46,9 +49,11 @@ void PortManager::discoverPorts(const std::string& pattern, uint16_t pType, bool
 
     // check to make sure all knownPorts are also representing in the top-level PortManager's set
     for (auto& [entry, port] : knownPorts ) {
-        if (!this->contains(port))
+        if (!this->contains(port)) {
             this->insert(port);
+        }
     }
+    return portsChanged;
 }
 
 /**
@@ -88,6 +93,8 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
     for (port_listener& l : listeners) {
         l(PORT_ADDED, portType, portName, port);
     }
+
+    portsChanged = true;
 }
 
 /**

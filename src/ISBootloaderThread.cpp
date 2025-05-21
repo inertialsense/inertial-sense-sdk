@@ -438,7 +438,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                     m_serial_threads[port_name] = new_thread;
                     new_thread->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[port_name], "isb-serial-app");
 
-                    m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "mode_thread_serial_app found viable port: %s", port_name.c_str());
+                    m_infoProgress(std::any(), IS_LOG_LEVEL_MORE_DEBUG, "mode_thread_serial_app found viable port: %s", port_name.c_str());
                     m_serial_devicesActive++;
                 }
             }
@@ -552,7 +552,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             if (!found)
             {
-                m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "get_device_isb_version_thread found viable port: %s", port_name.c_str());
+                m_infoProgress(std::any(), IS_LOG_LEVEL_MORE_DEBUG, "get_device_isb_version_thread found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads[port_name] = new_thread;
                 new_thread->thread = threadCreateAndStart(get_device_isb_version_thread, new_thread, "isb-dev-version");
@@ -730,7 +730,7 @@ is_operation_result cISBootloaderThread::update(
 
             if (!found)
             {
-                m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "mode_thread_serial_isb found viable port: %s", port_name.c_str());
+                m_infoProgress(std::any(), IS_LOG_LEVEL_MORE_DEBUG, "mode_thread_serial_isb found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name, force_isb_update); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads[port_name] = new_thread;
                 new_thread->thread = threadCreateAndStart(mode_thread_serial_isb, new_thread, "isb-serial-isb");
@@ -864,7 +864,7 @@ is_operation_result cISBootloaderThread::update(
 
             if (!found)
             {
-                m_infoProgress(std::any(), IS_LOG_LEVEL_DEBUG, "update_thread_serial found viable port: %s", port_name.c_str());
+                m_infoProgress(std::any(), IS_LOG_LEVEL_MORE_DEBUG, "update_thread_serial found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name, force_isb_update); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads[port_name] = new_thread;
                 new_thread->thread = threadCreateAndStart(update_thread_serial, new_thread, "isb-update-serial");

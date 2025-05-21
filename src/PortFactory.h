@@ -38,7 +38,7 @@ public:
     virtual void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern = "", uint16_t pType = PORT_TYPE__UNKNOWN) = 0;
 
     /**
-     * Checks to determine if "the essense" of a port is valid. This should probably not perform any operation on the port
+     * Checks to determine if "the essence" of a port is valid. This should probably not perform any operation on the port
      * that could impact the ability of the port to operate. Rather, perform any reasonable checks to confirm if the port
      * actually exists and can be operated on (ie, does the device exist in the OS, or does the target host respond to a ping?).
      * Note that this is a factory-specific function typically called by the PortManager in order to determine if a port is
