@@ -19,9 +19,6 @@
 #include "ISConstants.h"
 #include "ISDevice.h"
 #include "PortManager.h"
-// #include "DeviceManager.h"
-
-typedef ISDevice* (*ISDeviceFactoryMethod)();
 
 /**
  * An interface which, to be implemented as a singleton, that is responsible for identifying various types of ISDevice and allocating them
@@ -52,9 +49,9 @@ public:
     /**
      * @param deviceCallback - A function to be called when this Factory identifies a possible Inertial Sense device; callback parameters are factory and the device information
      */
-    virtual void locateDevices(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)> deviceCallback, uint16_t hdwId);
+    virtual void locateDevices(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, uint16_t hdwId, uint16_t timeout);
 
-    virtual void locateDevice(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)> deviceCallback, port_handle_t port, uint16_t hdwId);
+    virtual bool locateDevice(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, port_handle_t port, uint16_t hdwId, uint16_t timeout);
 
 
     void setDeviceTimeout(uint32_t timeout) { deviceTimeout = timeout; };

@@ -74,40 +74,46 @@ public:
      * This function does not return a value, and provides no direct indication that any devices were successfully discovered.
      * @param pm a reference to a PortManager instance (but, its a singleton??) which will be used for ports to query for new devices.
      * @param hdwId a IS_HARDWARE_* type used to restrict the discovery to only matching device types, default value of IS_HARDWARE_ANY
-     * will match all device types.
+     *  will match all device types.
+     * @return true if one more more devices were discovered, otherwise false
      */
-    void discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY) {
+    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0) {
+        bool result = false;
         for (auto& port : portManager) {
-            discoverDevice(port, hdwId);
+            result |= discoverDevice(port, hdwId, timeoutMs);
         }
+        return result;
     }
 
     /**
      * Iterates through all registered factories attempting to identify a discoverable device on the specified port.
      * Note that only newly discovered devices which have not been previously discovered will trigger a device_listener callback.
-     * This function does not return a value, and provides no direct indication that any devices were successfully discovered.
      * @param port a port_handle_t which is queried for a viable device.
      * @param hdwId a IS_HARDWARE_* type used to restrict the discovery to only matching device types, default value of IS_HARDWARE_ANY
-     * will match all device types.
+     *  will match all device types.
+     * @param timeoutMs the number of milliseconds to wait for a device to respond before failing
+     * @return true if a device was discovered on the specified port, otherwise false
      */
-    void discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY) {
+    bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0) {
         if (!portIsValid(port))
-            return;
+            return false;
 
         // If the port isn't opened, do we ignore it, or attempt to open it?
         if (!portIsOpened(port) && (option_ignoreClosedPorts || (portOpen(port) != PORT_ERROR__NONE)))
-            return;
+            return false;
 
         // first check if this port is already associated with another device
         for (auto d: *this) {
             if (d && d->hasDeviceInfo() && (d->port == port))
-                return;
+                return false;
         }
 
         for (auto l : factories) {
-            auto cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-            l->locateDevice(cb, port, hdwId);
+            std::function<void(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+            if (l->locateDevice(cb, port, hdwId, timeoutMs))
+                return true;    // successfully located/allocated a device
         }
+        return false;
     }
 
     /**

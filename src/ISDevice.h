@@ -456,8 +456,6 @@ public:
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
 
-    bool handshakeISbl();
-    bool queryDeviceInfoISbl();
     bool validate(uint32_t timeout = 3000);
     int validateAsync(uint32_t timeout = 3000);
 
@@ -493,6 +491,10 @@ private:
     static int processNmeaMsgs(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port);
 
     void stepLogger(void* ctx, const p_data_t* data, port_handle_t port);
+
+    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
+    bool handshakeISbl();
+
 };
 
 

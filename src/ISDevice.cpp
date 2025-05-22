@@ -182,7 +182,7 @@ bool ISDevice::handshakeISbl() {
             return false;
         }
 
-        if (portWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY)) {
+        if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
             return true;           // Success
         }
     }
@@ -190,7 +190,7 @@ bool ISDevice::handshakeISbl() {
     return false;
 }
 
-bool ISDevice::queryDeviceInfoISbl() {
+bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     uint8_t buf[64] = {};
 
     handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
@@ -207,47 +207,48 @@ bool ISDevice::queryDeviceInfoISbl() {
     SLEEP_MS(10);
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-    int count = portReadTimeout(port, buf, 14, 1000);
-    if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
-    {   // expected response
-        devInfo.firmwareVer[0] = buf[2];
-        devInfo.firmwareVer[1] = buf[3];
-        // m_isb_props.rom_available = buf[4];
+    uint32_t timeoutExpires = current_timeMs() + timeout;
+    do {
+        int count = portReadTimeout(port, buf, 14, 10);
+        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55) {   // expected response
+            devInfo.firmwareVer[0] = buf[2];
+            devInfo.firmwareVer[1] = buf[3];
+            // m_isb_props.rom_available = buf[4];
 
-        if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-        {
-            switch ((ISBootloader::eProcessorType)buf[5]) {
-                case ISBootloader::IS_PROCESSOR_UNKNOWN:
-                    devInfo.hardwareType = IS_HARDWARE_TYPE_UNKNOWN;
-                    break;
-                case ISBootloader::IS_PROCESSOR_SAMx70:
-                    devInfo.hardwareType = IS_HARDWARE_TYPE_EVB;
-                    break;
-                case ISBootloader::IS_PROCESSOR_STM32L4:
-                    // IMX-5.0
-                    devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
-                    devInfo.hardwareVer[0] = 5;
-                    devInfo.hardwareVer[1] = 0;
-                    break;
-                case ISBootloader::IS_PROCESSOR_STM32U5:
-                    // GPX-1
-                    devInfo.hardwareType = IS_HARDWARE_TYPE_GPX; // OR IMX-5.1
-                    devInfo.hardwareVer[0] = 1;
-                    devInfo.hardwareVer[1] = 0;
-                    break;
-                case ISBootloader::IS_PROCESSOR_NUM:
-                    break;
+            if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n') {
+                switch ((ISBootloader::eProcessorType) buf[5]) {
+                    case ISBootloader::IS_PROCESSOR_UNKNOWN:
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_UNKNOWN;
+                        break;
+                    case ISBootloader::IS_PROCESSOR_SAMx70:
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_EVB;
+                        break;
+                    case ISBootloader::IS_PROCESSOR_STM32L4:
+                        // IMX-5.0
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
+                        devInfo.hardwareVer[0] = 5;
+                        devInfo.hardwareVer[1] = 0;
+                        break;
+                    case ISBootloader::IS_PROCESSOR_STM32U5:
+                        // GPX-1
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_GPX; // OR IMX-5.1
+                        devInfo.hardwareVer[0] = 1;
+                        devInfo.hardwareVer[1] = 0;
+                        break;
+                    case ISBootloader::IS_PROCESSOR_NUM:
+                        break;
+                }
+                // m_isb_props.is_evb = buf[6];
+                hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+                devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
+                devInfo.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
+                devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
+                devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
+                memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
+                return true;
             }
-            // m_isb_props.is_evb = buf[6];
-            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-            devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
-            devInfo.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
-            devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
-            devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
-            memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
-            return true;
         }
-    }
+    } while (current_timeMs() < timeoutExpires);
 
     hdwId = IS_HARDWARE_TYPE_UNKNOWN;
     devInfo = {};
@@ -280,7 +281,7 @@ bool ISDevice::validate(uint32_t timeout) {
                 GetData(DID_DEV_INFO);
                 break;
             case QUERYTYPE_ISbootloader:
-                queryDeviceInfoISbl();
+                queryDeviceInfoISbl(250);
                 break;
             case QUERYTYPE_mcuBoot:
                 break;
@@ -348,7 +349,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
             // debug_message("[DBG] Querying serial port '%s' using ISbootloader protocol.\n", SERIAL_PORT(port)->portName);
-            queryDeviceInfoISbl();
+            queryDeviceInfoISbl(250);
             break;
         case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
             // debug_message("[DBG] Querying serial port '%s' mcuBoot/SMP protocol.\n", SERIAL_PORT(port)->portName);
