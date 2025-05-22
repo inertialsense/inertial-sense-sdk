@@ -5917,7 +5917,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p);
  * 
  * - Remove GPS_STATUS_NUM_SATS_USED_MASK bits in eGpsStatus this is reported in satsUsed in gps_pos_t.
  * - Move spoofing/jamming status into gps_pos_t.status and reclaim gps_pos_t.status2 as resevered.
- * 
+ * - Change $INFO to conform to NMEA 0183 standard. $INFO is a proprietary message and should start with $P and have max of 79 characters. see SN-6231
  * 
  * 
  * 

@@ -26,6 +26,8 @@ extern "C"
 #define TEST_TRUNCATED_PACKETS                  1
 #define TEST_BUFF_PARSE_MSG						1
 
+#define TEST_STATS_FOR_NERDS                    0
+
 // Protocols
 #define TEST_PROTO_ISB		1
 #define TEST_PROTO_NMEA		1
@@ -1627,12 +1629,14 @@ TEST(ISComm, BufferParse)
     totalBytes += outBufSize;  
 
     // print stats
-    printf("Bytes parsed: %d\r\n", totalBytes);
-    printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
-    printf("NMEA_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
-    printf("DID_GPS1_POS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
-    printf("DID_IMU: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
-    printf("DID_INS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
+    #if TEST_STATS_FOR_NERDS
+        printf("Bytes parsed: %d\r\n", totalBytes);
+        printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
+        printf("NMEA_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
+        printf("DID_GPS1_POS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
+        printf("DID_IMU: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
+        printf("DID_INS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
+    #endif
 
     // Check good and bad packet count
     EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
