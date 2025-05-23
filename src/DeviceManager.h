@@ -82,10 +82,9 @@ public:
      */
     bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0, int options = OPTIONS_USE_DEFAULTS) {
         bool result = false;
-        options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
+        // options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
         for (auto& port : portManager) {
-            if (portIsOpened(port) || (!(options & DISCOVERY__IGNORE_CLOSED_PORTS) && (portOpen(port) == PORT_ERROR__NONE)))
-                result |= discoverDevice(port, hdwId, timeoutMs);
+            result |= discoverDevice(port, hdwId, timeoutMs, options);
         }
         return result;
     }
@@ -100,8 +99,8 @@ public:
      * @param timeoutMs the number of milliseconds to wait for a device to respond before failing
      * @return true if a device was discovered on the specified port, otherwise false
      */
-    bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0) {
-        if (!portIsValid(port) || !portIsOpened(port))
+    bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0, int options = OPTIONS_USE_DEFAULTS) {
+        if (!portIsValid(port))
             return false;
 
         // first check if this port is already associated with another device
@@ -110,8 +109,16 @@ public:
                 return false;
         }
 
+        // open the port, if needed - if we can't open it, fail.
+        options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
+        if (!portIsOpened(port) &&
+            (!(options & DISCOVERY__IGNORE_CLOSED_PORTS) &&
+             (portOpen(port) != PORT_ERROR__NONE)))
+            return false;
+
+
         for (auto l : factories) {
-            std::function<void(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+            std::function<void(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, options);
             if (l->locateDevice(cb, port, hdwId, timeoutMs))
                 return true;    // successfully located/allocated a device
         }
@@ -266,7 +273,7 @@ protected:
      * @param port - the port which the device was discovered on
      * @param devInfo - the name of the port (as determined by the factory, should be unique)
      */
-    void deviceHandler(DeviceFactory* factory, const dev_info_t& devInfo, port_handle_t port);
+    void deviceHandler(DeviceFactory* factory, const dev_info_t& devInfo, port_handle_t port, int options);
 
 
 private:

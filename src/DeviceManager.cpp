@@ -138,11 +138,11 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
  * @param devInfo - the device info for the discovered device
  * @param port - the port the device was discovered on, if any
  */
-void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devInfo, port_handle_t port) {
-
+void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devInfo, port_handle_t port, int options) {
+    options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
     uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(devInfo);
     if (!devId) {
-        if (managementOptions & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+        if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
             portClose(port);
         return; // this is an invalid device Id -- no hdwId and no serialNo
     }
@@ -167,7 +167,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                 debug_message("[DBG] -- Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.\n", portName(port));
                 delete deviceEntry.device;
                 deviceEntry.device = nullptr;
-                if (managementOptions & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+                if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
                     portClose(port);
                 break;
             }
@@ -178,7 +178,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     // if not, then do we need to allocate it?
     deviceEntry.device = factory->allocateDevice(devInfo, port);
     if (!deviceEntry.device) {
-        if (managementOptions & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+        if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
             portClose(port);
         return;
     }
@@ -192,7 +192,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
         l(DEVICE_ADDED, deviceEntry.device);
     }
 
-    if (managementOptions & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
         portClose(port);
 }
 

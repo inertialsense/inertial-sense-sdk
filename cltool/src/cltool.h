@@ -159,7 +159,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string fl
 /**
  * Override the ISDevice class so we can implement our own data handlers
  */
-class CltoolDevice : ISDevice {
+class CltoolDevice : public ISDevice {
     public:
     CltoolDevice(const dev_info_t& _devInfo, port_handle_t _port) : ISDevice(_devInfo, _port) { }
     ~CltoolDevice() override = default;
@@ -187,7 +187,7 @@ private:
      * @param devInfo
      * @return
      */
-    virtual ISDevice* allocateDevice(const dev_info_t &devInfo) override { return (ISDevice*) new CltoolDevice(devInfo, nullptr); };
+    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port) override { return (ISDevice*) new CltoolDevice(devInfo, port); };
 };
 
 #endif // __CLTOOL_H__

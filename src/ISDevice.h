@@ -102,10 +102,6 @@ public:
     }
 
     virtual ~ISDevice() {
-        //        if (hdwId != IS_HARDWARE_ANY) {
-        //            debug_message("Destroying ISDevice %s.\n", getDescription().c_str());
-        //        }
-
         devInfo = {};
 
         if (port) {

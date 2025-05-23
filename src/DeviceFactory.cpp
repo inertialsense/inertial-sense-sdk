@@ -17,7 +17,7 @@ void DeviceFactory::locateDevices(std::function<void(DeviceFactory*, const dev_i
 }
 
 bool DeviceFactory::locateDevice(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, port_handle_t port, uint16_t hdwId, uint16_t timeoutMs) {
-    if (!port || !portIsValid(port))
+    if (!portIsValid(port))
         return false;     // TODO: Should we do anything special if the port is invalid?  Really, we should never get here with an invalid port...
 
     // can we open the port?
@@ -49,7 +49,7 @@ bool DeviceFactory::locateDevice(std::function<void(DeviceFactory*, const dev_in
             SLEEP_MS(1); // this shouldn't be necessary - validateAsync() has its own SLEEP to allow data to be sent, and at this point, we've already parsed all incoming messages.
         } while (!localDev.validateAsync(timeoutMs));
 
-        if (localDev.hasDeviceInfo() && ((hdwId == IS_HARDWARE_ANY) || ((localDev.hdwId & hdwId) == hdwId))) {
+        if (localDev.hasDeviceInfo() && ((hdwId == IS_HARDWARE_ANY) || ((localDev.hdwId & hdwId) == localDev.hdwId))) {
             deviceCallback(this, localDev.devInfo, port);
             return true;
         }

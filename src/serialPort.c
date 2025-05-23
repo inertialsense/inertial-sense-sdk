@@ -341,7 +341,7 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned in
 int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
     int count = serialPortWrite(port, buffer, writeCount);
-    if (count == writeCount)
+    if (count == (int)writeCount)
         count += serialPortWrite(port, (unsigned char*)"\r\n", 2);
     return count;
 }

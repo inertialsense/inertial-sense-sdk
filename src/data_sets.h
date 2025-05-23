@@ -5221,8 +5221,8 @@ typedef struct
     /** Port monitor set */
     port_monitor_set_t port[NUM_COM_PORTS];
 
-    uint8_t activePorts;
-        
+    /** Number of ports in the port[] array */
+    uint8_t activePorts;        // FIXME: This should be moved to BEFORE the port definition, so on the receiving end, we know how many ports to expect.
 } port_monitor_t;
 
 /** Stores data for the event mask */

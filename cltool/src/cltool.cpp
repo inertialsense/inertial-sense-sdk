@@ -1069,10 +1069,15 @@ int extract_array_index(std::string &str)
 
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
-    inertialSenseInterface.WaitForFlashSynced();
+    // FIXME: this currently only does the first device of many - we should probably change this to apply to ALL devices
+    CltoolDevice* device = (CltoolDevice*)inertialSenseInterface.getDevices().front();
+    if (!device)
+        return false;   // we absolutely have to have a valid device...
+
+    device->WaitForFlashSynced(); // we're not interested in success here, but its nice to have it.
 
     nvm_flash_cfg_t flashCfg;
-    inertialSenseInterface.FlashConfig(flashCfg);
+    device->FlashConfig(flashCfg);
     const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfoMap(DID_FLASH_CONFIG);
 
     if (flashCfgString.length() < 2)
@@ -1199,10 +1204,10 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 
         if (modified)
         {   // Upload flash config
-            inertialSenseInterface.SetFlashConfig(flashCfg);
+            device->SetFlashConfig(flashCfg);
 
             // Check that upload completed
-            inertialSenseInterface.WaitForFlashSynced();
+            device->WaitForFlashSynced();   // TODO This one we are more interested in... we should probably note if we were successful
         }
     }
 

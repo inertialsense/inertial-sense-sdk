@@ -46,11 +46,9 @@ public:
      *  will match all ports.
      * @param pType a PORT_TYPE__ value indicating that only ports matching the specified type will be discovered, default
      *  value of PORT_TYPE__UNKNOWN will match all port types
-     * @param openPort if true, indicates that any discovered port should be opened at discovery. Opened ports will remain
-     *  open until explicitly closed.
      * @returns true if one or more ports were added or removed from the list of managed ports
      */
-    bool discoverPorts(const std::string& pattern = "(.+)", uint16_t pType = PORT_TYPE__UNKNOWN, bool openPort=false);
+    bool discoverPorts(const std::string& pattern = "(.+)", uint16_t pType = PORT_TYPE__UNKNOWN);
 
     void addPortFactory(PortFactory* pl) {
         factories.push_back(pl);
@@ -61,6 +59,7 @@ public:
     }
 
     void removePortListener(port_listener listener) {
+        // FIXME: this needs to be implemented correctly
 /*
         for (auto it = listeners.begin(); it != listeners.end(); it++) {
             if (*it == listener) {

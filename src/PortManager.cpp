@@ -15,10 +15,8 @@
  *  will match all ports.
  * @param pType a PORT_TYPE__ value indicating that only ports matching the specified type will be discovered, default
  *  value of PORT_TYPE__UNKNOWN will match all port types
- * @param openPort if true, indicates that any discovered port should be opened at discovery. Opened ports will remain
- *  open until explicitly closed.
  */
-bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType, bool openPorts) {
+bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
     portsChanged = false;   // always clear this flag every time we call discoverPorts - the process will set it back, if needed.
 
     // look for ports which are no longer valid and remove them

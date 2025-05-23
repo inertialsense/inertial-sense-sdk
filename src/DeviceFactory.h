@@ -47,10 +47,25 @@ public:
     virtual bool releaseDevice(ISDevice* device) { return false; };
 
     /**
-     * @param deviceCallback - A function to be called when this Factory identifies a possible Inertial Sense device; callback parameters are factory and the device information
+     * Attempts to identify a specific type of device on all currently known ports, within the timeout period
+     * @param deviceCallback a function to be called if this Factory identified a possible/viable Inertial Sense device on the specified port
+     * @param hdwId a hardware Id qualifier that can be used to narrow the type of device
+     * @param timeout the maximum time to attempt to identify a device before giving up
+     * @return true if a device was detected, otherwise false (indicating a timeout occurred)
      */
     virtual void locateDevices(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, uint16_t hdwId, uint16_t timeout);
 
+    /**
+     * Attempts to identify a specific type of device on the specified port, within the timeout period.
+     * @param deviceCallback a function to be called if this Factory identified a possible/viable Inertial Sense device on the specified port
+     * @param port the port to check for an Inertial Sense device. In most uses, the port specified should already be opened, however if the
+     *   port is not opened, this function will attempt to open it in order for ensure discovery.
+     * @param hdwId a hardware Id qualifier that can be used to narrow the type of device.  There is no direct indication that a hardware type
+     *   failed to match.
+     * @param timeout the maximum time to attempt to identify a device before giving up. There is no direct indication that a timeout occurred.
+     * @return true if a device was detected, otherwise false. Note that a false can result for any number of reasons, including invalid port,
+     *   hdwId mismatch, or a timeout.
+     */
     virtual bool locateDevice(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, port_handle_t port, uint16_t hdwId, uint16_t timeout);
 
 
