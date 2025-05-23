@@ -318,10 +318,10 @@ int serialPortReadCharTimeout(port_handle_t port, unsigned char* c, int timeoutM
 int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (writeCount < 1))
+    if (!serialPort || !serialPort->handle || !buffer || (writeCount < 1))
     {
         if (serialPort && serialPort->pfnError) {
-            if (serialPort->handle == 0) serialPort->pfnError(port, ENOENT, strerror(ENOENT));
+            if (!serialPort->handle) serialPort->pfnError(port, ENOENT, strerror(ENOENT));
             else serialPort->pfnError(port, EINVAL, strerror(EINVAL));
         }
         return 0;
@@ -330,7 +330,7 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned in
     int count = serialPort->pfnWrite(port, buffer, writeCount);
     if (count < 0)
     {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, ENODATA, strerror(ENODATA));
+        if (serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
 
@@ -340,24 +340,19 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned in
 
 int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (writeCount < 1))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, EINVAL, strerror(EINVAL));
-        return 0;
-    }
-
     int count = serialPortWrite(port, buffer, writeCount);
-    count += serialPortWrite(port, (unsigned char*)"\r\n", 2);
+    if (count == writeCount)
+        count += serialPortWrite(port, (unsigned char*)"\r\n", 2);
     return count;
 }
 
 int serialPortWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLength)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (bufferLength < 2))
+    if (!serialPort || !serialPort->handle || !buffer || (bufferLength < 2))
     {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, EINVAL, strerror(EINVAL));
+        if (!serialPort || !serialPort->handle) serialPort->pfnError(port, ENOENT, strerror(ENOENT));
+        else serialPort->pfnError(port, EINVAL, strerror(EINVAL));
         return 0;
     }
 
@@ -407,22 +402,12 @@ int serialPortWriteAscii(port_handle_t port, const char* buffer, unsigned int bu
 
 int serialPortWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength)
 {
-    //serial_port_t* serialPort = (serial_port_t*)port;
     return serialPortWriteAndWaitForTimeout(port, buffer, writeCount, waitFor, waitForLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
 int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const int timeoutMilliseconds)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (writeCount < 1) || (waitFor == 0) || (waitForLength < 1))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, EINVAL, strerror(EINVAL));
-        return 0;
-    }
-
-    int actuallyWrittenCount = serialPortWrite(port, buffer, writeCount);
-
-    if (actuallyWrittenCount != (int)writeCount)
+    if (serialPortWrite(port, buffer, writeCount) != (int)writeCount)
     {
         return 0;
     }
@@ -432,7 +417,6 @@ int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* bu
 
 int serialPortWaitFor(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength)
 {
-    // serial_port_t* serialPort = (serial_port_t*)port;
     return serialPortWaitForTimeout(port, waitFor, waitForLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 

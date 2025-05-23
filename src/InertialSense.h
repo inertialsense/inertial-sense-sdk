@@ -278,14 +278,6 @@ public:
      */
     std::vector<std::string> checkForNewPorts(std::vector<std::string>& oldPorts);
 
-    /**
-     * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
-     * @param info1
-     * @param info2
-     * @return a uint32_t with each bit indicating a match of a specific field in the struct
-     */
-    uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
-
 
     void ProcessRxData(port_handle_t port, p_data_t* data);
     void ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize);
@@ -412,7 +404,7 @@ public:
     * Request device(s) version information (dev_info_t) for all connected devices. This does not wait for, or
     * validate the response.
     */
-    void QueryDeviceInfo();
+    static void QueryDeviceInfo();
 
     /**
     * Turn off broadcasting of all messages on all connected devices.
@@ -420,19 +412,19 @@ public:
      *   ports (Ser0, Ser1, Ser2, etc). Otherwise (false), only the device port which is directly connected to
      *   this host will stop broadcasting; the device will continue to broadcast on its other ports.
     */
-    void StopBroadcasts(bool allPorts=true);
+    static void StopBroadcasts(bool allPorts=true);
 
     /**
      * Persists the currently streaming/broadcasting messages to flash memory, and enables broastcasts on boot.
      * This will cause the device to automatically resume streaming of its current message sets on all configured
      * ports each time the device reboots.
      */
-    void SavePersistent();
+    static void SavePersistent();
 
     /**
      * Instructs all connected devices to perform a software reset.
      */
-    void SoftwareReset();
+    static void SoftwareReset();
 
     /**
      * @brief Request a specific data set by DID.
@@ -442,7 +434,7 @@ public:
      * @param offset Byte offset into data
      * @param period Broadcast period multiple
      */
-    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
+    static void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
 
     /**
     * Send packet payload data to all devices; the payload data is wrapped according to the pktInfo parameter
@@ -454,7 +446,7 @@ public:
     * @param length length of data to send
     * @param offset offset into data to send at
      */
-    void Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0);
+    static void Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0);
 
     /**
      * Send IS packet payload data to all devices; the payload data is wrapped in an ISB packet with the specified dataId
@@ -466,14 +458,14 @@ public:
      * @param length length of data to send
      * @param offset offset into data to send at
      */
-    void SendData(eDataIDs dataId, void* data, uint32_t length, uint32_t offset = 0);
+    static void SendData(eDataIDs dataId, void* data, uint32_t length, uint32_t offset = 0);
 
     /**
     * Send raw (bare) data directly to serial port
     * @param data the data to send
     * @param length length of data to send
     */
-    void SendRaw(void* data, uint32_t length);
+    static void SendRaw(void* data, uint32_t length);
 
     /**
      * Request a specific device broadcast binary data
@@ -482,7 +474,7 @@ public:
      * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
      * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
      */
-    void BroadcastBinaryData(uint32_t dataId, int periodMultiple);
+    static void BroadcastBinaryData(uint32_t dataId, int periodMultiple);
 
     /**
     * Broadcast binary data
@@ -497,14 +489,7 @@ public:
     * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS, stream data necessary for post processing.
     * @param rmcPreset realtimeMessageController preset
     */
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
-
-    /**
-    * Get the device info
-    * @param device device to get device info for.
-    * @return the device info
-    */
-    const dev_info_t DeviceInfo(port_handle_t port = 0);
+    static void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
 
     /**
     * Get current device system command
@@ -530,6 +515,12 @@ public:
      *                If arg is < 0 default port will be used
     */
     void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port = 0);
+
+#if 0
+    // TODO - These have (generally) all been moved into ISDevice and are no longer needed here.
+    //  these DO NOT operate a all devices, but on a single device, which is redudant at best
+    //  and ambiguous at worst.
+    //  Kyle Mallory - Remove by 7/23/2025
 
     /**
     * Get the flash config, returns the latest flash config read from the IMX flash memory
@@ -596,7 +587,7 @@ public:
      * @return false When failed to synchronize
      */
     bool WaitForFlashSynced(port_handle_t port = 0);
-
+#endif
 
     std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
     std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
@@ -634,7 +625,7 @@ protected:
     void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
     void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
 
-    static int OnSerialPortError(port_handle_t port, int errCode, const char *errMsg);
+    static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
 
 
 private:
@@ -677,8 +668,6 @@ private:
     is_comm_instance_t m_gpComm;
     uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 
-    port_handle_t allocateSerialPort(int ptype);
-    // std::unordered_set<port_handle_t> m_serialPorts;   //! actual initialized serial ports
     std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
 
     std::set<port_handle_t> portsToValidate;    //! ports which were discovered but have not been validated as an ISDevice
@@ -690,7 +679,6 @@ private:
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
     bool HasReceivedDeviceInfoFromAllDevices();
-    void RemoveDevice(ISDevice* device);
     bool OpenSerialPorts(const char* port, int baudRate);
     void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);

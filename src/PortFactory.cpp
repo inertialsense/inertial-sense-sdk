@@ -137,13 +137,6 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
 
 #endif
 
-#if 0
-    cout << "Available ports: " << endl;
-    for (int i = 0; i < ports.size(); i++)
-    {
-        cout << ports[i] << endl;
-    }
-#endif
     return ports.size();
 }
 

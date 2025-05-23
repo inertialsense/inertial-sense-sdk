@@ -9,7 +9,7 @@
 #include "DeviceManager.h"
 
 /**
- * Registers a previously created ISDevice instance
+ * Registers a previously created ISDevice instance - use this when a device which is manually allocated (statically, etc) needs to be managed
  * @param device
  * @return
  */
@@ -31,7 +31,7 @@ bool DeviceManager::registerDevice(ISDevice* device) {
 
 /**
  * Creates a new ISDevice instance by calling the newDeviceHandler function, with the port and dev_info_t that will
- * be associated with the device. This attempt to avoid redundant entries by checking if any previously registered
+ * be associated with the device. This attempts to avoid redundant entries by checking if any previously registered
  * devices exists for the same HdwID and Serial No; if found, that existing device will be returned.
  * If m_newDeviceHandler is null, then a generic ISDevice will be created.
  * @param port the port that the new device is connected to
@@ -111,7 +111,6 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
 
     if (closePort && portIsValid(device->port) && portIsOpened(device->port)) {
         portClose(device->port);
-        // portManager.releasePort(device->port);
     }
 
     erase(deviceIter); // erase only remove the ISDevice* from the list, but doesn't release/free the instance itself
@@ -143,7 +142,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
     uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(devInfo);
     if (!devId) {
-        if (option_closePortOnError)
+        if (managementOptions & DISCOVERY__CLOSE_PORT_ON_FAILURE)
             portClose(port);
         return; // this is an invalid device Id -- no hdwId and no serialNo
     }
@@ -168,7 +167,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                 debug_message("[DBG] -- Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.\n", portName(port));
                 delete deviceEntry.device;
                 deviceEntry.device = nullptr;
-                if (option_closePortOnError)
+                if (managementOptions & DISCOVERY__CLOSE_PORT_ON_FAILURE)
                     portClose(port);
                 break;
             }
@@ -179,7 +178,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     // if not, then do we need to allocate it?
     deviceEntry.device = factory->allocateDevice(devInfo, port);
     if (!deviceEntry.device) {
-        if (option_closePortOnError)
+        if (managementOptions & DISCOVERY__CLOSE_PORT_ON_FAILURE)
             portClose(port);
         return;
     }
@@ -193,7 +192,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
         l(DEVICE_ADDED, deviceEntry.device);
     }
 
-    if (option_closePortOnDiscovery)
+    if (managementOptions & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
         portClose(port);
 }
 

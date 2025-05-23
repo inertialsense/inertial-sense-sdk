@@ -61,13 +61,13 @@ static int staticProcessRxData(void *ctx, p_data_t* data, port_handle_t port)
     pfnHandleBinaryData handler = s_cm_state->binaryCallback[data->hdr.id];
     s_cm_state->stepLogFunction(ctx, data, port);
 
-    if (handler != NULLPTR)
+    if (handler)
     {
         handler(s_cm_state->inertialSenseInterface, data, port);
     }
 
     pfnHandleBinaryData handlerGlobal = s_cm_state->binaryCallbackGlobal;
-    if (handlerGlobal != NULLPTR)
+    if (handlerGlobal)
     {
         // Called for all DID's
         handlerGlobal(s_cm_state->inertialSenseInterface, data, port);
@@ -1239,7 +1239,7 @@ void InertialSense::OnClientDisconnected(cISTcpServer* server, is_socket_t socke
     }
 }
 
-int InertialSense::OnSerialPortError(port_handle_t port, int errCode, const char *errMsg) {
+int InertialSense::OnPortError(port_handle_t port, int errCode, const char *errMsg) {
     printf("%s\n", errMsg);
     return 0;
 }
@@ -1823,52 +1823,52 @@ void InertialSense::deviceManagerHandler(uint8_t event, ISDevice* device) {
 
 void InertialSense::QueryDeviceInfo()
 {
-    for (auto device : deviceManager) { device->QueryDeviceInfo(); }
+    for (auto device : DeviceManager::getInstance()) { device->QueryDeviceInfo(); }
 }
 
 void InertialSense::StopBroadcasts(bool allPorts)
 {
-    for (auto device : deviceManager) { device->StopBroadcasts(allPorts); }
+    for (auto device : DeviceManager::getInstance()) { device->StopBroadcasts(allPorts); }
 }
 
 void InertialSense::SavePersistent()
 {
-    for (auto device : deviceManager) { device->SavePersistent(); }
+    for (auto device : DeviceManager::getInstance()) { device->SavePersistent(); }
 }
 
 void InertialSense::SoftwareReset()
 {
-    for (auto device : deviceManager) { device->SoftwareReset(); }
+    for (auto device : DeviceManager::getInstance()) { device->SoftwareReset(); }
 }
 
 void InertialSense::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)
 {
-    for (auto device : deviceManager) { device->GetData(dataId, length, offset, period); }
+    for (auto device : DeviceManager::getInstance()) { device->GetData(dataId, length, offset, period); }
 }
 
 void InertialSense::SendData(eDataIDs dataId, void* data, uint32_t length, uint32_t offset)
 {
-    for (auto device : deviceManager) { device->SendData(dataId, data, length, offset); }
+    for (auto device : DeviceManager::getInstance()) { device->SendData(dataId, data, length, offset); }
 }
 
 void InertialSense::SendRaw(void* data, uint32_t length)
 {
-    for (auto device : deviceManager) { device->SendRaw(data, length); }
+    for (auto device : DeviceManager::getInstance()) { device->SendRaw(data, length); }
 }
 
 void InertialSense::Send(uint8_t pktInfo, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
-    for (auto device : deviceManager) { device->Send(pktInfo, data, did, size, offset); }
+    for (auto device : DeviceManager::getInstance()) { device->Send(pktInfo, data, did, size, offset); }
 }
 
 void InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
 {
-    for (auto device : deviceManager) { device->BroadcastBinaryData(dataId, periodMultiple); }
+    for (auto device : DeviceManager::getInstance()) { device->BroadcastBinaryData(dataId, periodMultiple); }
 }
 
 void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions)
 {
-    for (auto device : deviceManager) { device->BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions); }
+    for (auto device : DeviceManager::getInstance()) { device->BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions); }
 }
 
 void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
@@ -1938,11 +1938,12 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
     if (!port) {
         SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
     } else {
-        ISDevice *device = getDevice(port);
+        ISDevice *device = DeviceManager::getInstance().getDevice(port);
         if (device) device->SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
     }
 }
 
+/*
 bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port) {
     ISDevice* device = port ? getDevice(port) : deviceManager.front();
     return (device ? device->FlashConfig(flashCfg) : false);
@@ -1956,3 +1957,4 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port) {
     ISDevice* device = port ? getDevice(port) : deviceManager.front();
     return (device ? device->WaitForFlashSynced() : false);
 }
+*/
