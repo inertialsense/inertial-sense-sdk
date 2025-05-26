@@ -114,13 +114,6 @@ static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_
     mapper.AddArray("uid", &manufacturing_info_t::uid, DATA_TYPE_UINT32, 4, "", "Unique microcontroller identifier", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapIO(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<io_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &io_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("gpioStatus", &io_t::gpioStatus, DATA_TYPE_UINT32, "", "Use to read and control GPIO input and output.", DATA_FLAGS_DISPLAY_HEX);
-}
-
 static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<bit_t> mapper(data_set, did);
@@ -597,7 +590,9 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddMember("imuRejectThreshGyroLow", &nvm_flash_cfg_t::imuRejectThreshGyroLow, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
-    mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
+    mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 1);
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)");
+    mapper.AddArray("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 3);
  
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
@@ -1568,7 +1563,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapCanConfig(           m_data_set, DID_CAN_CONFIG);
     PopulateMapRmc(                 m_data_set, DID_RMC);
     PopulateMapRmc(                 m_data_set, DID_GPX_RMC);
-    PopulateMapIO(                  m_data_set, DID_IO);
     PopulateMapISEvent(             m_data_set, DID_EVENT);
 
     // EVB
@@ -1706,7 +1700,6 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_RMC:
     case DID_DEBUG_STRING:
     case DID_DEBUG_ARRAY:
-    case DID_IO:
     case DID_MAG_CAL:
     case DID_COMMUNICATIONS_LOOPBACK:
     case DID_BIT:
