@@ -153,9 +153,10 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                     }
                 }
             }
-            SLEEP_MS(1000);
+            SLEEP_MS(500);
             is->portManager.discoverPorts();
-            is->deviceManager.discoverDevices();
+            if (is->portManager.getPortCount() > 0)
+                is->deviceManager.discoverDevices(device->hdwId, 0, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
         }
 
         if (!foundIt) {
@@ -191,8 +192,8 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 }
                 break;
             case UPDATE_DONE:
-                delete imgStream;
-                delete imgBuffer;
+                if (imgStream) { delete imgStream; imgStream = nullptr; }
+                if (imgBuffer) { delete imgBuffer; imgStream = nullptr; }
                 rebootToAPP();
                 session_status = fwUpdate::FINALIZING;
                 break;
@@ -315,6 +316,7 @@ uint32_t ISBFirmwareUpdater::get_device_info()
 
     // Send command
     portWrite(device->port, (uint8_t*)":020000041000EA", 15);
+    SLEEP_MS(10);
 
     uint8_t buf[14] = { 0 };
 
@@ -398,6 +400,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
         portFlush(device->port);
         portRead(device->port, buf, sizeof(buf));    // empty Rx buffer
         portWrite(device->port, (uint8_t*)":020000041000EA", 15);
+        SLEEP_MS(10);
 
         // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
 #define READ_DELAY_MS   500
@@ -571,6 +574,8 @@ bool ISBFirmwareUpdater::rebootToISB()
             }
             else portFlush(device->port);
         }
+        device->disconnect();   // I think the intent here, is that we rebooted the device, and possibly got a new port - so disconnect the old one.
+        device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
     } else if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
         if (device->SendRaw(":020000040500F5", 15) == 15)
             return true;
@@ -850,7 +855,8 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     // create a program request with just the hex characters that will fit on this page
     unsigned char programLine[12];
     SNPRINTF((char*)programLine, 12, ":%02X%04X00", byteCount, currentOffset);
-    if (portWrite(device->port, programLine, 9) != 9)
+    size_t count = strlen((char*)programLine);
+    if (portWrite(device->port, programLine, count) != (int)count)
     {
         fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to write start page");
         return IS_OP_ERROR;
@@ -889,6 +895,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
             return IS_OP_ERROR;
         }
 
+        SLEEP_MS(5);
         unsigned char buf[5] = { 0 };
         int count = portReadTimeout(device->port, buf, 3, 100);
         if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)

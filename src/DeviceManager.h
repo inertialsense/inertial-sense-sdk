@@ -58,6 +58,7 @@ public:
     static const uint16_t DISCOVERY__IGNORE_CLOSED_PORTS          = 0x0001;       //!< when set, this will cause closed ports to be skipped/ignored, otherwise open the port before attempting discovery
     static const uint16_t DISCOVERY__CLOSE_PORT_ON_FAILURE        = 0x0002;       //!< when set, this will cause the port to be closed when discovery fails, otherwise the port will be left open
     static const uint16_t DISCOVERY__CLOSE_PORT_ON_COMPLETION     = 0x0004;       //!< when set, this will cause the port to be closed once discovery is completed, regardless of failure.
+    static const uint16_t DISCOVERY__FORCE_REVALIDATION           = 0x0010;       //!< when set, if an existing device entry if found for this port, the device will be forced to validate again.
 
     static const uint16_t DISCOVERY__DEFAULTS                     = (DISCOVERY__IGNORE_CLOSED_PORTS | DISCOVERY__CLOSE_PORT_ON_FAILURE);
 
@@ -205,20 +206,24 @@ public:
     std::list<ISDevice*>& getDevices() { return *this; };
 
     /**
-     * Returns a vector of available, connected devices
-     * @return
+     * @returns a std::vector<ISDevice*> of known devices
      */
     std::vector<ISDevice*> getDevicesAsVector();
 
     /**
-     * @return an ISDevice* instance associated with the specified port, or NULL if not found
+     * @returns an ISDevice* instance identified by the specified UID, or NULL if not found
+     */
+    ISDevice* getDevice(uint64_t uid);
+
+    /**
+     * @returns an ISDevice* instance associated with the specified port, or NULL if not found
      */
     ISDevice* getDevice(port_handle_t port);
 
     /**
-     * @return an ISDevice* instance identified by the specified UID, or NULL if not found
+     * @returns an ISDevice* instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
      */
-    ISDevice* getDevice(uint64_t uid);
+    ISDevice* getDevice(const std::string& deviceId);
 
     /**
      * Returns the first ISDevice instance matching the specified criteria

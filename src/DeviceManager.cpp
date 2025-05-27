@@ -161,6 +161,9 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
             if (device && portIsValid(port)) {
                 device->assignPort(port);
+                if (options & DISCOVERY__FORCE_REVALIDATION) {
+                    device->devInfo = {0};    // clear the device info, and force it to re-query
+                }
             } else {
                 // FIXME: if we're here, it means we had a deviceEntry that matched the discovered device, but its associated device is invalid.
                 //  we don't want to reallocate the device, since there is already one there, but just need to reassign the devInfo, etc.
@@ -214,6 +217,9 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
 }
 
 
+/**
+ * @returns a vector of available devices
+ */
 std::vector<ISDevice *> DeviceManager::getDevicesAsVector() {
     std::vector<ISDevice*> vecOut;
     for (auto device : *this) {
@@ -222,15 +228,10 @@ std::vector<ISDevice *> DeviceManager::getDevicesAsVector() {
     return vecOut;
 }
 
-ISDevice *DeviceManager::getDevice(port_handle_t port) {
-    for (auto device : *this) {
-        if (device->port == port)
-            return device;
-    }
-    return NULL;
-}
-
-ISDevice *DeviceManager::getDevice(uint64_t uid) {
+/**
+ * @returns an ISDevice* instance identified by the specified UID, or NULL if not found
+ */
+ISDevice* DeviceManager::getDevice(uint64_t uid) {
     for (auto device : *this) {
         if (device && (ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo) == uid))
             return device;
@@ -238,7 +239,35 @@ ISDevice *DeviceManager::getDevice(uint64_t uid) {
     return NULL;
 }
 
-ISDevice *DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
+/**
+ * @returns an ISDevice* instance associated with the specified port, or NULL if not found
+ */
+ISDevice* DeviceManager::getDevice(port_handle_t port) {
+    for (auto device : *this) {
+        if (device->port == port)
+            return device;
+    }
+    return NULL;
+}
+
+/**
+ * @returns an ISDevice* instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
+ */
+ISDevice* DeviceManager::getDevice(const std::string& deviceId) {
+    for (auto device : *this) {
+        if (device->getIdAsString() == deviceId)
+            return device;
+    }
+    return NULL;
+}
+
+/**
+ * Returns the first ISDevice instance matching the specified criteria.
+ * @param serialNum the serial number of the device to return
+ * @param hdwId an optional hdwId to further filter on
+ * @return an ISDevice* instance or NULL if not found
+ */
+ISDevice* DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
     for (auto device : *this) {
         if ((device->hdwId == hdwId) && (device->devInfo.serialNumber == serialNum))
             return device;
@@ -246,15 +275,6 @@ ISDevice *DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
     return NULL;
 }
 
-/*
-std::vector<std::string> DeviceManager::GetPortNames()
-{
-    std::vector<std::string> ports;
-    for (auto device : *this) { ports.push_back(portName(device->port)); }
-    return ports;
-}
-
-*/
 
 /**
  * Returns a subset of connected devices filtered by the passed devInfo and filterFlags.

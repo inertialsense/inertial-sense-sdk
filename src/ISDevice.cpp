@@ -203,7 +203,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     }
 
     // Query device
-    portWrite(port, (uint8_t*)":020000041000EA", 18);
+    portWrite(port, (uint8_t*)":020000041000EA", 15);
     SLEEP_MS(10);
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
