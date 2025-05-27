@@ -113,7 +113,7 @@ public:
         // open the port, if needed - if we can't open it, fail.
         options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
         if (!portIsOpened(port) &&
-            (!(options & DISCOVERY__IGNORE_CLOSED_PORTS) &&
+            ((options & DISCOVERY__IGNORE_CLOSED_PORTS) ||
              (portOpen(port) != PORT_ERROR__NONE)))
             return false;
 
