@@ -331,10 +331,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         /**
          * Send the specified NMEA message to all connected devices, and exit
          */
-        // TODO: This should probably be a function in InertialSense class to send a NMEA string to all available devices
-        for (auto device : inertialSenseInterface.getDevices()) {
-            device->SendNmea(g_commandLineOptions.nmeaMessage);
-        }
+        inertialSenseInterface.SendNmea(g_commandLineOptions.nmeaMessage);
         return true;
     }
 
@@ -347,32 +344,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {   // check for any compatible (protocol version 2) devices
         // FIXME: Device Validation Disabled would be performing a PortManager::discoverPorts, and then creating ISDevices from each directly
         //  IT WILL NOT involve calling DeviceManager::discoverDevices
-/*
-        for (auto device : inertialSenseInterface.getDevices()) {
-            if ((device->hdwId == IS_HARDWARE_TYPE_UNKNOWN) ||
-                (device->devInfo.hdwRunState != HDW_STATE_APP) ||
-                (device->devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0)) {
-                // printf("ERROR: One or more discovered devices are unable to communicate.\n");
-                // let's print the dev info for all connected devices (so the user can identify the errant device)
-                for (auto dev : inertialSenseInterface.getDevices()) {
-                    switch(dev->devInfo.hdwRunState) {
-                        // TODO: Let's be consistent and user utils::devInfoToString() or whatever its called...
-                        case HDW_STATE_UNKNOWN:
-                            printf("%s :: Device is unresponsive.\n", dev->getIdAsString().c_str());
-                            break;
-                        case HDW_STATE_BOOTLOADER:
-                            printf("%s :: Currently in Bootloader Mode.\n", dev->getIdAsString().c_str());
-                            break;
-                        case HDW_STATE_APP:
-                            printf("%s :: Incompatible protocol version (requires %d.x.x).\n", dev->getIdAsString().c_str(), PROTOCOL_VERSION_CHAR0);
-                            break;
-                    }
-                }
-                if (g_commandLineOptions.fwUpdateCmds.empty())
-                    return false; // only return false (and exit) if we are NOT performing an firmware update.
-            }
-        }
-*/
     }
 
     // ask for device info every 2 seconds
@@ -786,13 +757,6 @@ static int cltool_createHost()
 }
 
 
-//void testtesty(unsigned int pHandle, p_data_t* data)
-// int testtesty(p_data_t* data, port_handle_t port)
-// {
-//     printf("AAAAAAAAASSSSSSSSSSSSV");
-//     return 0;
-// }
-
 void getMemoryEvent(InertialSense& inertialSenseInterface, uint32_t addrs, const std::string& destFolder, uint8_t addrCnts, bool IMX)
 {
 #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
@@ -1053,11 +1017,7 @@ static int inertialSenseMain()
     }
     else if (!g_commandLineOptions.nmeaMessage.empty() || g_commandLineOptions.nmeaRx)
     {
-        // serial_port_t nmeaSerialPort;
-        // port_handle_t nmeaPort = (port_handle_t)&nmeaSerialPort;
-
-        auto ports = InertialSense::getLastInstance()->portManager.getPorts();
-        for (auto port : ports) {
+        for (auto port : InertialSense::getLastInstance()->portManager) {
             if ( portValidate(port) && portOpen(port) ) {
                 sendNmea(port, "STPB");
                 sendNmea(port, g_commandLineOptions.nmeaMessage);

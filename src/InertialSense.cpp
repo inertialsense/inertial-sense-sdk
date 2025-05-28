@@ -1856,6 +1856,11 @@ void InertialSense::SendRaw(void* data, uint32_t length)
     for (auto device : DeviceManager::getInstance()) { device->SendRaw(data, length); }
 }
 
+void InertialSense::SendNmea(const std::string& nmeaMsg)
+{
+    for (auto device : DeviceManager::getInstance()) { device->SendNmea(nmeaMsg); }
+}
+
 void InertialSense::Send(uint8_t pktInfo, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     for (auto device : DeviceManager::getInstance()) { device->Send(pktInfo, data, did, size, offset); }

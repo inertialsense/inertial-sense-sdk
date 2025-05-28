@@ -468,6 +468,13 @@ public:
     static void SendRaw(void* data, uint32_t length);
 
     /**
+     * Send the specified string as a NMEA sentence.  This function will insert the prefix and calculate the checksum if they
+     * are not already provided.
+     * @param nmeaMsg the sentence to send
+     */
+    static void SendNmea(const std::string& nmeaMsg);
+
+    /**
      * Request a specific device broadcast binary data
      * @param port the device's port to request data from
      * @param dataId the data id (DID_* - see data_sets.h) to broadcast
