@@ -12,11 +12,19 @@
 #include <vector>
 #include <regex>
 
+#define REMOTE_SOCAT_PORTS      // only does anything on linux
+
+#ifdef REMOTE_SOCAT_PORTS
+    #include <filesystem>
+#endif
+
 #include "util/util.h"
 
 #include "PortManager.h"
 #include "serialPort.h"
 #include "serialPortPlatform.h"
+
+
 
 port_handle_t SerialPortFactory::bindPort(uint16_t pType, const std::string& pName) {
     serial_port_t* serialPort = new serial_port_t;
@@ -159,6 +167,21 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
     std::vector<std::string> comList8250;
     const char* sysdir = "/sys/class/tty/";
 
+
+    #ifdef REMOTE_SOCAT_PORTS
+        try
+        {
+            for (std::filesystem::recursive_directory_iterator i("/dev/remote"), end; i != end; ++i)
+            {
+                if (!std::filesystem::is_directory(i->path()) && std::filesystem::is_character_file(i->path()))
+                {
+                    ports.push_back(i->path().string());
+                }
+            }
+        } catch (const std::filesystem::filesystem_error&) {}
+    #endif
+
+
     // Scan through /sys/class/tty - it contains all tty-devices in the system
     int n = scandir(sysdir, &namelist, NULL, NULL);
     if (n < 0)
@@ -213,6 +236,11 @@ bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& 
     // check first for /dev/<pName> and that its a character device
     if (! (!stat(pName.c_str(), &st) && S_ISCHR(st.st_mode) && st.st_rdev))
         return false;
+
+#ifdef REMOTE_SOCAT_PORTS
+    if (pName.starts_with("/dev/remote"))
+        return true;
+#endif
 
     std::string devdir = utils::string_format("/sys/class/tty/%s/device/driver", basename(pName.c_str()));
     if (! (!lstat(devdir.c_str(), &st) && S_ISLNK(st.st_mode) && st.st_nlink))
