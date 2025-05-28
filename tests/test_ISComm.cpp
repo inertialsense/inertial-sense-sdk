@@ -664,143 +664,143 @@ static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 
 static int generate_ISBPkt_DevInfo(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	dev_info_t dev;
+    dev_info_t dev;
 
-	// Dev Info
-	dev.hardwareType = 4;
-	dev.serialNumber = 234532;
-	dev.hardwareVer[0] = 1;
-	dev.hardwareVer[1] = 0;
-	dev.hardwareVer[2] = 0;
-	dev.hardwareVer[3] = 0;
-	dev.firmwareVer[1] = 2;
-	dev.firmwareVer[2] = 4;
-	dev.firmwareVer[3] = 2;
-	dev.firmwareVer[4] = 125;
-	dev.buildNumber = 4532345;
-	dev.protocolVer[0] = 2;
-	dev.protocolVer[1] = 0;
-	dev.protocolVer[2] = 0;
-	dev.protocolVer[3] = 0;
-	dev.repoRevision = 0x65682a70;
-	dev.buildType = 'c';
-	dev.buildYear = 25;
-	dev.buildMonth = 5;
-	dev.buildDay = 13;
-	dev.buildHour = 14;
-	dev.buildMinute = 19;
-	dev.buildSecond = 55;
-	dev.buildMillisecond = 134;
+    // Dev Info
+    dev.hardwareType = 4;
+    dev.serialNumber = 234532;
+    dev.hardwareVer[0] = 1;
+    dev.hardwareVer[1] = 0;
+    dev.hardwareVer[2] = 0;
+    dev.hardwareVer[3] = 0;
+    dev.firmwareVer[1] = 2;
+    dev.firmwareVer[2] = 4;
+    dev.firmwareVer[3] = 2;
+    dev.firmwareVer[4] = 125;
+    dev.buildNumber = 4532345;
+    dev.protocolVer[0] = 2;
+    dev.protocolVer[1] = 0;
+    dev.protocolVer[2] = 0;
+    dev.protocolVer[3] = 0;
+    dev.repoRevision = 0x65682a70;
+    dev.buildType = 'c';
+    dev.buildYear = 25;
+    dev.buildMonth = 5;
+    dev.buildDay = 13;
+    dev.buildHour = 14;
+    dev.buildMinute = 19;
+    dev.buildSecond = 55;
+    dev.buildMillisecond = 134;
 
-	strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
-	strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
+    strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
+    strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
 
-	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_DEV_INFO, sizeof(dev_info_t), 0, &dev);;
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_DEV_INFO, sizeof(dev_info_t), 0, &dev);;
 }
 
 static int generate_NMEAPkt_DevInfo(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	dev_info_t dev;
+    dev_info_t dev;
 
-	// Dev Info
-	dev.hardwareType = 4;
-	dev.serialNumber = 234532;
-	dev.hardwareVer[0] = 1;
-	dev.hardwareVer[1] = 0;
-	dev.hardwareVer[2] = 0;
-	dev.hardwareVer[3] = 0;
-	dev.firmwareVer[1] = 2;
-	dev.firmwareVer[2] = 4;
-	dev.firmwareVer[3] = 2;
-	dev.firmwareVer[4] = 125;
-	dev.buildNumber = 4532345;
-	dev.protocolVer[0] = 2;
-	dev.protocolVer[1] = 0;
-	dev.protocolVer[2] = 0;
-	dev.protocolVer[3] = 0;
-	dev.repoRevision = 0x65682a70;
-	dev.buildType = 'c';
-	dev.buildYear = 25;
-	dev.buildMonth = 5;
-	dev.buildDay = 13;
-	dev.buildHour = 14;
-	dev.buildMinute = 19;
-	dev.buildSecond = 55;
-	dev.buildMillisecond = 134;
+    // Dev Info
+    dev.hardwareType = 4;
+    dev.serialNumber = 234532;
+    dev.hardwareVer[0] = 1;
+    dev.hardwareVer[1] = 0;
+    dev.hardwareVer[2] = 0;
+    dev.hardwareVer[3] = 0;
+    dev.firmwareVer[1] = 2;
+    dev.firmwareVer[2] = 4;
+    dev.firmwareVer[3] = 2;
+    dev.firmwareVer[4] = 125;
+    dev.buildNumber = 4532345;
+    dev.protocolVer[0] = 2;
+    dev.protocolVer[1] = 0;
+    dev.protocolVer[2] = 0;
+    dev.protocolVer[3] = 0;
+    dev.repoRevision = 0x65682a70;
+    dev.buildType = 'c';
+    dev.buildYear = 25;
+    dev.buildMonth = 5;
+    dev.buildDay = 13;
+    dev.buildHour = 14;
+    dev.buildMinute = 19;
+    dev.buildSecond = 55;
+    dev.buildMillisecond = 134;
 
-	strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
-	strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
+    strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
+    strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
 
 
-	return nmea_dev_info((char*)buf, buffSize, dev);
+    return nmea_dev_info((char*)buf, buffSize, dev);
 }
 
 static int generate_ISBPkt_gps1Pos(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	gps_pos_t gps;
+    gps_pos_t gps;
 
-	// GPS
-	gps.week = 2270;
-	gps.timeOfWeekMs = 12345678;
-	gps.status = 0x03457834;
-	gps.ecef[0] = 2345.967;
-	gps.ecef[1] = 134.0687;
-	gps.ecef[2] = -8657.2345;
-	gps.lla[0] = 40.330565516;
-	gps.lla[1] = -111.725787806;
-	gps.lla[2] = 1408.565264;
-	gps.hMSL = 1408.565264;
-	gps.hAcc = 0.16546;
-	gps.vAcc = 2.3423;
-	gps.pDop = 1.053;
-	gps.cnoMean = 38.928;
-	gps.towOffset = 7254.0982;
-	gps.leapS = 18;
-	gps.satsUsed = 25;
-	gps.cnoMeanSigma = 2;
-	gps.status2 = 0x05;
+    // GPS
+    gps.week = 2270;
+    gps.timeOfWeekMs = 12345678;
+    gps.status = 0x03457834;
+    gps.ecef[0] = 2345.967;
+    gps.ecef[1] = 134.0687;
+    gps.ecef[2] = -8657.2345;
+    gps.lla[0] = 40.330565516;
+    gps.lla[1] = -111.725787806;
+    gps.lla[2] = 1408.565264;
+    gps.hMSL = 1408.565264;
+    gps.hAcc = 0.16546;
+    gps.vAcc = 2.3423;
+    gps.pDop = 1.053;
+    gps.cnoMean = 38.928;
+    gps.towOffset = 7254.0982;
+    gps.leapS = 18;
+    gps.satsUsed = 25;
+    gps.cnoMeanSigma = 2;
+    gps.status2 = 0x05;
 
-	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
 }
 
 static int generate_ISBPkt_ins2(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	ins_2_t ins;
+    ins_2_t ins;
 
-	// INS2
-	ins.week = 2270;
-	ins.timeOfWeek = 12345678;
-	ins.insStatus = 0x12345678;
-	ins.hdwStatus = 0x87654321;
-	ins.qn2b[0] = 173.895;
-	ins.qn2b[1] = 762.54;
-	ins.qn2b[2] = 93.267;
-	ins.qn2b[3] = 5.45;
-	ins.uvw[0] = 2.23;
-	ins.uvw[1] = 789.543;
-	ins.uvw[2] = 123.546;
-	ins.lla[0] = 40.330565516;
-	ins.lla[1] = -111.725787806;
-	ins.lla[2] = 1408.565264;
+    // INS2
+    ins.week = 2270;
+    ins.timeOfWeek = 12345678;
+    ins.insStatus = 0x12345678;
+    ins.hdwStatus = 0x87654321;
+    ins.qn2b[0] = 173.895;
+    ins.qn2b[1] = 762.54;
+    ins.qn2b[2] = 93.267;
+    ins.qn2b[3] = 5.45;
+    ins.uvw[0] = 2.23;
+    ins.uvw[1] = 789.543;
+    ins.uvw[2] = 123.546;
+    ins.lla[0] = 40.330565516;
+    ins.lla[1] = -111.725787806;
+    ins.lla[2] = 1408.565264;
 
-	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_INS_2, sizeof(ins_2_t), 0, &ins);
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_INS_2, sizeof(ins_2_t), 0, &ins);
 }
 
 static int generate_ISBPkt_imu(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	imu_t imu;
+    imu_t imu;
 
-	// IMU
-	imu.time = 25670.98;
-	imu.status = 0x9876543;
-	imu.I.pqr[0] = 1234.;
-	imu.I.pqr[1] = 5643.;
-	imu.I.pqr[2] = -93.5678;
-	imu.I.acc[0] = -321.567;
-	imu.I.acc[1] = 2134.456;
-	imu.I.acc[2] = 4123.856;
+    // IMU
+    imu.time = 25670.98;
+    imu.status = 0x9876543;
+    imu.I.pqr[0] = 1234.;
+    imu.I.pqr[1] = 5643.;
+    imu.I.pqr[2] = -93.5678;
+    imu.I.acc[0] = -321.567;
+    imu.I.acc[1] = 2134.456;
+    imu.I.acc[2] = 4123.856;
 
-	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_IMU, sizeof(imu_t), 0, &imu);
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_IMU, sizeof(imu_t), 0, &imu);
 }
 
 #if BASIC_TX_BUFFER_RX_BYTE_TEST
@@ -836,11 +836,11 @@ TEST(ISComm, BasicTxBufferRxByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-	parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
+    parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
+    EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -878,11 +878,11 @@ TEST(ISComm, BasicTxPortRxByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-	parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
+    parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
+    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -921,11 +921,11 @@ TEST(ISComm, BasicTxRxMultiByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-	parseRingBufMultiByte(g_testTxDeque, TEST0_PORT->portRingBuf);
+    parseRingBufMultiByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
+    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -1006,8 +1006,8 @@ TEST(ISComm, TxRxWithOffsetTest)
     {
         ins_1_t rxIns1 = {};
 
-		int n = ringBufUsed(&(TEST0_PORT->portRingBuf));
-		ringBufRead(&(TEST0_PORT->portRingBuf), g_comm.rxBuf.tail, n);
+        int n = ringBufUsed(&(TEST0_PORT->portRingBuf));
+        ringBufRead(&(TEST0_PORT->portRingBuf), g_comm.rxBuf.tail, n);
         g_comm.rxBuf.tail += n;
 
         // Read timeOfWeek
@@ -1373,8 +1373,8 @@ TEST(ISComm, TruncatedPackets)
 
     while (g_testTxDeque.size()>0)
     {
-		int n = _MIN(ringBufUsed(&(TEST0_PORT->portRingBuf)), is_comm_free(&comm));
-		ringBufRead(&(TEST0_PORT->portRingBuf), comm.rxBuf.tail, n);
+        int n = _MIN(ringBufUsed(&(TEST0_PORT->portRingBuf)), is_comm_free(&comm));
+        ringBufRead(&(TEST0_PORT->portRingBuf), comm.rxBuf.tail, n);
 
         // Update comm buffer tail pointer
         comm.rxBuf.tail += n;
@@ -1432,7 +1432,7 @@ TEST(ISComm, TruncatedPackets)
             found++;
         }
 
-		if (ringBufUsed(&(TEST0_PORT->portRingBuf)) <= 0)
+        if (ringBufUsed(&(TEST0_PORT->portRingBuf)) <= 0)
         {
             // No more data left in ring buffer.  Reset parser one byte ahead of head and try again until there's no more data iscomm buffer.
             comm.rxBuf.head++;
@@ -1446,7 +1446,7 @@ TEST(ISComm, TruncatedPackets)
     }
 
     // Check that we got all data
-	EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
+    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_TRUE(g_testTxDeque.empty());
 
     // Check good and bad packet count
@@ -1471,7 +1471,7 @@ static uint32_t s_buffParseMsgInCnt[5] = { 0 };
 /**
  * @brief ISB callback for testing the function is_comm_buffer_parse_messages()
  */
-int BufferParse_isb(p_data_t* data, port_handle_t port)
+int BufferParse_isb(void* ctx, p_data_t* data, port_handle_t port)
 {
     switch (data->hdr.id)
     {
@@ -1487,9 +1487,9 @@ int BufferParse_isb(p_data_t* data, port_handle_t port)
 /**
  * @brief NMEA callback for testing the function is_comm_buffer_parse_messages()
  */
-int BufferParse_nmea(const unsigned char* msg, int msgSize, port_handle_t port)
+int BufferParse_nmea(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port)
 {
-	switch (getNmeaMsgId(msg, msgSize))
+    switch (getNmeaMsgId(msg, msgSize))
     {
         case NMEA_MSG_ID_INFO:  s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]++;  break;
     }
@@ -1515,7 +1515,7 @@ TEST(ISComm, BufferParse)
 
     uint32_t outBufSize = 0;
     uint32_t tmpBufSize = 0;
-	uint32_t totalBytes = 0;
+    uint32_t totalBytes = 0;
 
     // create comm instance
     is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
@@ -1547,19 +1547,19 @@ TEST(ISComm, BufferParse)
             if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)  
                 break;
 
-			// prep for next message
-			uint8_t randByte = (uint8_t)rand();
+            // prep for next message
+            uint8_t randByte = (uint8_t)rand();
             memset(tmpBuf, 0, BUFF_PARSE_OUT_BUF_SIZE);
 
             // fill next read
             switch (randByte&0x7)
             {
                 case BUFF_PARSE_DEV: // Dev Info
-					tmpBufSize = generate_ISBPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
+                    tmpBufSize = generate_ISBPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
                     msgOutCnt[BUFF_PARSE_DEV]++;
                     break;
                 case BUFF_PARSE_DEV_NMEA: // Dev Info NMEA
-					tmpBufSize = generate_NMEAPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
+                    tmpBufSize = generate_NMEAPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
                     msgOutCnt[BUFF_PARSE_DEV_NMEA]++;
                     break;
                 case BUFF_PARSE_GPS: // GPS
@@ -1581,27 +1581,27 @@ TEST(ISComm, BufferParse)
                     tmpBufSize = ((randByte&0x7e) >> 1);
                     break;
                 default: // fill with upto 64 random values
-				{
-					tmpBufSize = ((randByte & 0xfc) >> 2);
-					
-					for (int j = 0; j < tmpBufSize; j++)
-					{
-						tmpBuf[j] = (uint8_t)rand();
+                {
+                    tmpBufSize = ((randByte & 0xfc) >> 2);
 
-						// CHEAT A LITTLE. Dont allow packet start bytes.
-						if (tmpBuf[j] == PSC_NMEA_START_BYTE ||
-							tmpBuf[j] == PSC_ISB_PREAMBLE_BYTE1 ||
-							tmpBuf[j] == UBLOX_START_BYTE1 ||
-							tmpBuf[j] == RTCM3_START_BYTE ||
-							tmpBuf[j] == SPARTN_START_BYTE ||
-							tmpBuf[j] == SONY_START_BYTE)
-						{
-							tmpBuf[j] = 0x00;
-						}
-					}
+                    for (int j = 0; j < tmpBufSize; j++)
+                    {
+                        tmpBuf[j] = (uint8_t)rand();
 
-					break;
-				}
+                        // CHEAT A LITTLE. Dont allow packet start bytes.
+                        if (tmpBuf[j] == PSC_NMEA_START_BYTE ||
+                            tmpBuf[j] == PSC_ISB_PREAMBLE_BYTE1 ||
+                            tmpBuf[j] == UBLOX_START_BYTE1 ||
+                            tmpBuf[j] == RTCM3_START_BYTE ||
+                            tmpBuf[j] == SPARTN_START_BYTE ||
+                            tmpBuf[j] == SONY_START_BYTE)
+                        {
+                            tmpBuf[j] = 0x00;
+                        }
+                    }
+
+                    break;
+                }
             }
         }
 
