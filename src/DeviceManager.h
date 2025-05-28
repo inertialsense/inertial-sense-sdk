@@ -43,17 +43,6 @@ public:
         DEVICE_REMOVED,
     };
 
-    // TODO: we need a mechanism to manage ports when discovering devices.  The following options need to be implemented; there maybe more options still undetermined
-    //  - IgnoreClosedPorts - don't attempt to discover devices for ports which are not actively open.
-    //  - ClosePortsOnDiscovery - if the discovery succeeds, and a device is validated, if set, close the port regardless
-    //  - ClosePortsOnError - if the discovery fails to validate a device on the current port (for any reason), close the port
-    //  - ClosePortAfterDiscovery - essentially the combination of "ClosePortsOn" because, if set, the port will always be closed after attempting to discover, regardless of success/failure.
-    //  - rediscoverKnownDevices - if true, will force ports known to belong to an existing device to be rediscovered; if false, ports already bound to a device, and validated will be ignored
-
-    //    bool option_ignoreClosedPorts = true;                               //!< option indicating whether to attempt to discovery of devices on ports which are closed - if true, only currently opened ports will be used for discovery; if false, closed ports will be opened before attempting to discover
-    //    bool option_closePortOnError = true;                                //!< option indicating whether to close a port when the discovery fails - if true, ports would be closed after a failure to discovery; if true, ports would remain open (or fall through to closePortOnDiscovery)
-    //    bool option_closePortOnDiscovery = false;                           //!< option indicating whether to close a port when the discovery succeeds - if true, ports would be closed after successful discovery, and would need to be reopened explicitly, if false ports are left open after discovery
-
     static const uint16_t OPTIONS_USE_DEFAULTS                    = 0xFFFF;       //!< used to indicate that higher-order options, if set should be used
     static const uint16_t DISCOVERY__IGNORE_CLOSED_PORTS          = 0x0001;       //!< when set, this will cause closed ports to be skipped/ignored, otherwise open the port before attempting discovery
     static const uint16_t DISCOVERY__CLOSE_PORT_ON_FAILURE        = 0x0002;       //!< when set, this will cause the port to be closed when discovery fails, otherwise the port will be left open

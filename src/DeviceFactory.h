@@ -21,7 +21,7 @@
 #include "PortManager.h"
 
 /**
- * An interface which, to be implemented as a singleton, that is responsible for identifying various types of ISDevice and allocating them
+ * An interface, to be implemented as a singleton, that is responsible for identifying various types of ISDevice and allocating and releasing them.
  */
 class DeviceFactory {
 public:
@@ -68,8 +68,11 @@ public:
      */
     virtual bool locateDevice(std::function<void(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, port_handle_t port, uint16_t hdwId, uint16_t timeout);
 
-
-    void setDeviceTimeout(uint32_t timeout) { deviceTimeout = timeout; };
+    /**
+     * Assigns a Factory-specific timeout period for each port
+     * @param timeout
+     */
+    void setPerDeviceTimeout(uint32_t timeout) { deviceTimeout = timeout; };
 
 private:
     uint32_t deviceTimeout = 3000;
