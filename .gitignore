@@ -49,3 +49,5 @@ CMakeFiles/
 /src/version
 ExampleProjects/InertialSense_log_reader_RegCmp/Log/
 ExampleProjects/InertialSense_log_reader_RegCmp/CMakeSettings.json
+ExampleProjects/IS_SPI_Dev_Example/IS_SPI_Dev_Example_local
+

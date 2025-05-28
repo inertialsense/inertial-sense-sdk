@@ -4728,8 +4728,8 @@ enum eGPXHdwStatusFlags
 
     /** GNSS is faulting firmware update REQUIRED */
     GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
-    /**  */
-    GPX_HDW_STATUS_UNUSED                               = (int)0x00002000,
+    /** Enables LED in Manufacturing TBed */
+    GPX_HDW_STATUS_LED_ENABLED                          = (int)0x00002000,
     /** System Reset is Required for proper function */
     GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
@@ -5959,7 +5959,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p);
  * 
  * - Remove GPS_STATUS_NUM_SATS_USED_MASK bits in eGpsStatus this is reported in satsUsed in gps_pos_t.
  * - Move spoofing/jamming status into gps_pos_t.status and reclaim gps_pos_t.status2 as resevered.
- * 
+ * - Change $INFO to conform to NMEA 0183 standard. $INFO is a proprietary message and should start with $P and have max of 79 characters. see SN-6231
  * 
  * 
  * 

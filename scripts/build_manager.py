@@ -231,12 +231,29 @@ class BuildTestManager:
         result = 0
         suffix = f"-{build_type.lower()}" if is_windows else ""
         build_dir = project_dir / f"build{suffix}"
-
         if clean:
             print(f"=== Running make clean... ===")
+            
+            build_dir_o = project_dir / f"out/build"
+            build_dir_r = project_dir / f"release"
+            build_dir_d = project_dir / f"debug"
+            build_dir_br = project_dir / f"build-release"
+            build_dir_bd = project_dir / f"build-debug"
+            build_dir_b = project_dir / f"build"
+
             try:
-                if os.path.exists(build_dir):
-                    shutil.rmtree(build_dir)
+                if os.path.exists(build_dir_o):
+                    shutil.rmtree(build_dir_o)
+                if os.path.exists(build_dir_r):
+                    shutil.rmtree(build_dir_r)
+                if os.path.exists(build_dir_d):
+                    shutil.rmtree(build_dir_d)
+                if os.path.exists(build_dir_br):
+                    shutil.rmtree(build_dir_br)
+                if os.path.exists(build_dir_bd):
+                    shutil.rmtree(build_dir_bd)
+                if os.path.exists(build_dir_b):
+                    shutil.rmtree(build_dir_b)
             except Exception as e:
                 print(f"Error cleaning: {project_name}.  Directory `{build_dir}` cannot be removed.")
                 if not BuildTestManager.is_directory_empty(build_dir):
