@@ -72,6 +72,59 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
 
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
     printf("%s :: Error %d : %s\n", portName(port), errCode, errMsg);
+    // decide which of these should result in a port-closure, vs a port invalid, vs nothing...
+    switch (errCode) {
+
+        // close but don't invalidate
+        case EIO:       /* I/O error */
+        case ENXIO:     /* No such device or address */
+        case E2BIG:     /* Argument list too long */
+        case ENOEXEC:   /* Exec format error */
+        case EBADF:     /* Bad file number */
+        case ECHILD:    /* No child processes */
+        case ENOMEM:    /* Out of memory */
+        case EACCES:    /* Permission denied */
+        case EFAULT:    /* Bad address */
+        case ENFILE:    /* File table overflow */
+        case EMFILE:    /* Too many open files */
+        case EFBIG:     /* File too large */
+        case ENOSPC:    /* No space left on device */
+        case ESPIPE:    /* Illegal seek */
+        case EROFS:     /* Read-only file system */
+        case EMLINK:    /* Too many links */
+            portClose(port);
+            break;
+
+            // close and invalidate
+        case ENOENT:    /* No such file or directory */
+        case ESRCH:     /* No such process */
+        case ENODEV:    /* No such device */
+        case ENOTDIR:   /* Not a directory */
+        case EISDIR:    /* Is a directory */
+        case ENOTBLK:   /* Block device required */
+        case EPIPE:     /* Broken pipe */
+            portClose(port);
+            portInvalidate(port);
+            break;
+
+
+        // ignore
+        case EBUSY:     /* Device or resource busy */
+        case EAGAIN:    /* Try again */
+        case EPERM:     /* Operation not permitted */
+        case EINTR:     /* Interrupted system call */
+
+        case EEXIST:    /* File exists */
+        case EXDEV:     /* Cross-device link */
+        case EINVAL:    /* Invalid argument */
+        case ENOTTY:    /* Not a typewriter */
+        case ETXTBSY:   /* Text file busy */
+        case EDOM:      /* Math argument out of domain of func */
+        case ERANGE:    /* Math result not representable */
+        default:
+            // do nothing (try again??)
+            break;
+    }
     return 0;
 }
 

@@ -154,8 +154,9 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 }
             }
             SLEEP_MS(500);
-            is->portManager.discoverPorts();
-            if (is->portManager.getPortCount() > 0)
+            bool portsChanged = is->portManager.discoverPorts();
+            SLEEP_MS(100);
+            if (portsChanged || (is->portManager.getPortCount() > 0))
                 is->deviceManager.discoverDevices(device->hdwId, 0, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
         }
 
@@ -193,8 +194,8 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 break;
             case UPDATE_DONE:
                 if (imgStream) { delete imgStream; imgStream = nullptr; }
-                if (imgBuffer) { delete imgBuffer; imgStream = nullptr; }
-                rebootToAPP();
+                if (imgBuffer) { delete imgBuffer; imgBuffer = nullptr; }
+                rebootToAPP(true);  // we should be able to keep the port open
                 session_status = fwUpdate::FINALIZING;
                 break;
         }
@@ -266,8 +267,10 @@ fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdat
 
     if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
         if (check_is_compatible()) {
-            imgBuffer = new ByteBuffer(session_image_size);
-            imgStream = new ByteBufferStream(*imgBuffer);
+            if (!imgBuffer) // don't leak memory
+                imgBuffer = new ByteBuffer(session_image_size);
+            if (!imgStream) // don't leak memory
+                imgStream = new ByteBufferStream(*imgBuffer);
             return fwUpdate::READY;
         }
     } else if (device->devInfo.hdwRunState == HDW_STATE_APP) {
@@ -594,7 +597,7 @@ bool ISBFirmwareUpdater::rebootToISB()
  * @return true if successful, otherwise false
  */
 bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
-    if (!portIsOpened(device->port))
+    if (!device || !portIsOpened(device->port))
         return false;
 
     fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
@@ -602,9 +605,11 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     // send the "reboot to program mode" command and the device should start in program mode
     portWrite(device->port, (unsigned char*)":020000040300F7", 15);
     portFlush(device->port);
+    SLEEP_MS(20);
+
+    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // invalidated, because we don't know until we rediscover the device
     if (!keepPortOpen) {
-        SLEEP_MS(100);
-        portClose(device->port);
+        device->disconnect();
     }
     return true;
 }

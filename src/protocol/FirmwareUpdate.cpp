@@ -686,7 +686,7 @@ namespace fwUpdate {
             return fwUpdate_handleVersionResponse(payload);
 
         if (payload.data.update_resp.session_id != session_id)
-            return false;
+            return false; // this suggests the this message belongs to another session - we should ignore it.
 
         bool result = false;
         fwUpdate_resetTimeout();

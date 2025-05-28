@@ -84,7 +84,10 @@ public:
     bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0, int options = OPTIONS_USE_DEFAULTS) {
         bool result = false;
         // options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
-        for (auto& port : portManager) {
+        for (auto port : portManager) {
+            // FIXME: sometimes this segfaults - I think the portManager's set gets updated while iterating here.
+            //  we may need to put a mutex on the PortManager so we can't add/remove ports while iterating on the base set.
+            //  probably s smart thing to do for the DeviceManager too
             result |= discoverDevice(port, hdwId, timeoutMs, options);
         }
         return result;

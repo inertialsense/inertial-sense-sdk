@@ -103,7 +103,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
     if(pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Requested firmware update with Image '%s', md5: %s", fwUpdate_getSessionTargetName(), filename.c_str(), md5_to_string(session_md5).c_str());
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Requested firmware update with Image '%s', md5: %s", fwUpdate_getSessionTargetName(), filename.c_str(), md5_to_string(session_md5).c_str());
     return result;
 }
 */
@@ -161,7 +161,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     nextStartAttempt = current_timeMs() + attemptInterval;
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
     if (pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Initiating update with image '%s' to target slot %d (%d bytes, md5: %s)", filename.c_str(), slot, fileSize, md5_to_string(session_md5).c_str());
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Initiating update with image '%s' to target slot %d (%d bytes, md5: %s)", filename.c_str(), slot, fileSize, md5_to_string(session_md5).c_str());
     return result;
 }
 
@@ -187,7 +187,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     target_devInfo = &remoteDevInfo;
 
     if(pfnStatus_cb != nullptr) {
-        pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo).c_str());
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo).c_str());
     }
 
     return true;
@@ -215,9 +215,9 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t 
 
     if (pfnStatus_cb != nullptr) {
         if (session_status == fwUpdate::READY)
-            pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s; Expecting %d chunks.", fwUpdate_getStatusName(session_status), session_total_chunks);
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s; Expecting %d chunks.", fwUpdate_getStatusName(session_status), session_total_chunks);
         else
-            pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s", fwUpdate_getStatusName(session_status));
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s", fwUpdate_getStatusName(session_status));
     }
 
     switch (session_status) {
@@ -264,7 +264,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
                     break;
             }
             if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, IS_LOG_LEVEL_ERROR, "To many resends of the same chunk; giving up with error %s", fwUpdate_getNiceStatusName(session_status));
+                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_ERROR, "To many resends of the same chunk; giving up with error %s", fwUpdate_getNiceStatusName(session_status));
             return false;
         }
     } else {
@@ -272,8 +272,8 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
         resent_chunkid_time = current_ms;
     }
 
-    if(pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
+    if (pfnStatus_cb != nullptr)
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
     nextChunkSend = current_timeMs() + nextChunkDelay;
     return fwUpdate_sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
@@ -290,7 +290,7 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     // percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char* message = (msg.data.progress.msg_len > 0) ? (const char*)&msg.data.progress.message : "";
     if (pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, static_cast<eLogLevel>(msg.data.progress.msg_level), message);
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), static_cast<eLogLevel>(msg.data.progress.msg_level), message);
 
     progress_mutex.unlock();
     return true;
@@ -324,8 +324,9 @@ void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
         fwUpdate::payload_t *msg;
         void *aux_data = nullptr;
         int msg_len = fwUpdate_mapBufferToPayload(p, &msg, &aux_data);
-        if (fwUpdate_processMessage(*msg))
-            p += msg_len;
+        p += msg_len;   // we need to continue to consume the message, even if we can't process it below, otherwise, we'll be stuck here forever.
+
+        fwUpdate_processMessage(*msg);
     }
     delete [] toHostBuf;
 }
@@ -343,7 +344,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
     }
 
     if ((pfnStatus_cb != nullptr) && (lastStatus != session_status)) {
-        pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
         lastStatus = session_status;
     }
 
@@ -373,9 +374,9 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                             nextStartAttempt = current_timeMs() + attemptInterval;
                             if (fwUpdate_requestUpdate()) {
                                 startAttempts++;
-                                pfnStatus_cb(this, IS_LOG_LEVEL_DEBUG, "[%s : %d] :: Requesting Firmware Update start (Attempt %d)", portName(port), devInfo->serialNumber, startAttempts);
+                                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_DEBUG, "[%s : %d] :: Requesting Firmware Update start (Attempt %d)", portName(port), devInfo->serialNumber, startAttempts);
                             } else {
-                                pfnStatus_cb(this, IS_LOG_LEVEL_ERROR, "Error attempting to initiate Firmware Update");
+                                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_ERROR, "Error attempting to initiate Firmware Update");
                             }
                         }
                     }
@@ -398,7 +399,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
             break; // do nothing, just wait
         case fwUpdate::FINISHED:
             if(pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Firmware uploaded in %0.1f seconds", (current_timeMs() - updateStartTime) / 1000.f);
+                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Firmware uploaded in %0.1f seconds", (current_timeMs() - updateStartTime) / 1000.f);
             if (hasPendingCommands()) {
                 requestPending = false;
                 session_status = fwUpdate::NOT_STARTED;
@@ -489,7 +490,7 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     stepErrors.emplace_back(activeStep, cmd, buffer);
 
     if (pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, IS_LOG_LEVEL_ERROR, buffer);
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_ERROR, buffer);
 
     if (failLabel.empty()) {
         // if no label has been specified, clear all commands and reset
@@ -508,7 +509,7 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
     if (pfnStatus_cb != nullptr) {
         static std::string priorCmd;
         if (priorCmd != cmd)
-            pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command \"%s\"", cmd.c_str());
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command \"%s\"", cmd.c_str());
         priorCmd = cmd;
     }
 
@@ -597,7 +598,7 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
             std::string msg;
             joinStrings(args, ',', msg);
             if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, IS_LOG_LEVEL_INFO, msg.c_str());
+                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, msg.c_str());
         } else if ((activeCommand == "slot") && (args.size() == 1)) {
             slotNum = strtol(args[0].c_str(), nullptr, 10);
         } else if ((activeCommand == "timeout") && (args.size() == 1)) {
@@ -610,7 +611,7 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
             progressRate = strtol(args[0].c_str(), nullptr, 10);
         } else if ((activeCommand == "delay") && (args.size() == 1)) {
             if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, IS_LOG_LEVEL_MORE_INFO, "Pausing for %0.2f seconds...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
+                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_INFO, "Pausing for %0.2f seconds...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
             pauseUntil = current_timeMs() + strtol(args[0].c_str(), nullptr, 10);
         } else if ((activeCommand == "waitfor") && (args.size() >= 1) && (args.size() <= 3)) {
             if ((args.size() == 3) && (args[2] == "true")) {
@@ -630,7 +631,7 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
                         pingInterval = strtol(args[1].c_str(), nullptr, 10);
                     }
                     if (pfnStatus_cb != nullptr)
-                        pfnStatus_cb(this, IS_LOG_LEVEL_MORE_INFO, "Requesting version info from target device (upto %0.2f seconds)...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
+                        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_INFO, "Requesting version info from target device (upto %0.2f seconds)...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
                     return; // returning now will force this command to be re-executed (until the timeout expires).
                 }
                 if (pingTimeout < current_timeMs()) {
@@ -642,7 +643,7 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
                     fwUpdate_requestVersionInfo(target);
 
                     if (pfnStatus_cb != nullptr)
-                        pfnStatus_cb(this, IS_LOG_LEVEL_MORE_DEBUG, "Re-requesting version info from target device...");
+                        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Re-requesting version info from target device...");
                 }
                 return; // keep trying...
             }
@@ -707,16 +708,16 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
                 fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
             }
             if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Requesting target reset (%s)", hard ? "hard" : "soft");
+                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Requesting target reset (%s)", hard ? "hard" : "soft");
         } else if (activeCommand == "finish") {
             commands.clear();
             bool reportErrors = (args.size() == 1 && args[0] == "true");
             if (reportErrors && (pfnStatus_cb != nullptr))
-                pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "TODO: Give some kind of finish report (errors: %s)", reportErrors ? "true" : "false");
+                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "TODO: Give some kind of finish report (errors: %s)", reportErrors ? "true" : "false");
         } else {
             // unknown command - ignore it
             if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(this, IS_LOG_LEVEL_ERROR, "Unknown command: '%s'", activeCommand.c_str());
+                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_ERROR, "Unknown command: '%s'", activeCommand.c_str());
         }
     }
 
