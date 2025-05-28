@@ -923,28 +923,29 @@ int is_comm_free(is_comm_instance_t* c)
 
     int bytesFree = (int)(buf->end - buf->tail);
 
-    // If the buff has any data try to free space
+    // If the buffer contains any data
     if (bytesFree < (int)(buf->size))
     {   // Buffer contains data
         if (c->processPkt != NULL)
-        {   // Currently parsing a packet.
+        {   // Currently parsing a packet
             if (buf->head != buf->start)
             {   // Data is not at the beginning of the buffer. Move current parse to the front.
                 int shift = (int)(buf->head - buf->start);
                 // Shift current data to start of buffer
 
                 // memmove(buf->start, buf->head, buf->tail - buf->head);
-                move_buffer_32bit(buf->start, buf->head, buf->tail - buf->head);
+                move_buffer_32bit(buf->start, buf->head, buf->tail - buf->head);    // Use instead of memmove() for efficiency on 32-bit processors
 
                 buf->head = buf->start;
                 buf->tail -= shift;
                 buf->scan -= shift;
 
-                // re-calculate free byte count
+                // Re-calculate free byte count
                 bytesFree = (int)(buf->end - buf->tail);
             }
             else if (bytesFree == 0)
-            {   // The current packet if too big to parse. Dump and restart!
+            {   // The current packet if too big to parse. Clear buffer and reset pointers.
+                reportParseError(c, EPARSE_RXBUFFER_FLUSHED);
                 return is_comm_reset_buffer(c);
             }
         }
