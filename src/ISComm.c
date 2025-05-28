@@ -170,21 +170,18 @@ int validateBaudRate(unsigned int baudRate)
 }
 
 /**
- * @brief Sets buffer to inital state
+ * @brief Sets buffer to initial state
  * 
  * @param c is_comm_instance_t*
- * @param buffer uint8_t*
- * @param bufferSize Size of the buffer
  * @return returns the size of the buffer
  */
-int is_comm_reset_buffer(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+int is_comm_reset_buffer(is_comm_instance_t* c)
 {
-    c->rxBuf.size = bufferSize;
-    c->rxBuf.start = buffer;
-    c->rxBuf.end = buffer + bufferSize;
-    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = buffer;
+    c->parser.state = 0;
+    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = c->rxBuf.start;
+    c->processPkt = NULL;
 
-    return bufferSize;
+    return c->rxBuf.size;
 }
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler)
@@ -193,7 +190,12 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsC
 
     // Clear buffer and initialize buffer pointers
     memset(buffer, 0, bufferSize);
-    is_comm_reset_buffer(c, buffer, bufferSize);
+    
+    c->rxBuf.size = bufferSize;
+    c->rxBuf.start = buffer;
+    c->rxBuf.end = buffer + bufferSize;
+
+    is_comm_reset_buffer(c);
     
     // Set parse enable flags
     c->cb.protocolMask = DEFAULT_PROTO_MASK;
@@ -989,16 +991,48 @@ static protocol_type_t processSpartnByte(void* v)
 }
 
 /**
+ * Move a buffer of data from src to dest.  This function is used to move data between buffers 
+ * that are not aligned to 32-bit boundaries.  Equivalent to memmove() but more efficient on 
+ * 32-bit processors.  Requires src and dest do not overlap such that dest will overwrite src 
+ * data not yet copied (i.e. ideal use is dest < src).
+ * @param dest the destination buffer
+ * @param src the source buffer
+ * @param size the number of bytes to move
+ */
+void move_buffer_32bit(void* dest, void* src, size_t size)
+{
+    uint32_t* dest32 = (uint32_t*)dest;
+    uint32_t* src32 = (uint32_t*)src;
+
+    size_t size32 = size>>2;
+    size_t remaining = size&0x3;
+
+    // Copy 32-bit chunks
+    for (size_t i = 0; i < size32; i++)
+    {
+        dest32[i] = src32[i];
+    }
+
+    // Copy remaining bytes
+    uint8_t* dest8 = (uint8_t*)(dest32 + size32);
+    uint8_t* src8 = (uint8_t*)(src32 + size32);
+
+    for (size_t i = 0; i < remaining; i++)
+    {
+        dest8[i] = src8[i];
+    }
+}
+
+/**
  *            *** MAKE SURE YOU UNDERSTAND THIS FUNCTION BEFORE YOU USE IT ***
  *
- * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.
- * Specifically, if the buffer is empty, it will reset all pointers to the start of the buffer.
- * If the buffer pointers are at the end of the buffer, and there is free space at the beginning, it will
- * move the buffer contents back to start, and realign the buffer pointers to maximize free space at the end.
- * If the buffer is mostly (2/3rds) full and cannot be shifted, it will be cleared (reinitialized, dropping
- * old data).
+ * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.  
+ * This function should be called before adding data to the is_comm buffer and calling 
+ * is_comm_parse_timeout() or related parse functions.  
+ * - Reset buffer pointers to the start of the buffer if 1.) parsing is done or 2.) the buffer is full.
+ * - Free up buffer space by shifting partial/incomplete packets to the beginning of the buffer. 
  * @param c the comm instance associated with the port
- * @return the number of free bytes available in the buffer (for subsequent reads)
+ * @return the number of free bytes available in the buffer
  */
 int is_comm_free(is_comm_instance_t* c)
 {
@@ -1006,32 +1040,37 @@ int is_comm_free(is_comm_instance_t* c)
 
     int bytesFree = (int)(buf->end - buf->tail);
 
-    // if we are out of free space, we need to either move bytes over or start over
-    if (bytesFree == 0)
-    {
-        int shift = (int)(buf->head - buf->start);
+    // If the buff has any data try to free space
+    if (bytesFree < (int)(buf->size))
+    {   // Buffer contains data
+        if (c->processPkt != NULL)
+        {   // Currently parsing a packet.
+            if (buf->head != buf->start)
+            {   // Data is not at the beginning of the buffer. Move current parse to the front.
+                int shift = (int)(buf->head - buf->start);
+                // Shift current data to start of buffer
 
-        if (shift < (int)(buf->size / 3))
-        {   // If the buffer is mostly full and can only be shifted less than 1/3 of the buffer
-            // we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
-            // will need to resend the data
-            parseErrorResetState(c, EPARSE_RXBUFFER_FLUSHED);
-            return is_comm_reset_buffer(c, buf->start, buf->size);
+                // memmove(buf->start, buf->head, buf->tail - buf->head);
+                move_buffer_32bit(buf->start, buf->head, buf->tail - buf->head);
+
+                buf->head = buf->start;
+                buf->tail -= shift;
+                buf->scan -= shift;
+
+                // re-calculate free byte count
+                bytesFree = (int)(buf->end - buf->tail);
+            }
+            else if (bytesFree == 0)
+            {   // The current packet if too big to parse. Dump and restart!
+                reportParseError(c, EPARSE_RXBUFFER_FLUSHED);
+                return is_comm_reset_buffer(c);
+            }
         }
         else
-        {   // Shift current data to start of buffer
-            memmove(buf->start, buf->head, buf->tail - buf->head);
-            buf->head = buf->start;
-            buf->tail -= shift;
-            buf->scan -= shift;
-
-            // re-calculate free byte count
-            bytesFree = (int)(buf->end - buf->tail);
+        {   // Not currently parsing a packet
+            if (buf->scan >= buf->tail) // No data left to scan in buffer. RESET pointers to start of the buffer.
+                 return is_comm_reset_buffer(c);
         }
-    }
-    else if (c->processPkt == NULL && buf->scan >= buf->tail)
-    {   // Not currently parsing a packet and no data left to scan in buffer. RESET pointers to start of the buffer.
-        return is_comm_reset_buffer(c, buf->start, buf->size);
     }
 
     return bytesFree;
