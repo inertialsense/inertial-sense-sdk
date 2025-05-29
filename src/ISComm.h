@@ -556,7 +556,7 @@ typedef enum {
     EPARSE_INCOMPLETE_PACKET,       //! Stream/Sentence(NMEA) is too short/incomplete to identify as a packet
     EPARSE_INVALID_HEADER,
     EPARSE_INVALID_PAYLOAD,
-    EPARSE_RXBUFFER_FLUSHED,
+    EPARSE_RXBUFFER_FLUSHED,        //!< RX buffer flushed during parse, packet too large to fit
     EPARSE_STREAM_UNPARSABLE,
     NUM_EPARSE_ERRORS
 } eParseErrorType;
