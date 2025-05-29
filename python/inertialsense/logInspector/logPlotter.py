@@ -390,7 +390,7 @@ class logPlot:
             ax[1].plot(time, lla[:,1])
             ax[2].plot(time, lla[:,2])
 
-            if(np.shape(self.active_devs)[0]==1):
+            if (np.shape(self.active_devs)[0]==1):
                 towOffset = 0
                 timeGPS1 = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 if len(timeGPS1):
