@@ -496,7 +496,7 @@ is_operation_result ISBFirmwareUpdater::sync()
         }
 
         if (portWaitForTimeout(device->port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {    // Success
+        {   // Success
             return IS_OP_OK;
         }
     }
@@ -508,7 +508,7 @@ is_operation_result ISBFirmwareUpdater::sync()
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
         if (portWriteAndWaitForTimeout(device->port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {    // Success
+        {   // Success
             return IS_OP_OK;
         }
     }

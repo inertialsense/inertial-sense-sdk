@@ -1317,7 +1317,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     }
 
     if (pkt->data.size + sizeof(packet_hdr_t) + 4 > PKT_BUF_SIZE)
-    {    // Packet size + offset + payload + footer is too large
+    {   // Packet size + offset + payload + footer is too large
         return -1;
     }
 

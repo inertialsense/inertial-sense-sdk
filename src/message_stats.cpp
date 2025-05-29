@@ -111,7 +111,7 @@ static void updateTimeMs(msg_stats_t &s, int timeMs, int bytes)
     {
         uint32_t dtMs = timeMs - s.startTimeMs;
         if (dtMs >= 1000)
-        {    // Update ever second
+        {   // Update ever second
             s.bytesPerSec = (1000 * s.bytes) / dtMs;
             s.bytes = 0;
             s.startTimeMs = timeMs;
@@ -130,7 +130,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
             msgStats.isb[id] = createNewMsgStats(timeMs, cISDataMappings::DataName(id));
         }
 
-        {    // Update count and timestamps
+        {   // Update count and timestamps
             updateTimeMs(msgStats.isb[id], timeMs, bytes);
         }
         break;
@@ -141,7 +141,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
             msgStats.nmea[id] = createNewMsgStats(timeMs);
         }
 
-        {    // Update count and timestamps
+        {   // Update count and timestamps
             updateTimeMs(msgStats.nmea[id], timeMs, bytes);
         }
         break;
@@ -154,7 +154,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
             msgStats.ublox[id] = createNewMsgStats(timeMs, messageDescriptionUblox(msgClass, msgID));
         }
 
-        {    // Update count and timestamps
+        {   // Update count and timestamps
             updateTimeMs(msgStats.ublox[id], timeMs, bytes);
         }
         break;
@@ -165,7 +165,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
             msgStats.rtcm3[id] = createNewMsgStats(timeMs, messageDescriptionRtcm3(id));
         }
 
-        {    // Update count and timestamps
+        {   // Update count and timestamps
             msg_stats_t &s = msgStats.rtcm3[id];
             updateTimeMs(s, timeMs, bytes);
 
