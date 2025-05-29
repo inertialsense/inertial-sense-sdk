@@ -19,7 +19,7 @@ sys.path.insert(1, '../logs')
 from logReader import Log
 
 class SuperNPP():
-    def __init__(self, params_filename=None, serials=['ALL'], startMode=0):		# start mode 0=hot, 1=cold, 2=factory
+    def __init__(self, params_filename=None, serials=['ALL'], startMode=0): # start mode 0=hot, 1=cold, 2=factory
         self.config_serials = serials
         self.logs_file = None
 
@@ -143,7 +143,7 @@ class SuperNPP():
         print('  log count: ' + str(len(self.logs)))
         for log in self.logs:
             print("   " + log["directory"])
-        time.sleep(2)	# seconds
+        time.sleep(2)   # seconds
 
         # Start threads
         threads = [Thread(target=self.reprocess_log, args=(log["directory"], self.config_serials, yaml.dump(log).replace('\n', ';'))) for log in self.logs]
@@ -227,10 +227,10 @@ class SuperNPP():
 
         mode_suffix = {1: ' -mode COLD', 2: ' -mode FACTORY'}.get(self.startMode, '')
         for i in range(len(cmds)):
-            cmds[i] += mode_suffix		            # Cold/Factory init
-            cmds[i] += ' -kml'                      # Cold init, enable KML output
-            cmds[i] += ' --outputoff'				# disable INS display output
-            cmds[i] += ' --disableBaroFusion'		# disable barometer fusion
+            cmds[i] += mode_suffix              # Cold/Factory init
+            cmds[i] += ' -kml'                  # Cold init, enable KML output
+            cmds[i] += ' --outputoff'           # disable INS display output
+            cmds[i] += ' --disableBaroFusion'   # disable barometer fusion
             cmds[i] += f' --params "{params_str}"'
         
         output = "Running NPP: \n"
@@ -257,7 +257,7 @@ def buildNPP(npp_build_folder):
     process.wait()
  
 def nppPrint(str):
-    print(str)	# Comment out to disable output
+    print(str)  # Comment out to disable output
     pass
 
 def file_contains_string_count(file_path, search_string):

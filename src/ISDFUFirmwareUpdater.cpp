@@ -50,7 +50,7 @@ size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devic
     libusb_device **device_list;
     libusb_device *dev;
 
-    if(dfuMutex.try_lock())
+    if (dfuMutex.try_lock())
     {
         libusb_init(NULL);
 

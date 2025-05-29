@@ -463,10 +463,10 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,      // within limits (e.g. DOP & accuracy)
     GPS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,      // Differential GPS (DGPS) used.
     GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
-	GPS_STATUS_FLAGS_UNUSED_1                       = (int)0x00080000,
-	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
-	GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
-	GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GPS2 RTK moving base mode enabled
+    GPS_STATUS_FLAGS_UNUSED_1                       = (int)0x00080000,
+    GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
+    GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
+    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GPS2 RTK moving base mode enabled
     GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR    = (int)0x00800000,      // GPS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)
     GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING     = (int)0x01000000,      // GPS1 RTK error: Either base observations or antenna position have not been received.
     GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING  = (int)0x02000000,      // GPS1 RTK error: base position moved when it should be stationary
@@ -482,8 +482,8 @@ enum eGpsStatus
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET),
-	GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message. GPS velocity is NED (not ECEF).
-	GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS.
+    GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message. GPS velocity is NED (not ECEF).
+    GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS.
 
     GPS_STATUS_FLAGS_MASK                           = (int)0x1FFFE000,    
     GPS_STATUS_FLAGS_BIT_OFFSET                     = (int)16,
@@ -955,7 +955,7 @@ enum eImuStatus
     IMU_STATUS_SHOCK_PRESENT                    = (int)0x00000040,
 
     /** Magnetometer sample occurred */
-    IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
+    IMU_STATUS_MAG_UPDATE                        = (int)0x00000100,
     /** Data was received at least once from Reference IMU */
     IMU_STATUS_REFERENCE_IMU_PRESENT            = (int)0x00000200,
     /** Reserved */
@@ -1039,7 +1039,7 @@ typedef struct PACKED
     uint8_t                 cnoMeanSigma;
 
     /** (see eGpsStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused */
-    uint8_t					status2;
+    uint8_t                 status2;
 
 } gps_pos_t;
 
@@ -1513,7 +1513,7 @@ enum eGenFaultCodes
     /*! System Fault: CRITICAL system fault (see DID_SYS_FAULT) */
     GFC_SYS_FAULT_CRITICAL                  = 0x00020000,
     /*! Sensor(s) saturated */
-    GFC_SENSOR_SATURATION 				= 0x00040000,
+    GFC_SENSOR_SATURATION                   = 0x00040000,
 
     /*! Fault: IMU initialization */
     GFC_INIT_IMU                            = 0x00100000,
@@ -3031,9 +3031,9 @@ enum eSensorConfig
     /** Magnetometer output data rate (ODR).  Set to enable 100Hz output data rate.  System reset required to enable. */
     // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
 
-    /** Disable magnetometer sensor (sensorConfig[22]) */	
+    /** Disable magnetometer sensor (sensorConfig[22]) */    
     SENSOR_CFG_DISABLE_MAGNETOMETER             = (int)0x00400000,
-    /** Disable barometometer sensor (sensorConfig[23]) */	
+    /** Disable barometometer sensor (sensorConfig[23]) */    
     SENSOR_CFG_DISABLE_BAROMETER                = (int)0x00800000,
 
     /** Triple IMU fault detection level. Higher levels add new features to previous levels */
@@ -3139,7 +3139,7 @@ enum eIoConfig
     /** GPS source MASK */
     IO_CONFIG_GPS_SOURCE_MASK                   = (int)0x00000007,
     /** GPS source - Disable */
-    IO_CONFIG_GPS_SOURCE_DISABLE				= (int)0,
+    IO_CONFIG_GPS_SOURCE_DISABLE                = (int)0,
     /** GPS source - Serial 0 */
     IO_CONFIG_GPS_SOURCE_SER0                   = (int)3,
     /** GPS source - Serial 1 */
@@ -3150,17 +3150,17 @@ enum eIoConfig
     IO_CONFIG_GPS_SOURCE_LAST                   = IO_CONFIG_GPS_SOURCE_SER2,    // set to last source
 
     /** GPS type MASK */
-    IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000007,
+    IO_CONFIG_GPS_TYPE_MASK                     = (int)0x00000007,
     /** GPS type - Unused.  USE this when adding a new GNSS Receiver */
-    IO_CONFIG_GPS_TYPE_UNUSED					= (int)0,
+    IO_CONFIG_GPS_TYPE_UNUSED                    = (int)0,
     /** GPS type - ublox ZED-F9P w/ RTK */
     IO_CONFIG_GPS_TYPE_UBX_F9P                  = (int)1,
     /** GPS type - NMEA */
     IO_CONFIG_GPS_TYPE_NMEA                     = (int)2,
     /** GPS type - InertialSense GPX */
-    IO_CONFIG_GPS_TYPE_GPX						= (int)3,
+    IO_CONFIG_GPS_TYPE_GPX                        = (int)3,
     /** GPS type - last type */
-    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_GPX,		// Set to last type
+    IO_CONFIG_GPS_TYPE_LAST                        = IO_CONFIG_GPS_TYPE_GPX,        // Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
@@ -3180,7 +3180,7 @@ enum eIoConfig
     IO_CONFIG_IMU_3_DISABLE                         = (int)0x80000000,
 };
 
-#define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT)    
+#define IO_CONFIG_DEFAULT     (IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT)    
 
 enum eIoConfig2
 {
@@ -3331,7 +3331,7 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_l 
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_r
-    WHEEL_CFG_BITS_ENCODER_SOURCE           = (int)0x00000400,	// 0 = uINS, 1 = EVB
+    WHEEL_CFG_BITS_ENCODER_SOURCE           = (int)0x00000400,  // 0 = uINS, 1 = EVB
 };
 
 typedef enum
@@ -3575,7 +3575,7 @@ typedef struct PACKED
     uint8_t                 imuShockDeltaAccPerMsLowThreshold;
 
     /** Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2). */
-    uint8_t				    ioConfig2;
+    uint8_t                 ioConfig2;
 
     /** Reserved */
     uint16_t                reserved1;
@@ -3613,7 +3613,7 @@ typedef struct PACKED
     uint32_t                timeOfWeekMs;
 
     /** Strobe input pin (i.e. G1, G2, G5, G9, G11, G12, G13, G15) */
-    uint16_t				pin;
+    uint16_t                pin;
 
     /** Strobe serial index number */
     uint16_t                count;
@@ -4649,7 +4649,7 @@ typedef struct
     uint8_t                 reserved1[2];
 
     /** System configuration bits (see eGpxSysConfigBits). */
-    uint32_t				sysCfgBits;
+    uint32_t                sysCfgBits;
 
     /** Reserved */
     uint32_t                reserved2;

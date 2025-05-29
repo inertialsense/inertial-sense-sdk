@@ -343,7 +343,7 @@ uint32_t ISBFirmwareUpdater::get_device_info()
     m_isb_minor = (char)buf[3];
     m_isb_props.rom_available = buf[4];
 
-    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
+    if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {
         m_isb_props.processor = (eProcessorType)buf[5];
         m_isb_props.is_evb = buf[6];
@@ -431,7 +431,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
     m_isb_props.is_evb = false;
     m_sn = 0;
 
-    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
+    if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {   // Valid packet found
         processor = (eProcessorType)buf[5];
         m_isb_props.is_evb = buf[6];
@@ -441,7 +441,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
     {   // Error parsing
         char msg[200] = { 0 };
         int n = SNPRINTF(msg, sizeof(msg), "(ISB) check_is_compatible parse error:\n 0x ");
-        for(int i=0; i<count; i++)
+        for (int i=0; i<count; i++)
         {
             if (i%2 == 0)
             {   // Add space every other
@@ -454,14 +454,14 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
         return (eImageSignature)valid_signatures;
     }
 
-    if(m_isb_major >= 6)
+    if (m_isb_major >= 6)
     {   // v6 and up has EVB detection built-in
-        if(processor == IS_PROCESSOR_SAMx70)
+        if (processor == IS_PROCESSOR_SAMx70)
         {
             valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
             if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
         }
-        else if(processor == IS_PROCESSOR_STM32L4)
+        else if (processor == IS_PROCESSOR_STM32L4)
         {
             valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
             if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
@@ -490,13 +490,13 @@ is_operation_result ISBFirmwareUpdater::sync()
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
-        if(portWrite(device->port, &handshakerChar, 1) != 1)
+        if (portWrite(device->port, &handshakerChar, 1) != 1)
         {
             return IS_OP_ERROR;
         }
 
         if (portWaitForTimeout(device->port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {	// Success
+        {    // Success
             return IS_OP_OK;
         }
     }
@@ -508,7 +508,7 @@ is_operation_result ISBFirmwareUpdater::sync()
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
         if (portWriteAndWaitForTimeout(device->port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {	// Success
+        {    // Success
             return IS_OP_OK;
         }
     }
@@ -1159,7 +1159,7 @@ is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byt
         int newPage = strtol((char*)tmp, 0, 16);
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) flash page changed (%d) in stream.", newPage);
 
-        if(newPage == 0) {
+        if (newPage == 0) {
             lastSubOffset = currentOffset = m_isb_props.app_offset;
             return IS_OP_OK;
         }

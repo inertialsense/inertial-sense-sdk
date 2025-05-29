@@ -974,7 +974,8 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
         case DID_GPS1_POS:
             static time_t lastTime;
             time_t currentTime = time(NULLPTR);
-            if (abs(currentTime - lastTime) > 5) {	// Update every 5 seconds
+            if (abs(currentTime - lastTime) > 5) 
+            {   // Update every 5 seconds
                 lastTime = currentTime;
                 gps_pos_t &gps = *((gps_pos_t*)data->ptr);
                 if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D) {

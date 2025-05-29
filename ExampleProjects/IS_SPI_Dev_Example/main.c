@@ -39,6 +39,6 @@
 
 int main(void)
 {
-	atmel_start_init();
-	IS_SPI_Example();
+    atmel_start_init();
+    IS_SPI_Example();
 }

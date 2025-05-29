@@ -755,7 +755,7 @@ TEST(ComManager, SegmentedRxTest)
     while (!ringBufEmpty(&tmpRBuf) && !g_testRxDeque.empty())
     {
         // Partial write of data -- we're bypassing the port handler and directly copying data between ring-buffers
-		ringBuftoRingBufWrite(&(TEST0_PORT->portRingBuf), &tmpRBuf, bytesToWrite);
+        ringBuftoRingBufWrite(&(TEST0_PORT->portRingBuf), &tmpRBuf, bytesToWrite);
 
         while (portAvailable(TEST0_PORT))
         {
@@ -766,7 +766,7 @@ TEST(ComManager, SegmentedRxTest)
 
     // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
-	EXPECT_TRUE(ringBufEmpty(&(TEST0_PORT->portRingBuf)));
+    EXPECT_TRUE(ringBufEmpty(&(TEST0_PORT->portRingBuf)));
 }
 #endif
 

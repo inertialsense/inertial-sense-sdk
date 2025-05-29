@@ -11,7 +11,7 @@ static sys_sensors_t g_sensor_sys;
 static sys_sensors_adc_t g_sensor_adc;
 static sys_sensors_adc_t g_sensor_lsb;
 static sys_sensors_adc_t g_adcSigma;
-static sys_params_t	g_sysParams;
+static sys_params_t g_sysParams;
 static nvm_flash_cfg_t g_nvmFlashCfg;
 static rtos_info_t g_rtos;
 static system_command_t g_sysCmd;

@@ -28,7 +28,7 @@ extern "C"
 #define BLAST_RX_TEST                           1
 #define TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS  1
 #define TEST_TRUNCATED_PACKETS                  1
-#define TEST_BUFF_PARSE_MSG						1
+#define TEST_BUFF_PARSE_MSG                     1
 
 #define TEST_STATS_FOR_NERDS                    0
 
@@ -1458,7 +1458,7 @@ TEST(ISComm, TruncatedPackets)
 
 #if TEST_BUFF_PARSE_MSG
 
-#define BUFF_PARSE_PASSES		1000000
+#define BUFF_PARSE_PASSES       1000000
 #define BUFF_PARSE_OUT_BUF_SIZE 600  
 #define BUFF_PARSE_DEV          0  
 #define BUFF_PARSE_DEV_NMEA     1  

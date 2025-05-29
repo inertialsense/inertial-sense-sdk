@@ -276,7 +276,7 @@ public:
 protected:
     void status_update(const char* info, eLogLevel level)
     { 
-        if(m_info_callback) m_info_callback(std::any_cast<cISBootloaderBase*>(this), level, info);
+        if (m_info_callback) m_info_callback(std::any_cast<cISBootloaderBase*>(this), level, info);
     }
 
     struct

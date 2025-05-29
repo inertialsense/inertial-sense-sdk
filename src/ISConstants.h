@@ -144,7 +144,7 @@ extern "C" {
 #elif PLATFORM_IS_EMBEDDED
     #ifndef SAMD_ZERO
         #ifndef ARDUINO_SAMD_ZERO
-            #include "printf.h"		// Use embedded-safe SNPRINTF
+            #include "printf.h" // Use embedded-safe SNPRINTF
         #endif
     #endif
     #define SNPRINTF snprintf_

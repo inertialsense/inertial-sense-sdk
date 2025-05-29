@@ -233,14 +233,14 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
         {   // Array
             for (uint32_t i=0; i<info.arraySize; i++)
             {
-				cISDataMappings::DataToString(info, &hdrCopy, bufPtr, tmp, i, false, false);
+                cISDataMappings::DataToString(info, &hdrCopy, bufPtr, tmp, i, false, false);
                 csv += ",";
                 csv += tmp;
             }
         }
         else
         {   // Single element
-			cISDataMappings::DataToString(info, &hdrCopy, bufPtr, tmp, 0, false, false);
+            cISDataMappings::DataToString(info, &hdrCopy, bufPtr, tmp, 0, false, false);
             csv += ",";
             csv += tmp;
         }

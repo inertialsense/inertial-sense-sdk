@@ -333,7 +333,7 @@ void cISBootloaderThread::update_thread_libusb(void* context)
 
 bool cISBootloaderThread::true_if_cancelled(void)
 {
-    if(m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
+    if (m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     {
         m_continue_update = false;
         return true;
@@ -497,7 +497,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_threads.clear();
     }
 
-    if(m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
+    if (m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -613,7 +613,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_threads.clear();
     }
 
-    if(m_uploadProgress(std::any(), 0.0f, ""/*"Waiting for device response."*/, 0, 0) == IS_OP_CANCELLED)
+    if (m_uploadProgress(std::any(), 0.0f, ""/*"Waiting for device response."*/, 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -686,7 +686,7 @@ is_operation_result cISBootloaderThread::update(
             comPorts.begin(), comPorts.end(),
             back_inserter(ports_user_ignore));
 
-    if(m_uploadProgress(std::any(), 0.0f, ""/*"Writing Flash"*/, 0, 0) == IS_OP_CANCELLED)
+    if (m_uploadProgress(std::any(), 0.0f, ""/*"Writing Flash"*/, 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -783,7 +783,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
     }
 
-    if(m_uploadProgress(std::any(), 0.0f, "Writing Flash", 0, 0) == IS_OP_CANCELLED)
+    if (m_uploadProgress(std::any(), 0.0f, "Writing Flash", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -910,7 +910,7 @@ is_operation_result cISBootloaderThread::update(
 
     threadJoinAndFree(libusb_thread);
 
-    if(m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
+    if (m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 

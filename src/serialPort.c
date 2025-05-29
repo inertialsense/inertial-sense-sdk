@@ -193,7 +193,7 @@ int serialPortRead(port_handle_t port, unsigned char* buffer, unsigned int readC
 int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if ((serialPort == 0) || (buffer == 0) || (readCount < 1))
+    if ((serialPort == 0) || (buffer == 0) || (readCount < 1))
     {
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
@@ -236,7 +236,7 @@ int serialPortReadLine(port_handle_t port, unsigned char* buffer, unsigned int b
 int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if ((port == 0) || (buffer == 0) || (bufferLength < 8))
+    if ((port == 0) || (buffer == 0) || (bufferLength < 8))
     {
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
