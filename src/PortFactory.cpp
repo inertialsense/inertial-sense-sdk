@@ -109,7 +109,9 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
         case ENODEV:    /* No such device */
         case ENOTDIR:   /* Not a directory */
         case EISDIR:    /* Is a directory */
+#if PLATFORM_IS_LINUX
         case ENOTBLK:   /* Block device required */
+#endif
         case EPIPE:     /* Broken pipe */
             portClose(port);
             portInvalidate(port);
