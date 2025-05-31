@@ -1521,6 +1521,7 @@ TEST(ISComm, BufferParse)
     is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
 
     // Enable/disable protocols
+    is_comm_register_callbacks(&comm, &callbacks);
     is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
     is_comm_enable_protocol(&comm, _PTYPE_NMEA);
 

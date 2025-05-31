@@ -623,7 +623,7 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
  * @param checkSum a starting checksum "seed" (this would also be the result of a previous call which was not the final call).
  * @param ptr a pointer to the data buffer
  * @param start an offset into the data buffer from which to start calculating the checksum
- * @param end an offset into the data buffer, specifying when to stop calculating the checkum
+ * @param end an offset into the data buffer, specifying when to stop calculating the checksum
  * @param checkSumPosition an offset into the data buffer (usually the very end), where the resulting checksum will be set
  * @param finalCheckSum a bool indicating if this is the final checksum() call to be made on this buffer
  * @return
@@ -667,11 +667,11 @@ bool ISBFirmwareUpdater::sendCmd(const std::string& cmd, int chksumPos) {
 /**
  * Helper functions which waits for a particular acknowledgement response from the remote device, and generates periodic status
  * reports while it waits.  This function calculates (and returns via 'progress') a percentage progress as an indication of
- * time elapsed between elasped and maxTimeout. The implementation for progress is non-linear (exponential).
+ * time elapsed between elapsed and maxTimeout. The implementation for progress is non-linear (exponential).
  * @param ackStr the string to look for, which indicates an acknowledgement
  * @param progressMsg a message to report when sending periodic status updates
  * @param maxTimeout the maximum number of milliseconds to wait for the acknowledgement
- * @param elapsed the number of milliseconds that have elasped since submitting the operation that is waiting for the acknowledgement
+ * @param elapsed the number of milliseconds that have elapsed since submitting the operation that is waiting for the acknowledgement
  * @param progress  a calculated percentage (0-1.0) indicating a "progress" toward a timeout occurring
  * @return false if an acknowledgement has been received, otherwise false
  */
@@ -1007,14 +1007,6 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
             break;
         case WRITE:
         {
-            // if (writeStartedMs == 0) {
-            //    fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initiating flash write.");
-            //    if (sendCmd(WRITE_FLASH))
-            //       writeStartedMs = current_timeMs();
-            //       SLEEP_MS(100); // give a moment for the device to respond to the command (but not too long).
-            //    }
-            // }
-
             switch (process_hex_stream(*imgStream)) {
                 case IS_OP_OK:  // normal operation, and still more data to process
                     writeState = WRITE;
