@@ -1307,7 +1307,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout)
                 break;
 
-            deviceManager.discoverDevices();
+            deviceManager.discoverDevices(IS_HARDWARE_ANY, 5000, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);  // In this case, We ABSOLUTELY want to open any closes ports (because they are all closed currently)
         } while (!portsToValidate.empty());
         debug_message("[DBG] Completed device validation for %lu devices, on %lu ports.\n", deviceManager.size(), portManager.size());
 
