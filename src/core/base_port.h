@@ -55,7 +55,7 @@ typedef int(*pfnPortClose)(port_handle_t port);
 typedef int(*pfnPortFree)(port_handle_t port);
 typedef int(*pfnPortAvailable)(port_handle_t port);
 typedef int(*pfnPortFlush)(port_handle_t port);
-typedef int(*pfnPortDrain)(port_handle_t port);
+typedef int(*pfnPortDrain)(port_handle_t port, uint32_t timeout);
 typedef int(*pfnPortRead)(port_handle_t port, uint8_t* buf, unsigned int len);
 typedef int(*pfnPortReadTimeout)(port_handle_t port, uint8_t* buf, unsigned int len, uint32_t timeout);
 typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int len);
@@ -269,6 +269,19 @@ static inline int portFree(port_handle_t port) {
 static inline int portAvailable(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
     return (BASE_PORT(port)->portAvailable) ? BASE_PORT(port)->portAvailable(port) : PORT_ERROR__NOT_SUPPORTED;
+}
+
+/**
+ * Blocks upto timeoutMs for all queued TX data to be sent to the physical device. No guarantee is made
+ * about the delivery state of that data. This effectively flushes the TX buffer. If timeoutMs is exceeded,
+ * all remaining data in the buffer will be dropped.
+ * @param port the port to query
+ * @param timeoutMs the maximum number of milliseconds to allow data to be sent before dropping all remaining data.
+ * @return if >= 0, the number of bytes that were dropped if any, otherwise a PORT_ERROR__ indicating the error
+ */
+static inline int portDrain(port_handle_t port, uint32_t timeoutMs) {
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    return (BASE_PORT(port)->portDrain) ? BASE_PORT(port)->portDrain(port, timeoutMs) : PORT_ERROR__NOT_SUPPORTED;
 }
 
 /**

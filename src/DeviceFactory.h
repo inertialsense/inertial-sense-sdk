@@ -42,9 +42,18 @@ public:
      * Because this does not close the port, the port may remain open, and so may be discovered at a later point
      * assuming the device is still physically connected to that port, and the port is valid.
      * @param device the pointer/handle of the Device to release
-     * @return true if the device specified was a valid, and it was successfully released, otherwise false.
+     * @return true if the device specified was valid, and it was successfully released, otherwise false.
      */
-    virtual bool releaseDevice(ISDevice* device) { return false; };
+    virtual bool releaseDevice(ISDevice* device) {
+        // cleanup some memory, so if this accidentally gets used after being free, it won't be catastrophic.
+        device->port = nullptr;
+        device->fwUpdater = nullptr;
+        device->hdwId = IS_HARDWARE_NONE;
+        device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+
+        delete device;
+        return true;
+    };
 
     /**
      * Attempts to identify a specific type of device on all currently known ports, within the timeout period

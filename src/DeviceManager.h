@@ -93,17 +93,27 @@ public:
      * @return true if a device was discovered on the specified port, otherwise false
      */
     bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0, int options = OPTIONS_USE_DEFAULTS) {
+        options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
+
         if (!portIsValid(port))
             return false;
 
         // first check if this port is already associated with another device
         for (auto d: *this) {
-            if (d && d->hasDeviceInfo() && (d->port == port))
-                return false;
+            if (d && d->hasDeviceInfo() && (d->port == port)) {
+                if ((options & DISCOVERY__FORCE_REVALIDATION)) {
+                    // Invalidate the device, which will force a rediscovery, without losing the identity of the device itself.
+                    d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+                    memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
+                } else {
+                    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+                        portClose(port);
+                    return true;    // this is a success (rediscovered an existing device), without a FORCE_VALIDATION
+                }
+            }
         }
 
         // open the port, if needed - if we can't open it, fail.
-        options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
         if (!portIsOpened(port) &&
             ((options & DISCOVERY__IGNORE_CLOSED_PORTS) ||
              (portOpen(port) != PORT_ERROR__NONE)))
@@ -112,8 +122,11 @@ public:
 
         for (auto l : factories) {
             std::function<void(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, options);
-            if (l->locateDevice(cb, port, hdwId, timeoutMs))
+            if (l->locateDevice(cb, port, hdwId, timeoutMs)) {
+                if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)  // locateDevice should already handle this, but just in case.
+                    portClose(port);
                 return true;    // successfully located/allocated a device
+            }
         }
         return false;
     }
@@ -183,7 +196,19 @@ public:
      * @param closePort
      * @return true if the device was found, and released otherwise false
      */
-    bool releaseDevice(ISDevice* device, bool closePort = true);
+    bool releaseDevice(ISDevice* device, bool closePort = true, bool deleteDevice = true);
+
+    /**
+     * Remove and release/free all known/discovered devices.
+     */
+    void clear(bool closePorts = true) {
+        std::vector<ISDevice*> tmp = getDevicesAsVector();
+        for (auto d : tmp) releaseDevice(d, closePorts, true);
+
+        // just to make sure we didn't miss anything (though this could cause memory leaks)
+        std::list<ISDevice*>::clear();
+        knownDevices.clear();
+    }
 
     /**
     * Get the number of open devices
@@ -249,11 +274,6 @@ public:
      * @return a vector of ISDevice* which match the filter criteria (hdwId)
      */
     std::vector<ISDevice*> selectByHdwId(const uint16_t hdwId = 0xFFFF);
-
-    void clear() {
-        std::list<ISDevice*>::clear();
-        knownDevices.clear();
-    }
 
 protected:
     void portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port);

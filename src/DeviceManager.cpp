@@ -90,14 +90,15 @@ ISDevice* DeviceManager::registerNewDevice(port_handle_t port, dev_info_t devInf
 }
 
 /**
- * Removes the specified device and associated port from being managed by the InertialSense's comManager instance.
- * This does not free/delete/release the device or port, but the underlying call into comManagerRemovePort() will
- * close the port. This is a special-use function as there is generally little utility is retaining an ISDevice
- * instance which is not attached to the InertialSense class; you should probably be using releaseDevice() instead.
- * NOTE: if you use RemoveDevice() it is the callers responsibility to delete/release the ISDevice instance, as
- * the InertialSense class will no longer manage it.
+ * Removes the specified device from being managed by the DeviceManager, and can optionally (by default) close
+ * the associated port, and free/delete the memory associated with the device.  This can be used with the closePort/deleteDevice
+ * arguments to decouple a device from the DeviceManager, and still keep the device functional, however it becomes to developers
+ * responsibility to ensure that the device is properly closed/released when no longer needed.
+ * @param device a pointer reference the device to release
+ * @param closePort if true (default) the port will be closed (if open) prior to the device being released, otherwise the port is left in its current state.
+ * @param deleteDevice if true (default) the memory associated with the device will be deallocated, otherwise the device is left in an operational state.
  */
-bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
+bool DeviceManager::releaseDevice(ISDevice* device, bool closePort, bool deleteDevice)
 {
     auto deviceIter = std::find(begin(), end(), device);
     if (deviceIter == end())
@@ -116,13 +117,22 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
     erase(deviceIter); // erase only remove the ISDevice* from the list, but doesn't release/free the instance itself
     device->port = NULL;
 
-    // also remove from known devices
+    // also remove from knownDevices
     uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo);
     device_entry_t deviceEntry(nullptr, devId, nullptr);
-    auto knownIter = std::remove_if(knownDevices.begin(), knownDevices.end(), [&devId](const device_entry_t& e) { return e.hdwId == devId;});
+    auto knownIter = std::remove_if(knownDevices.begin(), knownDevices.end(), [&deviceEntry](const device_entry_t& e) {
+        if (e.hdwId == deviceEntry.hdwId) {
+            // if we found the matching ID, populate the missing entry fields
+            deviceEntry.factory = e.factory;
+            deviceEntry.device = e.device;
+            return true;
+        }
+        return false;
+    });
     knownDevices.erase(knownIter);
 
-    delete device; // FIXME This maybe problematic, since there may be external references to this device, which likely won't be notified of it being deleted (DeviceCollector, etc)
+    if (deleteDevice)
+        deviceEntry.factory->releaseDevice(deviceEntry.device);
 
     return true;
 }
@@ -132,8 +142,8 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort)
  * This is a low-level callback indicating that a device identified by devInfo was discovered.
  * This handler is responsible for makings further determinations of viability and making callbacks
  * for specifics events such as whether the device is a new device, or a previously known device.
- * NOTE: this function will likely be called frequently, since it will be called once
- * for each device identified, for each locator register, for every call of checkForNewPort()
+ * NOTE: this function will likely be called frequently, since it will be called once for each device
+ * identified, for each locator register, for every call of checkForNewPort()
  * @param factory - the factory which discovered this device
  * @param devInfo - the device info for the discovered device
  * @param port - the port the device was discovered on, if any
@@ -161,9 +171,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
             if (device && portIsValid(port)) {
                 device->assignPort(port);
-                if (options & DISCOVERY__FORCE_REVALIDATION) {
-                    device->devInfo = {0};    // clear the device info, and force it to re-query
-                }
+                device->devInfo = devInfo;
             } else {
                 // FIXME: if we're here, it means we had a deviceEntry that matched the discovered device, but its associated device is invalid.
                 //  we don't want to reallocate the device, since there is already one there, but just need to reassign the devInfo, etc.
@@ -174,6 +182,9 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                     portClose(port);
                 break;
             }
+
+            if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+                portClose(port);
             return;
         }
     }

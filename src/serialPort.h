@@ -239,9 +239,10 @@ int serialPortFlush(port_handle_t port);
 /**
  * blocks until all pending TX writes have completed, and the TX buffer is empty.
  * @param port
+ * @param timeoutMs the number of milliseconds to wait, at most before data is discarded
  * @return 1 if success, 0 if failure
  */
-int serialPortDrain(port_handle_t port);
+int serialPortDrain(port_handle_t port, uint32_t timeoutMs);
 
 /**
  * read up to readCount bytes into buffer

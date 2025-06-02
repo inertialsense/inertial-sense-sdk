@@ -157,15 +157,17 @@ int serialPortFlush(port_handle_t port)
     return serialPort->pfnFlush(port);
 }
 
-int serialPortDrain(port_handle_t port)
+int serialPortDrain(port_handle_t port, uint32_t timeoutMs)
 {
+    (void) timeoutMs;
+
     serial_port_t* serialPort = (serial_port_t*)port;
     if ((serialPort == 0) || (serialPort->pfnDrain == 0))
     {
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
-    return serialPort->pfnDrain(serialPort);
+    return serialPort->pfnDrain(serialPort); // currently, our implementation ignores timeoutMs
 }
 
 

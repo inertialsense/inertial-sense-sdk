@@ -717,13 +717,15 @@ void InertialSense::Close()
         StopBroadcasts(false);
         SLEEP_MS(100);
     }
-//    for (auto& device : m_comManagerState.devices)
-//    {
-//        serialPortClose(device.port);
-//    }
-//    m_comManagerState.devices.clear();
-//    m_serialPorts.clear();
-    CloseSerialPorts(true); // allow all opened ports to transmit all buffered data
+
+    // Note the distinction here; we are closing ports, not devices...  Maybe we should do this differently though?
+    for (ISDevice* d : deviceManager) {
+        if (d->isConnected()) {
+            portFlush(d->port);
+        }
+        d->disconnect();
+    }
+
 }
 
 #if 0
@@ -1365,7 +1367,7 @@ void InertialSense::CloseSerialPorts(bool drainBeforeClose)
     for (auto port : portManager) {
         if (port) {
             if (drainBeforeClose) {
-                serialPortDrain(port);
+                serialPortDrain(port, 0);
             }
             serialPortClose(port);
         }

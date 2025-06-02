@@ -176,6 +176,7 @@ public:
      * @return true if successful, otherwise false
      */
     virtual bool disconnect() {
+        devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // once we disconnect, we don't actually know the status of the hardware anymore
         return (portClose(port) == PORT_ERROR__NONE);
     }
 
@@ -397,7 +398,7 @@ public:
 
     /**
      * @returns true if the local flashConfig upload was either not received or rejected.
-     * TODO: this REALLY only does a checksum comparision of the sysParams and the uploaded flashCfg to confirm they match.
+     * TODO: this REALLY only does a checksum comparison of the sysParams and the uploaded flashCfg to confirm they match.
      *  Maybe this is enough, but this function name maybe
      */
     bool FlashConfigUploadFailure() {
