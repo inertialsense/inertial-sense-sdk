@@ -320,9 +320,9 @@ public:
         uint8_t buf[10];
         for (auto device : deviceManager)
         {
-            if (!serialPortIsOpen(device->port))
+            if (device->isConnected())
             {
-                while (serialPortReadTimeout(device->port, buf, sizeof(buf), 0));
+                while (portReadTimeout(device->port, buf, sizeof(buf), 50));
             }
         }
     }

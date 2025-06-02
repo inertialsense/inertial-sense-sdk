@@ -483,7 +483,7 @@ std::string ISDevice::getDescription(int flags) {
     if (!(flags & OMIT_FIRMWARE_VERSION)) {
         desc += " " + getFirmwareInfo(flags);
         if (!(flags & OMIT_PORT_NAME))
-            desc += ", " + getPortName();
+            desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
     }
     return desc;
 }
