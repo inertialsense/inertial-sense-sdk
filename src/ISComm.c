@@ -421,6 +421,11 @@ static protocol_type_t processIsbPkt(void* v)
 
     // Validate checksum
     packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
+    if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)
+        return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+    if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) && (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB))
+        return parseErrorResetState(c, EPARSE_INVALID_HEADER);
+
     uint16_t payloadSize = isbPkt->hdr.payloadSize;
     uint8_t *payload = c->rxBuf.head + sizeof(packet_hdr_t);
     checksum16_u *cksum = (checksum16_u*)(payload + payloadSize);
@@ -1160,7 +1165,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 {
                     p_data_t data;
                     is_comm_to_isb_p_data(comm, &data);
-                    notConsumed = comm->cb.isbData(&data, port);
+                    notConsumed = comm->cb.isbData(comm->cb.context, &data, port);
                 }
                 break;
             case _PTYPE_INERTIAL_SENSE_ACK:
@@ -1168,14 +1173,14 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 break;
             default:
                 if (comm->cb.generic[ptype]) {
-                    notConsumed = comm->cb.generic[ptype](comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
+                    notConsumed = comm->cb.generic[ptype](comm->cb.context, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
                 }
                 break;
         }
 
         if (comm->cb.all && notConsumed)
         {
-            comm->cb.all(ptype, &(comm->rxPkt), port);
+            comm->cb.all(comm->cb.context, ptype, &(comm->rxPkt), port);
         }
     }
 }
@@ -1197,6 +1202,9 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
 void is_comm_port_parse_messages(port_handle_t port)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
+        return;
+
+    if (COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)
         return;
 
     is_comm_instance_t* comm = &COMM_PORT(port)->comm;
@@ -1309,7 +1317,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     }
 
     if (pkt->data.size + sizeof(packet_hdr_t) + 4 > PKT_BUF_SIZE)
-    {    // Packet size + offset + payload + footer is too large
+    {   // Packet size + offset + payload + footer is too large
         return -1;
     }
 

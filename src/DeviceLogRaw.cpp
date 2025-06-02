@@ -128,6 +128,9 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                             int start = m_comm.rxPkt.dataHdr.offset;
                             int end = m_comm.rxPkt.dataHdr.offset + m_comm.rxPkt.dataHdr.size;
 
+                            if (!devInfo->hdwRunState)
+                                devInfo->hdwRunState = HDW_STATE_APP;   // FIXME: this should go away once the DEV_INFO from the device correctly reports the runState
+
                             // Did we really get the protocol version?
                             int protOffset = offsetof(dev_info_t, protocolVer);
                             if (start <= protOffset && (int) (protOffset + sizeof(uint32_t)) <= end) {
@@ -163,7 +166,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
         // Save chunk to file and clear
         if (!WriteChunkToFile())
         {
-            return false;
+            return false;   // there was a error writing the chunk to disk
         }
         else if (m_fileSize >= m_maxFileSize)
         {
@@ -176,7 +179,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     m_logSize += dataSize;
     if (!m_chunk.PushBack((unsigned char*)dataBuf, dataSize))
     {
-        return false;
+        return false;   // unable to push the buffer into the chunk
     }
 
     return true;
@@ -219,7 +222,7 @@ bool cDeviceLogRaw::WriteChunkToFile()
 }
 
 
-packet_t* cDeviceLogRaw::ReadPacket(protocol_type_t &ptype) 
+packet_t* cDeviceLogRaw::ReadPacket(protocol_type_t &ptype)
 {
     packet_t* pkt = NULL;
 
@@ -253,7 +256,7 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
         case _PTYPE_INERTIAL_SENSE_DATA:
             return &m_pData;
 
-        case _PTYPE_NONE:   
+        case _PTYPE_NONE:
             // Read next chunk from file
             if (!ReadChunkFromFile())
             {   // File is empty

@@ -7,16 +7,19 @@
 
 #include <fstream>
 #include <algorithm>
+#include <deque>
 
+#include "util/md5.h"
 #include <protocol/FirmwareUpdate.h>
 
 #include "ISDevice.h"
-// #include "InertialSense.h"
 #include "ISFileManager.h"
 #include "ISUtilities.h"
 #include "util/md5.h"
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBootloaderBase.h"
+#include "ISUtilities.h"
+
 #include "miniz.h"
 
 #ifndef __EMBEDDED__
@@ -31,7 +34,6 @@ extern "C"
     #include "com_manager.h"
     #include "serialPortPlatform.h"
 }
-
 
 class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
 private:
@@ -51,9 +53,10 @@ private:
     uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
     uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)
 
-    ISBootloader::pfnBootloadProgress pfnUploadProgress_cb = nullptr;
-    ISBootloader::pfnBootloadProgress pfnVerifyProgress_cb = nullptr;
-    ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
+    // float percentComplete = 0.f;        //! the current percent complete as reported by the device
+
+    fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
+    std::deque<uint8_t> toHost;           //! a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
 
     std::vector<std::string> commands;
     std::string activeStep;             //! the name of the currently executing step name, from the manifest when available
@@ -70,45 +73,50 @@ private:
     fwUpdate::target_t target;
 
     mz_zip_archive *zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
-    dfu::ISDFUFirmwareUpdater *dfuUpdater = nullptr;
+    //dfu::ISDFUFirmwareUpdater *dfuUpdater = nullptr;
+    fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
     dev_info_t remoteDevInfo = {};
 
     std::vector<std::tuple<std::string, std::string, std::string>> stepErrors;
 
-    void runCommand(std::string cmd);
+    void runCommand(const std::string& cmd);
+
+    void fwUpdate_handleLocalDevice();
 
 public:
 
     enum pkg_error_e {
         PKG_SUCCESS = 0,
-        PKG_ERR_PACKAGE_FILE_ERROR = -1,            // the package file couldn't be opened/accessed (invalid, or not found)
-        PKG_ERR_INVALID_IMAGES = -2,                // the manifest doesn't define any images, or the images are incorrectly formatted
-        PKG_ERR_INVALID_STEPS = -3,                 // the manifest doesn't define any steps, or the steps are incorrectly formatted
-        PKG_ERR_INVALID_TARGET = -4,                // the active step target is invalid (yaml schema/syntax)
-        PKG_ERR_UNSUPPORTED_TARGET = -5,            // the step target specified is valid, but not supported
-        PKG_ERR_NO_ACTIONS = -6,                    // the step doesn't describe any actions to perform
-        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       // the step action 'image' references an image which doesn't exist in the manifest
-        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            // the referenced image doesn't include a filename
-        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          // the file for the referenced image doesn't exist
-        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,      // the image file's actual size doesn't match the manifest's reported size
-        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      // the image file's actual md5sum doesn't match the manifest's reported md5sum
+        PKG_ERR_PACKAGE_FILE_ERROR = -1,            //! the package file couldn't be opened/accessed (invalid, or not found)
+        PKG_ERR_INVALID_IMAGES = -2,                //! the manifest doesn't define any images, or the images are incorrectly formatted
+        PKG_ERR_INVALID_STEPS = -3,                 //! the manifest doesn't define any steps, or the steps are incorrectly formatted
+        PKG_ERR_INVALID_TARGET = -4,                //! the active step target is invalid (yaml schema/syntax)
+        PKG_ERR_UNSUPPORTED_TARGET = -5,            //! the step target specified is valid, but not supported
+        PKG_ERR_NO_ACTIONS = -6,                    //! the step doesn't describe any actions to perform
+        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       //! the step action 'image' references an image which doesn't exist in the manifest
+        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            //! the referenced image doesn't include a filename
+        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          //! the file for the referenced image doesn't exist
+        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,     //! the image file's actual size doesn't match the manifest's reported size
+        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      //! the image file's actual md5sum doesn't match the manifest's reported md5sum
     };
 
-    // const ISDevice& device;
-    port_handle_t port = 0;                 //! a handle to the comm port which we use to talk to the device
-    const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
-    dev_info_t *target_devInfo = nullptr;   //! the target's device info, if any
+    const ISDevice* device = nullptr;               //! a handle to the device which is being updated; maybe null in some cases
+    port_handle_t port = 0;                         //! a handle to the comm port which we use to talk to the device
+    const dev_info_t *devInfo = nullptr;            //! the root device info connected on this port
+    dev_info_t *target_devInfo = nullptr;           //! the target's device info, if any
 
     /**
      * Constructor to initiate and manage updating a firmware image of a device connected on the specified port
      * @param portHandle handle to the port (typically serial) to which the device is connected
      * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
-    ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo) { };
+    ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo) { }
 
-    ISFirmwareUpdater(ISDevice& device) : FirmwareUpdateHost(), port(device.port), devInfo(&device.devInfo) { };
+    explicit ISFirmwareUpdater(ISDevice* device);
 
-    ~ISFirmwareUpdater() override {};
+    void setInfoProgressCb(fwUpdate::pfnStatusCb cb) { pfnStatus_cb = cb; }
+
+    ~ISFirmwareUpdater() override = default;
 
     void setTarget(fwUpdate::target_t _target);
 
@@ -162,7 +170,7 @@ public:
      */
     fwUpdate::update_status_e initializeDFUUpdate(libusb_device *usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int flags = 0, int progressRate = 500);
 
-    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
+    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 200);
 
     /**
      * @param offset the offset into the image file to pull data from
@@ -187,12 +195,6 @@ public:
     bool fwUpdate_handleDone(const fwUpdate::payload_t &msg);
 
     bool fwUpdate_isDone();
-
-    void setUploadProgressCb(ISBootloader::pfnBootloadProgress pfnUploadProgress) { pfnUploadProgress_cb = pfnUploadProgress; }
-
-    void setVerifyProgressCb(ISBootloader::pfnBootloadProgress pfnVerifyProgress) { pfnVerifyProgress_cb = pfnVerifyProgress; }
-
-    void setInfoProgressCb(ISBootloader::pfnBootloadStatus pfnInfoProgress) { pfnInfoProgress_cb = pfnInfoProgress; }
 
     /**
      * this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
@@ -249,5 +251,6 @@ public:
     int cmd_Upload(std::vector<std::string> &args);
 
     int cmd_Reset(std::vector<std::string> &args);
+
 };
 #endif //SDK_ISFIRMWAREUPDATER_H

@@ -27,34 +27,43 @@ using namespace ISBootloader;
 using namespace std;
 
 // print out upload progress
-static is_operation_result bootloaderUploadProgress(void* obj, float pct)
+static is_operation_result bootloaderUploadProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if (obj == NULL) return IS_OP_OK;
-
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     int percent = (int)(pct * 100.0f);
     printf("\rUpload Progress: %d%%\r", percent);
-    ctx->m_update_progress = percent;
 
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+            isblPtr->m_update_progress = percent;
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
     return IS_OP_OK;
 }
 
 // print out verify progress
-static is_operation_result bootloaderVerifyProgress(void* obj, float pct)
+static is_operation_result bootloaderVerifyProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if (obj == NULL) return IS_OP_OK;
-
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     int percent = (int)(pct * 100.0f);
     printf("\rVerify Progress: %d%%\r", percent);
-    ctx->m_verify_progress = percent;
 
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+            isblPtr->m_verify_progress = percent;
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
     return IS_OP_OK;
 }
 
-static void bootloaderStatusText(void* obj, eLogLevel level, const char* str, ...)
+static void bootloaderStatusText(const std::any& obj, eLogLevel level, const char* str, ...)
 {
-    if (obj == NULL) return;
 
     static char buffer[256];
 
@@ -64,26 +73,35 @@ static void bootloaderStatusText(void* obj, eLogLevel level, const char* str, ..
     va_end(ap);
 
 
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
-
-    if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
-    {
-        printf("%s (SN%d):", ctx->m_port_name.c_str(), ctx->m_sn);
-    }
-    else if (ctx->m_sn != 0)
-    {
-        printf("(SN%d):", ctx->m_sn);
-    }
-    else if (ctx->m_port_name.size() != 0)
-    {
-        printf("%s:", ctx->m_port_name.c_str());
-    }
-    else
-    {
-        printf("SN?:");
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
     }
 
-    printf("\t\t\t%s\r\n", buffer);
+    if (isblPtr == NULL)
+    {
+        cout << buffer << endl;
+        return;
+    }
+
+    if (isblPtr) {
+        if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
+            printf("    | %s (SN%d):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+        } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
+            printf("    | (SN%d):", isblPtr->m_sn);
+        } else if (isblPtr->m_port_name.size() != 0) {
+            printf("    | %s:", isblPtr->m_port_name.c_str());
+        } else {
+            printf("    | SN?:");
+        }
+    }
+
+    if (buffer[0])
+        printf(" %s\r\n", buffer);
 }
 
 int main(int argc, char* argv[])

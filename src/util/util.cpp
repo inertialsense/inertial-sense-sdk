@@ -139,7 +139,7 @@ std::string utils::getCurrentTimestamp() {
 
     char buffer[80];
     strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
-    sprintf(buffer + strlen(buffer), "%03d", (int) millis);
+    sprintf(buffer + strlen(buffer), ".%03d", (int) millis);
 
     return std::string(buffer);
 }
@@ -164,7 +164,7 @@ std::string utils::raw_hexdump(const char* raw_data, int bytesLen, int bytesPerL
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
 #endif
-    int lines = bytesLen / bytesPerLine;
+    int lines = (bytesLen / bytesPerLine) + (bytesLen % bytesPerLine > 0 ? 1 : 0);
     for (int j = 0; j < lines; j++) {
         int linelen = (j == lines-1) ? bytesLen % bytesPerLine : bytesPerLine;
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "    ");
@@ -233,8 +233,8 @@ std::string utils::getHardwareAsString(const dev_info_t& devInfo) {
     return out;
 }
 
-std::string utils::getFirmwareAsString(const dev_info_t& devInfo) {
-    std::string out = utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
+std::string utils::getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix) {
+    std::string out = utils::string_format("%s%u.%u.%u", prefix.c_str(), devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
     switch(devInfo.buildType) {
         case 'a': out +="-alpha";       break;
         case 'b': out +="-beta";        break;
@@ -250,7 +250,7 @@ std::string utils::getFirmwareAsString(const dev_info_t& devInfo) {
     return out;
 }
 
-std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags) {
+std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags, const std::string& sep) {
     std::string out;
 
     if ((flags & DV_BIT_BUILD_COMMIT) && devInfo.repoRevision) {
@@ -262,7 +262,7 @@ std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags) {
 
     if (flags & DV_BIT_BUILD_KEY) {  // include build key/number
         // build number/type
-        if (!out.empty()) out += " ";
+        if (!out.empty()) out += sep;
         if (((devInfo.buildNumber >> 12) & 0xFFFFF) > 0) {
             out += utils::string_format("%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
         } else {
@@ -273,11 +273,12 @@ std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags) {
     }
 
     if (flags & DV_BIT_BUILD_DATE) {
-        out += (out.empty() ? "" : " ") + utils::string_format("%04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
+        out += (out.empty() ? "" : sep) + utils::string_format( (flags & DV_BIT_COMPACT_DATE ? "%04u%02u%02u" : "%04u-%02u-%02u"), devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
     }
 
     if (flags & DV_BIT_BUILD_TIME) {
-        out += (out.empty() ? "" : " ") + utils::string_format("%02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+        out += (out.empty() ? "" : sep) + utils::string_format( (flags & DV_BIT_COMPACT_TIME ?  "%02u%02u%02u" : "%02u:%02u:%02u"), devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+
         if (devInfo.buildMillisecond)
             out += utils::string_format(".%03u", devInfo.buildMillisecond);
     }
@@ -340,7 +341,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
         std::regex(R"(SN(\d+)[:]?)"),                           //!< 0, serial number
         std::regex(R"((fw|v)([\d.]+)(-([\w]+)\.([\d]+))?)"),    //!< 1, firmware version w/ optional release type
         std::regex(R"((\d){4}-(\d){1,2}-(\d){1,2})"),           //!< 2, build date
-        std::regex(R"((\d){1,2}:(\d){2}:(\d){2}|_(\d{6}))"),    //!< 3, build time
+        std::regex(R"((\d){1,2}:(\d){2}:(\d){2}|[_-](\d{6}))"), //!< 3, build time
         std::regex(R"((IS_)?([\w]+)-([\d\.]+)[,]?)"),           //!< 4, hdw type & version
         std::regex(R"(([0-9A-F]{5})(\.(\d+)))"),                //!< 5, build key and build number
         std::regex(R"(b(\d{1}[\d.]*)([a-z]?))"),                //!< 6, legacy build number and type -- note that this MUST be tested before 5, because 5 CAN catch it...
@@ -409,6 +410,11 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                                 devInfo.hardwareType = ii;
                                 break;
                             }
+                            if ((str.find("bootloader") != std::string::npos) || (str.find("mcuboot") != std::string::npos)) {
+                                devInfo.hdwRunState = 1;    // Bootloader firmware?
+                            } else {
+                                devInfo.hdwRunState = 2;    // APP firmware??
+                            }
                         }
                         // hardware version
                         for (auto& e : devInfo.hardwareVer) e = 0;
@@ -454,7 +460,6 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
     return componentsParsed;
 }
 
-
 /**
  * simple check if two dev_info_t structs indicate equivelent/compatible hardware
  * Used primarily to determine if a firmware is compatible with a target device.
@@ -468,6 +473,8 @@ bool utils::isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b) {
     if (a.hardwareVer[0] != b.hardwareVer[0])
         return false;
     if (a.hardwareVer[1] != b.hardwareVer[1])
+        return false;
+    if (a.hdwRunState != b.hdwRunState)         // don't forget to also confirm the run state - APP firmware is NOT THE SAME as Bootloader Firmware
         return false;
     return true;
 }
@@ -490,6 +497,61 @@ uint64_t utils::intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis) {
     if (useMillis)
         aDateTime = (aDateTime * 10000) + a.buildMillisecond;
     return aDateTime;
+}
+
+
+bool utils::devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2)
+{
+    if (info1.serialNumber != info2.serialNumber)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (info1.hardwareVer[i] != info2.hardwareVer[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags) {
+    bool match = (info1.buildType == info2.buildType);              // release type
+
+    match = match && (info1.firmwareVer[0] == info2.firmwareVer[0]) && (info1.firmwareVer[1] == info2.firmwareVer[1]) && (info1.firmwareVer[2] == info2.firmwareVer[2]);
+    match = (flags & DV_BIT_EXACT_MATCH) ? match && (info1.firmwareVer[3] == info2.firmwareVer[3]) : match;
+
+    match = (flags & DV_BIT_BUILD_COMMIT) ? match && (info1.repoRevision == info2.repoRevision) : match;
+    match = (flags & DV_BIT_BUILD_KEY) ? match && (info1.buildNumber == info2.buildNumber) : match;
+
+    if (match && (flags & DV_BIT_PROTOCOL_VER)) {
+        match = (info1.protocolVer[0] == info2.protocolVer[0]) && (info1.protocolVer[1] == info2.protocolVer[1]) && (info1.protocolVer[2] == info2.protocolVer[2]);
+        match = (flags & DV_BIT_EXACT_MATCH) ? match && (info1.protocolVer[3] == info2.protocolVer[3]) : match;
+    }
+
+    if (match && (flags & DV_BIT_BUILD_DATE)) {
+        uint64_t aDateTime = intDateTimeFromDevInfo(info1);
+        uint64_t bDateTime = intDateTimeFromDevInfo(info2);
+
+        if (!(flags & DV_BIT_BUILD_TIME)) {
+            dev_info_t tmpInfo = info2; // make a copy we can modify
+            // then set the time equal to the time of info1, so the times match
+            tmpInfo.buildHour = info1.buildHour;
+            tmpInfo.buildMinute = info1.buildMinute;
+            tmpInfo.buildSecond = info1.buildSecond;
+            bDateTime = intDateTimeFromDevInfo(tmpInfo);
+        }
+
+        // if NOT exact match, we'll allow upto a 5-minute difference between timestamps
+        double delta = abs((double)bDateTime - (double)aDateTime);
+        match = (delta <= ((flags & DV_BIT_EXACT_MATCH) ? 0 : 300.0));
+    }
+
+    return match;
 }
 
 /**
@@ -517,4 +579,100 @@ bool utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b) {
         return a.buildNumber > b.buildNumber;
 
     return a.buildType > b.buildType;
+}
+
+/**
+ * Generates a detailed comparison, field-by-field, of two pointers of a particular DID.
+ * @param did the Data ID of the data buffers to compare (A & B)
+ * @param A a pointer to the first data buffer to compare
+ * @param B a pointer to the second data buffer to compare
+ * @param printDiff if true, print a detailed list of which fields were different, comparing their values.
+ *   if false, no output it printed
+ * @return true if the two data buffers match, otherwise false
+ */
+bool utils::compareDataIDs(uint32_t did, const uint8_t* A, const uint8_t* B, bool printDiff) {
+    const data_set_t& dataInfo = *(cISDataMappings::DataSet(did));
+    bool match = true;
+
+    for (uint32_t i = 0; i < dataInfo.size; i++) {
+        if (A[i] != B[i]) {
+            // get the field Info given the current position; we should be able to determine the start and end of this field
+            const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(did, i);
+            if (fieldInfo) {
+                if (printDiff) {
+                    char valueBuff[32] = {};
+                    std::string valueA = "<\?\?>", valueB = "<\?\?>";
+                    std::string fieldName = (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>");
+                    if (fieldInfo) {
+                        cISDataMappings::DataToString(*fieldInfo, NULL, A, valueBuff, 0, false);
+                        valueA = std::string(valueBuff);
+
+                        cISDataMappings::DataToString(*fieldInfo, NULL, B, valueBuff, 0, false);
+                        valueB = std::string(valueBuff);
+                    }
+                    printf("%s field '%s' mismatch: %s (A) != %s (B) (offset %d, size %d)\n",cISDataMappings::DataName(did), fieldName.c_str(), valueA.c_str(), valueB.c_str(), fieldInfo->offset, fieldInfo->size);
+                    match = false;
+                }
+                i = fieldInfo->offset + fieldInfo->size;
+            }
+        }
+    }
+    return match;
+}
+
+std::string utils::getPortMonitorDescription(uint8_t portInfo) {
+    static std::vector<std::string> portTypeNames = { "???", "SER", "USB", "SPI", "I2C", "CAN" };
+    return utils::string_format("%s.%d", portTypeNames[(portInfo >> 4) & 0x0F].c_str(), portInfo & 0x0F);
+}
+
+
+/**
+ * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
+ * @param info1
+ * @param info2
+ * @return a uint32_t with each bit indicating a match of a specific field in the struct
+ */
+uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2) {
+    uint32_t match = 0;
+
+    match |= (((info1.reserved          == info2.reserved)          & 1) << 0);
+
+    match |= (((info1.hardwareType      == info2.hardwareType)      & 1) << 1);
+    match |= (((info1.hdwRunState       == info2.hdwRunState)       & 1) << 2);
+
+    match |= (((info1.serialNumber      == info2.serialNumber)      & 1) << 3);
+
+    match |= (((info1.hardwareVer[0]    == info2.hardwareVer[0])    & 1) << 4);
+    match |= (((info1.hardwareVer[1]    == info2.hardwareVer[1])    & 1) << 5);
+    match |= (((info1.hardwareVer[2]    == info2.hardwareVer[2])    & 1) << 6);
+    match |= (((info1.hardwareVer[3]    == info2.hardwareVer[3])    & 1) << 7);
+
+    match |= (((info1.firmwareVer[0]    == info2.firmwareVer[0])    & 1) << 8);
+    match |= (((info1.firmwareVer[1]    == info2.firmwareVer[1])    & 1) << 9);
+    match |= (((info1.firmwareVer[2]    == info2.firmwareVer[2])    & 1) << 10);
+    match |= (((info1.firmwareVer[3]    == info2.firmwareVer[3])    & 1) << 11);
+
+    match |= (((info1.buildNumber       == info2.buildNumber)       & 1) << 12);
+
+    match |= (((info1.protocolVer[0]    == info2.protocolVer[0])    & 1) << 13);
+    match |= (((info1.protocolVer[1]    == info2.protocolVer[1])    & 1) << 14);
+    match |= (((info1.protocolVer[2]    == info2.protocolVer[2])    & 1) << 15);
+    match |= (((info1.protocolVer[3]    == info2.protocolVer[3])    & 1) << 16);
+
+    match |= (((!strncmp(info1.manufacturer, info2.manufacturer, DEVINFO_MANUFACTURER_STRLEN))    & 1) << 17);
+
+    match |= (((info1.buildType         == info2.buildType)         & 1) << 18);
+
+    match |= (((info1.buildYear         == info2.buildYear)         & 1) << 19);
+    match |= (((info1.buildMonth        == info2.buildMonth)        & 1) << 20);
+    match |= (((info1.buildDay          == info2.buildDay)          & 1) << 21);
+
+    match |= (((info1.buildHour         == info2.buildHour)         & 1) << 22);
+    match |= (((info1.buildMinute       == info2.buildMinute)       & 1) << 23);
+    match |= (((info1.buildSecond       == info2.buildSecond)       & 1) << 24);
+    match |= (((info1.buildMillisecond  == info2.buildMillisecond)  & 1) << 25);
+
+    match |= (((!strncmp(info1.addInfo, info2.addInfo, DEVINFO_ADDINFO_STRLEN))    & 1) << 26);
+
+    return match;
 }

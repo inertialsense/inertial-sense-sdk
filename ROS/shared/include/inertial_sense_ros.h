@@ -113,13 +113,14 @@ using namespace std::chrono_literals;
 #define LEAP_SECONDS 18           // GPS time does not have leap seconds, UNIX does (as of 1/1/2017 - next one is probably in 2020 sometime unless there is some crazy earthquake or nuclear blast)
 #define UNIX_TO_GPS_OFFSET (GPS_UNIX_OFFSET - LEAP_SECONDS)
 
-#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                                                   \
-    IS_.BroadcastBinaryData((eDataIDs)(DID), (int)(__periodmultiple),                                           \
-                            [this](InertialSense *i, p_data_t *data, void *port)                                \
-                            {                                                                                   \
-                              /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */  \
-                                this->__cb_fun((eDataIDs)DID, reinterpret_cast<__type *>(data->ptr));           \
-                            })
+// TODO: Replace this macro with an equivelent method in ISDevice::registerDataHandler(uint8_t dataId, callback) and update project.
+//#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                                                   \
+//    IS_.BroadcastBinaryData((eDataIDs)(DID), (int)(__periodmultiple),                                           \
+//                            [this](InertialSense *i, p_data_t *data, void *port)                                \
+//                            {                                                                                   \
+//                              /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */  \
+//                                this->__cb_fun((eDataIDs)DID, reinterpret_cast<__type *>(data->ptr));           \
+//                            })
 
 
 class InertialSenseROS //: SerialListener

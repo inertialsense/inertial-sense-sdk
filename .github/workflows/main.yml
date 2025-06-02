@@ -96,7 +96,7 @@ jobs:
       - name: Clean all
         run: ./clean_all.bat
 
-      - name: Build IS SDK library 
+      - name: Build IS SDK library
         run: ./build_is_sdk.bat
 
       - name: Build Unit Tests
@@ -114,7 +114,8 @@ jobs:
   ros1-bridge-tests:
     name: "ROS1 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker, focal]
-    # if: false  # disable this job
+    timeout-minutes: 5
+    if: false  # disable this job -- ROS1 has been EOL'd and will be phased out.  We can no longer support it.
 
     env:
       ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
@@ -167,7 +168,7 @@ jobs:
           ./install_sdk_dependencies.sh
           ./install_python_dependencies.sh
           ./install_gtest.sh
-            
+
       - name: Setup ROS environment
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
@@ -199,10 +200,16 @@ jobs:
           catkin_make run_tests_inertial_sense_ros_gtest_test_ros_bridge
           catkin_test_results
 
+      - name: Cleanup build folder to prevent future errors (Remove maybe?)
+        run: |
+          rm -rf ./* || true
+          rm -rf ./.??* || true
+
   ros2-bridge-tests:
     name: "ROS2 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker, focal]
-    # if: false  # disable this job
+    timeout-minutes: 5
+    if: false  # disable this job -- ROS2 needs to be updated to support ISDevice & DeviceManager
 
     container:
       image: osrf/ros:jazzy-desktop
@@ -277,6 +284,8 @@ jobs:
       - name: Build ROS2 bridge
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
+          # find . -name "libInertialSenseSDK*" -delete
+          # rm log/ build/ install/ src/inertial-sense-sdk/CMakeCache.txt &>/dev/null || true
           git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
           colcon build
           "
@@ -287,3 +296,8 @@ jobs:
           source install/setup.bash
           ros2 run inertial_sense_ros2 test_inertial_sense_ros2
           "
+
+      - name: Cleanup build folder to prevent future errors (maybe remove?)
+        run: |
+          rm -rf ./* || true
+          rm -rf ./.??* || true

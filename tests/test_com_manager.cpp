@@ -29,24 +29,24 @@ extern "C"
 #if 1
 #define DEBUG_PRINTF        printf
 #else
-#define DEBUG_PRINTF    
+#define DEBUG_PRINTF
 #endif
 
 #define PORT_BUFFER_SIZE    8192
 
 // FIXME:: This struct is effectively redundant now to ISDevice and the Serial port refactor (that moves ISComm, etc into the port_handle_t)
 //  We should also be able to implement a "virtual serial port" that provides serial emulation, without the need for ring-buffers, etc.
-typedef struct
+typedef struct test_data_s
 {
     ISComManager            cm;
-    com_manager_status_t    cmBufStatus[NUM_COM_PORTS];
-    broadcast_msg_t         cmBufBcastMsg[MAX_NUM_BCAST_MSGS];
-    struct  
+    com_manager_status_t    cmBufStatus[NUM_COM_PORTS] = { 0 };
+    broadcast_msg_t         cmBufBcastMsg[MAX_NUM_BCAST_MSGS] = { 0 };
+    struct
     {
         dev_info_t          devInfo;
         nvm_flash_cfg_t     nvmFlashCfg;
         nmea_msgs_t         nmeaMsgs;
-    }                        msgs;
+    }                       msgs = { 0 };
 
     // Used to simulate serial ports
 //    ring_buf_t            portRxBuf;
@@ -72,10 +72,10 @@ static test_data_t tcm = {};
 static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
-static int dummyIsbProtocolHandler(p_data_t* data, port_handle_t port) { return 0; }
-static int dummyGenericProtocolHandler(const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
+static int dummyIsbProtocolHandler(void* ctx, p_data_t* data, port_handle_t port) { return 0; }
+static int dummyGenericProtocolHandler(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }
 
-static int postRxRead(p_data_t* dataRead, port_handle_t port)
+static int postRxRead(void* ctx, p_data_t* dataRead, port_handle_t port)
 {
     data_holder_t td = g_testRxDeque.front();
     g_testRxDeque.pop_front();
@@ -89,30 +89,30 @@ static int postRxRead(p_data_t* dataRead, port_handle_t port)
     return 0;
 }
 
-static int disableBroadcasts(port_handle_t port)
+static int disableBroadcasts(void*ctx, port_handle_t port)
 {
     return 0;
 }
 
-int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
+int prepDevInfo(void* ctx, port_handle_t port, p_data_hdr_t* dataHdr)
 {
     return 1;
 }
 
-int writeNvrUserpageFlashCfg(p_data_t* data, port_handle_t port)
+int writeNvrUserpageFlashCfg(void* ctx, p_data_t* data, port_handle_t port)
 {
     return 0;
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerBinaryData(p_data_t* msg, port_handle_t port)
+static int msgHandlerBinaryData(void* ctx, p_data_t* msg, port_handle_t port)
 {
-    postRxRead(msg, port);
+    postRxRead(ctx, msg, port);
     return 0;
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
+static int msgHandlerNmea(void* ctx, const uint8_t* msg, int msgSize, port_handle_t port)
 {
     if (msgSize == 10)
     {   // 4 character commands (i.e. "$STPB*14\r\n")
@@ -123,11 +123,11 @@ static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
                 break;
 
             case NMEA_MSG_ID_STPB: // stop all broadcasts on all ports
-                disableBroadcasts(0);
+                disableBroadcasts(ctx, 0);
                 break;
 
             case NMEA_MSG_ID_STPC: // stop all broadcasts on current port
-                disableBroadcasts(port);
+                disableBroadcasts(ctx, port);
                 break;
 
             case NMEA_MSG_ID_BLEN: // bootloader enable
@@ -169,7 +169,7 @@ static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
     return 0;
 }
 
-static int msgHandlerUblox(const uint8_t* msg, int msgSize, port_handle_t port)
+static int msgHandlerUblox(void* ctx, const uint8_t* msg, int msgSize, port_handle_t port)
 {
     data_holder_t td = g_testRxDeque.front();
     g_testRxDeque.pop_front();
@@ -207,7 +207,7 @@ static int msgHandlerUblox(const uint8_t* msg, int msgSize, port_handle_t port)
     return 0;
 }
 
-static int msgHandlerRtcm3(const uint8_t* msg, int msgSize, port_handle_t port)
+static int msgHandlerRtcm3(void* ctx, const uint8_t* msg, int msgSize, port_handle_t port)
 {
     data_holder_t td = g_testRxDeque.front();
     g_testRxDeque.pop_front();
@@ -245,7 +245,7 @@ static int msgHandlerRtcm3(const uint8_t* msg, int msgSize, port_handle_t port)
     return 0;
 }
 
-static int msgHandlerError(port_handle_t port)
+static int msgHandlerError(void* ctx, port_handle_t port)
 {
     return 0;
 }
@@ -315,7 +315,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 
         int j = i % 17;
         switch (j)
-        {    
+        {
             case 0:
             case 1:
             case 2:
@@ -576,7 +576,7 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
         switch (td.ptype)
         {
         case _PTYPE_INERTIAL_SENSE_DATA:
-            // Packetize data 
+            // Packetize data
             n = is_comm_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
             td.pktSize = n;
             EXPECT_FALSE(ringBufWrite(rbuf, buf, n));
@@ -631,10 +631,10 @@ void parseDequeFromPort(std::deque<data_holder_t> &testDeque, port_handle_t port
                     EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
                     break;
 
-                case _PTYPE_UBLOX:    
+                case _PTYPE_UBLOX:
                     DEBUG_PRINTF("Found data: UBLOX\n");
                     break;
-                case _PTYPE_RTCM3:    
+                case _PTYPE_RTCM3:
                     DEBUG_PRINTF("Found data: RTCM3\n");
                     break;
 
@@ -720,7 +720,7 @@ TEST(ComManager, BasicRxTest)
         tcm.cm.step(); // 2048 byte limit each step
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
 }
@@ -755,7 +755,7 @@ TEST(ComManager, SegmentedRxTest)
     while (!ringBufEmpty(&tmpRBuf) && !g_testRxDeque.empty())
     {
         // Partial write of data -- we're bypassing the port handler and directly copying data between ring-buffers
-        ringBuftoRingBufWrite(&(TEST0_PORT->loopbackPortBuf), &tmpRBuf, bytesToWrite);
+        ringBuftoRingBufWrite(&(TEST0_PORT->portRingBuf), &tmpRBuf, bytesToWrite);
 
         while (portAvailable(TEST0_PORT))
         {
@@ -764,9 +764,9 @@ TEST(ComManager, SegmentedRxTest)
         }
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
-    EXPECT_TRUE(ringBufEmpty(&(TEST0_PORT->loopbackPortBuf)));
+    EXPECT_TRUE(ringBufEmpty(&(TEST0_PORT->portRingBuf)));
 }
 #endif
 
@@ -812,7 +812,7 @@ TEST(ComManager, RxWithGarbageTest)
         tcm.cm.step(); // 2048 byte limit each step
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
 }
@@ -903,7 +903,7 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufUsed(&portRxBuf) == 0);
 }
@@ -1074,7 +1074,7 @@ TEST(ComManager, Evb2DataForwardTest)
         }
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufUsed(&portRxBuf) == 0);
 }

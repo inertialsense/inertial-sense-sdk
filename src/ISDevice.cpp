@@ -6,6 +6,7 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
+#include "core/msg_logger.h"
 #include "ISDevice.h"
 #include "ISBootloaderBase.h"
 #include "ISFirmwareUpdater.h"
@@ -15,6 +16,39 @@
 
 ISDevice ISDevice::invalidRef;
 
+/**
+ * General Purpose IS-binary protocol handler for the InertialSense class.
+ * This is called anytime ISB packets are received by any of the underlying ports
+ * which are managed by the InertialSense and CommManager classes.  Eventually
+ * this should be moved into the ISDevice class, where devices of different types
+ * can handle their data independently. There could be a hybrid approach here
+ * where this function would (should?) locate the ISDevice by its port, and then
+ * redirect to the ISDevice specific callback.
+ * @param data The data which was parsed and is ready to be consumed
+ * @param port The port which the data was received from
+ * @return 0 if this data packet WILL NOT BE processed again by other handlers;
+ *   any other value indicates that the packet MAY BE processed by other handlers.
+ *   No guarantee is given that other handlers will process this packet if the
+ *   return value is non-zero, but IS GUARANTEED that this packet WILL NOT BE
+ *   further processed if a zero-value is returned.  Effectively, 0 = End-of-line.
+ */
+int ISDevice::processIsbMsgs(void* ctx, p_data_t* data, port_handle_t port)
+{
+    ISDevice* device = (ISDevice*)ctx;
+    //device->stepLogger(ctx, data, port);
+    return (device && device->port == port) ? device->onIsbDataHandler(data, port) : -1;
+}
+
+int ISDevice::processNmeaMsgs(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port)
+{
+    ISDevice* device = (ISDevice*)ctx;
+    return (device && device->port == port) ? device->onNmeaHandler(msg, msgSize, port) : -1;
+}
+
+int ISDevice::processPacket(void *ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port) {
+    ISDevice* device = (ISDevice*)ctx;
+    return (device && device->port == port) ? device->onPacketHandler(ptype, pkt, port) : -1;
+}
 
 bool ISDevice::Update() {
     return step();
@@ -27,33 +61,32 @@ bool ISDevice::Update() {
 bool ISDevice::step() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!port)
+    if (!isConnected())
         return false;
 
-    comManagerStep(port);
-    SyncFlashConfig();
-    if (fwUpdater)
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+
+    if (!hasDeviceInfo()) {
+        validateAsync(30000);
+    } else if (fwUpdater) {
         fwUpdate();
+    } else {
+        if (sysParams.flashCfgChecksum == 0)
+            GetData(DID_SYS_PARAMS);
+        if ((flashCfg.checksum == 0) || (flashCfg.checksum == (uint32_t)-1))
+            GetData(DID_FLASH_CONFIG);
+
+        SyncFlashConfig();
+    }
+
     return true;
 }
 
-is_operation_result ISDevice::updateFirmware(
-        fwUpdate::target_t targetDevice,
-        std::vector<std::string> cmds,
-        ISBootloader::pfnBootloadProgress uploadProgress,
-        ISBootloader::pfnBootloadProgress verifyProgress,
-        ISBootloader::pfnBootloadStatus infoProgress,
-        void (*waitAction)()
-)
-{
-    fwUpdater = new ISFirmwareUpdater(*this);
-    fwUpdater->setTarget(targetDevice);
-
-    // TODO: Implement maybe
-    fwUpdater->setUploadProgressCb(uploadProgress);
-    fwUpdater->setVerifyProgressCb(verifyProgress);
+is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()) {
+    fwUpdater = new ISFirmwareUpdater(this);
     fwUpdater->setInfoProgressCb(infoProgress);
-
+    fwUpdater->setTarget(targetDevice);
     fwUpdater->setCommands(cmds);
 
     return IS_OP_OK;
@@ -64,6 +97,11 @@ is_operation_result ISDevice::updateFirmware(
  * False is returned regardless of whether the update was successful or not.
  */
 bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
+
+/**
+ * @return as percentage (0-1.0) the completion progress for the current fwUpdate, or 0.0 if not update is in progress.
+ */
+float ISDevice::fwUpdatePercentCompleted() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()) ? fwUpdater->fwUpdate_getProgressPercent() : 0.0f; }
 
 /**
  * Instructs the device to continue performing its actions.  This should be called regularly to ensure that the update process
@@ -98,12 +136,6 @@ bool ISDevice::fwUpdate() {
                 }
             }
 
-            // update our upload progress
-            if ((fwLastStatus == fwUpdate::IN_PROGRESS)) {
-                fwPercent = ((float) fwUpdater->fwUpdate_getNextChunkID() / (float) fwUpdater->fwUpdate_getTotalChunks()) * 100.f;
-            } else {
-                fwPercent = fwLastStatus <= fwUpdate::READY ? 0.f : 100.f;
-            }
         } else if (fwUpdater->getActiveCommand() == "waitfor") {
             fwLastMessage = "Waiting for response from device.";
         } else if (fwUpdater->getActiveCommand() == "reset") {
@@ -135,8 +167,6 @@ bool ISDevice::fwUpdate() {
             delete fwUpdater;
             fwUpdater = nullptr;
         }
-    } else {
-        fwPercent = 0.0;
     }
 
     return fwUpdateInProgress();
@@ -148,11 +178,11 @@ bool ISDevice::handshakeISbl() {
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++) {
-        if (serialPortWrite(port, &handshakerChar, 1) != 1) {
+        if (portWrite(port, &handshakerChar, 1) != 1) {
             return false;
         }
 
-        if (serialPortWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY)) {
+        if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
             return true;           // Success
         }
     }
@@ -160,60 +190,176 @@ bool ISDevice::handshakeISbl() {
     return false;
 }
 
-bool ISDevice::queryDeviceInfoISbl() {
+bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     uint8_t buf[64] = {};
 
     handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
 
-    serialPortFlush(port);
-    serialPortRead(port, buf, sizeof(buf));    // empty Rx buffer
-
-    // Query device
-    serialPortWrite(port, (uint8_t*)":020000041000EA", 15);
-
-    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-    int count = serialPortReadTimeout(port, buf, 14, 1000);
-    if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
-    {   // expected response
-        devInfo.firmwareVer[0] = buf[2];
-        devInfo.firmwareVer[1] = buf[3];
-        // m_isb_props.rom_available = buf[4];
-
-        if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-        {
-            switch ((ISBootloader::eProcessorType)buf[5]) {
-                case ISBootloader::IS_PROCESSOR_UNKNOWN:
-                    devInfo.hardwareType = IS_HARDWARE_TYPE_UNKNOWN;
-                    break;
-                case ISBootloader::IS_PROCESSOR_SAMx70:
-                    devInfo.hardwareType = IS_HARDWARE_TYPE_EVB;
-                    break;
-                case ISBootloader::IS_PROCESSOR_STM32L4:
-                    // IMX-5.0
-                    devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
-                    devInfo.hardwareVer[0] = 5;
-                    devInfo.hardwareVer[1] = 0;
-                    break;
-                case ISBootloader::IS_PROCESSOR_STM32U5:
-                    // GPX-1
-                    devInfo.hardwareType = IS_HARDWARE_TYPE_GPX; // OR IMX-5.1
-                    devInfo.hardwareVer[0] = 1;
-                    devInfo.hardwareVer[1] = 0;
-                    break;
-                case ISBootloader::IS_PROCESSOR_NUM:
-                    break;
-            }
-            // m_isb_props.is_evb = buf[6];
-            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo) ;
-            hdwRunState = ISDevice::HDW_STATE_BOOTLOADER;
-            memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
-            return true;
-        }
+    for (int i = 0; i < 5; i++) {
+        portWrite(port, (uint8_t*)"\n", 1);
+        SLEEP_MS(10);
+        portFlush(port);
+        portRead(port, buf, sizeof(buf));    // empty Rx buffer
     }
 
+    // Query device
+    portWrite(port, (uint8_t*)":020000041000EA", 15);
+    SLEEP_MS(10);
+
+    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
+    uint32_t timeoutExpires = current_timeMs() + timeout;
+    do {
+        int count = portReadTimeout(port, buf, 14, 10);
+        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55) {   // expected response
+            devInfo.firmwareVer[0] = buf[2];
+            devInfo.firmwareVer[1] = buf[3];
+            // m_isb_props.rom_available = buf[4];
+
+            if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n') {
+                switch ((ISBootloader::eProcessorType) buf[5]) {
+                    case ISBootloader::IS_PROCESSOR_UNKNOWN:
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_UNKNOWN;
+                        break;
+                    case ISBootloader::IS_PROCESSOR_SAMx70:
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_EVB;
+                        break;
+                    case ISBootloader::IS_PROCESSOR_STM32L4:
+                        // IMX-5.0
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
+                        devInfo.hardwareVer[0] = 5;
+                        devInfo.hardwareVer[1] = 0;
+                        break;
+                    case ISBootloader::IS_PROCESSOR_STM32U5:
+                        // GPX-1
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_GPX; // OR IMX-5.1
+                        devInfo.hardwareVer[0] = 1;
+                        devInfo.hardwareVer[1] = 0;
+                        break;
+                    case ISBootloader::IS_PROCESSOR_NUM:
+                        break;
+                }
+                // m_isb_props.is_evb = buf[6];
+                hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+                devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
+                devInfo.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
+                devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
+                devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
+                memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
+                return true;
+            }
+        }
+    } while (current_timeMs() < timeoutExpires);
+
     hdwId = IS_HARDWARE_TYPE_UNKNOWN;
-    hdwRunState = ISDevice::HDW_STATE_UNKNOWN;
+    devInfo = {};
     return false;
+}
+
+
+bool ISDevice::validate(uint32_t timeout) {
+    if (!isConnected())
+        return false;
+
+    // check for Inertial-Sense App by making an NMEA request (which it should respond to)
+    hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
+
+    queryTypes nextQueryType = QUERYTYPE_NMEA;
+    unsigned int startTime = current_timeMs();
+    do {
+        if ((current_timeMs() - startTime) > timeout)
+            return false;
+
+        // REMOVE - Don't tolerate SERIAL_PORT specific conditions in ISDevice
+        if (SERIAL_PORT(port)->errorCode == ENOENT)
+            return false;
+
+        switch (nextQueryType) {
+            case QUERYTYPE_NMEA:
+                SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
+                break;
+            case QUERYTYPE_ISB:
+                GetData(DID_DEV_INFO);
+                break;
+            case QUERYTYPE_ISbootloader:
+                queryDeviceInfoISbl(250);
+                break;
+            case QUERYTYPE_mcuBoot:
+                break;
+
+        }
+        // FIXME - there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+        // REMOVE - Don't tolerate SERIAL_PORT specific conditions in ISDevice
+        // if (SERIAL_PORT(port)->errorCode != 0)
+        //   return false;
+
+        SLEEP_MS(100);
+        step();
+
+        nextQueryType = static_cast<queryTypes>((int)nextQueryType + 1 % (int)QUERYTYPE_MAX);
+    } while (!hasDeviceInfo());
+
+    if (hasDeviceInfo()) {
+        GetData(DID_SYS_CMD, 0, 0, 0);
+        GetData(DID_FLASH_CONFIG, 0, 0, 0);
+        GetData(DID_EVB_FLASH_CFG, 0, 0, 0);
+    }
+
+    previousQueryType = QUERYTYPE_NMEA;
+    return true;
+}
+
+/**
+ * Non-blocking, internal(ish) method to validate a device.  Will be called repeatedly from step() as long as "isValidating" is true.
+ * @param timeout the maximum number of milliseconds that must pass without a validating response from the device, before giving up.
+ * @return -1 if the default fails to validate, 0 if the device is still validating, 1 if the device successfully validated
+ */
+int ISDevice::validateAsync(uint32_t timeout) {
+    if (!isConnected())
+        return -1;
+
+    if (hasDeviceInfo()) {
+        // we got out Device Info, so reset our timer (stop trying) and return true
+        validationStartMs = 0;
+        previousQueryType = QUERYTYPE_NMEA;
+        return 1;
+    }
+
+    // if this is non-zero, it means we're actively validating; this helps us know when to give up/timeout
+    if (!validationStartMs) {
+        validationStartMs = current_timeMs();
+    }
+
+    // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
+    if ((current_timeMs() - validationStartMs) > timeout) {
+        // We failed to get a response before the timeout occurred, so reset the timer (stop trying) and return false
+        debug_message("ISDevice::validateAsync() timed out after %dms.\n", current_timeMs() - validationStartMs);
+        validationStartMs = 0;
+        previousQueryType = QUERYTYPE_NMEA;
+        return -1;
+    }
+
+    switch (previousQueryType) {
+        case ISDevice::queryTypes::QUERYTYPE_NMEA :
+            // debug_message("[DBG] Querying serial port '%s' using NMEA protocol.\n", SERIAL_PORT(port)->portName);
+            SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
+            break;
+        case ISDevice::queryTypes::QUERYTYPE_ISB :
+            // debug_message("[DBG] Querying serial port '%s' using ISB protocol.\n", SERIAL_PORT(port)->portName);
+            GetData(DID_DEV_INFO);
+            break;
+        case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
+            // debug_message("[DBG] Querying serial port '%s' using ISbootloader protocol.\n", SERIAL_PORT(port)->portName);
+            queryDeviceInfoISbl(250);
+            break;
+        case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
+            // debug_message("[DBG] Querying serial port '%s' mcuBoot/SMP protocol.\n", SERIAL_PORT(port)->portName);
+            break;
+    }
+
+    SLEEP_MS(5); // give just enough time for the device to receive, process and respond to the query
+
+    previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
+    return 0;
 }
 
 /**
@@ -238,11 +384,9 @@ std::string ISDevice::getIdAsString() {
     return getIdAsString(devInfo);
 }
 
-std::string ISDevice::getName(const dev_info_t &devInfo) {
-    std::string out;
-
+std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
     // device serial no
-    out += utils::string_format("SN%09d (", devInfo.serialNumber);
+    std::string out = utils::string_format( !(flags & COMPACT_SERIALNO) ? "SN%09d (" : "SN%d (", devInfo.serialNumber);
 
     // hardware type & version
     const char *typeName = "\?\?\?";
@@ -253,65 +397,76 @@ std::string ISDevice::getName(const dev_info_t &devInfo) {
         default: typeName = "\?\?\?"; break;
     }
     out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
-    if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
-        out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-        if (devInfo.hardwareVer[3] != 0)
-            out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+    if (!(flags & COMPACT_HARDWARE_VER)) {
+        if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+            out += utils::string_format(".%u", devInfo.hardwareVer[2]);
+            if (devInfo.hardwareVer[3] != 0)
+                out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+        }
     }
     out += ")";
-    // return utils::string_format("%s-%d.%d::SN%ld", typeName, dev.devInfo.hardwareVer[0], dev.devInfo.hardwareVer[1], dev.devInfo.serialNumber);
+
     return out;
 }
 
-std::string ISDevice::getName() {
-    return getName(devInfo);
+std::string ISDevice::getName(int flags) {
+    return getName(devInfo, flags);
 }
 
 /**
  * Generates a single string representing the firmware version & build information for this specified device.
  * @param dev the dev_data_s device for which to format the version info
- * @param detail an indicator for the amount of detail that should be provided in the resulting string.
- *      a value of 0 will output only the firmware version only.
+ * @param flags an indicator for the amount of detail that should be provided in the resulting string.
+ *      a value of 0 will output the firmware version only.
  *      a value of 1 will output the firmware version and build number.
  *      a value of 2 will output the firmware version, build number, and build date/time.
  * @return the resulting string
  */
 
-std::string ISDevice::getFirmwareInfo(const dev_info_t& devInfo, int detail, eHdwRunStates hdwRunState) {
+std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
     std::string out;
 
-    if (hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
+    if (devInfo.hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
         out += utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], devInfo.firmwareVer[1]);
     } else {
         // firmware version
         out += utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
-        switch(devInfo.buildType) {
-            case 'a': out +="-alpha";       break;
-            case 'b': out +="-beta";        break;
-            case 'c': out +="-rc";          break;
-            case 'd': out +="-devel";       break;
-            case 's': out +="-snap";        break;
-            case '^': out +="-snap";        break;
-            default : out +="";             break;
+        if (!(flags & COMPACT_BUILD_TYPE)) {
+            switch (devInfo.buildType) {
+                case 'a': out += "-alpha";  break;
+                case 'b': out += "-beta";   break;
+                case 'c': out += "-rc";     break;
+                case 'd': out += "-devel";  break;
+                case 's': out += "-snap";   break;
+                case '^': out += "-snap";   break;
+                default : out += "";        break;
+            }
+        } else {
+            out += (char)devInfo.buildType;
         }
         if (devInfo.firmwareVer[3] != 0)
             out += utils::string_format(".%u", devInfo.firmwareVer[3]);
 
-        if (detail > 0) {
+        if (!(flags & OMIT_COMMIT_HASH)) {
             out += utils::string_format(" %08x", devInfo.repoRevision);
             if (devInfo.buildType == '^') {
                 out += "^";
             }
 
-            if (detail > 1) {
+            if (!(flags & OMIT_BUILD_DATE)) {
                 // build number/type
                 out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
 
-                // build date/time
-                out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
-                out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
-                if (devInfo.buildMillisecond)
-                    out += utils::string_format(".%03u", devInfo.buildMillisecond);
+                if (!(flags & OMIT_BUILD_TIME)) {
+                    // build date/time
+                    out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
+                    out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+                    if (!(flags & OMIT_BUILD_MILLIS)) {
+
+                        if (devInfo.buildMillisecond)
+                            out += utils::string_format(".%03u", devInfo.buildMillisecond);
+                    }
+                }
             }
         }
     }
@@ -319,12 +474,18 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t& devInfo, int detail, eHd
     return out;
 }
 
-std::string ISDevice::getFirmwareInfo(int detail) {
-    return getFirmwareInfo(devInfo, detail, hdwRunState);
+std::string ISDevice::getFirmwareInfo(int flags) {
+    return getFirmwareInfo(devInfo, flags);
 }
 
-std::string ISDevice::getDescription() {
-    return utils::string_format("%-12s [ %s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), portName(port));
+std::string ISDevice::getDescription(int flags) {
+    std::string desc = getName(flags);
+    if (!(flags & OMIT_FIRMWARE_VERSION)) {
+        desc += " " + getFirmwareInfo(flags);
+        if (!(flags & OMIT_PORT_NAME))
+            desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
+    }
+    return desc;
 }
 
 void ISDevice::registerWithLogger(cISLogger *logger) {
@@ -333,6 +494,12 @@ void ISDevice::registerWithLogger(cISLogger *logger) {
     }
 }
 
+/**
+ * Requests that this device broadcast the requested DID are the specified period
+ * @param dataId the DID to be broadcast at periodic intervals
+ * @param periodMultiple the period multiple (NOT a frequency). If 0, this will request a one-shot, also effectively stopping any existing broadcasts
+ * @return true if the request was successfully sent, otherwise false (ie, port invalid, invalid device, etc)
+ */
 bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
 {
     if (!port)
@@ -344,9 +511,9 @@ bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
 
     std::lock_guard<std::recursive_mutex> lock(portMutex);
     if (periodMultiple < 0) {
-        comManagerDisableData(port, dataId);
+        DisableData(dataId);
     } else {
-        comManagerGetData(port, dataId, 0, 0, periodMultiple);
+        GetData(dataId, 0, 0, periodMultiple);
     }
     return true;
 }
@@ -367,7 +534,7 @@ bool ISDevice::verifyFlashConfigUpload() {
         printf(".");
         fflush(stdout);
 
-        comManagerStep(port);
+        step(); // comManagerStep(port); // FIXME:  we shouldn't be making comManager calls...
         success = (memcmp(&(flashCfg), &(flashCfgUpload), sizeof(nvm_flash_cfg_t)) == 0); // Flash config matches
     } while (!success && ((current_timeMs() - startTimeMs) < 5000));
     return success;
@@ -379,11 +546,20 @@ int ISDevice::SetSysCmd(const uint32_t command) {
     sysCmd.command = command;
     sysCmd.invCommand = ~command;
     // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
+    debug_message("Issuing SYS_CMD %d to %s (%s)\n", command, getIdAsString().c_str(), getPortName().c_str());
     return comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 }
 
+/**
+ * Send the specified string as a NMEA sentence.  This function will insert the prefix and calculate the checksum if they
+ * are not already provided.
+ * @param nmeaMsg
+ * @return 0 on success, -1 on failure
+ */
 int ISDevice::SendNmea(const std::string& nmeaMsg)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     uint8_t buf[1024] = {0};
     int n = 0;
     if (nmeaMsg[0] != '$') buf[n++] = '$'; // Append header if missing
@@ -405,6 +581,8 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
 */
 int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
 
@@ -449,6 +627,8 @@ int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMas
  *  a valid sync.
  */
 bool ISDevice::SyncFlashConfig() {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     unsigned int timeMs = current_timeMs();
     if (flashCfgUploadTimeMs)
     {   // if flashCfgUploadTimeMs != 0, then a UPLOAD is still in progress (we have sent a new Cfg, but waiting for it to sync back via the DID_SYS_PARAMS
@@ -497,6 +677,8 @@ bool ISDevice::SyncFlashConfig() {
 
 void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     bool platformCfgUpdateIoConfig = flashCfg_.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
 
     // Exclude from the checksum update the following which does not get saved in the flash config
@@ -513,17 +695,26 @@ void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
 
 /**
  * Populates the passed reference to a nvm_flash_cfg_t struct with the contents of this device's last known flash config
- * @param flashCfg
+ * @param flashCfg a struct which will be populated with a copy of the current flash configuration for this device
+ * @param timeout if > 0 will block for timeout milliseconds, attempting to synchronize the flash config. If == 0, returns
+ *    the current flashConfig value is memory, and does not attempt to synchronize (though it have have been previously).
  * @return true if flashCfg was populated, and the flash checksum matches the remote device's checksum (they are synchronized).
- *    False indicates that the resulting flash config cannot be trusted due to an inability to confirm synchronization
+ *    False indicates that the resulting flash config cannot be trusted due to mismatched synchronization checksum or
  */
-bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_)
+bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    // attempt to synchronize, if requested
+    if (timeout > 0) {
+        WaitForFlashSynced(timeout);
+    }
+
     // Copy flash config
     flashCfg_ = ISDevice::flashCfg;
 
     // Indicate whether the port connection is valid, open, and the flash config is synchronized; otherwise false
-    return (port && serialPortIsOpen(port) && (sysParams.flashCfgChecksum == flashCfg.checksum));
+    return (isConnected() && (sysParams.flashCfgChecksum == flashCfg.checksum));
 }
 
 /**
@@ -537,6 +728,8 @@ bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_)
  * @return true if the ANY of the changes failed to send to the remove device.
  */
 bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
     uint32_t *newCfg = (uint32_t*)&flashCfg_;
     uint32_t *curCfg = (uint32_t*)&(flashCfg);
@@ -608,6 +801,8 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
  */
 bool ISDevice::WaitForFlashSynced(uint32_t timeout)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if (!port)
         return false;   // No device, no flash-sync
 
@@ -680,7 +875,9 @@ bool ISDevice::WaitForFlashSynced(uint32_t timeout)
  * @return true if there are "PENDING FLASH WRITES" waiting to clear, or no response from device.
  */
 bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
-    if (!port || !serialPortIsOpen(port))
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    if (!port || !portIsOpened(port))
         return false;
 
     return ((sysParams.hdwStatus & HDW_STATUS_FLASH_WRITE_PENDING) || (sysParams.hdwStatus == 0));
@@ -694,11 +891,16 @@ bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
  */
 bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
     if (!SetFlashConfig(flashCfg))  // Upload and verify upload
         return false;   // we failed to even upload the new config
 
     // save the uploaded config, with correct checksum calculated in SetFlashConfig()
     nvm_flash_cfg_t tmpFlash = flashCfg;
+
+    SLEEP_MS(10);
+    step();
 
     if (!WaitForFlashSynced(timeout))
         return false;   // Re-download flash config
@@ -711,7 +913,9 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
 
 
 bool ISDevice::reset() {
-    if (current_timeMs() > nextResetTime) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    if (!portIsValid(port) || (current_timeMs() > nextResetTime)) {
         for (int i = 0; i < 3; i++) {
             SetSysCmd(SYS_CMD_SOFTWARE_RESET);
             SLEEP_MS(10);
@@ -720,4 +924,409 @@ bool ISDevice::reset() {
         return true;
     }
     return false;
+}
+
+int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
+{
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    if (data->hdr.size==0 || data->ptr==NULL) {
+        return 0;   // We didn't process, so let others try
+    }
+
+    if (devLogger) {
+        // FIXME:  devLogger->SaveData(data, 0);
+        // stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
+    }
+
+    // printf("DID: %d\n", data->hdr.id);
+    switch (data->hdr.id) {
+        case DID_DEV_INFO:
+            devInfo = *(dev_info_t*)data->ptr;
+            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+            if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
+                devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
+            break;
+        case DID_SYS_CMD:
+            sysCmd = *(system_command_t*)data->ptr;
+            break;
+        case DID_SYS_PARAMS:
+            copyDataPToStructP(&sysParams, data, sizeof(sys_params_t));
+            DEBUG_PRINT("Received DID_SYS_PARAMS\n");
+            break;
+        case DID_FLASH_CONFIG:
+            copyDataPToStructP(&flashCfg, data, sizeof(nvm_flash_cfg_t));
+            if ( dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data)) {
+                sysParams.flashCfgChecksum = flashCfg.checksum;
+            }
+            DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
+            break;
+        case DID_FIRMWARE_UPDATE:
+            // we don't respond to messages if we don't already have an active Updater
+            if (fwUpdater) {
+                fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
+                fwUpdate();
+            }
+            break;
+
+        // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
+        //  this seems to be for RTK RTCM3/NTrip Correction services, to republish the device's current position as NMEA GGA
+        case DID_GPS1_POS:
+            static time_t lastTime;
+            time_t currentTime = time(NULLPTR);
+            if (abs(currentTime - lastTime) > 5) 
+            {   // Update every 5 seconds
+                lastTime = currentTime;
+                gps_pos_t &gps = *((gps_pos_t*)data->ptr);
+                if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D) {
+                    // *s_cm_state->clientBytesToSend = nmea_gga(s_cm_state->clientBuffer, s_cm_state->clientBufferSize, gps);
+                }
+            }
+            break;
+    }
+
+    devInfo.hdwRunState = HDW_STATE_APP;  // It's basically impossible for us to receive ISB protocol, and NOT be in APP state
+    return 1;   // allow others to continue to process this message
+}
+
+// return 0 on success, -1 on failure
+int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    switch (getNmeaMsgId(msg, msgSize))
+    {
+        case NMEA_MSG_ID_INFO:
+            nmea_parse_info(devInfo, (const char*)msg, msgSize);
+            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+            devInfo.hdwRunState = HDW_STATE_APP;
+        break;
+    }
+    return 1;   // allow others to continue to process this message
+}
+
+int ISDevice::onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    return 1;   // allow others to continue to process this message
+}
+
+void ISDevice::stepLogger(void* ctx, const p_data_t* data, port_handle_t port)
+{
+/*
+    InertialSense* i = &InertialSense::StepLogger();
+    cMutexLocker logMutexLocker(&i->m_logMutex);
+    if (i->m_logger.Enabled())
+    {
+        p_data_buf_t d;
+        d.hdr = data->hdr;
+        memcpy(d.buf, data->ptr, d.hdr.size);
+        i->m_logPackets[port].push_back(d);
+    }
+*/
+}
+
+bool ISDevice::assignPort(port_handle_t newPort) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    if (port) {
+        // releaseSerialPort()  TODO: I'm sure there is something we probably need to do before we can just assign the new port - close, flush, delete, etc?
+    }
+
+    port = newPort;
+    if (!portIsValid(port)) {
+        return false;   // nothing more to do if the port is invalid
+    }
+
+    if ((portType(newPort) & PORT_TYPE__COMM)) {
+        originalCbs = COMM_PORT(newPort)->comm.cb; // make a copy of the new port's original callbacks/context, which we'll restore when this device is destroyed
+    }
+
+    defaultCbs.all = processPacket;
+    registerIsbDataHandler(processIsbMsgs);
+    registerProtocolHandler(_PTYPE_NMEA, processNmeaMsgs);
+
+    is_comm_callbacks_t portCbs = defaultCbs;
+
+    // Initialize IScomm instance, for serial reads / writes
+    if ((portType(port) & PORT_TYPE__COMM)) {
+        comm_port_t* comm = COMM_PORT(port);
+
+        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), portCbs.all);
+        is_comm_register_port_callbacks(port, &portCbs);
+
+#if ENABLE_PACKET_CONTINUATION
+        // Packet data continuation
+        memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
+#endif
+    }
+//    if ((hdwId != IS_HARDWARE_ANY) || devInfo.serialNumber)
+//        debug_message("[DBG] Device %s bound to port %s.\n", getIdAsString().c_str(), getPortName().c_str());
+    return true;
+}
+
+
+pfnIsCommIsbDataHandler ISDevice::registerIsbDataHandler(pfnIsCommIsbDataHandler cbHandler) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    pfnIsCommIsbDataHandler oldHandler = defaultCbs.isbData;
+    defaultCbs.context = this;
+    defaultCbs.isbData = cbHandler;
+    defaultCbs.protocolMask |= ENABLE_PROTOCOL_ISB;
+
+    if (port && (portType(port) & PORT_TYPE__COMM)) {
+        COMM_PORT(port)->comm.cb.context = this;
+        oldHandler = is_comm_register_isb_handler(&COMM_PORT(port)->comm, cbHandler);
+    }
+
+    return oldHandler;
+}
+
+pfnIsCommGenMsgHandler ISDevice::registerProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    if ((ptype < _PTYPE_FIRST_DATA) || (ptype > _PTYPE_LAST_DATA))
+        return NULL;
+
+    pfnIsCommGenMsgHandler oldHandler = defaultCbs.generic[ptype];
+
+    // if port is null, set this as the default handler, and also set it for all available ports
+    defaultCbs.context = this;
+    defaultCbs.generic[ptype] = cbHandler;
+    defaultCbs.protocolMask |= (0x01 << ptype);  // enable the protocol  TODO: if cbHandler is NULL, this should disable the protocol
+
+    if (port && portType(port) & PORT_TYPE__COMM) {
+        COMM_PORT(port)->comm.cb.context = this;
+        return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+    }
+
+    return oldHandler;
+}
+
+void ISDevice::SaveFlashConfigFile(std::string path)
+{
+    nvm_flash_cfg_t* outData = &flashCfg;
+
+    YAML::Node map = YAML::Node(YAML::NodeType::Map);
+
+    map["size"]             = outData->size;
+    map["checksum"]         = outData->checksum;
+    map["key"]              = outData->key;
+    map["startupImuDtMs"]   = outData->startupImuDtMs;
+    map["startupNavDtMs"]   = outData->startupNavDtMs;
+    map["ser0BaudRate"]     = outData->ser0BaudRate;
+    map["ser1BaudRate"]     = outData->ser1BaudRate;
+
+    YAML::Node insRotation = YAML::Node(YAML::NodeType::Sequence);
+    insRotation.push_back(outData->insRotation[0]);
+    insRotation.push_back(outData->insRotation[1]);
+    insRotation.push_back(outData->insRotation[2]);
+    map["insRotation"]                 = insRotation;
+
+    YAML::Node insOffset = YAML::Node(YAML::NodeType::Sequence);
+    insOffset.push_back(outData->insOffset[0]);
+    insOffset.push_back(outData->insOffset[1]);
+    insOffset.push_back(outData->insOffset[2]);
+    map["insOffset"]                 = insOffset;
+
+    YAML::Node gps1AntOffset = YAML::Node(YAML::NodeType::Sequence);
+    gps1AntOffset.push_back(outData->gps1AntOffset[0]);
+    gps1AntOffset.push_back(outData->gps1AntOffset[1]);
+    gps1AntOffset.push_back(outData->gps1AntOffset[2]);
+    map["gps1AntOffset"]    = gps1AntOffset;
+
+    map["dynamicModel"]     = (uint16_t)outData->dynamicModel;
+    map["debug"]            = (uint16_t)outData->debug;
+    map["gnssSatSigConst"]  = outData->gnssSatSigConst;
+    map["sysCfgBits"]       = outData->sysCfgBits;
+
+    YAML::Node refLla = YAML::Node(YAML::NodeType::Sequence);
+    refLla.push_back(outData->refLla[0]);
+    refLla.push_back(outData->refLla[1]);
+    refLla.push_back(outData->refLla[2]);
+    map["refLla"]                     = refLla;
+
+    YAML::Node lastLla = YAML::Node(YAML::NodeType::Sequence);
+    lastLla.push_back(outData->lastLla[0]);
+    lastLla.push_back(outData->lastLla[1]);
+    lastLla.push_back(outData->lastLla[2]);
+    map["lastLla"]                     = lastLla;
+
+    map["lastLlaTimeOfWeekMs"]      = outData->lastLlaTimeOfWeekMs;
+    map["lastLlaWeek"]              = outData->lastLlaWeek;
+    map["lastLlaUpdateDistance"]    = outData->lastLlaUpdateDistance;
+    map["ioConfig"]                 = outData->ioConfig;
+    map["platformConfig"]           = outData->platformConfig;
+
+    YAML::Node gps2AntOffset = YAML::Node(YAML::NodeType::Sequence);
+    gps2AntOffset.push_back(outData->gps2AntOffset[0]);
+    gps2AntOffset.push_back(outData->gps2AntOffset[1]);
+    gps2AntOffset.push_back(outData->gps2AntOffset[2]);
+    map["gps2AntOffset"]            = gps2AntOffset;
+
+    YAML::Node zeroVelRotation = YAML::Node(YAML::NodeType::Sequence);
+    zeroVelRotation.push_back(outData->zeroVelRotation[0]);
+    zeroVelRotation.push_back(outData->zeroVelRotation[1]);
+    zeroVelRotation.push_back(outData->zeroVelRotation[2]);
+    map["zeroVelRotation"]          = zeroVelRotation;
+
+    YAML::Node zeroVelOffset = YAML::Node(YAML::NodeType::Sequence);
+    zeroVelOffset.push_back(outData->zeroVelOffset[0]);
+    zeroVelOffset.push_back(outData->zeroVelOffset[1]);
+    zeroVelOffset.push_back(outData->zeroVelOffset[2]);
+    map["zeroVelOffset"]            = zeroVelOffset;
+
+    map["gpsTimeUserDelay"]         = outData->gpsTimeUserDelay;
+    map["magDeclination"]           = outData->magDeclination;
+    map["gpsTimeSyncPeriodMs"]      = outData->gpsTimeSyncPeriodMs;
+    map["startupGPSDtMs"]           = outData->startupGPSDtMs;
+    map["RTKCfgBits"]               = outData->RTKCfgBits;
+    map["sensorConfig"]             = outData->sensorConfig;
+    map["gpsMinimumElevation"]      = outData->gpsMinimumElevation;
+    map["ser2BaudRate"]             = outData->ser2BaudRate;
+
+    YAML::Node wheelCfgTransE_b2w   = YAML::Node(YAML::NodeType::Sequence);
+    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[0]);
+    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[1]);
+    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[2]);
+    map["wheelCfgTransE_b2w"]       = wheelCfgTransE_b2w;
+
+    YAML::Node wheelCfgTransE_b2wsig = YAML::Node(YAML::NodeType::Sequence);
+    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[0]);
+    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[1]);
+    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[2]);
+    map["wheelCfgTransE_b2wsig"]    = wheelCfgTransE_b2wsig;
+
+    YAML::Node wheelCfgTransT_b2w = YAML::Node(YAML::NodeType::Sequence);
+    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[0]);
+    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[1]);
+    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[2]);
+    map["wheelCfgTransT_b2w"]       = wheelCfgTransT_b2w;
+
+    YAML::Node wheelCfgTransT_b2wsig = YAML::Node(YAML::NodeType::Sequence);
+    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[0]);
+    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[1]);
+    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[2]);
+    map["wheelCfgTransT_b2wsig"]    = wheelCfgTransT_b2wsig;
+
+    map["wheelConfigTrackWidth"]    = outData->wheelConfig.track_width;
+    map["wheelConfigRadius"]        = outData->wheelConfig.radius;
+    map["wheelConfigBits"]          = outData->wheelConfig.bits;
+
+    std::ofstream fout(path);
+
+    YAML::Emitter emitter;
+    emitter.SetSeqFormat(YAML::Flow);
+    emitter << map;
+    fout << emitter.c_str();
+    fout.close();
+}
+
+int ISDevice::LoadFlashConfig(std::string path)
+{
+    try
+    {
+        nvm_flash_cfg_t loaded_flash;
+        FlashConfig(loaded_flash);
+
+        YAML::Node inData = YAML::LoadFile(path);
+        loaded_flash.size                     = inData["size"].as<uint32_t>();
+        loaded_flash.checksum                 = inData["checksum"].as<uint32_t>();
+        loaded_flash.key                      = inData["key"].as<uint32_t>();
+        loaded_flash.startupImuDtMs           = inData["startupImuDtMs"].as<uint32_t>();
+        loaded_flash.startupNavDtMs           = inData["startupNavDtMs"].as<uint32_t>();
+        loaded_flash.ser0BaudRate             = inData["ser0BaudRate"].as<uint32_t>();
+        loaded_flash.ser1BaudRate             = inData["ser1BaudRate"].as<uint32_t>();
+
+        YAML::Node insRotation                = inData["insRotation"];
+        loaded_flash.insRotation[0]           = insRotation[0].as<float>();
+        loaded_flash.insRotation[1]           = insRotation[1].as<float>();
+        loaded_flash.insRotation[2]           = insRotation[2].as<float>();
+
+        YAML::Node insOffset                  = inData["insOffset"];
+        loaded_flash.insOffset[0]             = insOffset[0].as<float>();
+        loaded_flash.insOffset[1]             = insOffset[1].as<float>();
+        loaded_flash.insOffset[2]             = insOffset[2].as<float>();
+
+        YAML::Node gps1AntOffset              = inData["gps1AntOffset"];
+        loaded_flash.gps1AntOffset[0]         = gps1AntOffset[0].as<float>();
+        loaded_flash.gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
+        loaded_flash.gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
+
+        loaded_flash.dynamicModel             = (uint8_t)inData["dynamicModel"].as<uint16_t>();
+        loaded_flash.debug                    = (uint8_t)inData["debug"].as<uint16_t>();
+        loaded_flash.gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
+        loaded_flash.sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();
+
+        YAML::Node refLla                     = inData["refLla"];
+        loaded_flash.refLla[0]                = refLla[0].as<double>();
+        loaded_flash.refLla[1]                = refLla[1].as<double>();
+        loaded_flash.refLla[2]                = refLla[2].as<double>();
+
+        YAML::Node lastLla                    = inData["lastLla"];
+        loaded_flash.lastLla[0]               = lastLla[0].as<double>();
+        loaded_flash.lastLla[1]               = lastLla[1].as<double>();
+        loaded_flash.lastLla[2]               = lastLla[2].as<double>();
+
+        loaded_flash.lastLlaTimeOfWeekMs      = inData["lastLlaTimeOfWeekMs"].as<uint32_t>();
+        loaded_flash.lastLlaWeek              = inData["lastLlaWeek"].as<uint32_t>();
+        loaded_flash.lastLlaUpdateDistance    = inData["lastLlaUpdateDistance"].as<float>();
+        loaded_flash.ioConfig                 = inData["ioConfig"].as<uint32_t>();
+        loaded_flash.platformConfig           = inData["platformConfig"].as<uint32_t>();
+
+        YAML::Node gps2AntOffset              = inData["gps2AntOffset"];
+        loaded_flash.gps2AntOffset[0]         = gps2AntOffset[0].as<float>();
+        loaded_flash.gps2AntOffset[1]         = gps2AntOffset[1].as<float>();
+        loaded_flash.gps2AntOffset[2]         = gps2AntOffset[2].as<float>();
+
+        YAML::Node zeroVelRotation            = inData["zeroVelRotation"];
+        loaded_flash.zeroVelRotation[0]       = zeroVelRotation[0].as<float>();
+        loaded_flash.zeroVelRotation[1]       = zeroVelRotation[1].as<float>();
+        loaded_flash.zeroVelRotation[2]       = zeroVelRotation[2].as<float>();
+
+        YAML::Node zeroVelOffset              = inData["zeroVelOffset"];
+        loaded_flash.zeroVelOffset[0]         = zeroVelOffset[0].as<float>();
+        loaded_flash.zeroVelOffset[1]         = zeroVelOffset[1].as<float>();
+        loaded_flash.zeroVelOffset[2]         = zeroVelOffset[2].as<float>();
+
+        loaded_flash.gpsTimeUserDelay         = inData["gpsTimeUserDelay"].as<float>();
+        loaded_flash.magDeclination           = inData["magDeclination"].as<float>();
+        loaded_flash.gpsTimeSyncPeriodMs      = inData["gpsTimeSyncPeriodMs"].as<uint32_t>();
+        loaded_flash.startupGPSDtMs           = inData["startupGPSDtMs"].as<uint32_t>();
+        loaded_flash.RTKCfgBits               = inData["RTKCfgBits"].as<uint32_t>();
+        loaded_flash.sensorConfig             = inData["sensorConfig"].as<uint32_t>();
+        loaded_flash.gpsMinimumElevation      = inData["gpsMinimumElevation"].as<float>();
+        loaded_flash.ser2BaudRate             = inData["ser2BaudRate"].as<uint32_t>();
+
+        loaded_flash.wheelConfig.bits         = inData["wheelConfigBits"].as<uint32_t>();
+        loaded_flash.wheelConfig.radius       = inData["wheelConfigRadius"].as<float>();
+        loaded_flash.wheelConfig.track_width  = inData["wheelConfigTrackWidth"].as<float>();
+
+        YAML::Node wheelCfgTransE_b2w                       = inData["wheelCfgTransE_b2w"];
+        loaded_flash.wheelConfig.transform.e_b2w[0]         = wheelCfgTransE_b2w[0].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w[1]         = wheelCfgTransE_b2w[1].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w[2]         = wheelCfgTransE_b2w[2].as<float>();
+
+        YAML::Node wheelCfgTransE_b2wsig                    = inData["wheelCfgTransE_b2wsig"];
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[0]   = wheelCfgTransE_b2wsig[0].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[1]   = wheelCfgTransE_b2wsig[1].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[2]   = wheelCfgTransE_b2wsig[2].as<float>();
+
+        YAML::Node wheelCfgTransT_b2w                       = inData["wheelCfgTransT_b2wsig"];
+        loaded_flash.wheelConfig.transform.t_b2w[0]         = wheelCfgTransT_b2w[0].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w[1]         = wheelCfgTransT_b2w[1].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w[2]         = wheelCfgTransT_b2w[2].as<float>();
+
+        YAML::Node wheelCfgTransT_b2wsig                    = inData["wheelCfgTransT_b2wsig"];
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[0]   = wheelCfgTransT_b2wsig[0].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[1]   = wheelCfgTransT_b2wsig[1].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[2]   = wheelCfgTransT_b2wsig[2].as<float>();
+
+        SetFlashConfig(loaded_flash);
+    }
+    catch (const YAML::Exception& ex)
+    {
+        printf("[ERROR] --- There was an error parsing the YAML file: %s", ex.what());
+        return -1;
+    }
+
+    return 0;
 }

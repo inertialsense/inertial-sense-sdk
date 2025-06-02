@@ -19,21 +19,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../hw-libs/bootloader/bootloaderShared.h"
 #include "libusb.h"
 #include "ISUtilities.h"
+#include "protocol/FirmwareUpdate.h"
 
 using namespace ISBootloader;
 
 // const char* is_samx70_bootloader_needle = "bootloader-SAMx70";
 
-is_operation_result ISBootloader::dummy_update_callback(void* obj, float percent) 
+is_operation_result ISBootloader::dummy_update_callback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
+    auto ctx = std::any_cast<cISBootloaderBase*>(obj);
     ctx->m_update_progress = percent;
     return IS_OP_OK;
 }
 
-is_operation_result ISBootloader::dummy_verify_callback(void* obj, float percent) 
+is_operation_result ISBootloader::dummy_verify_callback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
+    auto ctx = std::any_cast<cISBootloaderBase*>(obj);
     ctx->m_verify_progress = percent;
     return IS_OP_OK;
 }
@@ -170,9 +171,9 @@ is_operation_result cISBootloaderBase::mode_device_app
 (
     firmwares_t filenames,
     port_handle_t port,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -189,7 +190,7 @@ is_operation_result cISBootloaderBase::mode_device_app
     uint32_t fw_IMX_5  = get_image_signature(filenames.fw_IMX_5.path)  & (IS_IMAGE_SIGN_IMX_5p0);
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
 
-    statusfn(NULL, ISBootloader::IS_LOG_LEVEL_DEBUG, "    | (%s): Switching context to APP mode.", portName(port));
+    statusfn(std::any(), eLogLevel::IS_LOG_LEVEL_DEBUG, "    | %s: Switching context to APP mode.", portName(port));
 
     obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, port);
     
@@ -235,9 +236,9 @@ is_operation_result cISBootloaderBase::mode_device_app
 is_operation_result cISBootloaderBase::get_device_isb_version(
     firmwares_t filenames,
     port_handle_t port,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -298,9 +299,9 @@ is_operation_result cISBootloaderBase::mode_device_isb
     firmwares_t filenames,
     bool force,
     port_handle_t port,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -323,15 +324,15 @@ is_operation_result cISBootloaderBase::mode_device_isb
     //uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path,  &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
-    statusfn(NULL, ISBootloader::IS_LOG_LEVEL_DEBUG, "    | (%s): Switching context to IS-bootloader mode.", portName(port));
+    statusfn(std::any(), eLogLevel::IS_LOG_LEVEL_DEBUG, "    | %s: Switching context to IS-bootloader mode.", portName(port));
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
-    device = obj->check_is_compatible();
-    if (device == IS_IMAGE_SIGN_ERROR)
+    if (!(device = obj->check_is_compatible()))
     {
         delete obj;
+        return IS_OP_INCOMPATIBLE;
     }
-    else if (device)
+    else
     {   // Firmware for a device must be specified to update its bootloader
         if ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2) // & ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2))
         {
@@ -393,10 +394,6 @@ is_operation_result cISBootloaderBase::mode_device_isb
             return IS_OP_CLOSED;
         }
     }
-    else
-    {
-        delete obj;
-    }
 
     return IS_OP_OK;
 }
@@ -405,9 +402,9 @@ is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
     libusb_device_handle* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -419,7 +416,7 @@ is_operation_result cISBootloaderBase::update_device
     uint32_t device = IS_IMAGE_SIGN_NONE;
     uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path) & IS_IMAGE_SIGN_ISB_STM32L4;
 
-    statusfn(NULL, ISBootloader::IS_LOG_LEVEL_MORE_INFO, "    | (%s): Starting DFU device update.", "DFU Device");
+    statusfn(std::any(), eLogLevel::IS_LOG_LEVEL_MORE_INFO, "    | %s: Starting DFU device update.", "DFU Device");
 
     obj = new cISBootloaderDFU(updateProgress, verifyProgress, statusfn, handle);
     obj->get_device_info();
@@ -465,9 +462,9 @@ is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
     port_handle_t port,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context,
@@ -484,7 +481,7 @@ is_operation_result cISBootloaderBase::update_device
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
-    statusfn(NULL, ISBootloader::IS_LOG_LEVEL_MORE_INFO, "    | (%s): Starting Serial Port device update.", portName(port));
+    statusfn(std::any(), eLogLevel::IS_LOG_LEVEL_MORE_INFO, "    | %s: Starting Serial Port device update.", portName(port));
 
     if (bl_EVB_2 || bl_uINS_3)
     {
@@ -542,7 +539,7 @@ is_operation_result cISBootloaderBase::update_device
             } 
             else
             {
-                statusfn(NULL, IS_LOG_LEVEL_ERROR, "    | (SAM-BA) Firmware image incompatible with SAM-BA device");
+                statusfn(std::any(), IS_LOG_LEVEL_ERROR, "    | (SAM-BA) Firmware image incompatible with SAM-BA device");
                 delete obj;
                 return IS_OP_CANCELLED;
             }
@@ -556,7 +553,7 @@ is_operation_result cISBootloaderBase::update_device
     serialPortClose(port);
     if (!serialPortOpenRetry(port, portName(port), baud, 1))
     {
-        statusfn(NULL, IS_LOG_LEVEL_ERROR, "    | (%s): Unable to open port at %d baud", portName(port), baud);
+        statusfn(std::any(), IS_LOG_LEVEL_ERROR, "Unable to open port at %d baud", baud);
         return IS_OP_ERROR;
     }
 
@@ -564,7 +561,7 @@ is_operation_result cISBootloaderBase::update_device
     device = obj->check_is_compatible();
     if (device == IS_IMAGE_SIGN_NONE)
     {
-        obj->logStatus(IS_LOG_LEVEL_WARN, "Device response missing.");
+        obj->logStatus(IS_LOG_LEVEL_ERROR, "Device response missing."); // TODO?  are these the same call?
         delete obj;
         return IS_OP_ERROR;
     }
@@ -665,7 +662,7 @@ is_operation_result cISBootloaderBase::update_device
         }
         else
         {
-            statusfn(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB) Firmware image incompatible with ISB device");
+            statusfn(std::any(), IS_LOG_LEVEL_ERROR, "    | (ISB) Firmware image incompatible with ISB device");
             delete obj;
             return IS_OP_CANCELLED;
         }
@@ -676,7 +673,7 @@ is_operation_result cISBootloaderBase::update_device
     }
 
     char msg[120] = {0};
-    SNPRINTF(msg, sizeof(msg), "    | (%s): Incompatible device selected", portName(port));
-    statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
+    SNPRINTF(msg, sizeof(msg), "    | %s: Incompatible device selected", portName(port));
+    statusfn(std::any(), IS_LOG_LEVEL_ERROR, msg);
     return IS_OP_ERROR;
 }

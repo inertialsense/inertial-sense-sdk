@@ -28,7 +28,7 @@ extern "C"
 #define BLAST_RX_TEST                           1
 #define TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS  1
 #define TEST_TRUNCATED_PACKETS                  1
-#define TEST_BUFF_PARSE_MSG						1
+#define TEST_BUFF_PARSE_MSG                     1
 
 #define TEST_STATS_FOR_NERDS                    0
 
@@ -43,14 +43,14 @@ extern "C"
 #if 0
 #define DEBUG_PRINTF                            printf
 #else
-#define DEBUG_PRINTF    
+#define DEBUG_PRINTF
 #endif
 
 //#define PORT_BUFFER_SIZE                      10000
 
 typedef struct
 {
-    struct 
+    struct
     {
         dev_info_t      devInfo;
         nvm_flash_cfg_t nvmFlashCfg;
@@ -447,7 +447,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
             switch (j++)
             {
                 default: j = 0; // fall-through
-                case 0: 
+                case 0:
                 {
                     td.ptype = _PTYPE_SONY;
                     uint8_t buf[] = { 0x7F,0x0E,0x00,0x81,0x0E,0x80,0x61,0x7B,0x04,0xE0,0x17,0x59,0x3E,0x72,0xBD,0xA7,0x2F,0x02,0x00,0xF5 };
@@ -465,7 +465,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     if (!generateDataAppend(testDeque, td, byteSize)) return;
                 } break;
 
-                case 2: 
+                case 2:
                 {
                     td.ptype = _PTYPE_SONY;
                     uint8_t buf[] = { 0x7F,0x1F,0x00,0x84,0x22,0x80,0x1C,0x00,0xD3,0x00,0x16,0x43,0xF0,0x00,0x8A,0x21,0xD7,0x72,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x66,0xC0,0x17,0xE9 };
@@ -474,7 +474,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     if (!generateDataAppend(testDeque, td, byteSize)) return;
                 } break;
 
-                case 3: 
+                case 3:
                 {
                     td.ptype = _PTYPE_SONY;
                     uint8_t buf[] = { 0x7F,0xAE,0x00,0x84,0xB1,0x80,0xAB,0x00,0xD3,0x00,0xA5,0x44,0x90,0x00,0x59,0xF5,0x82,0xB2,0x00,0x00,0x20,0x38,0x00,0xC0,0x08,0x00,0x00,0x00,0x20,0x00,0x00,0x80,0x5D,0x7E,0xAC,0xA0,0x94,0xAA,0xA6,0x9A,0xAA,0x00,0x00,0x00,0x1F,0xC8,0xD3,0xC8,0xA3,0x66,0x0D,0x5B,0x60,0x79,0xC3,0xFA,0xAF,0xC4,0x40,0x19,0xFF,0xDF,0xF1,0x5F,0x91,0x38,0xA6,0x88,0x51,0x3B,0x60,0x00,0x01,0xFC,0xE3,0xE7,0x64,0x27,0xD3,0x3F,0x20,0x00,0x00,0x27,0xA0,0x00,0x00,0x01,0xB4,0x69,0xA0,0x00,0x00,0x01,0xF5,0xF2,0x30,0x4C,0xDD,0xFF,0xFD,0xA6,0x1D,0xF2,0x80,0x0D,0x86,0xDE,0x12,0xAD,0x9C,0x00,0x00,0xB4,0x28,0xDE,0x7A,0x00,0x06,0xD1,0xDF,0xB0,0xAD,0xFF,0xFD,0x93,0x22,0x4C,0x60,0x04,0xC7,0x31,0xCC,0x60,0x04,0xC6,0x00,0x48,0x20,0x01,0x15,0xB1,0xB1,0x21,0xBE,0xB4,0xA2,0x6E,0x10,0x02,0xF0,0x00,0x2B,0x50,0x03,0x78,0xA8,0x6E,0x00,0x00,0x1E,0x27,0x47,0xEE,0x7F,0xA2,0x00,0x01,0xE5,0x49,0xF3,0x09,0x26,0x70,0x00,0x00,0x87,0x40,0x5C,0x5B };
@@ -483,7 +483,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     if (!generateDataAppend(testDeque, td, byteSize)) return;
                 } break;
 
-                case 4: 
+                case 4:
                 {
                     td.ptype = _PTYPE_SONY;
                     uint8_t buf[] = { 0x7F,0x1F,0x00,0x84,0x22,0x80,0x1C,0x00,0xD3,0x00,0x16,0x45,0xD0,0x00,0x59,0xF5,0x82,0xB2,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x70,0x48,0xD5,0xA9 };
@@ -492,7 +492,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     if (!generateDataAppend(testDeque, td, byteSize)) return;
                 } break;
 
-                case 5: 
+                case 5:
                 {
                     td.ptype = _PTYPE_SONY;
                     // uint8_t buf[] = { 0x7F,0x1F,0x00,0x84,0x22,0x80,0x1C,0x00,0xD3,0x00,0x16,0x46,0x70,0x00,0x59,0xF4,0xA7,0xF0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x4A,0x14,0x8F,0x0C };
@@ -525,7 +525,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
         switch (td.ptype)
         {
             case _PTYPE_INERTIAL_SENSE_DATA:
-                // Packetize data 
+                // Packetize data
                 uint8_t buf[COM_BUFFER_SIZE];
                 n = is_comm_set_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
                 td.pktSize = n;
@@ -597,7 +597,7 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
             {
                 return;
             }
-        }        
+        }
     }
 }
 
@@ -664,143 +664,143 @@ static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 
 static int generate_ISBPkt_DevInfo(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	dev_info_t dev;
+    dev_info_t dev;
 
-	// Dev Info
-	dev.hardwareType = 4;
-	dev.serialNumber = 234532;
-	dev.hardwareVer[0] = 1;
-	dev.hardwareVer[1] = 0;
-	dev.hardwareVer[2] = 0;
-	dev.hardwareVer[3] = 0;
-	dev.firmwareVer[1] = 2;
-	dev.firmwareVer[2] = 4;
-	dev.firmwareVer[3] = 2;
-	dev.firmwareVer[4] = 125;
-	dev.buildNumber = 4532345;
-	dev.protocolVer[0] = 2;
-	dev.protocolVer[1] = 0;
-	dev.protocolVer[2] = 0;
-	dev.protocolVer[3] = 0;
-	dev.repoRevision = 0x65682a70;
-	dev.buildType = 'c';
-	dev.buildYear = 25;
-	dev.buildMonth = 5;
-	dev.buildDay = 13;
-	dev.buildHour = 14;
-	dev.buildMinute = 19;
-	dev.buildSecond = 55;
-	dev.buildMillisecond = 134;
+    // Dev Info
+    dev.hardwareType = 4;
+    dev.serialNumber = 234532;
+    dev.hardwareVer[0] = 1;
+    dev.hardwareVer[1] = 0;
+    dev.hardwareVer[2] = 0;
+    dev.hardwareVer[3] = 0;
+    dev.firmwareVer[1] = 2;
+    dev.firmwareVer[2] = 4;
+    dev.firmwareVer[3] = 2;
+    dev.firmwareVer[4] = 125;
+    dev.buildNumber = 4532345;
+    dev.protocolVer[0] = 2;
+    dev.protocolVer[1] = 0;
+    dev.protocolVer[2] = 0;
+    dev.protocolVer[3] = 0;
+    dev.repoRevision = 0x65682a70;
+    dev.buildType = 'c';
+    dev.buildYear = 25;
+    dev.buildMonth = 5;
+    dev.buildDay = 13;
+    dev.buildHour = 14;
+    dev.buildMinute = 19;
+    dev.buildSecond = 55;
+    dev.buildMillisecond = 134;
 
-	strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
-	strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
+    strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
+    strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
 
-	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_DEV_INFO, sizeof(dev_info_t), 0, &dev);;
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_DEV_INFO, sizeof(dev_info_t), 0, &dev);;
 }
 
 static int generate_NMEAPkt_DevInfo(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	dev_info_t dev;
+    dev_info_t dev;
 
-	// Dev Info
-	dev.hardwareType = 4;
-	dev.serialNumber = 234532;
-	dev.hardwareVer[0] = 1;
-	dev.hardwareVer[1] = 0;
-	dev.hardwareVer[2] = 0;
-	dev.hardwareVer[3] = 0;
-	dev.firmwareVer[1] = 2;
-	dev.firmwareVer[2] = 4;
-	dev.firmwareVer[3] = 2;
-	dev.firmwareVer[4] = 125;
-	dev.buildNumber = 4532345;
-	dev.protocolVer[0] = 2;
-	dev.protocolVer[1] = 0;
-	dev.protocolVer[2] = 0;
-	dev.protocolVer[3] = 0;
-	dev.repoRevision = 0x65682a70;
-	dev.buildType = 'c';
-	dev.buildYear = 25;
-	dev.buildMonth = 5;
-	dev.buildDay = 13;
-	dev.buildHour = 14;
-	dev.buildMinute = 19;
-	dev.buildSecond = 55;
-	dev.buildMillisecond = 134;
+    // Dev Info
+    dev.hardwareType = 4;
+    dev.serialNumber = 234532;
+    dev.hardwareVer[0] = 1;
+    dev.hardwareVer[1] = 0;
+    dev.hardwareVer[2] = 0;
+    dev.hardwareVer[3] = 0;
+    dev.firmwareVer[1] = 2;
+    dev.firmwareVer[2] = 4;
+    dev.firmwareVer[3] = 2;
+    dev.firmwareVer[4] = 125;
+    dev.buildNumber = 4532345;
+    dev.protocolVer[0] = 2;
+    dev.protocolVer[1] = 0;
+    dev.protocolVer[2] = 0;
+    dev.protocolVer[3] = 0;
+    dev.repoRevision = 0x65682a70;
+    dev.buildType = 'c';
+    dev.buildYear = 25;
+    dev.buildMonth = 5;
+    dev.buildDay = 13;
+    dev.buildHour = 14;
+    dev.buildMinute = 19;
+    dev.buildSecond = 55;
+    dev.buildMillisecond = 134;
 
-	strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
-	strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
+    strncpy(dev.manufacturer, "Inertial Sense Inc", DEVINFO_MANUFACTURER_STRLEN);
+    strncpy(dev.addInfo, "GPX-1", DEVINFO_ADDINFO_STRLEN);
 
 
-	return nmea_dev_info((char*)buf, buffSize, dev);
+    return nmea_dev_info((char*)buf, buffSize, dev);
 }
 
 static int generate_ISBPkt_gps1Pos(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	gps_pos_t gps;
+    gps_pos_t gps;
 
-	// GPS
-	gps.week = 2270;
-	gps.timeOfWeekMs = 12345678;
-	gps.status = 0x03457834;
-	gps.ecef[0] = 2345.967;
-	gps.ecef[1] = 134.0687;
-	gps.ecef[2] = -8657.2345;
-	gps.lla[0] = 40.330565516;
-	gps.lla[1] = -111.725787806;
-	gps.lla[2] = 1408.565264;
-	gps.hMSL = 1408.565264;
-	gps.hAcc = 0.16546;
-	gps.vAcc = 2.3423;
-	gps.pDop = 1.053;
-	gps.cnoMean = 38.928;
-	gps.towOffset = 7254.0982;
-	gps.leapS = 18;
-	gps.satsUsed = 25;
-	gps.cnoMeanSigma = 2;
-	gps.status2 = 0x05;
+    // GPS
+    gps.week = 2270;
+    gps.timeOfWeekMs = 12345678;
+    gps.status = 0x03457834;
+    gps.ecef[0] = 2345.967;
+    gps.ecef[1] = 134.0687;
+    gps.ecef[2] = -8657.2345;
+    gps.lla[0] = 40.330565516;
+    gps.lla[1] = -111.725787806;
+    gps.lla[2] = 1408.565264;
+    gps.hMSL = 1408.565264;
+    gps.hAcc = 0.16546;
+    gps.vAcc = 2.3423;
+    gps.pDop = 1.053;
+    gps.cnoMean = 38.928;
+    gps.towOffset = 7254.0982;
+    gps.leapS = 18;
+    gps.satsUsed = 25;
+    gps.cnoMeanSigma = 2;
+    gps.status2 = 0x05;
 
-	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
 }
 
 static int generate_ISBPkt_ins2(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	ins_2_t ins;
+    ins_2_t ins;
 
-	// INS2
-	ins.week = 2270;
-	ins.timeOfWeek = 12345678;
-	ins.insStatus = 0x12345678;
-	ins.hdwStatus = 0x87654321;
-	ins.qn2b[0] = 173.895;
-	ins.qn2b[1] = 762.54;
-	ins.qn2b[2] = 93.267;
-	ins.qn2b[3] = 5.45;
-	ins.uvw[0] = 2.23;
-	ins.uvw[1] = 789.543;
-	ins.uvw[2] = 123.546;
-	ins.lla[0] = 40.330565516;
-	ins.lla[1] = -111.725787806;
-	ins.lla[2] = 1408.565264;
+    // INS2
+    ins.week = 2270;
+    ins.timeOfWeek = 12345678;
+    ins.insStatus = 0x12345678;
+    ins.hdwStatus = 0x87654321;
+    ins.qn2b[0] = 173.895;
+    ins.qn2b[1] = 762.54;
+    ins.qn2b[2] = 93.267;
+    ins.qn2b[3] = 5.45;
+    ins.uvw[0] = 2.23;
+    ins.uvw[1] = 789.543;
+    ins.uvw[2] = 123.546;
+    ins.lla[0] = 40.330565516;
+    ins.lla[1] = -111.725787806;
+    ins.lla[2] = 1408.565264;
 
-	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_INS_2, sizeof(ins_2_t), 0, &ins);
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_INS_2, sizeof(ins_2_t), 0, &ins);
 }
 
 static int generate_ISBPkt_imu(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-	imu_t imu;
+    imu_t imu;
 
-	// IMU
-	imu.time = 25670.98;
-	imu.status = 0x9876543;
-	imu.I.pqr[0] = 1234.;
-	imu.I.pqr[1] = 5643.;
-	imu.I.pqr[2] = -93.5678;
-	imu.I.acc[0] = -321.567;
-	imu.I.acc[1] = 2134.456;
-	imu.I.acc[2] = 4123.856;
+    // IMU
+    imu.time = 25670.98;
+    imu.status = 0x9876543;
+    imu.I.pqr[0] = 1234.;
+    imu.I.pqr[1] = 5643.;
+    imu.I.pqr[2] = -93.5678;
+    imu.I.acc[0] = -321.567;
+    imu.I.acc[1] = 2134.456;
+    imu.I.acc[2] = 4123.856;
 
-	return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_IMU, sizeof(imu_t), 0, &imu);
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_IMU, sizeof(imu_t), 0, &imu);
 }
 
 #if BASIC_TX_BUFFER_RX_BYTE_TEST
@@ -823,8 +823,7 @@ TEST(ISComm, BasicTxBufferRxByteTest)
         {
         default:    // IS binary
             uint8_t buf[COM_BUFFER_SIZE];
-            n = is_comm_data_to_buf(buf, sizeof(buf), &COMM_PORT(TEST0_PORT)->comm, td.did, td.size, 0, td.data.buf);
-            portWrite(TEST0_PORT, buf, n);
+            n = is_comm_data(TEST0_PORT, td.did, td.size, 0, td.data.buf);
             break;
 
         case _PTYPE_NMEA:
@@ -837,11 +836,11 @@ TEST(ISComm, BasicTxBufferRxByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-    parseRingBufByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+    parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-    EXPECT_TRUE(ringBufUsed(&TEST0_PORT->loopbackPortBuf) == 0);
+    EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -879,11 +878,11 @@ TEST(ISComm, BasicTxPortRxByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-    parseRingBufByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+    parseRingBufByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -922,11 +921,11 @@ TEST(ISComm, BasicTxRxMultiByteTest)
     }
 
     // Test that data parsed from Tx port matches deque data
-    parseRingBufMultiByte(g_testTxDeque, TEST0_PORT->loopbackPortBuf);
+    parseRingBufMultiByte(g_testTxDeque, TEST0_PORT->portRingBuf);
 
     // Check that we got all data
     EXPECT_TRUE(g_testTxDeque.empty());
-    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
 }
 #endif
@@ -1007,8 +1006,8 @@ TEST(ISComm, TxRxWithOffsetTest)
     {
         ins_1_t rxIns1 = {};
 
-        int n = ringBufUsed(&(TEST0_PORT->loopbackPortBuf));
-        ringBufRead(&(TEST0_PORT->loopbackPortBuf), g_comm.rxBuf.tail, n);
+        int n = ringBufUsed(&(TEST0_PORT->portRingBuf));
+        ringBufRead(&(TEST0_PORT->portRingBuf), g_comm.rxBuf.tail, n);
         g_comm.rxBuf.tail += n;
 
         // Read timeOfWeek
@@ -1062,7 +1061,7 @@ TEST(ISComm, SegmentedRxTest)
         }
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufEmpty(&tcm.portRxBuf));
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
@@ -1104,7 +1103,7 @@ TEST(ISComm, BlastRxTest)
         }
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufEmpty(&tcm.portRxBuf));
     EXPECT_EQ(COMM_PORT(TEST0_PORT)->comm.rxErrorCount, 0);
@@ -1152,7 +1151,7 @@ TEST(ISComm, RxWithGarbageTest)
         parseRingBufByte(g_testRxDeque, tcm.portRxBuf);
     }
 
-    // Check that no data was left behind 
+    // Check that no data was left behind
     EXPECT_TRUE(g_testRxDeque.empty());
     EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
 }
@@ -1175,7 +1174,7 @@ TEST(ISComm, IsCommGetDataTest)
 
     // Reset buffer if needed
     is_comm_free(&g_comm);
-    
+
     // Add byte to buffer
     ringBufRead(&tcm.portTxBuf, g_comm.rxBuf.tail, size);
     g_comm.rxBuf.tail += size;
@@ -1374,8 +1373,8 @@ TEST(ISComm, TruncatedPackets)
 
     while (g_testTxDeque.size()>0)
     {
-        int n = _MIN(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)), is_comm_free(&comm));
-        ringBufRead(&(TEST0_PORT->loopbackPortBuf), comm.rxBuf.tail, n);
+        int n = _MIN(ringBufUsed(&(TEST0_PORT->portRingBuf)), is_comm_free(&comm));
+        ringBufRead(&(TEST0_PORT->portRingBuf), comm.rxBuf.tail, n);
 
         // Update comm buffer tail pointer
         comm.rxBuf.tail += n;
@@ -1433,21 +1432,21 @@ TEST(ISComm, TruncatedPackets)
             found++;
         }
 
-        if (ringBufUsed(&(TEST0_PORT->loopbackPortBuf))<=0)
+        if (ringBufUsed(&(TEST0_PORT->portRingBuf)) <= 0)
         {
             // No more data left in ring buffer.  Reset parser one byte ahead of head and try again until there's no more data iscomm buffer.
             comm.rxBuf.head++;
             is_comm_reset_parser(&comm);
 
             if (comm.rxBuf.head >= comm.rxBuf.tail)
-            {   // No more data to parse. 
+            {   // No more data to parse.
                 break;
             }
         }
     }
 
     // Check that we got all data
-    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->loopbackPortBuf)) == 0);
+    EXPECT_TRUE(ringBufUsed(&(TEST0_PORT->portRingBuf)) == 0);
     EXPECT_TRUE(g_testTxDeque.empty());
 
     // Check good and bad packet count
@@ -1459,7 +1458,7 @@ TEST(ISComm, TruncatedPackets)
 
 #if TEST_BUFF_PARSE_MSG
 
-#define BUFF_PARSE_PASSES		1000000
+#define BUFF_PARSE_PASSES       1000000
 #define BUFF_PARSE_OUT_BUF_SIZE 600  
 #define BUFF_PARSE_DEV          0  
 #define BUFF_PARSE_DEV_NMEA     1  
@@ -1472,7 +1471,7 @@ static uint32_t s_buffParseMsgInCnt[5] = { 0 };
 /**
  * @brief ISB callback for testing the function is_comm_buffer_parse_messages()
  */
-int BufferParse_isb(p_data_t* data, port_handle_t port)
+int BufferParse_isb(void* ctx, p_data_t* data, port_handle_t port)
 {
     switch (data->hdr.id)
     {
@@ -1488,9 +1487,9 @@ int BufferParse_isb(p_data_t* data, port_handle_t port)
 /**
  * @brief NMEA callback for testing the function is_comm_buffer_parse_messages()
  */
-int BufferParse_nmea(const unsigned char* msg, int msgSize, port_handle_t port)
+int BufferParse_nmea(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port)
 {
-	switch (getNmeaMsgId(msg, msgSize))
+    switch (getNmeaMsgId(msg, msgSize))
     {
         case NMEA_MSG_ID_INFO:  s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]++;  break;
     }
@@ -1516,12 +1515,13 @@ TEST(ISComm, BufferParse)
 
     uint32_t outBufSize = 0;
     uint32_t tmpBufSize = 0;
-	uint32_t totalBytes = 0;
+    uint32_t totalBytes = 0;
 
     // create comm instance
     is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
 
     // Enable/disable protocols
+    is_comm_register_callbacks(&comm, &callbacks);
     is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
     is_comm_enable_protocol(&comm, _PTYPE_NMEA);
 
@@ -1548,19 +1548,19 @@ TEST(ISComm, BufferParse)
             if (outBufSize >= BUFF_PARSE_OUT_BUF_SIZE)  
                 break;
 
-			// prep for next message
-			uint8_t randByte = (uint8_t)rand();
+            // prep for next message
+            uint8_t randByte = (uint8_t)rand();
             memset(tmpBuf, 0, BUFF_PARSE_OUT_BUF_SIZE);
 
             // fill next read
             switch (randByte&0x7)
             {
                 case BUFF_PARSE_DEV: // Dev Info
-					tmpBufSize = generate_ISBPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
+                    tmpBufSize = generate_ISBPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
                     msgOutCnt[BUFF_PARSE_DEV]++;
                     break;
                 case BUFF_PARSE_DEV_NMEA: // Dev Info NMEA
-					tmpBufSize = generate_NMEAPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
+                    tmpBufSize = generate_NMEAPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
                     msgOutCnt[BUFF_PARSE_DEV_NMEA]++;
                     break;
                 case BUFF_PARSE_GPS: // GPS
@@ -1582,27 +1582,27 @@ TEST(ISComm, BufferParse)
                     tmpBufSize = ((randByte&0x7e) >> 1);
                     break;
                 default: // fill with upto 64 random values
-				{
-					tmpBufSize = ((randByte & 0xfc) >> 2);
-					
-					for (int j = 0; j < tmpBufSize; j++)
-					{
-						tmpBuf[j] = (uint8_t)rand();
+                {
+                    tmpBufSize = ((randByte & 0xfc) >> 2);
 
-						// CHEAT A LITTLE. Dont allow packet start bytes.
-						if (tmpBuf[j] == PSC_NMEA_START_BYTE ||
-							tmpBuf[j] == PSC_ISB_PREAMBLE_BYTE1 ||
-							tmpBuf[j] == UBLOX_START_BYTE1 ||
-							tmpBuf[j] == RTCM3_START_BYTE ||
-							tmpBuf[j] == SPARTN_START_BYTE ||
-							tmpBuf[j] == SONY_START_BYTE)
-						{
-							tmpBuf[j] = 0x00;
-						}
-					}
+                    for (int j = 0; j < tmpBufSize; j++)
+                    {
+                        tmpBuf[j] = (uint8_t)rand();
 
-					break;
-				}
+                        // CHEAT A LITTLE. Dont allow packet start bytes.
+                        if (tmpBuf[j] == PSC_NMEA_START_BYTE ||
+                            tmpBuf[j] == PSC_ISB_PREAMBLE_BYTE1 ||
+                            tmpBuf[j] == UBLOX_START_BYTE1 ||
+                            tmpBuf[j] == RTCM3_START_BYTE ||
+                            tmpBuf[j] == SPARTN_START_BYTE ||
+                            tmpBuf[j] == SONY_START_BYTE)
+                        {
+                            tmpBuf[j] = 0x00;
+                        }
+                    }
+
+                    break;
+                }
             }
         }
 

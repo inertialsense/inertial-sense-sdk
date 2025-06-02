@@ -79,13 +79,13 @@ uint8_t cISBootloaderSTM32::check_is_compatible(uint32_t imgSign)
     switch(m_pid)
     {
     case 0x62: 
-        m_info_callback(this, "Detected STM32L4 device", IS_LOG_LEVEL_DEBUG);
+        m_info_callback(std::make_any<cISBootloaderBase*>(this), IS_LOG_LEVEL_DEBUG, "Detected STM32L4 device");
         return IS_IMAGE_SIGN_STM_L4;   // STM32L452 (IMX-5.0)
     case 0x82: 
-        m_info_callback(this, "Detected STM32U5 device", IS_LOG_LEVEL_DEBUG);
+        m_info_callback(std::make_any<cISBootloaderBase*>(this), IS_LOG_LEVEL_DEBUG, "Detected STM32U5 device");
         return IS_IMAGE_SIGN_STM_U5;   // STM32U575/STM32U585 (GPX-1/IMX-5.1)
     default: 
-        m_info_callback(this, "No STM32 device detected", IS_LOG_LEVEL_DEBUG);
+        m_info_callback(std::make_any<cISBootloaderBase*>(this), IS_LOG_LEVEL_DEBUG, "No STM32 device detected");
         return IS_IMAGE_SIGN_NONE;
     }
 
@@ -97,7 +97,7 @@ is_operation_result cISBootloaderSTM32::reboot_up()
     // Jump to the application in FLASH memory
     if (go(0x08000000) != STM32_ACK)
     {
-        m_info_callback(this, "Failed to jump to application in FLASH memory", IS_LOG_LEVEL_ERROR);
+        m_info_callback(std::make_any<cISBootloaderBase*>(this), IS_LOG_LEVEL_ERROR, "Failed to jump to application in FLASH memory");
         return IS_OP_ERROR;
     }
 
@@ -158,7 +158,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
                 // TODO: Add support for other areas.
                 if (image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x0807FFFF)
                 {
-                    m_info_callback(this, "Invalid address range for STM32L4 device", IS_LOG_LEVEL_WARN);
+                    m_info_callback(std::make_any<cISBootloaderBase*>(this), IS_LOG_LEVEL_WARN, "Invalid address range for STM32L4 device");
                     continue;
                 }
                 break;
@@ -166,12 +166,12 @@ is_operation_result cISBootloaderSTM32::download_image(void)
                 // TODO: Add support for other areas.
                 if (image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x08200000)
                 {
-                    m_info_callback(this, "Invalid address range for STM32U5 device", IS_LOG_LEVEL_WARN);
+                    m_info_callback(std::make_any<cISBootloaderBase*>(this), IS_LOG_LEVEL_WARN, "Invalid address range for STM32U5 device");
                     continue;
                 }
                 break;
             default: 
-                m_info_callback(this, "No STM32 device detected", IS_LOG_LEVEL_DEBUG);
+                m_info_callback(std::make_any<cISBootloaderBase*>(this), IS_LOG_LEVEL_DEBUG, "No STM32 device detected");
                 ihex_unload_sections(image, numSections);
                 return IS_OP_ERROR;
         }
@@ -202,7 +202,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
             bytesWritten += (uint32_t)payload.len + 1;
 
             m_update_progress = 0.25f + 0.75f * ((float)bytesWritten / (float)totalLen);
-            m_update_callback(this, m_update_progress);
+            m_update_callback(std::make_any<cISBootloaderBase*>(this), m_update_progress, "", 0, 0);
         } 
     }
 

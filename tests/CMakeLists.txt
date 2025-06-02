@@ -13,6 +13,7 @@ include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 # Include InertialSenseSDK header files
 include_directories(
     ${IS_SDK_DIR}/src
+    ${IS_SDK_DIR}/src/core
     ${IS_SDK_DIR}/src/protocol
     ${IS_SDK_DIR}/src/libusb/libusb
     ${IS_SDK_DIR}/src/util
@@ -34,26 +35,30 @@ endif()
 add_executable(${PROJECT_NAME} 
     ${TESTS_SOURCES}
     runtime/device_runtime_tests.cpp
-
-    # test_ISLogger.cpp
-    # test_data_utils.cpp
-
-    # test_protocol_nmea.cpp
-    # test_time_conversion.cpp    
-    # test_runtime_tests.cpp
-    # test_data_utils.cpp
 )
 
 if(WIN32)   # Windows
-    set(PROJECT_PLATFORM_LIBS GTest::GTest GTest::Main)
+    # Check if VCPKG_ROOT is defined
+    if(NOT DEFINED ENV{VCPKG_ROOT})
+        message(FATAL_ERROR "The environment variable VCPKG_ROOT is not defined. Please run install_build_tools.bat or set it to the path of your vcpkg installation.")
+    endif()
+
+    # Use the VCPKG_ROOT system variable
+    set(VCPKG_PATH $ENV{VCPKG_ROOT})
+    set(GTEST_LIBRARY "${VCPKG_PATH}/installed/x64-windows/lib/gtest.lib")
+    set(GTEST_MAIN_LIBRARY "${VCPKG_PATH}/installed/x64-windows/lib/manual-link/gtest_main.lib")
+    target_link_directories(${PROJECT_NAME} PRIVATE "${VCPKG_PATH}/installed/x64-windows/lib/manual-link")
+    set(PROJECT_PLATFORM_LIBS ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} GTest::GTest GTest::Main wsock32 ws2_32)
 else()      # Linux
     set(PROJECT_PLATFORM_LIBS gtest_main ${GTEST_LIBRARIES} udev pthread m)
 endif()
-
-# Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} ${PROJECT_PLATFORM_LIBS} InertialSenseSDK)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Link IS-SDK libraries to the executable
+include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
+
+# Link InertialSenseSDK static library to the executable
+target_link_libraries(${PROJECT_NAME} ${PROJECT_PLATFORM_LIBS})

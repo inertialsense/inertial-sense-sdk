@@ -192,7 +192,7 @@ uint8_t getHexValue(unsigned char hex);
 * @param info the parameter to pass to the thread function
 * @return the thread handle
 */
-void* threadCreateAndStart(void(*function)(void* info), void* info, const char* threadName = nullptr);
+void* threadCreateAndStart(void(*function)(void* info), void* info, const char* threadName);
 
 /**
 * Join a thread with this thread, waiting for it to finish, then free the thread

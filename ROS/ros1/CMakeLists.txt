@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.10.0)
+set(CMAKE_POLICY_VERSION_MINIMUM, 3.5) # Override CMAKE minimum version support
+cmake_minimum_required(VERSION 3.21.0)
 add_definitions(-DROS1)
 project(inertial_sense_ros)
 

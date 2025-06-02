@@ -51,9 +51,9 @@ extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 
 enum eSerialPortOptions
 {
-    OPT_PARITY_NONE = 0x0,    
+    OPT_PARITY_NONE = 0x0,
     OPT_PARITY_ODD = 0x1,
-    OPT_PARITY_EVEN = 0x2,    
+    OPT_PARITY_EVEN = 0x2,
     OPT_PARITY_MASK = 0x3,
 
     SERIAL_PORT_OPTIONS_MASK = OPT_PARITY_MASK,
@@ -82,6 +82,8 @@ struct serial_port_s
         comm_port_t comm;
     };
 
+    port_monitor_set_t stats;
+
     rmci_t rmci;
     uint8_t rmciUPMcnt[DID_COUNT];
     uint8_t rmciNMEAcnt[NMEA_MSG_ID_COUNT];
@@ -91,6 +93,12 @@ struct serial_port_s
 
     // the port name (do not modify directly)
     char portName[MAX_SERIAL_PORT_NAME_LENGTH + 1];
+
+    // the current (or expected) baud rate to communicate at
+    int baudRate;
+
+    // non-zero if this port is configured for blocking calls
+    int blocking;
 
     // latest errno that was reported from an operation on this port
     int errorCode;
@@ -231,9 +239,10 @@ int serialPortFlush(port_handle_t port);
 /**
  * blocks until all pending TX writes have completed, and the TX buffer is empty.
  * @param port
+ * @param timeoutMs the number of milliseconds to wait, at most before data is discarded
  * @return 1 if success, 0 if failure
  */
-int serialPortDrain(port_handle_t port);
+int serialPortDrain(port_handle_t port, uint32_t timeoutMs);
 
 /**
  * read up to readCount bytes into buffer
@@ -243,7 +252,7 @@ int serialPortDrain(port_handle_t port);
  * @param readCount
  * @return number of bytes read which is less than or equal to readCount.
  */
-int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount);
+int serialPortRead(port_handle_t port, unsigned char* buffer, unsigned int readCount);
 
 /**
  * read up to thue number of bytes requested
@@ -253,7 +262,7 @@ int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount);
  * @param timeoutMilliseconds
  * @return number of bytes read which is less than or equal to readCount
  */
-int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds);
+int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
 
 /**
  * start an async read - not all platforms will support an async read and may call the callback function immediately
@@ -265,7 +274,7 @@ int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCou
  * @param callback
  * @return 1 if success, 0 if failed to start async operation
  */
-int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion callback);
+int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, unsigned int readCount, pfnSerialPortAsyncReadCompletion callback);
 
 /**
  * read up until a \r\n sequence has been read
@@ -275,7 +284,7 @@ int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, int re
  * @param bufferLength
  * @return number of bytes read or -1 if timeout or buffer overflow, count does not include the null terminator
  */
-int serialPortReadLine(port_handle_t port, unsigned char* buffer, int bufferLength);
+int serialPortReadLine(port_handle_t port, unsigned char* buffer, unsigned int bufferLength);
 
 /**
  * read up until a \r\n sequence has been read
@@ -286,7 +295,7 @@ int serialPortReadLine(port_handle_t port, unsigned char* buffer, int bufferLeng
  * @param timeoutMilliseconds
  * @return number of bytes read or -1 if timeout or buffer overflow, count does not include the null terminator
  */
-int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, int bufferLength, int timeoutMilliseconds);
+int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMilliseconds);
 
 /**
  * read ASCII data (starts with $ and ends with \r\n, based on NMEA format)
@@ -298,7 +307,7 @@ int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, int buf
  * @param asciiData
  * @return -1 if timeout or buffer overflow or checksum failure
  */
-int serialPortReadAscii(port_handle_t port, unsigned char* buffer, int bufferLength, unsigned char** asciiData);
+int serialPortReadAscii(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned char** asciiData);
 
 /**
  * read ASCII data (starts with $ and ends with \r\n, based on NMEA format)
@@ -311,7 +320,7 @@ int serialPortReadAscii(port_handle_t port, unsigned char* buffer, int bufferLen
  * @param asciiData
  * @return -1 if timeout or buffer overflow or checksum failure
  */
-int serialPortReadAsciiTimeout(port_handle_t port, unsigned char* buffer, int bufferLength, int timeoutMilliseconds, unsigned char** asciiData);
+int serialPortReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMilliseconds, unsigned char** asciiData);
 
 // read one char, waiting SERIAL_PORT_DEFAULT_TIMEOUT milliseconds to get a char
 int serialPortReadChar(port_handle_t port, unsigned char* c);
@@ -320,21 +329,21 @@ int serialPortReadChar(port_handle_t port, unsigned char* c);
 int serialPortReadCharTimeout(port_handle_t port, unsigned char* c, int timeoutMilliseconds);
 
 // write, returns the number of bytes written
-int serialPortWrite(port_handle_t port, const unsigned char* buffer, int writeCount);
+int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned int writeCount);
 
 // write with a \r\n added at the end, \r\n should not be part of buffer, returns the number of bytes written
-int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, int writeCount);
+int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, unsigned int writeCount);
 
 // write ascii data - if buffer does not start with $, a $ will be written first, followed by buffer, followed by *xx\r\n, where xx is a two hex character checksum
-int serialPortWriteAscii(port_handle_t port, const char* buffer, int bufferLength);
+int serialPortWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLength);
 
 // write and wait for a response, returns 1 if success, 0 if failure
-int serialPortWriteAndWaitFor (port_handle_t port, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength);
-int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength, const int timeoutMilliseconds);
+int serialPortWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength);
+int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const int timeoutMilliseconds);
 
 // wait for a response, returns 0 if failure, 1 if success
-int serialPortWaitFor (port_handle_t port, const unsigned char* waitFor, int waitForLength);
-int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, int waitForLength, int timeoutMilliseconds);
+int serialPortWaitFor(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength);
+int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength, int timeoutMilliseconds);
 
 // get available bytes in the receive buffer
 int serialPortGetByteCountAvailableToRead(port_handle_t port);
@@ -350,6 +359,7 @@ void serialPortSetOptions(port_handle_t port, uint32_t options);
 
 // Set callback for error events
 int serialPortSetErrorCB(port_handle_t port, pfnSerialPortOnErrorCB onErrorCb);
+
 
 #ifdef __cplusplus
 }

@@ -15,6 +15,7 @@
 
 #ifdef __cplusplus
 #include <string>
+#include <any>
 
 #include "util/md5.h"
 
@@ -101,12 +102,17 @@ namespace fwUpdate {
  *
  */
 
+    typedef is_operation_result (*pfnProgressCb)(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+    typedef void (*pfnStatusCb)(const std::any& obj, eLogLevel level, const char* infoString, ...);
+
+
 #define FWUPDATE__MAX_CHUNK_SIZE   512
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
-    static constexpr uint32_t TARGET_TYPE_MASK = 0xFFF0;
-    static constexpr uint32_t TARGET_DFU_FLAG = 0x80000000;
-    static constexpr uint32_t TARGET_ISB_FLAG = 0x40000000;
+    static constexpr uint32_t TARGET_TYPE_MASK = 0x0000FFF0;
+    static constexpr uint32_t TARGET_DFU_FLAG  = 0x80000000;
+    static constexpr uint32_t TARGET_ISB_FLAG  = 0x40000000;
+    static constexpr uint32_t TARGET_SMP_FLAG  = 0x20000000;
 
     enum target_t : uint32_t {
         TARGET_HOST = 0x00,
@@ -115,6 +121,7 @@ namespace fwUpdate {
         TARGET_ISB_IMX5 = (TARGET_ISB_FLAG | TARGET_IMX5), // note that the IMX5 ONLY support ISB mode (it doesn't directly support ISv2)
         TARGET_GPX1 = 0x20,
         TARGET_DFU_GPX1 = (TARGET_DFU_FLAG | TARGET_GPX1),
+        TARGET_SMP_GPX1 = (TARGET_SMP_FLAG | TARGET_GPX1),
         TARGET_VPX = 0x30, // RESERVED FOR VPX
         TARGET_UBLOX_F9P = 0x110,
         TARGET_UBLOX_F9P__1 = 0x111,
@@ -173,8 +180,9 @@ namespace fwUpdate {
         ERR_INVALID_IMAGE = -15,    // indicates that the specified image file is invalid; this can also be reported directly by the host if the image file is not found.
         ERR_INVALID_CHUNK = -16,    // indicates a repeated failure to deliver the correct chunk id or size
         ERR_INVALID_TARGET = -17,   // indicates that the target is invalid - this could mean that the target 'index' doesn't exist, or that the target + target_flags are unsupported, etc.
-        ERR_UNKNOWN = -18,          // indicates an unknown error, this should *always* be the last (lower) value
-        // TODO: IF YOU ADD NEW ERROR MESSAGES, don't forget to update fwUpdate::status_names, and getSessionStatusName()
+        ERR_INTERRUPTED = -18,      // indicates that the process was artificially interrupted (by the user, etc), and not from an internal error condition
+        ERR_UNKNOWN = -19,          // indicates an unknown error, this should *always* be the last (lower) value
+        // TODO: IF YOU ADD NEW ERROR MESSAGES, don't forget to update fwUpdate::status_names, and fwUpdate_getStatusName()
     };
 
     enum resend_reason_e : int16_t {
@@ -264,7 +272,7 @@ namespace fwUpdate {
         struct {
             target_t resTarget;     //! the target identifier of the responding device (for which this data represents)
             uint32_t serialNumber;  //! the serial number of the host, or controlling device (return the IMX SN if querying the IMX's Accelerometer, for example)
-            uint8_t reserved;       //! unused
+            uint8_t hdwRunState;    //! the devices run-state; Application, Bootloader, etc
             uint8_t hardwareType;   //! hardware identifier
             uint8_t hardwareVer[4]; //! Hardware version
             uint8_t firmwareVer[4]; //! Firmware (software) version
@@ -373,6 +381,20 @@ namespace fwUpdate {
          */
         target_t fwUpdate_getTargetType(target_t target) { return (target_t)((uint32_t)target & TARGET_TYPE_MASK); };
 
+        /**
+         * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
+         * Called with each messages that is received/processed.  Can optionally be called manually, typically at a regular interval. If you don't call
+         * fwUpdate_step() things should still generally work, but state advancement may stall if there is no received message (for example, after all
+         * messages have been sent by the remote).
+         * @param msg_type the last received msg_type that was received.  If you are calling this method manually (from a timer, etc) pass in MSG_UNKNOWN.
+         * @param processed indicates whether the received message was successfully processed after being received (this is usually the return value from
+         *  fwUpdate_handleXXXX() functions).
+         * @return false _suggests_ that the step couldn't complete in some way or another, perhaps because there was no processed messages, or that the
+         *  is in an invalid state, etc.  Otherwise, return true. This result is primarily informational, and should not effect any downstream functionality
+         *  or prevent (or indicate) a failure of the firmware update engine.
+         */
+        virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
+
     protected:
         uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
         uint32_t last_message = 0;                              //! the time (millis) since we last received a payload targeted for us.
@@ -402,20 +424,6 @@ namespace fwUpdate {
          * @return
          */
         bool fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data= nullptr);
-
-        /**
-         * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
-         * Called with each messages that is received/processed.  Can optionally be called manually, typically at a regular interval. If you don't call
-         * fwUpdate_step() things should still generally work, but state advancement may stall if there is no received message (for example, after all
-         * messages have been sent by the remote).
-         * @param msg_type the last received msg_type that was received.  If you are calling this method manually (from a timer, etc) pass in MSG_UNKNOWN.
-         * @param processed indicates whether the received message was successfully processed after being received (this is usually the return value from
-         *  fwUpdate_handleXXXX() functions).
-         * @return false _suggests_ that the step couldn't complete in some way or another, perhaps because there was no processed messages, or that the
-         *  is in an invalid state, etc.  Otherwise, return true. This result is primarily informational, and should not effect any downstream functionality
-         *  or prevent (or indicate) a failure of the firmware update engine.
-         */
-        virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
 
         /**
          * Virtual function that must be implemented in the concrete implementations, responsible for writing buffer out to the wire (serial, or otherwise).
@@ -565,7 +573,7 @@ namespace fwUpdate {
          * This message only include the number of chunks sent, and the total expected (sufficient for a percentage) and the
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgress();
+        virtual bool fwUpdate_sendProgress();
 
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -573,7 +581,7 @@ namespace fwUpdate {
          * @param message the actual message to be sent to the host
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgress(int level, const std::string message);
+        virtual bool fwUpdate_sendProgress(int level, const std::string message);
 
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -583,7 +591,7 @@ namespace fwUpdate {
          * @
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgressFormatted(int level, const char *message, ...);
+        virtual bool fwUpdate_sendProgressFormatted(int level, const char *message, ...);
 
         /**
          * @return true if we have an active session and are updating.
@@ -778,6 +786,31 @@ namespace fwUpdate {
          */
         float fwUpdate_getResendRate() { return (chunks_sent > 0) ? ((float)resend_count / (float)chunks_sent) : 0.f; }
 
+        /**
+         * @return the total number of "steps" used to calculate the progress completion - this is generally
+         * synonymous with getTotalChunks() but can be overridden by the device's Progress Status message.
+         * Internally, if progress_total == 0, will return session_total_chunks instead.  Note that
+         * progress_total is only sent by the remote device in its progress message.
+         */
+        uint16_t fwUpdate_getProgressTotal() { return progress_total ? progress_total : session_total_chunks; }
+
+        /**
+         * @return the current number of "steps" used to calculate the progress completion - this is generally
+         * synonymous with getNextChunkID() but can be overridden by the device's Progress Status message.
+         * Internally, if progress_total == 0, will return next_chunk_id instead.  Note that progress_total
+         * is only sent by the remote device in its progress message.
+         */
+        uint16_t fwUpdate_getProgressNum() { return progress_total ? progress_num : next_chunk_id; }
+
+        /**
+         * @return the calculated progress as a percentage (0-1.0) from progressNum() / progressTotal()
+         */
+        float fwUpdate_getProgressPercent() {
+            /// return (session_status < fwUpdate::READY) ? 0.f : (session_status >=  fwUpdate::FINALIZING) ? 100.f : percentComplete;
+            /// return msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f
+            return (session_status < fwUpdate::READY) ? 0.f : (session_status >=  fwUpdate::FINALIZING) ? 1.f : (float)fwUpdate_getProgressNum() / (float)fwUpdate_getProgressTotal();
+        }
+
 
     protected:
         //===========  Functions which MUST be implemented ===========//
@@ -858,6 +891,9 @@ namespace fwUpdate {
 
         uint16_t next_chunk_id = 0;                     //! the next chuck id to send, at the next send.
         uint16_t chunks_sent = 0;                       //! the total number of chunks that have been sent, including resends
+
+        uint16_t progress_total = 0;                    //!< the total number of steps used to report completion progress
+        uint16_t progress_num = 0;                      //!< the current step (between 0 an progress_total) to indicate the current completion progress
     };
 
 } // fwUpdate

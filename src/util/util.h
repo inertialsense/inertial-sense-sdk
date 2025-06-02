@@ -10,9 +10,16 @@
 #define IS_SDK__UTIL_H
 
 #include <string>
-#include <vector>
 #include <memory>
 #include <stdexcept>
+#include <iostream>
+#include <vector>
+#include <streambuf>
+#include <istream>
+#include <ostream>
+#include <cstring>
+#include <algorithm>
+
 #include <sstream>
 #include <functional>
 
@@ -86,8 +93,8 @@ namespace utils {
      * @param args
      * @return
      */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wformat-security"
     template<typename ... Args>
     std::string string_format(const std::string& format, Args ... args) {
         if constexpr (sizeof...(args) == 0) {
@@ -103,7 +110,7 @@ namespace utils {
         std::snprintf(buf.get(), size, format.c_str(), args ...);
         return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
     }
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 
     /**
      * Combine all elements of a container denoted by the start and ending iterators, to join into a
@@ -135,7 +142,7 @@ namespace utils {
     std::string join_to_string(const T& v, const std::string& delimiter) {
         std::ostringstream s;
         for (const auto& i : v) {
-            if (&i != &v[0]) {
+            if (&i != &*v.begin()) {
                 s << delimiter;
             }
             s << i;
@@ -169,7 +176,8 @@ namespace utils {
             vOut[n++] = lambda(s.substr(start, end - start));
             start = end + 1;
         }
-        vOut[n++] = lambda(s.substr(start));
+        if (start < s.length())
+            vOut[n++] = lambda(s.substr(start));
         return n;
     }
 
@@ -186,29 +194,157 @@ namespace utils {
     std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
 
     enum dev_info_fmt_e : uint16_t {
-        DV_BIT_SERIALNO         = 0x001,        //!< serial number
-        DV_BIT_FIRMWARE_VER     = 0x002,        //!< firmware version w/ optional release type
-        DV_BIT_HARDWARE_INFO    = 0x004,        //!< hdw type & version
-        DV_BIT_BUILD_KEY        = 0x008,        //!< build key and build number
-        DV_BIT_BUILD_DATE       = 0x010,        //!< build date
-        DV_BIT_BUILD_TIME       = 0x020,        //!< build time
-        DV_BIT_BUILD_COMMIT     = 0x040,        //!< repo hash & build status (dirty)
-        DV_BIT_ADDITIONAL_INFO  = 0x100,        //!< additional info
+        DV_BIT_SERIALNO         = 0x0001,        //!< serial number
+        DV_BIT_FIRMWARE_VER     = 0x0002,        //!< firmware version w/ optional release type
+        DV_BIT_HARDWARE_INFO    = 0x0004,        //!< hdw type & version
+        DV_BIT_BUILD_KEY        = 0x0008,        //!< build key and build number
+        DV_BIT_BUILD_DATE       = 0x0010,        //!< build date
+        DV_BIT_BUILD_TIME       = 0x0020,        //!< build time
+        DV_BIT_BUILD_COMMIT     = 0x0040,        //!< repo hash & build status (dirty)
+        DV_BIT_ADDITIONAL_INFO  = 0x0100,        //!< additional info
+        DV_BIT_PROTOCOL_VER     = 0x0200,        //!< protocol version
+        DV_BIT_COMPACT_DATE     = 0x1000,        //!< compact date formatting
+        DV_BIT_COMPACT_TIME     = 0x2000,        //!< compact time formatting
+        DV_BIT_EXACT_MATCH      = 0x4000,        //!< when matching/comparing, match exactly (version & time)
     };
 
     std::string getHardwareAsString(const dev_info_t& devInfo);
-    std::string getFirmwareAsString(const dev_info_t& devInfo);
-    std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1);
+    std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
+    std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1, const std::string& sep = " ");
+    // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
 
     std::string getCurrentTimestamp();
     std::string devInfoToString(const dev_info_t& devInfo, uint16_t flags = -1);
     uint16_t devInfoFromString(const std::string& str, dev_info_t& devInfo);
     uint64_t intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis = false);
+    bool devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2);
+    bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags = DV_BIT_FIRMWARE_VER | DV_BIT_BUILD_COMMIT | DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME);
     bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
     bool compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
 
     // int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
     // bool devInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo);
+
+    /**
+     * Generates a detailed comparison, field-by-field, of two pointers of a particular DID.
+     * @param did the Data ID of the data buffers to compare (A & B)
+     * @param A a pointer to the first data buffer to compare
+     * @param B a pointer to the second data buffer to compare
+     * @param printDiff if true, print a detailed list of which fields were different, comparing their values.
+     *   if false, no output it printed
+     * @return true if the two data buffers match, otherwise false
+     */
+    bool compareDataIDs(uint32_t did, const uint8_t* A, const uint8_t* B, bool printDiff);
+
+    /**
+     * returns a string describing the portInfo parameter from a port_monitor_set_t.
+     * @param portInfo the port_monitor_set_t.portInfo
+     * @return a string of format "TYPE.ID"
+     */
+    std::string getPortMonitorDescription(uint8_t portInfo);
+
+    /**
+     * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
+     * @param info1
+     * @param info2
+     * @return a uint32_t with each bit indicating a match of a specific field in the struct
+     */
+    uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
+};
+
+class ByteBuffer : public std::streambuf {
+public:
+    ByteBuffer(std::size_t size) : size_(size) {
+        buffer_.resize(size_, 0); // Initialize buffer with zeros
+        setg(buffer_.data(), buffer_.data(), buffer_.data() + buffer_.size());
+        setp(buffer_.data(), buffer_.data() + buffer_.size());
+    }
+
+    void insert(std::size_t pos, const uint8_t* data, std::size_t len) {
+        if (pos + len > buffer_.size()) {
+            throw std::out_of_range("Insert position out of range");
+        }
+        std::memcpy(buffer_.data() + pos, data, len);
+        initialized_ranges_.emplace_back(pos, pos + len);
+        merge_initialized_ranges();
+    }
+
+    std::size_t tellg() const {
+        return gptr() - eback();
+    }
+
+    std::size_t tellp() const {
+        return pptr() - pbase();
+    }
+
+    std::size_t data_size() const {
+        return current_write_pos_;
+    }
+
+    void seekg(std::size_t pos) {
+        setg(eback(), eback() + pos, egptr());
+    }
+
+    bool is_initialized(std::size_t pos, std::size_t len) const {
+        auto end_pos = pos + len;
+        for (const auto& range : initialized_ranges_) {
+            if (pos >= range.first && end_pos <= range.second) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    std::vector<char> buffer_;
+    std::size_t size_;
+    std::size_t current_write_pos_ = 0;
+    std::vector<std::pair<std::size_t, std::size_t>> initialized_ranges_;
+
+    void merge_initialized_ranges() {
+        if (initialized_ranges_.empty()) return;
+        std::sort(initialized_ranges_.begin(), initialized_ranges_.end());
+        std::vector<std::pair<std::size_t, std::size_t>> merged;
+        merged.push_back(initialized_ranges_[0]);
+
+        for (const auto& range : initialized_ranges_) {
+            if (merged.back().second >= range.first) {
+                merged.back().second = (merged.back().second > range.second ? merged.back().second : range.second);
+            } else {
+                merged.push_back(range);
+            }
+        }
+        initialized_ranges_ = std::move(merged);
+    }
+};
+
+class ByteBufferStream : public std::iostream {
+public:
+    ByteBufferStream(ByteBuffer& buffer)
+            : std::iostream(&buffer), buffer_(buffer) {}
+
+    std::size_t tellg() const {
+        return buffer_.tellg();
+    }
+
+    std::size_t tellp() const {
+        return buffer_.tellp();
+    }
+
+    std::size_t data_size() const {
+        return buffer_.data_size();
+    }
+
+    void seekg(std::size_t pos) {
+        buffer_.seekg(pos);
+    }
+
+    bool is_initialized(std::size_t pos, std::size_t len) const {
+        return buffer_.is_initialized(pos, len);
+    }
+
+private:
+    ByteBuffer& buffer_;
 };
 
 

@@ -142,6 +142,9 @@ public:
     std::shared_ptr<cDeviceLog> DeviceLogBySerialNumber(uint32_t serialNo) {
         return (m_devices.count(serialNo) ? m_devices[serialNo] : nullptr);
     }
+
+    void Cleanup();
+
     // bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
     // const dev_info_t* DeviceInfo(unsigned int device = 0);
 
@@ -246,7 +249,6 @@ public:
 
     static inline int logPortData(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData) {
         // remember, that as a logger, we GENERALLY are only interested in WRITING data, regardless of whether that data is sent or received.
-
         if (!userData)
             return -1;
 
@@ -268,7 +270,6 @@ private:
 #endif
 
     bool InitDevicesForWriting(std::vector<ISDevice*>& devices);
-    void Cleanup();
     void PrintProgress();
 
     static time_t GetTime()

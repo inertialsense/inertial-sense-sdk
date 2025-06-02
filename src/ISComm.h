@@ -574,22 +574,23 @@ typedef struct
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
 // raw packet handler function with is_comm_instance_t
-typedef int(*pfnIsCommHandler)(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+typedef int(*pfnIsCommHandler)(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 // InertialSense binary (ISB) data message handler function
-typedef int(*pfnIsCommIsbDataHandler)(p_data_t* data, port_handle_t port);
+typedef int(*pfnIsCommIsbDataHandler)(void* ctx, p_data_t* data, port_handle_t port);
 
 // broadcast message handler
 // typedef int(*pfnIsCommAsapMsg)(p_data_get_t* req, port_handle_t port);
 
 // Generic message handler function with message pointer and size
-typedef int(*pfnIsCommGenMsgHandler)(const unsigned char* msg, int msgSize, port_handle_t port);
+typedef int(*pfnIsCommGenMsgHandler)(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port);
 
 // Callback functions are called when the specific message is received and callback pointer is not null:
 typedef struct
 {
     /** A bitmask (each bit position corresponding to the _PTYPE_* protocol value) which forces parsing of that protocol (alternative to callbacks) */
     uint32_t                        protocolMask;
+    void*                           context;
     pfnIsCommHandler                all;
     pfnIsCommIsbDataHandler         isbData;
     pfnIsCommGenMsgHandler          generic[_PTYPE_SIZE];
@@ -636,15 +637,19 @@ typedef struct
     is_comm_callbacks_t cb;
 } is_comm_instance_t;
 
+static const uint8_t COMM_PORT_FLAG__EXPLICIT_READ  = 0x01;     //! When set, ISComm::is_comm_port_parse_messages() will not read/parse from this port; the operator must readPort() and then is_comm_buffer_parse_messages in separate, explicit steps.
+
 typedef struct {
     base_port_t base;
-    port_monitor_set_t* stats;          //! stats associated with this port
+    // port_monitor_set_t* stats;          //! stats associated with this port
     is_comm_instance_t comm;            //! Comm instance
 #if defined(GPX_1)
     #define GPX_COM_BUFFER_SIZE 2800
     uint8_t buffer[GPX_COM_BUFFER_SIZE];       //! Comm instance data buffer
+    uint8_t flags;                      //! COMM_PORT flags (ie, EXPLICIT, etc)
 #else
     uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
+    uint8_t flags;                      //! COMM_PORT flags (ie, EXPLICIT, etc)
 #endif
 } comm_port_t;
 #define COMM_PORT(n)    ((comm_port_t*)(n))

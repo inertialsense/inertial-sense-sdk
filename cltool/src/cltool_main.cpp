@@ -139,7 +139,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
     logger.PrintLogDiskUsage();
 }
 
-static int cltool_errorCallback(port_handle_t port)
+static int cltool_errorCallback(void* ctx, port_handle_t port)
 {
     #define BUF_SIZE    8192
     #define BLACK   "\u001b[30m"
@@ -235,8 +235,14 @@ static int cltool_errorCallback(port_handle_t port)
 }
 
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
-static int cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
+static int cltool_dataCallback(void* ctx, p_data_t* data, port_handle_t port)
 {
+    return 0;
+}
+
+int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
+    ISDevice::onIsbDataHandler(data, port);
+
     if (!g_enableDataCallback)
     {   // Receive disabled
         return 0;
@@ -246,9 +252,6 @@ static int cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t p
     {   // ignore all other received data, except the "onceDid"
         return 0;
     }
-
-    (void)i;
-    (void)port;
 
     // track which DIDs we've received and when, and how frequently
     for (stream_did_t& did : g_commandLineOptions.datasets) {
@@ -265,6 +268,11 @@ static int cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t p
         g_inertialSenseDisplay.ProcessData(data);
 
     return 0;
+}
+
+int CltoolDevice::onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) {
+    ISDevice::onNmeaHandler(msg, msgSize, port);
+    return 0;   // do something special, if we need to...
 }
 
 
@@ -300,9 +308,11 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
     }
 }
 
-// Where we tell the IMX what data to send and at what rate.
-// "cltool_dataCallback()" is registered as the callback functions for all received data.
-// All DID messages are found in data_sets.h
+/**
+ * Configure communications for each connected device, send initial data or command requests, validating devices, etc.
+ * @param inertialSenseInterface
+ * @return true if successful, and further processing of any received data should occur, or false if the application should exit.
+ */
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
@@ -316,31 +326,24 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (inertialSenseInterface.DeviceCount() <= 0)
         return false;
 
-    for (auto device : inertialSenseInterface.getDevices()) {
-        // FIXME: don't assign a commInstance, but assign a device or port
-        g_inertialSenseDisplay.setDevice(device);
-    }
-
     if (g_commandLineOptions.nmeaMessage.size() != 0)
     {
-        ISDevice* device = inertialSenseInterface.getDevices().front();
-        serialPortWriteAscii(device->port, g_commandLineOptions.nmeaMessage.c_str(), (int) g_commandLineOptions.nmeaMessage.size());
+        /**
+         * Send the specified NMEA message to all connected devices, and exit
+         */
+        inertialSenseInterface.SendNmea(g_commandLineOptions.nmeaMessage);
         return true;
     }
 
+
+    // we can only display a single device at a time; so use the first available device.  - FIXME: This should be selectable while running
+    ISDevice* activeDevice = inertialSenseInterface.getDevices().front();
+    g_inertialSenseDisplay.setDevice(activeDevice);
+
     if (!g_commandLineOptions.disableDeviceValidation)
     {   // check for any compatible (protocol version 2) devices
-        for (auto device : inertialSenseInterface.getDevices()) {
-            if (device->devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
-                printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
-                // let's print the dev info for all connected devices (so the user can identify the errant device)
-            for (auto device : inertialSenseInterface.getDevices()) {
-                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(device-> devInfo, true);
-                    printf("%s\n", devInfo.c_str());
-                }
-                return false;
-            }
-        }
+        // FIXME: Device Validation Disabled would be performing a PortManager::discoverPorts, and then creating ISDevices from each directly
+        //  IT WILL NOT involve calling DeviceManager::discoverDevices
     }
 
     // ask for device info every 2 seconds
@@ -485,8 +488,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 std::vector<ISBootloader::cISBootloaderBase*> firmwareProgressContexts;
 
-is_operation_result bootloadUpdateCallback(void* obj, float percent);
-is_operation_result bootloadVerifyCallback(void* obj, float percent);
+is_operation_result bootloadUpdateCallback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+is_operation_result bootloadVerifyCallback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
 
 static int cltool_updateFirmware()
 {
@@ -506,7 +509,7 @@ static int cltool_updateFirmware()
             g_commandLineOptions.forceBootloaderUpdate,
             g_commandLineOptions.baudRate,
             bootloadUpdateCallback,
-            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
+            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : (fwUpdate::pfnProgressCb)0),
             cltool_bootloadUpdateInfo,
             cltool_firmwareUpdateWaiter
   ) == IS_OP_OK) return 0;
@@ -555,6 +558,8 @@ void printProgress()
         if (display == displayLast && display!=0)
         {
             printf("%d%% ", display);
+            if (display == 100)
+                printf("\r\n");
         }
         fflush(stdout);
 
@@ -571,28 +576,35 @@ void printProgress()
     print_mutex.unlock();
 }
 
-is_operation_result bootloadUpdateCallback(void* obj, float percent)
+is_operation_result bootloadUpdateCallback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if (obj)
-    {
-        ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
-        ctx->m_update_progress = percent;
-    }
+    static std::string lastMsg;
+    std::string msg;
+    if (!stepName.empty()) msg += stepName;
+    if (stepNo || totalSteps) msg += utils::string_format(" (%d of %d)", stepNo, totalSteps);
+    if (percent != 0.0f) msg += utils::string_format(" : %d %%%%", (int)(percent * 100));
+    if (!msg.empty() && msg.compare(lastMsg))
+        cltool_firmwareUpdateInfo(obj, IS_LOG_LEVEL_MORE_INFO, msg.c_str());
+
+    if (!msg.empty()) lastMsg = msg;
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-is_operation_result bootloadVerifyCallback(void* obj, float percent)
+is_operation_result bootloadVerifyCallback(const std::any& obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if (obj)
-    {
-        ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
-        ctx->m_verify_progress = percent;
-    }
+    static std::string lastMsg;
+    std::string msg;
+    if (!stepName.empty()) msg += stepName;
+    if (stepNo || totalSteps) msg += utils::string_format(" %d of %d)", stepNo, totalSteps);
+    if (percent != 0.0f) msg += utils::string_format(" : %d %%%%", (int)(percent * 100));
+    if (!msg.empty() && msg.compare(lastMsg))
+        cltool_firmwareUpdateInfo(obj, IS_LOG_LEVEL_MORE_INFO, msg.c_str());
 
+    lastMsg = msg;
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...)
+void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...)
 {
     if (level > g_commandLineOptions.verboseLevel)
         return;
@@ -605,30 +617,37 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
     vsnprintf(buffer, sizeof(buffer) - 1, str, ap);
     va_end(ap);
 
-    if (obj == NULL)
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    ISFirmwareUpdater* fwPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+        } catch (const std::bad_any_cast &e) {
+            try {
+                fwPtr = std::any_cast<ISFirmwareUpdater *>(obj);
+            } catch (const std::bad_any_cast &e) {
+                // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+            }
+        }
+    }
+
+    if ((isblPtr == NULL) && (fwPtr == NULL))
     {
         cout << buffer << endl;
         print_mutex.unlock();
         return;
     }
 
-    ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase *)obj;
-
-    if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
-    {
-        printf("    | %s (SN%d):", ctx->m_port_name.c_str(), ctx->m_sn);
-    }
-    else if (ctx->m_sn != 0)
-    {
-        printf("    | (SN%d):", ctx->m_sn);
-    }
-    else if (ctx->m_port_name.size() != 0)
-    {
-        printf("    | %s:", ctx->m_port_name.c_str());
-    }
-    else
-    {
-        printf("    | SN?:");
+    if (isblPtr) {
+        if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
+            printf("    | %s (SN%d):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+        } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
+            printf("    | (SN%d):", isblPtr->m_sn);
+        } else if (isblPtr->m_port_name.size() != 0) {
+            printf("    | %s:", isblPtr->m_port_name.c_str());
+        } else {
+            printf("    | SN?:");
+        }
     }
 
     if (buffer[0])
@@ -638,7 +657,7 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
     print_mutex.unlock();
 }
 
-void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...)
+void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...)
 {
     print_mutex.lock();
     static char buffer[256];
@@ -651,18 +670,32 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         va_end(ap);
     }
 
-    if (obj == NULL) {
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    ISFirmwareUpdater* fwPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+        } catch (const std::bad_any_cast &e) {
+            try {
+                fwPtr = std::any_cast<ISFirmwareUpdater *>(obj);
+            } catch (const std::bad_any_cast &e) {
+                // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+            }
+        }
+    }
+
+    if ((isblPtr == NULL) && (fwPtr == NULL) && (level <= g_commandLineOptions.verboseLevel)) {
         cout << buffer << endl;
-    } else {
-        ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
-        if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) || ((g_commandLineOptions.verboseLevel >= ISBootloader::eLogLevel::IS_LOG_LEVEL_MORE_INFO) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS))) {
-            printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, portName(fwCtx->port), fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
-            if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
-                int tot = fwCtx->fwUpdate_getTotalChunks();
-                int num = fwCtx->fwUpdate_getNextChunkID();
-                float percent = num / (float) (tot) * 100.f;
+    } else if (fwPtr) {
+        if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority
+            ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS))) {
+            printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, portName(fwPtr->port), fwPtr->devInfo->serialNumber, fwPtr->fwUpdate_getSessionTargetName());
+            if (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
+                int tot = fwPtr->fwUpdate_getProgressTotal();
+                int num = fwPtr->fwUpdate_getProgressNum();
+                float percent = fwPtr->fwUpdate_getProgressPercent() * 100.f;
                 printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
-            } else if (g_commandLineOptions.verboseLevel > ISBootloader::eLogLevel::IS_LOG_LEVEL_MORE_INFO) {
+            } else if (g_commandLineOptions.verboseLevel > ::IS_LOG_LEVEL_MORE_INFO) {
                 // printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
             }
             if (buffer[0])
@@ -724,13 +757,6 @@ static int cltool_createHost()
 }
 
 
-//void testtesty(unsigned int pHandle, p_data_t* data)
-// int testtesty(p_data_t* data, port_handle_t port)
-// {
-//     printf("AAAAAAAAASSSSSSSSSSSSV");
-//     return 0;
-// }
-
 void getMemoryEvent(InertialSense& inertialSenseInterface, uint32_t addrs, const std::string& destFolder, uint8_t addrCnts, bool IMX)
 {
 #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
@@ -773,7 +799,8 @@ static int cltool_dataStreaming()
 {
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface(cltool_dataCallback);
+    InertialSense inertialSenseInterface({}, {&CltoolDeviceFactory::getInstance()});
+    //inertialSenseInterface.setDeviceFactory(&CltoolDeviceFactory::getInstance());   // use the CltoolDevice && CltoolDeviceFactory
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
 
@@ -785,6 +812,9 @@ static int cltool_dataStreaming()
     }
 
     if (g_commandLineOptions.list_devices) {
+        /**
+         * List discovered devices and exit
+         */
         struct nat_cmp {
             bool operator()(const std::string& s1, const std::string& s2) const {
                 return (utils::natcmp(s1, s2) <= 0);
@@ -824,12 +854,8 @@ static int cltool_dataStreaming()
         {
             if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
                 if (inertialSenseInterface.updateFirmware(
-                        g_commandLineOptions.comPort,
-                        g_commandLineOptions.baudRate,
                         g_commandLineOptions.updateFirmwareTarget,
                         g_commandLineOptions.fwUpdateCmds,
-                        bootloadUpdateCallback,
-                        (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
                         cltool_firmwareUpdateInfo,
                         cltool_firmwareUpdateWaiter
               ) != IS_OP_OK) {
@@ -932,11 +958,12 @@ static int cltool_dataStreaming()
 static void sigint_cb(int sig)
 {
     g_killThreadsNow = true;
-    cltool_bootloadUpdateInfo(NULL, ISBootloader::eLogLevel::IS_LOG_LEVEL_ERROR, "Update cancelled, killing threads and exiting...");
+    cltool_bootloadUpdateInfo(NULL, IS_LOG_LEVEL_ERROR, "Update cancelled, killing threads and exiting...");
     signal(SIGINT, SIG_DFL);
 }
 
 // Create and send full NMEA message with terminator w/ checksum trailer
+//TODO - deprecate this.  There should be functions in ISDevice and InertialSense class to do the same thing...
 static void sendNmea(port_handle_t port, string nmeaMsg)
 {
     char buf[1024] = {0};
@@ -964,7 +991,7 @@ static int inertialSenseMain()
         // [REPLAY INSTRUCTION] 1.) Replay data log
         return cltool_replayDataLog();
     }
-    
+
     // if event parsing return after completeing
     else if (g_commandLineOptions.evOCont.extractEv)
     {
@@ -990,31 +1017,24 @@ static int inertialSenseMain()
     }
     else if (!g_commandLineOptions.nmeaMessage.empty() || g_commandLineOptions.nmeaRx)
     {
-        serial_port_t nmeaSerialPort;
-        port_handle_t nmeaPort = (port_handle_t)&nmeaSerialPort;
-
-        serialPortPlatformInit(nmeaPort);
-        if (!serialPortOpen(nmeaPort, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0))
-        {   // Failed to open port
-            return -1;
-        }
-
-        if (!g_commandLineOptions.nmeaMessage.empty()) {
-            sendNmea(nmeaPort, "STPB");
-            sendNmea(nmeaPort, g_commandLineOptions.nmeaMessage);
-        }
-
-        unsigned char line[512];
-        unsigned char* asciiData;
-        while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
-        {
-            if (serialPortReadAsciiTimeout(&nmeaPort, line, sizeof(line), 10, &asciiData) > 0)
-            {
-                printf("%s\r\n", (char*)asciiData);
+        for (auto port : InertialSense::getLastInstance()->portManager) {
+            if ( portValidate(port) && portOpen(port) ) {
+                sendNmea(port, "STPB");
+                sendNmea(port, g_commandLineOptions.nmeaMessage);
             }
 
-            // Scan for "q" press to exit program
-            g_inertialSenseDisplay.GetKeyboardInput();
+            unsigned char line[512];
+            unsigned char* asciiData;
+            while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
+            {
+                if (portReadAsciiTimeout(&port, line, sizeof(line), 10, &asciiData) > 0)
+                {
+                    printf("%s\r\n", (char*)asciiData);
+                }
+
+                // Scan for "q" press to exit program
+                g_inertialSenseDisplay.GetKeyboardInput();
+            }
         }
     }
     else

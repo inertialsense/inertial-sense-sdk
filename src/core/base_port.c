@@ -1,0 +1,262 @@
+/**
+ * @file base_port.c 
+ * @brief ${BRIEF_DESC}
+ *
+ * @author Kyle Mallory on 5/9/25.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ */
+
+#include "core/types.h"
+#include "core/base_port.h"
+
+#include "ISUtilities.h"
+
+/**
+ * General purpose blocking "read n bytes" with a timeout in the event that n bytes aren't received within the alotted timeout
+ * @param port
+ * @param buffer
+ * @param readCount
+ * @param timeoutMs
+ * @return number of bytes read. If the number of bytes read is less than the readCount value, it should be assumed that a timeout occurred
+ */
+int portReadTimeout_internal(port_handle_t port, uint8_t* buffer, unsigned int readCount, unsigned int timeoutMs)
+{
+    if (!portIsValid(port) || (buffer == 0) || (readCount <= 0))
+        return 0;
+
+    uint32_t timeout = current_timeMs() + timeoutMs;
+    uint16_t bytesPending = portAvailable(port);
+    while ((bytesPending < readCount) && (current_timeMs() > timeout)) {
+        SLEEP_US(50000);
+        bytesPending = portAvailable(port);
+    }
+
+    return portRead(port, buffer, bytesPending < readCount ? bytesPending : readCount);
+}
+
+/**
+ * Waits timeoutMilliseconds for a sequence of waitForLength bytes matching waitFor to be read from a part.
+ * No data is retained or buffered while waiting. If the sequence is read within the timeout period, this returns
+ * true, otherwise false. NOTE: This is a blocking call
+ * @param port the port monitor for the anticipated bytes
+ * @param waitFor the sequence of bytes to wait for, not to exceed 128 bytes
+ * @param waitForLength the number of bytes in waitFor
+ * @param timeoutMs the maximum number of milliseconds to wait
+ * @return true (non-zero) if the waitFor sequence is received in time, otherwise false (zero)
+ */
+int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength, unsigned int timeoutMs)
+{
+    if ((port == 0) || (waitFor == 0) || (waitForLength < 1) || (waitForLength >= 128))
+        return 0;
+
+    static unsigned char buf[132] = { 0 }; // note that we are padding this slightly (4 bytes)
+    static uint8_t* bPtr = buf;
+    int bytesWaiting = 0;
+
+    uint32_t timeout = current_timeMs() + timeoutMs;
+    while (current_timeMs() < timeout) {
+        bytesWaiting = portAvailable(port);
+        if (bytesWaiting > 0) {
+            // append the read bytes into our working buffer, but don't be greedy about it (only take what we need)
+            uint8_t buffSpace = sizeof(buf) - (bPtr - buf);
+            uint8_t maxRead = buffSpace < waitForLength ? buffSpace : waitForLength;
+            int bytesRead = portRead(port, bPtr, maxRead);   // note that we don't read bytesWaiting, but just enough to fill our buffer
+            bPtr += bytesRead;
+
+            // now scan (hopefully quickly) to see if there is any bytes of interest in the data we just read
+            unsigned int nMatch = 0;         // number of bytes from 'waitFor' that have matches sequentially
+            uint8_t *mPtr = NULL;   // a pointer into buf where the first matching character is found; we'll purge upto this point if we don't find a match
+            for (uint8_t* sPtr = buf; sPtr < bPtr; sPtr++) {
+                if (*sPtr == waitFor[nMatch]) {
+                    if (nMatch == 0)
+                        mPtr = sPtr;
+                    if (nMatch >= waitForLength-1)
+                        return 1;       // success, we match all 'waitForLength' bytes
+                    nMatch++;
+                } else {
+                    nMatch = 0;
+                    mPtr = sPtr;
+                }
+            }
+            if (mPtr && nMatch) {
+                // we found at least one matching character (which wasn't reset by a subsequent non-matching character),
+                // but still no complete match, so let's dump that from our working buffer, and try again.
+                memmove(buf, mPtr, sizeof(buf) - (mPtr - buf));
+            }
+        } else if (bytesWaiting < 0) {
+            return 0;   // error while reading
+        } else {
+            SLEEP_US(1000);
+        }
+    }
+
+    return 0;
+}
+
+int portWaitFor(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength)
+{
+    // serial_port_t* serialPort = (serial_port_t*)port;
+    return portWaitForTimeout(port, waitFor, waitForLength, PORT_DEFAULT_TIMEOUT);
+}
+
+int portReadCharTimeout(port_handle_t port, unsigned char* c, int timeoutMs)
+{
+    return portReadTimeout(port, c, 1, timeoutMs);
+}
+
+int portReadChar(port_handle_t port, unsigned char* c)
+{
+    return portReadCharTimeout(port, c, PORT_DEFAULT_TIMEOUT);
+}
+
+int portReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMs)
+{
+    if (!portIsValid(port))
+        return PORT_ERROR__INVALID;
+
+    int prevCR = 0;
+    unsigned int bufferIndex = 0;
+    unsigned char c;
+    while (bufferIndex < bufferLength && portReadCharTimeout(port, &c, timeoutMs) == 1)
+    {
+        buffer[bufferIndex++] = c;
+        if (c == '\n' && prevCR)
+        {
+            // remove \r\n and null terminate and return count of chars
+            buffer[bufferIndex -= 2] = '\0';
+            return (int)bufferIndex;
+        }
+        prevCR = (c == '\r');
+    }
+    return -1;
+}
+
+int portReadLine(port_handle_t port, unsigned char* buffer, unsigned int bufferLength)
+{
+    // serial_port_t* serialPort = (serial_port_t*)port;
+    return portReadLineTimeout(port, buffer, bufferLength, PORT_DEFAULT_TIMEOUT);
+}
+
+int portReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMs, unsigned char** asciiData)
+{
+    int count = portReadLineTimeout(port, buffer, bufferLength, timeoutMs);
+    unsigned char* ptr = buffer;
+    unsigned char* ptrEnd = buffer + count;
+    while (*ptr != '$' && ptr < ptrEnd)
+    {
+        ptr++;
+    }
+
+    // if at least 8 chars available
+    if (ptrEnd - ptr > 7)
+    {
+        if (asciiData != 0)
+        {
+            *asciiData = ptr;
+        }
+        int checksum = 0;
+        int existingChecksum;
+
+        // calculate checksum, skipping leading $ and trailing *XX\r\n
+        unsigned char* ptrEndNoChecksum = ptrEnd - 3;
+        while (++ptr < ptrEndNoChecksum)
+        {
+            checksum ^= *ptr;
+        }
+
+        if (*ptr == '*')
+        {
+            // read checksum from buffer, skipping the * char
+            existingChecksum = strtol((void*)++ptr, NULL, 16);
+            if (existingChecksum == checksum)
+            {
+                return count;
+            }
+        }
+    }
+
+    return -1;
+}
+
+int portReadAscii(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned char** asciiData)
+{
+    return portReadAsciiTimeout(port, buffer, bufferLength, PORT_DEFAULT_TIMEOUT, asciiData);
+}
+
+int portWriteLine(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
+{
+    if (!portIsValid(port)) return 0;
+
+    int count = portWrite(port, buffer, writeCount);
+    count += portWrite(port, (unsigned char*)"\r\n", 2);
+    return count;
+}
+
+int portWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLength)
+{
+    if (!portIsValid(port)) return 0;
+
+    int checkSum = 0;
+    const unsigned char* ptr = (const unsigned char*)buffer;
+    int count = 0;
+
+    if (*buffer == '$')
+    {
+        ptr++;
+        bufferLength--;
+    }
+    else
+    {
+        count += portWrite(port, (const unsigned char*)"$", 1);
+    }
+
+    const unsigned char* ptrEnd = ptr + bufferLength;
+    unsigned char buf[16];
+
+    count += portWrite(port, (const unsigned char*)buffer, bufferLength);
+
+    while (ptr != ptrEnd)
+    {
+        checkSum ^= *ptr++;
+    }
+
+#ifdef _MSC_VER
+
+    #pragma warning(push)
+#pragma warning(disable: 4996)
+
+#endif
+
+    snprintf((char*)buf, sizeof(buf), "*%.2x\r\n", checkSum);
+
+#ifdef _MSC_VER
+
+#pragma warning(pop)
+
+#endif
+
+    count += portWrite(port, buf, 5);
+
+    return count;
+}
+
+int portWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const int timeoutMs)
+{
+    if (!portIsValid(port)) return 0;
+
+    int actuallyWrittenCount = portWrite(port, buffer, writeCount);
+
+    if (actuallyWrittenCount != (int)writeCount)
+    {
+        return 0;
+    }
+
+    return portWaitForTimeout(port, waitFor, waitForLength, timeoutMs);
+}
+
+int portWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength)
+{
+    //serial_port_t* serialPort = (serial_port_t*)port;
+    return portWriteAndWaitForTimeout(port, buffer, writeCount, waitFor, waitForLength, PORT_DEFAULT_TIMEOUT);
+}
+

@@ -214,7 +214,7 @@ namespace ISFileManager {
         return (files.size() != startSize);
     }
 
-    // TODO: This is highly redundant to the above function; just call it, and extra the filenames from the file_info_t...
+    // TODO: This is highly redundant to the above function; just call it, and extract the filenames from the file_info_t...
     bool GetAllFilesInDirectory(const std::string& directory, bool recursive, const std::string& regexPattern, std::vector<std::string>& files)
     {
         size_t startSize = files.size();
@@ -313,21 +313,23 @@ namespace ISFileManager {
 
         while ((ent = readdir(dir)) != NULL) {
             const std::string file_name = ent->d_name;
-            const std::string full_file_name = directory + "/" + file_name;
+            std::string full_file_name = directory;
+            full_file_name += (directory[directory.length()-1] == '/' ? "" : "/");
+            full_file_name += file_name;
 
-            // if file is current path or does not exist (-1) then continue
-            if (file_name[0] == '.' || stat(full_file_name.c_str(), &st) == -1 ||
-                (rePtr != NULL && !regex_search(full_file_name, re))) {
+            if (stat(full_file_name.c_str(), &st) == -1)    // good path??
+                continue;
+
+            if ((file_name == ".") || (file_name == ".."))  // ignore current and parent directory symbols
+                continue;
+
+            if (recursive && ((st.st_mode & S_IFDIR) != 0)) {              // is the file a directory?
+                GetAllFilesInDirectory(full_file_name, true, files);
                 continue;
             }
-            else if ((st.st_mode & S_IFDIR) != 0) {
-                if (recursive) {
-                    GetAllFilesInDirectory(full_file_name, true, files);
-                }
-                continue;
-            }
 
-            files.push_back(full_file_name);
+            if (rePtr && regex_search(full_file_name, re))
+                files.push_back(full_file_name);
         }
         closedir(dir);
 

@@ -21,6 +21,7 @@ namespace fwUpdate {
 
     static const status_strings_t status_names [] = {
             { .name = "ERR_UNKNOWN", .nice = "Unknown Error" },
+            { .name = "ERR_INTERRUPTED", .nice = "Interrupted by User" },
             { .name = "ERR_INVALID_TARGET", .nice = "Invalid Target" },
             { .name = "ERR_INVALID_CHUNK", .nice = "Invalid or Out of Sequence Chunk" },
             { .name = "ERR_INVALID_IMAGE", .nice = "Invalid Image" },
@@ -358,6 +359,7 @@ namespace fwUpdate {
         fwUpdate_step(payload.hdr.msg_type, result); // TODO: we should probably do something with the step() result, but not sure what just yet
         return result;
     }
+
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
         fwUpdate::payload_t *payload = nullptr;
         void *aux_data = nullptr;
@@ -625,6 +627,7 @@ namespace fwUpdate {
         response.data.version_resp.resTarget = payload.hdr.target_device;
         response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareType = devInfo.hardwareType;
+        response.data.version_resp.hdwRunState = devInfo.hdwRunState;
         memcpy(&response.data.version_resp.hardwareVer[0], &devInfo.hardwareVer[0], 4);
         memcpy(&response.data.version_resp.firmwareVer[0], &devInfo.firmwareVer[0], 4);
         response.data.version_resp.buildYear = devInfo.buildYear;
@@ -679,35 +682,28 @@ namespace fwUpdate {
         if (payload.hdr.target_device != TARGET_HOST)
             return false;
 
+        if (payload.hdr.msg_type == MSG_VERSION_INFO_RESP)  // this is "sessionless", so respond even if we don't have a session
+            return fwUpdate_handleVersionResponse(payload);
+
+        if (payload.data.update_resp.session_id != session_id)
+            return false; // this suggests the this message belongs to another session - we should ignore it.
+
         bool result = false;
         fwUpdate_resetTimeout();
         switch (payload.hdr.msg_type) {
             case MSG_UPDATE_RESP:
-                if (payload.data.update_resp.session_id == session_id)
-                    result = fwUpdate_handleUpdateResponse(payload);
-                break;
+                return fwUpdate_handleUpdateResponse(payload);
             case MSG_UPDATE_PROGRESS:
-                if (payload.data.progress.session_id == session_id)
-                    result = fwUpdate_handleUpdateProgress(payload);
-                break;
+                return fwUpdate_handleUpdateProgress(payload);
             case MSG_REQ_RESEND_CHUNK:
-                if (payload.data.req_resend.session_id == session_id) {
-                    resend_count += next_chunk_id - payload.data.req_resend.chunk_id;
-                    next_chunk_id = payload.data.req_resend.chunk_id;
-                    result = fwUpdate_handleResendChunk(payload);
-                }
-                break;
+                resend_count += next_chunk_id - payload.data.req_resend.chunk_id;
+                next_chunk_id = payload.data.req_resend.chunk_id;
+                return fwUpdate_handleResendChunk(payload);
             case MSG_UPDATE_DONE:
-                if (payload.data.resp_done.session_id == session_id) {
-                    session_status = payload.data.resp_done.status;
-                    result = fwUpdate_handleDone(payload);
-                }
-                break;
+                session_status = payload.data.resp_done.status;
+                return fwUpdate_handleDone(payload);
             case MSG_RESET_RESP:
-                break;
             case MSG_VERSION_INFO_RESP:
-                result = fwUpdate_handleVersionResponse(payload);
-                break;
             default:
                 break;
         }

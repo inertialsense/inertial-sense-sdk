@@ -21,14 +21,15 @@ class cISBootloaderAPP : public ISBootloader::cISBootloaderBase
 {
 public:
     cISBootloaderAPP(
-        ISBootloader::pfnBootloadProgress upload_cb,
-        ISBootloader::pfnBootloadProgress verify_cb,
-        ISBootloader::pfnBootloadStatus info_cb,
+        fwUpdate::pfnProgressCb upload_cb,
+        fwUpdate::pfnProgressCb verify_cb,
+        fwUpdate::pfnStatusCb info_cb,
         port_handle_t port
   ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_APP;
+        m_bootloader_type = IS_BL_TYPE_APP;
+        // TODO? m_device_type = ISBootloader::IS_DEV_TYPE_APP;
         m_port_name = std::string(portName(port));
     }
 

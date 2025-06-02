@@ -20,16 +20,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 cmd_options_t g_commandLineOptions = {};
-port_handle_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
-
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend)
-{
-    (void)cmHandle;
-    (void)port;
-    return serialPortWrite(g_serialPort, bufferToSend->buf, bufferToSend->size);
-}
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 {   // Enable logging in continuous background mode
@@ -40,12 +32,18 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
     options.maxFileSize = g_commandLineOptions.maxLogFileSize;                          // each log file will be no larger than this in bytes
     options.useSubFolderTimestamp = g_commandLineOptions.logSubFolder != cISLogger::g_emptyString;
     options.timeStamp = g_commandLineOptions.logSubFolder;                              // log sub folder name
-    return inertialSenseInterface.EnableLogger(
+
+    bool result = inertialSenseInterface.EnableLogger(
         g_commandLineOptions.enableLogging,
         g_commandLineOptions.logPath,
         options,
         g_commandLineOptions.rmcPreset,
         RMC_OPTIONS_PRESERVE_CTRL);
+
+    for (ISDevice* d : inertialSenseInterface.getDevices())
+        inertialSenseInterface.Logger()->registerDevice(d);
+
+    return result;
 }
 
 static bool startsWith(const char* str, const char* pre)
@@ -162,7 +160,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.nmeaMessage = "";
     g_commandLineOptions.updateBootloaderFilename = "";
     g_commandLineOptions.forceBootloaderUpdate = false;
-    g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
+    g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO;
 
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
@@ -264,14 +262,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.evFCont.dest = stoi(token);
 
             if (g_commandLineOptions.evFCont.dest == 0)
-                printf("EVF Target: Primary device\n");
+                printf("EVF Target: Primary device.\n");
             else if (g_commandLineOptions.evFCont.dest == 1)
-                printf("EVF Target: device GNSS1 port\n");
+                printf("EVF Target: device GNSS1 port.\n");
             else if (g_commandLineOptions.evFCont.dest == 2)
-                printf("EVF Target: device GNSS2 port\n");
+                printf("EVF Target: device GNSS2 port.\n");
             else
             {
-                printf("EVF Target: INVALID\n");
+                printf("EVF Target: INVALID '%s'\n", token);
                 g_commandLineOptions.evFCont.sendEVF = false;
                 continue;
             }
@@ -644,13 +642,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             if ((strcmp(a, "-ufpkg") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
                 g_commandLineOptions.fwUpdateCmds.push_back(string("package=") + string(argv[++i]));
                 enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }
             else if ((strcmp(a, "-uf-cmd") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
                 splitString(string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
                 enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }
@@ -669,20 +667,20 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.disableDeviceValidation = true;
         }
-        else if (startsWith(a, "-verbose"))
+        else if (startsWith(a, "-verbose") || startsWith(a, "-ll"))
         {
-            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_INFO;
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO;
             if (a[8] == '=')
             {
                 switch (a[9])
                 {
-                    case 'e': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_ERROR; break;
-                    case 'w': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_WARN; break;
-                    case 'i': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO; break;
-                    case 'I': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_INFO; break;
-                    case 'd': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_DEBUG; break;
-                    case 'D': g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_MORE_DEBUG; break;
-                    default: g_commandLineOptions.verboseLevel = atoi(&a[9]); break;
+                    case 'e': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_ERROR; break;
+                    case 'w': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_WARN; break;
+                    case 'i': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO; break;
+                    case 'I': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO; break;
+                    case 'd': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_DEBUG; break;
+                    case 'D': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_DEBUG; break;
+                    default: g_commandLineOptions.verboseLevel = (eLogLevel)atoi(&a[9]); break;
                 }
             } else {
                 const char* p = &a[8];
@@ -777,7 +775,7 @@ bool cltool_extractEventData()
     uint8_t evScratch[1028 + DID_EVENT_HEADER_SIZE];
     c.rxBuf.start = evScratch;
     c.rxBuf.size = 1028 + DID_EVENT_HEADER_SIZE;
-    
+
     std::time_t logTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     if (g_commandLineOptions.evOCont.inFile.length() == 0)
@@ -839,7 +837,7 @@ bool cltool_extractEventData()
     {
 
         string deviceFolder = g_commandLineOptions.evOCont.outFile + "/SN-" + std::to_string(dl->SerialNumber());
-        
+
         if (stat(deviceFolder.c_str(), &info) == 0)
         {
             if (!(info.st_mode & S_IFDIR))
@@ -884,14 +882,14 @@ bool cltool_extractEventData()
                 {
                     case EVENT_MSG_TYPE_ID_RAW:  fileName = deviceFolder + "/out.raw"; break;
                     case EVENT_MSG_TYPE_ID_ASCII: fileName = deviceFolder + "/out.txt";  break;
-                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1: 
-                        fileName = deviceFolder + "/rcvr1.rtcm"; 
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1:
+                        fileName = deviceFolder + "/rcvr1.rtcm";
                         c.rxBuf.size = ev->length;
                         c.rxBuf.head = evScratch;
                         c.rxBuf.end = evScratch + ev->length;
                         c.rxBuf.tail = evScratch + ev->length;
                         c.rxBuf.scan = evScratch;
-                        
+
                         c.processPkt = nullptr;
 
                         is_comm_parse_timeout(&c, 0);
@@ -900,7 +898,7 @@ bool cltool_extractEventData()
                     case EVENT_MSG_TYPE_ID_RTMC3_EXT: fileName = deviceFolder + "/rcvr_ext.rtcm";  break;
                     case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
                     case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
-                    default: 
+                    default:
                         fileName = deviceFolder + "/UNKNOWN_" + std::to_string(ev->msgTypeID) + ".Bin";
                         printf("Event type %d found but is not supported. Output at: %s\n", ev->msgTypeID, fileName.c_str());
                         break;
@@ -978,7 +976,7 @@ void cltool_outputUsage()
     cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
     cout << "         target:" << boldOff << "        t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
     cout << "         portMask:" << boldOff << "      po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
-    cout << "         priorityLevel:" << boldOff << " pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn; 
+    cout << "         priorityLevel:" << boldOff << " pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn;
     cout << "         " << boldOff << "    It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors."  << endlbOn;
     cout << "         msgTypeIdMask:" << boldOff << " id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
     cout << "         " << boldOff << "    See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
@@ -1053,28 +1051,33 @@ void cltool_outputHelp()
 
 // Return the index into an array if specified and remove from string.  i.e. `insOffset[2]` returns 2 and str is reduced to `insOffset`.
 int extract_array_index(std::string &str)
-{    
+{
     int arrayIndex = -1;
     size_t openBracketPos  = str.find('[');
     size_t closeBracketPos = str.find(']');
-    if (openBracketPos != std::string::npos && closeBracketPos != std::string::npos && openBracketPos < closeBracketPos) 
+    if (openBracketPos != std::string::npos && closeBracketPos != std::string::npos && openBracketPos < closeBracketPos)
     {   // Extract array index
         std::string indexStr = str.substr(openBracketPos + 1, closeBracketPos - openBracketPos - 1);
         arrayIndex = std::stoi(indexStr);
 
         // Remove index from variable name
         str = str.substr(0, openBracketPos);
-    } 
+    }
 
     return arrayIndex;
 }
 
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
-    inertialSenseInterface.WaitForFlashSynced();
+    // FIXME: this currently only does the first device of many - we should probably change this to apply to ALL devices
+    CltoolDevice* device = (CltoolDevice*)inertialSenseInterface.getDevices().front();
+    if (!device)
+        return false;   // we absolutely have to have a valid device...
+
+    device->WaitForFlashSynced(); // we're not interested in success here, but its nice to have it.
 
     nvm_flash_cfg_t flashCfg;
-    inertialSenseInterface.FlashConfig(flashCfg);
+    device->FlashConfig(flashCfg);
     const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfoMap(DID_FLASH_CONFIG);
 
     if (flashCfgString.length() < 2)
@@ -1116,7 +1119,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             if (keyAndValue.size() == 1) 
             {   // Display only select flash config value(s)
                 int arrayIndex = -1;
-                // Some arrays are multi-element single-variable and some are single-element multi-variable. 
+                // Some arrays are multi-element single-variable and some are single-element multi-variable.
                 if (flashMap.find(keyAndValue[0]) == flashMap.end())
                 {   // Unrecognized key.  See if we are using a multi-element single-variable.
                     arrayIndex = extract_array_index(keyAndValue[0]);
@@ -1131,7 +1134,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                         if (info.arraySize)
                         {   // Array
                             if (arrayIndex == -1)
-                            {   // Array: all elements 
+                            {   // Array: all elements
                                 for (int arrayIndex=0; arrayIndex<info.arraySize; arrayIndex++)
                                 {
                                     if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer, arrayIndex))
@@ -1147,7 +1150,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                                     cout << info.name << "[" << arrayIndex << "] " << " invalid array index" << endl;
                                     return false;
                                 }
-                     
+
                                 if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer, _MAX(0, arrayIndex)))
                                 {
                                     cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
@@ -1168,14 +1171,14 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             {   // Set select flash config values
                 int arrayIndex = -1;
 
-                // Some arrays are multi-element single-variable and some are single-element multi-variable. 
+                // Some arrays are multi-element single-variable and some are single-element multi-variable.
                 if (flashMap.find(keyAndValue[0]) == flashMap.end())
                 {   // Unrecognized key.  See if we are using a multi-element single-variable.
                     arrayIndex = extract_array_index(keyAndValue[0]);
                 }
 
                 if (flashMap.find(keyAndValue[0]) == flashMap.end())
-                {   
+                {
                     cout << "Unrecognized DID_FLASH_CONFIG key '" << keyAndValue[0] << "' specified, ignoring." << endl;
                 }
                 else
@@ -1191,7 +1194,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                     {   // Remove "0x" from hexidecimal
                         str = str.substr(2);
                     }
-                    // Address how elem 
+                    // Address how elem
                     cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, _MAX(0, arrayIndex));
                     cout << "Setting DID_FLASH_CONFIG." << keyAndValue[0] << " = " << keyAndValue[1].c_str() << endl;
                     modified = true;
@@ -1201,10 +1204,10 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 
         if (modified)
         {   // Upload flash config
-            inertialSenseInterface.SetFlashConfig(flashCfg);
+            device->SetFlashConfig(flashCfg);
 
             // Check that upload completed
-            inertialSenseInterface.WaitForFlashSynced();
+            device->WaitForFlashSynced();   // TODO This one we are more interested in... we should probably note if we were successful
         }
     }
 

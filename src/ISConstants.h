@@ -45,8 +45,11 @@ extern "C" {
     #define _WINSOCKAPI_
     #include <winsock2.h>
     #include <WS2tcpip.h>
+    #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
-    #define is_socket_t SOCKET
+
+    // #define is_socket_t SOCKET
+    typedef SOCKET is_socket_t;
 
     #define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
@@ -141,7 +144,7 @@ extern "C" {
 #elif PLATFORM_IS_EMBEDDED
     #ifndef SAMD_ZERO
         #ifndef ARDUINO_SAMD_ZERO
-            #include "printf.h"		// Use embedded-safe SNPRINTF
+            #include "printf.h" // Use embedded-safe SNPRINTF
         #endif
     #endif
     #define SNPRINTF snprintf_

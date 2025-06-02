@@ -107,9 +107,9 @@ int cISBootloaderDFU::get_num_devices()
             ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
 
             // USB-IF DFU interface class numbers
-            if (cfg->interface->altsetting[0].bInterfaceClass       != 0xFE || 
-                cfg->interface->altsetting[0].bInterfaceSubClass    != 0x01 || 
-                cfg->interface->altsetting[0].bInterfaceProtocol    != 0x02) 
+            if (cfg->interface->altsetting[0].bInterfaceClass       != 0xFE ||
+                cfg->interface->altsetting[0].bInterfaceSubClass    != 0x01 ||
+                cfg->interface->altsetting[0].bInterfaceProtocol    != 0x02)
                 continue;
 
             present++;
@@ -151,9 +151,9 @@ is_operation_result cISBootloaderDFU::list_devices(is_dfu_list* list)
         ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
 
         // USB-IF DFU interface class numbers
-        if (cfg->interface->altsetting[0].bInterfaceClass != 0xFE || 
+        if (cfg->interface->altsetting[0].bInterfaceClass != 0xFE ||
             cfg->interface->altsetting[0].bInterfaceSubClass != 0x01 || 
-            cfg->interface->altsetting[0].bInterfaceProtocol != 0x02) 
+            cfg->interface->altsetting[0].bInterfaceProtocol != 0x02)
             continue;
 
         // Open the device
@@ -244,8 +244,8 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
     }
 
     int index = 0;
-    uint8_t* otp_mem = (uint8_t*)rxBuf; 
-    
+    uint8_t* otp_mem = (uint8_t*)rxBuf;
+
     // Look for the first section of zeroes
     uint8_t cmp[OTP_SECTION_SIZE];
     memset(cmp, 0xFF, OTP_SECTION_SIZE);
@@ -315,7 +315,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
     }
 
     // If starting address is 0, set it to 0x08000000 (start of flash memory)
-    if (image[0].address == 0x00000000) 
+    if (image[0].address == 0x00000000)
     {
         for (size_t i = 0; i < image_sections; i++)
         {
@@ -361,7 +361,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
             bytes_written_total += STM32_PAGE_SIZE;
 
             m_update_progress = 0.25f * ((float)bytes_written_total / (float)image_total_len);
-            m_update_callback(this, m_update_progress);
+            m_update_callback(std::make_any<cISBootloaderBase*>(this), m_update_progress, "Erasing Flash", 0, 0);
         } while (byteInSection < image[i].len - 1);
     }
 
@@ -419,7 +419,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
             bytes_written_total += payloadLen;
 
             m_update_progress = 0.25f + 0.75f * ((float)bytes_written_total / (float)image_total_len);
-            m_update_callback(this, m_update_progress);
+            m_update_callback(std::make_any<cISBootloaderBase*>(this), m_update_progress, "Writing Flash", 0, 0);
         } while (byteInSection < image[i].len - 1);
     }
 
@@ -472,7 +472,7 @@ is_operation_result cISBootloaderDFU::reboot_up()
     if (ret_dfu < DFU_ERROR_NONE) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
     ret_libusb = dfu_DNLOAD(&m_dfu.handle_libusb, 2, bytes, sizeof(bytes));
-    dfu_wait_for_state(&m_dfu.handle_libusb, DFU_STATE_DNLOAD_IDLE);    
+    dfu_wait_for_state(&m_dfu.handle_libusb, DFU_STATE_DNLOAD_IDLE);
 
     // ret_libusb = libusb_reset_device(dev_handle);
     // if (ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR; 

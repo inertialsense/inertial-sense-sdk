@@ -51,7 +51,7 @@ using namespace std;
 #define BUF_SIZE 8192
 
 #define DATASET_VIEW_NUM_ROWS   25
-#define DISPLAY_DELTA_TIME	    0    // show delta time instead of time
+#define DISPLAY_DELTA_TIME      0    // show delta time instead of time
 #define SNPRINTF_ID_NAME(id)    SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", id, cISDataMappings::DataName(id))
 
 static bool s_exitProgram;
@@ -260,8 +260,8 @@ string cInertialSenseDisplay::Connected()
         comm_port_t* comPort = COMM_PORT(m_device->port);
         stream << ", Tx " << std::to_string(comPort->comm.txPktCount);
         stream << ", Rx " << std::to_string(comPort->comm.rxPktCount);
-        if (comPort->stats) {
-            stream << " (" << (comPort->stats->rxBytesPerSec ? std::to_string(comPort->stats->rxBytesPerSec) : "--") << " bytes/s)";
+        if (comPort->base.stats) {
+            stream << " (" << (comPort->base.stats->rxBytesPerSec ? std::to_string(comPort->base.stats->rxBytesPerSec) : "--") << " bytes/s)";
         }
     }
     stream << "     " << endl;
@@ -591,7 +591,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
     if (comm == NULL)
-		return "";
+        return "";
 
     std::stringstream ss;
     ss << "is_comm stats:  Rx " << std::setw (10) << comm->rxPktCount;
@@ -703,69 +703,69 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 
     uDatasets d = {};
 
-	// Copy only new data
-	copyDataPToStructP(&d, data, sizeof(uDatasets));
+    // Copy only new data
+    copyDataPToStructP(&d, data, sizeof(uDatasets));
 
-	if (m_displayMode == DMODE_RAW_PARSE)
+    if (m_displayMode == DMODE_RAW_PARSE)
     {
-		return DataToStringPacket((const char *) data->ptr, data->hdr, 32, true);
-	}
+        return DataToStringPacket((const char *) data->ptr, data->hdr, 32, true);
+    }
 
 
-	string str;
-	switch (data->hdr.id)
-	{
-    case DID_EVB_DEV_INFO:      // FALL THROUGH
-    case DID_GPX_DEV_INFO:      // FALL THROUGH
-	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
-	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
-	case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
-	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
-	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
-	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
-	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
-	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
-	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
-	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
-    case DID_GPS1_VERSION:      // FALL THROUGH
-	case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);      break;
-    case DID_GPS1_POS:          // FALL THROUGH
-    case DID_GPS2_POS:          // FALL THROUGH
-	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
-	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
-	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
-	case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
-	case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
-    case DID_GPS1_RAW:          // FALL THROUGH
-    case DID_GPS2_RAW:          // FALL THROUGH
-	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
-	case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
-	case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
-	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;
-	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);              break;
-	case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);      break;
-	case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr);  break;
-	case DID_GPX_RTOS_INFO:     str = DataToStringGRTOS(d.gRtosInfo, data->hdr);            break;
-    case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr);        break;
-    case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr);   break;
-    case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;
-    case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
-    case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
-    case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);    			break;
-    default:
-        if (m_showRawHex)
-            str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
-        else if (m_editData.did == data->hdr.id)
-        {   // Default view
-            str = DatasetToString(&m_editData.pData);
-        }
-        else
-        {
-            std::ostringstream oss;
-            oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id)) << std::endl;
-            str = oss.str();
-        }
-        break;
+    string str;
+    switch (data->hdr.id)
+    {
+        case DID_EVB_DEV_INFO:      // FALL THROUGH
+        case DID_GPX_DEV_INFO:      // FALL THROUGH
+        case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);            break;
+        case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                    break;
+        case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);      break;
+        case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);                  break;
+        case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);                  break;
+        case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);                  break;
+        case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);                  break;
+        case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);             break;
+        case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);           break;
+        case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);              break;
+        case DID_GPS1_VERSION:      // FALL THROUGH
+        case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);          break;
+        case DID_GPS1_POS:          // FALL THROUGH
+        case DID_GPS2_POS:          // FALL THROUGH
+        case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);              break;
+        case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
+        case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
+        case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
+        case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
+        case DID_GPS1_RAW:          // FALL THROUGH
+        case DID_GPS2_RAW:          // FALL THROUGH
+        case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
+        case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
+        case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
+        case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;
+        case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);              break;
+        case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);      break;
+        case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr);  break;
+        case DID_GPX_RTOS_INFO:     str = DataToStringGRTOS(d.gRtosInfo, data->hdr);            break;
+        case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr);        break;
+        case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr);   break;
+        case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr);   break;
+        case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
+        case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr);    break;
+        case DID_EVENT:             str = DataToStringEvent(d.event, data->hdr);                break;
+        default:
+            if (m_showRawHex)
+                str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
+            else if (m_editData.did == data->hdr.id)
+            {   // Default view
+                str = DatasetToString(&m_editData.pData);
+            }
+            else
+            {
+                std::ostringstream oss;
+                oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id)) << std::endl;
+                str = oss.str();
+            }
+            break;
     }
 
     return str;
@@ -1271,13 +1271,13 @@ string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, c
         ver.hwVersion);
 
     for (int i=0; i<GPS_VER_NUM_EXTENSIONS; i++)
-    {    
+    {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s", (char*)&(ver.extension[i]));
     }
 
     if (m_displayMode != DMODE_SCROLL)
     {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
     }
 
     return buf;
@@ -1324,7 +1324,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status: 0x%08x (", gps.status);
         switch (gps.status&GPS_STATUS_FIX_MASK)
         {
-            default: 
+            default:
             case GPS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);    break;
             case GPS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
             case GPS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
@@ -1340,7 +1340,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
             gps.lla[2]);    // GPS Ellipsoid altitude (meters)
         bool comma = false;
         if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED)
-        {    
+        {
             if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR)    { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error"); }
             switch (gps.status&GPS_STATUS_FLAGS_ERROR_MASK)
             {
@@ -1360,8 +1360,8 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
         if (gps.status2&GPS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT)       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof possible, "); };
         if (gps.status2&GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED)              { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof detected, "); };
 
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
-	}
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    }
 
     return buf;
 }
@@ -1397,7 +1397,7 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
             rel.baseToRoverVector[0],           // Vector to base in ECEF
             rel.baseToRoverVector[1],           // Vector to base in ECEF
             rel.baseToRoverVector[2]);          // Vector to base in ECEF
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge:%5.1fs  arRatio: %4.1f  dist:%7.2fm  bear:%6.1f\n", 
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge:%5.1fs  arRatio: %4.1f  dist:%7.2fm  bear:%6.1f\n",
             rel.differentialAge, rel.arRatio, rel.baseToRoverDistance, rel.baseToRoverHeading*C_RAD2DEG_F);
     }
 
@@ -1587,84 +1587,9 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
     return string(buf) + DataToStringDevInfo(info, m_displayMode!=DMODE_SCROLL) + (m_displayMode!=DMODE_SCROLL ? "\n" : "");
 }
 
-string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
+string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, int flags)
 {
-    char buf[BUF_SIZE];
-    sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
-    return string(buf);
-
-/*
-    // Single line format
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d",
-        info.serialNumber
-);
-
-    switch (info.hardwareType)
-    {
-        default:                        ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?");     break;
-        case IS_HARDWARE_TYPE_UINS:     ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS");    break;
-        case IS_HARDWARE_TYPE_EVB:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");     break;
-        case IS_HARDWARE_TYPE_IMX:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");     break;
-        case IS_HARDWARE_TYPE_GPX:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");     break;
-    }
-
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d",
-        info.hardwareVer[0],
-        info.hardwareVer[1],
-        info.hardwareVer[2]
-);
-
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, " Fw-%d.%d.%d",
-        info.firmwareVer[0],
-        info.firmwareVer[1],
-        info.firmwareVer[2]
-);
-
-    switch(info.buildType) {
-        case 'a': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-alpha");     break;
-        case 'b': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-beta");      break;
-        case 'c': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-rc");        break;
-        case 'd': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-devel");     break;
-        case 's': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
-        case '^': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
-        default : break;
-    }
-
-    if (info.firmwareVer[3] > 0) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, ".%d", info.firmwareVer[3]);
-    }
-
-    char dirty = 0;
-    if (info.buildType == '^') {
-        dirty = '^';
-    }
-
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %08x%c (%05X.%d)",
-        info.repoRevision,
-        dirty,
-        ((info.buildNumber >> 12) & 0xFFFFF),
-        (info.buildNumber & 0xFFF)
-);
-
-    if (full)
-    {   // Spacious format
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %04d-%02d-%02d %02d:%02d:%02d Proto-%d.%d.%d.%d (%s)",
-            info.buildYear + 2000,
-            info.buildMonth,
-            info.buildDay,
-            info.buildHour,
-            info.buildMinute,
-            info.buildSecond,
-            info.protocolVer[0],
-            info.protocolVer[1],
-            info.protocolVer[2],
-            info.protocolVer[3],
-            info.addInfo
-    );
-    }
-
-    return buf;
-*/
+    return "" + ISDevice::getName(info, flags) + ISDevice::getFirmwareInfo(info, flags);
 }
 
 string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {
@@ -1678,18 +1603,10 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
     ss << "barTemp " << setprecision(2) << sensorsADC.barTemp << ", ";
     ss << "humidity " << setprecision(2) << sensorsADC.humidity << ", ";
 
-//     ss << " ana[" << setprecision(2);
-//     for (size_t i = 0; i < NUM_ANA_CHANNELS; ++i)
-//     {
-//         if (i != 0) { ss << ", "; }
-//         ss << sensorsADC.ana[i];
-//     }
-//     ss << "]";
-
     if (m_displayMode != DMODE_SCROLL)
     {   // Spacious format
         ss << "\n";
-#define SADC_WIDTH      5  
+#define SADC_WIDTH      5
         for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
         {
             auto &imu = sensorsADC.imu[i];
@@ -1749,8 +1666,7 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
         wheel.omega_r,          // Right wheel angular velocity
         wheel.wrap_count_l,     // Left wheel angle wrap
         wheel.wrap_count_r      // Right wheel angle wrap
-);
-    
+    );
     return buf;
 }
 
@@ -1891,7 +1807,7 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
     // print Serial number */
     // event.senderSN;
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "Sender SN:%d\n", event.senderSN);
-  
+
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
     // event.senderHdwId;
     switch (event.senderHdwId)
@@ -1900,13 +1816,13 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
         case IS_HARDWARE_TYPE_GPX:  ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: GPX\n"); break;
         default:                    ptr += SNPRINTF(ptr, ptrEnd - ptr, "HDW Type: Other\n"); break;
     }
-    
+
     // print eEventPriority */
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "Piority: %d\n", event.priority);
 
     // print length
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "Size: %d\n", event.length);
-    
+
     // print the data
     switch (event.msgTypeID)
     {
@@ -1923,7 +1839,7 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
                 else
                     ptr += SNPRINTF(ptr, ptrEnd - ptr, "EVMG ");
                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "Addr: 0x%08x\n", resp->reqAddr);
-                
+
                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "ADDR\t0x0\t0x01\t0x2\t0x3\t\t0x4\t0x5\t0x6\t0x7\n");
                 for (int i = 0; i < EVENT_MEM_REQ_SIZE; i+=8)
                 {
@@ -1992,7 +1908,7 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
 
         case EVENT_MSG_TYPE_ID_GPX_SER0_REG:
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "GPX SR EV:%d\n", EVENT_MSG_TYPE_ID_GPX_SER0_REG);
-            
+
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR1:\t0x%08x\n", *(uint32_t*)&event.data[0]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR2:\t0x%08x\n", *(uint32_t*)&event.data[4]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "CR3:\t0x%08x\n", *(uint32_t*)&event.data[8]);
@@ -2034,7 +1950,7 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.periph_reg:\t\t0x%08x\n", *(uint32_t*)&event.data[28]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf:\t\t0x%08x\n", *(uint32_t*)&event.data[32]);
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "cfg.buf_len:\t\t0x%04x\n", *(uint16_t*)&event.data[36]);
-    
+
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx:\t\t\t0x%08x\n", *(uint32_t*)&event.data[38]);
             // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[1]:\t0x%08x\n", *(uint32_t*)&event.data[42]);
             // ptr += SNPRINTF(ptr, ptrEnd - ptr, "lli.rx[2]:\t0x%08x\n", *(uint32_t*)&event.data[46]);
@@ -2332,8 +2248,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
     // printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
     // return;
 
-    if ((c >= '0' && c <= '9') || 
-        (c >= 'a' && c <= 'f') || c == '.' || c == '-')
+    if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || c == '.' || c == '-')
     {   // Number
         if (!m_editData.readOnlyMode)
         {
@@ -2373,7 +2288,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 
         case 'w': VarSelectDecrement(); m_editData.field.clear(); break;    // up
         case 's': VarSelectIncrement(); m_editData.field.clear(); break;    // down
-            
+
         case 3:     // Ctrl-C
         case 'q':
             SetExitProgram();
@@ -2453,7 +2368,7 @@ void cInertialSenseDisplay::VarSelectIncrement()
         Clear();
     }
 
-    m_editData.editEnabled = false; 
+    m_editData.editEnabled = false;
 }
 
 
@@ -2488,7 +2403,7 @@ void cInertialSenseDisplay::VarSelectDecrement()
         Clear();
     }
 
-    m_editData.editEnabled = false; 
+    m_editData.editEnabled = false;
 }
 
 

@@ -496,26 +496,20 @@ void* threadCreateAndStart(void(*function)(void* info), void* info, const char* 
 #elif CPP11_IS_ENABLED
 
     auto new_thread = new thread(function, info);
+    #if defined(PLATFORM_IS_LINUX) && defined(HAVE_PTHREAD_SETNAME_NP)
     if (threadName) {
-    #if PLATFORM_IS_LINUX
-        auto thandle = new_thread->native_handle();
-        pthread_setname_np(thandle, threadName);
-    #endif
+        pthread_setname_np(new_thread->native_handle(), threadName);
     }
+    #endif
     return new_thread;
 
 #elif PLATFORM_IS_WINDOWS
-
     return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)function, info, 0, NULL);
-
-#else
-
+#elif PPTHREAD_ONCE_INIT
     pthread_t* t = (pthread_t*)MALLOC(sizeof(pthread_t));
     pthread_create(t, NULL, function, info);
     return t;
-
 #endif
-
 }
 
 void threadJoinAndFree(void* handle)

@@ -10,6 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "core/base_port.h"
 #include "serialPort.h"
 #include "serialPortPlatform.h"
 #include "ISConstants.h"
@@ -66,11 +67,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
-#define error_message(...)
-#ifndef error_message
-    #define error_message printf
-#endif
-
 typedef struct
 {
     int blocking;
@@ -95,8 +91,8 @@ static int serialPortDrainPlatform(port_handle_t port);
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
-// #define DEBUG_COMMS
-// Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
+
+// #define DEBUG_COMMS   // Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
 #ifdef DEBUG_COMMS
 #define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)))
 static inline void debugDumpBuffer(const char* prefix, const unsigned char* buffer, int len) {
@@ -117,7 +113,11 @@ static inline void debugDumpBuffer(const char* prefix, const unsigned char* buff
     }
 }
 #else
+    #define error_message(...)
     #define debugDumpBuffer(...)
+#endif
+#ifndef error_message
+    #define error_message printf
 #endif
 
 
@@ -168,11 +168,11 @@ static int validate_baud_rate(int baudRate)
 
 static int configure_serial_port(int fd, int baudRate)
 {
-    struct termios tty;
+    struct termios tty = {};
 
     if (tcgetattr(fd, &tty) != 0) 
     {
-        error_message("error getting tty settings: tcgetattr\n");
+        error_message("config_serial_port():: tcgetattr() : error getting tty settings: %s (%d)\n", strerror(errno), errno);
         return -1;
     }
 
@@ -180,7 +180,7 @@ static int configure_serial_port(int fd, int baudRate)
     baudRate = validate_baud_rate(baudRate);    
     if (baudRate == 0)
     {
-        error_message("error invalid baudrate\n");
+        error_message("config_serial_port():: error invalid baudrate: %s (%d)\n", strerror(errno), errno);
         return -1;
     }
 
@@ -193,7 +193,7 @@ static int configure_serial_port(int fd, int baudRate)
     // Now baud rate can be set higher than 230400
     if (ioctl(fd, IOSSIOSPEED, &baudRate) == -1)
     {
-        error_message("error %d from ioctl IOSSIOSPEED\n", errno);
+        error_message("config_serial_port():: error %d from ioctl IOSSIOSPEED\n", errno);
     }
 
 #else
@@ -217,29 +217,15 @@ static int configure_serial_port(int fd, int baudRate)
     tty.c_lflag &= ~ECHOE;                      // Disable erasure
     tty.c_lflag &= ~ECHONL;                     // Disable new-line echo
     tty.c_lflag &= ~ISIG;                       // Disable interpretation of INTR, QUIT and SUSP
-    // No line processing
-    // echo off, echo newline off, canonical mode off,
-    // extended input processing off, signal chars off
-    tty.c_lflag = 0;
 
     // Disable input processing options (raw mode)
     tty.c_iflag &= ~IGNBRK;                     // Disable break processing
     tty.c_iflag &= ~(IXON | IXOFF | IXANY);     // Turn off xon/xoff software flow ctrl
     tty.c_iflag &= ~(ICRNL | INLCR);            // Disable any special handling of received bytes
-    // No convert break to null byte, no CR to NL translation,
-    // no NL to CR translation, don't mark parity errors or breaks
-    // no input parity check, don't strip high bit off,
-    // no XON/XOFF software flow control
-    tty.c_iflag = 0;
 
     // Disable output processing options (raw mode)
     tty.c_oflag &= ~OPOST;                      // Prevent special interpretation of output bytes (e.g. newline chars)
     tty.c_oflag &= ~ONLCR;                      // Prevent conversion of newline to carriage return/line feed
-    // no CR to NL translation, no NL to CR-NL translation,
-    // no NL to CR translation, no column 0 CR suppression,
-    // no Ctrl-D suppression, no fill characters, no case mapping,
-    // no local output processing
-    tty.c_oflag = 0;
 
     // Set the timeout and minimum characters.  Read doesn't block
     tty.c_cc[VMIN] = 0;
@@ -248,8 +234,33 @@ static int configure_serial_port(int fd, int baudRate)
     // Save tty settings, also checking for error
     if (tcsetattr(fd, TCSANOW, &tty) != 0) 
     {
-        error_message("error saving tty settings: tcsetattr\n");
+        error_message("config_serial_port():: tcsetattr() : error setting tty settings: %s (%d)\n", strerror(errno), errno);
         return -1;
+    } else {
+        // TODO: Note that tcsetattr() returns success if any of the requested changes could be successfully carried out.
+        //  Therefore, when making multiple changes it may be necessary to follow this call with a further call to
+        //  tcgetattr() to check that all changes have been performed successfully.
+        //  Ie, we are probably not seeing this error as we think we are...
+
+        struct termios new_tty = {};
+        if (tcgetattr(fd, &new_tty) != 0)
+        {
+            error_message("config_serial_port():: tcgetattr() : error confirming successful setting of tty settings: %s (%d)\n", strerror(errno), errno);
+            return -1;
+        }
+        if (memcmp(&new_tty, &tty, sizeof(struct termios)) != 0) {
+            // what was set didn't match what was just read back (confirmation failed);
+            // Let's figure out what didn't get set correctly...
+            error_message("config_serial_port():: termios confirmation failed to match expected values:\n");
+            if (new_tty.c_iflag != tty.c_iflag) { error_message("config_serial_port():: setting c_iflag mismatch: expected: %x, actual: %x\n", tty.c_iflag, new_tty.c_iflag); }
+            if (new_tty.c_oflag != tty.c_oflag) { error_message("config_serial_port():: setting c_oflag mismatch: expected: %x, actual: %x\n", tty.c_oflag, new_tty.c_oflag); }
+            if (new_tty.c_cflag != tty.c_cflag) { error_message("config_serial_port():: setting c_cflag mismatch: expected: %x, actual: %x\n", tty.c_cflag, new_tty.c_cflag); }
+            if (new_tty.c_lflag != tty.c_lflag) { error_message("config_serial_port():: setting c_lflag mismatch: expected: %x, actual: %x\n", tty.c_lflag, new_tty.c_lflag); }
+            for (int i = 0; i < 32; i++)
+                if (new_tty.c_cc[i] != tty.c_cc[i]) { error_message("config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d\n", i, tty.c_cc[i], new_tty.c_cc[i]); }
+            if (new_tty.c_line != tty.c_line) { error_message("config_serial_port():: setting c_line mismatch: expected: %d, actual: %d\n", tty.c_line, new_tty.c_line); }
+            return -1;
+        }
     }
 
     return 0;
@@ -262,14 +273,14 @@ int set_nonblocking(int fd)
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) 
     {
-        error_message("error fcntl F_GETFL\n");
+        error_message("set_nonblocking():: error fcntl F_GETFL : %s (%d)\n", strerror(errno), errno);
         return -1;
     }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) == -1) 
     {
-        error_message("error setting O_NONBLOCK\n");
+        error_message("set_nonblocking():: error setting O_NONBLOCK : %s (%d)\n", strerror(errno), errno);
         return -1;
     }
 
@@ -284,13 +295,13 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     serial_port_t* serialPort = (serial_port_t*)port;
     if (serialPort->handle != 0)
     {
-        // FIXME: Should we be closing the port and then reopen??
+        // already open --  FIXME: Should we be closing the port and then reopen??
         // serialPortClose(serialPort);
-        // already open
-        return 0;
+        return 1;
     }
 
     serialPortSetPort(port, portName);
+    serialPort->baudRate = baudRate;
 
 #if PLATFORM_IS_WINDOWS
 
@@ -370,13 +381,13 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     int fd = open(portName, O_RDWR | O_NOCTTY);     // enable read/write and disable flow control
     if (fd < 0)
     {
-        error_message("[%s] open():: Error opening port: %s (%d)\n", portName, strerror(errno), errno);
+        error_message("[%s]serialPortOpenPlatform():: Error opening port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
-    if (configure_serial_port(fd, baudRate) != 0) 
+    if (configure_serial_port(fd, baudRate) != 0)
     {
         error_message("[%s] open():: Error configuring port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
@@ -384,10 +395,21 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         return 0;
     }
 
+    // FIXME: This is currently disabled to work around ARMv7 issues.. THIS MUST NOT GO TO RELEASE without at least a switch
     // Disable blocking port reads and writes.
+/*
     if (set_nonblocking(fd) != 0) 
     {
         close(fd);
+        return 0;
+    }
+*/
+
+
+    if (configure_serial_port(fd, baudRate) != 0)
+    {
+        error_message("[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)\n", port, strerror(errno), errno);
+        serialPort->errorCode = errno;
         return 0;
     }
 
@@ -618,6 +640,9 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         gettimeofday(&start, NULL);
     }
 
+    if (!handle || !buffer)
+        return -1;
+
     while (1)
     {
         if (timeoutMilliseconds > 0)
@@ -638,7 +663,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         if (n <= -1)
         {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-                // error_message("Error reading from file %d : %s (%d)\n", handle->fd, strerror(errno), errno);
+                // error_message("[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)\n", port, handle->fd, strerror(errno), errno);
             }
             return -1;
         }
@@ -692,16 +717,12 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        error_message("[%s] read():: Error reading from port: %s (%d)\n", portName(portName), strerror(errno), errno);
+        error_message("[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)\n", portName(portName), strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
         serialPort->error = strerror(serialPort->errorCode);
     } else {
         serialPort->errorCode = 0; // clear any previous errorcode
         serialPort->error = NULL;
-    }
-
-    if ((portType(port) & PORT_TYPE__COMM) && (COMM_PORT(port)->stats)) {
-        COMM_PORT(port)->stats->rxBytes += result;
     }
 
     debugDumpBuffer("{{ ", buffer, result);
@@ -817,7 +838,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // Other errors
             serialPort->errorCode = errno;
             serialPort->error = strerror(serialPort->errorCode);
-            error_message("[%s] write():: Error writing to port: %s (%d)\n", serialPort->portName, strerror(errno), errno);
+            error_message("[%s] serialPortWritePlatform():: Error writing: %s (%d)\n", serialPort->portName, strerror(errno), errno);
             return -1;
         }
         bytes_written += result;
@@ -830,10 +851,6 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         {   // Drain error
             return 0;
         }
-    }
-
-    if ((portType(port) & PORT_TYPE__COMM) && (COMM_PORT(port)->stats)) {
-        COMM_PORT(port)->stats->txBytes += bytes_written;
     }
 
     debugDumpBuffer(">> ", buffer, bytes_written);
@@ -918,22 +935,35 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     memcpy(serialPort->portName, tmpName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
 
     serialPort->base = tmp;
-    serialPort->base.portRead = serialPort->pfnRead = serialPortReadPlatform;
-    serialPort->base.portWrite = serialPort->pfnWrite = serialPortWritePlatform;
-    serialPort->base.portAvailable = serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
-    serialPort->base.portFree = serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
+
+    serialPort->base.portName = serialPortName;
+    // serialPort->base.portValidate = serialPortValidate;
+    // serialPort->base.portOpen = serialPortOpen;
+    serialPort->base.portClose = serialPortClose;
+    serialPort->base.portFree = serialPortGetByteCountAvailableToWrite;
+    serialPort->base.portAvailable = serialPortGetByteCountAvailableToRead;
+    serialPort->base.portFlush = serialPortFlush;
+    serialPort->base.portDrain = serialPortDrain;
+    serialPort->base.portRead = serialPortRead;
+    serialPort->base.portWrite = serialPortWrite;
+
+    serialPort->base.stats = (port_stats_t*)&serialPort->stats;
 
     if (portType(port) & PORT_TYPE__COMM)
         is_comm_port_init(COMM_PORT(port), NULL);
 
-    serialPort->pfnClose = serialPortClosePlatform;
-    serialPort->pfnFlush = serialPortFlushPlatform;
-    serialPort->pfnDrain = serialPortDrainPlatform;
+    // platform specific functions
     serialPort->pfnOpen = serialPortOpenPlatform;
     serialPort->pfnIsOpen = serialPortIsOpenPlatform;
     serialPort->pfnReadTimeout = serialPortReadTimeoutPlatform;
     serialPort->pfnAsyncRead = serialPortAsyncReadPlatform;
-    serialPort->base.portName = serialPortName;
+    serialPort->pfnFlush = serialPortFlushPlatform;
+    serialPort->pfnDrain = serialPortDrainPlatform;
+    serialPort->pfnClose = serialPortClosePlatform;
+    serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
+    serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
+    serialPort->pfnRead = serialPortReadPlatform;
+    serialPort->pfnWrite = serialPortWritePlatform;
     serialPort->pfnSleep = serialPortSleepPlatform;
     return 0;
 }

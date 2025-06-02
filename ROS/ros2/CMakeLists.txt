@@ -1,6 +1,7 @@
-set(CMAKE_CXX_STANDARD 17)
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.21.0)
 project(inertial_sense_ros2)
+set(CMAKE_CXX_STANDARD 20)
+
 #find_package(rosidl_typesupport_c REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)

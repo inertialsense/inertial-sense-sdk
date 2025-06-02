@@ -79,8 +79,8 @@ SimpleMutex myMutex;
 
 #else
 
-#define LOCK_MUTEX()        
-#define UNLOCK_MUTEX()      
+#define LOCK_MUTEX()
+#define UNLOCK_MUTEX()
 
 #endif
 
@@ -126,6 +126,15 @@ cISLogger::~cISLogger()
 void cISLogger::Cleanup()
 {
     LOCK_MUTEX();
+    // cleanup any loggers bound to ports, etc.
+    for (auto& [serialno, devicelog] : m_devices) {
+        ISDevice* device = devicelog->Device();
+        if (device) {
+            device->devLogger.reset();
+            if (device->port)
+                setPortLogger(device->port, nullptr, nullptr);
+        }
+    }
     m_devices.clear();
     m_logStats.Clear();
     UNLOCK_MUTEX();
@@ -381,7 +390,7 @@ bool nextStreamDigit(stringstream &ss, string &str)
     return true;
 }
 
-// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.  
+// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.
 bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
 {
     serialNum = 0;
@@ -546,12 +555,12 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     }
 #if 1
     else
-    {    // Success
+    {   // Success
         m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id, ISB_HDR_TO_PACKET_SIZE(*dataHdr));
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
-            cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(deviceLog->DeviceInfo()->serialNumber) + ".txt", "a");
+            cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(deviceLog->DeviceInfo().serialNumber) + ".txt", "a");
             std::string msg = (((diag_msg_t *)dataBuf)->message);
             outfile->write(msg.c_str(), msg.length());
             if (msg.length() > 0 && *msg.end() != '\n')
@@ -578,7 +587,8 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
 
     if (deviceLog == NULL || dataSize <= 0 || dataBuf == NULL)
     {
-        m_errorFile.lprintf("Invalid device handle or NULL data\r\n");
+        // if we don't have a logger, we probably should set one up...
+        m_errorFile.lprintf("Invalid device handle or NULL data.\r\n");
         return false;
     }
 
@@ -951,7 +961,7 @@ std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs()
 
 std::shared_ptr<cDeviceLog> cISLogger::getDeviceLogByPort(port_handle_t port) {
     for (auto& [serialNo, devLog] : m_devices) {
-        if (devLog->getDevice() && devLog->getDevice()->port == port)
+        if ((devLog.use_count() > 0) && devLog->getDevice() && devLog->getDevice()->port == port)
             return devLog;
     }
     return nullptr;
