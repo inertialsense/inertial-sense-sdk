@@ -25,6 +25,7 @@
 cmake-build-*/
 .cmake/
 build/
+build-*/
 obj/
 x64
 Release/
@@ -46,3 +47,5 @@ CMakeFiles/
 /ros/ros2/log
 /scripts/.venv
 /src/version
+ExampleProjects/IS_SPI_Dev_Example/IS_SPI_Dev_Example_local
+

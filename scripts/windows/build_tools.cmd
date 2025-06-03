@@ -17,69 +17,50 @@
 	set TESTS_SUCCESS=
 
 	:: Locate MSBuild.exe
-	set MSBUILD_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe"
-    if exist %MSBUILD_EXECUTABLE% goto found_msbuild_executable
-	set MSBUILD_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Msbuild\Current\Bin\MSBuild.exe"
-    if exist %MSBUILD_EXECUTABLE% goto found_msbuild_executable
-    for /F "tokens* USEBACKQ" %%i in (MSBuild.exe) do ( set MSBUILD_EXECUTABLE=%%~$PATH:i )
-    if exist %MSBUILD_EXECUTABLE% goto found_msbuild_executable
-	echo Failed to locate MSBuild.exe!!!
-	pause
+	call :locate_executable_multi "MSBuild.exe" ^
+		"C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" ^
+		"C:\Program Files\Microsoft Visual Studio\2022\Msbuild\Current\Bin\MSBuild.exe"
 
-:found_msbuild_executable
-	:: Locate nmake.exe
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.42.34433\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+	if not defined FOUND_EXECUTABLE (
+		echo Failed to locate MSBuild.exe!!!
+		pause
+		exit /b 1
+	)
+	set "MSBUILD_EXECUTABLE=%FOUND_EXECUTABLE%"
+	echo Found MSBuild.exe at "%MSBUILD_EXECUTABLE%"
 
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+	:: Locate latest nmake.exe
+	set "VC_ROOT_COMMUNITY=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC"
+	set "VC_ROOT_ENTERPRISE=C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC"
+	set "FOUND_EXECUTABLE="
 
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+	if exist "%VC_ROOT_COMMUNITY%" (
+		for /f "delims=" %%D in ('dir "%VC_ROOT_COMMUNITY%" /b /ad-h /o-n') do (
+			call :locate_executable_multi "nmake.exe" ^
+				"%VC_ROOT_COMMUNITY%\%%D\bin\Hostx64\x64\nmake.exe"
+			if defined FOUND_EXECUTABLE goto :found_nmake
+		)
+	)
 
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+	if exist "%VC_ROOT_ENTERPRISE%" (
+		for /f "delims=" %%D in ('dir "%VC_ROOT_ENTERPRISE%" /b /ad-h /o-n') do (
+			call :locate_executable_multi "nmake.exe" ^
+				"%VC_ROOT_ENTERPRISE%\%%D\bin\Hostx64\x64\nmake.exe"
+			if defined FOUND_EXECUTABLE goto :found_nmake
+		)
+	)
 
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.42.34433\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.41.34120\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.40.33807\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.39.33519\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.38.33130\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.36.32532\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.33.31629\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
-
-	set NMAKE_EXECUTABLE="C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC\14.32.31326\bin\Hostx64\x64\nmake.exe"
-    if exist %NMAKE_EXECUTABLE% goto found_nmake_executable
+	call :locate_executable_multi "nmake.exe"
+	if defined FOUND_EXECUTABLE goto :found_nmake
 
 	echo Failed to locate nmake.exe!!!
 	pause
+	exit /b 1
 
-:found_nmake_executable
+:found_nmake
+	set "NMAKE_EXECUTABLE=%FOUND_EXECUTABLE%"
+	echo Found nmake.exe at "%NMAKE_EXECUTABLE%"
+
 
     REM set MSBUILD_OPTIONS=/maxcpucount:7 /p:MP=7 /t:Build /p:Configuration=Release /p:Platform=x64
     set MSBUILD_OPTIONS=/maxcpucount:7 /p:MP=7 /t:Build /p:Configuration=Release /p:std=c++17
@@ -277,3 +258,34 @@
 	echo. 
 	exit /b
 
+:: Locate Executable (Multiple Known Paths + PATH fallback)
+:: Usage:
+::   call :locate_executable_multi "<executable name>" "<path1>" "<path2>" "<path3>" ...
+:: Result:
+::   FOUND_EXECUTABLE will contain full path if found, else will be empty.
+:locate_executable_multi
+	setlocal
+	set "EXE_NAME=%~1"
+	shift
+	set "FOUND="
+
+	:try_next_path
+	if "%~1"=="" goto try_path_fallback
+	if exist "%~1" (
+		set "FOUND=%~1"
+		goto :locate_done
+	)
+	shift
+	goto :try_next_path
+
+	:try_path_fallback
+	for %%i in (%EXE_NAME%) do (
+		if exist "%%~$PATH:i" (
+			set "FOUND=%%~$PATH:i"
+			goto :locate_done
+		)
+	)
+
+	:locate_done
+	endlocal & set "FOUND_EXECUTABLE=%FOUND%"
+	goto :eof
