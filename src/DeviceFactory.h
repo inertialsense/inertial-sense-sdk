@@ -34,7 +34,7 @@ public:
      * @param port an associated port (optional) that this device should be bound to.
      * @return a ISDevice pointer to the newly allocated ISDevice or null of not allocated
      */
-    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) = 0;
+    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return new ISDevice(devInfo, port); };
 
     /**
      * A function responsible for freeing the allocated memory of the ISDevice instance.

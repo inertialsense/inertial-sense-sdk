@@ -269,7 +269,7 @@ bool ISDevice::validate(uint32_t timeout) {
         if ((current_timeMs() - startTime) > timeout)
             return false;
 
-        // REMOVE - Don't tolerate SERIAL_PORT specific conditions in ISDevice
+        // FIXME - Don't tolerate SERIAL_PORT specific conditions in ISDevice
         if (SERIAL_PORT(port)->errorCode == ENOENT)
             return false;
 
@@ -287,21 +287,18 @@ bool ISDevice::validate(uint32_t timeout) {
                 break;
 
         }
-        // FIXME - there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
-        // REMOVE - Don't tolerate SERIAL_PORT specific conditions in ISDevice
-        // if (SERIAL_PORT(port)->errorCode != 0)
-        //   return false;
 
-        SLEEP_MS(100);
+        SLEEP_MS(20);
         step();
 
         nextQueryType = static_cast<queryTypes>((int)nextQueryType + 1 % (int)QUERYTYPE_MAX);
     } while (!hasDeviceInfo());
 
     if (hasDeviceInfo()) {
-        GetData(DID_SYS_CMD, 0, 0, 0);
-        GetData(DID_FLASH_CONFIG, 0, 0, 0);
-        GetData(DID_EVB_FLASH_CFG, 0, 0, 0);
+        // once we have device info, turn off these other messages
+        GetData(DID_DEV_INFO);
+        GetData(DID_SYS_PARAMS);
+        GetData(DID_FLASH_CONFIG);
     }
 
     previousQueryType = QUERYTYPE_NMEA;
@@ -502,7 +499,7 @@ void ISDevice::registerWithLogger(cISLogger *logger) {
  */
 bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
 {
-    if (!port)
+    if (!portIsValid(port))
         return false;
 
     if (devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0)
@@ -931,7 +928,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (data->hdr.size==0 || data->ptr==NULL) {
-        return 0;   // We didn't process, so let others try
+        return 0;   // this message is invalid, so don't let anything else try and handle it...
     }
 
     if (devLogger) {
