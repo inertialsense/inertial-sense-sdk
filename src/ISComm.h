@@ -642,7 +642,6 @@ static const uint8_t COMM_PORT_FLAG__EXPLICIT_READ  = 0x01;     //! When set, IS
 
 typedef struct {
     base_port_t base;
-    // port_monitor_set_t* stats;          //! stats associated with this port
     is_comm_instance_t comm;            //! Comm instance
 #if defined(GPX_1)
     #define GPX_COM_BUFFER_SIZE 2800

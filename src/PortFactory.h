@@ -95,16 +95,6 @@ private:
     ~SerialPortFactory() = default;
 
     /**
-     * An internal static function which identifies all available serial ports on the host device. It populates a referenced
-     * std::vector<std::string> with their names, as suitable identifiers. This does NOT do any port_handle allocation, validation,
-     * or other operations necessary to USE the port - it merely identifies them.
-     * @param portNames a reference to a vector of strings which will be cleared, and populated with UART/Serial ports known to
-     *  the host operating system.
-     * @return the number of port names populated into the vector.
-     */
-    static int getComPorts(std::vector<std::string>& portNames);
-
-    /**
      * A static function which is used to report errors that occur on a port created by this factory
      * @param port the port the error occurred on
      * @param errCode the error code (usually errno) of the error that occurred
@@ -114,6 +104,17 @@ private:
     static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 
     std::vector<std::string> portNames = {};
+
+    /**
+     * An internal static function which identifies all available serial ports on the host device. It populates a referenced
+     * std::vector<std::string> with their names, as suitable identifiers. This does NOT do any port_handle allocation, validation,
+     * or other operations necessary to USE the port - it merely identifies them.
+     * @param portNames a reference to a vector of strings which will be cleared, and populated with UART/Serial ports known to
+     *  the host operating system.
+     * @return the number of port names populated into the vector.
+     */
+    static int getComPorts(std::vector<std::string>& portNames);
+
 
 #if PLATFORM_IS_LINUX
     static std::string get_driver__linux(const std::string& tty);

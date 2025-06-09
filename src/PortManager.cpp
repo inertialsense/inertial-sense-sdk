@@ -75,6 +75,10 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
             else {
                 // the port was previously identified, but the port handle is invalid.
                 // we probably should release to port and reallocate a new one
+                // finally, call our handler
+                for (port_listener& l : listeners) {
+                    l(PORT_REMOVED, entry.type, entry.name, port);
+                }
                 entry.factory->releasePort(port);
                 port = nullptr;
                 break;

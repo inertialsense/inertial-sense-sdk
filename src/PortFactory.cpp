@@ -162,7 +162,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
         snprintf(comPort, sizeof(comPort), "COM%d", i);
         if (QueryDosDeviceA(comPort, targetPath, 256))
         {
-            ports.push_back(comPort);
+            portNames.push_back(comPort);
         }
     }
 
