@@ -83,7 +83,7 @@ typedef struct
 typedef struct base_port_s {
     uint16_t pnum;                          //! an identifier for a specific port that belongs to this device
     uint16_t ptype;                         //! an indicator of the type of port
-    uint16_t pflags;                        //! a bitmask of flags, incidating state of special capabilities for this port
+    uint16_t pflags;                        //! a bitmask of flags, indicating state of special capabilities for this port
     uint16_t perror;                        //! a non-zero value indicating an error for the last operation attempted for this port
 
     pfnPortName portName;                   //! a function which returns an optional name to (ideally) uniquely identify this port
@@ -101,11 +101,8 @@ typedef struct base_port_s {
 
     void *portLoggerData;                   //! an opaque pointer of "user data" associated with the portLogger that is passed whenever the portLogger() callback function is called
     port_stats_t* stats;                    //! if not-null, contains the stats associated with this port (bytes sent/received, etc)
-
 } base_port_t;
-
 #define BASE_PORT(n)        ((base_port_t*)(n))
-
 
 #ifdef __cplusplus
 extern "C" {

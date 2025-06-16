@@ -43,11 +43,11 @@ public:
      * actually exists and can be operated on (ie, does the device exist in the OS, or does the target host respond to a ping?).
      * Note that this is a factory-specific function typically called by the PortManager in order to determine if a port is
      * no longer viable as a precursory check
-     * @param pType the type of port to validate
-     * @param pName the string identifier of the port
+     * @param pName the string identifier of the port - this must be unique and is required
+     * @param pType the type of port to validate - this is optional, but maybe modified by the underlying implementation
      * @return true if the port is viable/valid, otherwise false
      */
-    virtual bool validatePort(uint16_t pType, const std::string& pName) = 0;
+    virtual bool validatePort(const std::string& pName, uint16_t pType = 0) = 0;
 
     /**
      * A function responsible for allocating the underlying port type and returning a port_handle_t to it
@@ -56,7 +56,7 @@ public:
      * @param pName the binding name of the port to be allocated.
      * @return a port_handle_t to the allocated port
      */
-    virtual port_handle_t bindPort(uint16_t pType, const std::string& pName) = 0;
+    virtual port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) = 0;
 
     /**
      * A function responsible for freeing the allocated memory of the underlying port.
@@ -84,9 +84,9 @@ public:
 
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
 
-    bool validatePort(uint16_t pType, const std::string& pName) override;
+    bool validatePort(const std::string& pName, uint16_t pType = 0) override;
 
-    port_handle_t bindPort(uint16_t pType, const std::string& pName) override;
+    port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
 
     bool releasePort(port_handle_t port) override;
 
@@ -94,14 +94,27 @@ private:
     SerialPortFactory() = default;
     ~SerialPortFactory() = default;
 
-    static int validate_port(port_handle_t port) { return SerialPortFactory::getInstance().validatePort(portType(port), portName(port)); }
-    static int open_port(port_handle_t port) {
-        if (!portIsValid(port)) return PORT_ERROR__INVALID;
-        serial_port_t* serialPort = (serial_port_t*)port;
-        return serialPortOpen(port, serialPort->portName, serialPort->baudRate, serialPort->blocking) == 1 ? PORT_ERROR__NONE : PORT_ERROR__OPEN_FAILURE;
-    }
+    /**
+     * A static function which is used to report errors that occur on a port created by this factory
+     * @param port the port the error occurred on
+     * @param errCode the error code (usually errno) of the error that occurred
+     * @param errMsg an optional string message which describes the error the occurred
+     * @return
+     */
+    static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 
-    std::vector<std::string> ports = {};
+    std::vector<std::string> portNames = {};
+
+    /**
+     * An internal static function which identifies all available serial ports on the host device. It populates a referenced
+     * std::vector<std::string> with their names, as suitable identifiers. This does NOT do any port_handle allocation, validation,
+     * or other operations necessary to USE the port - it merely identifies them.
+     * @param portNames a reference to a vector of strings which will be cleared, and populated with UART/Serial ports known to
+     *  the host operating system.
+     * @return the number of port names populated into the vector.
+     */
+    static int getComPorts(std::vector<std::string>& portNames);
+
 
 #if PLATFORM_IS_LINUX
     static std::string get_driver__linux(const std::string& tty);
@@ -112,10 +125,15 @@ private:
 #elif PLATFORM_IS_WINDOWS
 #endif
 
-    int getComPorts(std::vector<std::string>& ports);
+    // THESE ARE LOCALIZED HELPER FUNCTIONS to provide basic functionality that is not normally provided by the original SerialPort/SerialPortPlatform implementation
+    // TODO: at some point, these should be moved into the implementation directly, and removed from the factory
+    static int validate_port(port_handle_t port) { return SerialPortFactory::getInstance().validatePort(portName(port), portType(port)); }
+    static int open_port(port_handle_t port) {
+        if (!portIsValid(port)) return PORT_ERROR__INVALID;
+        serial_port_t* serialPort = (serial_port_t*)port;
+        return serialPortOpen(port, serialPort->portName, serialPort->baudRate, serialPort->blocking) == 1 ? PORT_ERROR__NONE : PORT_ERROR__OPEN_FAILURE;
+    }
 
-
-    static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 };
 
 

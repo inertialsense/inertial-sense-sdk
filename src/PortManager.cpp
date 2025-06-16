@@ -22,7 +22,7 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
     // look for ports which are no longer valid and remove them
     std::vector<const port_entry_t*> lostPorts; // a vector of ports which no longer are available and need to be cleaned up
     for (auto& [entry, port] : knownPorts) {
-        bool invalid = !(portIsValid(port) && entry.factory->validatePort(entry.type, entry.name));
+        bool invalid = !(portIsValid(port) && entry.factory->validatePort(entry.name, entry.type));
 
         // check if port still exists...
         if (invalid) {
@@ -75,6 +75,10 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
             else {
                 // the port was previously identified, but the port handle is invalid.
                 // we probably should release to port and reallocate a new one
+                // finally, call our handler
+                for (port_listener& l : listeners) {
+                    l(PORT_REMOVED, entry.type, entry.name, port);
+                }
                 entry.factory->releasePort(port);
                 port = nullptr;
                 break;
@@ -83,7 +87,7 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
     }
 
     // if not, then do we need to allocate it?
-    port_handle_t port = factory->bindPort(portType, portName);
+    port_handle_t port = factory->bindPort(portName, portType);
     knownPorts[portEntry] = port;
     insert(port);
 

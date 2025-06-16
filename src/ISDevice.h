@@ -87,6 +87,7 @@ public:
         flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
         flashCfgUpload = src.flashCfgUpload;
         evbFlashCfg = src.evbFlashCfg;
+        sysParams = src.sysParams;
         sysCmd = src.sysCmd;
         // devLogger = src.devLogger.get();
         closeStatus = src.closeStatus;
@@ -124,6 +125,7 @@ public:
         flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
         flashCfgUpload = src.flashCfgUpload;
         evbFlashCfg = src.evbFlashCfg;
+        sysParams = src.sysParams;
         sysCmd = src.sysCmd;
         // devLogger = src.devLogger.get();
         closeStatus = src.closeStatus;
@@ -159,14 +161,21 @@ public:
      * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
      * Can be overridden to provide custom configuration, etc on connection - just remember
      *  to call back into ISDevice::connect() in your new method.
+     * @param dontValidate if true (default), skips device validation after successfully connecting
      * @return true if the connection is made/port opened, otherwise false
      */
-    virtual bool connect() {
+    virtual bool connect(bool dontValidate = true) {
         if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
             return false;
         if (portIsOpened(port))
             return true;
-        return (portOpen(port) == PORT_ERROR__NONE);
+        bool result = (portOpen(port) == PORT_ERROR__NONE);
+
+        if (!dontValidate && result) {
+            SLEEP_MS(15);
+            result = validate();
+        }
+        return result;
     }
 
     /**

@@ -257,11 +257,6 @@ public:
         return (devLog && logInstance->LogData(devLog, len, buf)) ? 1 : -1;
     }
 
-    static int logPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
-        // FIXME: We currently aren't interested in logging data that we have SENT (portWrite) to the device, only the response back from the device
-        return -1;
-    }
-
 private:
 #if CPP11_IS_ENABLED
     cISLogger(const cISLogger& copy) = delete;

@@ -26,7 +26,10 @@
 
 
 
-port_handle_t SerialPortFactory::bindPort(uint16_t pType, const std::string& pName) {
+port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pType) {
+    if (!validatePort(pName, pType))
+        return nullptr;
+
     serial_port_t* serialPort = new serial_port_t;
     port_handle_t port = (port_handle_t)serialPort;
 
@@ -59,7 +62,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     return true;
 }
 
-bool SerialPortFactory::validatePort(uint16_t pType, const std::string& pName) {
+bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 #if PLATFORM_IS_WINDOWS
     char targetPath[256];
     return (QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath)) != 0);
@@ -70,11 +73,11 @@ bool SerialPortFactory::validatePort(uint16_t pType, const std::string& pName) {
 
 void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     std::regex matchPattern(pattern);
-    getComPorts(ports);
-    for (auto& np : ports) {
-        auto match = std::regex_match(np, matchPattern);
-        if (validatePort(PORT_TYPE__UART, np) && match)
-            portCallback(this, PORT_TYPE__UART, np);
+    getComPorts(portNames);
+    for (auto& name : portNames) {
+        auto match = std::regex_match(name, matchPattern);
+        if (validatePort(name, PORT_TYPE__UART) && match)
+            portCallback(this, PORT_TYPE__UART, name);
     }
 }
 
@@ -142,12 +145,12 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
  * Populates a vector of string identifiers for all available Serial/TTY/UART devices on the host system.
  * This does not open, access, or configure the devices, nor does it make any guarantee about the availability
  * of the ports (only that the OS has registered/enumerated it).
- * @param ports a reference to a vector of strings, which will be populated with available serial ports
+ * @param portNames a reference to a vector of strings, which will be populated with names identifiers of available ports
  * @return the number of ports found on the host
  */
-int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
+int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
 {
-    ports.clear();
+    portNames.clear();
 
 #if PLATFORM_IS_WINDOWS
 
@@ -159,7 +162,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
         snprintf(comPort, sizeof(comPort), "COM%d", i);
         if (QueryDosDeviceA(comPort, targetPath, 256))
         {
-            ports.push_back(comPort);
+            portNames.push_back(comPort);
         }
     }
 
@@ -177,7 +180,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
             {
                 if (!std::filesystem::is_directory(i->path()) && std::filesystem::is_character_file(i->path()))
                 {
-                    ports.push_back(i->path().string());
+                    portNames.push_back(i->path().string());
                 }
             }
         } catch (const std::filesystem::filesystem_error&) {}
@@ -200,7 +203,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
                 devicedir += namelist[n]->d_name;
 
                 // Register the device
-                register_comport__linux(ports, comList8250, devicedir);
+                register_comport__linux(portNames, comList8250, devicedir);
             }
             free(namelist[n]);
             namelist[n] = nullptr;
@@ -211,11 +214,11 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& ports)
 
     // Only non-serial8250 has been added to comList without any further testing
     // serial8250-devices must be probe to check for validity
-    probe_serial8250_comports__linux(ports, comList8250);
+    probe_serial8250_comports__linux(portNames, comList8250);
 
 #endif
 
-    return ports.size();
+    return portNames.size();
 }
 
 
