@@ -423,7 +423,8 @@ enum eSysStatusFlags
 
     SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
 
-    SYS_STATUS_PRIMARY_NMEA_GNSS_SOURCE        = (int)0x00000004, // 0 = GPS1 is the primary NMEA GNSS source 1 = GPS2 is the primary NMEA GNSS source
+    SYS_STATUS_PRIMARY_NMEA_GNSS_SOURCE             = (int)0x00000004, // 0 = GPS1 is the primary NMEA GNSS source 1 = GPS2 is the primary NMEA GNSS source
+    SYS_STATUS_PRIMARY_NMEA_GNSS_SOURCE_offest      = 2,
 };
 
 // Used to validate GPS position (and velocity)
