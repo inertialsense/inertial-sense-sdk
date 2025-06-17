@@ -50,7 +50,9 @@ list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 # find_package(udev)
 find_library(UDEV_LIB udev)
 
-add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
+add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK}
+		src/TCPPortFactory.cpp
+		src/TCPPortFactory.h)
 
 # Include paths
 target_include_directories(${PROJECT_NAME} PUBLIC

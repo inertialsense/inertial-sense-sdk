@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDevice.h"
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
+#include "TCPPortFactory.h"
 #include "protocol/FirmwareUpdate.h"
 #include "imx_defaults.h"
 
@@ -128,6 +129,9 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
         spf.portOptions.defaultBaudRate = BAUDRATE_921600;
         spf.portOptions.defaultBlocking = false;
         portManager.addPortFactory(&spf);
+        TCPPortFactory& tpf = TCPPortFactory::getInstance();
+        tpf.portOptions.defaultBlocking = false;
+        portManager.addPortFactory(&tpf);
     } else {
         for (auto f : pFactories) portManager.addPortFactory(f);
     }
@@ -529,10 +533,10 @@ bool InertialSense::Update()
     bool anyOpen = false;
     for (auto device : deviceManager)
     {
-        if (!serialPortIsOpen(device->port))
+        if (!portIsOpened(device->port))
         {
             // Make sure its closed..
-            serialPortClose(device->port);
+            portClose(device->port);
         } else
             anyOpen = true;
     }
@@ -567,7 +571,7 @@ bool InertialSense::UpdateServer()
     int n = is_comm_free(comm);         // TODO:  This is a little janky; as a Serial/COMM port, this should already know how to do these things...
 
     // Read data directly into comm buffer
-    if ((n = serialPortReadTimeout(port, comm->rxBuf.tail, n, 0)))
+    if ((n = portReadTimeout(port, comm->rxBuf.tail, n, 0)))
     {
         // Update comm buffer tail pointer
         comm->rxBuf.tail += n;
@@ -706,7 +710,7 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 
 bool InertialSense::IsOpen()
 {
-    return (DeviceCount() != 0 && serialPortIsOpen(deviceManager.front()->port));
+    return (DeviceCount() != 0 && portIsOpened(deviceManager.front()->port));
 }
 
 void InertialSense::Close()
