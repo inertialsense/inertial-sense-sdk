@@ -165,7 +165,7 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
     m_handlerSpartn = nullptr;
 }
 
-InertialSense::InertialSense() : InertialSense( { (PortFactory*)&(SerialPortFactory::getInstance()) }, { (DeviceFactory*)&ImxDeviceFactory::getInstance() }) {
+InertialSense::InertialSense() : InertialSense( { }, { }) {
     s_is = this;
 }
 
@@ -192,6 +192,7 @@ InertialSense::InertialSense(
     deviceManager.addDeviceListener([this](auto && PH1, auto && PH2) { deviceManagerHandler(PH1, PH2); });
 
     portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
+    portManager.addPortFactory((PortFactory*)&(TCPPortFactory::getInstance()));
     portManager.addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4) { portManagerHandler(PH1, PH2, PH3, PH4); });
 
     for (int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
