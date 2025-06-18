@@ -120,11 +120,11 @@ protected:
     void OnReadPacket(packet_t* pkt, protocol_type_t ptype);
     void OnReadData(p_data_buf_t *data);
 
-    const ISDevice *device = nullptr;               //! ISDevice reference to source of data
+    const ISDevice *device = nullptr;               //!< ISDevice reference to source of data
 
-    uint16_t m_devHdwId = 0;                        //! used when reading a file and no ISDevice is available
-    uint32_t m_devSerialNo = -1;                    //! used when reading a file, and no ISDevice is available
-    std::string m_deviceId;                         //! a string representation of a unique device id (hdwid+sn)
+    uint16_t m_devHdwId = 0;                        //!< used when reading a file and no ISDevice is available
+    uint32_t m_devSerialNo = -1;                    //!< used when reading a file, and no ISDevice is available
+    std::string m_deviceId;                         //!< a string representation of a unique device id (hdwid+sn)
 
     std::vector<std::string> m_fileNames;
     cISLogFileBase *m_pFile = NULL;
@@ -132,7 +132,7 @@ protected:
     std::string m_directory;
     std::string m_timeStamp;
     std::string m_fileName;
-    bool m_writeMode = false;                       //! Logger initialized for writing
+    bool m_writeMode = false;                       //!< Logger initialized for writing
     bool m_showParseErrors = false;
     uint64_t m_fileSize = 0;
     uint64_t m_logSize = 0;
@@ -146,10 +146,10 @@ protected:
     bool m_showPointTimestamps = true;
     double m_pointUpdatePeriodSec = 1.0f;
     cLogStats m_logStats;
-    std::vector<index_record_t> m_indexChunks;    //! a list of current index records, waiting to be written to disk
-    uint32_t m_lastIndexOffset = 0;               //! essentially, the last known size of the log file, as written to disk; this should be updated with each chunk-write to be the new size of the log file
-    uint32_t m_logStartUpTime = 0;                    //! the system uptime (in millis) at the moment this index was created
-    uint32_t m_lastIndexTime = 0;                 //! this is the system uptime (in millis) of the last index record created; we won't create new records if data comes in faster than 1ms, we'll update the last one instead
+    std::vector<index_record_t> m_indexChunks;      //!< a list of current index records, waiting to be written to disk
+    uint32_t m_lastIndexOffset = 0;                 //!< essentially, the last known size of the log file, as written to disk; this should be updated with each chunk-write to be the new size of the log file
+    uint32_t m_logStartUpTime = 0;                  //!< the system uptime (in millis) at the moment this index was created
+    uint32_t m_lastIndexTime = 0;                   //!< this is the system uptime (in millis) of the last index record created; we won't create new records if data comes in faster than 1ms, we'll update the last one instead
 
 };
 

@@ -675,9 +675,9 @@ private:
     is_comm_instance_t m_gpComm;
     uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 
-    std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
+    std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 
-    std::set<port_handle_t> portsToValidate;    //! ports which were discovered but have not been validated as an ISDevice
+    std::set<port_handle_t> portsToValidate;    //!< ports which were discovered but have not been validated as an ISDevice
 
 
     // returns false if logger failed to open

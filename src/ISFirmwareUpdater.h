@@ -37,42 +37,42 @@ extern "C"
 
 class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
 private:
-    std::istream *srcFile = nullptr;    //! the file that we are currently sending to a remote device, or nullptr if none
-    uint32_t nextStartAttempt = 0;      //! the number of millis (uptime?) that we will next attempt to start an upgrade
-    int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
+    std::istream *srcFile = nullptr;    //!< the file that we are currently sending to a remote device, or nullptr if none
+    uint32_t nextStartAttempt = 0;      //!< the number of millis (uptime?) that we will next attempt to start an upgrade
+    int8_t startAttempts = 0;           //!< the number of attempts that have been made to request that an update be started
 
-    int8_t maxAttempts = 5;             //! the maximum number of attempts that will be made before we give up.
-    uint16_t attemptInterval = 350;     //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+    int8_t maxAttempts = 5;             //!< the maximum number of attempts that will be made before we give up.
+    uint16_t attemptInterval = 350;     //!< the number of millis between attempts - default is to try every quarter-second, for 5 seconds
 
-    uint16_t last_resent_chunk = 0;     //! the chunk id of the last/previous received req_resend  (are we getting multiple requests for the same chunk?)
-    uint16_t resent_chunkid_count = 0;  //! the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
-    uint32_t resent_chunkid_time = 0;   //! time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
+    uint16_t last_resent_chunk = 0;     //!< the chunk id of the last/previous received req_resend  (are we getting multiple requests for the same chunk?)
+    uint16_t resent_chunkid_count = 0;  //!< the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
+    uint32_t resent_chunkid_time = 0;   //!< time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
 
-    uint16_t chunkDelay = 25;           //! provides a throttling mechanism
-    uint16_t nextChunkDelay = 250;      //! provides a throttling mechanism
-    uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
-    uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)
+    uint16_t chunkDelay = 25;           //!< provides a throttling mechanism
+    uint16_t nextChunkDelay = 250;      //!< provides a throttling mechanism
+    uint32_t nextChunkSend = 0;         //!< don't send the next chunk until this time has expired.
+    uint32_t updateStartTime = 0;       //!< the system time when the firmware was started (for performance reporting)
 
-    // float percentComplete = 0.f;        //! the current percent complete as reported by the device
+    // float percentComplete = 0.f;     //!< the current percent complete as reported by the device
 
     fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
-    std::deque<uint8_t> toHost;           //! a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
+    std::deque<uint8_t> toHost;         //!< a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
 
     std::vector<std::string> commands;
-    std::string activeStep;             //! the name of the currently executing step name, from the manifest when available
-    std::string activeCommand;          //! the name (without parameters) of the currently executing command
-    std::string failLabel;              //! a label to jump to, when an error occurs
-    bool requestPending = false;        //! true is an update has been requested, but we're still waiting on a response.
+    std::string activeStep;             //!< the name of the currently executing step name, from the manifest when available
+    std::string activeCommand;          //!< the name (without parameters) of the currently executing command
+    std::string failLabel;              //!< a label to jump to, when an error occurs
+    bool requestPending = false;        //!< true is an update has been requested, but we're still waiting on a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
     bool forceUpdate = false;
-    uint32_t pingInterval = 1000;       //! delay between attempts to communicate with a target device
-    uint32_t pingNextRetry = 0;         //! time for next ping
-    uint32_t pingTimeout = 0;           //! time when the ping operation will timeout if no response before then
-    uint32_t pauseUntil = 0;            //! delays next command execution until this time (but still allows the fwUpdate to step/receive responses).
+    uint32_t pingInterval = 1000;       //!< delay between attempts to communicate with a target device
+    uint32_t pingNextRetry = 0;         //!< time for next ping
+    uint32_t pingTimeout = 0;           //!< time when the ping operation will timeout if no response before then
+    uint32_t pauseUntil = 0;            //!< delays next command execution until this time (but still allows the fwUpdate to step/receive responses).
     std::string filename;
     fwUpdate::target_t target;
 
-    mz_zip_archive *zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
+    mz_zip_archive *zip_archive = nullptr; //!< is NOT null IF we are updating from a firmware package (zip archive).
     //dfu::ISDFUFirmwareUpdater *dfuUpdater = nullptr;
     fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
     dev_info_t remoteDevInfo = {};
@@ -87,23 +87,23 @@ public:
 
     enum pkg_error_e {
         PKG_SUCCESS = 0,
-        PKG_ERR_PACKAGE_FILE_ERROR = -1,            //! the package file couldn't be opened/accessed (invalid, or not found)
-        PKG_ERR_INVALID_IMAGES = -2,                //! the manifest doesn't define any images, or the images are incorrectly formatted
-        PKG_ERR_INVALID_STEPS = -3,                 //! the manifest doesn't define any steps, or the steps are incorrectly formatted
-        PKG_ERR_INVALID_TARGET = -4,                //! the active step target is invalid (yaml schema/syntax)
-        PKG_ERR_UNSUPPORTED_TARGET = -5,            //! the step target specified is valid, but not supported
-        PKG_ERR_NO_ACTIONS = -6,                    //! the step doesn't describe any actions to perform
-        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       //! the step action 'image' references an image which doesn't exist in the manifest
-        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            //! the referenced image doesn't include a filename
-        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          //! the file for the referenced image doesn't exist
-        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,     //! the image file's actual size doesn't match the manifest's reported size
-        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      //! the image file's actual md5sum doesn't match the manifest's reported md5sum
+        PKG_ERR_PACKAGE_FILE_ERROR = -1,            //!< the package file couldn't be opened/accessed (invalid, or not found)
+        PKG_ERR_INVALID_IMAGES = -2,                //!< the manifest doesn't define any images, or the images are incorrectly formatted
+        PKG_ERR_INVALID_STEPS = -3,                 //!< the manifest doesn't define any steps, or the steps are incorrectly formatted
+        PKG_ERR_INVALID_TARGET = -4,                //!< the active step target is invalid (yaml schema/syntax)
+        PKG_ERR_UNSUPPORTED_TARGET = -5,            //!< the step target specified is valid, but not supported
+        PKG_ERR_NO_ACTIONS = -6,                    //!< the step doesn't describe any actions to perform
+        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       //!< the step action 'image' references an image which doesn't exist in the manifest
+        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            //!< the referenced image doesn't include a filename
+        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          //!< the file for the referenced image doesn't exist
+        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,     //!< the image file's actual size doesn't match the manifest's reported size
+        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      //!< the image file's actual md5sum doesn't match the manifest's reported md5sum
     };
 
-    const ISDevice* device = nullptr;               //! a handle to the device which is being updated; maybe null in some cases
-    port_handle_t port = 0;                         //! a handle to the comm port which we use to talk to the device
-    const dev_info_t *devInfo = nullptr;            //! the root device info connected on this port
-    dev_info_t *target_devInfo = nullptr;           //! the target's device info, if any
+    const ISDevice* device = nullptr;               //!< a handle to the device which is being updated; maybe null in some cases
+    port_handle_t port = 0;                         //!< a handle to the comm port which we use to talk to the device
+    const dev_info_t *devInfo = nullptr;            //!< the root device info connected on this port
+    dev_info_t *target_devInfo = nullptr;           //!< the target's device info, if any
 
     /**
      * Constructor to initiate and manage updating a firmware image of a device connected on the specified port
