@@ -385,7 +385,7 @@ public:
      * Another fancy function that blocks until a flash sync has actually occurred.
      * @return true if successful or otherwise false if it couldn't (timeout? validation? bad connection?  -- who knows?)
      */
-    bool WaitForFlashSynced(uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+    bool WaitForFlashSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
 
     /**
      * A blocking call which uploads and then waits for synchronization confirmation that the new configuration was applied.

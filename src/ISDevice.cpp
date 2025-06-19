@@ -704,7 +704,7 @@ bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout)
 
     // attempt to synchronize, if requested
     if (timeout > 0) {
-        WaitForFlashSynced(timeout);
+        WaitForFlashSynced(false, timeout);
     }
 
     // Copy flash config
@@ -796,7 +796,7 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
  * @param timeout
  * @return true if both the flashCfg.checksum and sysParams.flashCfgChecksum match (and neither are zero)
  */
-bool ISDevice::WaitForFlashSynced(uint32_t timeout)
+bool ISDevice::WaitForFlashSynced(bool forceSync, uint32_t timeout)
 {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
@@ -808,6 +808,12 @@ bool ISDevice::WaitForFlashSynced(uint32_t timeout)
     unsigned int startMs = now;
 
     static unsigned int lastRequest = startMs;
+
+    if (forceSync)
+    {
+        sysParams.flashCfgChecksum = 0;
+    }
+
     if ((flashCfgUploadTimeMs == 0) && (flashCfgUpload.checksum == 0))
     {   // no upload is in progress; we don't need to verify with our uploaded flashCfg
         while (flashCfg.checksum != sysParams.flashCfgChecksum)
@@ -896,7 +902,7 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
     // save the uploaded config, with correct checksum calculated in SetFlashConfig()
     nvm_flash_cfg_t tmpFlash = flashCfg;
 
-    SLEEP_MS(250);
+    SLEEP_MS(10);
     step();
 
     if (!WaitForFlashSynced(timeout))
