@@ -4,7 +4,6 @@
 
 #ifndef __IS_TCPPORT_H
 #define __IS_TCPPORT_H
-#include <netinet/in.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,9 +12,15 @@ extern "C" {
 #include <stdbool.h>
 
 #include "ISComm.h"
+#include "ISConstants.h"
 
+#ifdef PLATFORM_IS_WINDOWS
+#include <winsock2.h>
+#else
+#include <netinet/in.h>
 #ifdef __unix__ // Unix sockets can do TCP connections via files on Unix systems
 #include <sys/un.h>
+#endif
 #endif
 
 #define MAX_TCP_PORT_NAME_LENGTH 63
