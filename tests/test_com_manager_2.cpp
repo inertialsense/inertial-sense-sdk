@@ -16,7 +16,6 @@ static nvm_flash_cfg_t g_nvmFlashCfg;
 static rtos_info_t g_rtos;
 static system_command_t g_sysCmd;
 static debug_array_t g_debug;
-static io_t g_IO;
 static mag_cal_t g_magCal;
 
 #define BUFFER_SIZE 8192
@@ -161,8 +160,6 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 	comManagerRegisterInstance(&(cm2->cm), DID_RTOS_INFO, 0, 0, &g_rtos, 0, sizeof(rtos_info_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SYS_CMD, 0, 0, &g_sysCmd, &g_sysCmd, sizeof(system_command_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_DEBUG_ARRAY, 0, 0, &g_debug, &g_debug, sizeof(debug_array_t), 0);
-// 	comManagerRegisterInstance(&(cm2->cm), DID_FEATURE_BITS, 0, 0, 0, 0, sizeof(feature_bits_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_IO, 0, 0, &g_IO, &g_IO, sizeof(io_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_MAG_CAL, 0, 0, &g_magCal, &g_magCal, sizeof(mag_cal_t), 0);
 }
 

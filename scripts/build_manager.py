@@ -177,7 +177,7 @@ class BuildTestManager:
         result = 0
         if self.run_test:
             self.test_header(project_name)
-            result = callback()
+            result = callback(self.test_name)
             self.test_footer(result)
         if result:
             self.result = result
@@ -215,7 +215,7 @@ class BuildTestManager:
         project_dir = Path(project_dir)
 
         self.build_header(project_name)
-        result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean)
+        result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean, self.is_windows)
         self.build_footer(result)
         if result:
             self.result = result
@@ -227,14 +227,33 @@ class BuildTestManager:
             return len(os.listdir(directory)) == 0    
     
     @staticmethod
-    def static_build_cmake(project_name, project_dir, build_type="Release", clean=False):
+    def static_build_cmake(project_name, project_dir, build_type="Release", clean=False, is_windows=False):
         result = 0
+        suffix = f"-{build_type.lower()}" if is_windows else ""
+        build_dir = project_dir / f"build{suffix}"
         if clean:
-            build_dir = project_dir / "build"
             print(f"=== Running make clean... ===")
+            
+            build_dir_o = project_dir / f"out/build"
+            build_dir_r = project_dir / f"release"
+            build_dir_d = project_dir / f"debug"
+            build_dir_br = project_dir / f"build-release"
+            build_dir_bd = project_dir / f"build-debug"
+            build_dir_b = project_dir / f"build"
+
             try:
-                if os.path.exists(build_dir):
-                    shutil.rmtree(build_dir)
+                if os.path.exists(build_dir_o):
+                    shutil.rmtree(build_dir_o)
+                if os.path.exists(build_dir_r):
+                    shutil.rmtree(build_dir_r)
+                if os.path.exists(build_dir_d):
+                    shutil.rmtree(build_dir_d)
+                if os.path.exists(build_dir_br):
+                    shutil.rmtree(build_dir_br)
+                if os.path.exists(build_dir_bd):
+                    shutil.rmtree(build_dir_bd)
+                if os.path.exists(build_dir_b):
+                    shutil.rmtree(build_dir_b)
             except Exception as e:
                 print(f"Error cleaning: {project_name}.  Directory `{build_dir}` cannot be removed.")
                 if not BuildTestManager.is_directory_empty(build_dir):
@@ -244,8 +263,39 @@ class BuildTestManager:
             try:
                 num_proc = os.cpu_count()
                 num_proc = int(max(num_proc - num_proc/10, 6))
-                subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
-                subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
+                start_time = time.time()                
+
+                if is_windows:
+                    arch = "x64"
+                    vcpkg_toolchain = r"C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+                    candidate_vcvars_paths = [
+                        r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
+                        r"C:\Program Files\Microsoft Visual Studio\2022\VC\Auxiliary\Build\vcvarsall.bat",
+                    ]
+                    # Find the first valid vcvarsall.bat path
+                    vcvars_path = next((p for p in candidate_vcvars_paths if os.path.exists(p)), None)
+                    if not vcvars_path:
+                        print("vcvarsall.bat path not found!!!")
+                        return -1
+
+                    # Configure with Ninja
+                    # cmd_configure = f'"{vcvars_path}" {arch} && cmake -G Ninja -B "{build_dir}" -S . -DCMAKE_BUILD_TYPE={build_type}'
+                    cmd_configure = f'"{vcvars_path}" {arch} && cmake -G Ninja -B "{build_dir}" -S . -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_TOOLCHAIN_FILE="{vcpkg_toolchain}"'
+                    subprocess.check_call(cmd_configure, shell=True, cwd=str(project_dir))
+
+                    # Build with Ninja
+                    cmd_build = f'"{vcvars_path}" {arch} && cmake --build "{build_dir}" --parallel {num_proc}'
+                    subprocess.check_call(cmd_build, shell=True, cwd=str(project_dir))
+                
+                else:   # Linux
+                    # subprocess.check_call(["cmake", "-B", f"{build_dir}", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
+                    # subprocess.check_call(["cmake", "--build", f"{build_dir}", "--config", build_type, "--parallel", str(num_proc)], cwd=str(project_dir))
+                    subprocess.check_call(["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"], cwd=str(project_dir))
+                    subprocess.check_call(["cmake", "--build", "build", "--config", f"{build_type}", "-j", f"{num_proc}"], cwd=str(project_dir))
+
+                duration = int(time.time() - start_time)
+                minutes, seconds = divmod(duration, 60)
+                print(f"Build completed in {minutes}:{seconds:02d}s using {num_proc} threads.")
             except subprocess.CalledProcessError as e:
                 print(f"Error building {project_name}!")
                 result = e.returncode
@@ -258,7 +308,7 @@ class BuildTestManager:
         if not exec_name:
             exec_name = test_name
         if self.is_windows:
-            test_dir = test_dir + "/Release"
+            test_dir += "-release"
             exec_name = exec_name + ".exe"
         else:
             exec_name = "./" + exec_name

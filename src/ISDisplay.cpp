@@ -721,8 +721,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	string str;
 	switch (data->hdr.id)
 	{
-	case DID_EVB_DEV_INFO:
-	case DID_GPX_DEV_INFO:
+    case DID_EVB_DEV_INFO:      // FALL THROUGH
+    case DID_GPX_DEV_INFO:      // FALL THROUGH
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
 	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
 	case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
@@ -733,17 +733,17 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
 	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
 	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
-	case DID_GPS1_VERSION:
+    case DID_GPS1_VERSION:      // FALL THROUGH
 	case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);      break;
-	case DID_GPS1_POS:
-	case DID_GPS2_POS:
+    case DID_GPS1_POS:          // FALL THROUGH
+    case DID_GPS2_POS:          // FALL THROUGH
 	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
 	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
 	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
 	case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
 	case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
-	case DID_GPS1_RAW:
-	case DID_GPS2_RAW:
+    case DID_GPS1_RAW:          // FALL THROUGH
+    case DID_GPS2_RAW:          // FALL THROUGH
 	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
 	case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
 	case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
@@ -1360,6 +1360,12 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
 			if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED) 		{ AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing"); }
 		}
 
+        // Spoof/Jamming Dectect
+        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT)         { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam possible, "); };
+        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_JAM_DETECTED)                { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam detected, "); };
+        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT)       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof possible, "); };
+        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED)              { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof detected, "); };
+
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
 	}
 
@@ -1809,17 +1815,17 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
 #else
 #endif
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    i[]: ");
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < DEBUG_I_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
     }
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    f[]: ");
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < DEBUG_F_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4f", debug.f[i]);
     }
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   lf[]: ");
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < DEBUG_LF_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4lf", debug.lf[i]);
     }
 

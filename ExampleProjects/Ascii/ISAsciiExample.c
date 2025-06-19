@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 2)
 	{
-		printf("Please pass the com port as the only argument\r\n");
+		printf("Please pass the com port as the only argument (i.e. /dev/ttyACM0 or COM5)\r\n");
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3" 
 		return -1;
 	}

@@ -13,7 +13,7 @@
 #include "globals.h"
 #endif
 
-static int s_protocol_version = 0;
+static int s_protocol_version = NMEA_PROTOCOL_2P3;	// Default to protocol version 2.3
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
 static struct  
@@ -281,7 +281,9 @@ char *ASCII_to_u32(uint32_t *val, char *ptr)
 
 char *ASCII_to_u64(uint64_t *val, char *ptr)
 {
-    val[0] = (uint64_t)atol(ptr);	ptr = ASCII_find_next_field(ptr);
+    char *endPtr = nullptr;
+    val[0] = (uint64_t)std::strtoll(ptr, &endPtr, 10); 
+    ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
@@ -926,16 +928,28 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
          4916.46,N    Latitude 49 deg. 16.45 min. North
          12311.12,W   Longitude 123 deg. 11.12 min. West
          225444.800   Fix taken at 22:54:44.8 UTC
-         A            Data Active or V (void)
+         A            Data status: A (active) or V (void)
          *iD          checksum data
     */
-
+    
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "GLL");
-    nmea_latToDegMin(a, aSize, n, pos.lla[0]);                      // 1,2
-    nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                      // 3,4
-    nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);                        // 5
-    nmea_sprint(a, aSize, n, ",A");                                 // 6
+
+    if (pos.status&GPS_STATUS_FIX_MASK)
+    {   // Valid lat/lon
+        nmea_latToDegMin(a, aSize, n, pos.lla[0]);      // 1,2
+        nmea_lonToDegMin(a, aSize, n, pos.lla[1]);      // 3,4
+    }
+    else // Invalid lat/lon
+        nmea_sprint(a, aSize, n, ",,,,");               // 1,2,3,4
+        
+    nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos); // 5
+
+    if (pos.week > 2269) // Time is valid so set to active
+        nmea_sprint(a, aSize, n, ",A");                 // 6
+    else // Time is invalid so set to void
+        nmea_sprint(a, aSize, n, ",V");                 // 6
+
     return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -1269,7 +1283,7 @@ int nmea_powPrep(char a[], int startN, const int aSize, gps_pos_t &pos)
 
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 1
     nmea_sprint(a, aSize, n, ",%d", pos.week);              // 2
-    nmea_sprint(a, aSize, n, ",%lu", ((uint64_t)pos.timeOfWeekMs)*1000); // 3 
+    nmea_sprint(a, aSize, n, ",%" PRIu64, ((uint64_t)pos.timeOfWeekMs)*1000); // 3
 
     valid = (pos.leapS > 10 && pos.leapS < 30) ? 1 : 0;     // should be ~18 so give a little leeway
     nmea_sprint(a, aSize, n, ",%d", valid);                 // 4
@@ -2631,13 +2645,39 @@ int nmea_parse_gll(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
     (void)aSize;
     char *ptr = (char *)&a[7];	// $GxGLL,
     
-    // 1,2 - Latitude (deg)
-    ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
-    // 3,4 - Longitude (deg)
-    ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
+    if (*ptr == ',')
+    {   // pos has no value 
+        // 1,2 - Latitude (deg)
+        gpsPos.lla[0] = 0;
+        // 3,4 - Longitude (deg)
+        gpsPos.lla[1] = 0;
+
+        // set status to no fix
+        gpsPos.status &= ~GPS_STATUS_FIX_MASK;
+
+        ptr += 4;
+    }
+    else
+    {   // pos has a value
+        // 1,2 - Latitude (deg)
+        ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
+        // 3,4 - Longitude (deg)
+        ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
+        
+        gpsPos.status |= GPS_STATUS_FIX_2D;
+    }
+
     // 5 - UTC time HHMMSS.sss
     ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &utcTime, ptr, utcWeekday, gpsPos.leapS);
+    
     // 6 - Valid (A=active, V=void)
+    if (*ptr != 'A')             
+    {
+        gpsPos.status &= ~GPS_STATUS_FIX_MASK;
+        gpsPos.timeOfWeekMs = 0;
+        gpsPos.lla[0] = 0.0;
+        gpsPos.lla[1] = 0.0;
+    }
 
     return 0;
 }
