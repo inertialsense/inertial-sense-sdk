@@ -4,11 +4,7 @@
 
 #include "tcpPort.h"
 #include <errno.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/ioctl.h>
 #include <stdbool.h>
-#include <netinet/tcp.h>
 #include <sys/time.h>
 
 #ifdef _WIN32
@@ -16,6 +12,11 @@
 #define errno WSAGetLastError()
 #define close closesocket
 #define ioctl ioctlsocket
+#else
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #endif
 
 const char* tcpPortGetName(port_handle_t port) {
