@@ -80,7 +80,7 @@ int tcpPortClose(port_handle_t port) {
 
 int tcpPortFree(port_handle_t port) {
 #ifdef PLATFORM_IS_WINDOWS
-    return PORT_ERROR__NOT_SUPPORTED
+    return PORT_ERROR__NOT_SUPPORTED;
 #else
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
