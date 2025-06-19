@@ -161,7 +161,7 @@ int tcpPortFlush(port_handle_t port) {
     }
 }
 
-int tcpPortDrain(port_handle_t port, __attribute__((unused)) uint32_t timeout) {
+int tcpPortDrain(port_handle_t port, uint32_t timeout) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
         tcpPort->base.perror = -(tcpPort->socket);
