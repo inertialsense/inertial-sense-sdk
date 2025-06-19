@@ -5,7 +5,6 @@
 #include "tcpPort.h"
 #include <errno.h>
 #include <stdbool.h>
-#include <sys/time.h>
 
 #ifdef PLATFORM_IS_WINDOWS
 #include <winsock2.h>
@@ -16,6 +15,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <sys/socket.h>
 #endif
 
