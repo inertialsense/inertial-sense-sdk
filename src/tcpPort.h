@@ -48,7 +48,11 @@ struct tcp_port_s
 
     // Store an Address type that can connect via TCP
     union {
+#ifdef PLATFORM_IS_WINDOWS
+        ADDRESS_FAMILY domain;
+#else
         sa_family_t domain; // Type of socket to use
+#endif
         struct sockaddr generic;
         struct sockaddr_in ipv4;
         struct sockaddr_in6 ipv6;
