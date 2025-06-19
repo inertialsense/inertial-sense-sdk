@@ -891,12 +891,12 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (!SetFlashConfig(flashCfg))  // Upload and verify upload
-        return false;   // we failed to even upload the new config
+        return false;               // we failed to even upload the new config
 
     // save the uploaded config, with correct checksum calculated in SetFlashConfig()
     nvm_flash_cfg_t tmpFlash = flashCfg;
 
-    SLEEP_MS(10);
+    SLEEP_MS(250);
     step();
 
     if (!WaitForFlashSynced(timeout))
@@ -904,6 +904,8 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
 
     if ((flashCfgUploadTimeMs != 0) && (flashSyncCheckTimeMs != 0))
         return false;   // timed-out,
+
+    printf ("flashCfg:0x%08X, tmpFlash:0x%08X\n", flashCfg.checksum, tmpFlash.checksum);
 
     return (memcmp(&flashCfg, &tmpFlash, sizeof(nvm_flash_cfg_t)) == 0);
 }
