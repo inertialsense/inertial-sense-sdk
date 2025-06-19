@@ -11,6 +11,7 @@
 #define errno WSAGetLastError()
 #define close closesocket
 #define ioctl ioctlsocket
+#define ssize_t SSIZE_T
 #else
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -78,6 +79,9 @@ int tcpPortClose(port_handle_t port) {
 }
 
 int tcpPortFree(port_handle_t port) {
+#ifdef PLATFORM_IS_WINDOWS
+    return PORT_ERROR__NOT_SUPPORTED
+#else
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
         tcpPort->base.perror = -(tcpPort->socket);
@@ -97,6 +101,7 @@ int tcpPortFree(port_handle_t port) {
         return -errno;
     }
     return bufferSize - bytesUsed;
+#endif
 }
 
 int tcpPortAvailable(port_handle_t port) {
@@ -123,6 +128,8 @@ int tcpPortFlush(port_handle_t port) {
 
     while (true) {
         int bufferSize = tcpPortAvailable(port);
+        int flag = 1;
+        ioctl(tcpPort->socket,FIONBIO, &flag);
         if (bufferSize > 0) {
             void *bigBuffer = malloc(bufferSize);
             if (bigBuffer == NULL) {
@@ -130,18 +137,24 @@ int tcpPortFlush(port_handle_t port) {
                 return -errno;
             }
             memset(bigBuffer, 0, bufferSize);
-            ssize_t retval = recv(tcpPort->socket, bigBuffer, bufferSize, MSG_DONTWAIT);
+            ssize_t retval = recv(tcpPort->socket, bigBuffer, bufferSize, 0);
             free(bigBuffer); // Free doesn't modify errno
             bigBuffer = NULL;
             if (retval < 0) {
                 tcpPort->base.perror = errno;
                 return -errno;
             } else if (retval == 0) {
+                flag = 0;
+                ioctl(tcpPort->socket,FIONBIO, &flag);
                 return 0;
             }
         } else if (bufferSize == 0) {
+            flag = 0;
+            ioctl(tcpPort->socket,FIONBIO, &flag);
             return 0;
         } else {
+            flag = 0;
+            ioctl(tcpPort->socket,FIONBIO, &flag);
             tcpPort->base.perror = -bufferSize;
             return bufferSize;
         }
@@ -163,15 +176,22 @@ int tcpPortDrain(port_handle_t port, __attribute__((unused)) uint32_t timeout) {
         return -errno;
     }
 
+    // Set nonblocking
+    flag = 0;
+    if (!tcpPort->blocking) {
+        flag = 1;
+    }
+    ioctl(tcpPort->socket,FIONBIO, &flag);
+
     // Makes sures the kernel actually tries to send something
-    retval = send(tcpPort->socket, NULL, 0, MSG_DONTWAIT);
+    retval = send(tcpPort->socket, NULL, 0, 0);
     if (retval < 0) {
         tcpPort->base.perror = errno;
         return -errno;
     }
 
     // Tell the kernel to buffer messages again cause TCP_NODELAY kills network performance
-    flag = 0;
+    ioctl(tcpPort->socket,FIONBIO, &flag);
     retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
     if (retval != 0) {
         tcpPort->base.perror = errno;
@@ -188,17 +208,20 @@ int tcpPortRead(port_handle_t port, uint8_t* buf, unsigned int len) {
     }
 
     // Determine flags
-    int flags = 0;
+    int flag = 0;
     if (!tcpPort->blocking) {
-        flags |= MSG_DONTWAIT;
+        flag = 1;
     }
+    ioctl(tcpPort->socket,FIONBIO, &flag);
 
     // Receive data from the socket
-    ssize_t retval = recv(tcpPort->socket, buf, len, flags);
+    ssize_t retval = recv(tcpPort->socket, buf, len, 0);
     if (retval < 0) {
         tcpPort->base.perror = errno;
         return -errno;
     }
+    flag = 0;
+    ioctl(tcpPort->socket,FIONBIO, &flag);
     return retval;
 }
 
@@ -266,17 +289,20 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     }
 
     // Determine flags
-    int flags = 0;
+    int flag = 0;
     if (!tcpPort->blocking) {
-        flags |= MSG_DONTWAIT;
+        flag = 1;
     }
+    ioctl(tcpPort->socket,FIONBIO, &flag);
 
     // Receive data from the socket
-    ssize_t retval = send(tcpPort->socket, buf, len, flags);
+    ssize_t retval = send(tcpPort->socket, buf, len, 0);
     if (retval < 0) {
         tcpPort->base.perror = errno;
         return -errno;
     }
+    flag = 0;
+    ioctl(tcpPort->socket,FIONBIO, &flag);
     return retval;
 }
 
