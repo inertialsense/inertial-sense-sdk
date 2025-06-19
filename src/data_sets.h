@@ -4878,7 +4878,7 @@ typedef struct
     /** port */
     uint8_t                 gpxSourcePort;
 
-    double                  upTime;     //! Time in seconds, since system was started
+    double                  upTime;     //!< Time in seconds, since system was started
 } gpx_status_t;
 
 

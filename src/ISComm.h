@@ -555,8 +555,8 @@ typedef enum {
     EPARSE_INVALID_SIZE,
     EPARSE_INVALID_CHKSUM,
     EPARSE_INVALID_DATATYPE,
-    EPARSE_MISSING_EOS_MARKER,      //! Invalid End-of-Stream/End-of-Sentence(NMEA) marker
-    EPARSE_INCOMPLETE_PACKET,       //! Stream/Sentence(NMEA) is too short/incomplete to identify as a packet
+    EPARSE_MISSING_EOS_MARKER,      //!< Invalid End-of-Stream/End-of-Sentence(NMEA) marker
+    EPARSE_INCOMPLETE_PACKET,       //!< Stream/Sentence(NMEA) is too short/incomplete to identify as a packet
     EPARSE_INVALID_HEADER,
     EPARSE_INVALID_PAYLOAD,
     EPARSE_RXBUFFER_FLUSHED,
@@ -638,18 +638,18 @@ typedef struct
     is_comm_callbacks_t cb;
 } is_comm_instance_t;
 
-static const uint8_t COMM_PORT_FLAG__EXPLICIT_READ  = 0x01;     //! When set, ISComm::is_comm_port_parse_messages() will not read/parse from this port; the operator must readPort() and then is_comm_buffer_parse_messages in separate, explicit steps.
+static const uint8_t COMM_PORT_FLAG__EXPLICIT_READ  = 0x01;     //!< When set, ISComm::is_comm_port_parse_messages() will not read/parse from this port; the operator must readPort() and then is_comm_buffer_parse_messages in separate, explicit steps.
 
 typedef struct {
     base_port_t base;
-    is_comm_instance_t comm;            //! Comm instance
+    is_comm_instance_t comm;                //!< Comm instance
 #if defined(GPX_1)
     #define GPX_COM_BUFFER_SIZE 2800
-    uint8_t buffer[GPX_COM_BUFFER_SIZE];       //! Comm instance data buffer
-    uint8_t flags;                      //! COMM_PORT flags (ie, EXPLICIT, etc)
+    uint8_t buffer[GPX_COM_BUFFER_SIZE];    //!< Comm instance data buffer
+    uint8_t flags;                          //!< COMM_PORT flags (ie, EXPLICIT, etc)
 #else
-    uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
-    uint8_t flags;                      //! COMM_PORT flags (ie, EXPLICIT, etc)
+    uint8_t buffer[PKT_BUF_SIZE];           //!< Comm instance data buffer
+    uint8_t flags;                          //!< COMM_PORT flags (ie, EXPLICIT, etc)
 #endif
 } comm_port_t;
 #define COMM_PORT(n)    ((comm_port_t*)(n))
