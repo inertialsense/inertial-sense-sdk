@@ -592,7 +592,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("imuRejectThreshGyroLow", &nvm_flash_cfg_t::imuRejectThreshGyroLow, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddMember("imuShockDetectLatencyMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.");
-    mapper.AddMember("imuShockRejectLatchMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.");
+    mapper.AddMember("imuShockRejectLatchMsDiv10", &nvm_flash_cfg_t::imuShockRejectLatchMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.");
     mapper.AddMember("imuShockOptions", &nvm_flash_cfg_t::imuShockOptions, DATA_TYPE_UINT8, "", "IMU shock rejection options (see eImuShockOptions).", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("imuShockDeltaAccPerMsHighThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsHighThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Min acceleration change in 1 ms to detect start of a shock.");
     mapper.AddMember("imuShockDeltaAccPerMsLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsLowThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Max acceleration change in 1 ms within the latch time to detect end of a shock.");
