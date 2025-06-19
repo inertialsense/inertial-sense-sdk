@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <sys/time.h>
 
-#ifdef _WIN32
+#ifdef PLATFORM_IS_WINDOWS
 #include <winsock2.h>
 #define errno WSAGetLastError()
 #define close closesocket
