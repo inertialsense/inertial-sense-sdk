@@ -4,7 +4,11 @@
 
 #include "TCPPortFactory.h"
 
+#ifdef PLATFORM_IS_WINDOWS
+#include <winsock2.h>
+#else
 #include <arpa/inet.h>
+#endif
 
 #include <iostream>
 #include <regex>
