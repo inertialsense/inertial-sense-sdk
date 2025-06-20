@@ -132,7 +132,7 @@ void cISLogger::Cleanup()
         if (device) {
             device->devLogger.reset();
             if (device->port)
-                setPortLogger(device->port, nullptr, nullptr);
+                portSetLogger(device->port, nullptr, nullptr);
         }
     }
     m_devices.clear();
@@ -330,7 +330,7 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice* device) {
     }
     device->devLogger->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
     m_devices[device->devInfo.serialNumber] = device->devLogger;
-    setPortLogger(device->port, logPortData, (void*)this);
+    portSetLogger(device->port, logPortData, (void*)this);
 
     return device->devLogger;
 }

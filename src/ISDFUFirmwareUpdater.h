@@ -255,10 +255,10 @@ private:
      * @brief OTP section
      */
     typedef struct {
-        uint32_t serialNumber;   //! Inertial Sense serial number
-        uint16_t lotNumber;      //! Inertial Sense lot number
-        uint16_t hardwareId;     //! Inertial Sense Hardware Id (type/version)
-        char date[16];           //! Inertial Sense manufacturing date (YYYYMMDDHHMMSS)
+        uint32_t serialNumber;   //!< Inertial Sense serial number
+        uint16_t lotNumber;      //!< Inertial Sense lot number
+        uint16_t hardwareId;     //!< Inertial Sense Hardware Id (type/version)
+        char date[16];           //!< Inertial Sense manufacturing date (YYYYMMDDHHMMSS)
     } otp_info_t;
 
     int detach(uint8_t timeout);
@@ -404,8 +404,8 @@ private:
     ByteBuffer* imgBuffer = nullptr;
     ByteBufferStream* imgStream = nullptr;
 
-    std::deque<uint8_t> toDevice;         //! a data stream that is input from the host (host tx) and output to the device (device rx)
-    std::deque<uint8_t> toHost;           //! a data stream that is input from the device (device tx) and output to the host (host rx)
+    std::deque<uint8_t> toDevice;         //!< a data stream that is input from the host (host tx) and output to the device (device rx)
+    std::deque<uint8_t> toHost;           //!< a data stream that is input from the device (device tx) and output to the host (host rx)
 
 };
 
