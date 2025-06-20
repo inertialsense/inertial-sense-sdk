@@ -908,7 +908,7 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
     SLEEP_MS(10);
     step();
 
-    if (!WaitForFlashSynced(timeout))
+    if (!WaitForFlashSynced(false, timeout))
         return false;   // Re-download flash config
 
     if ((flashCfgUploadTimeMs != 0) && (flashSyncCheckTimeMs != 0))
