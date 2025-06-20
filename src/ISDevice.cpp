@@ -911,8 +911,6 @@ bool ISDevice::SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
     if ((flashCfgUploadTimeMs != 0) && (flashSyncCheckTimeMs != 0))
         return false;   // timed-out,
 
-    printf ("flashCfg:0x%08X, tmpFlash:0x%08X\n", flashCfg.checksum, tmpFlash.checksum);
-
     return (memcmp(&flashCfg, &tmpFlash, sizeof(nvm_flash_cfg_t)) == 0);
 }
 
