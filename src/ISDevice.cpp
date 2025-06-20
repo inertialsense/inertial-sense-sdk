@@ -812,6 +812,9 @@ bool ISDevice::WaitForFlashSynced(bool forceSync, uint32_t timeout)
     if (forceSync)
     {
         sysParams.flashCfgChecksum = 0;
+        flashCfgUpload.checksum = 0;
+        flashCfgUploadTimeMs = 0;
+        printf("Forcing flash config sync.\n");
     }
 
     if ((flashCfgUploadTimeMs == 0) && (flashCfgUpload.checksum == 0))
