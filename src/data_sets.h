@@ -3519,11 +3519,11 @@ typedef struct PACKED
     /** IMU gyro fault rejection threshold high */
     uint8_t                 imuRejectThreshGyroHigh;
 
-    /** (ms/10) IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.  */
-    uint8_t                 imuShockDetectLatencyMsDiv10;
+    /** (ms) IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.  */
+    uint8_t                 imuShockDetectLatencyMs;
 
-    /** (ms/10) IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.  */
-    uint8_t                 imuShockRejectLatchMsDiv10;
+    /** (ms) IMU shock rejection latch time.  Time required following detected shock end to disable shock rejection.  */
+    uint8_t                 imuShockRejectLatchMs;
 
     /* IMU shock rejection options (see eImuShockOptions) */
     uint8_t                 imuShockOptions;
