@@ -591,12 +591,14 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddMember("imuRejectThreshGyroLow", &nvm_flash_cfg_t::imuRejectThreshGyroLow, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
-    mapper.AddMember("imuShockDetectLatencyMsDiv10", &nvm_flash_cfg_t::imuShockDetectLatencyMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.");
-    mapper.AddMember("imuShockRejectLatchMsDiv10", &nvm_flash_cfg_t::imuShockRejectLatchMsDiv10, DATA_TYPE_UINT8, "ms/10", "IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.");
+    mapper.AddMember("imuShockDetectLatencyMs", &nvm_flash_cfg_t::imuShockDetectLatencyMs, DATA_TYPE_UINT8, "ms", "IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.");
+    mapper.AddMember("imuShockRejectLatchMs", &nvm_flash_cfg_t::imuShockRejectLatchMs, DATA_TYPE_UINT8, "ms", "IMU shock rejection latch time.  Time required following detected end of shock to disable shock rejection.");
     mapper.AddMember("imuShockOptions", &nvm_flash_cfg_t::imuShockOptions, DATA_TYPE_UINT8, "", "IMU shock rejection options (see eImuShockOptions).", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("imuShockDeltaAccPerMsHighThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsHighThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Min acceleration change in 1 ms to detect start of a shock.");
-    mapper.AddMember("imuShockDeltaAccPerMsLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccPerMsLowThreshold, DATA_TYPE_UINT8, "m/s^2/ms", "IMU shock detection. Max acceleration change in 1 ms within the latch time to detect end of a shock.");
-    mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT16);
+    mapper.AddMember("imuShockDeltaAccHighThreshold", &nvm_flash_cfg_t::imuShockDeltaAccHighThreshold, DATA_TYPE_UINT8, "m/s^2", "IMU shock detection. Min acceleration difference between the 3 IMUs to detect start of a shock.");
+    mapper.AddMember("imuShockDeltaAccLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccLowThreshold, DATA_TYPE_UINT8, "m/s^2", "IMU shock detection. Max acceleration difference between the 3 IMUs within the latch time to detect end of a shock.");
+    mapper.AddMember("imuShockDeltaGyroHighThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroHighThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Min angular rate difference between the 3 IMUs to detect start of a shock.");
+    mapper.AddMember("imuShockDeltaGyroLowThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroLowThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect end of a shock.");
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2).");
  
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
