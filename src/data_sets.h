@@ -3528,17 +3528,20 @@ typedef struct PACKED
     /* IMU shock rejection options (see eImuShockOptions) */
     uint8_t                 imuShockOptions;
 
-    /* (m/s^2/ms) IMU shock detection. Min acceleration change in 1 ms to detect the start of a shock. */
-    uint8_t                 imuShockDeltaAccPerMsHighThreshold;
+    /* (m/s^2) IMU shock detection. Min acceleration difference between the 3 IMUs to detect the start of a shock. */
+    uint8_t                 imuShockDeltaAccHighThreshold;
 
-    /* (m/s^2/ms) IMU shock detection. Max acceleration change in 1 ms within the latch time to detect the end of a shock. */
-    uint8_t                 imuShockDeltaAccPerMsLowThreshold;
+    /* (m/s^2) IMU shock detection. Max acceleration difference between the 3 IMUs within the latch time to detect the end of a shock. */
+    uint8_t                 imuShockDeltaAccLowThreshold;
+
+    /* (deg/s) IMU shock detection. Min angular rate difference between the 3 IMUs to detect the start of a shock. */
+    uint8_t                 imuShockDeltaGyroHighThreshold;
+
+    /* (deg/s) IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect the end of a shock. */
+    uint8_t                 imuShockDeltaGyroLowThreshold;
 
     /** Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2). */
     uint8_t				    ioConfig2;
-
-    /** Reserved */
-    uint16_t                reserved1;
 
 } nvm_flash_cfg_t;
 
