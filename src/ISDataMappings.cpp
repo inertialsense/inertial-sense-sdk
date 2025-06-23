@@ -598,7 +598,6 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("imuShockDeltaAccLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccLowThreshold, DATA_TYPE_UINT8, "m/s^2", "IMU shock detection. Max acceleration difference between the 3 IMUs within the latch time to detect end of a shock.");
     mapper.AddMember("imuShockDeltaGyroHighThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroHighThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Min angular rate difference between the 3 IMUs to detect start of a shock.");
     mapper.AddMember("imuShockDeltaGyroLowThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroLowThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect end of a shock.");
-    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2).");
  
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
