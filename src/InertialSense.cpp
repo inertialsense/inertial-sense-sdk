@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -132,7 +132,7 @@ InertialSense::InertialSense(
     m_clientStream = NULLPTR;
     m_clientBufferBytesToSend = 0;
     m_clientServerByteCount = 0;
-    m_disableBroadcastsOnClose = false;  // For Intellian
+    m_disableBroadcastsOnClose = false;  // For Intel.
 
     for(int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
     {
@@ -275,7 +275,7 @@ void InertialSense::LoggerThread(void* info)
             // log the packets
             for (map<int, vector<p_data_buf_t>>::iterator i = packets.begin(); i != packets.end(); i++)
             {
-                if (inertialSense->m_logger.GetType() != cISLogger::LOGTYPE_RAW) {
+                if (inertialSense->m_logger.Type() != cISLogger::LOGTYPE_RAW) {
                     size_t numPackets = i->second.size();
                     for (size_t j = 0; j < numPackets; j++) {
                         auto device = inertialSense->m_comManagerState.devices[i->first];
@@ -503,7 +503,6 @@ bool InertialSense::UpdateServer()
         // Search comm buffer for valid packets
         while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
         {
-            int id = 0;	// len = 0;
             string str;
 
             switch (ptype)
@@ -518,34 +517,11 @@ bool InertialSense::UpdateServer()
                     }
                     if (ptype == _PTYPE_RTCM3)
                     {
-                        // len = messageStatsGetbitu(comm->rxPkt.data.ptr, 14, 10);
-                        id = messageStatsGetbitu(comm->rxPkt.data.ptr, 24, 12);
-                        if ((id == 1029) && (comm->rxPkt.data.size < 1024))
+                        if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
                         {
                             str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
                         }
                     }
-                    else if (ptype == _PTYPE_UBLOX)
-                    {
-                        id = *((uint16_t*)(&comm->rxPkt.data.ptr[2]));
-                    }
-                    break;
-
-                case _PTYPE_PARSE_ERROR:
-                    break;
-
-                case _PTYPE_INERTIAL_SENSE_DATA:
-                case _PTYPE_INERTIAL_SENSE_CMD:
-                    id = comm->rxPkt.hdr.id;
-                    break;
-
-                case _PTYPE_NMEA:
-                {	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)
-                    uint8_t *pStart = comm->rxPkt.data.ptr + 2;
-                    uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
-                    pStart = _MAX(pStart, pEnd - 8);
-                    memcpy(&id, pStart, (pEnd - pStart));
-                }
                     break;
 
                 default:
@@ -554,7 +530,7 @@ bool InertialSense::UpdateServer()
 
             if (ptype != _PTYPE_NONE)
             {	// Record message info
-                messageStatsAppend(str, m_serverMessageStats, ptype, id, m_timeMs);
+                messageStatsAppend(str, m_serverMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
             }
         }
     }
@@ -587,7 +563,6 @@ bool InertialSense::UpdateClient()
         // Search comm buffer for valid packets
         while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
         {
-            int id = 0;
             string str;
 
             switch (ptype)
@@ -599,15 +574,10 @@ bool InertialSense::UpdateClient()
 
                     if (ptype == _PTYPE_RTCM3)
                     {
-                        id = messageStatsGetbitu(comm->rxPkt.data.ptr, 24, 12);
-                        if ((id == 1029) && (comm->rxPkt.data.size < 1024))
+                        if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
                         {
                             str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
                         }
-                    }
-                    else if (ptype == _PTYPE_UBLOX)
-                    {
-                        id = *((uint16_t*)(&comm->rxPkt.data.ptr[2]));
                     }
                     break;
 
@@ -619,27 +589,13 @@ bool InertialSense::UpdateClient()
                     error++;
                     break;
 
-                case _PTYPE_INERTIAL_SENSE_DATA:
-                case _PTYPE_INERTIAL_SENSE_CMD:
-                    id = comm->rxPkt.hdr.id;
-                    break;
-
-                case _PTYPE_NMEA:
-                {	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)
-                    uint8_t *pStart = comm->rxPkt.data.ptr + 2;
-                    uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
-                    pStart = _MAX(pStart, pEnd - 8);
-                    memcpy(&id, pStart, (pEnd - pStart));
-                }
-                    break;
-
                 default:
                     break;
             }
 
             if (ptype != _PTYPE_NONE)
             {	// Record message info
-                messageStatsAppend(str, m_clientMessageStats, ptype, id, m_timeMs);
+                messageStatsAppend(str, m_clientMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
             }
         }
     }
@@ -682,7 +638,7 @@ void InertialSense::Close()
     EnableLogger(false);
     if (m_disableBroadcastsOnClose)
     {
-        StopBroadcasts();
+        StopBroadcasts(false);
         SLEEP_MS(100);
     }
     CloseSerialPorts(true); // allow all opened ports to transmit all buffered data
@@ -915,7 +871,7 @@ void InertialSense::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg)
 
     if (platformCfgUpdateIoConfig)
     {   // Update ioConfig
-        imxPlatformConfigToFlashCfgIoConfig(&flashCfg.ioConfig, flashCfg.platformConfig);
+        imxPlatformConfigToFlashCfgIoConfig(&flashCfg.ioConfig, &flashCfg.ioConfig2, flashCfg.platformConfig);
     }
 
     // Update checksum
@@ -1522,7 +1478,7 @@ void InertialSense::OnClientConnecting(cISTcpServer* server)
     // cout << endl << "Client connecting..." << endl;
 }
 
-void InertialSense::OnClientConnected(cISTcpServer* server, socket_t socket)
+void InertialSense::OnClientConnected(cISTcpServer* server, is_socket_t socket)
 {
     // cout << endl << "Client connected: " << (int)socket << endl;
     m_clientConnectionsCurrent++;
@@ -1534,7 +1490,7 @@ void InertialSense::OnClientConnectFailed(cISTcpServer* server)
     // cout << endl << "Client connection failed!" << endl;
 }
 
-void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
+void InertialSense::OnClientDisconnected(cISTcpServer* server, is_socket_t socket)
 {
     // cout << endl << "Client disconnected: " << (int)socket << endl;
     m_clientConnectionsCurrent--;

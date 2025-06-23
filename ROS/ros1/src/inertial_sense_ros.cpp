@@ -396,7 +396,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
         rs_.imu.enabled = true;
         odometryIdentity(msg_odom_ned);
         if (!firstrun)
-            return;;
+            return;
     }
 
     if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins4.streaming && imuStreaming_))

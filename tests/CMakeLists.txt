@@ -1,14 +1,14 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
+if(WIN32)
+set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")	# Must go before calling project()
+endif()
 
 project(IS-SDK_unit-tests)
 
-set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+add_definitions(-DSDK_UNIT_TEST)
 
-find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
-if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
-    # InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
-    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
-endif()
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 
 # Include InertialSenseSDK header files
 include_directories(
@@ -44,5 +44,11 @@ add_executable(${PROJECT_NAME}
     # test_data_utils.cpp
 )
 
+if(WIN32)   # Windows
+    set(PROJECT_PLATFORM_LIBS GTest::GTest GTest::Main)
+else()      # Linux
+    set(PROJECT_PLATFORM_LIBS gtest_main ${GTEST_LIBRARIES} udev pthread m)
+endif()
+
 # Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} gtest_main InertialSenseSDK ${GTEST_LIBRARIES} udev pthread m)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_PLATFORM_LIBS} InertialSenseSDK)

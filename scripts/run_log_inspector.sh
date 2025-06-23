@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
+cd "$(dirname "$(realpath $0)")" > /dev/null
+source lib/activate_python_venv.sh
 
-source "$(dirname "$(realpath $0)")/lib/python_venv.sh" # Load python virtual enviroment must be ran before pushd
-pushd "$(dirname "$(realpath $0)")" > /dev/null
-
-python3 ../python/logInspector/logInspectorInternal.py
-
-popd > /dev/null
+python3 ../python/logInspector/logInspector.py

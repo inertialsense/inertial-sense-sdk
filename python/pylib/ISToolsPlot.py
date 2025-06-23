@@ -1,8 +1,6 @@
 import numpy as np
 import os
-# import sys
 import simplekml
-# import pdb
 
 import inertialsense_math.pose as pose
 import pylib.ISToolsDataSorted as itd
@@ -13,7 +11,8 @@ import matplotlib
 import datetime
 
 import time as systime
-from pylib.ISToolsDataSorted import cObj, refLla, getTimeFromTowMs, getTimeFromTow
+from pylib.ISToolsDataSorted import cObj
+from pylib.ISToolsGNSS import getTimeFromGpsTow, getTimeFromGpsTowMs
 
 RAD2DEG = 180/np.pi
 DEG2RAD = np.pi/180
@@ -335,8 +334,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             sysP = log.data['sysParams']
             time = (sysP['towMs'] - sysP['towMs'][0])/1000.0
             fig, ax = pt.subplots(f, 2, 'Temperature')
-            pt.subplotSingle(ax[0], getTimeFromTowMs(sysP['towMs']), sysP['imuTemp'], title='Temperature: IMU')
-            pt.subplotSingle(ax[1], getTimeFromTowMs(sysP['towMs']), sysP['baroTemp'], title='Temperature: Baro')
+            pt.subplotSingle(ax[0], getTimeFromGpsTowMs(sysP['towMs']), sysP['imuTemp'], title='Temperature: IMU')
+            pt.subplotSingle(ax[1], getTimeFromGpsTowMs(sysP['towMs']), sysP['baroTemp'], title='Temperature: Baro')
             saveFigures('Temperature', f)
 
 
@@ -477,8 +476,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
             rtkRel = log.data['gps1RtkCmpRel']
 
-            pt.subplotSingle(ax[0], getTimeFromTowMs(rtkRel['timeOfWeekMs']), rtkRel['headingToBase'] * RAD2DEG, title="RTK")
-            pt.subplotSingle(ax[1], getTimeFromTow(ins.v['tow']), ins.v['euler'][:, 2] * RAD2DEG, title="INS")
+            pt.subplotSingle(ax[0], getTimeFromGpsTowMs(rtkRel['timeOfWeekMs']), rtkRel['headingToBase'] * RAD2DEG, title="RTK")
+            pt.subplotSingle(ax[1], getTimeFromGpsTow(ins.v['tow']), ins.v['euler'][:, 2] * RAD2DEG, title="INS")
             saveFigures('compassingAngle.svg', f)
 
     #############################################
@@ -508,7 +507,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             # dist2basefloat[(rtkRel['arRatio'] < 0.0) | (rtkRel['arRatio'] > 3.0)] = np.nan
             # dist2basesingle[rtkRel['arRatio'] > 0.001] = np.nan
 
-            time = getTimeFromTowMs(rtkRel['timeOfWeekMs'])
+            time = getTimeFromGpsTowMs(rtkRel['timeOfWeekMs'])
 
             cmap = matplotlib.cm.get_cmap('Spectral')
             colors = [cmap(i/numDevs) for i in range(numDevs)]
@@ -652,7 +651,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         if rIns:
             pt.plot3Axes(f, rIns.v['time'], rIns.uvw, options=rInsColor)
             legend += ['Truth']
-        pt.plot3Axes(f, getTimeFromTow(ins.v['tow']), ins.v['uvw'], options=insColor)
+        pt.plot3Axes(f, getTimeFromGpsTow(ins.v['tow']), ins.v['uvw'], options=insColor)
         legend += ['INS']
         plt.legend(legend)
 
@@ -670,7 +669,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
     if peCheck('uvwErr') and 'uvwErr' in ins.v.dtype.names:
         f += 1;    legend = []
-        pt.plot3Axes(f, getTimeFromTow(ins.v['tow']), ins.v['uvwErr'], 'UVW Error from Truth INS', 'm/s', options=errColor)
+        pt.plot3Axes(f, getTimeFromGpsTow(ins.v['tow']), ins.v['uvwErr'], 'UVW Error from Truth INS', 'm/s', options=errColor)
 
 
     #############################################
@@ -683,32 +682,32 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             pt.subplotSingle(ax[0], rIns.v['time'], rIns.v['euler'][:,0]*RAD2DEG, options=rInsColor)
 
         if referencePlot:
-            pt.subplotSingle(ax[0], getTimeFromTow(ins.v['tow']), ins.v['euler'][:,0]*RAD2DEG, 'Roll', 'deg', options=insColor)
+            pt.subplotSingle(ax[0], getTimeFromGpsTow(ins.v['tow']), ins.v['euler'][:,0]*RAD2DEG, 'Roll', 'deg', options=insColor)
         else:
-            pt.subplotSingle(ax[0], getTimeFromTow(ins.v['tow']), ins.v['euler'][:,0]*RAD2DEG, 'Roll', 'deg')
+            pt.subplotSingle(ax[0], getTimeFromGpsTow(ins.v['tow']), ins.v['euler'][:,0]*RAD2DEG, 'Roll', 'deg')
 
         if rIns:
             pt.subplotSingle(ax[1], rIns.v['time'], rIns.v['euler'][:,1]*RAD2DEG, options=rInsColor)
 
         if referencePlot:
-            pt.subplotSingle(ax[1], getTimeFromTow(ins.v['tow']), ins.v['euler'][:,1]*RAD2DEG, 'Pitch', 'deg', options=insColor)
+            pt.subplotSingle(ax[1], getTimeFromGpsTow(ins.v['tow']), ins.v['euler'][:,1]*RAD2DEG, 'Pitch', 'deg', options=insColor)
         else:
-            pt.subplotSingle(ax[1], getTimeFromTow(ins.v['tow']), ins.v['euler'][:,1]*RAD2DEG, 'Pitch', 'deg')
+            pt.subplotSingle(ax[1], getTimeFromGpsTow(ins.v['tow']), ins.v['euler'][:,1]*RAD2DEG, 'Pitch', 'deg')
 
         if rIns:
             pt.subplotSingle(ax[2], rIns.v['time'], rIns.v['euler'][:,2]*RAD2DEG, options=rInsColor)
             legend += ['Truth']
 
         if referencePlot:
-            pt.subplotSingle(ax[2], getTimeFromTow(ins.v['tow']), ins.v['euler'][:,2]*RAD2DEG, 'Yaw', 'deg', options=insColor)
+            pt.subplotSingle(ax[2], getTimeFromGpsTow(ins.v['tow']), ins.v['euler'][:,2]*RAD2DEG, 'Yaw', 'deg', options=insColor)
         else:
-            pt.subplotSingle(ax[2], getTimeFromTow(ins.v['tow']), ins.v['euler'][:,2]*RAD2DEG, 'Yaw', 'deg')
+            pt.subplotSingle(ax[2], getTimeFromGpsTow(ins.v['tow']), ins.v['euler'][:,2]*RAD2DEG, 'Yaw', 'deg')
 
         legend += ['INS']
 
         if pe['att'] >= 2: # Display GPS heading
             # Ignore GPS if timestamp is not valid
-            if gps1Pos and np.fabs(np.mean(getTimeFromTow(ins.v['tow'])) - np.mean(gps1Pos.time)) < 1000:
+            if gps1Pos and np.fabs(np.mean(getTimeFromGpsTow(ins.v['tow'])) - np.mean(gps1Pos.time)) < 1000:
                 pt.subplotSingle(ax[2], gps1Pos.time, gps1Pos.v['course']*RAD2DEG, options=refColor)
                 legend += ['GPS']
 
@@ -847,8 +846,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         fig, ax = pt.subplots(f,3, 'ECEF', sharex=True)
 
 
-        instime = getTimeFromTow(ins.v['tow'])
-        gpstime = getTimeFromTowMs(gps1Pos.v['timeOfWeekMs'])
+        instime = getTimeFromGpsTow(ins.v['tow'])
+        gpstime = getTimeFromGpsTowMs(gps1Pos.v['timeOfWeekMs'])
         pt.subplotSingle(ax[0], instime, ins.ecef()[:,0], 'X', 'm', options=insColor)
         pt.subplotSingle(ax[0], gpstime, gps1Pos.v['ecef'][:,0], options=refColor )
 
@@ -872,8 +871,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         if rIns:
             pt.subplotSingle(ax[0], rIns.v['time'], rIns.v['lla'][:,0], options=rInsColor )
 
-        instime = getTimeFromTow(ins.v['tow'])
-        gpstime = getTimeFromTowMs(gps1Pos.v['timeOfWeekMs'])
+        instime = getTimeFromGpsTow(ins.v['tow'])
+        gpstime = getTimeFromGpsTowMs(gps1Pos.v['timeOfWeekMs'])
         pt.subplotSingle(ax[0], instime, ins.v['lla'][:,0], 'Latitude', 'deg', options=insColor)
         pt.subplotSingle(ax[0], gpstime, gps1Pos.v['lla'][:,0], options=refColor )
 
@@ -922,28 +921,28 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         #             fd
 
         if ins:
-            instime = getTimeFromTow(ins.v['tow'])
+            instime = getTimeFromGpsTow(ins.v['tow'])
         if gps1Pos:
-            gpstime = getTimeFromTowMs(gps1Pos.v['timeOfWeekMs'])
+            gpstime = getTimeFromGpsTowMs(gps1Pos.v['timeOfWeekMs'])
 
         if 'gps1UbxPos' in log.data.keys():
             global refLla
             # ubxNED = pose.lla2ned(refLla, log.data['gps1RtkPos']['lla'])
-            # ubxtime = getTimeFromTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
-            ubxtime = getTimeFromTowMs(gps1Ubx.v['timeOfWeekMs'])
+            # ubxtime = getTimeFromGpsTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
+            ubxtime = getTimeFromGpsTowMs(gps1Ubx.v['timeOfWeekMs'])
         # else:
         #     rtkNED = None
 
         if 'gps1RtkPos' in log.data.keys():
             global refLla
             # rtkNED = pose.lla2ned(refLla, log.data['gps1RtkPos']['lla'])
-            # rtktime = getTimeFromTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
-            rtktime = getTimeFromTowMs(gps1RtkPos.v['timeOfWeekMs'])
+            # rtktime = getTimeFromGpsTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
+            rtktime = getTimeFromGpsTowMs(gps1RtkPos.v['timeOfWeekMs'])
         else:
             rtkNED = None
 
         if gps1Ubx:
-            ubxtime = getTimeFromTowMs(gps1Ubx.v['timeOfWeekMs'])
+            ubxtime = getTimeFromGpsTowMs(gps1Ubx.v['timeOfWeekMs'])
 
         pt.subplotSingle(ax[0], instime, ins.ned()[:,0], options=insColor, title="North", ylabel='m')
         legend = ['ins']
@@ -1455,7 +1454,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             fig, ax = pt.subplots(f,3, 'GPS Stats', sharex=True)
 
             gpsPos = log.data['gps1Pos']
-            time = getTimeFromTowMs(gpsPos['timeOfWeekMs'])
+            time = getTimeFromGpsTowMs(gpsPos['timeOfWeekMs'])
 
             pt.subplotSingle(ax[0], time, gpsPos['status'] & 0xFF, 'Satellites Used in Solution', '' )
             pt.subplotSingle(ax[1], time, gpsPos['pDop'], 'Accuracy', 'm', options='m' )
@@ -1465,7 +1464,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             pt.subplotSingle(ax[1], time, gpsPos['vAcc'], options='b' )
             legend += ['Ver']
             if 'gps1RtkPos' in log.data.keys():
-                rtktime = getTimeFromTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
+                rtktime = getTimeFromGpsTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
                 pt.subplotSingle(ax[1], rtktime, log.data['gps1RtkPos']['vAcc'], options=rtkColor)
                 legend += ['rtkHor']
             ax[1].legend(legend)
@@ -1512,14 +1511,14 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             #     n_plots += 1
             fig, ax = pt.subplots(f,n_plots, 'RTK Stats', sharex=True)
 
-            time = getTimeFromTowMs(log.data['gps1Pos']['timeOfWeekMs'])
+            time = getTimeFromGpsTowMs(log.data['gps1Pos']['timeOfWeekMs'])
             compassing = log.data['gps1Pos']['status'][10] & 0x00400000
             if not compassing:
                 fixType = log.data['gps1Pos']['status'] >> 8 & 0xFF
                 pt.subplotSingle(ax[0], time, fixType, 'GPS Fix Type: 2=2D, 3=3D, 10=Single, 11=Float, 12=Fix', '' )
                 ax[0].legend(legend)
 
-            time = getTimeFromTowMs(log.data['gps1RtkPosRel']['timeOfWeekMs'])
+            time = getTimeFromGpsTowMs(log.data['gps1RtkPosRel']['timeOfWeekMs'])
 
             if compassing:
                 fixType = log.data['gps1RtkPosRel']['arRatio'].copy()
@@ -1535,7 +1534,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
             n_plot = 4
             if 'gps1RtkPosMisc' in log.data.keys():
-                rtkMiscTime = getTimeFromTowMs(log.data['gps1RtkPosMisc']['timeOfWeekMs'])
+                rtkMiscTime = getTimeFromGpsTowMs(log.data['gps1RtkPosMisc']['timeOfWeekMs'])
                 pt.subplotSingle(ax[n_plot], rtkMiscTime, log.data['gps1RtkPosMisc']['cycleSlipCount'], 'RTK: Slip Counter', ' ' )
                 n_plot += 1
 
@@ -1577,7 +1576,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         pt.labels('INS Status')
         cnt = 0
 
-        instime = getTimeFromTow(ins.v['tow'])
+        instime = getTimeFromGpsTow(ins.v['tow'])
         iStatus = ins.iStatus()
         #         ax.text(p1, -cnt*1.5, '___ ALIGNED ___')
         #         cnt+=1

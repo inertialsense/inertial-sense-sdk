@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -92,8 +92,10 @@ public:
 	void SetExitProgram();
 
 	// for the binary protocol, this processes a packet of data
+	void ProcessData(p_data_buf_t* data, bool enableReplay = false, double replaySpeedX = 1.0);
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
 	bool PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
+	static std::string PrintIsCommStatus(is_comm_instance_t *comm);
 	void DataToStats(const p_data_t* data);
 	void PrintStats();
 	std::string DataToString(const p_data_t* data);
@@ -119,6 +121,7 @@ public:
 	std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
 	std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
 	std::string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
+	std::string DataToStringGRTOS(const gpx_rtos_info_t& info, const p_data_hdr_t& hdr);
 	std::string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
 	static std::string DataToStringDevInfo(const dev_info_t &info, bool full=false);
 	std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
@@ -126,6 +129,7 @@ public:
     std::string DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr);
     std::string DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr);
     std::string DataToStringPortMonitor(const port_monitor_t &portMon, const p_data_hdr_t& hdr);
+	std::string DataToStringEvent(const did_event_t &event, const p_data_hdr_t& hdr);
     std::string DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
     std::string DataToStringPacket(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine, bool colorize);
 	std::string DataToStringGeneric(const p_data_t* data);
@@ -145,7 +149,7 @@ public:
 	void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
 
 private:
-	std::string VectortoString();
+	std::string VectorToString();
 	void DataToVector(const p_data_t* data);
 
 	bool m_nonblockingkeyboard = false;

@@ -78,52 +78,60 @@ void LogReader::forward_message(eDataIDs did, std::vector<gps_raw_wrapper_t>& ve
     g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<sta_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sta.size()}, vec[0].sta.data()), device_id, (int)raw_data_type_base_station_antenna_position);
 }
 
-
 bool LogReader::init(py::object python_class, std::string log_directory, py::list serials)
 {
-    printf("SDK Protocol: %d.%d.%d.%d\n", 
-        PROTOCOL_VERSION_CHAR0,
-        PROTOCOL_VERSION_CHAR1,
-        PROTOCOL_VERSION_CHAR2,
-        PROTOCOL_VERSION_CHAR3);
+    std::ostringstream oss;
 
-    vector<string> stl_serials = serials.cast<vector<string>>();
-    cout << "Loading from: " << log_directory << endl;
-    cout << "Serial numbers: ";
-    for (int i = 0; i < (int)stl_serials.size(); i++)
-        cout << stl_serials[i] << "\n";
+    oss << "LogReader Init:\n";
 
-    // first try DAT files, if that doesn't work, then try SDAT files
-    if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials))
-    {
-        cout << "Found *.dat log with ";
+    // Print SDK protocol version
+    oss << " - SDK Protocol: "
+        << PROTOCOL_VERSION_CHAR0 << "."
+        << PROTOCOL_VERSION_CHAR1 << "."
+        << PROTOCOL_VERSION_CHAR2 << "."
+        << PROTOCOL_VERSION_CHAR3 << "\n";
+
+    std::vector<std::string> stl_serials = serials.cast<std::vector<std::string>>();
+    oss << " - Loading from: " << log_directory << "\n";
+
+    oss << " - Serials: ";
+    for (const auto& s : stl_serials) {
+        oss << s << "\n";
+    }
+
+    // Try loading log files
+    bool loaded = false;
+    if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials)) {
+        oss << " - Found *.dat log with ";
+        loaded = true;
     } 
-    else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_RAW, stl_serials))
-    {
-        cout << "Found *.raw log with ";
-    }
-    else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_SDAT, stl_serials))
-    {
-        cout << "Found *.sdat log with ";
-    }
-    else
-    {
-        cout << "Unable to load files" << endl;
+    else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_RAW, stl_serials)) {
+        oss << " - Found *.raw log with ";
+        loaded = true;
+    } 
+    else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_SDAT, stl_serials)) {
+        oss << " - Found *.sdat log with ";
+        loaded = true;
+    } 
+    else {
+        oss << " - Unable to load files\n";
+        std::cout << oss.str();
         return false;
     }
 
-    cout << logger_.DeviceCount() << " device(s):\n";
-    vector<int> serialNumbers;
-    for (auto dev : logger_.DeviceLogs())
-    {
-        cout << (serialNumbers.empty() ? "  " : ", ") << dev->SerialNumber();
+    oss << logger_.DeviceCount() << " device(s):";
+
+    std::vector<int> serialNumbers;
+    for (auto dev : logger_.DeviceLogs()) {
+        oss << (serialNumbers.empty() ? " " : ", ") << dev->SerialNumber();
         serialNumbers.push_back(dev->SerialNumber());
     }
-    cout << endl;
-    serialNumbers_ = py::cast(serialNumbers);
+    oss << "\n";
 
-    // python_parent_ = python_class;
+    serialNumbers_ = py::cast(serialNumbers);
     g_python_parent = python_class;
+
+    std::cout << oss.str();
     return true;
 }
 
@@ -178,7 +186,6 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_SENSORS_TCAL, dev_log_->sensorsTcal );
         HANDLE_MSG( DID_SENSORS_MCAL, dev_log_->sensorsMcal );
         HANDLE_MSG( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias );
-        HANDLE_MSG( DID_IO, dev_log_->io );
         // HANDLE_MSG( DID_SENSORS_ADC, dev_log_->sensorsAdc );
         HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
         HANDLE_MSG( DID_REFERENCE_IMU, dev_log_->refImu );
@@ -271,7 +278,6 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_SENSORS_TCAL, dev_log_->sensorsTcal, device_id );
     forward_message( DID_SENSORS_MCAL, dev_log_->sensorsMcal, device_id );
     forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, device_id );
-    forward_message( DID_IO, dev_log_->io, device_id );
     // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, device_id );
     forward_message( DID_SCOMP, dev_log_->scomp, device_id );
     forward_message( DID_REFERENCE_IMU, dev_log_->refImu, device_id );
@@ -347,6 +353,8 @@ bool LogReader::load()
         forwardData(i);
     }
 
+	logger_.CloseAllFiles();
+
     return true;
 }
 
@@ -375,7 +383,7 @@ void LogReader::ins1ToIns2(int device_id)
     printf("LogReader::ins1ToIns2() converting ins1 to ins2 for device: %d\n", device_id);
     ins_2_t ins2;
     dev_log_->ins2.clear();
-    for (int i=0; i<dev_log_->ins1.size(); i++)
+    for (unsigned int i=0; i<dev_log_->ins1.size(); i++)
     {
         convertIns1ToIns2(&(dev_log_->ins1[i]), &ins2);
         dev_log_->ins2.push_back(ins2);

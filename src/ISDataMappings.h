@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -53,21 +53,21 @@ typedef enum
 typedef enum
 {
     DATA_FLAGS_FIXED_DECIMAL_MASK        = 0x0000000F,
-    DATA_FLAGS_FIXED_DECIMAL_1           = 0x00000001,
-	DATA_FLAGS_FIXED_DECIMAL_2           = 0x00000002,
-	DATA_FLAGS_FIXED_DECIMAL_3           = 0x00000003,
-    DATA_FLAGS_FIXED_DECIMAL_4           = 0x00000004,
-	DATA_FLAGS_FIXED_DECIMAL_5           = 0x00000005,
-	DATA_FLAGS_FIXED_DECIMAL_6           = 0x00000006,
-	DATA_FLAGS_FIXED_DECIMAL_7           = 0x00000007,
-	DATA_FLAGS_FIXED_DECIMAL_8           = 0x00000008,
-	DATA_FLAGS_FIXED_DECIMAL_9           = 0x00000009,
-	DATA_FLAGS_FIXED_DECIMAL_10          = 0x0000000A,
-	DATA_FLAGS_FIXED_DECIMAL_11          = 0x0000000B,
-	DATA_FLAGS_FIXED_DECIMAL_12          = 0x0000000C,
-	DATA_FLAGS_FIXED_DECIMAL_13          = 0x0000000D,
-	DATA_FLAGS_FIXED_DECIMAL_14          = 0x0000000E,
-	DATA_FLAGS_FIXED_DECIMAL_15          = 0x0000000F,
+    DATA_FLAGS_FIXED_DECIMAL_0           = 0x00000001,
+    DATA_FLAGS_FIXED_DECIMAL_1           = 0x00000002,
+	DATA_FLAGS_FIXED_DECIMAL_2           = 0x00000003,
+	DATA_FLAGS_FIXED_DECIMAL_3           = 0x00000004,
+    DATA_FLAGS_FIXED_DECIMAL_4           = 0x00000005,
+	DATA_FLAGS_FIXED_DECIMAL_5           = 0x00000006,
+	DATA_FLAGS_FIXED_DECIMAL_6           = 0x00000007,
+	DATA_FLAGS_FIXED_DECIMAL_7           = 0x00000008,
+	DATA_FLAGS_FIXED_DECIMAL_8           = 0x00000009,
+	DATA_FLAGS_FIXED_DECIMAL_9           = 0x0000000A,
+	DATA_FLAGS_FIXED_DECIMAL_10          = 0x0000000B,
+	DATA_FLAGS_FIXED_DECIMAL_11          = 0x0000000C,
+	DATA_FLAGS_FIXED_DECIMAL_12          = 0x0000000D,
+	DATA_FLAGS_FIXED_DECIMAL_13          = 0x0000000E,
+	DATA_FLAGS_FIXED_DECIMAL_14          = 0x0000000F,
 	DATA_FLAGS_READ_ONLY                 = 0x00000010,
 	DATA_FLAGS_HIDDEN                    = 0x00000020,	// Do not print to screen
 	DATA_FLAGS_DISPLAY_HEX               = 0x00000100,
@@ -405,11 +405,68 @@ public:
 	void AddLlaDegM(const std::string& name, 
 		uint32_t offset,
 		const std::string& description = "",
+		const std::string& descriptionAltitude = "",
 		int flags = 0)
     {
-		AddMember2(name + "[0]", offset + 0*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
-		AddMember2(name + "[1]", offset + 1*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
-		AddMember2(name + "[2]", offset + 2*sizeof(double), DATA_TYPE_F64, "m", description, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+		eDataType type = DATA_TYPE_F64;
+		flags &= ~DATA_FLAGS_FIXED_DECIMAL_MASK;
+		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, "°", description + " latitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, "°", description + " longitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, "m", description + " " + descriptionAltitude, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+	}
+
+	void AddVec3(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description1 = "",
+		const std::string& description2 = "",
+		const std::string& description3 = "",
+		int flags = 0,
+		double conversion = 1.0)
+    {
+		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, units, description1, flags, conversion);
+		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, units, description2, flags, conversion);
+		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, units, description3, flags, conversion);
+	}
+
+	void AddVec4(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description1 = "",
+		const std::string& description2 = "",
+		const std::string& description3 = "",
+		const std::string& description4 = "",
+		int flags = 0,
+		double conversion = 1.0)
+    {
+		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, units, description1, flags, conversion);
+		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, units, description2, flags, conversion);
+		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, units, description3, flags, conversion);
+		AddMember2(name + "[3]", offset + 3*s_eDataTypeSize[type], type, units, description4, flags, conversion);
+	}
+
+	void AddVec3Xyz(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description = "",
+		int flags = 0,
+		double conversion = 1.0)
+	{
+		AddVec3(name, offset, type, units, "X "+description, "Y "+description, "Z "+description, flags, conversion);
+	}
+
+	void AddVec3Rpy(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description = "",
+		int flags = 0,
+		double conversion = 1.0)
+	{
+		AddVec3(name, offset, type, units, "Roll "+description, "Pitch "+description, "Yaw "+description, flags, conversion);
 	}
 
 private:
@@ -498,7 +555,7 @@ public:
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, bool json = false);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, bool json = false, bool useConversion = true);
 
 	/**
 	* Convert a string to a variable.
@@ -523,7 +580,7 @@ public:
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex = 0, bool json = false);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex = 0, bool json = false, bool useConversion = true);
 
 	/**
 	* Convert a variable to a string
@@ -547,6 +604,14 @@ public:
     static double Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
 
 	/**
+	* Get a timestamp from data if available.  If not, use the current local time.
+	* @param hdr data header
+	* @param buf data buffer
+	* @return timestamp, or current local time if no timestamp available
+	*/
+	static double TimestampOrCurrentTime(const p_data_hdr_t* hdr, const uint8_t* buf);
+
+	/**
 	* Check whether field data can be retrieved given a data packet
 	* @param info metadata for the field to get
 	* @param arrayIndex index into array
@@ -561,6 +626,14 @@ protected:
 
 	data_set_t m_data_set[DID_COUNT];
 
+#if PLATFORM_IS_EMBEDDED
+	// on embedded we cannot new up C++ runtime until after free rtos has started
+	static cISDataMappings* s_map;
+#else
+	static cISDataMappings s_map;
+#endif
+
+private:
     #define PROTECT_UNALIGNED_ASSIGNS
     template<typename T>
     static inline void protectUnalignedAssign(void* out, T in) {
@@ -586,13 +659,6 @@ protected:
         return *(T*)in;
     #endif
     }
-
-#if PLATFORM_IS_EMBEDDED
-	// on embedded we cannot new up C++ runtime until after free rtos has started
-	static cISDataMappings* s_map;
-#else
-	static cISDataMappings s_map;
-#endif
 
 };
 

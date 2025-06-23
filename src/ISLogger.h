@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -55,8 +55,12 @@ public:
         LOGTYPE_SDAT,       // sorted -- unsupported/deprecated, DO NOT USE!
         LOGTYPE_CSV,
         LOGTYPE_KML,
-        LOGTYPE_JSON
+        LOGTYPE_JSON,
+        LOGTYPE_COUNT
     };
+
+    // Static array of strings for log type names
+    static const char* logTypeStrings[LOGTYPE_COUNT];
 
     struct sSaveOptions
     {
@@ -90,7 +94,7 @@ public:
     virtual ~cISLogger();
 
     // Setup logger to read from file
-    bool LoadFromDirectory(const std::string& directory, eLogType logType = LOGTYPE_DAT, std::vector<std::string> serials = {});
+    bool LoadFromDirectory(const std::string& directory, eLogType logType = LOGTYPE_RAW, std::vector<std::string> serials = {});
 
     // Setup logger for writing to file
     bool InitSave(const std::string& directory = g_emptyString, const sSaveOptions& options = cISLogger::sSaveOptions());
@@ -162,8 +166,9 @@ public:
         float driveUsageLimitPercent = 0.5f, 
         bool useSubFolderTimestamp = true,
         bool enableCsvIns2ToIns1Conversion = true);
-    const cLogStats& GetStats() { return m_logStats; }
-    eLogType GetType() { return m_logType; }
+    unsigned int Count() { return m_logStats.Count(); }
+    unsigned int Errors() { return m_logStats.Errors(); }
+    eLogType Type() { return m_logType; }
 
     /**
     * Get the timeout flush parameter in seconds
@@ -231,6 +236,9 @@ public:
     }
 
     static bool ParseFilename(std::string filename, int &serialNum, std::string &date, std::string &time, int &index);
+    void PrintStatistics();
+    void PrintIsCommStatus();
+    void PrintLogDiskUsage();
 
 private:
 #if CPP11_IS_ENABLED
@@ -276,6 +284,7 @@ private:
     bool					m_showPath = false;
     bool					m_showTimeStamp = false;
     double					m_iconUpdatePeriodSec = false;
+    time_t                  m_logStartTime = 0;
     time_t					m_lastCommTime = 0;
     time_t					m_timeoutFlushSeconds = 0;
     time_t					m_timeoutFileCullingSeconds = 10;

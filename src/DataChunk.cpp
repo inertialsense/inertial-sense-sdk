@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -218,12 +218,6 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
 
 		// Read additional chunk header
 		nBytes += ReadAdditionalChunkHeader(pFile);
-
-//     // Error check data size
-//     if (m_hdr.dataSize > MAX_DATASET_SIZE)
-//     {
-//         return -1;
-//     }
 	}
 	else
 	{

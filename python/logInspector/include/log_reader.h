@@ -55,7 +55,7 @@ struct DeviceLog
     std::vector<sensors_w_temp_t> sensorsTcal;
     std::vector<sensors_w_temp_t> sensorsMcal;
     std::vector<sensors_t> sensorsTcBias;
-    std::vector<io_t> io;
+    
     // std::vector<sys_sensors_adc_t> sensorsAdc;
     std::vector<sensor_compensation_t> scomp;
     std::vector<imu_t> refImu;

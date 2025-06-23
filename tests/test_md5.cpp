@@ -6,6 +6,15 @@
 #include <sys/stat.h>
 #include "../ISConstants.h"
 #include "../util/md5.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#define popen _popen
+#define pclose _pclose
+#else
+#include <unistd.h>
+#endif
+
 using namespace std;
 
 
@@ -18,32 +27,69 @@ long GetFileSize(string filename)
 
 void check_md5_file(const char *filename)
 {
-    // Compute md5 hash using our library
+    // Compute MD5 hash using our library
     size_t filesize = 0;
     md5hash_t hash;
-    std::ifstream s(filename);
-    EXPECT_EQ( md5_file_details(&s, filesize, hash), 0 );
+    std::ifstream s(filename, std::ios::binary);
+    if (!s) {
+        throw std::runtime_error("Failed to open file for reading");
+    }
 
-    // Compare md5 hash using Linux md5sum app
-    string hashStr = md5_to_string(hash); 
+    EXPECT_EQ(md5_file_details(&s, filesize, hash), 0);
+
+    // Convert computed hash to string
+    std::string hashStr = md5_to_string(hash);
+
+    // Compare MD5 hash using platform-specific command
+    std::string cmdOutput;
     std::stringstream cmd;
-    cmd << "md5sum " << filename;
+
+#ifdef _WIN32
+    cmd << "CertUtil -hashfile \"" << filename << "\" MD5";
+#else
+    cmd << "md5sum \"" << filename << "\"";
+#endif
+
     FILE *fp = popen(cmd.str().c_str(), "r");
-    char path[PATH_MAX];
-    while (fgets(path, PATH_MAX, fp) != NULL)
-    path[32] = 0;   // Null terminate to omit filename
+    if (!fp) {
+        throw std::runtime_error("Failed to execute command");
+    }
+
+    char buffer[512];
+    while (fgets(buffer, sizeof(buffer), fp) != nullptr) {
+        cmdOutput += buffer;
+    }
     pclose(fp);
 
-    // Compare two hash strings
-    EXPECT_EQ(hashStr, string(path));
+#ifdef _WIN32
+    // Extract MD5 hash from CertUtil output
+    size_t start = cmdOutput.find(": ") + 2;
+    size_t end = cmdOutput.find('\r', start); // CertUtil output may have \r\n
+    cmdOutput = cmdOutput.substr(start, end - start);
+#else
+    // Extract MD5 hash from md5sum output
+    cmdOutput = cmdOutput.substr(0, 32);
+#endif
 
-    // Compare filesize
-    EXPECT_EQ(filesize, GetFileSize(filename));
+    // Remove any trailing whitespace
+    cmdOutput.erase(cmdOutput.find_last_not_of(" \n\r\t") + 1);
+
+    // Compare two hash strings
+    EXPECT_EQ(hashStr, cmdOutput);
+
+    // Compare file size
+    struct stat fileStat;
+    if (stat(filename, &fileStat) != 0) {
+        throw std::runtime_error("Failed to retrieve file size");
+    }
+    EXPECT_EQ(filesize, static_cast<size_t>(fileStat.st_size));
 
 #if 0   // Print results
-    printf("size: %d %s %s\n", (int)filesize, hashStr.c_str(), path);
+    printf("size: %d %s %s\n", static_cast<int>(filesize), hashStr.c_str(), cmdOutput.c_str());
 #endif
 }
+
+#ifndef _WIN32  // This test does not run correctly in Windows and needs to be debugged. (WHJ)
 
 TEST(md5, hash)
 {
@@ -115,3 +161,4 @@ TEST(md5, hash_from_file_1_to_400k_file_size)
     remove(filename);
 }
 
+#endif

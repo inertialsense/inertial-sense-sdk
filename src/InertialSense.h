@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -608,9 +608,9 @@ public:
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
     void OnClientConnecting(cISTcpServer* server) OVERRIDE;
-    void OnClientConnected(cISTcpServer* server, socket_t socket) OVERRIDE;
+    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
     void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
-    void OnClientDisconnected(cISTcpServer* server, socket_t socket) OVERRIDE;
+    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
 
 private:
     uint32_t m_timeMs;

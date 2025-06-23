@@ -1,14 +1,8 @@
 #!/bin/bash
-function echo_blue   { echo -e "\033[1;34m$@\033[0m"; }
-
-pushd "$(dirname "$(realpath $0)")" > /dev/null
-
-echo_blue "==============================================="
-echo_blue " Install Dependencies: SDK                     "
-echo_blue "==============================================="
+cd "$(dirname "$(realpath $0)")" > /dev/null
+source lib/activate_python_venv.sh
 
 sudo apt install -y cmake unzip zip libyaml-cpp-dev libudev-dev
+./install_python_dependencies.sh
 
-source ~/.bashrc
-
-popd > /dev/null
+if [[ -e ~/.bashrc ]]; then source ~/.bashrc; fi

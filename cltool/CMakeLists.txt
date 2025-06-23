@@ -3,14 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 project(cltool)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
-# find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR} ${IS_SDK_DIR}/build ${IS_SDK_DIR}/build/Release)
-find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
-if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
-    # InertialSenseSDK library not prebuilt and not already included in project.  Include it in this project.
-    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
-else()
-    link_directories(${IS_SDK_DIR}/Build/Release)
-endif()
+include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 
 # Include InertialSenseSDK header files
 include_directories(
@@ -33,8 +26,5 @@ add_executable(${PROJECT_NAME}
     src/cltool.cpp
 )
 
-# Find pthread package
-find_package(Threads REQUIRED)
-
-# Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads)
+# Link IS-SDK libraries to the executable
+include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)

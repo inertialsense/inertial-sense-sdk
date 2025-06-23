@@ -4,6 +4,10 @@
 #include "data_sets.h"
 #include "time_conversion.h"
 
+#if !defined(GPX_1) && !defined(IMX_5) && !defined(NAV_POST_PROCESS)
+extern uint32_t g_cpu_msec;
+#endif
+
 #define NMEA_CMD_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
@@ -11,11 +15,9 @@
 #define NMEA_CMD_SOFTWARE_RESET                         "$SRST*06\r\n"
 #define NMEA_CMD_SIZE                                   10
 
-#define UINT32_MATCH(u1,u2)	((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
-
 enum eNmeaProtocolVersion
 {
-    NMEA_PROTOCOL_2P3 		= 0,	// <4.10
+    NMEA_PROTOCOL_2P3 		= 230,	// 2.3 (Default version)
     NMEA_PROTOCOL_4P10 		= 410,	// 4.10
 };
 
@@ -43,8 +45,7 @@ char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos);
-int getNmeaMsgId(const void* a, int aSize);
-int nmeaMsgIdToTalker(int msgId, void *str, int strSize);
+void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset, gps_pos_t &pos);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////
@@ -69,6 +70,8 @@ int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float h
 int nmea_gsv_gnss(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno=false);
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gpsSat, gps_sig_t &gpsSig);
 int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel);
+int nmea_powgps(char a[], const int aSize, gps_pos_t &pos);
+int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel);
 
 //////////////////////////////////////////////////////////////////////////
 // NMEA to Binary
@@ -89,6 +92,8 @@ int nmea_parse_gll(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
 int nmea_parse_gsa(const char a[], const int aSize, gps_pos_t &gpsPos, gps_sat_t *gpsSat=NULL);
 char* nmea_parse_gsv(const char a[], const int aSize, gps_sat_t *gpsSat, gps_sig_t *gpsSig, uint32_t *cnoSum, uint32_t *cnoCount);
 int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_t &gpsPos, gps_vel_t &vel, float ppsPhase[2], uint32_t ppsNoiseNs[1]);
+int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos);
+int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel);
 int nmea_parse_rmc(const char a[], int aSize, gps_vel_t &gpsVel, utc_time_t &utcTime, int utcWeekday, int leapS, uint32_t statusFlags=0);
 int nmea_parse_vtg(const char a[], const int aSize, gps_vel_t &vel, const double refLla[3]);
 int nmea_parse_zda(const char a[], const int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS);

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -21,46 +21,52 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISComm.h"
 
 
-typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timestamp);
+typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timeMs);
 
-class cLogStatDataId
+class cLogStatMsgId
 {
 public:
-	uint64_t count; // count for this data id
-	uint64_t errorCount; // error count for this data id
-	double averageTimeDelta; // average time delta for the data id
-	double totalTimeDelta; // sum of all time deltas
-	double lastTimestamp;
-	double lastTimestampDelta;
-	double minTimestampDelta;
-	double maxTimestampDelta;
-	uint64_t timestampDeltaCount;
-	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
+	unsigned int count;         // count for this data id
+	unsigned int errors;        // error count for this data id
+	unsigned int meanDtMs;    	// average time delta for the data id
+	unsigned int accumDtMs;     // sum of all time deltas
+	unsigned int lastTimeMs;
+	unsigned int lastDtMs;
+	unsigned int minDtMs;
+	unsigned int maxDtMs;
+	unsigned int dtMsCount;
+	unsigned int timeIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
 
-	cLogStatDataId();
-	void LogTimestamp(double timestamp);
-	void Printf();
+	unsigned int bpsBytes;
+	unsigned int bpsStartTimeMs;
+	unsigned int bytesPerSec;
+
+	cLogStatMsgId();
+	void LogTimestamp(unsigned int timeMs);
+	void LogByteSize(unsigned int timeMs, int bytes);
+};
+
+struct sLogStatPType
+{
+	std::map<int, cLogStatMsgId> stats;     // ID, cLogStatMsgId
+	unsigned int count;                     // count of all message ids
+	unsigned int errors;                    // total error count
 };
 
 class cLogStats
 {
 public:
-	std::map<int, cLogStatDataId> isbStats;
-	std::map<int, cLogStatDataId> nmeaStats;
-	std::map<int, cLogStatDataId> rtcm3Stats;
-	std::map<int, cLogStatDataId> ubloxStats;
-	uint64_t count; // count of all data ids
-	uint64_t errorCount; // total error count
+	std::map<protocol_type_t, sLogStatPType> msgs;
 	cISLogFileBase* statsFile;
 
 	cLogStats();
 	void Clear();
-	void LogError(const p_data_hdr_t* hdr);
-	cLogStatDataId* MsgStats(protocol_type_t ptype, uint32_t id);
-	void LogData(uint32_t id, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void Printf();
-	void WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
+	void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+    void LogData(protocol_type_t ptype, int id, int bytes, double timeMs=0.0);
+	unsigned int Count();
+	unsigned int Errors();
+	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
+	std::string Stats();
 	void WriteToFile(const std::string& fileName);
 };
 

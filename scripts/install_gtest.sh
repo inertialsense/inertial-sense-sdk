@@ -22,6 +22,6 @@ pushd /usr/src/googletest/googletest > /dev/null
   fi
 popd > /dev/null
 
-source ~/.bashrc
+if [[ -e ~/.bashrc ]]; then source ~/.bashrc; fi
 
 popd > /dev/null

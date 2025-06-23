@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -64,6 +64,16 @@ typedef struct
 
 typedef struct
 {
+    uint32_t Addrs[10];
+    std::string outDir;
+    bool sendEVM;
+    bool IMX;
+    bool hex;
+    uint8_t addrCnt;
+} EVMContainer_t;
+
+typedef struct
+{
 	std::string inFile;
 	std::string outFile;
 	std::string logType;
@@ -119,6 +129,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	uint32_t runDurationMs = 0;				// Run for this many millis before exiting (0 = indefinitely)
 	bool list_devices = false;				// if true, dumps results of findDevices() including port name.
 	EVFContainer_t evFCont = {0};
+    EVMContainer_t evMCont = {0};
 	EVOContainer_t evOCont;
 
 	bool disableDeviceValidation = false;	// Keep port(s) open even if no devices response is received.

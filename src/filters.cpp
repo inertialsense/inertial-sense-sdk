@@ -16,10 +16,6 @@
 
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
-void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, int Nsteps, float dti);
-float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast );
-float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast );
-float deltaThetaDeltaVelBortz( pimu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps );
 #if 0
 float integrateDeltaThetaVelRoscoe(
 	pimu_t *output, 
@@ -326,13 +322,21 @@ int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt)
     return 1;
 }
 
+void copyImu(imu_t *dst, const imu_t *src)
+{
+	dst->time = src->time;
+	dst->status = src->status;
+	cpy_Vec3_Vec3(dst->I.pqr, src->I.pqr);
+	cpy_Vec3_Vec3(dst->I.acc, src->I.acc);
+}
 
 #define CON_SCUL_INT_STEPS  2
 
 void integratePimu( pimu_t *output, imu_t *imu, imu_t *imuLast )
 {
 	output->time = imu->time;
-	output->status = imu->status;
+	output->status |= imu->status;														// Bitwise OR to preserve IMU status
+	output->status &= (~IMU_STATUS_IMU_OK_MASK) | (imu->status&IMU_STATUS_IMU_OK_MASK);	// Clear OK bits in PIMU status if not set in IMU status
 
 	//	output->dt += deltaThetaDeltaVelRiemannSum(output, imu, imuLast);
 	// 	output->dt += deltaThetaDeltaVelTrapezoidal(output, imu, imuLast);
@@ -365,7 +369,7 @@ float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast )
 	add_Vec3_Vec3( output->vel, output->vel, tmp3 );
 
 	// Update history
-	*imuLast = *imu;
+	copyImu(imuLast, imu);
 
 	return dt;
 }
@@ -389,7 +393,7 @@ float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast 
 	add_Vec3_Vec3( output->vel, output->vel, tmp3 );
 
 	// Update history
-	*imuLast = *imu;
+	copyImu(imuLast, imu);
 
 	return dt;
 }
@@ -431,7 +435,7 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
         cross_Vec3(thxthxwb, theta, thxwb);
         cross_Vec3(thxab, theta, ab);
         cross_Vec3(thxthxab, theta, thxab);
-        mag_theta2 = dot_Vec3(theta);
+        mag_theta2 = DOT_VEC3(theta);
         mag_theta4 = mag_theta2 * mag_theta2;
         Kw = Kw0 + mag_theta2 * Kw1 + mag_theta4 * Kw2; // + mag_theta4 * mag_theta2 * Kw3; <--- the last term is negligibly small
         for (int i = 0; i < 3; i++) {
@@ -454,7 +458,7 @@ float deltaThetaDeltaVelBortz(pimu_t *output, imu_t *imu, imu_t *imuLast, int Ns
 	integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), Nsteps, dt);
 
 	// Update history
-	*imuLast = *imu;
+	copyImu(imuLast, imu);
 
 	return dt;
 }
@@ -509,7 +513,7 @@ float integrateDeltaThetaVelRoscoe(
 	cpy_Vec3_Vec3(delta_veloc_last, delta_veloc);							//delta_veloc_last  <-- delta_veloc     {age delta_veloc}
 	
 	// Update history
-	*imuLast = *imu;
+	copyImu(imuLast, imu);
 	
 	return dt;
 }
@@ -519,7 +523,7 @@ void zeroPimu(pimu_t *pimu)
 {
 	pimu->time = 0.0;
 	pimu->dt = 0.0f;
-	pimu->status = 0;
+	pimu->status = IMU_STATUS_IMU_OK_MASK;		// IMU OK bits get cleared inside integratePimu() if not OK.
 	pimu->theta[2] = pimu->theta[1] = pimu->theta[0] = 0.0f;
 	pimu->vel[2]   = pimu->vel[1]   = pimu->vel[0]   = 0.0f;
 }

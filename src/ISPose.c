@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -120,17 +120,17 @@ void quat_Vec3_Vec3(ixQuat result, const ixVector3 v1, const ixVector3 v2)
     ixVector3 w1, w2;
     
     // Normalize input vectors
-    mul_Vec3_X( w1, v1, recipNorm_Vec3(v1) );
-    mul_Vec3_X( w2, v2, recipNorm_Vec3(v2) );
+    mul_Vec3_X( w1, v1, RECIPNORM_VEC3(v1) );
+    mul_Vec3_X( w2, v2, RECIPNORM_VEC3(v2) );
  
     // q[1:3]
 	cross_Vec3( &result[1], w1, w2 );
 
     // q[0]
-    result[0] = (f_t)(_SQRT( dot_Vec3(w1) * dot_Vec3(w1) ) + dot_Vec3_Vec3(w1, w2));
+    result[0] = (f_t)(_SQRT( DOT_VEC3(w1) * DOT_VEC3(w1) ) + dot_Vec3_Vec3(w1, w2));
 
 	// Normalize quaternion
-	div_Vec4_X( result, result, mag_Vec4(result) );
+	div_Vec4_X( result, result, MAG_VEC4(result) );
 }
 
 
@@ -551,7 +551,7 @@ void quatW(const ixEuler euler, ixMatrix4 mat)
 void quatRotAxis(const ixQuat q, ixVector3 pqr)
 {
     // Normalize quaternion
-//     mul_Vec4_X( q, q, 1/mag_Vec4(q) );
+//     mul_Vec4_X( q, q, 1/MAG_VEC4(q) );
 
 //     f_t theta = _ACOS( q[0] ) * (f_t)2.0;
     f_t sin_a, d;
@@ -689,7 +689,7 @@ float vectorToRoll(const ixVector3 v)
  */
 float vectorToPitch(const ixVector3 v)
 {
-	float mag = mag_Vec3(v);
+	float mag = MAG_VEC3(v);
 	if(mag == 0.0f)
 	{	
 		return 0.0f;
@@ -703,7 +703,7 @@ float vectorToPitch(const ixVector3 v)
  */
 float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis)
 {
-	float mag = mag_Vec3(v);
+	float mag = MAG_VEC3(v);
 	if (mag == 0.0f)
 	{
 		return 0.0f;
