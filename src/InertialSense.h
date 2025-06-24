@@ -370,7 +370,8 @@ public:
      * @param pHandle the port pHandle
      * @return false When failed to synchronize
      */
-    bool WaitForFlashSynced(int pHandle = 0);
+    bool WaitForImxFlashCfgSynced(int pHandle = 0);
+    bool WaitForGpxFlashCfgSynced(int pHandle = 0);
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);

@@ -475,26 +475,15 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
     if (g_commandLineOptions.imxFlashCfg.length() != 0)
     {
+        bool synced = inertialSenseInterface.WaitForImxFlashCfgSynced();
         return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg, DID_FLASH_CONFIG);
     }
 
-    // if (g_commandLineOptions.gpxFlashCfg.length() != 0)
-    // {
-    //     unsigned int startMs = current_timeMs();
-    //     while(!inertialSenseInterface.GpxFlashConfigSynced())
-    //     {   // Request and wait for flash config
-    //         inertialSenseInterface.Update();
-    //         SLEEP_MS(100);
-
-    //         if (current_timeMs() - startMs > 3000)
-    //         {   // Timeout waiting for flash config
-    //             cout << "Failed to read GPX flash config!" << endl;
-    //             return false;
-    //         }
-    //     }
-
-    //     return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg, DID_GPX_FLASH_CFG);
-    // }
+    if (g_commandLineOptions.gpxFlashCfg.length() != 0)
+    {
+        bool synced = inertialSenseInterface.WaitForGpxFlashCfgSynced();
+        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg, DID_GPX_FLASH_CFG);
+    }
 
     return true;
 }
