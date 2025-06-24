@@ -343,17 +343,8 @@ public:
     * @param pHandle the port pHandle to get flash config
     * @return bool whether the flash config is valid and currently synchronized
     */
-    bool ImxFlashConfigSynced(int pHandle = 0) 
-    { 
-        if (m_comManagerState.devices.size() == 0)
-        {   // No devices
-            return false;
-        }
-
-        ISDevice& device = m_comManagerState.devices[pHandle];
-        return  (device.imxFlashCfg.checksum == device.sysParams.flashCfgChecksum) && 
-                (device.imxFlashCfgUploadTimeMs==0) && !ImxFlashConfigUploadFailure(pHandle); 
-    }
+    bool ImxFlashConfigSynced(int pHandle = 0);
+    bool GpxFlashConfigSynced(int pHandle = 0);
 
     /**
      * @brief Failed to upload flash configuration for any reason.   
@@ -361,16 +352,8 @@ public:
      * @param pHandle the port pHandle to get flash config for
      * @return true Flash config upload was either not received or rejected.
      */
-    bool ImxFlashConfigUploadFailure(int pHandle = 0)
-    { 
-        if (m_comManagerState.devices.size() == 0)
-        {   // No devices
-            return true;
-        }
-
-        ISDevice& device = m_comManagerState.devices[pHandle];
-        return device.imxFlashCfgUploadChecksum && (device.imxFlashCfgUploadChecksum != device.sysParams.flashCfgChecksum);
-    } 
+    bool ImxFlashConfigUploadFailure(int pHandle = 0);
+    bool GpxFlashConfigUploadFailure(int pHandle = 0);
 
     /**
     * Set the flash config and update flash config on the IMX flash memory
@@ -661,6 +644,9 @@ private:
     static void LoggerThread(void* info);
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
+
+    void EnableSyncFlashCfgChecksum(uint32_t &flashCfgChecksum);
+    void CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t did);
     void SyncFlashConfig(unsigned int timeMs);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
 };

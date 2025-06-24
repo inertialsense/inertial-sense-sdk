@@ -790,7 +790,7 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
 
 void InertialSense::EnableSyncFlashCfgChecksum(uint32_t &flashCfgChecksum)
 {
-
+    flashCfgChecksum = 0xFFFFFFFF;      // Invalidate flash config checksum to trigger sync event
 }
 
 void InertialSense::CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t did)
@@ -908,6 +908,52 @@ bool InertialSense::GpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
     // Indicate whether flash config is synchronized
     return device.gpxStatus.flashCfgChecksum == device.gpxFlashCfg.checksum;
 }
+
+bool InertialSense::ImxFlashConfigSynced(int pHandle) 
+{ 
+    if (m_comManagerState.devices.size() == 0)
+    {   // No devices
+        return false;
+    }
+
+    ISDevice& device = m_comManagerState.devices[pHandle];
+    return  (device.imxFlashCfg.checksum == device.sysParams.flashCfgChecksum) && 
+            (device.imxFlashCfgUploadTimeMs==0) && !ImxFlashConfigUploadFailure(pHandle); 
+}
+
+bool InertialSense::GpxFlashConfigSynced(int pHandle) 
+{ 
+    if (m_comManagerState.devices.size() == 0)
+    {   // No devices
+        return false;
+    }
+
+    ISDevice& device = m_comManagerState.devices[pHandle];
+    return  (device.gpxFlashCfg.checksum == device.gpxStatus.flashCfgChecksum) && 
+            (device.gpxFlashCfgUploadTimeMs==0) && !GpxFlashConfigUploadFailure(pHandle); 
+}
+
+bool InertialSense::ImxFlashConfigUploadFailure(int pHandle)
+{ 
+    if (m_comManagerState.devices.size() == 0)
+    {   // No devices
+        return true;
+    }
+
+    ISDevice& device = m_comManagerState.devices[pHandle];
+    return device.imxFlashCfgUploadChecksum && (device.imxFlashCfgUploadChecksum != device.sysParams.flashCfgChecksum);
+} 
+
+bool InertialSense::GpxFlashConfigUploadFailure(int pHandle)
+{ 
+    if (m_comManagerState.devices.size() == 0)
+    {   // No devices
+        return true;
+    }
+
+    ISDevice& device = m_comManagerState.devices[pHandle];
+    return device.gpxFlashCfgUploadChecksum && (device.gpxFlashCfgUploadChecksum != device.gpxStatus.flashCfgChecksum);
+} 
 
 bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
@@ -1545,6 +1591,8 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
             ISDevice device;
             device.portHandle = i;
             device.serialPort = serial;
+            // device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
+            // device.gpxStatus.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
             m_comManagerState.devices.push_back(device);
         }
     }

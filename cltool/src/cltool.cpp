@@ -416,9 +416,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.forceBootloaderUpdate = true;
         }
-        else if (startsWith(a, "-flashCfg=") || startsWith(a, "-imxFlashCfg="))
+        else if (startsWith(a, "-flashCfg="))
         {
             g_commandLineOptions.imxFlashCfg = &a[10];
+            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+        }
+        else if (startsWith(a, "-imxFlashCfg="))
+        {
+            g_commandLineOptions.imxFlashCfg = &a[13];
             g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
         }
         else if (startsWith(a, "-flashCfg") || startsWith(a, "-imxFlashCfg"))
@@ -428,7 +433,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-gpxFlashCfg="))
         {
-            g_commandLineOptions.gpxFlashCfg = &a[10];
+            g_commandLineOptions.gpxFlashCfg = &a[13];
         }
         else if (startsWith(a, "-gpxFlashCfg"))
         {
@@ -1047,7 +1052,7 @@ int extract_array_index(std::string &str)
 
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString, uint32_t did)
 {
-    inertialSenseInterface.WaitForFlashSynced();
+    bool synced = inertialSenseInterface.WaitForFlashSynced();
 
     nvm_flash_cfg_t imxFlashCfg;
     gpx_flash_cfg_t gpxFlashCfg;
@@ -1062,17 +1067,10 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
     case DID_GPX_FLASH_CFG: dataPtr = (uint8_t*)&gpxFlashCfg; break;
     }
 
-    const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(did);
-
-
-    inertialSenseInterface.WaitForFlashSynced();
-
-    nvm_flash_cfg_t flashCfg;
-    inertialSenseInterface.FlashConfig(flashCfg);
-    const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfoMap(DID_FLASH_CONFIG);
+    const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfoMap(did);
 
     if (flashCfgString.length() < 2)
-    {   // Read flash config and display
+    {   // Read and display entire flash config
         data_mapping_string_t stringBuffer;
         cout << "Current flash config" << endl;
         for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
@@ -1082,7 +1080,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             {   // Array
                 for (int i=0; i < info.arraySize; i++)
                 {
-                    if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer, i))
+                    if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer, i))
                     {
                         cout << info.name << "[" << i << "] = " << stringBuffer << endl;
                     }
@@ -1090,7 +1088,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             }
             else
             {   // Single Elements
-                if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer))
+                if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer))
                 {
                     cout << info.name << " = " << stringBuffer << endl;
                 }
@@ -1098,7 +1096,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
         }
     }
     else
-    {   // Write to flash config
+    {   // Read or write specific flash config parameters
         vector<string> keyValues;
         bool modified = false;
 
@@ -1128,7 +1126,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                             {   // Array: all elements 
                                 for (int arrayIndex=0; arrayIndex<info.arraySize; arrayIndex++)
                                 {
-                                    if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer, arrayIndex))
+                                    if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer, arrayIndex))
                                     {
                                         cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
                                     }
@@ -1142,7 +1140,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                                     return false;
                                 }
                      
-                                if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer, _MAX(0, arrayIndex)))
+                                if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer, _MAX(0, arrayIndex)))
                                 {
                                     cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
                                 }
@@ -1150,7 +1148,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                         }
                         else
                         {   // Single element
-                            if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer))
+                            if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer))
                             {
                                 cout << info.name << " = " << stringBuffer << endl;
                             }
@@ -1175,13 +1173,6 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                 else
                 {
                     const data_info_t& info = flashMap.at(keyAndValue[0]);
-<<<<<<< HEAD
-                    int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
-                    int substrIndex = 2 * (radix == 16); // skip 0x for hex
-                    const string& str = keyAndValue[1].substr(substrIndex);
-                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, dataPtr, info, radix);
-                    cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
-=======
                     if (info.arraySize && arrayIndex >= info.arraySize)
                     {   // Array index out of bound
                         cout << info.name << "[" << arrayIndex << "] " << " invalid array index" << endl;
@@ -1193,10 +1184,9 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                         str = str.substr(2);
                     }
                     // Address how elem 
-                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, _MAX(0, arrayIndex));
+                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)dataPtr, info, _MAX(0, arrayIndex));
                     cout << "Setting DID_FLASH_CONFIG." << keyAndValue[0] << " = " << keyAndValue[1].c_str() << endl;
                     modified = true;
->>>>>>> origin/2.2.0-rc
                 }
             }
         }
