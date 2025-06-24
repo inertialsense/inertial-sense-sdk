@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#define PRINT_DEBUG 0
+#define PRINT_DEBUG 1
 #if PRINT_DEBUG
 #define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
 #else
@@ -1140,7 +1140,7 @@ bool InertialSense::WaitForGpxFlashCfgSynced(int pHandle)
         }
     }
 
-    return ImxFlashConfigSynced(pHandle);
+    return GpxFlashConfigSynced(pHandle);
 }
 
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)

@@ -1054,21 +1054,33 @@ int extract_array_index(std::string &str)
     return arrayIndex;
 }
 
-bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString, uint32_t did)
+bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
-    nvm_flash_cfg_t imxFlashCfg;
-    gpx_flash_cfg_t gpxFlashCfg;
-    inertialSenseInterface.ImxFlashConfig(imxFlashCfg);
-    inertialSenseInterface.GpxFlashConfig(gpxFlashCfg);
-    uint8_t* dataPtr;
-
-    switch (did)
+    if (!inertialSenseInterface.WaitForImxFlashCfgSynced())
     {
-    default: return false;  // Invalid did
-    case DID_FLASH_CONFIG:  dataPtr = (uint8_t*)&imxFlashCfg; break;
-    case DID_GPX_FLASH_CFG: dataPtr = (uint8_t*)&gpxFlashCfg; break;
+        cout << "Failed to sync IMX flash config." << endl;
+        return false;
     }
+    nvm_flash_cfg_t imxFlashCfg;
+    inertialSenseInterface.ImxFlashConfig(imxFlashCfg);
+    return cltool_updateFlashCfg(inertialSenseInterface, flashCfgString, DID_FLASH_CONFIG, (uint8_t*)&imxFlashCfg);
+}
 
+bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
+{
+    if (!inertialSenseInterface.WaitForGpxFlashCfgSynced())
+    {
+        cout << "Failed to sync GPX flash config." << endl;
+        return false;
+    }
+    gpx_flash_cfg_t gpxFlashCfg;
+    inertialSenseInterface.GpxFlashConfig(gpxFlashCfg);
+    return cltool_updateFlashCfg(inertialSenseInterface, flashCfgString, DID_GPX_FLASH_CFG, (uint8_t*)&gpxFlashCfg);
+}
+
+bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString, uint32_t did, uint8_t* dataPtr)
+{
+    bool success = false;
     const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfoMap(did);
 
     if (flashCfgString.length() < 2)
@@ -1085,6 +1097,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                     if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer, i))
                     {
                         cout << info.name << "[" << i << "] = " << stringBuffer << endl;
+                        success = true;
                     }
                 }
             }
@@ -1093,6 +1106,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                 if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer))
                 {
                     cout << info.name << " = " << stringBuffer << endl;
+                    success = true;
                 }
             }
         }
@@ -1133,6 +1147,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                                         cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
                                     }
                                 }
+                                success = true;
                             }
                             else
                             {   // Array: Single element
@@ -1145,6 +1160,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                                 if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer, _MAX(0, arrayIndex)))
                                 {
                                     cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
+                                    success = true;
                                 }
                             }
                         }
@@ -1153,6 +1169,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                             if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer))
                             {
                                 cout << info.name << " = " << stringBuffer << endl;
+                                success = true;
                             }
                         }
                     }
@@ -1189,16 +1206,19 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                     cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)dataPtr, info, _MAX(0, arrayIndex));
                     cout << "Setting " << cISDataMappings::DataName(did) << "." << keyAndValue[0] << " = " << keyAndValue[1].c_str() << endl;
                     modified = true;
+                    success = true;
                 }
             }
         }
 
         if (modified)
         {   // Upload flash config
+            nvm_flash_cfg_t *imxFlashCfg;
+            gpx_flash_cfg_t *gpxFlashCfg;
             switch (did)
             {
-            case DID_FLASH_CONFIG:  inertialSenseInterface.SetImxFlashConfig(imxFlashCfg);  break;
-            case DID_GPX_FLASH_CFG: inertialSenseInterface.SetGpxFlashConfig(gpxFlashCfg);  break;
+            case DID_FLASH_CONFIG:  imxFlashCfg = (nvm_flash_cfg_t*)dataPtr; inertialSenseInterface.SetImxFlashConfig(*imxFlashCfg);  break;
+            case DID_GPX_FLASH_CFG: gpxFlashCfg = (gpx_flash_cfg_t*)dataPtr; inertialSenseInterface.SetGpxFlashConfig(*gpxFlashCfg);  break;
             }
 
             // Check that upload completed
@@ -1206,5 +1226,6 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
         }
     }
 
-    return false;
+    // Successfully read/wrote flash config
+    return success;
 }

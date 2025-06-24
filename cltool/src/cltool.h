@@ -154,7 +154,9 @@ void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
 void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
 void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
-bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg, uint32_t did); // true if should continue
+bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
+bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
+bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg, uint32_t did, uint8_t* dataPtr);
 
 #endif // __CLTOOL_H__
 

@@ -473,16 +473,26 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         }
     }
 
+    bool exitNow = false;
     if (g_commandLineOptions.imxFlashCfg.length() != 0)
     {
-        bool synced = inertialSenseInterface.WaitForImxFlashCfgSynced();
-        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg, DID_FLASH_CONFIG);
+        if (!cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
+        {   // Exit cltool now and report error code
+            std::exit(-1);
+        }
+        exitNow = true;
     }
-
     if (g_commandLineOptions.gpxFlashCfg.length() != 0)
     {
-        bool synced = inertialSenseInterface.WaitForGpxFlashCfgSynced();
-        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg, DID_GPX_FLASH_CFG);
+        if (!cltool_updateGpxFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg))
+        {   // Exit cltool now and report error code
+            std::exit(-2);
+        }
+        exitNow = true;
+    }
+    if (exitNow)
+    {   // Exit cltool now and report success code
+        std::exit(0);
     }
 
     return true;
@@ -690,12 +700,12 @@ static int cltool_createHost()
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
         return -1;
     }
-    else if (g_commandLineOptions.imxFlashCfg.length() != 0 && !cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg, DID_FLASH_CONFIG))
+    else if (g_commandLineOptions.imxFlashCfg.length() != 0 && !cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
     {
         cout << "Failed to update IMX flash config" << endl;
         return -1;
     }
-    else if (g_commandLineOptions.gpxFlashCfg.length() != 0 && !cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg, DID_GPX_FLASH_CFG))
+    else if (g_commandLineOptions.gpxFlashCfg.length() != 0 && !cltool_updateGpxFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg))
     {
         cout << "Failed to update GPX flash config" << endl;
         return -1;
