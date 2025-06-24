@@ -45,17 +45,17 @@ public:
 
     enum DevInfoFormatFlags : uint16_t {
         // Description Options
-        OMIT_FIRMWARE_VERSION    = 0x0001,      //! suppresses output of the firmware version
-        OMIT_PORT_NAME           = 0x0002,      //! suppresses output of the device port
-        COMPACT_HARDWARE_VER     = 0x0004,      //! forces hiding digits 3 & 4 of the hardware version number, digits 1 & 2 are always shown
-        COMPACT_SERIALNO         = 0x0008,      //! disables zero-padding of the serial number
-        COMPACT_BUILD_TYPE       = 0x0010,      //! formats the build-type (when the firmware version is show) as a single character
+        OMIT_FIRMWARE_VERSION    = 0x0001,      //!< suppresses output of the firmware version
+        OMIT_PORT_NAME           = 0x0002,      //!< suppresses output of the device port
+        COMPACT_HARDWARE_VER     = 0x0004,      //!< forces hiding digits 3 & 4 of the hardware version number, digits 1 & 2 are always shown
+        COMPACT_SERIALNO         = 0x0008,      //!< disables zero-padding of the serial number
+        COMPACT_BUILD_TYPE       = 0x0010,      //!< formats the build-type (when the firmware version is show) as a single character
 
         // Version Options
-        OMIT_COMMIT_HASH         = 0x0100,      //! suppresses the output of the commit hash/dirty status
-        OMIT_BUILD_DATE          = 0x0200,      //! suppresses the output of the build date
-        OMIT_BUILD_TIME          = 0x0400,      //! suppresses the output of the build time
-        OMIT_BUILD_MILLIS        = 0x0800,      //! suppresses the output of the build milliseconds when not zero
+        OMIT_COMMIT_HASH         = 0x0100,      //!< suppresses the output of the commit hash/dirty status
+        OMIT_BUILD_DATE          = 0x0200,      //!< suppresses the output of the build date
+        OMIT_BUILD_TIME          = 0x0400,      //!< suppresses the output of the build time
+        OMIT_BUILD_MILLIS        = 0x0800,      //!< suppresses the output of the build milliseconds when not zero
     };
 
     static ISDevice invalidRef;
@@ -385,7 +385,7 @@ public:
      * Another fancy function that blocks until a flash sync has actually occurred.
      * @return true if successful or otherwise false if it couldn't (timeout? validation? bad connection?  -- who knows?)
      */
-    bool WaitForFlashSynced(uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+    bool WaitForFlashSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
 
     /**
      * A blocking call which uploads and then waits for synchronization confirmation that the new configuration was applied.
@@ -427,11 +427,11 @@ public:
     */
     fwUpdate::update_status_e getUpdateStatus() { return fwLastStatus; };
 
-    std::recursive_mutex  portMutex;                                           //! used to guard against concurrent use of the port in multi-threaded environments - only one read/write at a time
+    std::recursive_mutex  portMutex;                                 //!< used to guard against concurrent use of the port in multi-threaded environments - only one read/write at a time
     port_handle_t port = 0;
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
-    is_hardware_t               hdwId = IS_HARDWARE_TYPE_UNKNOWN;    //! hardware type and version (ie, IMX-5.0)
+    is_hardware_t               hdwId = IS_HARDWARE_TYPE_UNKNOWN;    //!< hardware type and version (ie, IMX-5.0)
 
     dev_info_t                  devInfo = { };
     sys_params_t                sysParams = { };
@@ -458,9 +458,9 @@ public:
     fwUpdate::update_status_e fwLastStatus = fwUpdate::NOT_STARTED;
     std::string fwLastMessage;
 
-    uint32_t lastResetRequest = 0;              //! system time when the last reset requests was sent
-    uint32_t resetRequestThreshold = 5000;      //! Don't allow to send reset requests more frequently than this...
-    uint32_t nextResetTime = 0;                 //! used to throttle reset requests
+    uint32_t lastResetRequest = 0;                                   //!< system time when the last reset requests was sent
+    uint32_t resetRequestThreshold = 5000;                           //!< Don't allow to send reset requests more frequently than this...
+    uint32_t nextResetTime = 0;                                      //!< used to throttle reset requests
 
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)());
     bool fwUpdateInProgress();
@@ -486,11 +486,11 @@ public:
         QUERYTYPE_mcuBoot,
         QUERYTYPE_MAX = QUERYTYPE_mcuBoot,
     };
-    queryTypes previousQueryType = QUERYTYPE_NMEA;                      //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
+    queryTypes previousQueryType = QUERYTYPE_NMEA;                   //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
 
 private:
 
-    uint32_t validationStartMs = 0;                                     //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
+    uint32_t validationStartMs = 0;                                  //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
 
     pfnIsCommHandler packetHandler = nullptr;
     pfnIsCommIsbDataHandler defaultISBHandler = nullptr;

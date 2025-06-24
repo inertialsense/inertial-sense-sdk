@@ -217,90 +217,90 @@ namespace fwUpdate {
             uint16_t reset_flags;
         } req_reset;
 
-        struct {             //! a response to a reset request (usually this isn't sent, but sometimes, like asking a GNSS receiver to reset, it could send back a reply, since that doesn't originate on the GNSS receiver).
-            target_t target;        //! responding target
-            uint16_t status;        //! response status (0 == success)
+        struct {                    //!< a response to a reset request (usually this isn't sent, but sometimes, like asking a GNSS receiver to reset, it could send back a reply, since that doesn't originate on the GNSS receiver).
+            target_t target;        //!< responding target
+            uint16_t status;        //!< response status (0 == success)
         } rpl_reset;
 
         struct {
-        } req_version;     //! requests the version info for the target device
+        } req_version;              //!< requests the version info for the target device
 
         struct {
-            uint16_t session_id;    //! random 16-bit identifier used to validate the data stream. This should be regenerated for each REQUEST_UPDATE
-            uint8_t image_slot;     //! a device-specific "slot" which is used to target specific files/regions of FLASH to update, ie, the Sony GNSS receiver has 4 different firmware files, each needs to be applied in turn. If the 8th (MSB) bit is raised, this is treated as a "FORCE"
-            uint8_t image_flags;    //! flags for update (see image_flagsMask_e)
-            uint32_t file_size;     //! the total size of the entire firmware file
-            uint16_t chunk_size;    //! the maximum size of each chunk
-            uint16_t progress_rate; //! the rate (millis) at which the device should publish progress reports back to the host.
-            md5hash_t md5_hash;     //! the md5 hash for the original firmware file.  If the delivered MD5 hash doesn't match this, after receiving the final chunk, the firmware file will be discarded.
+            uint16_t session_id;    //!< random 16-bit identifier used to validate the data stream. This should be regenerated for each REQUEST_UPDATE
+            uint8_t image_slot;     //!< a device-specific "slot" which is used to target specific files/regions of FLASH to update, ie, the Sony GNSS receiver has 4 different firmware files, each needs to be applied in turn. If the 8th (MSB) bit is raised, this is treated as a "FORCE"
+            uint8_t image_flags;    //!< flags for update (see image_flagsMask_e)
+            uint32_t file_size;     //!< the total size of the entire firmware file
+            uint16_t chunk_size;    //!< the maximum size of each chunk
+            uint16_t progress_rate; //!< the rate (millis) at which the device should publish progress reports back to the host.
+            md5hash_t md5_hash;     //!< the md5 hash for the original firmware file.  If the delivered MD5 hash doesn't match this, after receiving the final chunk, the firmware file will be discarded.
         } req_update;
 
         struct {
-            uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
-            uint16_t totl_chunks;   //! the total number of chunks that are necessary to transmit the entire firmware file
-            update_status_e status; //! a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
+            uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
+            uint16_t totl_chunks;   //!< the total number of chunks that are necessary to transmit the entire firmware file
+            update_status_e status; //!< a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
         } update_resp;
 
         struct {
-            uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
-            uint16_t chunk_id;      //! the chunk number identifying this portion of the firmware
-            uint16_t data_len;      //! the number of bytes of accompanying data
-            uint8_t data;           //! the first byte of data (cast to a uint8_t * to access the rest...)
+            uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
+            uint16_t chunk_id;      //!< the chunk number identifying this portion of the firmware
+            uint16_t data_len;      //!< the number of bytes of accompanying data
+            uint8_t data;           //!< the first byte of data (cast to a uint8_t * to access the rest...)
         } chunk;
 
         struct {
-            uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
-            uint16_t chunk_id;      //! the chunk number identifying this portion of the firmware which should be resent
-            resend_reason_e reason; //! an indicator of why this chunk was requested. This is optional, but is useful for debugging purposes. Regardless of the reason, the requested chunk, and all subsequent chunks must be resent.
+            uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
+            uint16_t chunk_id;      //!< the chunk number identifying this portion of the firmware which should be resent
+            resend_reason_e reason; //!< an indicator of why this chunk was requested. This is optional, but is useful for debugging purposes. Regardless of the reason, the requested chunk, and all subsequent chunks must be resent.
         } req_resend;
 
         struct {
-            uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
-            update_status_e status; //! the current status of the session, from the device standpoint (only devices send the progress message)
-            uint16_t num_chunks;    //! the number of chunks which have so far been received by the device, in sequential, contiguous order.  Ie, this is only the number of received VALID and processed chunks.
-            uint16_t totl_chunks;   //! the total number of chunks which the device is expecting from the host
-            uint8_t msg_level;      //! a numerical indication of the criticality of this message, 0 being the highest. Best practive is to associate syslog type levels here (CRITICAL, ERROR, WARN, INFO, DEBUG, etc).
-            uint8_t msg_len;        //! the length of the following string (in bytes)
-            uint8_t message;        //! an arbitrary human-readable string, that is intended to be consumed by the user to give status about the update process
+            uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
+            update_status_e status; //!< the current status of the session, from the device standpoint (only devices send the progress message)
+            uint16_t num_chunks;    //!< the number of chunks which have so far been received by the device, in sequential, contiguous order.  Ie, this is only the number of received VALID and processed chunks.
+            uint16_t totl_chunks;   //!< the total number of chunks which the device is expecting from the host
+            uint8_t msg_level;      //!< a numerical indication of the criticality of this message, 0 being the highest. Best practive is to associate syslog type levels here (CRITICAL, ERROR, WARN, INFO, DEBUG, etc).
+            uint8_t msg_len;        //!< the length of the following string (in bytes)
+            uint8_t message;        //!< an arbitrary human-readable string, that is intended to be consumed by the user to give status about the update process
         } progress;
 
         struct {
-            uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
-            update_status_e status; //! a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
+            uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
+            update_status_e status; //!< a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
         } resp_done;
 
         struct {
-            target_t resTarget;     //! the target identifier of the responding device (for which this data represents)
-            uint32_t serialNumber;  //! the serial number of the host, or controlling device (return the IMX SN if querying the IMX's Accelerometer, for example)
-            uint8_t hdwRunState;    //! the devices run-state; Application, Bootloader, etc
-            uint8_t hardwareType;   //! hardware identifier
-            uint8_t hardwareVer[4]; //! Hardware version
-            uint8_t firmwareVer[4]; //! Firmware (software) version
+            target_t resTarget;     //!< the target identifier of the responding device (for which this data represents)
+            uint32_t serialNumber;  //!< the serial number of the host, or controlling device (return the IMX SN if querying the IMX's Accelerometer, for example)
+            uint8_t hdwRunState;    //!< the devices run-state; Application, Bootloader, etc
+            uint8_t hardwareType;   //!< hardware identifier
+            uint8_t hardwareVer[4]; //!< Hardware version
+            uint8_t firmwareVer[4]; //!< Firmware (software) version
 
-            uint8_t buildHash[4];   //! Git hash
-            uint32_t buildNumber;   //! Build number
+            uint8_t buildHash[4];   //!< Git hash
+            uint32_t buildNumber;   //!< Build number
 
-            uint8_t buildType;      //! Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=debug)
-            uint8_t buildYear;      //! Build date year - 2000
-            uint8_t buildMonth;     //! Build date month
-            uint8_t buildDay;       //! Build date day
+            uint8_t buildType;      //!< Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=debug)
+            uint8_t buildYear;      //!< Build date year - 2000
+            uint8_t buildMonth;     //!< Build date month
+            uint8_t buildDay;       //!< Build date day
 
-            uint8_t buildHour;      //! Build time hour
-            uint8_t buildMinute;    //! Build time minute
-            uint8_t buildSecond;    //! Build time second
-            uint8_t buildMillis;    //! Build time millisecond
+            uint8_t buildHour;      //!< Build time hour
+            uint8_t buildMinute;    //!< Build time minute
+            uint8_t buildSecond;    //!< Build time second
+            uint8_t buildMillis;    //!< Build time millisecond
         } version_resp;
 
     } msg_data_t;
 
     typedef struct {
-        target_t target_device;     //! the target type and instance which this message is intended for
-        msg_types_e msg_type;       //! msg_type enum used to indicate how to parse the subsequent data in this message
+        target_t target_device;     //!< the target type and instance which this message is intended for
+        msg_types_e msg_type;       //!< msg_type enum used to indicate how to parse the subsequent data in this message
     } msg_header_t;
 
     typedef struct {
         msg_header_t hdr;
-        msg_data_t data;        //! the actual message data
+        msg_data_t data;            //!< the actual message data
     } payload_t;
 
     POP_PACK
@@ -396,22 +396,22 @@ namespace fwUpdate {
         virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
 
     protected:
-        uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
-        uint32_t last_message = 0;                              //! the time (millis) since we last received a payload targeted for us.
-        uint32_t timeout_duration = 20000;                      //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
-        uint32_t resend_count = 0;                              //! the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
+        uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //!< workspace for packing/unpacking payload messages
+        uint32_t last_message = 0;                              //!< the time (millis) since we last received a payload targeted for us.
+        uint32_t timeout_duration = 20000;                      //!< the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
+        uint32_t resend_count = 0;                              //!< the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
 
         target_t session_target = TARGET_HOST;
-        update_status_e session_status = NOT_STARTED;           //! last known state of this session
-        uint16_t session_id = 0;                                //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
-        uint16_t session_chunk_size = 0;                        //! the negotiated maximum size for each chunk.
-        uint16_t session_total_chunks = 0;                      //! the total number of chunks for the given image size
-        uint32_t session_image_size = 0;                        //! the total size of the image to be sent
-        uint16_t session_progress_rate = 250;                   //! the number of milliseconds between progress updates
-        uint8_t session_image_slot = 0;                         //! the "slot" to which this image will be written in the flash
-        uint8_t session_image_flags = 0;                        //! additional flags to be communicated to the device for special processing
-        md5hash_t session_md5 = { };                            //! the md5 of the firmware image
-        md5Context_t md5Context = { };                          //! context used internally for building MD5 hashes
+        update_status_e session_status = NOT_STARTED;           //!< last known state of this session
+        uint16_t session_id = 0;                                //!< the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
+        uint16_t session_chunk_size = 0;                        //!< the negotiated maximum size for each chunk.
+        uint16_t session_total_chunks = 0;                      //!< the total number of chunks for the given image size
+        uint32_t session_image_size = 0;                        //!< the total size of the image to be sent
+        uint16_t session_progress_rate = 250;                   //!< the number of milliseconds between progress updates
+        uint8_t session_image_slot = 0;                         //!< the "slot" to which this image will be written in the flash
+        uint8_t session_image_flags = 0;                        //!< additional flags to be communicated to the device for special processing
+        md5hash_t session_md5 = { };                            //!< the md5 of the firmware image
+        md5Context_t md5Context = { };                          //!< context used internally for building MD5 hashes
 
         FirmwareUpdateBase();
         virtual ~FirmwareUpdateBase() {};
@@ -889,8 +889,8 @@ namespace fwUpdate {
          */
         bool fwUpdate_resetEngine();
 
-        uint16_t next_chunk_id = 0;                     //! the next chuck id to send, at the next send.
-        uint16_t chunks_sent = 0;                       //! the total number of chunks that have been sent, including resends
+        uint16_t next_chunk_id = 0;                     //!< the next chuck id to send, at the next send.
+        uint16_t chunks_sent = 0;                       //!< the total number of chunks that have been sent, including resends
 
         uint16_t progress_total = 0;                    //!< the total number of steps used to report completion progress
         uint16_t progress_num = 0;                      //!< the current step (between 0 an progress_total) to indicate the current completion progress

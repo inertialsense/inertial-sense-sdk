@@ -14,9 +14,9 @@
 /**
  * Port definitions used across the entire product line & SDK.
  */
-#define PORT_TYPE__UNKNOWN          0xFFFF  //! Invalid or unknown port type
-#define PORT_TYPE__UART             0x0001      //!> this port wraps the UART protocol
-#define PORT_TYPE__USB              0x0002      //!> this port wraps the USB_CDC protocol
+#define PORT_TYPE__UNKNOWN          0xFFFF      //!< Invalid or unknown port type
+#define PORT_TYPE__UART             0x0001      //!< this port wraps the UART protocol
+#define PORT_TYPE__USB              0x0002      //!< this port wraps the USB_CDC protocol
 #define PORT_TYPE__SPI              0x0003      //!< this port wraps the SPI protocol
 #define PORT_TYPE__CAN              0x0004      //!< this port wraps the CAN protocol
 #define PORT_TYPE__TCP              0x0005      //!< this port wraps a TCP-based network socket
@@ -31,19 +31,19 @@
 #define PORT_FLAG__VALID            0x8000      //!< bit indicates that this port is valid, and can be operated on
 #define PORT_FLAG__OPENED           0x4000      //!< bit indicates that this port is opened, and able to process data
 
-#define PORT_ERROR__NONE                 0
-#define PORT_ERROR__NOT_SUPPORTED       -1
-#define PORT_ERROR__INVALID             -2
-#define PORT_ERROR__WRITE_FAILURE       -3
-#define PORT_ERROR__OPEN_FAILURE        -4
+#define PORT_ERROR__NONE                 0      //!< Indicates no error and/or successful execution
+#define PORT_ERROR__NOT_SUPPORTED       -1      //!< Indicates that the operation requested/called was not support by the specified port
+#define PORT_ERROR__INVALID             -2      //!< Indicates that the port specified in the operation was invalid; The port_handle_t should probably be abandoned.
+#define PORT_ERROR__WRITE_FAILURE       -3      //!< Indicates that an attempt to write to the port failed.
+#define PORT_ERROR__OPEN_FAILURE        -4      //!< Indicates that an attempt to open the port failed.
 
-#define PORT_OP__READ               0x00
-#define PORT_OP__WRITE              0x01
-#define PORT_OP__OPEN               0x02
-#define PORT_OP__CLOSE              0x03
-#define PORT_OP__FLUSH              0x04
+#define PORT_OP__READ               0x00        //!< A portLogger operation flag indicating a READ/RX was performed
+#define PORT_OP__WRITE              0x01        //!< A portLogger operation flag indicating a WRITE/TX was performed
+#define PORT_OP__OPEN               0x02        //!< A portLogger operation flag indicating a OPEN was performed
+#define PORT_OP__CLOSE              0x03        //!< A portLogger operation flag indicating a CLOSE was performed
+#define PORT_OP__FLUSH              0x04        //!< A portLogger operation flag indicating a FLUSH was performed
 
-#define PORT_DEFAULT_TIMEOUT        1000
+#define PORT_DEFAULT_TIMEOUT        1000        //!< A portLogger operation flag indicating a READ was performed
 
 
 typedef void* port_handle_t;
@@ -60,47 +60,48 @@ typedef int(*pfnPortRead)(port_handle_t port, uint8_t* buf, unsigned int len);
 typedef int(*pfnPortReadTimeout)(port_handle_t port, uint8_t* buf, unsigned int len, uint32_t timeout);
 typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int len);
 typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData);
+// typedef int(*pfnPortSetName)(port_handle_t port, const char* name, unsigned int len);
 
 typedef struct
 {
-    uint8_t         portInfo;               //! High nib port type (see ePortMonPortType) low nib index
-    uint32_t        status;                 //! Status
+    uint8_t         portInfo;               //!< High nib port type (see ePortMonPortType) low nib index
+    uint32_t        status;                 //!< Status
 
-    uint32_t        txBytesPerSec;          //! Tx data rate (bytes/s)
-    uint32_t        rxBytesPerSec;          //! Rx data rate (bytes/s)
+    uint32_t        txBytesPerSec;          //!< Tx data rate (bytes/s)
+    uint32_t        rxBytesPerSec;          //!< Rx data rate (bytes/s)
 
-    uint32_t        txBytes;                //! Tx byte count
-    uint32_t        rxBytes;                //! Rx byte count
+    uint32_t        txBytes;                //!< Tx byte count
+    uint32_t        rxBytes;                //!< Rx byte count
 
-    uint32_t        txDataDrops;            //! Tx buffer data drop occurrences, times portWrite could not send all data */
-    uint32_t        rxOverflows;            //! Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
+    uint32_t        txDataDrops;            //!< Tx buffer data drop occurrences, times portWrite could not send all data */
+    uint32_t        rxOverflows;            //!< Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
 
-    uint32_t        txBytesDropped;         //! Tx number of bytes that were not sent
-    uint32_t        rxChecksumErrors;       //! Rx number of errors while reading (not bytes)
+    uint32_t        txBytesDropped;         //!< Tx number of bytes that were not sent
+    uint32_t        rxChecksumErrors;       //!< Rx number of errors while reading (not bytes)
 } port_stats_t;
 
 
 typedef struct base_port_s {
-    uint16_t pnum;                          //! an identifier for a specific port that belongs to this device
-    uint16_t ptype;                         //! an indicator of the type of port
-    uint16_t pflags;                        //! a bitmask of flags, indicating state of special capabilities for this port
-    uint16_t perror;                        //! a non-zero value indicating an error for the last operation attempted for this port
+    uint16_t pnum;                          //!< an identifier for a specific port that belongs to this device
+    uint16_t ptype;                         //!< an indicator of the type of port
+    uint16_t pflags;                        //!< a bitmask of flags, indicating state of special capabilities for this port
+    uint16_t perror;                        //!< a non-zero value indicating an error for the last operation attempted for this port
 
-    pfnPortName portName;                   //! a function which returns an optional name to (ideally) uniquely identify this port
-    pfnPortValidate portValidate;           //! a function which confirms the viability of the port - this does not open or connect the port
-    pfnPortOpen portOpen;                   //! a function to open/connect the specified port - may not be supported by all implementations
-    pfnPortClose portClose;                 //! a function to close/disconnect the specified port - may not be supported by all implementations
-    pfnPortFree portFree;                   //! a function which returns the number of bytes which can safely be written
-    pfnPortAvailable portAvailable;         //! a function which returns the number of bytes currently available, waiting to be read
-    pfnPortFlush portFlush;                 //! a function to flush all data currently waiting to be read
-    pfnPortDrain portDrain;                 //! a function to clear/drain all data currently waiting to be written/sent to the port
-    pfnPortRead portRead;                   //! a function to return copy some number of bytes available for reading into a local buffer (and removed from the ports read buffer)
-    pfnPortReadTimeout portReadTimeout;     //! a function to return copy some number of bytes available for reading into a local buffer (and removed from the ports read buffer), but will only block at most timeout milliseconds
-    pfnPortWrite portWrite;                 //! a function to copy some number of bytes from a local buffer into the ports write buffer (when and how this data is actually "sent" is implementation specific)
-    pfnPortLogger portLogger;               //! a function, if set, to be called anytime a portRead or portWrite call is made; used to monitor/copy all data that goes through the port
+    pfnPortName portName;                   //!< a function which returns an optional name to (ideally) uniquely identify this port
+    pfnPortValidate portValidate;           //!< a function which confirms the viability of the port - this does not open or connect the port
+    pfnPortOpen portOpen;                   //!< a function to open/connect the specified port - may not be supported by all implementations
+    pfnPortClose portClose;                 //!< a function to close/disconnect the specified port - may not be supported by all implementations
+    pfnPortFree portFree;                   //!< a function which returns the number of bytes which can safely be written
+    pfnPortAvailable portAvailable;         //!< a function which returns the number of bytes currently available, waiting to be read
+    pfnPortFlush portFlush;                 //!< a function to flush all data currently waiting to be read
+    pfnPortDrain portDrain;                 //!< a function to clear/drain all data currently waiting to be written/sent to the port
+    pfnPortRead portRead;                   //!< a function to return copy some number of bytes available for reading into a local buffer (and removed from the ports read buffer)
+    pfnPortReadTimeout portReadTimeout;     //!< a function to return copy some number of bytes available for reading into a local buffer (and removed from the ports read buffer), but will only block at most timeout milliseconds
+    pfnPortWrite portWrite;                 //!< a function to copy some number of bytes from a local buffer into the ports write buffer (when and how this data is actually "sent" is implementation specific)
+    pfnPortLogger portLogger;               //!< a function, if set, to be called anytime a portRead or portWrite call is made; used to monitor/copy all data that goes through the port
 
-    void *portLoggerData;                   //! an opaque pointer of "user data" associated with the portLogger that is passed whenever the portLogger() callback function is called
-    port_stats_t* stats;                    //! if not-null, contains the stats associated with this port (bytes sent/received, etc)
+    void *portLoggerData;                   //!< an opaque pointer of "user data" associated with the portLogger that is passed whenever the portLogger() callback function is called
+    port_stats_t* stats;                    //!< if not-null, contains the stats associated with this port (bytes sent/received, etc)
 } base_port_t;
 #define BASE_PORT(n)        ((base_port_t*)(n))
 
@@ -306,7 +307,7 @@ static inline pfnPortLogger portLogger(port_handle_t port) {
  * @param portLogger a pointer to the pfnRportLogger function
  * @param loggerData an opaque "user data" pointer that will be passed to future calls to the portLogger function
  */
-static inline void setPortLogger(port_handle_t port, pfnPortLogger portLogger, void* loggerData) {
+static inline void portSetLogger(port_handle_t port, pfnPortLogger portLogger, void* loggerData) {
     if (portIsValid(port)) {
         BASE_PORT(port)->portLogger = portLogger;
         BASE_PORT(port)->portLoggerData = loggerData;
