@@ -124,8 +124,8 @@ typedef enum
 /** Defines the 4 parts to the communications version. See release notes. */
 #define PROTOCOL_VERSION_CHAR0		2   // Packet major: Increment w/ packetization breaking changes (in ISComm.cpp) that prevent backward compatibility with older protocols. 
 #define PROTOCOL_VERSION_CHAR1		0   // Packet minor: Increment w/ packetization non-breaking changes (in ISComm.cpp) that are backward compatibility with older protocols. 
-// #define PROTOCOL_VERSION_CHAR2       // (defined in data_sets.h) Payload major: Increment w/ breaking changes (in data_sets.h) that prevent backward compatibility with older protocols.
-// #define PROTOCOL_VERSION_CHAR3       // (defined in data_sets.h) Payload minor: Increment w/ non-breaking changes (in data_sets.h) that are backward compatibility with older protocols
+// #define PROTOCOL_VERSION_CHAR2       // Payload major: (defined in data_sets.h) Increment w/ breaking changes (in data_sets.h) that prevent backward compatibility with older protocols.
+// #define PROTOCOL_VERSION_CHAR3       // Payload minor: (defined in data_sets.h) Increment w/ non-breaking changes (in data_sets.h) that are backward compatibility with older protocols
 
 #define UBLOX_HEADER_SIZE 6
 #define RTCM3_HEADER_SIZE 3
