@@ -174,13 +174,11 @@ typedef uint32_t eDataIDs;
 #define DEVINFO_MANUFACTURER_STRLEN 24
 #define DEVINFO_ADDINFO_STRLEN 24
 
-
 /** Defines the 4 parts to the communications version. See release notes. */
-// TODO: Update release notes for v2
-// #define PROTOCOL_VERSION_CHAR0       // Major (in ISComm.h)
-// #define PROTOCOL_VERSION_CHAR1
-#define PROTOCOL_VERSION_CHAR2 0
-#define PROTOCOL_VERSION_CHAR3 0
+// #define PROTOCOL_VERSION_CHAR0		// (defined in ISComm.h) Increment w/ packetization breaking changes (in ISComm.cpp) that prevent backward compatibility with older protocols. 
+// #define PROTOCOL_VERSION_CHAR1		// (defined in ISComm.h) Increment w/ packetization non-breaking changes (in ISComm.cpp) that are backward compatibility with older protocols. 
+#define PROTOCOL_VERSION_CHAR2      1   // Payload major: increment w/ breaking changes (in data_sets.h) that would prevent backward compatibility with older protocols.
+#define PROTOCOL_VERSION_CHAR3      0   // Payload minor: increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
 
 /** Rtk rover receiver index */
 #define RECEIVER_INDEX_GPS1 1 // DO NOT CHANGE
