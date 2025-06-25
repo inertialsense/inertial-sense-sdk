@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#define PRINT_DEBUG 0
+#define PRINT_DEBUG 1
 #if PRINT_DEBUG
 #define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
 #else
@@ -788,11 +788,6 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
         comManagerSendData(pHandle, data, DID_EVENT, DID_EVENT_HEADER_SIZE + event.length, 0);
 }
 
-void InertialSense::EnableSyncFlashCfgChecksum(uint32_t &flashCfgChecksum)
-{
-    flashCfgChecksum = 0xFFFFFFFF;      // Invalidate flash config checksum to trigger sync event
-}
-
 void InertialSense::CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t did)
 {
     if (uploadTimeMs)
@@ -867,15 +862,14 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
             device.sysParams.timeOfWeekMs || 
             device.imxFlashCfg.checksum)
         {   // Sync IMX flash config if a IMX present
-            uint32_t checksum16 = 0;
-            DeviceSyncFlashCfg(i, timeMs, DID_FLASH_CONFIG,  device.imxFlashCfgUploadTimeMs, device.imxFlashCfg.checksum, device.sysParams.flashCfgChecksum, device.imxFlashCfgUploadChecksum, checksum16);
+            DeviceSyncFlashCfg(i, timeMs, DID_FLASH_CONFIG,  device.imxFlashCfgUploadTimeMs, device.imxFlashCfg.checksum, device.sysParams.flashCfgChecksum, device.imxFlashCfgUploadChecksum);
         }
 
         if (device.devInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
             device.gpxStatus.timeOfWeekMs || 
             device.gpxFlashCfg.checksum)
         {   // Sync GPX flash config if a GPX present
-            DeviceSyncFlashCfg(i, timeMs, DID_GPX_FLASH_CFG, device.gpxFlashCfgUploadTimeMs, device.gpxFlashCfg.checksum, device.gpxStatus.flashCfgChecksum, device.gpxFlashCfgUploadChecksum, device.gpxFlashCfgUploadChecksum16);
+            DeviceSyncFlashCfg(i, timeMs, DID_GPX_FLASH_CFG, device.gpxFlashCfgUploadTimeMs, device.gpxFlashCfg.checksum, device.gpxStatus.flashCfgChecksum, device.gpxFlashCfgUploadChecksum);
         }
     }
 }
@@ -1169,11 +1163,9 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
     {
         case DID_DEV_INFO:
             device.devInfo = *(dev_info_t*)data->ptr;
-            EnableSyncFlashCfgChecksum(device.sysParams.flashCfgChecksum);
             break;
         case DID_GPX_DEV_INFO:
             device.gpxDevInfo = *(dev_info_t*)data->ptr;
-            EnableSyncFlashCfgChecksum(device.gpxStatus.flashCfgChecksum);
             break;
         case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
         case DID_SYS_PARAMS:        
