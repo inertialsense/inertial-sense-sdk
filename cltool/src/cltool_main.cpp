@@ -835,7 +835,7 @@ static int cltool_dataStreaming()
         return 0;
     }
 
-    int exitCode = 0;
+    int exitCode = EXIT_CODE_SUCCESS;
 
     // [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
     if (cltool_setupCommunications(inertialSenseInterface))
@@ -894,7 +894,7 @@ static int cltool_dataStreaming()
             {
                 if (!inertialSenseInterface.Update())
                 {   // device disconnected, exit
-                    exitCode = -2;
+                    exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
                     break;
                 }
 
@@ -909,7 +909,7 @@ static int cltool_dataStreaming()
                 // If updating firmware, and all devices have finished, Exit
                 if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) {
                     if (inertialSenseInterface.isFirmwareUpdateFinished()) {
-                        exitCode = inertialSenseInterface.isFirmwareUpdateSuccessful() ? 0 : -3;
+                        exitCode = inertialSenseInterface.isFirmwareUpdateSuccessful() ? EXIT_CODE_SUCCESS : EXIT_CODE_FIRMWARE_UPDATE_FAILED;
                         break;
                     }
                 } else {  // Only print the usual output if we AREN'T updating firmware...
@@ -944,19 +944,21 @@ static int cltool_dataStreaming()
             cout << "Unknown exception..." << endl;
         }
     }
+    else
+    {   // Failed to setup communications
+        cout << "Failed to setup communications!" << endl;
+        exitCode = EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
+    }
 
     //If Firmware Update is specified return an error code based on the Status of the Firmware Update
     if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
         for (auto& device : inertialSenseInterface.getDevices()) {
             if (device.fwUpdate.hasError) {
-                exitCode = -3;
+                exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
                 break;
             }
         }
     }
-
-    // [C++ COMM INSTRUCTION] STEP 6: Close interface
-    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
 
     return exitCode;
 }
@@ -1013,7 +1015,7 @@ static int inertialSenseMain()
     else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)
     {
         cout << "option -uf [FILENAME] must be used with option -ub [FILENAME] " << endl;
-        return -1;
+        return EXIT_CODE_INVALID_COMMAND_LINE;
     }
         // if host was specified on the command line, create a tcp server
     else if (g_commandLineOptions.baseConnection.length() != 0)
@@ -1065,14 +1067,14 @@ int main(int argc, char* argv[])
     if (!cltool_parseCommandLine(argc, argv))
     {   // parsing failed
         g_inertialSenseDisplay.ShutDown();
-        return -1;
+        return EXIT_CODE_PARSE_COMMAND_LINE_FAILED;
     }
 
     g_inertialSenseDisplay.setOutputOnceDid(g_commandLineOptions.outputOnceDid);
 
     // InertialSense class example using command line options
-    int result = inertialSenseMain();
-    if (result == -1)
+    int exitCode = inertialSenseMain();
+    if (exitCode == EXIT_CODE_INVALID_COMMAND_LINE)
     {
         cltool_outputHelp();
 
@@ -1082,5 +1084,5 @@ int main(int argc, char* argv[])
 
     g_inertialSenseDisplay.ShutDown();
 
-    return result;
+    return exitCode;
 }
