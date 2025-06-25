@@ -22,6 +22,7 @@ cmd_options_t g_commandLineOptions = {};
 serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
+gpx_flash_cfg_t g_gpxFlashCfg_upload = {};
 
 int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
 {
@@ -1217,12 +1218,19 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             gpx_flash_cfg_t *gpxFlashCfg;
             switch (did)
             {
-            case DID_FLASH_CONFIG:  imxFlashCfg = (nvm_flash_cfg_t*)dataPtr; inertialSenseInterface.SetImxFlashConfig(*imxFlashCfg);  break;
-            case DID_GPX_FLASH_CFG: gpxFlashCfg = (gpx_flash_cfg_t*)dataPtr; inertialSenseInterface.SetGpxFlashConfig(*gpxFlashCfg);  break;
-            }
+            case DID_FLASH_CONFIG:  
+                imxFlashCfg = (nvm_flash_cfg_t*)dataPtr; 
+                inertialSenseInterface.SetImxFlashConfig(*imxFlashCfg);  
+                inertialSenseInterface.WaitForImxFlashCfgSynced();
+                break;
 
-            // Check that upload completed
-            inertialSenseInterface.WaitForImxFlashCfgSynced();
+            case DID_GPX_FLASH_CFG: 
+                gpxFlashCfg = (gpx_flash_cfg_t*)dataPtr; 
+                inertialSenseInterface.SetGpxFlashConfig(*gpxFlashCfg);
+                g_gpxFlashCfg_upload = *gpxFlashCfg; // Save for later use
+                inertialSenseInterface.WaitForGpxFlashCfgSynced();
+                break;
+            }
         }
     }
 

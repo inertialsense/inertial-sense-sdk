@@ -862,8 +862,21 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
     for (int i=0; i<int(m_comManagerState.devices.size()); i++)
     {
         ISDevice& device = m_comManagerState.devices[i];
-        DeviceSyncFlashCfg(i, timeMs, DID_FLASH_CONFIG,  device.imxFlashCfgUploadTimeMs, device.imxFlashCfg.checksum, device.sysParams.flashCfgChecksum, device.imxFlashCfgUploadChecksum);
-        DeviceSyncFlashCfg(i, timeMs, DID_GPX_FLASH_CFG, device.gpxFlashCfgUploadTimeMs, device.gpxFlashCfg.checksum, device.gpxStatus.flashCfgChecksum, device.gpxFlashCfgUploadChecksum);
+
+        if (device.devInfo.hardwareType == IS_HARDWARE_TYPE_IMX ||
+            device.sysParams.timeOfWeekMs || 
+            device.imxFlashCfg.checksum)
+        {   // Sync IMX flash config if a IMX present
+            uint32_t checksum16 = 0;
+            DeviceSyncFlashCfg(i, timeMs, DID_FLASH_CONFIG,  device.imxFlashCfgUploadTimeMs, device.imxFlashCfg.checksum, device.sysParams.flashCfgChecksum, device.imxFlashCfgUploadChecksum, checksum16);
+        }
+
+        if (device.devInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
+            device.gpxStatus.timeOfWeekMs || 
+            device.gpxFlashCfg.checksum)
+        {   // Sync GPX flash config if a GPX present
+            DeviceSyncFlashCfg(i, timeMs, DID_GPX_FLASH_CFG, device.gpxFlashCfgUploadTimeMs, device.gpxFlashCfg.checksum, device.gpxStatus.flashCfgChecksum, device.gpxFlashCfgUploadChecksum, device.gpxFlashCfgUploadChecksum16);
+        }
     }
 }
 
@@ -1167,12 +1180,17 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
             copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      
             DEBUG_PRINT("Received DID_SYS_PARAMS\n");
             break;
+        case DID_GPX_STATUS:
+            copyDataPToStructP(&device.gpxStatus, data, sizeof(gpx_status_t));
+            DEBUG_PRINT("Received DID_GPX_STATUS\n");
+            break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&device.imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap( offsetof(nvm_flash_cfg_t, checksum), 4, data ) )
             {	// Checksum received
                 device.sysParams.flashCfgChecksum = device.imxFlashCfg.checksum;
             }
+            DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
             break;
         case DID_GPX_FLASH_CFG:
             copyDataPToStructP(&device.gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
@@ -1180,7 +1198,7 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
             {	// Checksum received
                 device.gpxStatus.flashCfgChecksum = device.gpxFlashCfg.checksum;
             }
-            DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
+            DEBUG_PRINT("Received DID_GPX_FLASH_CFG\n");
             break;
         case DID_FIRMWARE_UPDATE:
             // we don't respond to messages if we don't already have an active Updater
@@ -1211,13 +1229,10 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
             {
             case IS_HARDWARE_TYPE_IMX:
                 device.devInfo = info;
-                EnableSyncFlashCfgChecksum(device.sysParams.flashCfgChecksum);
-                EnableSyncFlashCfgChecksum(device.gpxStatus.flashCfgChecksum);
                 break;
 
             case IS_HARDWARE_TYPE_GPX:
                 device.gpxDevInfo = info;
-                EnableSyncFlashCfgChecksum(device.gpxStatus.flashCfgChecksum);
                 break;
             }
 		}
@@ -1628,8 +1643,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
             ISDevice device;
             device.portHandle = i;
             device.serialPort = serial;
-            // device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
-            // device.gpxStatus.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
             m_comManagerState.devices.push_back(device);
         }
     }
@@ -1731,7 +1744,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
             comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);
             comManagerGetData((int) i, DID_FLASH_CONFIG, 0, 0, 0);
             comManagerGetData((int) i, DID_GPX_FLASH_CFG, 0, 0, 0);
-            comManagerGetData((int) i, DID_EVB_FLASH_CFG, 0, 0, 0);
         }
     }
 
