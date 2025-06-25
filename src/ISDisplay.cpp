@@ -1361,9 +1361,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
 		}
 
         // Spoof/Jamming Dectect
-        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT)         { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam possible, "); };
         if (gps.status2&GPS_STATUS2_FLAGS_GNSS_JAM_DETECTED)                { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam detected, "); };
-        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT)       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof possible, "); };
         if (gps.status2&GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED)              { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof detected, "); };
 
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 

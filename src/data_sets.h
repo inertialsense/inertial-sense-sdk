@@ -498,6 +498,9 @@ enum eGpsStatus2
     GPS_STATUS2_FLAGS_GNSS_JAM_DETECTED             = (uint8_t) 0x02,
     GPS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT    = (uint8_t) 0x04,
     GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED           = (uint8_t) 0x08,
+    
+    GPS_STATUS2_FLAGS_JAM_SPOOF_POSSIBLE_MASK       = (uint8_t) 0x05,
+    GPS_STATUS2_FLAGS_JAM_SPOOF_DETECTED_MASK       = (uint8_t) 0x0A,
     GPS_STATUS2_FLAGS_JAM_SPOOF_MASK                = (uint8_t) 0x0F,
 
     GPS_STATUS2_FLAGS_UNUSED                        = 0xF0,
