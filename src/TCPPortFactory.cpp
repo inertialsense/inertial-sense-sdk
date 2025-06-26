@@ -82,7 +82,7 @@ bool TCPPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     if (url.protocol != "tcp")
         return false;
 
-    if (pType != PORT_TYPE__TCP | PORT_TYPE__COMM)
+    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM))
         return false;
 
     sockaddr addr = {};
