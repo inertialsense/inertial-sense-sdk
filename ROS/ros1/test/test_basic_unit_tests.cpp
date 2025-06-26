@@ -72,7 +72,7 @@ TEST(BasicTestSuite, test_rtk_rover)
     isROS.initialize();
     EXPECT_TRUE(isROS.sdk_connected_) << "Unable to connect to device.";
     nvm_flash_cfg_t flashCfg;
-    isROS.IS_.WaitForImxFlashCfgSyncedSyncedSynced();
+    isROS.IS_.WaitForImxFlashCfgSynced();
     isROS.IS_.ImxFlashConfig(flashCfg);
     EXPECT_EQ(flashCfg.RTKCfgBits, 0x2);
 }
@@ -233,7 +233,7 @@ TEST(BasicTestSuite, test_rtk_base)
     isROS.initialize();
     EXPECT_TRUE(isROS.sdk_connected_) << "Unable to connect to device.";
     nvm_flash_cfg_t flashCfg;
-    isROS.IS_.WaitForImxFlashCfgSyncedSyncedSynced();
+    isROS.IS_.WaitForImxFlashCfgSynced();
     isROS.IS_.ImxFlashConfig(flashCfg);
     EXPECT_EQ(flashCfg.RTKCfgBits, 0x2);
 }
