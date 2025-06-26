@@ -647,7 +647,7 @@ void InertialSenseROS::configure_flash_parameters()
     bool reboot = false;
     nvm_flash_cfg_t flashCfg;
     IS_.WaitForFlashSynced();
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
     nvm_flash_cfg_t curCfg = flashCfg;
     //ROS_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", flashCfg.ioConfig, ioConfig_);
 
@@ -832,7 +832,7 @@ void InertialSenseROS::configure_rtk()
 {
     IS_.WaitForFlashSynced();
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
     flashCfg.RTKCfgBits = 0;
     if (rs_.gps1.type == "F9P")
     {
@@ -2213,7 +2213,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
     (void)req;
     IS_.WaitForFlashSynced();
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
 
     for (int i=0; i<3; i++)
     {
@@ -2240,7 +2240,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
 {
     IS_.WaitForFlashSynced();
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
 
     for (int i=0; i<3; i++)
     {
