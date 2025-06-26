@@ -433,7 +433,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
     if (!NavSatFixConfigured)
     {
         if (rs_.gps1_navsatfix.enabled) {
@@ -646,8 +646,8 @@ void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
     nvm_flash_cfg_t flashCfg;
-    IS_.WaitForFlashSynced();
-    IS_.FlashConfig(flashCfg);
+    IS_.WaitForImxFlashCfgSynced();
+    IS_.ImxFlashConfig(flashCfg);
     nvm_flash_cfg_t curCfg = flashCfg;
     //ROS_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", flashCfg.ioConfig, ioConfig_);
 
@@ -707,7 +707,7 @@ void InertialSenseROS::configure_flash_parameters()
         flashCfg.dynamicModel       = dynamicModel_;
         flashCfg.platformConfig     = platformConfig_;
 
-        IS_.SetFlashConfig(flashCfg);
+        IS_.SetImxFlashConfig(flashCfg);
     }
 
     if  (reboot)
@@ -830,9 +830,9 @@ void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
 
 void InertialSenseROS::configure_rtk()
 {
-    IS_.WaitForFlashSynced();
+    IS_.WaitForImxFlashCfgSynced();
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
     flashCfg.RTKCfgBits = 0;
     if (rs_.gps1.type == "F9P")
     {
@@ -927,7 +927,7 @@ void InertialSenseROS::configure_rtk()
         }
     }
 
-    IS_.SetFlashConfig(flashCfg);
+    IS_.SetImxFlashConfig(flashCfg);
     ROS_INFO("InertialSenseROS: Setting rtkConfigBits: 0x%08x", flashCfg.RTKCfgBits);
 }
 
@@ -2211,16 +2211,16 @@ void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
 bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
     (void)req;
-    IS_.WaitForFlashSynced();
+    IS_.WaitForImxFlashCfgSynced();
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
 
     for (int i=0; i<3; i++)
     {
         flashCfg.refLla[i] = lla_[i];
     }
 
-    if (IS_.SetFlashConfig(flashCfg))
+    if (IS_.SetImxFlashConfig(flashCfg))
     {
         res.success = true;
         res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(flashCfg.refLla[0]) + 
@@ -2238,16 +2238,16 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
 bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Request &req, inertial_sense_ros::refLLAUpdate::Response &res)
 {
-    IS_.WaitForFlashSynced();
+    IS_.WaitForImxFlashCfgSynced();
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
 
     for (int i=0; i<3; i++)
     {
         flashCfg.refLla[i] = req.lla[i];
     }
 
-    if (IS_.SetFlashConfig(flashCfg))
+    if (IS_.SetImxFlashConfig(flashCfg))
     {
         res.success = true;
         res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(flashCfg.refLla[0]) + 
