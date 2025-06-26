@@ -14,6 +14,13 @@
 #include <regex>
 #include "PortManager.h"
 
+/**
+ * This function parses and creates a new port_handle_t repersenting a TCP Port
+ * when passed a URL in the format tcp://ipAddr:port to pName and a pType of PORT_TYPE__TCP | PORT_TYPE__COMM
+ * @param pName The URL and name of the new port to bind a port_handle_to
+ * @param pType The port type requested to be generated
+ * @return A port_handle_t bound to the newly created TCP port for the connection pName represents
+ */
 port_handle_t TCPPortFactory::bindPort(const std::string& pName, uint16_t pType) {
     if (!validatePort(pName, pType))
         return nullptr;
@@ -43,11 +50,16 @@ port_handle_t TCPPortFactory::bindPort(const std::string& pName, uint16_t pType)
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    tcpPortInit(port, id, pType,  this->portOptions.defaultBlocking, pName.c_str(), &addr);
+    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), &addr);
 
     return port;
 }
 
+/**
+ * Releases and frees the memory used by this port
+ * @param port The TCP Port handle to deinitialize
+ * @return True if successful, false otherwise
+ */
 bool TCPPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
@@ -59,9 +71,18 @@ bool TCPPortFactory::releasePort(port_handle_t port) {
     return true;
 }
 
+/**
+ * Validate that a provided pName can create a TCP Port
+ * @param pName The URL to validate starting with tcp://
+ * @param pType Must be PORT_TYPE__TCP | PORT_TYPE__COMM
+ * @return True if port can be created, false otherwise
+ */
 bool TCPPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     const URL url = parseURL(pName);
     if (url.protocol != "tcp")
+        return false;
+
+    if (pType != PORT_TYPE__TCP | PORT_TYPE__COMM)
         return false;
 
     sockaddr addr = {};
@@ -75,13 +96,24 @@ bool TCPPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     return false;
 }
 
+/**
+ * TCP Port Factory implements a stub function that only creates 1 port if the provided pattern is a valid TCP port url
+ * @param portCallback The function to callback into to indicate that this port has been "found"
+ * @param pattern The URL to validate and "discover"
+ * @param pType Ignored
+ */
 void TCPPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     // The base TCP Port Factory doesn't provide a discovery service, but we must still "locate" any ports we determine are valid
-    if (validatePort(pattern, pType)) {
+    if (validatePort(pattern, PORT_TYPE__TCP | PORT_TYPE__COMM)) {
         portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, pattern);
     }
 }
 
+/**
+ * Parse a URL into a TCPPortFactory::URL
+ * @param pName URL to attempt to parse
+ * @return TCPPortFactory:URL that represents the parsed URL
+ */
 TCPPortFactory::URL TCPPortFactory::parseURL(const std::string& pName) {
     std::regex regexp(R"(^([^:\/?#]+):\/\/:?([^\/ ]*)?:([^\/?#\D]*)\/?([^?#]*)?\??([^#]*)?#?(.*)?$)");
     std::smatch match;

@@ -172,7 +172,7 @@ namespace utils {
     template <typename T=uint8_t, int N=4>
     int split_from_string(const std::string& s, T vOut[N], const char* d = ".", std::function<T(const std::string&)> lambda = [](const std::string& ss) -> T { return stoi(ss); } ) {
         long unsigned int start = 0, n = 0, end = 0, len = s.length();
-        while ( (start < len) && (n < len) && (end = s.find_first_of(d, start)) != std::string::npos) ) {
+        while ( (start < len) && (n < len) && (end = s.find_first_of(d, start)) != std::string::npos) {
             vOut[n++] = lambda(s.substr(start, end - start));
             start = end + 1;
         }

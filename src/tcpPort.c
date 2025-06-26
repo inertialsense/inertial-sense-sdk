@@ -20,11 +20,23 @@
 #include <sys/socket.h>
 #endif
 
+/**
+ * Returns the name, if any, associated with this port
+ * @param port
+ * @return
+ */
 const char* tcpPortGetName(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     return tcpPort->name;
 }
 
+/**
+ * Determines viability of the specified port. Does not connect or otherwise interface with the port
+ * directly, but generally indicates whether the underlying OS devices and resources exist in order to
+ * successfully open and operate on the port. If the port is successfully validated, returns 0
+ * @param port the port to validate
+ * @return 0 if the port is valid, or <0 if an error occurred and port is invalid
+ */
 int tcpPortValidate(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // Socket is currently closed, so let's create a new socket and see if it errors
@@ -40,6 +52,11 @@ int tcpPortValidate(port_handle_t port) {
     // although validating the server's existence is impossible without connecting or opening the socket
 }
 
+/**
+ * Opens or establishes a connection to port.
+ * @param port the port to open
+ * @return 0 on success, -errno on error
+ */
 int tcpPortOpen(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket >= 0) { // The socket is already open, we don't need to do anything
@@ -62,6 +79,11 @@ int tcpPortOpen(port_handle_t port) {
     return 0;
 }
 
+/**
+ * Closes or disconnects a connection to port.
+ * @param port the port to close
+ * @return 0 on success, -errno on error
+ */
 int tcpPortClose(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
@@ -78,6 +100,15 @@ int tcpPortClose(port_handle_t port) {
     return 0;
 }
 
+/**
+ * returns the number of free bytes in the underlying TX buffer, for new data to be queued for
+ * sending. Attempting to send more than portFree() bytes will result in a TX_OVERFLOW being raised
+ * on the port. It is the callers responsibility to detect this, and retain unsent data until all
+ * data can be transmitted, or to discard the excess information.
+ * This function isn't supported on Windows
+ * @param port the port to query
+ * @return number of free bytes in TX Buffer or -errno on Linux, not supported on Windows
+ */
 int tcpPortFree(port_handle_t port) {
 #ifdef PLATFORM_IS_WINDOWS
     return PORT_ERROR__NOT_SUPPORTED;
@@ -104,6 +135,11 @@ int tcpPortFree(port_handle_t port) {
 #endif
 }
 
+/**
+ * returns the number of bytes available to be read from the underlying RX buffer, if any.
+ * @param port the port to query
+ * @return Number of bytes available to read from RX Buffer
+ */
 int tcpPortAvailable(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
@@ -119,6 +155,11 @@ int tcpPortAvailable(port_handle_t port) {
     return bytesAvailable;
 }
 
+/**
+ * flushes/removes all bytes currently waiting to be read from the port
+ * @param port the port to query
+ * @return if >= 0, the number of bytes that were flushed, otherwise -errno
+ */
 int tcpPortFlush(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
@@ -126,6 +167,7 @@ int tcpPortFlush(port_handle_t port) {
         return tcpPort->socket;
     }
 
+    ssize_t clearedData = 0;
     while (true) {
         int bufferSize = tcpPortAvailable(port);
         int flag = 1;
@@ -146,12 +188,13 @@ int tcpPortFlush(port_handle_t port) {
             } else if (retval == 0) {
                 flag = 0;
                 ioctl(tcpPort->socket,FIONBIO, &flag);
-                return 0;
+                return clearedData;
             }
+            clearedData += retval;
         } else if (bufferSize == 0) {
             flag = 0;
             ioctl(tcpPort->socket,FIONBIO, &flag);
-            return 0;
+            return clearedData;
         } else {
             flag = 0;
             ioctl(tcpPort->socket,FIONBIO, &flag);
@@ -161,6 +204,13 @@ int tcpPortFlush(port_handle_t port) {
     }
 }
 
+/**
+ * Tells the kernel to transmit all queued TX data to be sent to the device.
+ * This effectively flushes the TX buffer. This will return instantly
+ * @param port the port to query
+ * @param timeout is ignored for this function
+ * @return 0 on success, otherwise an -errno
+ */
 int tcpPortDrain(port_handle_t port, uint32_t timeout) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
@@ -200,6 +250,14 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
     return 0;
 }
 
+/**
+ * Reads upto/at most 'len' number of bytes, copying those bytes into the buffer pointed to by 'buf'. Data copied into 'buf' is
+ * removed from the internal RX buffer of the port, releasing 'len' bytes from the underlying buffer. It cannot be read again.
+ * @param port the port from which to read data
+ * @param buf the buffer to place a copy of the data into
+ * @param len the maximum number of bytes to read; if fewer than 'len' bytes are available, only those bytes available will be returned.
+ * @return the number of actual bytes read from the internal RX buffer or -errno on error
+ */
 int tcpPortRead(port_handle_t port, uint8_t* buf, unsigned int len) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
@@ -225,6 +283,15 @@ int tcpPortRead(port_handle_t port, uint8_t* buf, unsigned int len) {
     return retval;
 }
 
+/**
+ * Reads upto/at most 'len' number of bytes, copying those bytes into the buffer pointed to by 'buf'. Data copied into 'buf' is
+ * removed from the internal RX buffer of the port, releasing 'len' bytes from the underlying buffer. It cannot be read again.
+ * @param port the port from which to read data
+ * @param buf the buffer to place a copy of the data into
+ * @param len the maximum number of bytes to read; if fewer than 'len' bytes are available, only those bytes available will be returned.
+ * @param timeout the maximum time, in milliseconds, to wait for 'len' bytes to be received before returning.
+ * @return the number of actual bytes read from the internal RX buffer or -errno on error
+ */
 int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint32_t timeout) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
@@ -268,6 +335,13 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
     return retval;
 }
 
+/**
+ * Write the specified len bytes pointed to by buf to the provided port
+ * @param port the port to send the data to
+ * @param buf the buffer to send data from
+ * @param len the number of bytes to send
+ * @return the number of bytes sent (0 is valid), or -errno in event on an error
+ */
 int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
@@ -306,10 +380,18 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     return retval;
 }
 
-void tcpPortInit(port_handle_t port, int id, int type, bool blocking, const char* name, const struct sockaddr* ip) {
+/**
+ * Initializes a new tcp port with the following parameters
+ * @param port The port handle to initialize
+ * @param id The id of the new port handle
+ * @param blocking To configure if this port is blocking
+ * @param name The name of the new port
+ * @param ip The address and port to connect to over TCP
+ */
+void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr* ip) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     tcpPort->base.pnum = id;
-    tcpPort->base.ptype = type | PORT_TYPE__TCP | PORT_TYPE__COMM | PORT_FLAG__VALID;
+    tcpPort->base.ptype = PORT_TYPE__TCP | PORT_TYPE__COMM | PORT_FLAG__VALID;
 
     tcpPort->base.stats = (port_stats_t*)&(tcpPort->stats);
 
@@ -331,6 +413,10 @@ void tcpPortInit(port_handle_t port, int id, int type, bool blocking, const char
     tcpPort->blocking = blocking;
 }
 
+/**
+ * Deinitializes a tcp port and clears and zeros it's allocated memory
+ * @param port The port handle to deinitialize
+ */
 void tcpPortDelete(port_handle_t port) {
     if (!port)
         return;

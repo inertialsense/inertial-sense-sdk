@@ -67,7 +67,7 @@ struct tcp_port_s
 typedef struct tcp_port_s tcp_port_t;
 #define TCP_PORT(n)  ((tcp_port_t*)n)
 
-void tcpPortInit(port_handle_t port, int id, int type, bool blocking, const char* name, const struct sockaddr* ip);
+void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr* ip);
 void tcpPortDelete(port_handle_t port);
 
 #ifdef __cplusplus
