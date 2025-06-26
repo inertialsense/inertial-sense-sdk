@@ -584,7 +584,7 @@ class logPlot:
                 ax[0,0].plot(gps1Time, gps1VelNed[:, 0])
                 ax[1,0].plot(gps1Time, gps1VelNed[:, 1])
                 ax[2,0].plot(gps1Time, gps1VelNed[:, 2])
-                ax[3,0].plot(gps2Time, gps1VelNorm, label=("%s GPS1" % (self.log.serials[d])))
+                ax[3,0].plot(gps1Time, gps1VelNorm, label=("%s GPS1" % (self.log.serials[d])))
             if len(gps2Time) and (SHOW_GPS2 or len(gps1Time) == 0):
                 gps2VelNorm = np.linalg.norm(gps2VelNed, axis=1)
                 ax[0,0].plot(gps2Time, gps2VelNed[:, 0])
@@ -1953,6 +1953,9 @@ class logPlot:
 
     def rtkObsSingleDiff(self, fig=None, axs=None):
         name = "Compassing"
+        if len(self.log.data[0, DID_GPS1_RAW][0]) == 0:
+            return
+        
         Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
         n_plots = 8
         if fig is None:
@@ -2451,14 +2454,15 @@ class logPlot:
                             plabel = ''
                         ax[i, 0].plot(refTime[d], refSnr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
 
+        if not 'ax' in locals():
+            return
+
         for i in range((1 if combineImu3 else sensorCnt)):
             self.legends_add(ax[0][i].legend(ncol=2))
             if plotResidual:
                 self.legends_add(ax[0,1].legend(ncol=2))
                 for i in range(3):
                     self.setPlotYSpanMin(ax[i,1], 1.0)
-        if not 'ax' in locals():
-            return
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -2534,14 +2538,16 @@ class logPlot:
                             plabel = ''
                         ax[i, 0].plot(refTime[d], refSnr[d][:, i], color='black', linestyle = 'dashed', label = plabel)
 
+        if not 'ax' in locals():
+            return
+
         for i in range((1 if combineImu3 else sensorCnt)):
             self.legends_add(ax[0][i].legend(ncol=2))
             if plotResidual:
                 self.legends_add(ax[0,1].legend(ncol=2))
                 for i in range(3):
                     self.setPlotYSpanMin(ax[i,1], 1.0)
-        if not 'ax' in locals():
-            return
+
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -3199,7 +3205,8 @@ class logPlot:
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
             ax[1].plot(xGps1, dtGps1)
             ax[2].plot(xGps2, dtGps2)
-            ax[3].plot(xImu3, deltaImu3Timestamp)
+            if xImu3.size > 0:
+                ax[3].plot(xImu3, deltaImu3Timestamp)
             ax[4].plot(xImu, deltaTimestamp)
             if 'dtPimu' in locals() and dtPimu.size:
                 ax[5].plot(xImu, dtPimu)
@@ -3207,7 +3214,8 @@ class logPlot:
             self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
             self.configureSubplot(ax[1], f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
             self.configureSubplot(ax[2], f'GPS2 dt: {np.mean(dtGps2):.3f}s', 's')
-            self.configureSubplot(ax[3], f'IMU3 Delta Timestamp: {np.mean(deltaImu3Timestamp):.3f}s', 's')
+            if 'deltaImu3Timestamp' in locals() and deltaImu3Timestamp.size > 0:
+                self.configureSubplot(ax[3], f'IMU3 Delta Timestamp: {np.mean(deltaImu3Timestamp):.3f}s', 's')
             self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.3f}s', 's')
             if 'dtPimu' in locals() and dtPimu.size:
                 self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.3f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
