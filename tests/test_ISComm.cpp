@@ -1241,7 +1241,7 @@ TEST(ISComm, alternating_isb_nmea_parse_error_check)
         WHILE_FULL;
 
         // append ISB get data DEV_INFO
-        n = is_comm_get_data_to_buf(txPtr, BUF_FREE, &g_comm, DID_DEV_INFO, 0, sizeof(dev_info_t), 0);
+        n = is_comm_get_data_to_buf(txPtr, BUF_FREE, &g_comm, DID_DEV_INFO, sizeof(dev_info_t), 0, 0);
         txPtr += n;
         msgCntIsb++;
         WHILE_FULL;
@@ -1257,7 +1257,7 @@ TEST(ISComm, alternating_isb_nmea_parse_error_check)
         ins1.timeOfWeek = 123.456 + i*2;
         ins1.hdwStatus = 78 + i*2;
         ins1.insStatus = 90 + i*2;
-        n = is_comm_data_to_buf(txPtr, BUF_FREE, &g_comm, DID_INS_1, 0, sizeof(ins_1_t), &ins1);
+        n = is_comm_data_to_buf(txPtr, BUF_FREE, &g_comm, DID_INS_1, sizeof(ins_1_t), 0, &ins1);
         txPtr += n;
         msgCntIsb++;
         WHILE_FULL;

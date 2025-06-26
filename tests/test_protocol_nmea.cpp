@@ -732,7 +732,7 @@ TEST(protocol_nmea, GLL)
 
     if (comValue != 0)
     {
-        printf(abuf);
+        printf("%s", abuf);
         printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
         printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
         printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
@@ -772,7 +772,7 @@ TEST(protocol_nmea, GLL_noFixStat)
 
     if (comValue != 0)
     {
-        printf(abuf);
+        printf("%s", abuf);
         printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
         printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
         printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
@@ -812,7 +812,7 @@ TEST(protocol_nmea, GLL_noLat)
 
     if (comValue != 0)
     {
-        printf(abuf);
+        printf("%s", abuf);
         printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
         printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
         printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
@@ -852,7 +852,7 @@ TEST(protocol_nmea, GLL_noLon)
 
     if (comValue != 0)
     {
-        printf(abuf);
+        printf("%s", abuf);
         printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
         printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
         printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
@@ -893,7 +893,7 @@ TEST(protocol_nmea, GLL_void)
 
     if (comValue != 0)
     {
-        printf(abuf);
+        printf("%s", abuf);
         printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
         printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
         printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);

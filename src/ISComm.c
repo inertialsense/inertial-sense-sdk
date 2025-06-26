@@ -1153,18 +1153,14 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
 
     // Header checksum
     pkt->hdrCksum = is_comm_isb_checksum16(0, &pkt->hdr, sizeof(pkt->hdr));
-    if (offset)
-    {
-        pkt->hdrCksum = is_comm_isb_checksum16(pkt->hdrCksum, &pkt->offset, sizeof(pkt->offset));
-    }
 }
 
 #define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
 
-void memcpyIncUpdateChecksum(uint8_t *dstBuf, const uint8_t* buf, int len, uint16_t *checksum)
+void memcpyIncUpdateChecksum(uint8_t **dstBuf, const uint8_t* srcBuf, int len, uint16_t *checksum)
 {
-    *checksum = is_comm_isb_checksum16(*checksum, buf, len);
-    MEMCPY_INC(dstBuf, buf, len);
+    *checksum = is_comm_isb_checksum16(*checksum, srcBuf, len);
+    MEMCPY_INC(*dstBuf, srcBuf, len);
 }
 
 int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
@@ -1179,14 +1175,14 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     MEMCPY_INC(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                                   // Header
     if (pkt->offset)
     {
-        memcpyIncUpdateChecksum(buf, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));                                // Offset (optional)
+        memcpyIncUpdateChecksum(&buf, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));                               // Offset (optional)
     }
     if (pkt->data.size)
     {
-        memcpyIncUpdateChecksum(buf, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                    // Payload
+        memcpyIncUpdateChecksum(&buf, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
     MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
-
+    
     // Increment Tx count
     comm->txPktCount++;
 
@@ -1209,50 +1205,40 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-#ifdef GPX_1
-    // Write packet to port in multiple write calls
+#ifdef GPX_1    // @Tony We want to remove this and use the single write call version for all ports.  We first need the stack usage (high water marks) 
+    // implemented in the GPX RTOS status so we know if it is save to allocate a 2048 bytes buffer on the stack as a local variable in this function.
+    
+    // Write packet to port in multiple write calls (LEGACY).  Interruptable calls to this function that also write to the port could cause severed packets written.
 
     // Write packet to port
-    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
-
+    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                           // Header
     if (pkt->offset)
     {
-        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
+        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));               // Offset (optional)
     }
     if (pkt->data.size)
     {
         n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));   // Payload
     }
-
-    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
+    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                            // Footer (checksum)
 #else
-    // Write packet to port in a single write call
-
+    // Write packet to port in a single write call.  Reentrant function that prevents severed packets written to the port if this function gets interrupted and data written the same port.
     uint8_t buf[PKT_BUF_SIZE];
     uint8_t *ptr = buf;
 
-    memcpy(ptr, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));       // Header
-    ptr += sizeof(packet_hdr_t);
-
+    // Set checksum using precomputed header checksum and Write packet to buffer
+    MEMCPY_INC(ptr, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                                   // Header
     if (pkt->offset)
     {
-        memcpy(ptr, (uint8_t*)&(pkt->offset), 2);                   // Offset (optional)
-        ptr += 2;
+        memcpyIncUpdateChecksum(&ptr, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));                               // Offset (optional)
     }
-
     if (pkt->data.size)
     {
-        // Include payload in checksum calculation
-        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
-
-        memcpy(ptr, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
-        ptr += pkt->data.size;
+        memcpyIncUpdateChecksum(&ptr, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
+    MEMCPY_INC(ptr, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
 
-    memcpy(ptr, (uint8_t*)&(pkt->checksum), 2);                     // Footer (checksum)
-    ptr += 2;
-
-    // Write packet to port (all in one write)
+    // Write entire packet to port (all at once).  
     int n = portWrite(port, buf, ptr - buf);
 #endif
 
