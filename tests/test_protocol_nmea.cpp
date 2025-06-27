@@ -47,7 +47,7 @@ void compareGpsPos(gps_pos_t &g1, gps_pos_t &g2)
     EXPECT_EQ(g1.leapS, g2.leapS);
     EXPECT_EQ(g1.satsUsed, g2.satsUsed);
     EXPECT_EQ(g1.cnoMeanSigma, g2.cnoMeanSigma);
-    EXPECT_EQ(g1.reserved, g2.reserved);
+    EXPECT_EQ(g1.status2, g2.status2);
 }
 
 void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
@@ -231,10 +231,11 @@ TEST(protocol_nmea, nmea_parse_asce)
     nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PINS2, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2]);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGSV, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGSV]);
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
-    cout << a << endl;
-
+    
     rmci_t outRmci[NUM_COM_PORTS] = {};
     uint32_t outOptions = nmea_parse_asce(port, a, n, outRmci);
+
+    //cout << a << endl;
 
     ASSERT_EQ( options, outOptions );
     for (int i=0; i<NUM_COM_PORTS; i++)
@@ -282,10 +283,13 @@ TEST(protocol_nmea, INFO)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     nmea_dev_info(abuf, ASCII_BUF_LEN, info);
-    printf("%s\n", abuf);
+
     dev_info_t result = {};
     nmea_parse_info(result, abuf, ASCII_BUF_LEN);
-    ASSERT_EQ(memcmp(&info, &result, sizeof(result)), 0);
+
+    int compVal = memcmp(&info, &result, sizeof(result));
+    if (compVal != 0)    printf("%s\n", abuf);
+    ASSERT_EQ(compVal, 0);
 }
 
 TEST(protocol_nmea, PIMU)
@@ -706,7 +710,43 @@ TEST(protocol_nmea, GGA4)
 TEST(protocol_nmea, GLL)
 {
     gps_pos_t pos = {};
-    // pos.week = 12;
+
+    pos.week = 2270;
+    pos.timeOfWeekMs = 370659600;
+    pos.status = (GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GPS_STATUS_FIX_2D;
+    pos.lla[0] = POS_LAT_DEG;
+    pos.lla[1] = POS_LON_DEG;
+    pos.leapS = LEAP_SEC;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
+    gps_pos_t result = {};
+    result.leapS = pos.leapS;
+    result.week = pos.week;
+    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
+    utc_time_t t;
+    nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
+
+    int comValue = memcmp(&pos, &result, sizeof(result));
+
+    if (comValue != 0)
+    {
+        printf("%s", abuf);
+        printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
+        printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
+        printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
+        printf("stat in: %d\r\nstat out:%d\r\n", pos.status, result.status);
+    }
+
+    ASSERT_EQ(comValue, 0);
+}
+
+TEST(protocol_nmea, GLL_noFixStat)
+{
+    gps_pos_t pos = {};
+
+    pos.week = 2270;
     pos.timeOfWeekMs = 370659600;
     pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
     pos.lla[0] = POS_LAT_DEG;
@@ -718,10 +758,149 @@ TEST(protocol_nmea, GLL)
     // printf("%s\n", abuf);
     gps_pos_t result = {};
     result.leapS = pos.leapS;
+    result.week = pos.week;
     uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
     utc_time_t t;
     nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
-    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+
+    // alter for test results 
+    pos.lla[0] = 0;
+    pos.lla[1] = 0;
+    pos.status &= ~(GPS_STATUS_FIX_MASK);
+
+    int comValue = memcmp(&pos, &result, sizeof(result));
+
+    if (comValue != 0)
+    {
+        printf("%s", abuf);
+        printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
+        printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
+        printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
+        printf("stat in: %d\r\nstat out:%d\r\n", pos.status, result.status);
+    }
+
+    ASSERT_EQ(comValue, 0);
+}
+
+TEST(protocol_nmea, GLL_noLat)
+{
+    gps_pos_t pos = {};
+
+    pos.week = 2270;
+    pos.timeOfWeekMs = 370659600;
+    pos.status = (GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GPS_STATUS_FIX_2D;
+    pos.lla[0] = POS_LAT_DEG;
+    pos.lla[1] = 0;
+    pos.leapS = LEAP_SEC;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
+    gps_pos_t result = {};
+    result.leapS = pos.leapS;
+    result.week = pos.week;
+    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
+    utc_time_t t;
+    nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
+
+    // alter for test results 
+    // pos.lla[0] = 0;
+    // pos.lla[1] = 0;
+    // pos.status &= ~(GPS_STATUS_FIX_MASK);
+
+    int comValue = memcmp(&pos, &result, sizeof(result));
+
+    if (comValue != 0)
+    {
+        printf("%s", abuf);
+        printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
+        printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
+        printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
+        printf("stat in: %d\r\nstat out:%d\r\n", pos.status, result.status);
+    }
+
+    ASSERT_EQ(comValue, 0);
+}
+
+TEST(protocol_nmea, GLL_noLon)
+{
+    gps_pos_t pos = {};
+
+    pos.week = 2270;
+    pos.timeOfWeekMs = 370659600;
+    pos.status = (GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GPS_STATUS_FIX_2D;
+    pos.lla[0] = 0;
+    pos.lla[1] = POS_LON_DEG;
+    pos.leapS = LEAP_SEC;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
+    gps_pos_t result = {};
+    result.leapS = pos.leapS;
+    result.week = pos.week;
+    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
+    utc_time_t t;
+    nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
+
+    // alter for test results 
+    // pos.lla[0] = 0;
+    // pos.lla[1] = 0;
+    // pos.status &= ~(GPS_STATUS_FIX_MASK);
+
+    int comValue = memcmp(&pos, &result, sizeof(result));
+
+    if (comValue != 0)
+    {
+        printf("%s", abuf);
+        printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
+        printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
+        printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
+        printf("stat in: %d\r\nstat out:%d\r\n", pos.status, result.status);
+    }
+
+    ASSERT_EQ(comValue, 0);
+}
+
+TEST(protocol_nmea, GLL_void)
+{
+    gps_pos_t pos = {};
+
+    pos.week = 0;
+    pos.timeOfWeekMs = 370659600;
+    pos.status = (GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GPS_STATUS_FIX_2D;
+    pos.lla[0] = POS_LAT_DEG;
+    pos.lla[1] = POS_LON_DEG;
+    pos.leapS = LEAP_SEC;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
+    gps_pos_t result = {};
+    result.leapS = pos.leapS;
+    result.week = pos.week;
+    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
+    utc_time_t t;
+    nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
+
+    // alter for test results 
+    pos.lla[0] = 0;
+    pos.lla[1] = 0;
+    pos.timeOfWeekMs = 0;
+    pos.status &= ~(GPS_STATUS_FIX_MASK);
+
+    int comValue = memcmp(&pos, &result, sizeof(result));
+
+    if (comValue != 0)
+    {
+        printf("%s", abuf);
+        printf("lat in: %f\r\nlat out:%f\r\n", pos.lla[0], result.lla[0]);
+        printf("lon in: %f\r\nlon out:%f\r\n", pos.lla[1], result.lla[1]);
+        printf("time in: %d\r\ntime out:%d\r\n", pos.timeOfWeekMs, result.timeOfWeekMs);
+        printf("stat in: %d\r\nstat out:%d\r\n", pos.status, result.status);
+    }
+
+    ASSERT_EQ(comValue, 0);
 }
 
 TEST(protocol_nmea, GSA)
@@ -781,9 +960,15 @@ TEST(protocol_nmea, RMC)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_rmc(abuf, ASCII_BUF_LEN, pos, vel, magDeclination);
-    printf("%s\n", rmc);
-    printf("%s\n", abuf);
-    ASSERT_EQ(memcmp(&rmc, &abuf, n), 0);
+
+    int compVal = memcmp(&rmc, &abuf, n);
+
+    if (compVal != 0)
+    {
+        printf("%s\n", rmc);
+        printf("%s\n", abuf);
+        ASSERT_EQ(compVal, 0);
+    }
 }
 
 TEST(protocol_nmea, ZDA)
@@ -899,7 +1084,8 @@ TEST(protocol_nmea, POWTLV)
     
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_powtlv(abuf, ASCII_BUF_LEN, pos, vel);
-    printf("%s\n", abuf);
+
+    // printf("%s\n", abuf);
 
     gps_pos_t resultPos = {};
     gps_vel_t resultVel = {};
@@ -946,7 +1132,8 @@ TEST(protocol_nmea, POWGPS_valid)
     
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
-    printf("%s\n", abuf);
+    
+    // printf("%s\n", abuf);
 
     gps_pos_t resultPos = {};
 
@@ -980,7 +1167,8 @@ TEST(protocol_nmea, POWGPS_gps_time_invalid)
     
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
-    printf("%s\n", abuf);
+
+    // printf("%s\n", abuf);
 
     gps_pos_t resultPos = {};
 
@@ -1014,7 +1202,8 @@ TEST(protocol_nmea, POWGPS_leap_invalid)
     
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_powgps(abuf, ASCII_BUF_LEN, pos);
-    printf("%s\n", abuf);
+
+    // printf("%s\n", abuf);
 
     gps_pos_t resultPos = {};
 
@@ -1174,6 +1363,7 @@ TEST(protocol_nmea, binary_GSV_binary)
         {
             gps_sat_sv_t &src = gpsSat.sat[i];
             gps_sat_sv_t &dst = outSat.sat[i];
+
             // printf("%d   gnss: %d %d,  svid: %d %d,  cno: %d %d,  ele: %d %d,  azm: %d %d\n", 
             //     i,
             //     src.gnssId, dst.gnssId, 
@@ -1181,6 +1371,7 @@ TEST(protocol_nmea, binary_GSV_binary)
             //     src.cno, dst.cno, 
             //     src.elev, dst.elev, 
             //     src.azim, dst.azim);
+
             ASSERT_TRUE( dst.gnssId == src.gnssId );
             ASSERT_TRUE( dst.svId == src.svId );
             ASSERT_TRUE( dst.elev == src.elev );
@@ -1193,14 +1384,15 @@ TEST(protocol_nmea, binary_GSV_binary)
         {
             gps_sig_sv_t &src = gpsSig.sig[i];
             gps_sig_sv_t &dst = outSig.sig[i];
+
             // printf("%d   gnss: %d %d,  svid: %d %d,  sigId: %d %d,  quality: %d %d,  cno: %d %d\n", 
             //     i,
             //     src.gnssId, dst.gnssId, 
             //     src.svId, dst.svId, 
             //     src.sigId, dst.sigId, 
             //     src.quality, dst.quality,
-            //     src.cno, dst.cno
-            // );
+            //     src.cno, dst.cno);
+
             ASSERT_TRUE( dst.gnssId == src.gnssId );
             ASSERT_TRUE( dst.svId == src.svId );
             ASSERT_TRUE( dst.sigId == src.sigId );

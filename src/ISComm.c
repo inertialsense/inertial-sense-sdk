@@ -171,21 +171,18 @@ int validateBaudRate(unsigned int baudRate)
 
 
 /**
- * @brief Sets buffer to inital state
+ * @brief Sets buffer to initial state
  * 
  * @param c is_comm_instance_t*
- * @param buffer uint8_t*
- * @param bufferSize Size of the buffer
  * @return returns the size of the buffer
  */
-int is_comm_reset_buffer(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+int is_comm_reset_buffer(is_comm_instance_t* c)
 {
-    c->rxBuf.size = bufferSize;
-    c->rxBuf.start = buffer;
-    c->rxBuf.end = buffer + bufferSize;
-    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = buffer;
+    c->parser.state = 0;
+    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = c->rxBuf.start;
+    c->processPkt = NULL;
 
-    return bufferSize;
+    return c->rxBuf.size;
 }
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
@@ -194,7 +191,12 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 
     // Clear buffer and initialize buffer pointers
     memset(buffer, 0, bufferSize);
-    is_comm_reset_buffer(c, buffer, bufferSize);
+    
+    c->rxBuf.size = bufferSize;
+    c->rxBuf.start = buffer;
+    c->rxBuf.end = buffer + bufferSize;
+
+    is_comm_reset_buffer(c);
     
     // Set parse enable flags
     c->config.enabledMask = DEFAULT_PROTO_MASK;
@@ -872,16 +874,48 @@ static protocol_type_t processSpartnByte(void* v)
 }
 
 /**
+ * Move a buffer of data from src to dest.  This function is used to move data between buffers 
+ * that are not aligned to 32-bit boundaries.  Equivalent to memmove() but more efficient on 
+ * 32-bit processors.  Requires src and dest do not overlap such that dest will overwrite src 
+ * data not yet copied (i.e. ideal use is dest < src).
+ * @param dest the destination buffer
+ * @param src the source buffer
+ * @param size the number of bytes to move
+ */
+void move_buffer_32bit(void* dest, void* src, size_t size)
+{
+    uint32_t* dest32 = (uint32_t*)dest;
+    uint32_t* src32 = (uint32_t*)src;
+
+    size_t size32 = size>>2;
+    size_t remaining = size&0x3;
+
+    // Copy 32-bit chunks
+    for (size_t i = 0; i < size32; i++)
+    {
+        dest32[i] = src32[i];
+    }
+
+    // Copy remaining bytes
+    uint8_t* dest8 = (uint8_t*)(dest32 + size32);
+    uint8_t* src8 = (uint8_t*)(src32 + size32);
+
+    for (size_t i = 0; i < remaining; i++)
+    {
+        dest8[i] = src8[i];
+    }
+}
+
+/**
  *            *** MAKE SURE YOU UNDERSTAND THIS FUNCTION BEFORE YOU USE IT ***
  *
- * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.
- * Specifically, if the buffer is empty, it will reset all pointers to the start of the buffer.
- * If the buffer pointers are at the end of the buffer, and there is free space at the beginning, it will
- * move the buffer contents back to start, and realign the buffer pointers to maximize free space at the end.
- * If the buffer is mostly (2/3rds) full and cannot be shifted, it will be cleared (reinitialized, dropping
- * old data).
+ * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.  
+ * This function should be called before adding data to the is_comm buffer and calling 
+ * is_comm_parse_timeout() or related parse functions.  
+ * - Reset buffer pointers to the start of the buffer if 1.) parsing is done or 2.) the buffer is full.
+ * - Free up buffer space by shifting partial/incomplete packets to the beginning of the buffer. 
  * @param c the comm instance associated with the port
- * @return the number of free bytes available in the buffer (for subsequent reads)
+ * @return the number of free bytes available in the buffer
  */
 int is_comm_free(is_comm_instance_t* c)
 {
@@ -889,32 +923,37 @@ int is_comm_free(is_comm_instance_t* c)
 
     int bytesFree = (int)(buf->end - buf->tail);
 
-    // if we are out of free space, we need to either move bytes over or start over
-    if (bytesFree == 0)
-    {
-        int shift = (int)(buf->head - buf->start);
+    // If the buffer contains any data
+    if (bytesFree < (int)(buf->size))
+    {   // Buffer contains data
+        if (c->processPkt != NULL)
+        {   // Currently parsing a packet
+            if (buf->head != buf->start)
+            {   // Data is not at the beginning of the buffer. Move current parse to the front.
+                int shift = (int)(buf->head - buf->start);
+                // Shift current data to start of buffer
 
-        if (shift < (int)(buf->size / 3))
-        {	// If the buffer is mostly full and can only be shifted less than 1/3 of the buffer
-            // we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
-            // will need to resend the data
-            parseErrorResetState(c, EPARSE_RXBUFFER_FLUSHED);
-            return is_comm_reset_buffer(c, buf->start, buf->size);
+                // memmove(buf->start, buf->head, buf->tail - buf->head);
+                move_buffer_32bit(buf->start, buf->head, buf->tail - buf->head);    // Use instead of memmove() for efficiency on 32-bit processors
+
+                buf->head = buf->start;
+                buf->tail -= shift;
+                buf->scan -= shift;
+
+                // Re-calculate free byte count
+                bytesFree = (int)(buf->end - buf->tail);
+            }
+            else if (bytesFree == 0)
+            {   // The current packet if too big to parse. Clear buffer and reset pointers.
+                reportParseError(c, EPARSE_RXBUFFER_FLUSHED);
+                return is_comm_reset_buffer(c);
+            }
         }
         else
-        {	// Shift current data to start of buffer
-            memmove(buf->start, buf->head, buf->tail - buf->head);
-            buf->head = buf->start;
-            buf->tail -= shift;
-            buf->scan -= shift;
-
-            // re-calculate free byte count
-            bytesFree = (int)(buf->end - buf->tail);
+        {   // Not currently parsing a packet
+            if (buf->scan >= buf->tail) // No data left to scan in buffer. RESET pointers to start of the buffer.
+                 return is_comm_reset_buffer(c);
         }
-    }
-    else if (c->processPkt == NULL && buf->scan >= buf->tail)
-    {   // Not currently parsing a packet and no data left to scan in buffer. RESET pointers to start of the buffer.
-        return is_comm_reset_buffer(c, buf->start, buf->size);
     }
 
     return bytesFree;
@@ -1114,10 +1153,14 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
 
     // Header checksum
     pkt->hdrCksum = is_comm_isb_checksum16(0, &pkt->hdr, sizeof(pkt->hdr));
-    if (offset)
-    {
-        pkt->hdrCksum = is_comm_isb_checksum16(pkt->hdrCksum, &pkt->offset, sizeof(pkt->offset));
-    }
+}
+
+#define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
+
+void memcpyIncUpdateChecksum(uint8_t **dstBuf, const uint8_t* srcBuf, int len, uint16_t *checksum)
+{
+    *checksum = is_comm_isb_checksum16(*checksum, srcBuf, len);
+    MEMCPY_INC(*dstBuf, srcBuf, len);
 }
 
 int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
@@ -1127,29 +1170,29 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
         return -1;
     }
 
-    // Set checksum using precomputed header checksum
+    // Set checksum using precomputed header checksum and Write packet to buffer
     pkt->checksum = pkt->hdrCksum;
-
-     // Write packet to buffer
-#define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
-    MEMCPY_INC(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));           // Header
+    MEMCPY_INC(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                                   // Header
     if (pkt->offset)
     {
-        MEMCPY_INC(buf, (uint8_t*)&(pkt->offset), 2);                       // Offset (optional)
+        memcpyIncUpdateChecksum(&buf, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));                               // Offset (optional)
     }
     if (pkt->data.size)
     {
-        // Include payload in checksum calculation
-        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
-
-        MEMCPY_INC(buf, (uint8_t*)pkt->data.ptr, pkt->data.size);           // Payload
+        memcpyIncUpdateChecksum(&buf, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
-    MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                         // Footer (checksum)
-
+    MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
+    
     // Increment Tx count
     comm->txPktCount++;
 
     return pkt->size;
+}
+
+int portWriteUpdateChecksum(pfnIsCommPortWrite portWrite, int port, const uint8_t* buf, int len, uint16_t *checksum)
+{
+    *checksum = is_comm_isb_checksum16(*checksum, buf, len);
+    return portWrite(port, buf, len);
 }
 
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *pkt)
@@ -1162,54 +1205,40 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-#ifdef GPX_1
-    // Write packet to port in multiple write calls
+#ifdef GPX_1    // @Tony We want to remove this and use the single write call version for all ports.  We first need the stack usage (high water marks) 
+    // implemented in the GPX RTOS status so we know if it is save to allocate a 2048 bytes buffer on the stack as a local variable in this function.
+    
+    // Write packet to port in multiple write calls (LEGACY).  Interruptable calls to this function that also write to the port could cause severed packets written.
 
     // Write packet to port
-    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
-
+    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                           // Header
     if (pkt->offset)
     {
-        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
+        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));               // Offset (optional)
     }
-
     if (pkt->data.size)
     {
-        // Include payload in checksum calculation
-        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
-
-        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
+        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));   // Payload
     }
-
-    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
+    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                            // Footer (checksum)
 #else
-    // Write packet to port in a single write call
-
+    // Write packet to port in a single write call.  Reentrant function that prevents severed packets written to the port if this function gets interrupted and data written the same port.
     uint8_t buf[PKT_BUF_SIZE];
     uint8_t *ptr = buf;
 
-    memcpy(ptr, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));       // Header
-    ptr += sizeof(packet_hdr_t);
-
+    // Set checksum using precomputed header checksum and Write packet to buffer
+    MEMCPY_INC(ptr, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                                   // Header
     if (pkt->offset)
     {
-        memcpy(ptr, (uint8_t*)&(pkt->offset), 2);                   // Offset (optional)
-        ptr += 2;
+        memcpyIncUpdateChecksum(&ptr, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));                               // Offset (optional)
     }
-
     if (pkt->data.size)
     {
-        // Include payload in checksum calculation
-        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
-
-        memcpy(ptr, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
-        ptr += pkt->data.size;
+        memcpyIncUpdateChecksum(&ptr, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
+    MEMCPY_INC(ptr, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
 
-    memcpy(ptr, (uint8_t*)&(pkt->checksum), 2);                     // Footer (checksum)
-    ptr += 2;
-
-    // Write packet to port (all in one write)
+    // Write entire packet to port (all at once).  
     int n = portWrite(port, buf, ptr - buf);
 #endif
 

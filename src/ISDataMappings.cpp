@@ -117,9 +117,9 @@ static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_
 static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<bit_t> mapper(data_set, did);
-    mapper.AddMember("command", &bit_t::command, DATA_TYPE_UINT8, "", "[cmd: " TOSTRING(BIT_CMD_FULL_STATIONARY) "=start full, " TOSTRING(BIT_CMD_BASIC_MOVING) "=start basic, " TOSTRING(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) "=start full HA, " TOSTRING(BIT_CMD_OFF) "=off]");
+    mapper.AddMember("command", &bit_t::command, DATA_TYPE_UINT8, "", "[cmd: " + std::to_string(BIT_CMD_FULL_STATIONARY) + "=start full, " + std::to_string(BIT_CMD_BASIC_MOVING) + "=start basic, " + std::to_string(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) + "=start full HA, " + std::to_string(BIT_CMD_OFF) + "=off]");
     mapper.AddMember("lastCommand", &bit_t::lastCommand, DATA_TYPE_UINT8, "", "Last input command", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " TOSTRING(BIT_STATE_RUNNING) "=running " TOSTRING(BIT_STATE_DONE) "=done]", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " + std::to_string(BIT_STATE_RUNNING) + "=running " + std::to_string(BIT_STATE_DONE) + "=done]", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &bit_t::reserved, DATA_TYPE_UINT8);
     mapper.AddMember("hdwBitStatus", &bit_t::hdwBitStatus, DATA_TYPE_UINT32, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("calBitStatus", &bit_t::calBitStatus, DATA_TYPE_UINT32, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
@@ -133,7 +133,7 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("acc", &bit_t::acc, DATA_TYPE_F32, SYM_M_PER_S, "Acceleration error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("pqrSigma", &bit_t::pqrSigma, DATA_TYPE_F32, SYM_DEG_PER_S, "Angular rate standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("accSigma", &bit_t::accSigma, DATA_TYPE_F32, SYM_M_PER_S, "Acceleration standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " TOSTRING(BIT_TEST_MODE_SIM_GPS_NOISE) "=GPS noise, " TOSTRING(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) "=Rx overflow, " TOSTRING(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) "=Tx overflow");
+    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " + std::to_string(BIT_TEST_MODE_SIM_GPS_NOISE) + "=GPS noise, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow");
     mapper.AddMember("testVar", &bit_t::testVar, DATA_TYPE_UINT8, "", "Test Mode variable (port number)");
     mapper.AddMember("detectedHardwareId", &bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
@@ -336,7 +336,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("leapS", &gps_pos_t::leapS, DATA_TYPE_UINT8, "", "GPS leap seconds (GPS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GPS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gps_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gps_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("reserved", &gps_pos_t::reserved, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("status2", &gps_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGpsStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
 }
 
 static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -557,7 +557,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
     str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("ioConfig", &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";
@@ -590,9 +591,13 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddMember("imuRejectThreshGyroLow", &nvm_flash_cfg_t::imuRejectThreshGyroLow, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
     mapper.AddMember("imuRejectThreshGyroHigh", &nvm_flash_cfg_t::imuRejectThreshGyroHigh, DATA_TYPE_UINT8, "", "IMU gyro rejection threshold.");
-    mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 1);
-    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)");
-    mapper.AddArray("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 3);
+    mapper.AddMember("imuShockDetectLatencyMs", &nvm_flash_cfg_t::imuShockDetectLatencyMs, DATA_TYPE_UINT8, "ms", "IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.");
+    mapper.AddMember("imuShockRejectLatchMs", &nvm_flash_cfg_t::imuShockRejectLatchMs, DATA_TYPE_UINT8, "ms", "IMU shock rejection latch time.  Time required following detected end of shock to disable shock rejection.");
+    mapper.AddMember("imuShockOptions", &nvm_flash_cfg_t::imuShockOptions, DATA_TYPE_UINT8, "", "IMU shock rejection options (see eImuShockOptions).", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("imuShockDeltaAccHighThreshold", &nvm_flash_cfg_t::imuShockDeltaAccHighThreshold, DATA_TYPE_UINT8, "m/s^2", "IMU shock detection. Min acceleration difference between the 3 IMUs to detect start of a shock.");
+    mapper.AddMember("imuShockDeltaAccLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccLowThreshold, DATA_TYPE_UINT8, "m/s^2", "IMU shock detection. Max acceleration difference between the 3 IMUs within the latch time to detect end of a shock.");
+    mapper.AddMember("imuShockDeltaGyroHighThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroHighThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Min angular rate difference between the 3 IMUs to detect start of a shock.");
+    mapper.AddMember("imuShockDeltaGyroLowThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroLowThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect end of a shock.");
  
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
@@ -708,7 +713,7 @@ static void PopulateMapEvbStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs", &evb_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
     mapper.AddArray("firmwareVer", &evb_status_t::firmwareVer, DATA_TYPE_UINT8, 4, "", "Firmware version", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("evbStatus", &evb_status_t::evbStatus, DATA_TYPE_UINT32, "", "EVB status bits", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("loggerMode", &evb_status_t::loggerMode, DATA_TYPE_UINT32, "", TOSTRING(EVB2_LOG_CMD_START) "=start, " TOSTRING(EVB2_LOG_CMD_STOP) "=stop");
+    mapper.AddMember("loggerMode", &evb_status_t::loggerMode, DATA_TYPE_UINT32, "", std::to_string(EVB2_LOG_CMD_START) + "=start, " + std::to_string(EVB2_LOG_CMD_STOP) + "=stop");
     mapper.AddMember("loggerElapsedTimeMs", &evb_status_t::loggerElapsedTimeMs, DATA_TYPE_UINT32, "ms", "Elapsed time of the current data log.");
     mapper.AddMember("wifiIpAddr", &evb_status_t::wifiIpAddr, DATA_TYPE_UINT32, "", "WiFi IP address", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("sysCommand", &evb_status_t::sysCommand, DATA_TYPE_UINT32, "", "99=software reset, 1122334455=unlock, 1357924681=chip erase");
@@ -1069,60 +1074,60 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<can_config_t> mapper(data_set, did);
     
-    mapper.AddMember2("can_period_mult[CID_INS_TIME]", offsetof(can_config_t, can_period_mult) + CID_INS_TIME * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS time");
-    mapper.AddMember2("can_period_mult[CIDINS_STATUS]",  offsetof(can_config_t, can_period_mult) + CID_INS_STATUS * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Perid multiplier for INS status");
-    mapper.AddMember2("can_period_mult[CIDINS_EULER]",  offsetof(can_config_t, can_period_mult) + CID_INS_EULER * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS Euler angles");
-    mapper.AddMember2("can_period_mult[CIDINS_QUATN2B]",  offsetof(can_config_t, can_period_mult) + CID_INS_QUATN2B * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS quaternion");
-    mapper.AddMember2("can_period_mult[CIDINS_QUATE2B]",  offsetof(can_config_t, can_period_mult) + CID_INS_QUATE2B * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS quaternion");
-    mapper.AddMember2("can_period_mult[CIDINS_UVW]",  offsetof(can_config_t, can_period_mult) + CID_INS_UVW * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS velocity");
-    mapper.AddMember2("can_period_mult[CIDINS_VE]",  offsetof(can_config_t, can_period_mult) + CID_INS_VE * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS velocity");
-    mapper.AddMember2("can_period_mult[CIDINS_LAT]",  offsetof(can_config_t, can_period_mult) + CID_INS_LAT * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS latitude");
-    mapper.AddMember2("can_period_mult[CIDINS_LON]",  offsetof(can_config_t, can_period_mult) + CID_INS_LON * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS longitude");
-    mapper.AddMember2("can_period_mult[CIDINS_ALT]",  offsetof(can_config_t, can_period_mult) + CID_INS_ALT * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS altitude");
-    mapper.AddMember2("can_period_mult[CIDINS_NORTH_EAST]",  offsetof(can_config_t, can_period_mult) + CID_INS_NORTH_EAST * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS north east");
-    mapper.AddMember2("can_period_mult[CIDINS_DOWN]",  offsetof(can_config_t, can_period_mult) + CID_INS_DOWN * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS down");
-    mapper.AddMember2("can_period_mult[CIDINS_ECEF_X]",  offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_X * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS ECEF X");
-    mapper.AddMember2("can_period_mult[CIDINS_ECEF_Y]",  offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_Y * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS ECEF Y");
-    mapper.AddMember2("can_period_mult[CIDINS_ECEF_Z]",  offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_Z * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS ECEF Z");
-    mapper.AddMember2("can_period_mult[CIDINS_L]",  offsetof(can_config_t, can_period_mult) + CID_INS_MSL * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS MSL");
-    mapper.AddMember2("can_period_mult[CIDPREINT_PX]",  offsetof(can_config_t, can_period_mult) + CID_PREINT_PX * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS preintegrated PX");
-    mapper.AddMember2("can_period_mult[CIDPREINT_QY]",  offsetof(can_config_t, can_period_mult) + CID_PREINT_QY * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS preintegrated QY");
-    mapper.AddMember2("can_period_mult[CIDPREINT_RZ]",  offsetof(can_config_t, can_period_mult) + CID_PREINT_RZ * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS preintegrated RZ");
-    mapper.AddMember2("can_period_mult[CIDDUAL_PX]",  offsetof(can_config_t, can_period_mult) + CID_DUAL_PX * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS dual PX");
-    mapper.AddMember2("can_period_mult[CIDDUAL_QY]",  offsetof(can_config_t, can_period_mult) + CID_DUAL_QY * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS dual QY");
-    mapper.AddMember2("can_period_mult[CIDDUAL_RZ]",  offsetof(can_config_t, can_period_mult) + CID_DUAL_RZ * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for INS dual RZ");
-    mapper.AddMember2("can_period_mult[CIDGPS1_POS]",  offsetof(can_config_t, can_period_mult) + CID_GPS1_POS * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for GPS1 position");
-    mapper.AddMember2("can_period_mult[CIDGPS2_POS]",  offsetof(can_config_t, can_period_mult) + CID_GPS2_POS * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for GPS2 position");
-    mapper.AddMember2("can_period_mult[CIDGPS1_RTK_POS_REL]",  offsetof(can_config_t, can_period_mult) + CID_GPS1_RTK_POS_REL * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for GPS1 RTK position relative");
-    mapper.AddMember2("can_period_mult[CIDGPS2_RTK_CMP_REL]",  offsetof(can_config_t, can_period_mult) + CID_GPS2_RTK_CMP_REL * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for GPS2 RTK compass relative");
-    mapper.AddMember2("can_period_mult[CIDROLL_ROLLRATE]",  offsetof(can_config_t, can_period_mult) + CID_ROLL_ROLLRATE * sizeof(uint16_t), DATA_TYPE_UINT16, "", "Period multiplier for roll rate");
-    mapper.AddMember2("cantransmit_address[CID_INS_TIME]", offsetof(can_config_t, can_period_mult) + CID_INS_TIME * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS time", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_STATUS]", offsetof(can_config_t, can_period_mult) + CID_INS_STATUS * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Status", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_EULER]", offsetof(can_config_t, can_period_mult) + CID_INS_EULER * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Euler Angles", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_QUATN2B]", offsetof(can_config_t, can_period_mult) + CID_INS_QUATN2B * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Quaternion", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_QUATE2B]", offsetof(can_config_t, can_period_mult) + CID_INS_QUATE2B * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Quaternion", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_UVW]", offsetof(can_config_t, can_period_mult) + CID_INS_UVW * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Velocity", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_VE]", offsetof(can_config_t, can_period_mult) + CID_INS_VE * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Velocity", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_LAT]", offsetof(can_config_t, can_period_mult) + CID_INS_LAT * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Latitude", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_LON]", offsetof(can_config_t, can_period_mult) + CID_INS_LON * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Longitude", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_ALT]", offsetof(can_config_t, can_period_mult) + CID_INS_ALT * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS Altitude", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_NORTH_EAST]", offsetof(can_config_t, can_period_mult) + CID_INS_NORTH_EAST * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS North/East", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_DOWN]", offsetof(can_config_t, can_period_mult) + CID_INS_DOWN * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Addres for INS Down", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_X]", offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_X * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for ECEF X", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_Y]", offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_Y * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for ECEF Y", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_Z]", offsetof(can_config_t, can_period_mult) + CID_INS_ECEF_Z * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for ECEF Z", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_INS_MSL]", offsetof(can_config_t, can_period_mult) + CID_INS_MSL * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for Mean Sea Level", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_PREINT_PX]", offsetof(can_config_t, can_period_mult) + CID_PREINT_PX * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS preintegrated IMU PX", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_PREINT_QY]", offsetof(can_config_t, can_period_mult) + CID_PREINT_QY * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS preintegrated IMU QY", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_PREINT_RZ]", offsetof(can_config_t, can_period_mult) + CID_PREINT_RZ * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS preintegrated IMU RZ", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_DUAL_PX]", offsetof(can_config_t, can_period_mult) + CID_DUAL_PX * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for dual IMU PX", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_DUAL_QY]", offsetof(can_config_t, can_period_mult) + CID_DUAL_QY * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS dual IMU QY", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_DUAL_RZ]", offsetof(can_config_t, can_period_mult) + CID_DUAL_RZ * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for INS dual IMU RZ", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GPS1_POS]", offsetof(can_config_t, can_period_mult) + CID_GPS1_POS * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for GPS1_POS", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GPS2_POS]", offsetof(can_config_t, can_period_mult) + CID_GPS2_POS * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for GPS2 POS", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GPS1_RTK_POS_REL]", offsetof(can_config_t, can_period_mult) + CID_GPS1_RTK_POS_REL * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Adress for GPS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GPS2_RTK_CMP_REL]", offsetof(can_config_t, can_period_mult) + CID_GPS2_RTK_CMP_REL * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for GPS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]", offsetof(can_config_t, can_period_mult) + CID_ROLL_ROLLRATE * sizeof(uint16_t), DATA_TYPE_UINT32, "", "Address for Roll Rate", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_period_mult[CID_INS_TIME]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_TIME, DATA_TYPE_UINT16, "", "Period multiplier for INS time");
+    mapper.AddMember2("can_period_mult[CIDINS_STATUS]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_STATUS, DATA_TYPE_UINT16, "", "Perid multiplier for INS status");
+    mapper.AddMember2("can_period_mult[CIDINS_EULER]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_EULER, DATA_TYPE_UINT16, "", "Period multiplier for INS Euler angles");
+    mapper.AddMember2("can_period_mult[CIDINS_QUATN2B]",            offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_QUATN2B, DATA_TYPE_UINT16, "", "Period multiplier for INS quaternion");
+    mapper.AddMember2("can_period_mult[CIDINS_QUATE2B]",            offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_QUATE2B, DATA_TYPE_UINT16, "", "Period multiplier for INS quaternion");
+    mapper.AddMember2("can_period_mult[CIDINS_UVW]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_UVW, DATA_TYPE_UINT16, "", "Period multiplier for INS velocity");
+    mapper.AddMember2("can_period_mult[CIDINS_VE]",                 offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_VE, DATA_TYPE_UINT16, "", "Period multiplier for INS velocity");
+    mapper.AddMember2("can_period_mult[CIDINS_LAT]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_LAT, DATA_TYPE_UINT16, "", "Period multiplier for INS latitude");
+    mapper.AddMember2("can_period_mult[CIDINS_LON]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_LON, DATA_TYPE_UINT16, "", "Period multiplier for INS longitude");
+    mapper.AddMember2("can_period_mult[CIDINS_ALT]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_ALT, DATA_TYPE_UINT16, "", "Period multiplier for INS altitude");
+    mapper.AddMember2("can_period_mult[CIDINS_NORTH_EAST]",         offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_NORTH_EAST, DATA_TYPE_UINT16, "", "Period multiplier for INS north east");
+    mapper.AddMember2("can_period_mult[CIDINS_DOWN]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_DOWN, DATA_TYPE_UINT16, "", "Period multiplier for INS down");
+    mapper.AddMember2("can_period_mult[CIDINS_ECEF_X]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_ECEF_X, DATA_TYPE_UINT16, "", "Period multiplier for INS ECEF X");
+    mapper.AddMember2("can_period_mult[CIDINS_ECEF_Y]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_ECEF_Y, DATA_TYPE_UINT16, "", "Period multiplier for INS ECEF Y");
+    mapper.AddMember2("can_period_mult[CIDINS_ECEF_Z]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_ECEF_Z, DATA_TYPE_UINT16, "", "Period multiplier for INS ECEF Z");
+    mapper.AddMember2("can_period_mult[CIDINS_L]",                  offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_INS_MSL, DATA_TYPE_UINT16, "", "Period multiplier for INS MSL");
+    mapper.AddMember2("can_period_mult[CIDPREINT_PX]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_PREINT_PX, DATA_TYPE_UINT16, "", "Period multiplier for INS preintegrated PX");
+    mapper.AddMember2("can_period_mult[CIDPREINT_QY]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_PREINT_QY, DATA_TYPE_UINT16, "", "Period multiplier for INS preintegrated QY");
+    mapper.AddMember2("can_period_mult[CIDPREINT_RZ]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_PREINT_RZ, DATA_TYPE_UINT16, "", "Period multiplier for INS preintegrated RZ");
+    mapper.AddMember2("can_period_mult[CIDDUAL_PX]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_PX, DATA_TYPE_UINT16, "", "Period multiplier for INS dual PX");
+    mapper.AddMember2("can_period_mult[CIDDUAL_QY]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_QY, DATA_TYPE_UINT16, "", "Period multiplier for INS dual QY");
+    mapper.AddMember2("can_period_mult[CIDDUAL_RZ]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_RZ, DATA_TYPE_UINT16, "", "Period multiplier for INS dual RZ");
+    mapper.AddMember2("can_period_mult[CIDGPS1_POS]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GPS1_POS, DATA_TYPE_UINT16, "", "Period multiplier for GPS1 position");
+    mapper.AddMember2("can_period_mult[CIDGPS2_POS]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GPS2_POS, DATA_TYPE_UINT16, "", "Period multiplier for GPS2 position");
+    mapper.AddMember2("can_period_mult[CIDGPS1_RTK_POS_REL]",       offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GPS1_RTK_POS_REL, DATA_TYPE_UINT16, "", "Period multiplier for GPS1 RTK position relative");
+    mapper.AddMember2("can_period_mult[CIDGPS2_RTK_CMP_REL]",       offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GPS2_RTK_CMP_REL, DATA_TYPE_UINT16, "", "Period multiplier for GPS2 RTK compass relative");
+    mapper.AddMember2("can_period_mult[CIDROLL_ROLLRATE]",          offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT16, "", "Period multiplier for roll rate");
+    mapper.AddMember2("cantransmit_address[CID_INS_TIME]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_TIME, DATA_TYPE_UINT32, "", "Address for INS time", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_STATUS]",        offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_STATUS, DATA_TYPE_UINT32, "", "Address for INS Status", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_EULER]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_EULER, DATA_TYPE_UINT32, "", "Address for INS Euler Angles", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_QUATN2B]",       offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_QUATN2B, DATA_TYPE_UINT32, "", "Address for INS Quaternion", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_QUATE2B]",       offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_QUATE2B, DATA_TYPE_UINT32, "", "Address for INS Quaternion", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_UVW]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_UVW, DATA_TYPE_UINT32, "", "Address for INS Velocity", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_VE]",            offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_VE, DATA_TYPE_UINT32, "", "Address for INS Velocity", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_LAT]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_LAT, DATA_TYPE_UINT32, "", "Address for INS Latitude", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_LON]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_LON, DATA_TYPE_UINT32, "", "Address for INS Longitude", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_ALT]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_ALT, DATA_TYPE_UINT32, "", "Address for INS Altitude", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_NORTH_EAST]",    offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_NORTH_EAST, DATA_TYPE_UINT32, "", "Address for INS North/East", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_DOWN]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_DOWN, DATA_TYPE_UINT32, "", "Addres for INS Down", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_X]",        offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_ECEF_X, DATA_TYPE_UINT32, "", "Address for ECEF X", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_Y]",        offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_ECEF_Y, DATA_TYPE_UINT32, "", "Address for ECEF Y", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_ECEF_Z]",        offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_ECEF_Z, DATA_TYPE_UINT32, "", "Address for ECEF Z", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_INS_MSL]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_MSL, DATA_TYPE_UINT32, "", "Address for Mean Sea Level", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_PREINT_PX]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_PREINT_PX, DATA_TYPE_UINT32, "", "Address for INS preintegrated IMU PX", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_PREINT_QY]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_PREINT_QY, DATA_TYPE_UINT32, "", "Address for INS preintegrated IMU QY", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_PREINT_RZ]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_PREINT_RZ, DATA_TYPE_UINT32, "", "Address for INS preintegrated IMU RZ", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_DUAL_PX]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_PX, DATA_TYPE_UINT32, "", "Address for dual IMU PX", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_DUAL_QY]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_QY, DATA_TYPE_UINT32, "", "Address for INS dual IMU QY", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_DUAL_RZ]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_RZ, DATA_TYPE_UINT32, "", "Address for INS dual IMU RZ", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GPS1_POS]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GPS1_POS, DATA_TYPE_UINT32, "", "Address for GPS1_POS", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GPS2_POS]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GPS2_POS, DATA_TYPE_UINT32, "", "Address for GPS2 POS", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GPS1_RTK_POS_REL]",  offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GPS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "Adress for GPS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GPS2_RTK_CMP_REL]",  offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GPS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "Address for GPS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]",     offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT32, "", "Address for Roll Rate", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate");
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
 }
@@ -1184,73 +1189,6 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
         mapper.AddArray2("acc" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Temperature compensation bias", flags);
         mapper.AddArray2("mag" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].mag), DATA_TYPE_F32, 3, "", "Temperature compensation bias", flags);
     }
-}
-
-static void PopulateMapSensorCompensation(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<sensor_compensation_t> mapper(data_set, did);
-    int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4;
-    string str = 
-        TOSTRING(SC_RUNTIME) "=Runtime, Tcal["
-        TOSTRING(SC_TCAL_INIT) "=Init, "
-        TOSTRING(SC_TCAL_RUNNING) "=Running, "
-        TOSTRING(SC_TCAL_STOP) "=Stop, "
-        TOSTRING(SC_TCAL_DONE) "=Done], MCAL["
-        TOSTRING(SC_MCAL_SAMPLE_INIT) "=Init, "
-        TOSTRING(SC_MCAL_SAMPLE_MEAN_UCAL) "=UCAL, "
-        TOSTRING(SC_MCAL_SAMPLE_MEAN_TCAL) "=TCAL, "
-        TOSTRING(SC_MCAL_SAMPLE_MEAN_MCAL) "=MCAL, "
-        TOSTRING(SC_LPF_SAMPLE) "=LPF 0.01Hz, "
-        TOSTRING(SC_LPF_SAMPLE_FAST) "=LPF 1Hz ";
-
-    mapper.AddMember("timeMs", &sensor_compensation_t::timeMs, DATA_TYPE_UINT32, "ms", "Time since boot up", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("calState", &sensor_compensation_t::calState, DATA_TYPE_UINT32, "", str);
-    mapper.AddMember("status", &sensor_compensation_t::status, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("sampleCount", &sensor_compensation_t::sampleCount, DATA_TYPE_UINT32, "", "Used in averaging");
-    mapper.AddArray("alignAccel", &sensor_compensation_t::alignAccel, DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Alignment acceleration", flags);
-    // Gyros
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
-    {
-        mapper.AddArray2 ("pqr" + to_string(i) + ".lpfLsb",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].lpfLsb), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Low-pass filtered LSB", flags, C_RAD2DEG);
-        mapper.AddMember2("pqr" + to_string(i) + ".lpfTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
-        mapper.AddArray2 ("pqr" + to_string(i) + ".k",              i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].k), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Slope", flags, C_RAD2DEG);
-        mapper.AddMember2("pqr" + to_string(i) + ".temp",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("pqr" + to_string(i) + ".tempRampRate",   i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].tempRampRate), DATA_TYPE_F32, SYM_DEG_C_PER_S, "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-        mapper.AddMember2("pqr" + to_string(i) + ".tci",            i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("pqr" + to_string(i) + ".numTcPts",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("pqr" + to_string(i) + ".dtTemp",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    }
-    // Accels
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
-    {
-        mapper.AddArray2 ("acc" + to_string(i) + ".lpfLsb",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].lpfLsb), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Low-pass filtered LSB", flags);
-        mapper.AddMember2("acc" + to_string(i) + ".lpfTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
-        mapper.AddArray2 ("acc" + to_string(i) + ".k",              i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].k), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Slope", flags);
-        mapper.AddMember2("acc" + to_string(i) + ".temp",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("acc" + to_string(i) + ".tempRampRate",   i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].tempRampRate), DATA_TYPE_F32, SYM_M_PER_S_2, "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-        mapper.AddMember2("acc" + to_string(i) + ".tci",            i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("acc" + to_string(i) + ".numTcPts",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("acc" + to_string(i) + ".dtTemp",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    }
-
-    // Magnetometers
-    for (int i=0; i<NUM_MAG_DEVICES; i++)
-    {
-        mapper.AddArray2 ("mag" + to_string(i) + ".lpfLsb",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].lpfLsb), DATA_TYPE_F32, 3, "", "Low-pass filtered LSB", flags);
-        mapper.AddMember2("mag" + to_string(i) + ".lpfTemp",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
-        mapper.AddArray2 ("mag" + to_string(i) + ".k",             i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].k), DATA_TYPE_F32, 3, "", "Slope", flags);
-        mapper.AddMember2("mag" + to_string(i) + ".temp",          i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("mag" + to_string(i) + ".tempRampRate",  i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].tempRampRate), DATA_TYPE_F32, "", "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-        mapper.AddMember2("mag" + to_string(i) + ".tci",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("mag" + to_string(i) + ".numTcPts",      i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("mag" + to_string(i) + ".dtTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    }
-
-    // Reference IMU
-    mapper.AddArray2("referenceImu.pqr", offsetof(sensor_compensation_t, referenceImu.pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Reference IMU angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
-    mapper.AddArray2("referenceImu.acc", offsetof(sensor_compensation_t, referenceImu.acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Reference IMU linear acceleration", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    // Reference Mag
-    mapper.AddArray("referenceMag", &sensor_compensation_t::referenceMag, DATA_TYPE_F32, 3, "", "Reference magnetometer", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapInl2MagObsInfo(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1578,7 +1516,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_TCAL);
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
-    PopulateMapSensorCompensation(  m_data_set, DID_SCOMP);
 
     // This must come last
     for (uint32_t did = 0; did < DID_COUNT; did++)

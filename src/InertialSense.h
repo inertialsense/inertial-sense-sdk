@@ -332,27 +332,19 @@ public:
     /**
     * Get the flash config, returns the latest flash config read from the IMX flash memory
     * @param flashCfg the flash config value
-    * @param pHandle the port pHandle to get flash config for
-    * @return bool whether the flash config is valid, currently synchronized
+    * @param pHandle the port pHandle to get flash config
+    * @return bool whether the flash config is valid and currently synchronized
     */
-    bool FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool ImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool GpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
     /**
-    * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
-    * @param pHandle the port pHandle to get flash config for
-    * @return bool whether the flash config is valid, currently synchronized.
+    * Indicates whether the current flash config has been downloaded and available via ImxFlashConfig()
+    * @param pHandle the port pHandle to get flash config
+    * @return bool whether the flash config is valid and currently synchronized
     */
-    bool FlashConfigSynced(int pHandle = 0) 
-    { 
-        if (m_comManagerState.devices.size() == 0)
-        {   // No devices
-            return false;
-        }
-
-        ISDevice& device = m_comManagerState.devices[pHandle];
-        return  (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && 
-                (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(pHandle); 
-    }
+    bool ImxFlashConfigSynced(int pHandle = 0);
+    bool GpxFlashConfigSynced(int pHandle = 0);
 
     /**
      * @brief Failed to upload flash configuration for any reason.   
@@ -360,16 +352,8 @@ public:
      * @param pHandle the port pHandle to get flash config for
      * @return true Flash config upload was either not received or rejected.
      */
-    bool FlashConfigUploadFailure(int pHandle = 0)
-    { 
-        if (m_comManagerState.devices.size() == 0)
-        {   // No devices
-            return true;
-        }
-
-        ISDevice& device = m_comManagerState.devices[pHandle];
-        return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum);
-    } 
+    bool ImxFlashConfigUploadFailure(int pHandle = 0);
+    bool GpxFlashConfigUploadFailure(int pHandle = 0);
 
     /**
     * Set the flash config and update flash config on the IMX flash memory
@@ -377,7 +361,8 @@ public:
     * @param pHandle the pHandle to set flash config for
     * @return true if success
     */
-    bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
     /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
@@ -385,7 +370,8 @@ public:
      * @param pHandle the port pHandle
      * @return false When failed to synchronize
      */
-    bool WaitForFlashSynced(int pHandle = 0);
+    bool WaitForImxFlashCfgSynced(int pHandle = 0);
+    bool WaitForGpxFlashCfgSynced(int pHandle = 0);
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
@@ -587,14 +573,14 @@ public:
      * @param pHandle - Handle of current device
      * @return -1 for failure to upload file, 0 for success.
      */
-    int LoadFlashConfig(std::string path, int pHandle = 0);
+    int LoadImxFlashConfigFromFile(std::string path, int pHandle = 0);
 
     /**
-     * @brief SaveFlashConfigFile
+     * @brief SaveImxFlashConfigToFile
      * @param path - Path to YAML flash config file
      * @param pHandle - Handle of current device
      */
-    void SaveFlashConfigFile(std::string path, int pHandle = 0);
+    void SaveImxFlashConfigToFile(std::string path, int pHandle = 0);
 
     std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
     std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
@@ -659,6 +645,8 @@ private:
     static void LoggerThread(void* info);
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
+
+    void CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t did);
     void SyncFlashConfig(unsigned int timeMs);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
 };
