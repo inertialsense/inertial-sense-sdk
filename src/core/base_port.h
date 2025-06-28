@@ -342,6 +342,7 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
     if (!BASE_PORT(port)->portRead) return PORT_ERROR__NOT_SUPPORTED;
     int bytesRead = BASE_PORT(port)->portRead(port, buf, len);
+    if (bytesRead < 0) return bytesRead;
     if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, BASE_PORT(port)->portLoggerData);
     if (BASE_PORT(port)->stats) BASE_PORT(port)->stats->rxBytes += bytesRead;
     return bytesRead;
@@ -360,6 +361,7 @@ static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
     if (!BASE_PORT(port)->portReadTimeout) return portReadTimeout_internal(port, buf, len, timeout); // PORT_ERROR__NOT_SUPPORTED;
     int bytesRead =  BASE_PORT(port)->portReadTimeout(port, buf, len, timeout);
+    if (bytesRead < 0) return bytesRead;
     if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, BASE_PORT(port)->portLoggerData);
     if (BASE_PORT(port)->stats) BASE_PORT(port)->stats->rxBytes += bytesRead;
     return bytesRead;
