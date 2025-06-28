@@ -2,24 +2,24 @@
 // Created by firiusfoxx on 6/12/25.
 //
 
-#ifndef TCPPORTFACTORY_H
-#define TCPPORTFACTORY_H
+#ifndef IS_SDK__TCP_PORT_FACTORY_H
+#define IS_SDK__TCP_PORT_FACTORY_H
 #include "PortFactory.h"
-#include "tcpPort.h"
+#include "core/tcpPort.h"
 
-class TCPPortFactory : public PortFactory {
+class TcpPortFactory : public PortFactory {
 public:
     struct {
         bool defaultBlocking = false;
     } portOptions = {};
 
-    static TCPPortFactory& getInstance() {
-        static TCPPortFactory instance;
+    static TcpPortFactory& getInstance() {
+        static TcpPortFactory instance;
         return instance;
     }
 
-    TCPPortFactory(TCPPortFactory const &) = delete;
-    TCPPortFactory& operator=(TCPPortFactory const&) = delete;
+    TcpPortFactory(TcpPortFactory const &) = delete;
+    TcpPortFactory& operator=(TcpPortFactory const&) = delete;
 
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
 
@@ -30,8 +30,8 @@ public:
     bool releasePort(port_handle_t port) override;
 
 private:
-    TCPPortFactory() = default;
-    ~TCPPortFactory() = default;
+    TcpPortFactory() = default;
+    ~TcpPortFactory() = default;
 
     struct URL {
         std::string fullurl;
@@ -46,4 +46,4 @@ private:
     static URL parseURL(const std::string& pName);
 };
 
-#endif //TCPPORTFACTORY_H
+#endif //IS_SDK__TCP_PORT_FACTORY_H

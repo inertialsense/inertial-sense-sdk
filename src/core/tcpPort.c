@@ -22,8 +22,8 @@
 
 /**
  * Returns the name, if any, associated with this port
- * @param port
- * @return
+ * @param port Port to get the name of
+ * @return The name of the port
  */
 const char* tcpPortGetName(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
@@ -35,7 +35,7 @@ const char* tcpPortGetName(port_handle_t port) {
  * directly, but generally indicates whether the underlying OS devices and resources exist in order to
  * successfully open and operate on the port. If the port is successfully validated, returns 0
  * @param port the port to validate
- * @return 0 if the port is valid, or <0 if an error occurred and port is invalid
+ * @return 1 if the port is valid, or 0 if an error occurred and port is invalid
  */
 int tcpPortValidate(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
@@ -43,11 +43,11 @@ int tcpPortValidate(port_handle_t port) {
         int sock = socket(tcpPort->addr.domain, SOCK_STREAM, IPPROTO_TCP);
         if (sock < 0) { // Can't create socket FD port can't be valid
             tcpPort->base.perror = errno; // Store errno somewhere where clients can read it
-            return -errno; // Return error code to calling function
+            return 0; // Return error code to calling function
         }
         close(sock); // Close socket if we didn't error
     }
-    return 0; // Creating the stream socket is likely the most validation we are getting without connecting
+    return 1; // Creating the stream socket is likely the most validation we are getting without connecting
     // The socket is allocated, and we can attempt to connect to the server
     // although validating the server's existence is impossible without connecting or opening the socket
 }
@@ -69,12 +69,18 @@ int tcpPortOpen(port_handle_t port) {
         tcpPort->base.perror = errno; // Store errno somewhere where clients can read it
         return tcpPort->socket; // Return error code to calling function
     }
+
     // Connect socket to remote
     int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.generic));
     if (retval != 0) {
         tcpPort->base.perror = errno;
         return -errno;
     }
+
+    // Set socket mode
+    tcpPort->blocking_internal = true;
+    tcpPortSetBlocking(port, tcpPort->blocking);
+
     tcpPort->base.ptype |= PORT_FLAG__OPENED;
     return 0;
 }
@@ -168,40 +174,20 @@ int tcpPortFlush(port_handle_t port) {
     }
 
     ssize_t clearedData = 0;
-    while (true) {
-        int bufferSize = tcpPortAvailable(port);
-        int flag = 1;
-        ioctl(tcpPort->socket,FIONBIO, &flag);
-        if (bufferSize > 0) {
-            void *bigBuffer = malloc(bufferSize);
-            if (bigBuffer == NULL) {
-                tcpPort->base.perror = errno;
-                return -errno;
-            }
-            memset(bigBuffer, 0, bufferSize);
-            ssize_t retval = recv(tcpPort->socket, bigBuffer, bufferSize, 0);
-            free(bigBuffer); // Free doesn't modify errno
-            bigBuffer = NULL;
-            if (retval < 0) {
-                tcpPort->base.perror = errno;
-                return -errno;
-            } else if (retval == 0) {
-                flag = 0;
-                ioctl(tcpPort->socket,FIONBIO, &flag);
-                return clearedData;
-            }
-            clearedData += retval;
-        } else if (bufferSize == 0) {
-            flag = 0;
-            ioctl(tcpPort->socket,FIONBIO, &flag);
-            return clearedData;
-        } else {
-            flag = 0;
-            ioctl(tcpPort->socket,FIONBIO, &flag);
-            tcpPort->base.perror = -bufferSize;
-            return bufferSize;
+    char throwAwayBuf[1024];
+    while (tcpPortAvailable(port) > 0) {
+        tcpPortSetBlocking(port, true);
+        ssize_t retval = recv(tcpPort->socket, throwAwayBuf, sizeof(throwAwayBuf), 0);
+        if (retval < 0) {
+            tcpPort->base.perror = errno;
+            return -errno;
         }
+        if (retval == 0) {
+            break;
+        }
+        clearedData += retval;
     }
+    return clearedData;
 }
 
 /**
@@ -226,12 +212,7 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
         return -errno;
     }
 
-    // Set nonblocking
-    flag = 0;
-    if (!tcpPort->blocking) {
-        flag = 1;
-    }
-    ioctl(tcpPort->socket,FIONBIO, &flag);
+    tcpPortSetBlocking(port, false);
 
     // Makes sures the kernel actually tries to send something
     retval = send(tcpPort->socket, NULL, 0, 0);
@@ -241,7 +222,7 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
     }
 
     // Tell the kernel to buffer messages again cause TCP_NODELAY kills network performance
-    ioctl(tcpPort->socket,FIONBIO, &flag);
+    flag = 0;
     retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
     if (retval != 0) {
         tcpPort->base.perror = errno;
@@ -265,12 +246,7 @@ int tcpPortRead(port_handle_t port, uint8_t* buf, unsigned int len) {
         return tcpPort->socket;
     }
 
-    // Determine flags
-    int flag = 0;
-    if (!tcpPort->blocking) {
-        flag = 1;
-    }
-    ioctl(tcpPort->socket,FIONBIO, &flag);
+    tcpPortSetBlocking(port, tcpPort->blocking);
 
     // Receive data from the socket
     ssize_t retval = recv(tcpPort->socket, buf, len, 0);
@@ -278,14 +254,13 @@ int tcpPortRead(port_handle_t port, uint8_t* buf, unsigned int len) {
         tcpPort->base.perror = errno;
         return -errno;
     }
-    flag = 0;
-    ioctl(tcpPort->socket,FIONBIO, &flag);
+
     return retval;
 }
 
 /**
- * Reads upto/at most 'len' number of bytes, copying those bytes into the buffer pointed to by 'buf'. Data copied into 'buf' is
- * removed from the internal RX buffer of the port, releasing 'len' bytes from the underlying buffer. It cannot be read again.
+ * Reads upto/at most 'len' number of bytes, copying those bytes into the buffer pointed to by 'buf', waiting no more than timeout for data to arrive.
+ * Data copied into 'buf' is removed from the internal RX buffer of the port, releasing 'len' bytes from the underlying buffer. It cannot be read again.
  * @param port the port from which to read data
  * @param buf the buffer to place a copy of the data into
  * @param len the maximum number of bytes to read; if fewer than 'len' bytes are available, only those bytes available will be returned.
@@ -299,6 +274,7 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
         return tcpPort->socket;
     }
 
+    tcpPortSetBlocking(port, false);
     // Set a timeout on the socket
 #ifdef PLATFORM_IS_WINDOWS
     DWORD tv = timeout;
@@ -362,12 +338,7 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
         return -errno;
     }
 
-    // Determine flags
-    int flag = 0;
-    if (!tcpPort->blocking) {
-        flag = 1;
-    }
-    ioctl(tcpPort->socket,FIONBIO, &flag);
+    tcpPortSetBlocking(port, tcpPort->blocking);
 
     // Receive data from the socket
     ssize_t retval = send(tcpPort->socket, buf, len, 0);
@@ -375,8 +346,7 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
         tcpPort->base.perror = errno;
         return -errno;
     }
-    flag = 0;
-    ioctl(tcpPort->socket,FIONBIO, &flag);
+
     return retval;
 }
 
@@ -411,6 +381,7 @@ void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, co
     tcpPort->name = strdup(name);
     tcpPort->addr.generic = *ip;
     tcpPort->blocking = blocking;
+    tcpPort->blocking_internal = true;
 }
 
 /**
@@ -423,4 +394,22 @@ void tcpPortDelete(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     free(tcpPort->name);
     memset(port, 0, sizeof(tcp_port_t));
+}
+
+/**
+ * This is an internal function used to set the current state of blocking on this port
+ * @param port Tcp Port to configure blocking on
+ * @param blocking The value to set blocking to
+ */
+int tcpPortSetBlocking(port_handle_t port, bool blocking) {
+    tcp_port_t* tcpPort = TCP_PORT(port);
+    if (tcpPort->blocking_internal != blocking) {
+        unsigned long flag = blocking ? 0 : 1;
+        int retval = ioctl(tcpPort->socket,FIONBIO, &flag);
+        if (retval == 0) {
+            tcpPort->blocking_internal = blocking;
+        }
+        return retval;
+    }
+    return 0;
 }

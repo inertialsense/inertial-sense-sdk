@@ -62,6 +62,7 @@ struct tcp_port_s
     } addr;
 
     bool blocking;
+    bool blocking_internal;
 };
 
 typedef struct tcp_port_s tcp_port_t;
@@ -69,6 +70,7 @@ typedef struct tcp_port_s tcp_port_t;
 
 void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr* ip);
 void tcpPortDelete(port_handle_t port);
+int tcpPortSetBlocking(port_handle_t port, bool blocking);
 
 #ifdef __cplusplus
 }

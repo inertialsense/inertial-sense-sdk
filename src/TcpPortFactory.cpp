@@ -2,7 +2,7 @@
 // Created by firiusfoxx on 6/12/25.
 //
 
-#include "TCPPortFactory.h"
+#include "TcpPortFactory.h"
 
 #ifdef PLATFORM_IS_WINDOWS
 #include <winsock2.h>
@@ -21,14 +21,16 @@
  * @param pType The port type requested to be generated
  * @return A port_handle_t bound to the newly created TCP port for the connection pName represents
  */
-port_handle_t TCPPortFactory::bindPort(const std::string& pName, uint16_t pType) {
-    if (!validatePort(pName, pType))
+port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType) {
+    if (!validatePort(pName, pType)) {
         return nullptr;
+    }
 
     // Parse pName for address
     const URL url = parseURL(pName);
-    if (url.protocol != "tcp")
+    if (url.protocol != "tcp") {
         return nullptr;
+    }
 
     sockaddr addr = {};
     sockaddr ipaddr = {};
@@ -60,9 +62,10 @@ port_handle_t TCPPortFactory::bindPort(const std::string& pName, uint16_t pType)
  * @param port The TCP Port handle to deinitialize
  * @return True if successful, false otherwise
  */
-bool TCPPortFactory::releasePort(port_handle_t port) {
-    if (!port)
+bool TcpPortFactory::releasePort(port_handle_t port) {
+    if (!port) {
         return false;
+    }
 
     debug_message("[DBG] Releasing network port '%s'\n", ((tcp_port_t*)port)->portName);
     tcpPortDelete(port);
@@ -77,13 +80,15 @@ bool TCPPortFactory::releasePort(port_handle_t port) {
  * @param pType Must be PORT_TYPE__TCP | PORT_TYPE__COMM
  * @return True if port can be created, false otherwise
  */
-bool TCPPortFactory::validatePort(const std::string& pName, uint16_t pType) {
+bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     const URL url = parseURL(pName);
-    if (url.protocol != "tcp")
+    if (url.protocol != "tcp") {
         return false;
+    }
 
-    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM))
+    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) {
         return false;
+    }
 
     sockaddr addr = {};
     if (inet_pton(AF_INET, url.address.c_str(), &addr)) {
@@ -102,7 +107,7 @@ bool TCPPortFactory::validatePort(const std::string& pName, uint16_t pType) {
  * @param pattern The URL to validate and "discover"
  * @param pType Ignored
  */
-void TCPPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
+void TcpPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     // The base TCP Port Factory doesn't provide a discovery service, but we must still "locate" any ports we determine are valid
     if (validatePort(pattern, PORT_TYPE__TCP | PORT_TYPE__COMM)) {
         portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, pattern);
@@ -114,7 +119,7 @@ void TCPPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std:
  * @param pName URL to attempt to parse
  * @return TCPPortFactory:URL that represents the parsed URL
  */
-TCPPortFactory::URL TCPPortFactory::parseURL(const std::string& pName) {
+TcpPortFactory::URL TcpPortFactory::parseURL(const std::string& pName) {
     std::regex regexp(R"(^([^:\/?#]+):\/\/:?([^\/ ]*)?:([^\/?#\D]*)\/?([^?#]*)?\??([^#]*)?#?(.*)?$)");
     std::smatch match;
     URL retval = {};
