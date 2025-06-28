@@ -94,6 +94,7 @@ public:
      */
     bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0, int options = OPTIONS_USE_DEFAULTS) {
         options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
+        options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
 
         if (!portIsValid(port))
             return false;
