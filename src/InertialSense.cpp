@@ -1224,6 +1224,11 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
                 break;
 
             case IS_HARDWARE_TYPE_GPX:
+                if (device.devInfo.hardwareType == 0 ||
+                    device.devInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
+                {   // Populate if device info is not set or GPX
+                    device.devInfo = info;
+                }
                 device.gpxDevInfo = info;
                 break;
             }
