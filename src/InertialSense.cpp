@@ -866,6 +866,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
         }
 
         if (device.devInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
+            device.gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
             device.gpxStatus.timeOfWeekMs || 
             device.gpxFlashCfg.checksum)
         {   // Sync GPX flash config if a GPX present
