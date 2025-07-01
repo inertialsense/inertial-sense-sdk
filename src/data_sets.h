@@ -3124,8 +3124,11 @@ enum eIoConfig
     IO_CONFIG_GPS_TYPE_NMEA						= (int)2,
     /** GPS type - InertialSense GPX */
     IO_CONFIG_GPS_TYPE_GPX						= (int)3,
+    /** GPS type - uINS GPX */
+    IO_CONFIG_GPS_TYPE_SEPTENTRIO				= (int)4,
+
     /** GPS type - last type */
-    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_GPX,		// Set to last type
+    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_SEPTENTRIO,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
@@ -5929,7 +5932,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p);
  * - Remove GPS_STATUS_NUM_SATS_USED_MASK bits in eGpsStatus this is reported in satsUsed in gps_pos_t.
  * - Move spoofing/jamming status into gps_pos_t.status and reclaim gps_pos_t.status2 as resevered.
  * - Change $INFO to conform to NMEA 0183 standard. $INFO is a proprietary message and should start with $P and have max of 79 characters. see SN-6231
- * 
+ * - Refactor all reference of GPS to GNSS where applicable. See SN-6796
  * 
  * 
  * 

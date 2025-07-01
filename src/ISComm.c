@@ -407,7 +407,150 @@ static protocol_type_t processNmeaPkt(void* v)
     switch (p->state)
     {
     case 0:	// Find start
-        if (*(c->rxBuf.scan) == PSC_NMEA_START_BYTE)
+        if (*(c->rxBuf.scan) == PSC_ASCI_START_BYTE)
+        {	// Found
+            p->state++;
+        }
+        return _PTYPE_NONE;
+
+    case 1:	// Find byte before end
+        if (*(c->rxBuf.scan) == PSC_NMEA_PRE_END_BYTE)
+        { 	// Found
+            p->state++;
+        }
+        else
+        {
+            numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+            if (numBytes > MAX_MSG_LENGTH_NMEA)
+            {	// Exceeds max length
+                return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+            }
+        }
+        return _PTYPE_NONE;
+
+    case 3:		// Wait for end of packet
+        if (*(c->rxBuf.scan) != PSC_NMEA_END_BYTE)
+        {	// Invalid end
+            return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);
+        }
+        // Found packet end
+        break;
+    }
+
+    // Reset state
+    p->state = 0;
+
+    // Validate length
+    numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+    if (numBytes < 8)
+    {	// Packet length too short
+        return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
+    }
+
+    // Validate checksum
+    uint8_t tmp = *(c->rxBuf.scan-1);	// Backup value
+    *(c->rxBuf.scan-1) = 0;				// Null terminate hex string for strtol()
+    int msgChecksum = (int)strtol((const char*)c->rxBuf.scan-3, NULL, 16);
+    *(c->rxBuf.scan-1) = tmp;			// Restore value
+    int calChecksum = 0;
+    for (uint8_t* ptr = c->rxBuf.head + 1, *ptrEnd = c->rxBuf.scan - 4; ptr < ptrEnd; ptr++)
+    {
+        calChecksum ^= (int)*ptr;
+    }
+    if (msgChecksum != calChecksum)
+    {	// Invalid checksum
+        return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
+    }
+
+    /////////////////////////////////////////////////////////
+    // Valid packet found - Checksum passed - Populate rxPkt
+    validPacketFound(c, numBytes, numBytes, getNmeaMsgId(c->rxBuf.head, numBytes));
+
+    return _PTYPE_NMEA;
+}
+
+static protocol_type_t processSeptPkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+    int numBytes;
+
+    switch (p->state)
+    {
+    case 0:	// Find start
+        if (*(c->rxBuf.scan) == PSC_ASCI_START_BYTE)
+        {	// Found
+            p->state++;
+        }
+        return _PTYPE_NONE;
+
+    case 1:	// Find byte before end
+        if (*(c->rxBuf.scan) == PSC_NMEA_PRE_END_BYTE)
+        { 	// Found
+            p->state++;
+        }
+        else
+        {
+            numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+            if (numBytes > MAX_MSG_LENGTH_NMEA)
+            {	// Exceeds max length
+                return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+            }
+        }
+        return _PTYPE_NONE;
+
+    case 3:		// Wait for end of packet
+        if (*(c->rxBuf.scan) != PSC_NMEA_END_BYTE)
+        {	// Invalid end
+            return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);
+        }
+        // Found packet end
+        break;
+    }
+
+    // Reset state
+    p->state = 0;
+
+    // Validate length
+    numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+    if (numBytes < 8)
+    {	// Packet length too short
+        return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
+    }
+
+    // Validate checksum
+    uint8_t tmp = *(c->rxBuf.scan-1);	// Backup value
+    *(c->rxBuf.scan-1) = 0;				// Null terminate hex string for strtol()
+    int msgChecksum = (int)strtol((const char*)c->rxBuf.scan-3, NULL, 16);
+    *(c->rxBuf.scan-1) = tmp;			// Restore value
+    int calChecksum = 0;
+    for (uint8_t* ptr = c->rxBuf.head + 1, *ptrEnd = c->rxBuf.scan - 4; ptr < ptrEnd; ptr++)
+    {
+        calChecksum ^= (int)*ptr;
+    }
+    if (msgChecksum != calChecksum)
+    {	// Invalid checksum
+        return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
+    }
+
+    /////////////////////////////////////////////////////////
+    // Valid packet found - Checksum passed - Populate rxPkt
+    validPacketFound(c, numBytes, numBytes, getNmeaMsgId(c->rxBuf.head, numBytes));
+
+    return _PTYPE_NMEA;
+}
+
+
+static protocol_type_t processPrePkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+    int numBytes;
+
+    switch (p->state)
+    {
+    case 0:	// Find start
+        if (*(c->rxBuf.scan) == PSC_ASCI_START_BYTE)
         {	// Found
             p->state++;
         }
@@ -993,12 +1136,12 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         {	// Scan for packet start
             switch (*(buf->scan))
             {			
-            case PSC_ISB_PREAMBLE_BYTE1:    if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)    { setParserStart(c, processIsbPkt); }      break;
-            case PSC_NMEA_START_BYTE:       if (c->config.enabledMask & ENABLE_PROTOCOL_NMEA)   { setParserStart(c, processNmeaPkt); }     break;
-            case UBLOX_START_BYTE1:         if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)  { setParserStart(c, processUbloxPkt); }    break;
-            case RTCM3_START_BYTE:          if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)  { setParserStart(c, processRtcm3Pkt); }    break;
-            case SPARTN_START_BYTE:         if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN) { setParserStart(c, processSpartnByte); }  break;
-            case SONY_START_BYTE:           if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)   { setParserStart(c, processSonyByte); }    break;
+            case PSC_ISB_PREAMBLE_BYTE1:    if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)            { setParserStart(c, processIsbPkt); }       break;
+            case PSC_ASCI_START_BYTE:       if (c->config.enabledMask & ENABLE_PROTOCOL_SEPT_NMEA_mask) { setParserStart(c, processPrePkt); }       break;
+            case UBLOX_START_BYTE1:         if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)          { setParserStart(c, processUbloxPkt); }     break;
+            case RTCM3_START_BYTE:          if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)          { setParserStart(c, processRtcm3Pkt); }     break;
+            case SPARTN_START_BYTE:         if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)         { setParserStart(c, processSpartnByte); }   break;
+            case SONY_START_BYTE:           if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)           { setParserStart(c, processSonyByte); }     break;
             default:                        
                 if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                 { 

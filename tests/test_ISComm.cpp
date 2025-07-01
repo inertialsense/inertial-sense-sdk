@@ -1596,7 +1596,7 @@ TEST(ISComm, BufferParse)
 						tmpBuf[j] = (uint8_t)rand();
 
 						// CHEAT A LITTLE. Dont allow packet start bytes.
-						if (tmpBuf[j] == PSC_NMEA_START_BYTE ||
+						if (tmpBuf[j] == PSC_ASCI_START_BYTE ||
 							tmpBuf[j] == PSC_ISB_PREAMBLE_BYTE1 ||
 							tmpBuf[j] == UBLOX_START_BYTE1 ||
 							tmpBuf[j] == RTCM3_START_BYTE ||

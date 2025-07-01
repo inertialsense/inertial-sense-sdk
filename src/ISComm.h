@@ -277,8 +277,8 @@ is performed).
 */
 enum ePktSpecialChars
 {
-    /** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
-    PSC_NMEA_START_BYTE = 0x24,
+    /** Dollar sign ($), used by NMEA and Septentrio protocol to signify start of message (36) */
+    PSC_ASCI_START_BYTE = 0x24,
 
     /** Carriage return (\r), used by NMEA protocol to signify one byte before end of message (10) */
     PSC_NMEA_PRE_END_BYTE = 0x0D,
@@ -309,6 +309,10 @@ enum ePktSpecialChars
 
     /** Sony GNSS start byte */
     SONY_START_BYTE = 0x7F,
+
+    /** Septentrio GNSS Second bytes */
+    SEPT_SBF_PREAMBLE_BYTE2 = 0x40, // 0x40 = '@'
+    SEPT_REPLY_BYTE1 = 0x52, // 0x52 = 'R'
 };
 
 /** Represents an NMEA message and how it is mapped to a structure in memory */
@@ -545,6 +549,9 @@ typedef enum
     ENABLE_PROTOCOL_RTCM3       = 0x00000008,
     ENABLE_PROTOCOL_SPARTN      = 0x00000010,
     ENABLE_PROTOCOL_SONY        = 0x00000020,
+    ENABLE_PROTOCOL_SEPT        = 0x00000040,
+
+    ENABLE_PROTOCOL_SEPT_NMEA_mask = ENABLE_PROTOCOL_SEPT, //!< Septentrio and NMEA have same preamble, so we need to mask them together
 } eProtocolMask;
 
 typedef enum {
@@ -652,6 +659,7 @@ typedef struct
     pfnIsCommParseErrorHandler      error;      // Error handler 
     pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
     pfnIsCommAsapMsg                rmc;        // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
+    pfnIsCommGenMsgHandler          sept;       // Message handler - Septentrio SBF handler
 } is_comm_callbacks_t;
 
 /**

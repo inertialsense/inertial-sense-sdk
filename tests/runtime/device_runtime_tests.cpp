@@ -69,7 +69,7 @@ void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
         parser = std::string("ISB id ") + std::to_string(comm.rxPkt.dataHdr.id) + " " + std::string(cISDataMappings::DataName(comm.rxPkt.dataHdr.id));
         parser += ", size " + std::to_string(comm.rxPkt.dataHdr.size);
         break;
-    case PSC_NMEA_START_BYTE:       parser = std::string("NMEA ") + std::string((char*)comm.rxBuf.head, _MIN(size, MAX_MSG_LENGTH_NMEA));    break;
+    case PSC_ASCI_START_BYTE:       parser = std::string("NMEA ") + std::string((char*)comm.rxBuf.head, _MIN(size, MAX_MSG_LENGTH_NMEA));    break;
     case UBLOX_START_BYTE1:         parser = std::string("UBX");        break;
     case RTCM3_START_BYTE:          parser = std::string("RTCM3");      break;
     case SPARTN_START_BYTE:         parser = std::string("SPARTN");     break;
