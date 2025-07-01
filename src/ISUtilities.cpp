@@ -494,15 +494,13 @@ void* threadCreateAndStart(void(*function)(void* info), void* info, const char* 
     return NULLPTR;
 
 #elif CPP11_IS_ENABLED
-
     auto new_thread = new thread(function, info);
-    #if defined(PLATFORM_IS_LINUX) && defined(HAVE_PTHREAD_SETNAME_NP)
+    #if defined(PLATFORM_IS_LINUX) && (__GLIBC__ > 2 || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 12)))
     if (threadName) {
         pthread_setname_np(new_thread->native_handle(), threadName);
     }
     #endif
     return new_thread;
-
 #elif PLATFORM_IS_WINDOWS
     return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)function, info, 0, NULL);
 #elif PPTHREAD_ONCE_INIT

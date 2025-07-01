@@ -336,7 +336,6 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned in
         return 0;
     }
 
-    serialPort->txBytes += count;
     return count;
 }
 
