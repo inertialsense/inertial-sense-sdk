@@ -50,8 +50,8 @@ public:
     serial_port_t serialPort = { };
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
-    dev_info_t devInfo = { };
-    dev_info_t gpxDevInfo = { };
+    dev_info_t devInfo = { };                   // Populated with IMX info if present, otherwise GPX info if present
+    dev_info_t gpxDevInfo = { };                // Only populated if a GPX device is present
     sys_params_t sysParams = { };
     gpx_status_t gpxStatus = { };
     nvm_flash_cfg_t imxFlashCfg = { };
