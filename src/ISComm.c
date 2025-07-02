@@ -1136,12 +1136,14 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         {	// Scan for packet start
             switch (*(buf->scan))
             {			
-            case PSC_ISB_PREAMBLE_BYTE1:    if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)            { setParserStart(c, processIsbPkt); }       break;
-            case PSC_ASCI_START_BYTE:       if (c->config.enabledMask & ENABLE_PROTOCOL_SEPT_NMEA_mask) { setParserStart(c, processPrePkt); }       break;
-            case UBLOX_START_BYTE1:         if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)          { setParserStart(c, processUbloxPkt); }     break;
-            case RTCM3_START_BYTE:          if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)          { setParserStart(c, processRtcm3Pkt); }     break;
-            case SPARTN_START_BYTE:         if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)         { setParserStart(c, processSpartnByte); }   break;
-            case SONY_START_BYTE:           if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)           { setParserStart(c, processSonyByte); }     break;
+            case PSC_ISB_PREAMBLE_BYTE1:    { if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)      { setParserStart(c, processIsbPkt); }       break; }
+            // case SEPT_PROTO_START_BYTE:     // Covered by NMEA both start with '$'
+            case PSC_NMEA_START_BYTE:       { if (c->config.enabledMask & (ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_SEPT)) 
+                                                                                                    { setParserStart(c, processPreAsciiPkt); }  break; }
+            case UBLOX_START_BYTE1:         { if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)    { setParserStart(c, processUbloxPkt); }     break; }
+            case RTCM3_START_BYTE:          { if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)    { setParserStart(c, processRtcm3Pkt); }     break; } 
+            case SPARTN_START_BYTE:         { if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)   { setParserStart(c, processSpartnByte); }   break; }
+            case SONY_START_BYTE:           { if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)     { setParserStart(c, processSonyByte); }     break; }
             default:                        
                 if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                 { 

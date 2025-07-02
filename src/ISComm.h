@@ -278,7 +278,10 @@ is performed).
 enum ePktSpecialChars
 {
     /** Dollar sign ($), used by NMEA and Septentrio protocol to signify start of message (36) */
-    PSC_ASCI_START_BYTE = 0x24,
+    ALL_MIGHTY_DOLLAR_START_BYTE = 0x24,
+
+    /** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
+    PSC_NMEA_START_BYTE = 0x24,
 
     /** Carriage return (\r), used by NMEA protocol to signify one byte before end of message (10) */
     PSC_NMEA_PRE_END_BYTE = 0x0D,
@@ -311,6 +314,7 @@ enum ePktSpecialChars
     SONY_START_BYTE = 0x7F,
 
     /** Septentrio GNSS Second bytes */
+    SEPT_PROTO_START_BYTE = 0x24, // 0x24 = '$'
     SEPT_SBF_PREAMBLE_BYTE2 = 0x40, // 0x40 = '@'
     SEPT_REPLY_BYTE1 = 0x52, // 0x52 = 'R'
 };
@@ -550,8 +554,6 @@ typedef enum
     ENABLE_PROTOCOL_SPARTN      = 0x00000010,
     ENABLE_PROTOCOL_SONY        = 0x00000020,
     ENABLE_PROTOCOL_SEPT        = 0x00000040,
-
-    ENABLE_PROTOCOL_SEPT_NMEA_mask = ENABLE_PROTOCOL_SEPT, //!< Septentrio and NMEA have same preamble, so we need to mask them together
 } eProtocolMask;
 
 typedef enum {
