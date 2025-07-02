@@ -86,6 +86,8 @@ typedef enum
     _PTYPE_RTCM3                = 7,						/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
     _PTYPE_SPARTN               = 8,						/** Protocol Type: SPARTN binary */
     _PTYPE_SONY                 = 9,						/** Protocol Type: Sony binary */
+    _PTYPE_SEPTENTRIO_SBF       = 10,						/** Protocol Type: Septentrio binary */
+    _PTYPE_SEPTENTRIO_REPLY     = 11,					    /** Protocol Type: Septentrio reply msg */
     _PTYPE_FIRST_DATA           = _PTYPE_INERTIAL_SENSE_DATA,
     _PTYPE_LAST_DATA            = _PTYPE_SONY
 } protocol_type_t;
@@ -278,7 +280,7 @@ is performed).
 enum ePktSpecialChars
 {
     /** Dollar sign ($), used by NMEA and Septentrio protocol to signify start of message (36) */
-    ALL_MIGHTY_DOLLAR_START_BYTE = 0x24,
+    PSC_PRE_ASCII_START_BYTE = 0x24,
 
     /** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
     PSC_NMEA_START_BYTE = 0x24,
@@ -314,9 +316,12 @@ enum ePktSpecialChars
     SONY_START_BYTE = 0x7F,
 
     /** Septentrio GNSS Second bytes */
-    SEPT_PROTO_START_BYTE = 0x24, // 0x24 = '$'
+    /** Dollar sign ($), used by Septentrio protocol to signify start of message (36) */
+    SEPT_PROTO_START_BYTE   = 0x24, // 0x24 = '$'
     SEPT_SBF_PREAMBLE_BYTE2 = 0x40, // 0x40 = '@'
-    SEPT_REPLY_BYTE1 = 0x52, // 0x52 = 'R'
+    SEPT_REPLY_BYTE2        = 0x52, // 0x52 = 'R'
+    SEPT_REPLY_PRE_END_BYTE = 0x0d, // 0x0d = '\r' <CR>
+    SEPT_REPLY_END_BYTE     = 0x0d, // 0x0a = '\n' <LF>
 };
 
 /** Represents an NMEA message and how it is mapped to a structure in memory */
@@ -502,6 +507,16 @@ typedef struct
     uint16_t            payloadSize;
 
 } ubx_pkt_hdr_t;
+
+
+typedef struct
+{
+    uint8_t syncChar1;      // 0x24
+    uint8_t syncChar2;      // 0x40
+    uint16_t crc;           // CRC16 checksum of the payload
+    uint16_t msgID;         // Message ID
+    uint16_t payloadSize;   // Size of the payload in bytes
+} sept_pkt_hdr_t;
 
 /** Sony binary packet header */
 typedef struct
@@ -916,6 +931,18 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
  * @return uint16_t 
  */
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
+
+
+
+/**
+ * @brief crc_ccitt - Calculate the CRC-CCITT checksum for a given data buffer. Used for Septentrio SBF packets. 0 seed 
+ * 
+ * @param data 
+ * @param length 
+ * @return uint16_t crc_ccitt checksum
+ */
+uint16_t crc_ccitt(const uint8_t *data, size_t length);
+
 #define is_comm_isb_checksum16  is_comm_fletcher16
 // #define is_comm_isb_checksum16  is_comm_xor16
 
