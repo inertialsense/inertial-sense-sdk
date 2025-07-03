@@ -3735,7 +3735,7 @@ typedef struct
     int32_t navsys;
 
     /** elevation mask angle (rad) */
-    double elmin;
+    float elmin;
 
     /** Min snr to consider satellite for rtk */
     int32_t snrmin;
@@ -3789,9 +3789,6 @@ typedef struct
     /** dynamics model (0:none,1:velociy,2:accel) */
     int32_t dynamics;
 
-    /** number of filter iteration */
-    int32_t niter;
-
     /** interpolate reference obs (for post mission) */
     int32_t intpref;
 
@@ -3802,60 +3799,60 @@ typedef struct
     int32_t refpos;
 
     /** code/phase error ratio */
-    double eratio[NFREQ];
+    float eratio[NFREQ];
 
     /** measurement error factor */
-    double err[7];
+    float err[7];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
-    double std[3];
+    float std[3];
 
     /** process-noise std [0]bias,[1]iono [2]trop [3]acch [4]accv [5] pos */
-    double prn[6];
+    float prn[6];
 
     /** satellite clock stability (sec/sec) */
     double sclkstab;
 
     /** AR validation threshold */
-    double thresar[8];
+    float thresar[8];
 
     /** elevation mask of AR for rising satellite (rad) */
-    double elmaskar;
+    float elmaskar;
 
     /** elevation mask to hold ambiguity (rad) */
-    double elmaskhold;
+    float elmaskhold;
 
     /** slip threshold of geometry-free phase (m) */
-    double thresslip;
+    float thresslip;
 
     /* slip threshold of doppler (m) */
-    double thresdop;
+    float thresdop;
 
     /** variance for fix-and-hold pseudo measurements (cycle^2) */
-    double varholdamb;
+    float varholdamb;
 
     /** gain used for GLO and SBAS sats to adjust ambiguity */
-    double gainholdamb;
+    float gainholdamb;
 
     /** max difference of time (sec) */
-    double maxtdiff;
+    float maxtdiff;
 
     /** reset sat biases after this long trying to get fix if not acquired */
     int fix_reset_base_msgs;
 
     /** reject threshold of innovation for phase [0] and code [1] (m) */
-    double maxinno[2];
+    float maxinno[2];
     /** reject thresholds of NIS for phase [0] and code [1] */
-    double maxnis_lo[2];
-    double maxnis_hi[2];
+    float maxnis_lo[2];
+    float maxnis_hi[2];
 
     /** reject threshold of gdop */
     double maxgdop;
 
     /** baseline length constraint {const,sigma before fix, sigma after fix} (m) */
-    double baseline[3];
-    double max_baseline_error;
-    double reset_baseline_error;
+    float baseline[3];
+    float max_baseline_error;
+    float reset_baseline_error;
 
     /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
     float max_ubx_error;
