@@ -36,6 +36,10 @@ This ROS2 (Jazzy) package, uses the inertial-sense-sdk as a submodule. Clone thi
 mkdir -p ros2_ws/src
 cd ros2_ws/src
 git clone https://github.com/inertialsense/inertial-sense-sdk
+cd inertial-sense-sdk
+git submodule update --init --recursive
+cd ..
+ln -s inertial-sense-sdk/ROS/ros2
 ```
 then, create a symbolic link to the `ROS/ros2` directory in the `ros2_ws/src` directory using the command `ln -s inertial-sense-sdk/ROS/ros2` (run this from `ros2_ws/src`). This
 allows `colcon build` to find the appropriate package to build.
