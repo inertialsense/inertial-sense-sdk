@@ -63,7 +63,7 @@ You will need to run this command on every new shell you open to have access to 
 ## Execution
 
 ```bash
-ros2 run inertial_sense_ros2 new_target
+ros2 run inertial_sense_ros2 inertial_sense_ros2_node
 ```
 
 For instructions on changing parameter values and topic remapping from the command line while using `ros2 run` refer to [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html). For proper operation, all parameters should be set before execution.
