@@ -21,7 +21,7 @@
 
 
 #define ACC_SCALE   (float)(-9.80665/2059.426)//.017453
-#define GYRO_SCALE  (float)(-300.0/4913.88)//9.80665
+#define GYRO_SCALE  (float)(-0.0612)
 
 
 using namespace std;
@@ -97,7 +97,7 @@ int parseInputFile()
 
         parsedData[parseCnt].timeMs = parseCnt * DELTA_TIME_MS;
 
-        if (parseCnt % 1000 == 1)
+        if (parseCnt % 100000 == 1)
             cout << "Parsed line: " << parseCnt << ".\r\n";
 
         parseCnt++;
@@ -145,14 +145,65 @@ void setCurrentScomp(int i)
     tmpScomp.pqr[0].k[_Z_] = parsedData[i].gyZ;*/
 }
 
-void setCurrentPimu(int i)
+void setCurrentPimu(int i) // target 5.236 / 80 radians per period. .06545
 {
+    double sumThetaX = 0;
+    double sumThetaY = 0;
+    double sumThetaZ = 0;
+    double degPerSX = 0;
+    double degPerSY = 0;
+    double degPerSZ = 0;
+
+    double sumVelX = 0;
+    double sumVelY = 0;
+    double sumVelZ = 0;
+    double gVelX = 0;
+    double gVelY = 0;
+    double gVelZ = 0;
+    
     tmpPimu.dt = DELTA_TIME_MS * 10;
     tmpPimu.time = i * DELTA_TIME_MS;
 
-    tmpPimu.theta[_X_] = parsedData[i].gyX * tmpPimu.dt * GYRO_SCALE;
-    tmpPimu.theta[_Y_] = parsedData[i].gyY * tmpPimu.dt * GYRO_SCALE;
-    tmpPimu.theta[_Z_] = parsedData[i].gyZ * tmpPimu.dt * GYRO_SCALE;
+    static int lastIndex = 0;
+
+    // sum previous samples
+    for (int j = i - 9; j <= i; j++)
+    {
+        if ((lastIndex+1) != parsedData[j].index)
+        {
+            printf("last: %d, current: %d\r\n", lastIndex, parsedData[j].index);
+        }
+        lastIndex = parsedData[j].index;
+
+        sumThetaX += parsedData[j].gyX;
+        sumThetaY += parsedData[j].gyY;
+        sumThetaZ += parsedData[j].gyZ;
+
+        sumVelX += parsedData[j].accX;
+        sumVelY += parsedData[j].accY;
+        sumVelZ += parsedData[j].accZ;
+    }
+
+    degPerSX = (sumThetaX / 10.0) * GYRO_SCALE;
+    degPerSY = (sumThetaY / 10.0) * GYRO_SCALE;
+    degPerSZ = (sumThetaZ / 10.0) * GYRO_SCALE;
+
+    gVelX = (sumVelX / 10.0) * .000244;
+    gVelY = (sumVelY / 10.0) * .000244;
+    gVelY = (sumVelZ / 10.0) * .000244;
+
+    tmpPimu.theta[_X_] = degPerSX * C_DEG2RAD * tmpPimu.dt;
+    tmpPimu.theta[_Y_] = degPerSY * C_DEG2RAD * tmpPimu.dt;
+    tmpPimu.theta[_Z_] = degPerSZ * C_DEG2RAD * tmpPimu.dt;
+
+    //tmpPimu.vel[_X_] = gVelX * tmpPimu.dt * 9.80665;
+    //tmpPimu.vel[_Y_] = gVelY * tmpPimu.dt * 9.80665;
+    //tmpPimu.vel[_Z_] = gVelZ * tmpPimu.dt * 9.80665;
+
+
+    //tmpPimu.theta[_X_] = parsedData[i].gyX * tmpPimu.dt * GYRO_SCALE;
+    //tmpPimu.theta[_Y_] = parsedData[i].gyY * tmpPimu.dt * GYRO_SCALE;
+    //tmpPimu.theta[_Z_] = parsedData[i].gyZ * tmpPimu.dt * GYRO_SCALE;
 
     tmpPimu.vel[_X_] = parsedData[i].accX * tmpPimu.dt * ACC_SCALE;
     tmpPimu.vel[_Y_] = parsedData[i].accY * tmpPimu.dt * ACC_SCALE;
@@ -205,7 +256,7 @@ int writeOutputFile()
 
 
         // log pimu
-        if ((i % 10) == 0)
+        if ((i % 10) == 0 && (i > 9))
         {
             setCurrentPimu(i);
             logger.LogData(devLog, &pimuHdr, (const uint8_t*)&tmpPimu);
@@ -215,7 +266,7 @@ int writeOutputFile()
         if ((i % BROAD_CAST_RATE) == (BROAD_CAST_RATE/2))
             logger.LogData(devLog, &devInfoHdr, (const uint8_t*)&tmpDevInfo);
 
-        if (i % 1000 == 1)
+        if (i % 100000 == 1)
             cout << "Writing line: " << i << ".\r\n";
     }
 
