@@ -115,15 +115,6 @@ void setCurrentScomp(int i)
     // set time
     tmpScomp.timeMs = i * DELTA_TIME_MS;
 
-    // set current temp
-    /*tmpScomp.acc[_X_].temp = parsedData[i].temperature;
-    tmpScomp.acc[_Y_].temp = parsedData[i].temperature;
-    tmpScomp.acc[_Z_].temp = parsedData[i].temperature;
-
-    tmpScomp.pqr[_X_].temp = parsedData[i].temperature;
-    tmpScomp.pqr[_Y_].temp = parsedData[i].temperature;
-    tmpScomp.pqr[_Z_].temp = parsedData[i].temperature;*/
-
     tmpScomp.acc[_X_].lpfTemp = parsedData[i].temperature;
 
     tmpScomp.pqr[_X_].lpfTemp = parsedData[i].temperature;
@@ -135,14 +126,6 @@ void setCurrentScomp(int i)
     tmpScomp.pqr[0].lpfLsb[_X_] = parsedData[i].gyX * GYRO_SCALE;
     tmpScomp.pqr[0].lpfLsb[_Y_] = parsedData[i].gyY * GYRO_SCALE;
     tmpScomp.pqr[0].lpfLsb[_Z_] = parsedData[i].gyZ * GYRO_SCALE;
-
-    /*tmpScomp.acc[0].k[_X_] = parsedData[i].accX;
-    tmpScomp.acc[0].k[_Y_] = parsedData[i].accY;
-    tmpScomp.acc[0].k[_Z_] = parsedData[i].accZ;
-
-    tmpScomp.pqr[0].k[_X_] = parsedData[i].gyX;
-    tmpScomp.pqr[0].k[_Y_] = parsedData[i].gyY;
-    tmpScomp.pqr[0].k[_Z_] = parsedData[i].gyZ;*/
 }
 
 void setCurrentPimu(int i) // target 5.236 / 80 radians per period. .06545
@@ -157,9 +140,9 @@ void setCurrentPimu(int i) // target 5.236 / 80 radians per period. .06545
     double sumVelX = 0;
     double sumVelY = 0;
     double sumVelZ = 0;
-    double gVelX = 0;
-    double gVelY = 0;
-    double gVelZ = 0;
+    double gAccX = 0;
+    double gAccY = 0;
+    double gAccZ = 0;
     
     tmpPimu.dt = DELTA_TIME_MS * 10;
     tmpPimu.time = i * DELTA_TIME_MS;
@@ -188,26 +171,19 @@ void setCurrentPimu(int i) // target 5.236 / 80 radians per period. .06545
     degPerSY = (sumThetaY / 10.0) * GYRO_SCALE;
     degPerSZ = (sumThetaZ / 10.0) * GYRO_SCALE;
 
-    gVelX = (sumVelX / 10.0) * .000244;
-    gVelY = (sumVelY / 10.0) * .000244;
-    gVelY = (sumVelZ / 10.0) * .000244;
+    // ave accel over period in g
+    gAccX = (sumVelX / 10.0) * .00048828125;
+    gAccY = (sumVelY / 10.0) * .00048828125;
+    gAccZ = (sumVelZ / 10.0) * .00048828125;
 
     tmpPimu.theta[_X_] = degPerSX * C_DEG2RAD * tmpPimu.dt;
     tmpPimu.theta[_Y_] = degPerSY * C_DEG2RAD * tmpPimu.dt;
     tmpPimu.theta[_Z_] = degPerSZ * C_DEG2RAD * tmpPimu.dt;
 
-    //tmpPimu.vel[_X_] = gVelX * tmpPimu.dt * 9.80665;
-    //tmpPimu.vel[_Y_] = gVelY * tmpPimu.dt * 9.80665;
-    //tmpPimu.vel[_Z_] = gVelZ * tmpPimu.dt * 9.80665;
-
-
-    //tmpPimu.theta[_X_] = parsedData[i].gyX * tmpPimu.dt * GYRO_SCALE;
-    //tmpPimu.theta[_Y_] = parsedData[i].gyY * tmpPimu.dt * GYRO_SCALE;
-    //tmpPimu.theta[_Z_] = parsedData[i].gyZ * tmpPimu.dt * GYRO_SCALE;
-
-    tmpPimu.vel[_X_] = parsedData[i].accX * tmpPimu.dt * ACC_SCALE;
-    tmpPimu.vel[_Y_] = parsedData[i].accY * tmpPimu.dt * ACC_SCALE;
-    tmpPimu.vel[_Z_] = parsedData[i].accZ * tmpPimu.dt * ACC_SCALE;
+    // Convert to m/s = g * G * dt
+    tmpPimu.vel[_X_] = gAccX * tmpPimu.dt * 9.80665;
+    tmpPimu.vel[_Y_] = gAccY * tmpPimu.dt * 9.80665;
+    tmpPimu.vel[_Z_] = gAccZ * tmpPimu.dt * 9.80665;
 }
 
 int writeOutputFile()
