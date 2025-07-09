@@ -90,6 +90,9 @@ public:
 
     bool releasePort(port_handle_t port) override;
 
+    SerialPortFactory& setBaudRate(uint32_t baud) { portOptions.defaultBaudRate = baud; return *this; }
+    SerialPortFactory& setBlocking(bool block) { portOptions.defaultBlocking = block; return *this; }
+
 private:
     SerialPortFactory() = default;
     ~SerialPortFactory() = default;

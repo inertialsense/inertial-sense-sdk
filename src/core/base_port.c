@@ -109,6 +109,15 @@ int portReadChar(port_handle_t port, unsigned char* c)
     return portReadCharTimeout(port, c, PORT_DEFAULT_TIMEOUT);
 }
 
+/**
+ * Reads up to either a newline sequence (CRLF) or bufferLength characters unless a timeout
+ *  occurs waiting for either to occur
+ * @param port the port to read from
+ * @param buffer the buffer to read bytes into
+ * @param bufferLength the maximum number of bytes that can be placed into the buffer
+ * @param timeoutMs the maximum time in milliseconds to wait for the data to arrive
+ * @return the number of bytes read, including the newline or -1 if a timeout occurs
+ */
 int portReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMs)
 {
     if (!portIsValid(port))
@@ -117,17 +126,25 @@ int portReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int 
     int prevCR = 0;
     unsigned int bufferIndex = 0;
     unsigned char c;
-    while (bufferIndex < bufferLength && portReadCharTimeout(port, &c, timeoutMs) == 1)
-    {
-        buffer[bufferIndex++] = c;
-        if (c == '\n' && prevCR)
-        {
-            // remove \r\n and null terminate and return count of chars
-            buffer[bufferIndex -= 2] = '\0';
-            return (int)bufferIndex;
+    uint32_t startMs = current_timeMs();
+    do {
+        if (portAvailable(port) == 0) {
+            SLEEP_US(10);
+            continue;
         }
-        prevCR = (c == '\r');
-    }
+
+        if (portRead(port, &c, 1) == 1)
+        {
+            buffer[bufferIndex++] = c;
+            if ((c == '\n' && prevCR) || (bufferIndex >= bufferLength))
+            {
+                // remove \r\n and null terminate and return count of chars
+                buffer[bufferIndex -= 2] = '\0';
+                return (int)bufferIndex;
+            }
+            prevCR = (c == '\r');
+        }
+    } while ((current_timeMs() - startMs) < timeoutMs);
     return -1;
 }
 

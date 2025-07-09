@@ -354,18 +354,21 @@ int test_serial_generate_ordered_data(uint8_t buf[], int bufSize)
 }
 
 /**
- * @brief Creates a delay sufficient for the specified data at baudrate to be sent, preventing buffer overflow.
- * 
- * @param bufSize Buffer for data to be written to.
- * @param baudrate Size of available buffer.
+ * @brief Calculate a delay sufficient for the specified data at baudrate to be sent,
+ *  preventing buffer overflow and optionally sleep for that duration.
+ * @param bytes number of bytes that has/will be sent
+ * @param baud Size of available buffer.
+ * @param sleep if true (default) will sleep for the calculated time, otherwise will return immediately
+ * @return the calculated wait in microseconds
  */
-void test_serial_delay_for_tx(int bufSize, int baudrate)
+int test_serial_delay_for_tx(int bytes, int baud, bool sleep)
 {
-    int bytes_per_sec = (baudrate/10);  // ~10 (bits/byte)
+    int bytes_per_sec = (baud / 10);  // ~10 (bits/byte)
 
     // Delay for enough time to allow data
-    int delayUs = (1000000 * bufSize / bytes_per_sec) + 10;     // + 10us additional for buffer
-    TIME_DELAY_USEC(delayUs);
+    int delayUs = (1000000 * bytes / bytes_per_sec) + 10;     // + 10us additional for buffer
+    if (!sleep) TIME_DELAY_USEC(delayUs);
+    return delayUs;
 }
 
 
