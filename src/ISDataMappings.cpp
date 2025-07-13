@@ -1554,7 +1554,34 @@ const char* cISDataMappings::DataName(uint32_t did)
     return m_dataIdNames[did];
 }
 
-uint32_t cISDataMappings::Did(string name)
+uint32_t cISDataMappings::Did(string s)
+{
+    // Try to use DID number
+    uint32_t did = strtol(s.c_str(), NULL, 10);
+
+    if (did <= DID_NULL || did >= DID_COUNT)
+    {   // Number is invalid.  Use DID name.
+        string name = s;
+        std::string::size_type pos = s.find('=');
+        if (pos != std::string::npos)
+        {   // Remove equal sign
+            name = s.substr(0, pos);
+        }
+        did = cISDataMappings::NameToDid(name);
+        return did;
+    }
+
+    if (did > DID_NULL && did < DID_COUNT)
+    {
+        return did;         // Valid DID
+    }
+    else
+    {
+        return DID_NULL;    // Invalid DID
+    }
+}
+
+uint32_t cISDataMappings::NameToDid(string name)
 {
     for (eDataIDs did = 0; did < DID_COUNT; did++)
     {
@@ -1959,6 +1986,178 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
     }
     return true;
 }
+
+
+string cISDataMappings::DidToString(int did, uint8_t* dataPtr, std::string fields)
+{
+    std::ostringstream oss, ossHdr;
+    const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
+    data_mapping_string_t stringBuffer;
+
+    // Parse pipe-delimited list of fields if specified
+    std::set<std::string> requestedFields;
+    std::map<std::string, int> arrayOverrides;
+    if (!fields.empty())
+    {
+        std::vector<std::string> splitFields;
+        splitString(fields, ',', splitFields);
+        for (std::string& f : splitFields)
+        {
+            int index = ExtractArrayIndex(f);  // Parses and strips array index if present
+            arrayOverrides[f] = index;         // If index == -1 → full array
+            requestedFields.insert(f);         // `f` has brackets stripped
+        }
+    }
+
+    for (const auto& entry : dataSetMap)
+    {
+        const data_info_t& info = entry.second;
+
+        if (!requestedFields.empty() && requestedFields.find(info.name) == requestedFields.end())
+        {
+            continue;  // Skip unrequested fields
+        }
+
+        // int arrayLimit = info.arraySize;
+        int forcedIndex = -1;
+
+        // Handle optional single element access: theta[1] etc.
+        auto it = arrayOverrides.find(info.name);
+        if (it != arrayOverrides.end())
+        {
+            forcedIndex = it->second;
+        }
+
+        if (info.arraySize)
+        {
+            if (forcedIndex >= 0)
+            {
+                if (forcedIndex >= int(info.arraySize))
+                {
+                    oss << info.name << "[" << forcedIndex << "] = <invalid index>" << std::endl;
+                }
+                else if (DataToString(info, NULL, dataPtr, stringBuffer, forcedIndex))
+                {
+                    oss << info.name << "[" << forcedIndex << "] = " << stringBuffer << std::endl;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < int(info.arraySize); i++)
+                {
+                    if (DataToString(info, NULL, dataPtr, stringBuffer, i))
+                    {
+                        oss << info.name << "[" << i << "] = " << stringBuffer << std::endl;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (DataToString(info, NULL, dataPtr, stringBuffer))
+            {
+                oss << info.name << " = " << stringBuffer << std::endl;
+            }
+        }
+    }
+
+    if (!oss.str().empty())
+    {
+        ossHdr << DataName(did) << " (" << did << ")" << std::endl;
+        return ossHdr.str() + oss.str();
+    }
+
+    return "";
+}
+
+
+bool cISDataMappings::StringToDid(int did, const std::string& fields, uint8_t* dataPtr)
+{
+    const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
+    if (!dataPtr || dataSetMap.empty())
+    {
+        return false;
+    }
+
+    bool success = false;
+    std::vector<std::string> keyValues;
+    splitString(fields, ',', keyValues);
+
+    for (const std::string& keyValue : keyValues)
+    {
+        std::vector<std::string> pair;
+        splitString(keyValue, '=', pair);
+        if (pair.size() != 2)
+        {
+            continue; // Invalid format, skip
+        }
+
+        std::string fieldName = pair[0];
+        std::string value = pair[1];
+
+        // Extract array index if specified (e.g. theta[1])
+        int arrayIndex = ExtractArrayIndex(fieldName);
+
+        auto it = dataSetMap.find(fieldName);
+        if (it == dataSetMap.end())
+        {
+            // Unknown field
+            continue;
+        }
+
+        const data_info_t& info = it->second;
+
+        // Check array bounds if applicable
+        if (arrayIndex >= int(info.arraySize))
+        {
+            if (info.arraySize > 0)
+            {   // Array index out of bounds
+                // cout << "Invalid array index for " << info.name << ": " << arrayIndex << std::endl;
+                return false;
+            }
+            else
+            {   // If no array size specified, default to 0
+                arrayIndex = 0; 
+            }
+        }
+
+        // Clean up value (optional: remove "0x" if present)
+        if (value.size() > 2 && value[0] == '0' && (value[1] == 'x' || value[1] == 'X'))
+        {
+            value = value.substr(2);
+        }
+
+        // Write to field
+        bool fieldSuccess = StringToData(
+            value.c_str(), int(value.length()),
+            nullptr,
+            dataPtr,
+            info,
+            std::max(0, arrayIndex)
+        );
+
+        success |= fieldSuccess;
+    }
+
+    return success;
+}
+
+
+// Return the index into an array if specified and remove from string.  i.e. `insOffset[2]` returns 2 and str is reduced to `insOffset`.
+int cISDataMappings::ExtractArrayIndex(const std::string &str)
+{    
+    int arrayIndex = -1;
+    size_t openBracketPos  = str.find('[');
+    size_t closeBracketPos = str.find(']');
+    if (openBracketPos != std::string::npos && closeBracketPos != std::string::npos && openBracketPos < closeBracketPos) 
+    {   // Extract array index
+        std::string indexStr = str.substr(openBracketPos + 1, closeBracketPos - openBracketPos - 1);
+        arrayIndex = std::stoi(indexStr);
+    } 
+
+    return arrayIndex;
+}
+
 
 double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
 {

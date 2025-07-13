@@ -46,6 +46,7 @@ using namespace std;
 static bool g_killThreadsNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
+InertialSense *g_inertialSenseInterface = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
@@ -241,9 +242,48 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         return;
     }
 
-    if (g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid != data->hdr.id)
-    {   // ignore all other received data, except the "onceDid"
+    if (g_commandLineOptions.outputOnceDid)
+    {   // Prevent processing of data if outputOnceDid is set
+        if (data->hdr.id == g_commandLineOptions.outputOnceDid)
+        {   
+            // Print the data to terminal
+            cout << cISDataMappings::DidToString(data->hdr.id, data->ptr, g_commandLineOptions.outputOnceFields);
+            // Exit cltool now and report success code
+            std::exit(0);
+        }
         return; 
+    }
+
+    if (g_commandLineOptions.setDidDid)
+    {   // Prevent processing of data if setDidDid is set
+        if (data->hdr.id == g_commandLineOptions.setDidDid)
+        {   
+            uDatasets dataset = {};
+            int did = data->hdr.id;
+            int size = cISDataMappings::DataSize(data->hdr.id);
+            copyDataPToStructP(&dataset, data, size);
+            uDatasets newSet = dataset;
+            if (!cISDataMappings::StringToDid(did, g_commandLineOptions.setDidString, (uint8_t*)&newSet))
+            {   // Exit cltool now and report success code
+                std::exit(0);
+            }
+            if (memcmp(&dataset, &newSet, size) == 0)
+            {   // Received matching dataset
+                cout << string(cISDataMappings::DataName(did)) << " is synced." << endl;
+
+                // Exit cltool now and report success code
+                std::exit(0);                
+            }
+                
+            // Upload the new dataset
+            cout << "Uploading " << string(cISDataMappings::DataName(did)) << endl;
+            if (g_inertialSenseInterface)
+            {
+                g_inertialSenseInterface->SendData(did, (uint8_t*)&newSet, size, 0);
+            }
+        }
+
+        return;
     }
 
     (void)i;
@@ -792,6 +832,7 @@ static int cltool_dataStreaming()
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
     InertialSense inertialSenseInterface(cltool_dataCallback);
+    g_inertialSenseInterface = &inertialSenseInterface;
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
 

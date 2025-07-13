@@ -559,7 +559,8 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	switch (m_displayMode)
 	{
 	default:	// Do not display
-		// fall through
+		break;
+
 	case DMODE_PRETTY:
 		Home();
 		if (m_enableReplay)

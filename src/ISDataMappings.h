@@ -492,11 +492,19 @@ public:
 	static const char* DataName(uint32_t did);
 
 	/**
-	* Get a data set id from name
-	* @param did the data id to get a data set name from
-	* @return data set name or NULL if not found
+	* Get a data set id from a numeric or alphabetic string (i.e. "DID_INS_1" or "4")
+	* @param string the string to convert to a data id
+	* @return data set ID or NULL if not found
 	*/
-	static uint32_t Did(std::string name);
+	static uint32_t Did(std::string string);
+
+	/**
+	 * @brief Convert a name to a data set id
+	 * 
+	 * @param name the name to convert
+	* @return data set ID or NULL if not found
+	 */
+	static uint32_t NameToDid(std::string name);
 
 	/**
 	* Get the size of a given data id
@@ -594,6 +602,18 @@ public:
 	* @return true if success, false if error
 	*/
 	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
+
+	/**
+	 * @brief Convert a data set to a string representation
+	 * @param did the data ID
+	 * @param dataPtr pointer to the data buffer
+	 * @param fieldName optional field name print only one field
+	 * @return std::string the string representation of the data set
+	 */
+	static std::string DidToString(int did, uint8_t* dataPtr, std::string fields);
+	static bool StringToDid(int did, const std::string& fields, uint8_t* dataPtr);
+
+	static int ExtractArrayIndex(const std::string &str);
 
 	/**
 	* Get a timestamp from data if available

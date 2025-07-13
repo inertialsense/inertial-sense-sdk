@@ -128,10 +128,13 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     std::string roverConnection; 			// -rover=type:IP/URL:port:mountpoint:user:password   (server)
     std::string baseConnection; 			// -base=IP:port    (client)	
     
+    uint32_t setDidDid;	
+    std::string setDidString;
     std::string imxFlashCfg;
     std::string gpxFlashCfg;
     uint32_t timeoutFlushLoggerSeconds;
     uint32_t outputOnceDid;	
+    std::string outputOnceFields;			// -getdid DID=FIELD
     
     uint32_t sysCommand;
     int32_t platformType;
@@ -167,7 +170,7 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
 void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
-bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg, uint32_t did, uint8_t* dataPtr);
+bool cltool_setDidFromString(InertialSense& inertialSenseInterface, std::string flashCfg, uint32_t did, uint8_t* dataPtr);
 
 #endif // __CLTOOL_H__
 
