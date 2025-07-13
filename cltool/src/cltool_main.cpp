@@ -247,7 +247,12 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         if (data->hdr.id == g_commandLineOptions.outputOnceDid)
         {   
             // Print the data to terminal
-            cout << cISDataMappings::DidToString(data->hdr.id, data->ptr, g_commandLineOptions.outputOnceFields);
+            string output = cISDataMappings::DidToString(data->hdr.id, data->ptr, g_commandLineOptions.outputOnceFields);
+            if (output.empty())
+            {   // No data to print
+                output = "Error parsing: " + g_commandLineOptions.outputOnceFields + "\n";
+            }
+            cout << output;
             // Exit cltool now and report success code
             std::exit(0);
         }

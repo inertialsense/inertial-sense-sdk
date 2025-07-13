@@ -84,10 +84,10 @@ static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("reserved2", &dev_info_t::reserved2, DATA_TYPE_UINT8);
     mapper.AddMember("hardwareType", &dev_info_t::hardwareType, DATA_TYPE_UINT8,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("serialNumber", &dev_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("hardwareVer", &dev_info_t::hardwareVer, DATA_TYPE_UINT8, 4, "", "Hardware version", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("firmwareVer", &dev_info_t::firmwareVer, DATA_TYPE_UINT8, 4, "", "Firmware version", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("hardwareVer", &dev_info_t::hardwareVer, DATA_TYPE_UINT8, 4, {""}, {"Hardware version"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("firmwareVer", &dev_info_t::firmwareVer, DATA_TYPE_UINT8, 4, {""}, {"Firmware version"}, DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildNumber", &dev_info_t::buildNumber, DATA_TYPE_UINT32, "", "Build number (0xFFFFF000 = Host key, 0x00000FFF = Build #)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("protocolVer", &dev_info_t::protocolVer, DATA_TYPE_UINT8, 4, "", "Communications protocol version", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("protocolVer", &dev_info_t::protocolVer, DATA_TYPE_UINT8, 4, {""}, {"Communications protocol version"}, DATA_FLAGS_READ_ONLY);
     mapper.AddMember("repoRevision", &dev_info_t::repoRevision, DATA_TYPE_UINT32, "", "Repo revision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("manufacturer", &dev_info_t::manufacturer, DATA_TYPE_STRING, "", "manufacturer", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildType", &dev_info_t::buildType, DATA_TYPE_UINT8, "", "'a'(97)=ALPHA, 'b'(98)=BETA, 'c'(99)=CANDIDATE, 'r'(114)=PRODUCTION, 'd'(100)=develop, 's'(115)=snapshot, '^'(94)=dirty", DATA_FLAGS_READ_ONLY);
@@ -111,7 +111,7 @@ static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_
     mapper.AddMember("key", &manufacturing_info_t::key, DATA_TYPE_UINT32, "", "key (times OTP area was set, 15 max)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("platformType", &manufacturing_info_t::platformType, DATA_TYPE_INT32, "", "Platform type (carrier board)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &manufacturing_info_t::reserved, DATA_TYPE_INT32, "", "Reserved", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("uid", &manufacturing_info_t::uid, DATA_TYPE_UINT32, 4, "", "Unique microcontroller identifier", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("uid", &manufacturing_info_t::uid, DATA_TYPE_UINT32, 4, {""}, {"Unique microcontroller identifier"}, DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -198,8 +198,8 @@ static void PopulateMapImu(data_set_t data_set[DID_COUNT], uint32_t did, string 
 {
     DataMapper<imu_t> mapper(data_set, did);
     mapper.AddMember("time", &imu_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray2("pqr", offsetof(imu_t, I.pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Angular rate.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("acc", offsetof(imu_t, I.acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Linear acceleration.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("pqr", offsetof(imu_t, I.pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("acc", offsetof(imu_t, I.acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("status", &imu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
 }
 
@@ -208,12 +208,12 @@ static void PopulateMapImu3(data_set_t data_set[DID_COUNT], uint32_t did, string
     DataMapper<imu3_t> mapper(data_set, did);
     mapper.AddMember("time", &imu3_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("status", &imu3_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray2("I0.pqr", offsetof(imu3_t, I[0].pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "IMU 1 angular rate.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I0.acc", offsetof(imu3_t, I[0].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "IMU 1 linear acceleration.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("I1.pqr", offsetof(imu3_t, I[1].pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "IMU 2 angular rate.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I1.acc", offsetof(imu3_t, I[1].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "IMU 2 linear acceleration.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("I2.pqr", offsetof(imu3_t, I[2].pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "IMU 3 angular rate.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I2.acc", offsetof(imu3_t, I[2].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "IMU 3 linear acceleration.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I0.pqr", offsetof(imu3_t, I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 1 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I0.acc", offsetof(imu3_t, I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 1 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I1.pqr", offsetof(imu3_t, I[1].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 2 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I1.acc", offsetof(imu3_t, I[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 2 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I2.pqr", offsetof(imu3_t, I[2].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 3 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I2.acc", offsetof(imu3_t, I[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 3 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapSysParams(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -240,9 +240,9 @@ static void PopulateMapSysSensors(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<sys_sensors_t> mapper(data_set, did);
     mapper.AddMember("time", &sys_sensors_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("temp", &sys_sensors_t::temp, DATA_TYPE_F32, SYM_DEG_C, "System temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray("pqr", &sys_sensors_t::pqr, DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
-    mapper.AddArray("acc", &sys_sensors_t::acc, DATA_TYPE_F32, 3, SYM_M_PER_S, "Linear acceleration", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("mag", &sys_sensors_t::mag, DATA_TYPE_F32, 3, "", "Magnetometer normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("pqr", &sys_sensors_t::pqr, DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Angular rate"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    mapper.AddArray("acc", &sys_sensors_t::acc, DATA_TYPE_F32, 3, {SYM_M_PER_S}, {"Linear acceleration"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("mag", &sys_sensors_t::mag, DATA_TYPE_F32, 3, {""}, {"Magnetometer normalized gauss"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("bar", &sys_sensors_t::bar, DATA_TYPE_F32, "kPa", "Barometric pressure", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
     mapper.AddMember("barTemp", &sys_sensors_t::barTemp, DATA_TYPE_F32, "m", "Barometer MSL altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2 );
     mapper.AddMember("mslBar", &sys_sensors_t::mslBar, DATA_TYPE_F32, "C", "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
@@ -269,10 +269,10 @@ void PopulateMapIns1(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeek", &ins_1_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
     mapper.AddMember("insStatus", &ins_1_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_1_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddVec3Rpy("theta", offsetof(ins_1_t, theta), DATA_TYPE_F32, SYM_DEG, "euler angle", flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
+    mapper.AddVec3Rpy("theta", offsetof(ins_1_t,theta), DATA_TYPE_F32, SYM_DEG, "euler angle", flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
     mapper.AddVec3Xyz("uvw", offsetof(ins_1_t,uvw), DATA_TYPE_F32, "m/s", "velocity in body frame", flags);
     str = " offset from reference LLA";
-    mapper.AddVec3("ned", offsetof(ins_1_t,ned), DATA_TYPE_F32, "m", "North"+str, "East"+str, "Down"+str, flags);
+    mapper.AddArray("ned", &ins_1_t::ned, DATA_TYPE_F32, 3, {"m"}, {"North"+str, "East"+str, "Down"+str}, flags);
     mapper.AddLlaDegM("lla", offsetof(ins_1_t, lla), "WGS84 coordinate", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
 }
 
@@ -285,7 +285,7 @@ static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("insStatus", &ins_2_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_2_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     std::string str = " quaternion body rotation with respect to NED";
-    mapper.AddVec4("qn2b", offsetof(ins_2_t, qn2b), DATA_TYPE_F32, "", "W"+str, "X"+str, "Y"+str, "Z"+str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("qn2b", &ins_2_t::qn2b, DATA_TYPE_F32, 4, {""}, {"W"+str, "X"+str, "Y"+str, "Z"+str}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddVec3Xyz("uvw", offsetof(ins_2_t, uvw), DATA_TYPE_F32, "m/s", "velocity in body frame", flags);
     mapper.AddLlaDegM("lla", offsetof(ins_2_t, lla), "WGS84 coordinate", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
 }
@@ -299,7 +299,7 @@ static void PopulateMapIns3(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("insStatus", &ins_3_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_3_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     std::string str = " quaternion body rotation with respect to NED";
-    mapper.AddVec4("qn2b", offsetof(ins_3_t, qn2b), DATA_TYPE_F32, "", "W"+str, "X"+str, "Y"+str, "Z"+str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("qn2b", &ins_3_t::qn2b, DATA_TYPE_F32, 4, {""}, {"W"+str, "X"+str, "Y"+str, "Z"+str}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddVec3Xyz("uvw", offsetof(ins_3_t, uvw), DATA_TYPE_F32, "m/s", "velocity in body frame", flags);
     mapper.AddLlaDegM("lla", offsetof(ins_3_t, lla), "WGS84 coordinate", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("msl", &ins_3_t::msl, DATA_TYPE_F32, "m", "Height above mean sea level (MSL)", flags);
@@ -314,7 +314,7 @@ static void PopulateMapIns4(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("insStatus", &ins_4_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_4_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     std::string str = " quaternion body rotation with respect to ECEF";
-    mapper.AddVec4("qe2b", offsetof(ins_4_t, qe2b), DATA_TYPE_F32, "", "W"+str, "X"+str, "Y"+str, "Z"+str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("qe2b", &ins_4_t::qe2b, DATA_TYPE_F32, 4, {""}, {"W"+str, "X"+str, "Y"+str, "Z"+str}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddVec3Xyz("ve", offsetof(ins_4_t,ve), DATA_TYPE_F32, "m/s", "velocity in ECEF (earth-centered earth-fixed) frame", flags);
     mapper.AddVec3Xyz("ecef", offsetof(ins_4_t,ecef), DATA_TYPE_F64, "m", "position in ECEF (earth-centered earth-fixed) frame", flags);
 }
@@ -325,7 +325,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("week", &gps_pos_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("timeOfWeekMs", &gps_pos_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("status", &gps_pos_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
-    mapper.AddArray("ecef", &gps_pos_t::ecef, DATA_TYPE_F64, 3, "m", "Position in ECEF {x,y,z}", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("ecef", &gps_pos_t::ecef, DATA_TYPE_F64, 3, {"m"}, {"Position in ECEF {x,y,z}"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddLlaDegM("lla", offsetof(gps_pos_t, lla), "", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hMSL", &gps_pos_t::hMSL, DATA_TYPE_F32, "m", "Meters above sea level", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("hAcc", &gps_pos_t::hAcc, DATA_TYPE_F32, "m", "Position horizontal accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -343,7 +343,7 @@ static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gps_vel_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gps_vel_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("vel", &gps_vel_t::vel, DATA_TYPE_F32, 3, "m/s", "Velocity in ECEF {vx,vy,vz} or NED {vN, vE, 0} if status GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0 or 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddArray("vel", &gps_vel_t::vel, DATA_TYPE_F32, 3, {"m/s"}, {"Velocity in ECEF {vx,vy,vz} or NED {vN, vE, 0} if status GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0 or 1"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("sAcc", &gps_vel_t::sAcc, DATA_TYPE_F32, "m/s", "Speed accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("status", &gps_vel_t::status, DATA_TYPE_UINT32, "", "GPS status: NMEA input if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
@@ -387,7 +387,7 @@ static void PopulateMapGpsVersion(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<gps_version_t> mapper(data_set, did);
     mapper.AddMember("swVersion", &gps_version_t::swVersion, DATA_TYPE_STRING, "", "Software version");
     mapper.AddMember("hwVersion", &gps_version_t::hwVersion, DATA_TYPE_STRING, "", "Hardware version");
-    mapper.AddArray("extension", &gps_version_t::extension, DATA_TYPE_STRING, GPS_VER_NUM_EXTENSIONS, "", "Extension 30 bytes array description.");
+    mapper.AddArray("extension", &gps_version_t::extension, DATA_TYPE_STRING, GPS_VER_NUM_EXTENSIONS, {""}, {"Extension 30 bytes array description."});
 }
 
 static void PopulateMapGpsTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -410,7 +410,7 @@ static void PopulateMapMagnetometer(data_set_t data_set[DID_COUNT], uint32_t did
 {
     DataMapper<magnetometer_t> mapper(data_set, did);
     mapper.AddMember("time", &magnetometer_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("mag", &magnetometer_t::mag, DATA_TYPE_F32, 3, "", "Normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("mag", &magnetometer_t::mag, DATA_TYPE_F32, 3, {SYM_M_PER_S}, {"Normalized gauss"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapBarometer(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -429,31 +429,31 @@ static void PopulateMapPimu(data_set_t data_set[DID_COUNT], uint32_t did, string
     mapper.AddMember("time", &pimu_t::time, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("dt", &pimu_t::dt, DATA_TYPE_F32, "s", "Integration period.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("status", &pimu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("theta", &pimu_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "IMU delta theta coning and sculling integrals in body/IMU frame.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
-    mapper.AddArray("vel", &pimu_t::vel, DATA_TYPE_F32, 3, "m/s", "IMU delta velocity coning and sculling integrals in body/IMU frame.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
+    mapper.AddArray("theta", &pimu_t::theta, DATA_TYPE_F32, 3, {SYM_DEG}, {"IMU delta theta coning and sculling integrals in body/IMU frame.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    mapper.AddArray("vel", &pimu_t::vel, DATA_TYPE_F32, 3, {"m/s"}, {"IMU delta velocity coning and sculling integrals in body/IMU frame.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
 
 static void PopulateMapPimuMag(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<pimu_mag_t> mapper(data_set, did);
     mapper.AddMember2("imutime", offsetof(pimu_mag_t, pimu.time), DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray2("theta", offsetof(pimu_mag_t, pimu.theta), DATA_TYPE_F32, 3, SYM_DEG, "IMU delta theta coning and sculling integrals in body/IMU frame.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
-    mapper.AddArray2("vel", offsetof(pimu_mag_t, pimu.vel), DATA_TYPE_F32, 3, "m/s", "IMU delta velocity coning and sculling integrals in body/IMU frame.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
+    mapper.AddArray2("theta", offsetof(pimu_mag_t, pimu.theta), DATA_TYPE_F32, 3, {SYM_DEG}, {"IMU delta theta coning and sculling integrals in body/IMU frame."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    mapper.AddArray2("vel", offsetof(pimu_mag_t, pimu.vel), DATA_TYPE_F32, 3, {"m/s"}, {"IMU delta velocity coning and sculling integrals in body/IMU frame."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
     mapper.AddMember2("dt", offsetof(pimu_mag_t, pimu.dt), DATA_TYPE_F32, "s", "Integration period.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember2("imustatus", offsetof(pimu_mag_t, pimu.status), DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("magtime", offsetof(pimu_mag_t, mag.time), DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray2("mag", offsetof(pimu_mag_t, mag.mag), DATA_TYPE_F32, 3, "", "Normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("mag", offsetof(pimu_mag_t, mag.mag), DATA_TYPE_F32, 3, {""}, {"Normalized gauss"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapImuMag(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<imu_mag_t> mapper(data_set, did);
     mapper.AddMember2("imutime", offsetof(imu_mag_t, imu.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray2("pqr", offsetof(imu_mag_t, imu.I.pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "IMU Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("acc", offsetof(imu_mag_t, imu.I.acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "IMU Linear acceleration", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("pqr", offsetof(imu_mag_t, imu.I.pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU Angular rate"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("acc", offsetof(imu_mag_t, imu.I.acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU Linear acceleration"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember2("imustatus", offsetof(imu_mag_t, imu.status), DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("magtime", offsetof(imu_mag_t, mag.time), DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray2("mag", offsetof(imu_mag_t, mag.mag), DATA_TYPE_F32, 3, "", "Normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("mag", offsetof(imu_mag_t, mag.mag), DATA_TYPE_F32, 3, {""}, {"Normalized gauss"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapMagCal(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -473,19 +473,19 @@ static void PopulateMapInfieldCal(data_set_t data_set[DID_COUNT], uint32_t did)
 
     for (int i=0; i<NUM_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("imu" + std::to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Sampled angular rate.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED", DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
-        mapper.AddArray2("imu" + std::to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Sampled linear acceleration.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED", DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("imu" + std::to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Sampled angular rate.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
+        mapper.AddArray2("imu" + std::to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Sampled linear acceleration.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_4);
     }
 
     for (int i=0; i<3; i++)
     {
-        mapper.AddArray2 ("calData" + std::to_string(i) + ".down.dev[0].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[0].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Linear acceleration", DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2 ("calData" + std::to_string(i) + ".down.dev[1].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[1].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Linear acceleration", DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2 ("calData" + std::to_string(i) + ".down.dev[2].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[2].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Linear acceleration", DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[0].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[1].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[2].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
         mapper.AddMember2("calData" + std::to_string(i) + ".down.yaw",        i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
-        mapper.AddArray2 ("calData" + std::to_string(i) + ".up.dev[0].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[0].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Linear acceleration", DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2 ("calData" + std::to_string(i) + ".up.dev[1].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[1].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Linear acceleration", DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2 ("calData" + std::to_string(i) + ".up.dev[2].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[2].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Linear acceleration", DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[0].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[1].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[2].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
         mapper.AddMember2("calData" + std::to_string(i) + ".up.yaw",          i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     }
 }
@@ -510,10 +510,10 @@ static void PopulateMapGroundVehicle(data_set_t data_set[DID_COUNT], uint32_t di
     mapper.AddMember("status", &ground_vehicle_t::status, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_READ_ONLY);
     mapper.AddMember("mode", &ground_vehicle_t::mode, DATA_TYPE_UINT32, "", "1=learning; Commands[2=start, 3=resume, 4=clear&start, 5=stop&save, 6=cancel]");
     mapper.AddMember2("wheelConfig.bits", offsetof(ground_vehicle_t, wheelConfig.bits), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray2("wheelConfig.transform.e_b2w", offsetof(ground_vehicle_t, wheelConfig.transform.e_b2w), DATA_TYPE_F32, 3, "rad", "Euler angle rotation from imu (body) to wheel frame (center of non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("wheelConfig.transform.e_b2w_sigma", offsetof(ground_vehicle_t, wheelConfig.transform.e_b2w_sigma), DATA_TYPE_F32, 3, "rad", "Standard deviation of Euler angles describing rotation from imu (body) to wheel frame (center of non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("wheelConfig.transform.t_b2w", offsetof(ground_vehicle_t, wheelConfig.transform.t_b2w), DATA_TYPE_F32, 3, "m", "Translation from imu (body) to wheel frame origin (center of non-steering axle), expressed in imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("wheelConfig.transform.t_b2w_sigma", offsetof(ground_vehicle_t, wheelConfig.transform.t_b2w_sigma), DATA_TYPE_F32, 3, "m", "Standard deviation of translation from imu (body) to wheel frame origin (center of non-steering axle), expressed in imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("wheelConfig.transform.e_b2w", offsetof(ground_vehicle_t, wheelConfig.transform.e_b2w), DATA_TYPE_F32, 3, { "rad" }, { "Euler angle rotation from imu (body) to wheel frame (center of non-steering axle)" }, DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("wheelConfig.transform.e_b2w_sigma", offsetof(ground_vehicle_t, wheelConfig.transform.e_b2w_sigma), DATA_TYPE_F32, 3, { "rad" }, { "Standard deviation of Euler angles describing rotation from imu (body) to wheel frame (center of non-steering axle)" }, DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("wheelConfig.transform.t_b2w", offsetof(ground_vehicle_t, wheelConfig.transform.t_b2w), DATA_TYPE_F32, 3, { "m" }, { "Translation from imu (body) to wheel frame origin (center of non-steering axle), expressed in imu (body) frame" }, DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("wheelConfig.transform.t_b2w_sigma", offsetof(ground_vehicle_t, wheelConfig.transform.t_b2w_sigma), DATA_TYPE_F32, 3, { "m" }, { "Standard deviation of translation from imu (body) to wheel frame origin (center of non-steering axle), expressed in imu (body) frame" }, DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember2("wheelConfig.track_width", offsetof(ground_vehicle_t, wheelConfig.track_width), DATA_TYPE_F32, "m", "Distance between left and right wheels");
     mapper.AddMember2("wheelConfig.radius", offsetof(ground_vehicle_t, wheelConfig.radius), DATA_TYPE_F32, "m", "Wheel radius");
 }
@@ -535,8 +535,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("ser0BaudRate", &nvm_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
     mapper.AddMember("ser1BaudRate", &nvm_flash_cfg_t::ser1BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 1 baud rate");
     mapper.AddMember("ser2BaudRate", &nvm_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
-    mapper.AddVec3Rpy("insRotation", offsetof(nvm_flash_cfg_t,insRotation), DATA_TYPE_F32, SYM_DEG, "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: yaw, pitch, roll.", 0, C_RAD2DEG);
-    mapper.AddVec3Xyz("insOffset", offsetof(nvm_flash_cfg_t,insOffset), DATA_TYPE_F32, "m", "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.");
+    mapper.AddVec3Rpy("insRotation", offsetof(nvm_flash_cfg_t, insRotation), DATA_TYPE_F32, SYM_DEG, "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: yaw, pitch, roll.", 0, C_RAD2DEG);
+    mapper.AddVec3Xyz("insOffset", offsetof(nvm_flash_cfg_t, insOffset), DATA_TYPE_F32, "m", "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.");
     mapper.AddVec3Xyz("gps1AntOffset", offsetof(nvm_flash_cfg_t,gps1AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS1 antenna.");
     mapper.AddVec3Xyz("gps2AntOffset", offsetof(nvm_flash_cfg_t,gps2AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS2 antenna.");
 
@@ -575,15 +575,14 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
 	mapper.AddMember("magInterferenceThreshold", &nvm_flash_cfg_t::magInterferenceThreshold, DATA_TYPE_F32, "", "Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection.");
 	mapper.AddMember("magCalibrationQualityThreshold", &nvm_flash_cfg_t::magCalibrationQualityThreshold, DATA_TYPE_F32, "", "Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good.");
     str = "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: heading, pitch, roll.";
-    mapper.AddArray("zeroVelRotation", &nvm_flash_cfg_t::zeroVelRotation, DATA_TYPE_F32, 3, SYM_DEG, "Roll, pitch, yaw " + str, 0, C_RAD2DEG);
-    // Do not change `zeroVelOffset` registration from mapper.AddArray() to mapper.AddVec3Xyz() as it is used in a ci test.  
+    mapper.AddArray("zeroVelRotation", &nvm_flash_cfg_t::zeroVelRotation, DATA_TYPE_F32, 3, {SYM_DEG}, {"Roll, pitch, yaw " + str}, 0, C_RAD2DEG);
     str = "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.";
-    mapper.AddArray("zeroVelOffset", &nvm_flash_cfg_t::zeroVelOffset, DATA_TYPE_F32, 3, "m", "X,Y,Z " + str);
+    mapper.AddArray("zeroVelOffset", &nvm_flash_cfg_t::zeroVelOffset, DATA_TYPE_F32, 3, {"m"}, {"X,Y,Z " + str}, 0, C_RAD2DEG);
     mapper.AddMember2("wheelConfig.bits", offsetof(nvm_flash_cfg_t, wheelConfig.bits), DATA_TYPE_UINT32, "", "Wheel encoder config bits: 0x1 enable encoders, 0x2 kinematic constraints", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray2("wheelConfig.transform.e_b2w", offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w), DATA_TYPE_F32, 3, "rad", "Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
-    mapper.AddArray2("wheelConfig.transform.e_b2w_sigma", offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w_sigma), DATA_TYPE_F32, 3, "m", "Standard deviation of Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
-    mapper.AddArray2("wheelConfig.transform.t_b2w", offsetof(nvm_flash_cfg_t, wheelConfig.transform.t_b2w), DATA_TYPE_F32, 3, "m", "Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("wheelConfig.transform.t_b2w_sigma", offsetof(nvm_flash_cfg_t, wheelConfig.transform.t_b2w_sigma), DATA_TYPE_F32, 3, "rad", "Standard deviation of translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("wheelConfig.transform.e_b2w", offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w), DATA_TYPE_F32, 3, {"rad"}, {"Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)"}, DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddArray2("wheelConfig.transform.e_b2w_sigma", offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w_sigma), DATA_TYPE_F32, 3, {"rad"}, {"Standard deviation of Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)"}, DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddArray2("wheelConfig.transform.t_b2w", offsetof(nvm_flash_cfg_t, wheelConfig.transform.t_b2w), DATA_TYPE_F32, 3, {"m"}, {"Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame"}, DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("wheelConfig.transform.t_b2w_sigma", offsetof(nvm_flash_cfg_t, wheelConfig.transform.t_b2w_sigma), DATA_TYPE_F32, 3, {"rad"}, {"Standard deviation of translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame"}, DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember2("wheelConfig.track_width", offsetof(nvm_flash_cfg_t, wheelConfig.track_width), DATA_TYPE_F32, "m", "Distance between the left and right wheels");
     mapper.AddMember2("wheelConfig.radius", offsetof(nvm_flash_cfg_t, wheelConfig.radius), DATA_TYPE_F32, "m", "Wheel radius");
     mapper.AddMember("debug", &nvm_flash_cfg_t::debug, DATA_TYPE_UINT8);
@@ -629,10 +628,10 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("ser1BaudRate", &gpx_flash_cfg_t::ser1BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 1 baud rate");
     mapper.AddMember("ser2BaudRate", &gpx_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
     mapper.AddMember("startupGPSDtMs", &gpx_flash_cfg_t::startupGPSDtMs, DATA_TYPE_UINT32, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
-    str = "offset from Sensor Frame origin to GPS1 antenna.";
-    mapper.AddArray("gps1AntOffset", &gpx_flash_cfg_t::gps1AntOffset, DATA_TYPE_F32, 3, "m", "X " + str);
-    str = "offset from Sensor Frame origin to GPS2 antenna.";
-    mapper.AddArray("gps2AntOffset", &gpx_flash_cfg_t::gps2AntOffset, DATA_TYPE_F32, 3, "m", "X " + str);
+    str = " offset from Sensor Frame origin to GPS1 antenna.";
+    mapper.AddArray("gps1AntOffset", &gpx_flash_cfg_t::gps1AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
+    str = " offset from Sensor Frame origin to GPS2 antenna.";
+    mapper.AddArray("gps2AntOffset", &gpx_flash_cfg_t::gps2AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
     mapper.AddMember("gnssSatSigConst", &gpx_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("dynamicModel", &gpx_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist");
     mapper.AddMember("debug", &gpx_flash_cfg_t::debug, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_DISPLAY_HEX);
@@ -711,7 +710,7 @@ static void PopulateMapEvbStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<evb_status_t> mapper(data_set, did);
     mapper.AddMember("week", &evb_status_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("timeOfWeekMs", &evb_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("firmwareVer", &evb_status_t::firmwareVer, DATA_TYPE_UINT8, 4, "", "Firmware version", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("firmwareVer", &evb_status_t::firmwareVer, DATA_TYPE_UINT8, 4, {""}, {"Firmware version"}, DATA_FLAGS_READ_ONLY);
     mapper.AddMember("evbStatus", &evb_status_t::evbStatus, DATA_TYPE_UINT32, "", "EVB status bits", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("loggerMode", &evb_status_t::loggerMode, DATA_TYPE_UINT32, "", std::to_string(EVB2_LOG_CMD_START) + "=start, " + std::to_string(EVB2_LOG_CMD_STOP) + "=stop");
     mapper.AddMember("loggerElapsedTimeMs", &evb_status_t::loggerElapsedTimeMs, DATA_TYPE_UINT32, "ms", "Elapsed time of the current data log.");
@@ -730,7 +729,7 @@ static void PopulateMapEvbFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
         + to_string(EVB2_CB_PRESET_USB_HUB_RS422) + "=USB hub w/ RS422";
     mapper.AddMember("cbPreset", &evb_flash_cfg_t::cbPreset, DATA_TYPE_UINT8, "", str);
     mapper.AddArray("reserved1", &evb_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 3);
-    mapper.AddArray("cbf", &evb_flash_cfg_t::cbf, DATA_TYPE_UINT32, EVB2_PORT_COUNT, "", "Communications bridge forwarding", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddArray("cbf", &evb_flash_cfg_t::cbf, DATA_TYPE_UINT32, EVB2_PORT_COUNT, {""}, {"Communications bridge forwarding"}, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("cbOptions", &evb_flash_cfg_t::cbOptions, DATA_TYPE_UINT32, "", "Communications bridge options (see eEvb2ComBridgeOptions)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("uinsComPort", &evb_flash_cfg_t::uinsComPort, DATA_TYPE_UINT8, "", "EVB port for uINS communications and SD card logging. 0=uINS0 (default), 1=uINS1, SP330=5, 6=GPIO_H8 (use eEvb2CommPorts)");
     mapper.AddMember("uinsAuxPort", &evb_flash_cfg_t::uinsAuxPort, DATA_TYPE_UINT8, "", "EVB port for uINS aux com and RTK corrections. 0=uINS0, 1=uINS1 (default), 5=SP330, 6=GPIO_H8 (use eEvb2CommPorts)");
@@ -748,7 +747,7 @@ static void PopulateMapEvbFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
 
     for (int i=0; i<NUM_WIFI_PRESETS; i++)
     {
-        mapper.AddArray2 ("server" + to_string(i) + ".ipAddr", i*sizeof(evb_server_t) + offsetof(evb_flash_cfg_t, server[0].ipAddr.u8), DATA_TYPE_UINT8, 4, "", "Server IP address");
+        mapper.AddArray2("server" + to_string(i) + ".ipAddr", i*sizeof(evb_server_t) + offsetof(evb_flash_cfg_t, server[0].ipAddr.u8), DATA_TYPE_UINT8, 4, {""}, {"Server IP address"});
         mapper.AddMember2("server" + to_string(i) + ".port",   i*sizeof(evb_server_t) + offsetof(evb_flash_cfg_t, server[0].port), DATA_TYPE_UINT32, "", "Sever port");
     }
 
@@ -772,8 +771,8 @@ static void PopulateMapDebugArray(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<debug_array_t> mapper(data_set, did);
     mapper.AddArray("i", &debug_array_t::i, DATA_TYPE_INT32, DEBUG_I_ARRAY_SIZE);
-    mapper.AddArray("f", &debug_array_t::f, DATA_TYPE_F32, DEBUG_F_ARRAY_SIZE, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("lf", &debug_array_t::lf, DATA_TYPE_F64, DEBUG_LF_ARRAY_SIZE, "", "", DATA_FLAGS_FIXED_DECIMAL_9);
+    mapper.AddArray("f", &debug_array_t::f, DATA_TYPE_F32, DEBUG_F_ARRAY_SIZE, {""}, {""}, DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("lf", &debug_array_t::lf, DATA_TYPE_F64, DEBUG_LF_ARRAY_SIZE, {""}, {""}, DATA_FLAGS_FIXED_DECIMAL_9);
 }
 
 static void PopulateMapDebugString(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -946,7 +945,7 @@ static void PopulateMapGpsRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gps_rtk_rel_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gps_rtk_rel_t::timeOfWeekMs, DATA_TYPE_UINT32,  "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("baseToRoverVector", &gps_rtk_rel_t::baseToRoverVector, DATA_TYPE_F32, 3, "m", "Vector from base to rover in ECEF.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddArray("baseToRoverVector", &gps_rtk_rel_t::baseToRoverVector, DATA_TYPE_F32, 3, {"m"}, {"Vector from base to rover in ECEF."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("differentialAge", &gps_rtk_rel_t::differentialAge, DATA_TYPE_F32, "s", "Age of differential signal received.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("arRatio", &gps_rtk_rel_t::arRatio, DATA_TYPE_F32, "", "Ambiguity resolution ratio factor for validation.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("baseToRoverDistance", &gps_rtk_rel_t::baseToRoverDistance, DATA_TYPE_F32, "", "baseToRoverDistance (m)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
@@ -960,8 +959,8 @@ static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<gps_rtk_misc_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gps_rtk_misc_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("timeToFirstFixMs", &gps_rtk_misc_t::timeToFirstFixMs, DATA_TYPE_UINT32, "ms", "Time to first RTK fix", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("accuracyPos", &gps_rtk_misc_t::accuracyPos, DATA_TYPE_F32, 3, "m", "Accuracy in meters north, east, up (standard deviation)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("accuracyCov", &gps_rtk_misc_t::accuracyCov, DATA_TYPE_F32, 3, "m", "Absolute value of means square root of estimated covariance NE, EU, UN", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("accuracyPos", &gps_rtk_misc_t::accuracyPos, DATA_TYPE_F32, 3, {"m"}, {"Accuracy in meters north, east, up (standard deviation)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("accuracyCov", &gps_rtk_misc_t::accuracyCov, DATA_TYPE_F32, 3, {"m"}, {"Absolute value of means square root of estimated covariance NE, EU, UN"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("arThreshold", &gps_rtk_misc_t::arThreshold, DATA_TYPE_F32, "", "Ambiguity resolution threshold for validation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("gDop", &gps_rtk_misc_t::gDop, DATA_TYPE_F32, "m", "Geomatic dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("hDop", &gps_rtk_misc_t::hDop, DATA_TYPE_F32, "m", "Horizontal dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1146,18 +1145,18 @@ static void PopulateMapSensorsADC(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("time", &sys_sensors_adc_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);    
     for (int i=0; i<NUM_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("imu" + to_string(i) + ".pqr",   i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].pqr), DATA_TYPE_F32, 3, "LSB", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddArray2("imu" + to_string(i) + ".acc",   i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].acc), DATA_TYPE_F32, 3, "LSB", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddArray2("imu" + to_string(i) + ".pqr",   i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].pqr), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddArray2("imu" + to_string(i) + ".acc",   i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].acc), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
         mapper.AddMember2("imu" + to_string(i) + ".temp", i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].temp), DATA_TYPE_F32, "LSB", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     }
     for (int i=0; i<NUM_MAG_DEVICES; i++)
     {
-        mapper.AddArray2("mag" + to_string(i) + ".mag", i*sizeof(sensors_mag_t) + offsetof(sys_sensors_adc_t, mag[0].mag), DATA_TYPE_F32, 3, "LSB", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddArray2("mag" + to_string(i) + ".mag", i*sizeof(sensors_mag_t) + offsetof(sys_sensors_adc_t, mag[0].mag), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     }
     mapper.AddMember("bar", &sys_sensors_adc_t::bar, DATA_TYPE_F32, "kPa", "Barometric pressure", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("barTemp", &sys_sensors_adc_t::barTemp, DATA_TYPE_F32, SYM_DEG_C, "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("humidity", &sys_sensors_adc_t::humidity, DATA_TYPE_F32, "%rH", "Relative humidity, 0%-100%", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray("ana", &sys_sensors_adc_t::ana, DATA_TYPE_F32, NUM_ANA_CHANNELS, "V", "ADC analog 0 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("ana", &sys_sensors_adc_t::ana, DATA_TYPE_F32, NUM_ANA_CHANNELS, {"V"}, {"ADC analog 0 input voltage"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapSensorsWTemp(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1168,13 +1167,13 @@ static void PopulateMapSensorsWTemp(data_set_t data_set[DID_COUNT], uint32_t did
     mapper.AddMember2("imu3.status", offsetof(sensors_w_temp_t, imu3.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     for (int i=0; i<NUM_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "", flags, C_RAD2DEG);
-        mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "", flags);
+        mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
+        mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Uncalibrated sensor output."}, flags);
     }
-    mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, 3, SYM_DEG_C, "Uncalibrated sensor output.", flags);
+    mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, 3, {SYM_DEG_C}, {"Uncalibrated sensor output."}, flags);
     for (int i=0; i<NUM_MAG_DEVICES; i++)
     {
-        mapper.AddArray2("mag" + to_string(i) + ".xyz", i*sizeof(mag_xyz_t) + offsetof(sensors_w_temp_t, mag[0].xyz), DATA_TYPE_F32, 3, "", "", flags);
+        mapper.AddArray2("mag" + to_string(i) + ".xyz", i*sizeof(mag_xyz_t) + offsetof(sensors_w_temp_t, mag[0].xyz), DATA_TYPE_F32, 3, {""}, {"Uncalibrated sensor output."}, flags);
     }
 }
 
@@ -1185,9 +1184,9 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GPS time of week (since Sunday morning).");
     for (int i=0; i<NUM_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("pqr" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].pqr), DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Temperature compensation bias", flags);
-        mapper.AddArray2("acc" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].acc), DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Temperature compensation bias", flags);
-        mapper.AddArray2("mag" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].mag), DATA_TYPE_F32, 3, "", "Temperature compensation bias", flags);
+        mapper.AddArray2("pqr" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Temperature compensation bias"}, flags);
+        mapper.AddArray2("acc" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Temperature compensation bias"}, flags);
+        mapper.AddArray2("mag" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].mag), DATA_TYPE_F32, 3, {""}, {"Temperature compensation bias"}, flags);
     }
 }
 
@@ -1205,11 +1204,11 @@ static void PopulateMapInl2MagObsInfo(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember("magInsHdgDelta", &inl2_mag_obs_info_t::magInsHdgDelta, DATA_TYPE_F32, "deg", "Difference between magHdg and insHdg", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE);
     mapper.AddMember("nis", &inl2_mag_obs_info_t::nis, DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_5);
     mapper.AddMember("nis_threshold", &inl2_mag_obs_info_t::nis_threshold, DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray("Wcal", &inl2_mag_obs_info_t::Wcal, DATA_TYPE_F32, 9, "", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("Wcal", &inl2_mag_obs_info_t::Wcal, DATA_TYPE_F32, 9, {""}, {""}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("activeCalSet", &inl2_mag_obs_info_t::activeCalSet, DATA_TYPE_UINT32, "", "Active calibration set (0 or 1)");
     mapper.AddMember("magHdgOffset", &inl2_mag_obs_info_t::magHdgOffset, DATA_TYPE_F32, "deg", "Offset from mag heading to ins heading estimate", DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("Tcal", &inl2_mag_obs_info_t::Tcal, DATA_TYPE_F32, "", "Scaled computed variance of calibrated magnetometer samples. Above 5 is bad.", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray("bias_cal", &inl2_mag_obs_info_t::bias_cal, DATA_TYPE_F32, 3, "", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
+    mapper.AddArray("bias_cal", &inl2_mag_obs_info_t::bias_cal, DATA_TYPE_F32, 3, {""}, {""}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
 
 static void PopulateMapInl2States(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1217,11 +1216,11 @@ static void PopulateMapInl2States(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<inl2_states_t> mapper(data_set, did);
     int flags = DATA_FLAGS_FIXED_DECIMAL_4;
     mapper.AddMember("timeOfWeek", &inl2_states_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", flags);
-    mapper.AddArray("qe2b", &inl2_states_t::qe2b, DATA_TYPE_F32, 4, "", "Quaternion rotation from ECEF to body frame", flags);
-    mapper.AddArray("ve", &inl2_states_t::ve, DATA_TYPE_F32, 3, "m/s", "Velocity in ECEF frame", flags);
-    mapper.AddArray("ecef", &inl2_states_t::ecef, DATA_TYPE_F64, 3, "m", "Position in ECEF frame", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray("biasPqr", &inl2_states_t::biasPqr, DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Gyro bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
-    mapper.AddArray("biasAcc", &inl2_states_t::biasAcc, DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Accelerometer bias", flags);
+    mapper.AddArray("qe2b", &inl2_states_t::qe2b, DATA_TYPE_F32, 4, {""}, {"Quaternion rotation from ECEF to body frame"}, flags);
+    mapper.AddArray("ve", &inl2_states_t::ve, DATA_TYPE_F32, 3, {"m/s"}, {"Velocity in ECEF frame"}, flags);
+    mapper.AddArray("ecef", &inl2_states_t::ecef, DATA_TYPE_F64, 3, {"m"}, {"Position in ECEF frame"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("biasPqr", &inl2_states_t::biasPqr, DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Gyro bias"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
+    mapper.AddArray("biasAcc", &inl2_states_t::biasAcc, DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Accelerometer bias"}, flags);
     mapper.AddMember("biasBaro", &inl2_states_t::biasBaro, DATA_TYPE_F32, "m", "Barometer bias", flags);
     mapper.AddMember("magDec", &inl2_states_t::magDec, DATA_TYPE_F32, SYM_DEG, "Magnetic declination", flags, C_RAD2DEG);
     mapper.AddMember("magInc", &inl2_states_t::magInc, DATA_TYPE_F32, SYM_DEG, "Magnetic inclination", flags, C_RAD2DEG);
@@ -1232,11 +1231,11 @@ static void PopulateMapInl2NedSigma(data_set_t data_set[DID_COUNT], uint32_t did
     DataMapper<inl2_ned_sigma_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5;
     mapper.AddMember("timeOfWeekMs", &inl2_ned_sigma_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("StdAttNed", &inl2_ned_sigma_t::StdAttNed, DATA_TYPE_F32, 3, SYM_DEG, "NED attitude error standard deviation", flags, C_RAD2DEG);
-    mapper.AddArray("StdVelNed", &inl2_ned_sigma_t::StdVelNed, DATA_TYPE_F32, 3, "m/s", "NED velocity error standard deviation", flags);
-    mapper.AddArray("StdPosNed", &inl2_ned_sigma_t::StdPosNed, DATA_TYPE_F32, 3, "m", "NED position error standard deviation", flags);
-    mapper.AddArray("StdAccBias", &inl2_ned_sigma_t::StdAccBias, DATA_TYPE_F32, 3, SYM_M_PER_S_2, "Acceleration bias error standard deviation", flags);
-    mapper.AddArray("StdGyrBias", &inl2_ned_sigma_t::StdGyrBias, DATA_TYPE_F32, 3, SYM_DEG, "Angular rate bias error standard deviation", flags, C_RAD2DEG);
+    mapper.AddArray("StdAttNed", &inl2_ned_sigma_t::StdAttNed, DATA_TYPE_F32, 3, {SYM_DEG}, {"NED attitude error standard deviation"}, flags, C_RAD2DEG);
+    mapper.AddArray("StdVelNed", &inl2_ned_sigma_t::StdVelNed, DATA_TYPE_F32, 3, {"m/s"}, {"NED velocity error standard deviation"}, flags);
+    mapper.AddArray("StdPosNed", &inl2_ned_sigma_t::StdPosNed, DATA_TYPE_F32, 3, {"m"}, {"NED position error standard deviation"}, flags);
+    mapper.AddArray("StdAccBias", &inl2_ned_sigma_t::StdAccBias, DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Acceleration bias error standard deviation"}, flags);
+    mapper.AddArray("StdGyrBias", &inl2_ned_sigma_t::StdGyrBias, DATA_TYPE_F32, 3, {SYM_DEG}, {"Angular rate bias error standard deviation"}, flags, C_RAD2DEG);
     mapper.AddMember("StdBarBias", &inl2_ned_sigma_t::StdBarBias, DATA_TYPE_F32, "m", "Barometric altitude bias error standard deviation", flags);
     mapper.AddMember("StdMagDeclination", &inl2_ned_sigma_t::StdMagDeclination, DATA_TYPE_F32, SYM_DEG, "Mag declination error standard deviation", flags, C_RAD2DEG);
 }
@@ -1249,8 +1248,8 @@ static void PopulateMapRosCovariancePoseTwist(data_set_t data_set[DID_COUNT], ui
     DataMapper<ros_covariance_pose_twist_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5;
     mapper.AddMember("timeOfWeek", &ros_covariance_pose_twist_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", flags);
-    mapper.AddArray("covPoseLD", &ros_covariance_pose_twist_t::covPoseLD, DATA_TYPE_F32, 21, COV_POSE_UNITS, "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
-    mapper.AddArray("covTwistLD", &ros_covariance_pose_twist_t::covTwistLD, DATA_TYPE_F32, 21, COV_TWIST_UNITS, "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    mapper.AddArray("covPoseLD", &ros_covariance_pose_twist_t::covPoseLD, DATA_TYPE_F32, 21, {COV_POSE_UNITS}, {"EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames"}, flags);
+    mapper.AddArray("covTwistLD", &ros_covariance_pose_twist_t::covTwistLD, DATA_TYPE_F32, 21, {COV_TWIST_UNITS}, {"EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames"}, flags);
 }
 
 #if PLATFORM_IS_EMBEDDED

@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __ISDATAMAPPINGS_H_
 
 #include <string>
+#include <vector>
 #include <map>
 #include <inttypes.h>
 #include "com_manager.h"
@@ -89,8 +90,8 @@ typedef struct
 	uint32_t    elementSize;	// Element size in bytes
 	eDataFlags  flags;
 	std::string name;
-	std::string units;			// Units (after conversion)
-	std::string description;
+	std::vector<std::string> units;			// Units (after conversion)
+	std::vector<std::string> description;
 	double conversion;			// Unit conversion when converting to string
 } data_info_t;
 
@@ -232,8 +233,8 @@ public:
             elementSize,
             eDataFlags(flags), 
             name, 
-            units, 
-            description, 
+            std::vector<std::string>{units}, 
+            std::vector<std::string>{description}, 
             conversion 
         };
 
@@ -257,20 +258,33 @@ public:
 		}
     }
 
-    template <typename MemberType>
+	template <typename MemberType>
 	void AddArray(const std::string& name, 
 		MemberType member,
 		eDataType type,
 		uint32_t arraySize,
-		const std::string& units = "", 
-		const std::string& description = "",
-        int flags = 0,
+		const std::vector<std::string>& units = {},
+		const std::vector<std::string>& description = {},
+		int flags = 0,
 		double conversion = 1.0) 	
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
 		uint32_t size = (uint32_t)sizeof(FieldType);
 		uint32_t elementSize = size/arraySize;
+
+		std::vector<std::string> unitsCopy = units;
+		if (unitsCopy.size() && unitsCopy.size() < arraySize)
+		{	// Extend the units vector to match the array size
+			std::string lastUnit = unitsCopy.empty() ? "" : unitsCopy.back();
+			unitsCopy.resize(arraySize, lastUnit);
+		}
+		std::vector<std::string> descriptionCopy = description;
+		if (descriptionCopy.size() && descriptionCopy.size() < arraySize)
+		{	// Extend the description vector to match the array size
+			std::string lastDesc = descriptionCopy.empty() ? "" : descriptionCopy.back();
+			descriptionCopy.resize(arraySize, lastDesc);
+		}
 
         // Populate the map with the new entry
         ds.nameToInfo[name] = { 
@@ -281,8 +295,8 @@ public:
 			elementSize,
             eDataFlags(flags),
             name, 
-            units, 
-            description, 
+            unitsCopy, 
+            descriptionCopy, 
             conversion 
         };
 
@@ -329,8 +343,8 @@ public:
             elementSize,
             eDataFlags(flags), 
             name, 
-            units, 
-            description, 
+            std::vector<std::string>{units}, 
+            std::vector<std::string>{description}, 
             conversion 
         };
 
@@ -358,8 +372,8 @@ public:
 		uint32_t offset,
 		eDataType type,
 		uint32_t arraySize,
-		const std::string& units = "", 
-		const std::string& description = "",
+		const std::vector<std::string>& units = {},
+		const std::vector<std::string>& description = {},
         int flags = 0,
 		double conversion = 1.0,
 		uint32_t typeSize = 0)
@@ -367,6 +381,19 @@ public:
 		uint32_t elementSize = (typeSize ? typeSize : s_eDataTypeSize[type]);
 		uint32_t size = elementSize * arraySize;
 
+		std::vector<std::string> unitsCopy = units;
+		if (unitsCopy.size() && unitsCopy.size() < arraySize)
+		{	// Extend the units vector to match the array size
+			std::string lastUnit = unitsCopy.empty() ? "" : unitsCopy.back();
+			unitsCopy.resize(arraySize, lastUnit);
+		}
+		std::vector<std::string> descriptionCopy = description;
+		if (descriptionCopy.size() && descriptionCopy.size() < arraySize)
+		{	// Extend the description vector to match the array size
+			std::string lastDesc = descriptionCopy.empty() ? "" : descriptionCopy.back();
+			descriptionCopy.resize(arraySize, lastDesc);
+		}
+		
         // Populate the map with the new entry
         ds.nameToInfo[name] = { 
             offset,
@@ -375,10 +402,10 @@ public:
 			arraySize,
 			elementSize,
             eDataFlags(flags),
-            name, 
-            units, 
-            description, 
-            conversion 
+            name,
+            unitsCopy,
+            descriptionCopy,
+            conversion
         };
 
         // Add the entry to the index
@@ -410,43 +437,9 @@ public:
     {
 		eDataType type = DATA_TYPE_F64;
 		flags &= ~DATA_FLAGS_FIXED_DECIMAL_MASK;
-		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, "°", description + " latitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
-		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, "°", description + " longitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
-		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, "m", description + " " + descriptionAltitude, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+		AddArray2(name, offset, type, 3, {"°", "°", "m"}, {description + " latitude", description + " longitude", description + " " + descriptionAltitude}, flags | DATA_FLAGS_FIXED_DECIMAL_8);
 	}
-
-	void AddVec3(const std::string& name, 
-		uint32_t offset,
-		eDataType type,
-		const std::string& units = "",
-		const std::string& description1 = "",
-		const std::string& description2 = "",
-		const std::string& description3 = "",
-		int flags = 0,
-		double conversion = 1.0)
-    {
-		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, units, description1, flags, conversion);
-		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, units, description2, flags, conversion);
-		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, units, description3, flags, conversion);
-	}
-
-	void AddVec4(const std::string& name, 
-		uint32_t offset,
-		eDataType type,
-		const std::string& units = "",
-		const std::string& description1 = "",
-		const std::string& description2 = "",
-		const std::string& description3 = "",
-		const std::string& description4 = "",
-		int flags = 0,
-		double conversion = 1.0)
-    {
-		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, units, description1, flags, conversion);
-		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, units, description2, flags, conversion);
-		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, units, description3, flags, conversion);
-		AddMember2(name + "[3]", offset + 3*s_eDataTypeSize[type], type, units, description4, flags, conversion);
-	}
-
+	
 	void AddVec3Xyz(const std::string& name, 
 		uint32_t offset,
 		eDataType type,
@@ -455,7 +448,7 @@ public:
 		int flags = 0,
 		double conversion = 1.0)
 	{
-		AddVec3(name, offset, type, units, "X "+description, "Y "+description, "Z "+description, flags, conversion);
+		AddArray2(name, offset, type, 3, {units}, {"X "+description, "Y "+description, "Z "+description}, flags, conversion);
 	}
 
 	void AddVec3Rpy(const std::string& name, 
@@ -466,7 +459,7 @@ public:
 		int flags = 0,
 		double conversion = 1.0)
 	{
-		AddVec3(name, offset, type, units, "Roll "+description, "Pitch "+description, "Yaw "+description, flags, conversion);
+		AddArray2(name, offset, type, 3, {units}, {"Roll "+description, "Pitch "+description, "Yaw "+description}, flags, conversion);
 	}
 
 private:
