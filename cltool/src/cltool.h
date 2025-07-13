@@ -130,6 +130,8 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     
     uint32_t setDidDid;	
     std::string setDidString;
+    bool imxflashCfgSet;
+    bool gpxflashCfgSet;
     std::string imxFlashCfg;
     std::string gpxFlashCfg;
     uint32_t timeoutFlushLoggerSeconds;
@@ -170,7 +172,6 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
 void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
-bool cltool_setDidFromString(InertialSense& inertialSenseInterface, std::string flashCfg, uint32_t did, uint8_t* dataPtr);
 
 #endif // __CLTOOL_H__
 

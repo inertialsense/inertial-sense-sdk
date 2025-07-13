@@ -247,9 +247,9 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         if (data->hdr.id == g_commandLineOptions.outputOnceDid)
         {   
             // Print the data to terminal
-            string output = cISDataMappings::DidToString(data->hdr.id, data->ptr, g_commandLineOptions.outputOnceFields);
-            if (output.empty())
-            {   // No data to print
+            string output;
+            if (!cISDataMappings::DidToString(data->hdr.id, data->ptr, output, g_commandLineOptions.outputOnceFields))
+            {   // Error parsing
                 output = "Error parsing: " + g_commandLineOptions.outputOnceFields + "\n";
             }
             cout << output;
@@ -519,7 +519,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
 
     bool exitNow = false;
-    if (g_commandLineOptions.imxFlashCfg.length() != 0)
+    if (g_commandLineOptions.imxflashCfgSet)
     {
         if (!cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
         {   // Exit cltool now and report error code
@@ -527,7 +527,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         }
         exitNow = true;
     }
-    if (g_commandLineOptions.gpxFlashCfg.length() != 0)
+    if (g_commandLineOptions.gpxflashCfgSet)
     {
         if (!cltool_updateGpxFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg))
         {   // Exit cltool now and report error code
@@ -745,12 +745,12 @@ static int cltool_createHost()
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
         return -1;
     }
-    else if (g_commandLineOptions.imxFlashCfg.length() != 0 && !cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
+    else if (g_commandLineOptions.imxflashCfgSet && !cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
     {
         cout << "Failed to update IMX flash config" << endl;
         return -1;
     }
-    else if (g_commandLineOptions.gpxFlashCfg.length() != 0 && !cltool_updateGpxFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg))
+    else if (g_commandLineOptions.gpxflashCfgSet && !cltool_updateGpxFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg))
     {
         cout << "Failed to update GPX flash config" << endl;
         return -1;

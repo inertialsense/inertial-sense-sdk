@@ -455,28 +455,34 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-flashCfg="))
         {
+            g_commandLineOptions.imxflashCfgSet = true;
             g_commandLineOptions.imxFlashCfg = &a[10];
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            std::replace(g_commandLineOptions.imxFlashCfg.begin(), g_commandLineOptions.imxFlashCfg.end(), '|', ',');     // Replace '|' with ',' to match the expected format
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-imxFlashCfg="))
         {
+            g_commandLineOptions.imxflashCfgSet = true;
             g_commandLineOptions.imxFlashCfg = &a[13];
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            std::replace(g_commandLineOptions.imxFlashCfg.begin(), g_commandLineOptions.imxFlashCfg.end(), '|', ',');     // Replace '|' with ',' to match the expected format
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-flashCfg") || startsWith(a, "-imxFlashCfg"))
         {
-            g_commandLineOptions.imxFlashCfg = ".";
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            g_commandLineOptions.imxflashCfgSet = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-gpxFlashCfg="))
         {
+            g_commandLineOptions.gpxflashCfgSet = true;
             g_commandLineOptions.gpxFlashCfg = &a[13];
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            std::replace(g_commandLineOptions.gpxFlashCfg.begin(), g_commandLineOptions.gpxFlashCfg.end(), '|', ',');     // Replace '|' with ',' to match the expected format
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-gpxFlashCfg"))
         {
-            g_commandLineOptions.gpxFlashCfg = ".";
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            g_commandLineOptions.gpxflashCfgSet = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-hi") || startsWith(a, "--hi"))
         {
@@ -1087,7 +1093,29 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
     }
     nvm_flash_cfg_t imxFlashCfg;
     inertialSenseInterface.ImxFlashConfig(imxFlashCfg);
-    return cltool_setDidFromString(inertialSenseInterface, flashCfgString, DID_FLASH_CONFIG, (uint8_t*)&imxFlashCfg);
+
+    bool success = false;
+    if (flashCfgString.find('=') != std::string::npos)
+    {   // Write to flash config
+        success = cISDataMappings::StringToDid(DID_FLASH_CONFIG, flashCfgString, (uint8_t*)&imxFlashCfg);
+
+        inertialSenseInterface.SetImxFlashConfig(imxFlashCfg);  
+        inertialSenseInterface.WaitForImxFlashCfgSynced();
+    }
+    else
+    {   // Read from flash config
+        string output;
+        if (cISDataMappings::DidToString(DID_FLASH_CONFIG, (uint8_t*)&imxFlashCfg, output, flashCfgString))
+        {
+            cout << output;
+        }
+        else
+        {
+            cout << "Failed to read flash config." << endl;
+        }
+    }
+
+    return success;
 }
 
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
@@ -1099,49 +1127,29 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
     }
     gpx_flash_cfg_t gpxFlashCfg;
     inertialSenseInterface.GpxFlashConfig(gpxFlashCfg);
-    return cltool_setDidFromString(inertialSenseInterface, flashCfgString, DID_GPX_FLASH_CFG, (uint8_t*)&gpxFlashCfg);
-}
 
-bool cltool_setDidFromString(InertialSense& inertialSenseInterface, string flashCfgString, uint32_t did, uint8_t* dataPtr)
-{
     bool success = false;
 
-    if (flashCfgString.length() < 2)
-    {   // Read and display entire flash config
-        // string str = cISDataMappings::DidToString(did, dataPtr);
-        // if (str.length() > 0)
-        // {
-        //     cout << str;
-        //     success = true;
-        // }
+    if (flashCfgString.find('=') != std::string::npos)
+    {   // Write to flash config
+        success = cISDataMappings::StringToDid(DID_GPX_FLASH_CFG, flashCfgString, (uint8_t*)&gpxFlashCfg);
+
+        inertialSenseInterface.SetGpxFlashConfig(gpxFlashCfg);
+        g_gpxFlashCfg_upload = gpxFlashCfg; // Save for later use
+        inertialSenseInterface.WaitForGpxFlashCfgSynced();
     }
     else
-    {   // Read or write specific flash config parameters
-        // cISDataMappings::SetReadDidString(did, flashCfgString, dataPtr);
-
-        bool modified = false;
-        if (modified)
-        {   // Upload flash config
-            nvm_flash_cfg_t *imxFlashCfg;
-            gpx_flash_cfg_t *gpxFlashCfg;
-            switch (did)
-            {
-            case DID_FLASH_CONFIG:  
-                imxFlashCfg = (nvm_flash_cfg_t*)dataPtr; 
-                inertialSenseInterface.SetImxFlashConfig(*imxFlashCfg);  
-                inertialSenseInterface.WaitForImxFlashCfgSynced();
-                break;
-
-            case DID_GPX_FLASH_CFG: 
-                gpxFlashCfg = (gpx_flash_cfg_t*)dataPtr; 
-                inertialSenseInterface.SetGpxFlashConfig(*gpxFlashCfg);
-                g_gpxFlashCfg_upload = *gpxFlashCfg; // Save for later use
-                inertialSenseInterface.WaitForGpxFlashCfgSynced();
-                break;
-            }
+    {   // Read from flash config
+        string output;
+        if (cISDataMappings::DidToString(DID_GPX_FLASH_CFG, (uint8_t*)&gpxFlashCfg, output, flashCfgString))
+        {
+            cout << output;
+        }
+        else
+        {
+            cout << "Failed to read flash config." << endl;
         }
     }
 
-    // Successfully read/wrote flash config
     return success;
 }

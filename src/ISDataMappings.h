@@ -598,15 +598,24 @@ public:
 
 	/**
 	 * @brief Convert a data set to a string representation
+	 * 
 	 * @param did the data ID
 	 * @param dataPtr pointer to the data buffer
-	 * @param fieldName optional field name print only one field
-	 * @return std::string the string representation of the data set
+	 * @param output the string representation of the data set
+	 * @param fields optional fields to include in the output
+	 * @return true if successful, false if error
 	 */
-	static std::string DidToString(int did, uint8_t* dataPtr, std::string fields);
-	static bool StringToDid(int did, const std::string& fields, uint8_t* dataPtr);
+	static bool DidToString(int did, const uint8_t* dataPtr, std::string &output, std::string fields);
 
-	static int ExtractArrayIndex(std::string &str);
+	/**
+	* Convert a data set to a string representation
+	* @param did the data ID
+	* @param dataPtr pointer to the data buffer
+	* @param output the string representation of the data set
+	* @param fields optional fields to include in the output
+	* @return true if successful, false if error
+	*/
+	static bool StringToDid(int did, const std::string& fields, uint8_t* dataPtr);
 
 	/**
 	* Get a timestamp from data if available
@@ -635,6 +644,8 @@ public:
 	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
 protected:
+	static int ExtractArrayIndex(std::string &str);
+
 	static const char* const m_dataIdNames[];
 
 	data_set_t m_data_set[DID_COUNT];
