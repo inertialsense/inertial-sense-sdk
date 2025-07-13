@@ -1097,7 +1097,7 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
     bool success = false;
     if (flashCfgString.find('=') != std::string::npos)
     {   // Write to flash config
-        success = cISDataMappings::StringToDid(DID_FLASH_CONFIG, flashCfgString, (uint8_t*)&imxFlashCfg);
+        success = cISDataMappings::StringToDidBuffer(DID_FLASH_CONFIG, flashCfgString, (uint8_t*)&imxFlashCfg);
 
         inertialSenseInterface.SetImxFlashConfig(imxFlashCfg);  
         inertialSenseInterface.WaitForImxFlashCfgSynced();
@@ -1105,7 +1105,7 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
     else
     {   // Read from flash config
         string output;
-        if (cISDataMappings::DidToString(DID_FLASH_CONFIG, (uint8_t*)&imxFlashCfg, output, flashCfgString))
+        if (cISDataMappings::DidBufferToString(DID_FLASH_CONFIG, (uint8_t*)&imxFlashCfg, output, flashCfgString))
         {
             cout << output;
         }
@@ -1132,7 +1132,7 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
 
     if (flashCfgString.find('=') != std::string::npos)
     {   // Write to flash config
-        success = cISDataMappings::StringToDid(DID_GPX_FLASH_CFG, flashCfgString, (uint8_t*)&gpxFlashCfg);
+        success = cISDataMappings::StringToDidBuffer(DID_GPX_FLASH_CFG, flashCfgString, (uint8_t*)&gpxFlashCfg);
 
         inertialSenseInterface.SetGpxFlashConfig(gpxFlashCfg);
         g_gpxFlashCfg_upload = gpxFlashCfg; // Save for later use
@@ -1141,7 +1141,7 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
     else
     {   // Read from flash config
         string output;
-        if (cISDataMappings::DidToString(DID_GPX_FLASH_CFG, (uint8_t*)&gpxFlashCfg, output, flashCfgString))
+        if (cISDataMappings::DidBufferToString(DID_GPX_FLASH_CFG, (uint8_t*)&gpxFlashCfg, output, flashCfgString))
         {
             cout << output;
         }

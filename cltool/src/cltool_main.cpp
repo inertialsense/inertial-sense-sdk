@@ -248,7 +248,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         {   
             // Print the data to terminal
             string output;
-            if (!cISDataMappings::DidToString(data->hdr.id, data->ptr, output, g_commandLineOptions.outputOnceFields))
+            if (!cISDataMappings::DidBufferToString(data->hdr.id, data->ptr, output, g_commandLineOptions.outputOnceFields))
             {   // Error parsing
                 output = "Error parsing: " + g_commandLineOptions.outputOnceFields + "\n";
             }
@@ -268,7 +268,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
             int size = cISDataMappings::DataSize(data->hdr.id);
             copyDataPToStructP(&dataset, data, size);
             uDatasets newSet = dataset;
-            if (!cISDataMappings::StringToDid(did, g_commandLineOptions.setDidString, (uint8_t*)&newSet))
+            if (!cISDataMappings::StringToDidBuffer(did, g_commandLineOptions.setDidString, (uint8_t*)&newSet))
             {   // Exit cltool now and report success code
                 std::exit(0);
             }

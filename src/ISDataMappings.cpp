@@ -1987,7 +1987,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
 }
 
 
-bool cISDataMappings::DidToString(int did, const uint8_t* dataPtr, string &output, std::string fields)
+bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string &output, std::string fields)
 {
     std::ostringstream oss, ossHdr;
     const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
@@ -2102,7 +2102,7 @@ bool cISDataMappings::DidToString(int did, const uint8_t* dataPtr, string &outpu
 }
 
 
-bool cISDataMappings::StringToDid(int did, const std::string& fields, uint8_t* dataPtr)
+bool cISDataMappings::StringToDidBuffer(int did, const std::string& fields, uint8_t* dataPtr)
 {
     const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
     if (!dataPtr || dataSetMap.empty())

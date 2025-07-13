@@ -597,25 +597,24 @@ public:
 	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
 
 	/**
-	 * @brief Convert a data set to a string representation
-	 * 
+	 * @brief Convert a did data set buffer to a string representation
+	 *
 	 * @param did the data ID
-	 * @param dataPtr pointer to the data buffer
+	 * @param dataPtr pointer to the did buffer
 	 * @param output the string representation of the data set
 	 * @param fields optional fields to include in the output
 	 * @return true if successful, false if error
 	 */
-	static bool DidToString(int did, const uint8_t* dataPtr, std::string &output, std::string fields);
+	static bool DidBufferToString(int did, const uint8_t* dataPtr, std::string &output, std::string fields="");
 
 	/**
-	* Convert a data set to a string representation
+	* Convert a string representation to a did data set buffer
 	* @param did the data ID
-	* @param dataPtr pointer to the data buffer
-	* @param output the string representation of the data set
 	* @param fields optional fields to include in the output
+	* @param dataPtr pointer to the did buffer
 	* @return true if successful, false if error
 	*/
-	static bool StringToDid(int did, const std::string& fields, uint8_t* dataPtr);
+	static bool StringToDidBuffer(int did, const std::string& fields, uint8_t* dataPtr);
 
 	/**
 	* Get a timestamp from data if available
