@@ -1993,18 +1993,27 @@ string cISDataMappings::DidToString(int did, uint8_t* dataPtr, std::string field
     const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
     data_mapping_string_t stringBuffer;
 
-    // Parse comma-delimited list of fields (e.g., theta[1],insStatus)
-    std::set<std::string> requestedFields;
-    std::map<std::string, int> arrayOverrides;
-    if (!fields.empty())
+    // Build a map: baseFieldName → list of requested indices (-1 = entire array)
+    std::map<std::string, std::set<int>> requested;
+    bool showAll = fields.empty();
+
+    if (!showAll)
     {
         std::vector<std::string> splitFields;
         splitString(fields, ',', splitFields);
-        for (std::string& f : splitFields)
+
+        for (std::string f : splitFields)
         {
-            int index = ExtractArrayIndex(f);  // Parses and strips [n] if present
-            arrayOverrides[f] = index;         // If index == -1, means "entire array"
-            requestedFields.insert(f);         // f is now just the field name
+            std::string base = f;
+            int index = ExtractArrayIndex(base);  // base is mutated to strip [n]
+            if (index >= 0)
+            {
+                requested[base].insert(index);  // Request specific element
+            }
+            else
+            {
+                requested[base].insert(-1);     // Special marker: request full array or scalar
+            }
         }
     }
 
@@ -2012,50 +2021,72 @@ string cISDataMappings::DidToString(int did, uint8_t* dataPtr, std::string field
     {
         const data_info_t& info = entry.second;
 
-        // If a field list was specified, skip fields not in the list
-        if (!requestedFields.empty() && requestedFields.find(info.name) == requestedFields.end())
+        if (!showAll)
         {
-            continue;
-        }
-
-        // Check if an index override is specified for this field (e.g., theta[1])
-        int forcedIndex = -1;
-        auto it = arrayOverrides.find(info.name);
-        if (it != arrayOverrides.end())
-        {
-            forcedIndex = it->second;
-        }
-
-        if (info.arraySize > 0)
-        {
-            if (forcedIndex >= 0)
+            auto it = requested.find(info.name);
+            if (it == requested.end())
             {
-                if (forcedIndex >= int(info.arraySize))
+                continue;  // Not requested
+            }
+
+            const std::set<int>& indices = it->second;
+
+            if (info.arraySize > 0)
+            {
+                if (indices.count(-1))  // Full array requested
                 {
-                    oss << info.name << "[" << forcedIndex << "] = <invalid index>" << std::endl;
+                    for (int i = 0; i < int(info.arraySize); i++)
+                    {
+                        if (DataToString(info, nullptr, dataPtr, stringBuffer, i))
+                        {
+                            oss << info.name << "[" << i << "] = " << stringBuffer << std::endl;
+                        }
+                    }
                 }
-                else if (DataToString(info, NULL, dataPtr, stringBuffer, forcedIndex))
+                else
                 {
-                    oss << info.name << "[" << forcedIndex << "] = " << stringBuffer << std::endl;
+                    for (int idx : indices)
+                    {
+                        if (idx < 0 || idx >= int(info.arraySize))
+                        {
+                            oss << info.name << "[" << idx << "] = <invalid index>" << std::endl;
+                            continue;
+                        }
+
+                        if (DataToString(info, nullptr, dataPtr, stringBuffer, idx))
+                        {
+                            oss << info.name << "[" << idx << "] = " << stringBuffer << std::endl;
+                        }
+                    }
                 }
             }
             else
             {
-                // Print entire array
-                for (int i = 0; i < int(info.arraySize); i++)
+                if (DataToString(info, nullptr, dataPtr, stringBuffer))
                 {
-                    if (DataToString(info, NULL, dataPtr, stringBuffer, i))
-                    {
-                        oss << info.name << "[" << i << "] = " << stringBuffer << std::endl;
-                    }
+                    oss << info.name << " = " << stringBuffer << std::endl;
                 }
             }
         }
         else
         {
-            if (DataToString(info, NULL, dataPtr, stringBuffer))
+            // No filtering, dump all
+            if (info.arraySize > 0)
             {
-                oss << info.name << " = " << stringBuffer << std::endl;
+                for (int i = 0; i < int(info.arraySize); i++)
+                {
+                    if (DataToString(info, nullptr, dataPtr, stringBuffer, i))
+                    {
+                        oss << info.name << "[" << i << "] = " << stringBuffer << std::endl;
+                    }
+                }
+            }
+            else
+            {
+                if (DataToString(info, nullptr, dataPtr, stringBuffer))
+                {
+                    oss << info.name << " = " << stringBuffer << std::endl;
+                }
             }
         }
     }
@@ -2143,16 +2174,18 @@ bool cISDataMappings::StringToDid(int did, const std::string& fields, uint8_t* d
 
 
 // Return the index into an array if specified and remove from string.  i.e. `insOffset[2]` returns 2 and str is reduced to `insOffset`.
-int cISDataMappings::ExtractArrayIndex(const std::string &str)
-{    
+int cISDataMappings::ExtractArrayIndex(std::string& str)
+{
     int arrayIndex = -1;
     size_t openBracketPos  = str.find('[');
     size_t closeBracketPos = str.find(']');
-    if (openBracketPos != std::string::npos && closeBracketPos != std::string::npos && openBracketPos < closeBracketPos) 
-    {   // Extract array index
+
+    if (openBracketPos != std::string::npos && closeBracketPos != std::string::npos && openBracketPos < closeBracketPos)
+    {
         std::string indexStr = str.substr(openBracketPos + 1, closeBracketPos - openBracketPos - 1);
         arrayIndex = std::stoi(indexStr);
-    } 
+        str = str.substr(0, openBracketPos);  // Strip the "[n]" part from the name
+    }
 
     return arrayIndex;
 }

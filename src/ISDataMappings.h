@@ -606,7 +606,7 @@ public:
 	static std::string DidToString(int did, uint8_t* dataPtr, std::string fields);
 	static bool StringToDid(int did, const std::string& fields, uint8_t* dataPtr);
 
-	static int ExtractArrayIndex(const std::string &str);
+	static int ExtractArrayIndex(std::string &str);
 
 	/**
 	* Get a timestamp from data if available
