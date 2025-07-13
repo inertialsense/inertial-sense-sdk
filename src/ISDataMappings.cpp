@@ -1994,7 +1994,7 @@ string cISDataMappings::DidToString(int did, uint8_t* dataPtr, std::string field
     const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
     data_mapping_string_t stringBuffer;
 
-    // Parse pipe-delimited list of fields if specified
+    // Parse comma-delimited list of fields (e.g., theta[1],insStatus)
     std::set<std::string> requestedFields;
     std::map<std::string, int> arrayOverrides;
     if (!fields.empty())
@@ -2003,9 +2003,9 @@ string cISDataMappings::DidToString(int did, uint8_t* dataPtr, std::string field
         splitString(fields, ',', splitFields);
         for (std::string& f : splitFields)
         {
-            int index = ExtractArrayIndex(f);  // Parses and strips array index if present
-            arrayOverrides[f] = index;         // If index == -1 → full array
-            requestedFields.insert(f);         // `f` has brackets stripped
+            int index = ExtractArrayIndex(f);  // Parses and strips [n] if present
+            arrayOverrides[f] = index;         // If index == -1, means "entire array"
+            requestedFields.insert(f);         // f is now just the field name
         }
     }
 
@@ -2013,22 +2013,21 @@ string cISDataMappings::DidToString(int did, uint8_t* dataPtr, std::string field
     {
         const data_info_t& info = entry.second;
 
+        // If a field list was specified, skip fields not in the list
         if (!requestedFields.empty() && requestedFields.find(info.name) == requestedFields.end())
         {
-            continue;  // Skip unrequested fields
+            continue;
         }
 
-        // int arrayLimit = info.arraySize;
+        // Check if an index override is specified for this field (e.g., theta[1])
         int forcedIndex = -1;
-
-        // Handle optional single element access: theta[1] etc.
         auto it = arrayOverrides.find(info.name);
         if (it != arrayOverrides.end())
         {
             forcedIndex = it->second;
         }
 
-        if (info.arraySize)
+        if (info.arraySize > 0)
         {
             if (forcedIndex >= 0)
             {
@@ -2043,6 +2042,7 @@ string cISDataMappings::DidToString(int did, uint8_t* dataPtr, std::string field
             }
             else
             {
+                // Print entire array
                 for (int i = 0; i < int(info.arraySize); i++)
                 {
                     if (DataToString(info, NULL, dataPtr, stringBuffer, i))
