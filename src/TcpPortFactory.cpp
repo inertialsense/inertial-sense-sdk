@@ -10,9 +10,10 @@
 #include <arpa/inet.h>
 #endif
 
+#include <netdb.h>
 #include <iostream>
-#include <regex>
 #include "PortManager.h"
+#include <util.h>
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
@@ -27,23 +28,45 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     }
 
     // Parse pName for address
-    const URL url = parseURL(pName);
+    const utils::URL url = utils::parseURL(pName);
     if (url.protocol != "tcp") {
         return nullptr;
     }
 
-    sockaddr addr = {};
-    sockaddr ipaddr = {};
+    sockaddr_storage addr = {};
+    sockaddr_storage ipaddr = {};
+    struct addrinfo hints = {}, *dns_addr;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
     if (inet_pton(AF_INET, url.address.c_str(), &ipaddr)) {
-        addr.sa_family = AF_INET;
+        addr.ss_family = AF_INET;
         const auto ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
         ipv4->sin_port = htons(stoi(url.port));
         ipv4->sin_addr = *reinterpret_cast<in_addr*>(&ipaddr);
     } else if (inet_pton(AF_INET6, url.address.c_str(), &ipaddr)) {
-        addr.sa_family = AF_INET6;
+        addr.ss_family = AF_INET6;
         const auto ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
         ipv6->sin6_port = htons(stoi(url.port));
         ipv6->sin6_addr = *reinterpret_cast<in6_addr*>(&ipaddr);
+    } else if (getaddrinfo(url.address.c_str(), url.port.c_str(), &hints, &dns_addr) == 0) {
+        addr.ss_family = dns_addr->ai_family;
+        if (addr.ss_family == AF_INET) {
+            const auto ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
+            const auto ipv4_from_dns = reinterpret_cast<sockaddr_in*>(dns_addr->ai_addr);
+            ipv4->sin_family = ipv4_from_dns->sin_family;
+            ipv4->sin_port = ipv4_from_dns->sin_port;
+            ipv4->sin_addr = ipv4_from_dns->sin_addr;
+        } else if (addr.ss_family == AF_INET6) {
+            const auto ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
+            const auto ipv6_from_dns = reinterpret_cast<sockaddr_in6*>(dns_addr->ai_addr);
+            ipv6->sin6_family = ipv6_from_dns->sin6_family;
+            ipv6->sin6_port = ipv6_from_dns->sin6_port;
+            ipv6->sin6_flowinfo = ipv6_from_dns->sin6_flowinfo;
+            ipv6->sin6_addr = ipv6_from_dns->sin6_addr;
+            ipv6->sin6_scope_id = ipv6_from_dns->sin6_scope_id;
+        }
+        freeaddrinfo(dns_addr);
     } else {
         return nullptr;
     }
@@ -81,7 +104,7 @@ bool TcpPortFactory::releasePort(port_handle_t port) {
  * @return True if port can be created, false otherwise
  */
 bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
-    const URL url = parseURL(pName);
+    const utils::URL url = utils::parseURL(pName);
     if (url.protocol != "tcp") {
         return false;
     }
@@ -95,6 +118,13 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
         return true;
     }
     if (inet_pton(AF_INET6, url.address.c_str(), &addr)) {
+        return true;
+    }
+    struct addrinfo hints = {}, *dns_addr;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    if (getaddrinfo(url.address.c_str(), url.port.c_str(), &hints, &dns_addr) == 0) {
         return true;
     }
 
@@ -112,25 +142,4 @@ void TcpPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std:
     if (validatePort(pattern, PORT_TYPE__TCP | PORT_TYPE__COMM)) {
         portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, pattern);
     }
-}
-
-/**
- * Parse a URL into a TCPPortFactory::URL
- * @param pName URL to attempt to parse
- * @return TCPPortFactory:URL that represents the parsed URL
- */
-TcpPortFactory::URL TcpPortFactory::parseURL(const std::string& pName) {
-    std::regex regexp(R"(^([^:\/?#]+):\/\/:?([^\/ ]*)?:([^\/?#\D]*)\/?([^?#]*)?\??([^#]*)?#?(.*)?$)");
-    std::smatch match;
-    URL retval = {};
-    if (std::regex_search(pName, match, regexp)) {
-        retval.fullurl = match[0].str();
-        retval.protocol = match[1].str();
-        retval.address = match[2].str();
-        retval.port = match[3].str();
-        retval.path = match[4].str();
-        retval.params = match[5].str();
-        retval.tags = match[6].str();
-    }
-    return retval;
 }

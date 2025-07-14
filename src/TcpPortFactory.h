@@ -32,18 +32,6 @@ public:
 private:
     TcpPortFactory() = default;
     ~TcpPortFactory() = default;
-
-    struct URL {
-        std::string fullurl;
-        std::string protocol;
-        std::string address;
-        std::string port;
-        std::string path;
-        std::string params;
-        std::string tags;
-    };
-
-    static URL parseURL(const std::string& pName);
 };
 
 #endif //IS_SDK__TCP_PORT_FACTORY_H

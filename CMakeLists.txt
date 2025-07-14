@@ -49,6 +49,7 @@ list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
 # find_package(udev)
 find_library(UDEV_LIB udev)
+find_library(MDNS_LIB mdns PATHS src/mdns)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 

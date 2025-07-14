@@ -71,7 +71,7 @@ int tcpPortOpen(port_handle_t port) {
     }
 
     // Connect socket to remote
-    int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.generic));
+    int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.storage));
     if (retval != 0) {
         tcpPort->base.perror = errno;
         return -errno;
@@ -358,7 +358,7 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
  * @param name The name of the new port
  * @param ip The address and port to connect to over TCP
  */
-void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr* ip) {
+void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr_storage* ip) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     tcpPort->base.pnum = id;
     tcpPort->base.ptype = PORT_TYPE__TCP | PORT_TYPE__COMM | PORT_FLAG__VALID;
@@ -379,7 +379,7 @@ void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, co
 
     tcpPort->socket = -EBADF;
     tcpPort->name = strdup(name);
-    tcpPort->addr.generic = *ip;
+    tcpPort->addr.storage = *ip;
     tcpPort->blocking = blocking;
     tcpPort->blocking_internal = true;
 }

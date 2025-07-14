@@ -59,6 +59,7 @@ struct tcp_port_s
 #ifdef __unix__
         struct sockaddr_un UNIX;
 #endif
+        struct sockaddr_storage storage;
     } addr;
 
     bool blocking;
@@ -68,7 +69,7 @@ struct tcp_port_s
 typedef struct tcp_port_s tcp_port_t;
 #define TCP_PORT(n)  ((tcp_port_t*)n)
 
-void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr* ip);
+void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr_storage* ip);
 void tcpPortDelete(port_handle_t port);
 int tcpPortSetBlocking(port_handle_t port, bool blocking);
 
