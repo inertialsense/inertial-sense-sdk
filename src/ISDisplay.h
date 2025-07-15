@@ -144,7 +144,10 @@ public:
 	void StopEditing();
 	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
 	edit_data_t *EditData() { return &m_editData; }
-	void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
+	void setOutputOnceDid(std::vector<uint32_t> did) 
+	{ 
+		m_outputOnceDid = did; m_interactiveMode = did.empty(); 
+	}
 	void SetSerialPort(serial_port_t* port) { m_port = port; }
 	void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
 
@@ -163,7 +166,7 @@ private:
 	double m_replaySpeedX = 1.0;
 
 	edit_data_t m_editData = {};
-	uint32_t m_outputOnceDid = 0;			// Set to DID to display then exit cltool.  0 = disabled
+	std::vector<uint32_t> m_outputOnceDid = {};			// Set to DID to display then exit cltool.  0 = disabled
 	bool m_interactiveMode = true;
     bool m_showRawHex = false;
 

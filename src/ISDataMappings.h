@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <vector>
 #include <map>
 #include <inttypes.h>
+#include <yaml-cpp/yaml.h>
 #include "com_manager.h"
 
 #include <type_traits>
@@ -606,6 +607,12 @@ public:
 	 * @return true if successful, false if error
 	 */
 	static bool DidBufferToString(int did, const uint8_t* dataPtr, std::string &output, std::string fields="");
+
+	// static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node &output, const YAML::Node fields = YAML::Node());
+	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output);
+	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter);
+
+	static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr);
 
 	/**
 	* Convert a string representation to a did data set buffer

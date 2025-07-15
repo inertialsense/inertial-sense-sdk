@@ -242,20 +242,46 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         return;
     }
 
-    if (g_commandLineOptions.outputOnceDid)
+    if (g_commandLineOptions.outputOnceDid.size() > 0)
     {   // Prevent processing of data if outputOnceDid is set
-        if (data->hdr.id == g_commandLineOptions.outputOnceDid)
-        {   
-            // Print the data to terminal
-            string output;
-            if (!cISDataMappings::DidBufferToString(data->hdr.id, data->ptr, output, g_commandLineOptions.outputOnceFields))
-            {   // Error parsing
-                output = "Error parsing: " + g_commandLineOptions.outputOnceFields + "\n";
+        for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); )
+        {
+            if (data->hdr.id == *it)
+            {
+                // Print the data to terminal
+                YAML::Node output;
+                if (!cISDataMappings::DataToYaml(data->hdr.id, data->ptr, output, g_commandLineOptions.getNode))
+                // if (!cISDataMappings::DataToYaml(data->hdr.id, data->ptr, output))
+                {
+                    cout << "Error parsing: " + g_commandLineOptions.outputOnceFields + "\n";
+                }
+                else
+                {
+                    YAML::Emitter out;
+                    out << output;
+                    if (out.good()) {
+                        std::cout << out.c_str() << std::endl;
+                    } else {
+                        std::cerr << "YAML emitter error: " << out.GetLastError() << std::endl;
+                    }
+                }
+
+                // Erase the matched DID from the vector and move to next
+                it = g_commandLineOptions.outputOnceDid.erase(it);
             }
-            cout << output;
+            else
+            {
+                ++it;
+            }
+        }
+
+        if (g_commandLineOptions.outputOnceDid.empty())
+        {
             // Exit cltool now and report success code
             std::exit(0);
+            return;
         }
+
         return; 
     }
 
@@ -923,7 +949,7 @@ static int cltool_dataStreaming()
                     g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
             // before we start, if we are doing a run-once, set a default runDurationMs, so we don't hang indefinitely
-            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDurationMs)
+            if (g_commandLineOptions.outputOnceDid.size() && !g_commandLineOptions.runDurationMs)
                 g_commandLineOptions.runDurationMs = 10000; // 10 second timeout, if none is specified
 
             // Main loop. Could be in separate thread if desired.

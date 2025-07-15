@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include <sstream>
+// #include <sstream>
 
 #include "ISDataMappings.h"
 #include "DataJSON.h"
@@ -1987,6 +1987,168 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
     return true;
 }
 
+bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output)
+{
+    return DataToYaml(did, dataPtr, output, YAML::Node());
+}
+
+bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter)
+{
+    const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
+    data_mapping_string_t stringBuffer;
+    YAML::Node list(YAML::NodeType::Sequence);
+
+    const std::string didName = cISDataMappings::DataName(did);
+    const YAML::Node didFilter = filter[didName];
+
+    bool showAll = !filter || filter.IsNull() || !filter[didName] || filter[didName].IsNull();
+
+    std::set<std::string> requestedFields;
+    std::map<std::string, std::set<int>> arrayIndices;  // array field → set of requested indices
+
+    // Parse field filters
+    if (!showAll && didFilter && didFilter.IsSequence())
+    {
+        auto insertField = [&](const std::string& name) {
+            std::string base = name;
+            int index = -1;
+
+            // Check for array index like "theta[2]"
+            auto openBracket = name.find('[');
+            auto closeBracket = name.find(']');
+            if (openBracket != std::string::npos && closeBracket != std::string::npos && closeBracket > openBracket)
+            {
+                base = name.substr(0, openBracket);
+                try {
+                    index = std::stoi(name.substr(openBracket + 1, closeBracket - openBracket - 1));
+                } catch (...) {
+                    // Ignore invalid index
+                }
+            }
+
+            requestedFields.insert(base);
+            if (index >= 0)
+                arrayIndices[base].insert(index);
+            else
+                arrayIndices[base].insert(-1);  // -1 means full array
+        };
+
+        for (const auto& entry : didFilter)
+        {
+            if (entry.IsScalar())
+            {
+                insertField(entry.as<std::string>());
+            }
+            else if (entry.IsMap() && entry.begin() != entry.end())
+            {
+                insertField(entry.begin()->first.as<std::string>());
+            }
+        }
+    }
+
+    // Generate filtered output
+    for (const auto& entry : dataSetMap)
+    {
+        const data_info_t& info = entry.second;
+
+        if (!showAll && requestedFields.find(info.name) == requestedFields.end())
+        {
+            continue;  // Not requested
+        }
+
+        if (info.arraySize > 0)
+        {
+            auto indicesIt = arrayIndices.find(info.name);
+            const std::set<int>& indices = indicesIt != arrayIndices.end() ? indicesIt->second : std::set<int>{-1};
+
+            for (int i = 0; i < static_cast<int>(info.arraySize); ++i)
+            {
+                bool include =
+                    showAll ||
+                    indices.count(-1) ||  // request for entire array
+                    indices.count(i);
+
+                if (include && DataToString(info, nullptr, dataPtr, stringBuffer, i))
+                {
+                    YAML::Node elem;
+                    elem[info.name + "[" + std::to_string(i) + "]"] = stringBuffer;
+                    list.push_back(elem);
+                }
+            }
+        }
+        else
+        {
+            if (DataToString(info, nullptr, dataPtr, stringBuffer))
+            {
+                YAML::Node elem;
+                elem[info.name] = stringBuffer;
+                list.push_back(elem);
+            }
+        }
+    }
+
+    if (list.size() > 0)
+    {
+        output[didName] = list;
+        return true;
+    }
+
+    return false;
+}
+
+bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr)
+{
+    const std::string didName = cISDataMappings::DataName(did);
+    const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
+    const YAML::Node& list = yaml[didName];
+
+    if (!list || !list.IsSequence()) {
+        return false;
+    }
+
+    for (const auto& item : list)
+    {
+        if (!item.IsMap() || item.begin() == item.end()) {
+            continue;
+        }
+
+        const auto& kv = *item.begin();
+        std::string name = kv.first.as<std::string>();
+        std::string value = kv.second.as<std::string>();  // Assume scalar string
+
+        // Parse array index if present (e.g. "theta[2]")
+        std::string baseName = name;
+        int index = -1;
+        auto open = name.find('[');
+        auto close = name.find(']');
+        if (open != std::string::npos && close != std::string::npos && close > open) {
+            baseName = name.substr(0, open);
+            try {
+                index = std::stoi(name.substr(open + 1, close - open - 1));
+            } catch (...) {
+                continue; // Invalid index
+            }
+        }
+
+        auto it = dataSetMap.find(baseName);
+        if (it == dataSetMap.end()) {
+            continue;  // Field not found
+        }
+
+        const data_info_t& info = it->second;
+
+        if (info.arraySize > 0) {
+            if (index < 0 || index >= static_cast<int>(info.arraySize)) {
+                continue;  // Invalid index for array
+            }
+            StringToData(value.c_str(), static_cast<int>(value.length()), nullptr, dataPtr, info, index);
+        } else {
+            StringToData(value.c_str(), static_cast<int>(value.length()), nullptr, dataPtr, info, 0);
+        }
+    }
+
+    return true;
+}
 
 bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string &output, std::string fields)
 {
@@ -2101,7 +2263,6 @@ bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string 
 
     return false;
 }
-
 
 bool cISDataMappings::StringToDidBuffer(int did, const std::string& fields, uint8_t* dataPtr)
 {

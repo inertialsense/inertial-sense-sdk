@@ -98,6 +98,75 @@ bool read_get_did_argument(string s, stream_did_t *dataset, std::string &fields)
     return false;
 }
 
+bool read_get_did_argument2(string s)
+{
+    // s = R"({DID_SYS_PARAMS: [timeOfWeekMs, sysStatus], DID_FLASH_CONFIG: [ioConfig, insOffset, "gps1AntOffset[1]"]})";
+    std::cout << "argv string: " << s << std::endl;
+
+    try {
+        g_commandLineOptions.getNode = YAML::Load(s);
+    } catch (const YAML::ParserException& e) {
+        std::cerr << "Parser error: " << e.what() << "\n";
+    } catch (const YAML::Exception& e) {
+        std::cerr << "General YAML error: " << e.what() << "\n";
+    }
+
+    // YAML::Emitter out;
+    // out << g_commandLineOptions.getNode;
+    // if (out.good()) {
+    //     std::string yamlStr = out.c_str();
+    //     std::cout << "YAML string:\n" << yamlStr << "\n";
+    // } else {
+    //     std::cerr << "Emitter error: " << out.GetLastError() << "\n";
+    // }
+
+    g_commandLineOptions.datasets.clear();
+
+    for (const auto& topLevel : g_commandLineOptions.getNode) 
+    {
+        const std::string& key = topLevel.first.as<std::string>();
+        const YAML::Node& list = topLevel.second;
+
+        // std::cout << "Top-level key: " << key << "\n";
+        // for (const auto& item : list) {
+        //     std::string value = item.as<std::string>();
+        //     std::cout << "  - " << value << "\n";
+        // }
+
+        stream_did_t dataset = {};
+        eDataIDs did = cISDataMappings::Did(key);
+
+        if (did > DID_NULL && did < DID_COUNT)
+        {   // DID is valid
+            
+        //     fields = "";
+        //     std::string::size_type pos = s.find('=');
+        //     if (pos != std::string::npos)
+        //     {   // Contains '=' specifying a specific field to get
+        //         fields = s.substr(pos + 1);
+                
+        //         // // Validate that the field exists
+        //         // const map_name_to_info_t* map = cISDataMappings::NameToInfoMap(did);
+        //     }
+
+            dataset.did = did;
+            dataset.periodMultiple = 0;
+
+            g_commandLineOptions.datasets.push_back(dataset);
+            g_commandLineOptions.outputOnceDid.push_back(dataset.did);
+        }
+
+    }
+
+    if (g_commandLineOptions.datasets.empty())
+    {
+        cout << "Invalid argument: " << s << endl;
+        return false;
+    }
+
+    return true;
+}
+
 bool read_did_argument(string s, stream_did_t *dataset)
 {
     eDataIDs did = cISDataMappings::Did(s);
@@ -179,7 +248,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
     g_commandLineOptions.surveyIn.minAccuracy = 0;
-    g_commandLineOptions.outputOnceDid = 0;
+    g_commandLineOptions.outputOnceDid.clear();
     g_commandLineOptions.setDidDid = 0;
     g_commandLineOptions.platformType = -1;
     g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;
@@ -211,30 +280,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
         }
-        else if (startsWith(a, "-getdid") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
-        {
-            stream_did_t dataset = {};
-            if (!read_get_did_argument(argv[++i], &dataset, g_commandLineOptions.outputOnceFields))    // use next argument
-            {
-                return false;
-            }
-            g_commandLineOptions.datasets.clear();              // Only query this one DID
-            g_commandLineOptions.datasets.push_back(dataset);
-            g_commandLineOptions.outputOnceDid = dataset.did;
-            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
-        }
-        else if (startsWith(a, "-setdid") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
-        {
-            stream_did_t dataset = {};
-            if (!read_get_did_argument(argv[++i], &dataset, g_commandLineOptions.setDidString))    // use next argument
-            {
-                return false;
-            }
-            g_commandLineOptions.datasets.clear();              // Only query this one DID
-            g_commandLineOptions.datasets.push_back(dataset);
-            g_commandLineOptions.setDidDid = dataset.did;
-            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
-        }
         else if (startsWith(a, "-chipEraseIMX"))
         {
             g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
@@ -261,19 +306,16 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // loop through next arguments that don't start with "-"
             {
                 i++;
-                if (g_commandLineOptions.outputOnceDid==0)
+                stream_did_t dataset = {};
+                if (read_did_argument(argv[i], &dataset))    // use next argument
                 {
-                    stream_did_t dataset = {};
-                    if (read_did_argument(argv[i], &dataset))    // use next argument
+                    if (dataset.periodMultiple == 0)
                     {
-                        if (dataset.periodMultiple == 0)
-                        {
-                            g_commandLineOptions.outputOnceDid = dataset.did;
-                            g_commandLineOptions.datasets.clear();
-                            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
-                        }
-                        g_commandLineOptions.datasets.push_back(dataset);
+                        g_commandLineOptions.outputOnceDid.push_back(dataset.did);
+                        g_commandLineOptions.datasets.clear();
+                        g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
                     }
+                    g_commandLineOptions.datasets.push_back(dataset);
                 }
             }
             enable_display_mode();
@@ -482,6 +524,26 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-gpxFlashCfg"))
         {
             g_commandLineOptions.gpxflashCfgSet = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
+        {
+            if (!read_get_did_argument2(argv[++i]))    // use next argument
+            {
+                return false;
+            }
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-set") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
+        {
+            stream_did_t dataset = {};
+            if (!read_get_did_argument(argv[++i], &dataset, g_commandLineOptions.setDidString))    // use next argument
+            {
+                return false;
+            }
+            g_commandLineOptions.datasets.clear();              // Only query this one DID
+            g_commandLineOptions.datasets.push_back(dataset);
+            g_commandLineOptions.setDidDid = dataset.did;
             enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-hi") || startsWith(a, "--hi"))
@@ -1019,11 +1081,11 @@ void cltool_outputUsage()
 
 	cout << endlbOn;
 	cout << "OPTIONS (IMX/GPX Messages)" << endl;
-	cout << "    -getdid <DID>[=<FIELD1>,<FIELD2>...]" << boldOff << "  Return value of the specified dataset. DID may be a number or name." << endlbOn;
-	cout << "                                        " << boldOff << "  Examples: `-getdid 4` or `-getdid DID_INS_1=timeOfWeek,insStatus,theta[1]`" << endlbOn;
-	cout << "    -setdid <DID>=<FIELD>=<VALUE>,[...] " << boldOff << "  Set values of the specified dataset. DID may be a number or name." << endlbOn;
-	cout << "                                        " << boldOff << "  Examples: `-setdid 12=gps1AntOffset[1]=0.8` or  " << endlbOn;
-	cout << "                                        " << boldOff << "            `-setdid DID_FLASH_CONFIG=gps1AntOffset[1]=0.8,ser2BaudRate=921600`,ioConfig=0x1a2b012c" << endlbOn;
+	cout << "    -get <DID>[=<FIELD1>,<FIELD2>...]" << boldOff << "  Return value of the specified dataset. DID may be a number or name." << endlbOn;
+	cout << "                                     " << boldOff << "  Examples: `-get 4` or `-get DID_INS_1=timeOfWeek,insStatus,theta[1]`" << endlbOn;
+	cout << "    -set <DID>=<FIELD>=<VALUE>,[...] " << boldOff << "  Set values of the specified dataset. DID may be a number or name." << endlbOn;
+	cout << "                                     " << boldOff << "  Examples: `-set 12=gps1AntOffset[1]=0.8` or  " << endlbOn;
+	cout << "                                     " << boldOff << "            `-set DID_FLASH_CONFIG=gps1AntOffset[1]=0.8,ser2BaudRate=921600`,ioConfig=0x1a2b012c" << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;

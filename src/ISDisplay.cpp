@@ -535,10 +535,10 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	}
 
     // if we are doing a onceDid for any other display type, and we got it, shutdown normally, ASAP, but not immediately...
-    if (m_outputOnceDid == data->hdr.id)
-    {
-        SetExitProgram();
-    }
+	if (std::find(m_outputOnceDid.begin(), m_outputOnceDid.end(), data->hdr.id) != m_outputOnceDid.end())
+	{
+		SetExitProgram();
+	}
 }
 
 // Print data to standard out at the following refresh rate.  Return true to refresh display.
