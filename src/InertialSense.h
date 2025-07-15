@@ -53,6 +53,7 @@ extern "C"
 class InertialSense;
 
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
+typedef std::function<void(InertialSense* i, p_ack_t* ack, unsigned char packetIdentifier, int pHandle)> pfnHandleAckData;
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pHandle);
 
 /**
@@ -69,6 +70,7 @@ public:
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
+        pfnHandleAckData binaryAckCallback;     // acknowledgment command and set data callback
 #define SIZE_BINARY_CALLBACK	256
         pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK];
         pfnStepLogFunction stepLogFunction;
@@ -96,6 +98,7 @@ public:
     */
     InertialSense(
             pfnHandleBinaryData    callbackIsb = NULL,
+            pfnHandleAckData       handlerAck = NULL,
             pfnIsCommAsapMsg       callbackRmc = NULL,
             pfnIsCommGenMsgHandler callbackNmea = NULL,
             pfnIsCommGenMsgHandler callbackUblox = NULL,
@@ -363,6 +366,15 @@ public:
     */
     bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
     bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
+
+    // Send only the modified portion of the data set.  Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
+    static bool SendDataSetChange(void *newData, void *curData, void *newData2, void *curData2, int did, int size, int pHandle = 0);
+    template <typename T>
+    static bool SendDataSetChangeTemplate(T* newData, T* curData, T* newData2, T* curData2, int did, int pHandle = 0)
+    {
+        static_assert(sizeof(T) % 4 == 0, "Struct must be a multiple of 4 bytes.");
+        return SendDataSetChange(newData, curData, newData2, curData2, did, sizeof(T), pHandle);
+    }
 
     /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 

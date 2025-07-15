@@ -104,6 +104,16 @@ static int staticProcessRxData(unsigned int port, p_data_t* data)
     return 0;
 }
 
+static int staticProcessAck(unsigned int port, p_ack_t* ack, unsigned char packetIdentifier)
+{
+    pfnHandleAckData handler = s_cm_state->binaryAckCallback;
+    if (handler != NULLPTR)
+    {
+        handler(s_cm_state->inertialSenseInterface, ack, packetIdentifier, port);
+    }
+    return 0;
+}
+
 static int staticProcessRxNmea(unsigned int port, const unsigned char* msg, int msgSize)
 {
     if ((size_t)port > s_cm_state->devices.size())
@@ -119,6 +129,7 @@ static int staticProcessRxNmea(unsigned int port, const unsigned char* msg, int 
 
 InertialSense::InertialSense(
         pfnHandleBinaryData    handlerIsb,
+        pfnHandleAckData       handlerAck,
         pfnIsCommAsapMsg       handlerRmc,
         pfnIsCommGenMsgHandler handlerNmea,
         pfnIsCommGenMsgHandler handlerUblox,
@@ -139,6 +150,7 @@ InertialSense::InertialSense(
         m_comManagerState.binaryCallback[i] = {};
     }
     m_comManagerState.binaryCallbackGlobal = handlerIsb;
+    m_comManagerState.binaryAckCallback = handlerAck;
     m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
     m_comManagerState.inertialSenseInterface = this;
     m_comManagerState.clientBuffer = m_clientBuffer;
@@ -1037,6 +1049,39 @@ bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     return !failure;
 }
 
+// Send only the modified portion of the data set.  Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
+bool InertialSense::SendDataSetChange(void *newData, void *curData, void *newData2, void *curData2, int did, int size, int pHandle)
+{
+    int iSize = size / 4;
+    uint32_t *newCfg = (uint32_t*)newData;
+    uint32_t *curCfg = (uint32_t*)curData;
+    uint32_t *newCfg2 = (uint32_t*)newData2;
+    uint32_t *curCfg2 = (uint32_t*)curData2;
+    bool failure = false, uploaded = false;
+
+    for (int i = 2; i < iSize; i++)     // Start with index 2 to exclude size and checksum
+    {
+        if (newCfg[i] != curCfg[i] && (newCfg2 == NULL || newCfg2[i] != curCfg2[i]))
+        {   // Found start
+            uint8_t *head = (uint8_t*)&(newCfg[i]);
+
+            // Search for end
+            for (; i < iSize && (newCfg[i] != curCfg[i] && (newCfg2 == NULL || newCfg2[i] != curCfg2[i])); i++);
+
+            // Found end
+            uint8_t *tail = (uint8_t*)&(newCfg[i]);
+            int size = tail-head;
+            int offset = head-((uint8_t*)newCfg);
+            
+            DEBUG_PRINT("Sending %s: size %d, offset %d\n", cISDataMappings::DataName(did), size, offset);
+            failure = failure || comManagerSendData(pHandle, head, did, size, offset);
+            uploaded = true;
+        }
+    }
+
+    return uploaded && !failure;
+}
+
 bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
@@ -1044,30 +1089,10 @@ bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
         return 0;
     }
     ISDevice& device = m_comManagerState.devices[pHandle];
-    
-    // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
-    static_assert(sizeof(gpx_flash_cfg_t) % 4 == 0, "Size of gpx_flash_cfg_t must be a 4 bytes in size!!!");
-    uint32_t *newCfg = (uint32_t*)&flashCfg;
-    uint32_t *curCfg = (uint32_t*)&device.gpxFlashCfg; 
-    int iSize = sizeof(gpx_flash_cfg_t) / 4;
-    bool failure = false;
-    for (int i = 2; i < iSize; i++)
+
+    if (SendDataSetChangeTemplate<gpx_flash_cfg_t>(&flashCfg, &device.gpxFlashCfg, NULL, NULL, DID_GPX_FLASH_CFG))
     {
-        if (newCfg[i] != curCfg[i])
-        {   // Found start
-            uint8_t *head = (uint8_t*)&(newCfg[i]);
-
-            // Search for end
-            for (; i < iSize && newCfg[i] != curCfg[i]; i++);
-
-            // Found end
-            uint8_t *tail = (uint8_t*)&(newCfg[i]);
-            int size = tail-head;
-            int offset = head-((uint8_t*)newCfg);
-            DEBUG_PRINT("Sending DID_GPX_FLASH_CFG: size %d, offset %d\n", size, offset);
-            failure = failure || comManagerSendData(pHandle, head, DID_GPX_FLASH_CFG, size, offset);
-            device.gpxFlashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
-        }
+        device.gpxFlashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
     }
 
     if (device.gpxFlashCfgUploadTimeMs == 0)
@@ -1080,13 +1105,14 @@ bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
     if (device.gpxFlashCfgUploadTimeMs)
     {
         device.gpxFlashCfgUploadChecksum = flashCfg.checksum;
+
+        // Update local copy of flash config
+        device.gpxFlashCfg = flashCfg;
+
+        return true;
     }
 
-    // Update local copy of flash config
-    device.gpxFlashCfg = flashCfg;
-
-    // Success
-    return !failure;
+    return false;
 }
 
 bool InertialSense::WaitForImxFlashCfgSynced(int pHandle)
@@ -1663,7 +1689,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     callbacks.sprtn = m_handlerSpartn;
     callbacks.error = m_handlerError;
     
-    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &callbacks) == -1) {    // Error
+    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, staticProcessAck, 0, &m_cmInit, m_cmPorts, &callbacks) == -1) {    // Error
         return false;
     }
 

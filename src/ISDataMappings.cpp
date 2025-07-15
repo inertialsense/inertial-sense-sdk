@@ -1556,7 +1556,7 @@ const char* cISDataMappings::DataName(uint32_t did)
 
 uint32_t cISDataMappings::Did(string s)
 {
-    // Try to use DID number
+    // Try to use DID numbers
     uint32_t did = strtol(s.c_str(), NULL, 10);
 
     if (did <= DID_NULL || did >= DID_COUNT)

@@ -136,9 +136,11 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     std::string gpxFlashCfg;
     uint32_t timeoutFlushLoggerSeconds;
     std::vector<uint32_t> outputOnceDid;	
+    std::vector<uint32_t> setAckDid;	
     std::string outputOnceFields;			// -getdid DID=FIELD
 
     YAML::Node getNode;
+    YAML::Node setNode;
     
     uint32_t sysCommand;
     int32_t platformType;

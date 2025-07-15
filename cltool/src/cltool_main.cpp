@@ -244,34 +244,37 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 
     if (g_commandLineOptions.outputOnceDid.size() > 0)
     {   // Prevent processing of data if outputOnceDid is set
-        for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); )
+
+        if (g_commandLineOptions.getNode && !g_commandLineOptions.getNode.IsNull() && g_commandLineOptions.getNode.size() > 0)
         {
-            if (data->hdr.id == *it)
+            for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); )
             {
-                // Print the data to terminal
-                YAML::Node output;
-                if (!cISDataMappings::DataToYaml(data->hdr.id, data->ptr, output, g_commandLineOptions.getNode))
-                // if (!cISDataMappings::DataToYaml(data->hdr.id, data->ptr, output))
+                if (data->hdr.id == *it)
                 {
-                    cout << "Error parsing: " + g_commandLineOptions.outputOnceFields + "\n";
+                    // Print the data to terminal
+                    YAML::Node output;
+                    if (!cISDataMappings::DataToYaml(data->hdr.id, data->ptr, output, g_commandLineOptions.getNode))
+                    {
+                        cout << "Error parsing: " << *it << "\n";
+                    }
+                    else
+                    {
+                        YAML::Emitter out;
+                        out << output;
+                        if (out.good()) {
+                            std::cout << out.c_str() << std::endl;
+                        } else {
+                            std::cerr << "YAML emitter error: " << out.GetLastError() << std::endl;
+                        }
+                    }
+
+                    // Erase the matched DID from the vector and move to next
+                    it = g_commandLineOptions.outputOnceDid.erase(it);
                 }
                 else
                 {
-                    YAML::Emitter out;
-                    out << output;
-                    if (out.good()) {
-                        std::cout << out.c_str() << std::endl;
-                    } else {
-                        std::cerr << "YAML emitter error: " << out.GetLastError() << std::endl;
-                    }
+                    ++it;
                 }
-
-                // Erase the matched DID from the vector and move to next
-                it = g_commandLineOptions.outputOnceDid.erase(it);
-            }
-            else
-            {
-                ++it;
             }
         }
 
@@ -283,38 +286,6 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         }
 
         return; 
-    }
-
-    if (g_commandLineOptions.setDidDid)
-    {   // Prevent processing of data if setDidDid is set
-        if (data->hdr.id == g_commandLineOptions.setDidDid)
-        {   
-            uDatasets dataset = {};
-            int did = data->hdr.id;
-            int size = cISDataMappings::DataSize(data->hdr.id);
-            copyDataPToStructP(&dataset, data, size);
-            uDatasets newSet = dataset;
-            if (!cISDataMappings::StringToDidBuffer(did, g_commandLineOptions.setDidString, (uint8_t*)&newSet))
-            {   // Exit cltool now and report success code
-                std::exit(0);
-            }
-            if (memcmp(&dataset, &newSet, size) == 0)
-            {   // Received matching dataset
-                cout << string(cISDataMappings::DataName(did)) << " is synced." << endl;
-
-                // Exit cltool now and report success code
-                std::exit(0);                
-            }
-                
-            // Upload the new dataset
-            cout << "Uploading " << string(cISDataMappings::DataName(did)) << endl;
-            if (g_inertialSenseInterface)
-            {
-                g_inertialSenseInterface->SendData(did, (uint8_t*)&newSet, size, 0);
-            }
-        }
-
-        return;
     }
 
     (void)i;
@@ -335,6 +306,36 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         g_inertialSenseDisplay.ProcessData(data);
 }
 
+static void cltool_ackCallback(InertialSense* i, p_ack_t* ack, unsigned char packetIdentifier, int pHandle)
+{
+    if (!g_enableDataCallback)
+    {   // Receive disabled
+        return;
+    }
+
+    if (g_commandLineOptions.setDidDid)
+    {   // Prevent processing of data if setDidDid is set
+        for (auto it = g_commandLineOptions.setAckDid.begin(); it != g_commandLineOptions.setAckDid.end(); )
+        {
+            if (ack->body.dataHdr.id == *it)
+            {   // Erase the matched DID from the vector and move to next
+                it = g_commandLineOptions.setAckDid.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+
+        if (g_commandLineOptions.setAckDid.empty())
+        {   // Exit cltool now and report success code
+            std::exit(0);
+            return;
+        }
+
+        return;
+    }
+}
 
 /**
  * requests any data which is not being actively received
@@ -545,6 +546,32 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
 
     bool exitNow = false;
+
+    if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
+    {
+        for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); ++it )
+        {
+            // Print the data to terminal
+            YAML::Node output;
+            uDatasets newD1 = {};
+            uDatasets newD2 = {};
+            memset(&newD2, 0xFF, sizeof(uDatasets));
+            uDatasets curD1 = newD1;
+            uDatasets curD2 = newD2;
+            int did = *it;
+            if (!cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&newD1) ||
+                !cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&newD2))
+            {
+                cout << "Error parsing: " << *it << "\n";
+                return false;
+            }
+            if (inertialSenseInterface.SendDataSetChange(&newD1, &curD1, &newD2, &curD2, did, cISDataMappings::DataSize(did)))
+            {
+                g_commandLineOptions.setAckDid.push_back(did);
+            }
+        }
+    }
+
     if (g_commandLineOptions.imxflashCfgSet)
     {
         if (!cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
@@ -862,7 +889,7 @@ static int cltool_dataStreaming()
 {
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface(cltool_dataCallback);
+    InertialSense inertialSenseInterface(cltool_dataCallback, cltool_ackCallback);
     g_inertialSenseInterface = &inertialSenseInterface;
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);

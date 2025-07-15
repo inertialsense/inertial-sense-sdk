@@ -98,69 +98,50 @@ bool read_get_did_argument(string s, stream_did_t *dataset, std::string &fields)
     return false;
 }
 
-bool read_get_did_argument2(string s)
+bool read_get_did_argument2(std::string s, YAML::Node &getNode)
 {
-    // s = R"({DID_SYS_PARAMS: [timeOfWeekMs, sysStatus], DID_FLASH_CONFIG: [ioConfig, insOffset, "gps1AntOffset[1]"]})";
-    std::cout << "argv string: " << s << std::endl;
-
     try {
-        g_commandLineOptions.getNode = YAML::Load(s);
+        getNode = YAML::Load(s);
     } catch (const YAML::ParserException& e) {
         std::cerr << "Parser error: " << e.what() << "\n";
+        return false;
     } catch (const YAML::Exception& e) {
         std::cerr << "General YAML error: " << e.what() << "\n";
+        return false;
     }
 
-    // YAML::Emitter out;
-    // out << g_commandLineOptions.getNode;
-    // if (out.good()) {
-    //     std::string yamlStr = out.c_str();
-    //     std::cout << "YAML string:\n" << yamlStr << "\n";
-    // } else {
-    //     std::cerr << "Emitter error: " << out.GetLastError() << "\n";
-    // }
-
     g_commandLineOptions.datasets.clear();
+    g_commandLineOptions.outputOnceDid.clear();
 
-    for (const auto& topLevel : g_commandLineOptions.getNode) 
+    YAML::Node newNode;
+
+    for (const auto& topLevel : getNode) 
     {
-        const std::string& key = topLevel.first.as<std::string>();
-        const YAML::Node& list = topLevel.second;
-
-        // std::cout << "Top-level key: " << key << "\n";
-        // for (const auto& item : list) {
-        //     std::string value = item.as<std::string>();
-        //     std::cout << "  - " << value << "\n";
-        // }
+        std::string key = topLevel.first.as<std::string>();
+        const YAML::Node& value = topLevel.second;
 
         stream_did_t dataset = {};
         eDataIDs did = cISDataMappings::Did(key);
 
         if (did > DID_NULL && did < DID_COUNT)
-        {   // DID is valid
-            
-        //     fields = "";
-        //     std::string::size_type pos = s.find('=');
-        //     if (pos != std::string::npos)
-        //     {   // Contains '=' specifying a specific field to get
-        //         fields = s.substr(pos + 1);
-                
-        //         // // Validate that the field exists
-        //         // const map_name_to_info_t* map = cISDataMappings::NameToInfoMap(did);
-        //     }
-
+        {
             dataset.did = did;
             dataset.periodMultiple = 0;
 
             g_commandLineOptions.datasets.push_back(dataset);
             g_commandLineOptions.outputOnceDid.push_back(dataset.did);
-        }
 
+            std::string canonicalName = cISDataMappings::DataName(did);
+            newNode[canonicalName] = value;
+        }
     }
+
+    // Update yaml node to ensure keys DID names instead of numbers 
+    g_commandLineOptions.getNode = newNode;
 
     if (g_commandLineOptions.datasets.empty())
     {
-        cout << "Invalid argument: " << s << endl;
+        std::cout << "Invalid argument: " << s << std::endl;
         return false;
     }
 
@@ -528,7 +509,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
         {
-            if (!read_get_did_argument2(argv[++i]))    // use next argument
+            if (!read_get_did_argument2(argv[++i], g_commandLineOptions.getNode))    // use next argument
             {
                 return false;
             }
@@ -536,14 +517,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-set") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
         {
-            stream_did_t dataset = {};
-            if (!read_get_did_argument(argv[++i], &dataset, g_commandLineOptions.setDidString))    // use next argument
+            if (!read_get_did_argument2(argv[++i], g_commandLineOptions.setNode))    // use next argument
             {
                 return false;
             }
-            g_commandLineOptions.datasets.clear();              // Only query this one DID
-            g_commandLineOptions.datasets.push_back(dataset);
-            g_commandLineOptions.setDidDid = dataset.did;
             enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-hi") || startsWith(a, "--hi"))
@@ -1081,11 +1058,12 @@ void cltool_outputUsage()
 
 	cout << endlbOn;
 	cout << "OPTIONS (IMX/GPX Messages)" << endl;
-	cout << "    -get <DID>[=<FIELD1>,<FIELD2>...]" << boldOff << "  Return value of the specified dataset. DID may be a number or name." << endlbOn;
-	cout << "                                     " << boldOff << "  Examples: `-get 4` or `-get DID_INS_1=timeOfWeek,insStatus,theta[1]`" << endlbOn;
-	cout << "    -set <DID>=<FIELD>=<VALUE>,[...] " << boldOff << "  Set values of the specified dataset. DID may be a number or name." << endlbOn;
-	cout << "                                     " << boldOff << "  Examples: `-set 12=gps1AntOffset[1]=0.8` or  " << endlbOn;
-	cout << "                                     " << boldOff << "            `-set DID_FLASH_CONFIG=gps1AntOffset[1]=0.8,ser2BaudRate=921600`,ioConfig=0x1a2b012c" << endlbOn;
+    cout << "    -get {<DID>: [<FIELD1>,<FIELD2>,...]}" << boldOff << " Return value of the specified dataset. DID may be a name or number." << endlbOn;
+    cout << "                                        " << boldOff << "  Examples: `-get {DID_INS_1}`" << endlbOn;
+    cout << "                                        " << boldOff << "  Examples: `-get {DID_INS_1: [{insStatus}, {\"theta[2]\"}], DID_INS_2: [{qn2b}]}`" << endlbOn;
+    cout << "    -set {<DID>: [{<FIELD1>: <VALUE>}, ...]}" << boldOff << "  Set values in the specified dataset. DID may be a number or name." << endlbOn;
+    cout << "                                        " << boldOff << "  Examples: `-set {DID_FLASH_CONFIG: [{\"gps1AntOffset[1]\": 0.8}]}`" << endlbOn;
+    cout << "                                        " << boldOff << "            `-set {12: [{\"ioConfig\": 0x1a2b012c}, {\"ser2BaudRate\": 921600}]}`" << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
