@@ -7,6 +7,7 @@
 
 #include "data_sets.h"
 #include "ISLogger.h"
+#include "filter.h"
 
 // 800 sample * 60 sec * 60 minutes * 12 hours
 //#define IN_DATA_MAX     100000
@@ -51,7 +52,7 @@ typedef struct inData {
     int gyY;
     int gyZ;
     double temperature;
-    double timeMs;
+    int timeMs;
 }inData_t;
 
 inData_t parsedData[IN_DATA_MAX];
@@ -95,7 +96,7 @@ int parseInputFile()
         parsedData[parseCnt].gyZ = stoi(subStrings[6]);
         parsedData[parseCnt].temperature = stod(subStrings[7]);
 
-        parsedData[parseCnt].timeMs = parseCnt * DELTA_TIME_MS;
+        parsedData[parseCnt].timeMs = parseCnt * DELTA_TIME_MS * 1000 + 1;
 
         if (parseCnt % 100000 == 1)
             cout << "Parsed line: " << parseCnt << ".\r\n";
@@ -108,25 +109,120 @@ int parseInputFile()
     return 0;
 }
 
-void setCurrentScomp(int i)
+#define O0_LP_FILTER_local(val,input,alph,beta)					(val = (((beta)*(val)) + ((alph)*(input))))
+
+// Low-pass filter
+void step_lpf_sens_comp(sensor_comp_unit_t& scu, float alpha, float beta, float temp, float input[3])
 {
-   // memset(&tmpScomp, 2, sizeof(sensor_compensation_t));
+    static uint32_t calStateLast = 1;
+
+    if (calStateLast != tmpScomp.calState)
+    {	// State change detected.  Initialize LPF.
+        calStateLast = tmpScomp.calState;
+
+        scu.lpfTemp = temp;
+
+        for (int i = 0; i < 3; i++)
+        {
+            scu.lpfLsb[i] = input[i];
+        }
+    }
+    else
+    {	// Low-pass filter sensor data
+        O0_LP_FILTER_local(scu.lpfTemp, temp, alpha, beta);
+
+        for (int i = 0; i < 3; i++)
+        {
+            O0_LP_FILTER_local(scu.lpfLsb[i], input[i], alpha, beta);
+        }
+    }
+}
+
+#define ALPH_750SR_0p001CF  .000015 
+#define BETA_750SR_0p001CF  .999985 // 1-ALPH_750SR_0p001CF
+
+#define ALPH_750SR_0p01CF   .00015 
+#define BETA_750SR_0p01CF   .99985 // 1-ALPH_750SR_0p001CF
+
+void runScompLpf(int i)
+{
+    // convert input to propper value
+    sensors_w_temp_t input;
+
+    // Assign temperature in C
+    input.temp[0] = parsedData[i].temperature;
+    input.temp[1] = parsedData[i].temperature;
+    input.temp[2] = parsedData[i].temperature;
+
+    // M/s^2
+    input.imu3.I[0].acc[_X_] = parsedData[i].accX * .00048828125 * 9.80665;
+    input.imu3.I[0].acc[_Y_] = parsedData[i].accY * .00048828125 * 9.80665;
+    input.imu3.I[0].acc[_Z_] = parsedData[i].accZ * .00048828125 * 9.80665;
+
+    // rad/s
+    input.imu3.I[0].pqr[_X_] = parsedData[i].gyX * C_DEG2RAD * GYRO_SCALE;
+    input.imu3.I[0].pqr[_Y_] = parsedData[i].gyY * C_DEG2RAD * GYRO_SCALE;
+    input.imu3.I[0].pqr[_Z_] = parsedData[i].gyZ * C_DEG2RAD * GYRO_SCALE;
+
+    // Run Low Pass Filter
+    static uint32_t calStateLast = 1;
+
+    if (calStateLast != tmpScomp.calState)
+    {	// State change detected.  Initialize LPF.
+        calStateLast = tmpScomp.calState;
+
+        tmpScomp.acc[0].lpfTemp = input.temp[0];
+        tmpScomp.pqr[0].lpfTemp = input.temp[0];
+
+        for (int i = 0; i < 3; i++)
+        {
+            tmpScomp.acc[0].lpfLsb[i] = input.imu3.I[0].acc[i];
+            tmpScomp.pqr[0].lpfLsb[i] = input.imu3.I[0].pqr[i];
+        }
+    }
+    else
+    {	// Low-pass filter sensor data
+        O0_LP_FILTER_local(tmpScomp.acc[0].lpfTemp, input.temp[0], ALPH_750SR_0p01CF, BETA_750SR_0p01CF);
+        O0_LP_FILTER_local(tmpScomp.pqr[0].lpfTemp, input.temp[0], ALPH_750SR_0p01CF, BETA_750SR_0p01CF);
+
+        for (int i = 0; i < 3; i++)
+        {
+            O0_LP_FILTER_local(tmpScomp.pqr[0].lpfLsb[i], input.imu3.I[0].pqr[i], ALPH_750SR_0p01CF, BETA_750SR_0p01CF);
+            O0_LP_FILTER_local(tmpScomp.acc[0].lpfLsb[i], input.imu3.I[0].acc[i], ALPH_750SR_0p01CF, BETA_750SR_0p01CF);
+        }
+    }
+
+
+
+    // Run Low Pass Filter
+    //step_lpf_sens_comp(tmpScomp.pqr[0], ALPH_750SR_0p001CF, BETA_750SR_0p001CF, input.temp[0], input.imu3.I[0].pqr);
+    //step_lpf_sens_comp(tmpScomp.acc[0], ALPH_750SR_0p001CF, BETA_750SR_0p001CF, input.temp[0], input.imu3.I[0].acc);
+}
+
+/*void sendCurrentScomp(int i)
+{
+    memset(&tmpScomp, 0, sizeof(sensor_compensation_t));
 
     // set time
     tmpScomp.timeMs = i * DELTA_TIME_MS;
 
+    // C
     tmpScomp.acc[_X_].lpfTemp = parsedData[i].temperature;
-
     tmpScomp.pqr[_X_].lpfTemp = parsedData[i].temperature;
 
-    tmpScomp.acc[0].lpfLsb[_X_] = parsedData[i].accX * ACC_SCALE;
-    tmpScomp.acc[0].lpfLsb[_Y_] = parsedData[i].accY * ACC_SCALE;
-    tmpScomp.acc[0].lpfLsb[_Z_] = parsedData[i].accZ * ACC_SCALE;
+    // M/s^2
+    tmpScomp.acc[0].lpfLsb[_X_] = parsedData[i].accX;
+    tmpScomp.acc[0].lpfLsb[_Y_] = parsedData[i].accY;
+    tmpScomp.acc[0].lpfLsb[_Z_] = parsedData[i].accZ;
 
-    tmpScomp.pqr[0].lpfLsb[_X_] = parsedData[i].gyX * GYRO_SCALE;
-    tmpScomp.pqr[0].lpfLsb[_Y_] = parsedData[i].gyY * GYRO_SCALE;
-    tmpScomp.pqr[0].lpfLsb[_Z_] = parsedData[i].gyZ * GYRO_SCALE;
-}
+    // rad/s
+    tmpScomp.pqr[0].lpfLsb[_X_] = parsedData[i].gyX;
+    tmpScomp.pqr[0].lpfLsb[_Y_] = parsedData[i].gyY;
+    tmpScomp.pqr[0].lpfLsb[_Z_] = parsedData[i].gyZ;
+
+
+    logger.LogData(devLog, &scompHdr, (const uint8_t*)&tmpScomp);
+}*/
 
 void setCurrentPimu(int i) // target 5.236 / 80 radians per period. .06545
 {
@@ -222,14 +318,19 @@ int writeOutputFile()
 
     for (int i = 0; i < parseCnt; i++)
     {
+        // run LPF
+        runScompLpf(i);
+
+        if (i == (800 * 40))
+            cout << "HALF";
+
         // log scomp
-        setCurrentScomp(i);
-
-        if (tmpScomp.acc[0].lpfTemp > 10 && tmpScomp.pqr[0].lpfTemp > 10)
+        if ((i > 0) && ((i % 800)))
+        {
+            // set time
+            tmpScomp.timeMs = parsedData[i].timeMs;
             logger.LogData(devLog, &scompHdr, (const uint8_t*)&tmpScomp);
-        else
-            tmpScomp.pqr[0].lpfTemp = 1;
-
+        }
 
         // log pimu
         if ((i % 10) == 0 && (i > 9))
@@ -242,7 +343,7 @@ int writeOutputFile()
         if ((i % BROAD_CAST_RATE) == (BROAD_CAST_RATE/2))
             logger.LogData(devLog, &devInfoHdr, (const uint8_t*)&tmpDevInfo);
 
-        if (i % 100000 == 1)
+        if (i % 1000 == 1)
             cout << "Writing line: " << i << ".\r\n";
     }
 
@@ -307,6 +408,8 @@ int main(int argc, char* argv[])
     else
         cout << "Please input and output file!\n";
 
+
+    cout << "Done: " << err << "!\n";
 
     return err;
 }
