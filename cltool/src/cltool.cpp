@@ -110,6 +110,8 @@ bool read_get_did_argument2(std::string s, YAML::Node &getNode)
         return false;
     }
 
+	std::cout << getNode << std::endl;      // Print the YAML node for debugging
+
     g_commandLineOptions.datasets.clear();
     g_commandLineOptions.outputOnceDid.clear();
 
@@ -1058,12 +1060,12 @@ void cltool_outputUsage()
 
 	cout << endlbOn;
 	cout << "OPTIONS (IMX/GPX Messages)" << endl;
-    cout << "    -get {<DID>: [<FIELD1>,<FIELD2>,...]}" << boldOff << " Return value of the specified dataset. DID may be a name or number." << endlbOn;
-    cout << "                                        " << boldOff << "  Examples: `-get {DID_INS_1}`" << endlbOn;
-    cout << "                                        " << boldOff << "  Examples: `-get {DID_INS_1: [{insStatus}, {\"theta[2]\"}], DID_INS_2: [{qn2b}]}`" << endlbOn;
-    cout << "    -set {<DID>: [{<FIELD1>: <VALUE>}, ...]}" << boldOff << "  Set values in the specified dataset. DID may be a number or name." << endlbOn;
-    cout << "                                        " << boldOff << "  Examples: `-set {DID_FLASH_CONFIG: [{\"gps1AntOffset[1]\": 0.8}]}`" << endlbOn;
-    cout << "                                        " << boldOff << "            `-set {12: [{\"ioConfig\": 0x1a2b012c}, {\"ser2BaudRate\": 921600}]}`" << endlbOn;
+    cout << "    -get {<DID>: {<FIELD1>,<FIELD2>,...}} " << boldOff << " Return values of dataset(s). DID may be a name or number. YAML input format." << endlbOn;
+    cout << "                                          " << boldOff << " Examples: `-get {DID_INS_1}`" << endlbOn;
+    cout << "                                          " << boldOff << "           `-get {DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}`" << endlbOn;
+    cout << "    -set {<DID>: {<FIELD1>: <VALUE>, ...}}" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
+    cout << "                                          " << boldOff << " Examples: `-set {DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}`" << endlbOn;
+    cout << "                                          " << boldOff << "           `-set {12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}`" << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;

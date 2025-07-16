@@ -478,6 +478,14 @@ public:
 
 	virtual ~cISDataMappings() {}
 
+	struct MemoryUsage
+	{
+		uint8_t* ptr;
+		size_t size;
+
+		uint8_t* end() const { return ptr + size; }
+	};
+
 	/**
 	* Get a data set name from an id
 	* @param did the data id to get a data set name from
@@ -612,7 +620,7 @@ public:
 	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output);
 	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter);
 
-	static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr);
+	static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec = nullptr);
 
 	/**
 	* Convert a string representation to a did data set buffer
@@ -649,7 +657,10 @@ public:
 	*/
 	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
+	static void AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void* newPtr, size_t newSize);
+
 protected:
+
 	static int ExtractArrayIndex(std::string &str);
 
 	static const char* const m_dataIdNames[];

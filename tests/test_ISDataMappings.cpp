@@ -64,6 +64,13 @@ TEST(ISDataMappings, StringToDataToString)
 	}
 }
 
+
+void PrintYamlNode(const YAML::Node& node)
+{
+    std::cout << node << std::endl;
+}
+
+
 void testDataToYamlToData(const uDatasets& d1, uint32_t did, size_t size)
 {
 	// Run the conversion from data to YAML and back to data twice to ensure small rounding does not affect the result.
@@ -75,6 +82,8 @@ void testDataToYamlToData(const uDatasets& d1, uint32_t did, size_t size)
 	EXPECT_TRUE(cISDataMappings::DataToYaml(did, (uint8_t*)&d2, yaml2));
 	uDatasets result = {};
 	EXPECT_TRUE(cISDataMappings::YamlToData(did, yaml2, (uint8_t*)&result));
+
+	// PrintYamlNode(yaml1);
 
 	EXPECT_EQ(0, memcmp(&d2, &result, size));
 }
@@ -143,4 +152,65 @@ TEST(ISDataMappings, DataToYamlToData)
 	d.flashCfg.ioConfig = 0x00000001; // IO configuration bits
 	d.flashCfg.platformConfig = 0x00000002; // Platform configuration bits
 	testDataToYamlToData(d, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t));
+}
+
+
+TEST(ISDataMappings, MemoryUsageTracking)
+{
+	std::vector<cISDataMappings::MemoryUsage> usage;
+
+	uDatasets d = {};
+
+	// size: 1, adds new
+	cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.ser2BaudRate, sizeof(d.flashCfg.ser2BaudRate));
+	EXPECT_EQ(usage.size(), 1);
+
+	// size: 1, adjacent to ser2BaudRate, should merge with existing
+	cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.gpsMinimumElevation, sizeof(d.flashCfg.gpsMinimumElevation));		
+	EXPECT_EQ(usage.size(), 1);
+
+	// size: 2, adds new
+	cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.insRotation[0], sizeof(d.flashCfg.insRotation[0]));
+	EXPECT_EQ(usage.size(), 2);
+
+	// size: 3, adds new
+	cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.insRotation[2], sizeof(d.flashCfg.insRotation[2]));
+	EXPECT_EQ(usage.size(), 3);
+
+	// size: 2, adjacent to insRotation[0] and insRotation[2], should cause two to merge
+	cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.insRotation[1], sizeof(d.flashCfg.insRotation[1]));   
+	EXPECT_EQ(usage.size(), 2);
+
+	// size 2, adjacent to ser2BaudRate, should merge with existing
+	cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.ser1BaudRate, sizeof(d.flashCfg.ser1BaudRate));		
+	EXPECT_EQ(usage.size(), 2);
+
+	EXPECT_EQ((void*)usage[0].ptr, (void*)&d.flashCfg.gpsMinimumElevation);
+	EXPECT_EQ(usage[0].size, sizeof(d.flashCfg.gpsMinimumElevation) + sizeof(d.flashCfg.ser2BaudRate));
+
+	EXPECT_EQ((void*)usage[1].ptr, (void*)&d.flashCfg.ser1BaudRate);
+	EXPECT_EQ(usage[1].size, sizeof(d.flashCfg.ser1BaudRate) + 3*sizeof(d.flashCfg.insRotation[0]));
+}
+
+
+TEST(ISDataMappings, YamlToDataMemoryUsage)
+{
+	YAML::Node map = YAML::Node(YAML::NodeType::Map);
+    map["gpsMinimumElevation"] = 0.1;
+	map["insRotation"] = YAML::Load("[0.1, 0.2, 0.3]");
+    map["ser2BaudRate"] = 9600;
+    map["ser1BaudRate"] = 115200;
+
+    YAML::Node root;
+    root["DID_INS_1"] = map;
+
+	PrintYamlNode(root);
+
+
+	uDatasets d = {};
+	std::vector<cISDataMappings::MemoryUsage> usageVec;
+
+	// Convert YAML to data
+	EXPECT_TRUE(cISDataMappings::YamlToData(DID_INS_1, root["DID_INS_1"], (uint8_t*)&d, &usageVec));
+
 }

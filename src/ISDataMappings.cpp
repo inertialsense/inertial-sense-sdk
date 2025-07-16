@@ -1994,156 +1994,109 @@ bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& ou
 
 bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter)
 {
-    const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
+    const auto& dataSetMap = *NameToInfoMap(did);
     data_mapping_string_t stringBuffer;
-    YAML::Node list(YAML::NodeType::Sequence);
-
     const std::string didName = cISDataMappings::DataName(did);
     const YAML::Node didFilter = filter[didName];
 
-    bool showAll = !filter || filter.IsNull() || !filter[didName] || filter[didName].IsNull();
-
+    bool showAll = !filter || filter.IsNull() || !didFilter || didFilter.IsNull();
     std::set<std::string> requestedFields;
-    std::map<std::string, std::set<int>> arrayIndices;  // array field → set of requested indices
 
-    // Parse field filters
-    if (!showAll && didFilter && didFilter.IsSequence())
+    if (!showAll && didFilter.IsMap())
     {
-        auto insertField = [&](const std::string& name) {
-            std::string base = name;
-            int index = -1;
-
-            // Check for array index like "theta[2]"
-            auto openBracket = name.find('[');
-            auto closeBracket = name.find(']');
-            if (openBracket != std::string::npos && closeBracket != std::string::npos && closeBracket > openBracket)
-            {
-                base = name.substr(0, openBracket);
-                try {
-                    index = std::stoi(name.substr(openBracket + 1, closeBracket - openBracket - 1));
-                } catch (...) {
-                    // Ignore invalid index
-                }
-            }
-
-            requestedFields.insert(base);
-            if (index >= 0)
-                arrayIndices[base].insert(index);
-            else
-                arrayIndices[base].insert(-1);  // -1 means full array
-        };
-
         for (const auto& entry : didFilter)
         {
-            if (entry.IsScalar())
-            {
-                insertField(entry.as<std::string>());
-            }
-            else if (entry.IsMap() && entry.begin() != entry.end())
-            {
-                insertField(entry.begin()->first.as<std::string>());
-            }
+            requestedFields.insert(entry.first.as<std::string>());
         }
     }
 
-    // Generate filtered output
+    YAML::Node map(YAML::NodeType::Map);
+
     for (const auto& entry : dataSetMap)
     {
         const data_info_t& info = entry.second;
 
         if (!showAll && requestedFields.find(info.name) == requestedFields.end())
         {
-            continue;  // Not requested
+            continue;
         }
 
         if (info.arraySize > 0)
         {
-            auto indicesIt = arrayIndices.find(info.name);
-            const std::set<int>& indices = indicesIt != arrayIndices.end() ? indicesIt->second : std::set<int>{-1};
-
-            for (int i = 0; i < static_cast<int>(info.arraySize); ++i)
+            YAML::Node arr(YAML::NodeType::Sequence);
+            for (unsigned int i = 0; i < info.arraySize; ++i)
             {
-                bool include =
-                    showAll ||
-                    indices.count(-1) ||  // request for entire array
-                    indices.count(i);
-
-                if (include && DataToString(info, nullptr, dataPtr, stringBuffer, i))
+                if (DataToString(info, nullptr, dataPtr, stringBuffer, i))
                 {
-                    YAML::Node elem;
-                    elem[info.name + "[" + std::to_string(i) + "]"] = stringBuffer;
-                    list.push_back(elem);
+                    arr.push_back(stringBuffer);
                 }
+            }
+            if (arr.size() > 0)
+            {
+                map[info.name] = arr;
             }
         }
         else
         {
             if (DataToString(info, nullptr, dataPtr, stringBuffer))
             {
-                YAML::Node elem;
-                elem[info.name] = stringBuffer;
-                list.push_back(elem);
+                map[info.name] = stringBuffer;
             }
         }
     }
 
-    if (list.size() > 0)
+    if (map.size() > 0)
     {
-        output[didName] = list;
+        output[didName] = map;
         return true;
     }
 
     return false;
 }
 
-bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr)
+bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec)
 {
     const std::string didName = cISDataMappings::DataName(did);
-    const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
-    const YAML::Node& list = yaml[didName];
+    const auto& dataSetMap = *NameToInfoMap(did);
+    const YAML::Node& map = yaml[didName];
 
-    if (!list || !list.IsSequence()) {
+    if (!map || !map.IsMap()) {
         return false;
     }
 
-    for (const auto& item : list)
+    for (const auto& kv : map)
     {
-        if (!item.IsMap() || item.begin() == item.end()) {
-            continue;
-        }
+        const std::string name = kv.first.as<std::string>();
+        const YAML::Node& valueNode = kv.second;
 
-        const auto& kv = *item.begin();
-        std::string name = kv.first.as<std::string>();
-        std::string value = kv.second.as<std::string>();  // Assume scalar string
-
-        // Parse array index if present (e.g. "theta[2]")
-        std::string baseName = name;
-        int index = -1;
-        auto open = name.find('[');
-        auto close = name.find(']');
-        if (open != std::string::npos && close != std::string::npos && close > open) {
-            baseName = name.substr(0, open);
-            try {
-                index = std::stoi(name.substr(open + 1, close - open - 1));
-            } catch (...) {
-                continue; // Invalid index
-            }
-        }
-
-        auto it = dataSetMap.find(baseName);
-        if (it == dataSetMap.end()) {
-            continue;  // Field not found
-        }
+        auto it = dataSetMap.find(name);
+        if (it == dataSetMap.end()) continue;
 
         const data_info_t& info = it->second;
 
-        if (info.arraySize > 0) {
-            if (index < 0 || index >= static_cast<int>(info.arraySize)) {
-                continue;  // Invalid index for array
+        if (info.arraySize > 0)
+        {
+            if (!valueNode.IsSequence()) continue;
+
+            size_t count = std::min(static_cast<size_t>(info.arraySize), valueNode.size());
+            for (size_t i = 0; i < count; ++i)
+            {
+                std::string valStr = valueNode[i].as<std::string>();
+                StringToData(valStr.c_str(), static_cast<int>(valStr.length()), nullptr, dataPtr, info, static_cast<unsigned int>(i));
+                if (usageVec)
+                {
+                    AppendMemoryUsage(*usageVec, dataPtr + info.offset + i * info.elementSize, info.elementSize);
+                }
             }
-            StringToData(value.c_str(), static_cast<int>(value.length()), nullptr, dataPtr, info, index);
-        } else {
-            StringToData(value.c_str(), static_cast<int>(value.length()), nullptr, dataPtr, info, 0);
+        }
+        else
+        {
+            std::string valStr = valueNode.as<std::string>();
+            StringToData(valStr.c_str(), static_cast<int>(valStr.length()), nullptr, dataPtr, info);
+            if (usageVec)
+            {
+                AppendMemoryUsage(*usageVec, dataPtr + info.offset, info.size);
+            }
         }
     }
 
@@ -2262,6 +2215,58 @@ bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string 
     }
 
     return false;
+}
+
+void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void* newPtr, size_t newSize)
+{
+    uint8_t* newPtr8 = static_cast<uint8_t*>(newPtr);
+    uint8_t* newEnd = newPtr8 + newSize;
+
+    // First, try to merge with any existing overlapping or contiguous region
+    for (size_t i = 0; i < usageVec.size(); ++i)
+    {
+        MemoryUsage& existing = usageVec[i];
+        uint8_t* existingEnd = existing.end();
+
+        // Check for overlap or contiguous range
+        if (!(newEnd < existing.ptr || newPtr8 > existingEnd))
+        {
+            // Expand existing range to include new range
+            uint8_t* newStart = std::min(existing.ptr, newPtr8);
+            uint8_t* mergedEnd = std::max(existingEnd, newEnd);
+
+            existing.ptr = newStart;
+            existing.size = mergedEnd - newStart;
+
+            // Now check for any other blocks that may overlap with the new merged one
+            for (size_t j = 0; j < usageVec.size(); )
+            {
+                if (j != i)
+                {
+                    MemoryUsage& other = usageVec[j];
+                    if (!(existing.end() < other.ptr || existing.ptr > other.end()))
+                    {
+                        // Merge this block too
+                        uint8_t* mergedStart = std::min(existing.ptr, other.ptr);
+                        uint8_t* mergedEnd = std::max(existing.end(), other.end());
+
+                        existing.ptr = mergedStart;
+                        existing.size = mergedEnd - mergedStart;
+
+                        usageVec.erase(usageVec.begin() + j);
+                        if (j < i) --i;  // Adjust i if we removed an earlier element
+                        continue;
+                    }
+                }
+                ++j;
+            }
+
+            return;  // Done: merged successfully
+        }
+    }
+
+    // No overlap, add as new entry
+    usageVec.push_back({ newPtr8, newSize });
 }
 
 bool cISDataMappings::StringToDidBuffer(int did, const std::string& fields, uint8_t* dataPtr)
