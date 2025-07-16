@@ -367,15 +367,6 @@ public:
     bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
     bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
-    // Send only the modified portion of the data set.  Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
-    static bool SendDataSetChange(void *newData, void *curData, void *newData2, void *curData2, int did, int size, int pHandle = 0);
-    template <typename T>
-    static bool SendDataSetChangeTemplate(T* newData, T* curData, T* newData2, T* curData2, int did, int pHandle = 0)
-    {
-        static_assert(sizeof(T) % 4 == 0, "Struct must be a multiple of 4 bytes.");
-        return SendDataSetChange(newData, curData, newData2, curData2, did, sizeof(T), pHandle);
-    }
-
     /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
      * 
