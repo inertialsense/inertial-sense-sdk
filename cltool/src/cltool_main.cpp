@@ -455,7 +455,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cout << "Sending software reset." << endl;
         inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        return false;
+        // return false;
+        exit(0); // Exit cltool now and report success code
     }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX

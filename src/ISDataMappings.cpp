@@ -2161,6 +2161,18 @@ void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void
     usageVec.push_back({ newPtr8, newSize });
 }
 
+void splitStringMulti(const std::string& input, const std::string& delimiters, std::vector<std::string>& output)
+{
+    size_t start = input.find_first_not_of(delimiters), end = 0;
+    while ((end = input.find_first_of(delimiters, start)) != std::string::npos)
+    {
+        output.push_back(input.substr(start, end - start));
+        start = input.find_first_not_of(delimiters, end);
+    }
+    if (start != std::string::npos)
+        output.push_back(input.substr(start));
+}
+
 bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string &output, std::string fields)
 {
     std::ostringstream oss, ossHdr;
@@ -2174,7 +2186,7 @@ bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string 
     if (!showAll)
     {
         std::vector<std::string> splitFields;
-        splitString(fields, ',', splitFields);
+        splitStringMulti(fields, "\n,|", splitFields);
 
         for (std::string f : splitFields)
         {
@@ -2285,7 +2297,7 @@ bool cISDataMappings::StringToDidBuffer(int did, const std::string& fields, uint
 
     bool success = false;
     std::vector<std::string> keyValues;
-    splitString(fields, '\n', keyValues);
+    splitStringMulti(fields, "\n,|", keyValues);
 
     for (const std::string& keyValue : keyValues)
     {

@@ -1157,13 +1157,19 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
     nvm_flash_cfg_t imxFlashCfg;
     inertialSenseInterface.ImxFlashConfig(imxFlashCfg);
 
-    bool success = false;
     if (flashCfgString.find('=') != std::string::npos)
     {   // Write to flash config
-        success = cISDataMappings::StringToDidBuffer(DID_FLASH_CONFIG, flashCfgString, (uint8_t*)&imxFlashCfg);
-
-        inertialSenseInterface.SetImxFlashConfig(imxFlashCfg);  
-        inertialSenseInterface.WaitForImxFlashCfgSynced();
+        if (!cISDataMappings::StringToDidBuffer(DID_FLASH_CONFIG, flashCfgString, (uint8_t*)&imxFlashCfg))
+        {
+            cout << "Failed to parse flash config string." << endl;
+            return false;
+        }
+        if (!inertialSenseInterface.SetImxFlashConfig(imxFlashCfg) ||
+            !inertialSenseInterface.WaitForImxFlashCfgSynced())
+        {
+            cout << "Failed to set IMX flash config." << endl;
+            return false;
+        }
     }
     else
     {   // Read from flash config
@@ -1178,7 +1184,7 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
         }
     }
 
-    return success;
+    return true;
 }
 
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
@@ -1191,15 +1197,20 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
     gpx_flash_cfg_t gpxFlashCfg;
     inertialSenseInterface.GpxFlashConfig(gpxFlashCfg);
 
-    bool success = false;
-
     if (flashCfgString.find('=') != std::string::npos)
     {   // Write to flash config
-        success = cISDataMappings::StringToDidBuffer(DID_GPX_FLASH_CFG, flashCfgString, (uint8_t*)&gpxFlashCfg);
-
-        inertialSenseInterface.SetGpxFlashConfig(gpxFlashCfg);
+        if (!cISDataMappings::StringToDidBuffer(DID_GPX_FLASH_CFG, flashCfgString, (uint8_t*)&gpxFlashCfg))
+        {
+            cout << "Failed to parse flash config string." << endl;
+            return false;
+        }
         g_gpxFlashCfg_upload = gpxFlashCfg; // Save for later use
-        inertialSenseInterface.WaitForGpxFlashCfgSynced();
+        if (!inertialSenseInterface.SetGpxFlashConfig(gpxFlashCfg) ||
+            !inertialSenseInterface.WaitForGpxFlashCfgSynced())
+        {
+            cout << "Failed to set GPX flash config." << endl;
+            return false;
+        }
     }
     else
     {   // Read from flash config
@@ -1214,5 +1225,5 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
         }
     }
 
-    return success;
+    return true;
 }
