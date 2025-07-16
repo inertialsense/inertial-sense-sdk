@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-// #include <sstream>
+#include <iostream>
 
 #include "ISDataMappings.h"
 #include "DataJSON.h"
@@ -2109,6 +2109,58 @@ bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataP
     return true;
 }
 
+void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void* newPtr, size_t newSize)
+{
+    uint8_t* newPtr8 = static_cast<uint8_t*>(newPtr);
+    uint8_t* newEnd = newPtr8 + newSize;
+
+    // First, try to merge with any existing overlapping or contiguous region
+    for (size_t i = 0; i < usageVec.size(); ++i)
+    {
+        MemoryUsage& existing = usageVec[i];
+        uint8_t* existingEnd = existing.end();
+
+        // Check for overlap or contiguous range
+        if (!(newEnd < existing.ptr || newPtr8 > existingEnd))
+        {
+            // Expand existing range to include new range
+            uint8_t* newStart = std::min(existing.ptr, newPtr8);
+            uint8_t* mergedEnd = std::max(existingEnd, newEnd);
+
+            existing.ptr = newStart;
+            existing.size = mergedEnd - newStart;
+
+            // Now check for any other blocks that may overlap with the new merged one
+            for (size_t j = 0; j < usageVec.size(); )
+            {
+                if (j != i)
+                {
+                    MemoryUsage& other = usageVec[j];
+                    if (!(existing.end() < other.ptr || existing.ptr > other.end()))
+                    {
+                        // Merge this block too
+                        uint8_t* mergedStart = std::min(existing.ptr, other.ptr);
+                        uint8_t* mergedEnd = std::max(existing.end(), other.end());
+
+                        existing.ptr = mergedStart;
+                        existing.size = mergedEnd - mergedStart;
+
+                        usageVec.erase(usageVec.begin() + j);
+                        if (j < i) --i;  // Adjust i if we removed an earlier element
+                        continue;
+                    }
+                }
+                ++j;
+            }
+
+            return;  // Done: merged successfully
+        }
+    }
+
+    // No overlap, add as new entry
+    usageVec.push_back({ newPtr8, newSize });
+}
+
 bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string &output, std::string fields)
 {
     std::ostringstream oss, ossHdr;
@@ -2127,14 +2179,14 @@ bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string 
         for (std::string f : splitFields)
         {
             std::string base = f;
-            int index = ExtractArrayIndex(base);  // base is mutated to strip [n]
+            int index = ExtractArrayIndex(base);    // base is mutated to strip [n]
             if (index >= 0)
             {
-                requested[base].insert(index);  // Request specific element
+                requested[base].insert(index);      // Request specific element
             }
             else
             {
-                requested[base].insert(-1);     // Special marker: request full array or scalar
+                requested[base].insert(-1);         // Special marker: request full array or scalar
             }
         }
     }
@@ -2223,58 +2275,6 @@ bool cISDataMappings::DidBufferToString(int did, const uint8_t* dataPtr, string 
     return false;
 }
 
-void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void* newPtr, size_t newSize)
-{
-    uint8_t* newPtr8 = static_cast<uint8_t*>(newPtr);
-    uint8_t* newEnd = newPtr8 + newSize;
-
-    // First, try to merge with any existing overlapping or contiguous region
-    for (size_t i = 0; i < usageVec.size(); ++i)
-    {
-        MemoryUsage& existing = usageVec[i];
-        uint8_t* existingEnd = existing.end();
-
-        // Check for overlap or contiguous range
-        if (!(newEnd < existing.ptr || newPtr8 > existingEnd))
-        {
-            // Expand existing range to include new range
-            uint8_t* newStart = std::min(existing.ptr, newPtr8);
-            uint8_t* mergedEnd = std::max(existingEnd, newEnd);
-
-            existing.ptr = newStart;
-            existing.size = mergedEnd - newStart;
-
-            // Now check for any other blocks that may overlap with the new merged one
-            for (size_t j = 0; j < usageVec.size(); )
-            {
-                if (j != i)
-                {
-                    MemoryUsage& other = usageVec[j];
-                    if (!(existing.end() < other.ptr || existing.ptr > other.end()))
-                    {
-                        // Merge this block too
-                        uint8_t* mergedStart = std::min(existing.ptr, other.ptr);
-                        uint8_t* mergedEnd = std::max(existing.end(), other.end());
-
-                        existing.ptr = mergedStart;
-                        existing.size = mergedEnd - mergedStart;
-
-                        usageVec.erase(usageVec.begin() + j);
-                        if (j < i) --i;  // Adjust i if we removed an earlier element
-                        continue;
-                    }
-                }
-                ++j;
-            }
-
-            return;  // Done: merged successfully
-        }
-    }
-
-    // No overlap, add as new entry
-    usageVec.push_back({ newPtr8, newSize });
-}
-
 bool cISDataMappings::StringToDidBuffer(int did, const std::string& fields, uint8_t* dataPtr)
 {
     const map_name_to_info_t& dataSetMap = *NameToInfoMap(did);
@@ -2285,7 +2285,7 @@ bool cISDataMappings::StringToDidBuffer(int did, const std::string& fields, uint
 
     bool success = false;
     std::vector<std::string> keyValues;
-    splitString(fields, ',', keyValues);
+    splitString(fields, '\n', keyValues);
 
     for (const std::string& keyValue : keyValues)
     {
@@ -2298,6 +2298,10 @@ bool cISDataMappings::StringToDidBuffer(int did, const std::string& fields, uint
 
         std::string fieldName = pair[0];
         std::string value = pair[1];
+
+        // Remove all trailing whitespace
+        fieldName.erase(fieldName.find_last_not_of(" \t\n\r\f\v") + 1);
+        value.erase(value.find_last_not_of(" \t\n\r\f\v") + 1);
 
         // Extract array index if specified (e.g. theta[1])
         int arrayIndex = ExtractArrayIndex(fieldName);

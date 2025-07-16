@@ -605,6 +605,25 @@ public:
 	*/
 	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
 
+	/*** Convert a did data set buffer to a YAML node
+	* @param did the data ID
+	* @param dataPtr pointer to the did buffer
+	* @param output the YAML node representation of the data set
+	* @param filter optional filter to apply to the output
+	* @return true if successful, false if error
+	*/
+	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output);
+	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter);
+
+	/*** Convert a YAML node to a did data set buffer
+	* @param did the data ID
+	* @param yaml the YAML node to convert
+	* @param dataPtr pointer to the did buffer
+	* @param usageVec optional vector to hold memory usage information
+	* @return true if successful, false if error
+	*/
+	static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec = nullptr);
+
 	/**
 	 * @brief Convert a did data set buffer to a string representation
 	 *
@@ -615,12 +634,6 @@ public:
 	 * @return true if successful, false if error
 	 */
 	static bool DidBufferToString(int did, const uint8_t* dataPtr, std::string &output, std::string fields="");
-
-	// static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node &output, const YAML::Node fields = YAML::Node());
-	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output);
-	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter);
-
-	static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec = nullptr);
 
 	/**
 	* Convert a string representation to a did data set buffer

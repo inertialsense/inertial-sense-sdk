@@ -1056,7 +1056,7 @@ bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
         return 0;
     }
     ISDevice& device = m_comManagerState.devices[pHandle];
-
+    
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
     static_assert(sizeof(gpx_flash_cfg_t) % 4 == 0, "Size of gpx_flash_cfg_t must be a 4 bytes in size!!!");
     uint32_t *newCfg = (uint32_t*)&flashCfg;
@@ -1092,14 +1092,13 @@ bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
     if (device.gpxFlashCfgUploadTimeMs)
     {
         device.gpxFlashCfgUploadChecksum = flashCfg.checksum;
-
-        // Update local copy of flash config
-        device.gpxFlashCfg = flashCfg;
-
-        return true;
     }
 
-    return false;
+    // Update local copy of flash config
+    device.gpxFlashCfg = flashCfg;
+
+    // Success
+    return !failure;
 }
 
 bool InertialSense::WaitForImxFlashCfgSynced(int pHandle)
