@@ -549,24 +549,20 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
+    	uDatasets d = {};
+    	std::vector<cISDataMappings::MemoryUsage> usageVec;
+
+        // This code uploads only portion of each DID data set that has been set from the setNode yaml.
         for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); ++it )
         {
-            // Print the data to terminal
-            YAML::Node output;
-            uDatasets newD1 = {};
-            uDatasets newD2 = {};
-            memset(&newD2, 0xFF, sizeof(uDatasets));
-            uDatasets curD1 = newD1;
-            uDatasets curD2 = newD2;
             int did = *it;
-            if (!cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&newD1) ||
-                !cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&newD2))
-            {
-                cout << "Error parsing: " << *it << "\n";
-                return false;
-            }
-            if (inertialSenseInterface.SendDataSetChange(&newD1, &curD1, &newD2, &curD2, did, cISDataMappings::DataSize(did)))
-            {
+            cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&d, &usageVec);
+
+            for (auto& usage : usageVec)
+            {   // Upload data to device
+                uint32_t offset = usage.ptr - (uint8_t*)&d;
+                cout << "Uploading data for DID: " << cISDataMappings::DataName(did) << " at offset: " << offset << ", size: " << usage.size << endl;
+                inertialSenseInterface.SendData(did, usage.ptr, usage.size, offset);
                 g_commandLineOptions.setAckDid.push_back(did);
             }
         }

@@ -2024,6 +2024,7 @@ bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& ou
         if (info.arraySize > 0)
         {
             YAML::Node arr(YAML::NodeType::Sequence);
+            arr.SetStyle(YAML::EmitterStyle::Flow);     // Make array display on one line
             for (unsigned int i = 0; i < info.arraySize; ++i)
             {
                 if (DataToString(info, nullptr, dataPtr, stringBuffer, i))
@@ -2056,12 +2057,17 @@ bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& ou
 
 bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec)
 {
-    const std::string didName = cISDataMappings::DataName(did);
+    const std::string didName = std::string(cISDataMappings::DataName(did));
     const auto& dataSetMap = *NameToInfoMap(did);
     const YAML::Node& map = yaml[didName];
 
     if (!map || !map.IsMap()) {
         return false;
+    }
+
+    if (usageVec)
+    {
+        usageVec->clear();
     }
 
     for (const auto& kv : map)

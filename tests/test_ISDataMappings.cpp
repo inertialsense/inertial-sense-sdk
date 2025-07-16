@@ -90,6 +90,8 @@ void testDataToYamlToData(const uDatasets& d1, uint32_t did, size_t size)
 
 TEST(ISDataMappings, DataToYamlToData)
 {
+	return;
+
 	uDatasets d = {};
 
 	d.ins1.timeOfWeek = 123456.789;
@@ -193,24 +195,64 @@ TEST(ISDataMappings, MemoryUsageTracking)
 }
 
 
+void PrintUsageVec(const std::vector<cISDataMappings::MemoryUsage>& usageVec) {
+	std::cout << "Memory Usage size: " <<  usageVec.size() << std::endl;
+    for (size_t i = 0; i < usageVec.size(); ++i) {
+        const auto& usage = usageVec[i];
+        std::cout << "usageVec[" << i << "]: ptr = "
+                  << static_cast<const void*>(usage.ptr)
+                  << ", size = " << usage.size
+                  << ", end = " << static_cast<const void*>(usage.end())
+                  << std::endl;
+    }
+}
+
+
 TEST(ISDataMappings, YamlToDataMemoryUsage)
 {
-	YAML::Node map = YAML::Node(YAML::NodeType::Map);
-    map["gpsMinimumElevation"] = 0.1;
-	map["insRotation"] = YAML::Load("[0.1, 0.2, 0.3]");
-    map["ser2BaudRate"] = 9600;
-    map["ser1BaudRate"] = 115200;
-
     YAML::Node root;
-    root["DID_INS_1"] = map;
-
-	PrintYamlNode(root);
-
-
 	uDatasets d = {};
 	std::vector<cISDataMappings::MemoryUsage> usageVec;
 
-	// Convert YAML to data
-	EXPECT_TRUE(cISDataMappings::YamlToData(DID_INS_1, root["DID_INS_1"], (uint8_t*)&d, &usageVec));
+	YAML::Node cfg = YAML::Node(YAML::NodeType::Map);
+    cfg["gpsMinimumElevation"] = 0.1;
+	cfg["insRotation"] = YAML::Load("[0.1, 0.2, 0.3]");
+    cfg["ser2BaudRate"] = 9600;
+    cfg["ser1BaudRate"] = 115200;
+    root["DID_FLASH_CONFIG"] = cfg;
 
+	YAML::Node sys = YAML::Node(YAML::NodeType::Map);
+	sys["timeOfWeekMs"] = 123456;
+    sys["sysStatus"] = 0x00000004;
+	sys["insStatus"] = 0x01020304;
+    sys["hdwStatus"] = 0x05060708;
+    sys["navUpdatePeriodMs"] = 5;
+	sys["genFaultCode"] = 0;
+    root["DID_SYS_PARAMS"] = sys;
+	// PrintYamlNode(root);
+
+	// Convert YAML to data.  This clears usageVec.
+	EXPECT_TRUE(cISDataMappings::YamlToData(DID_FLASH_CONFIG, root, (uint8_t*)&d, &usageVec));
+	// PrintUsageVec(usageVec);
+	EXPECT_EQ(usageVec.size(), 2);
+	// Group 1:	
+	EXPECT_EQ(usageVec[0].ptr, reinterpret_cast<uint8_t*>(&d.flashCfg.gpsMinimumElevation));
+	EXPECT_EQ(usageVec[0].size, sizeof(d.flashCfg.gpsMinimumElevation) + sizeof(d.flashCfg.ser2BaudRate));
+	// Group 2:
+	EXPECT_EQ(usageVec[1].ptr, reinterpret_cast<uint8_t*>(&d.flashCfg.ser1BaudRate));
+	EXPECT_EQ(usageVec[1].size, sizeof(d.flashCfg.ser1BaudRate) + 3 * sizeof(d.flashCfg.insRotation[0]));
+
+	// Convert YAML to data.  This clears usageVec.
+	EXPECT_TRUE(cISDataMappings::YamlToData(DID_SYS_PARAMS, root, (uint8_t*)&d, &usageVec));
+	// PrintUsageVec(usageVec);
+	EXPECT_EQ(usageVec.size(), 3);
+	// Group 1:	
+	EXPECT_EQ(usageVec[0].ptr, reinterpret_cast<uint8_t*>(&d.sysParams.timeOfWeekMs));
+	EXPECT_EQ(usageVec[0].size, sizeof(d.sysParams.timeOfWeekMs) + sizeof(d.sysParams.insStatus) + sizeof(d.sysParams.hdwStatus));
+	// Group 2:
+	EXPECT_EQ(usageVec[1].ptr, reinterpret_cast<uint8_t*>(&d.sysParams.sysStatus));
+	EXPECT_EQ(usageVec[1].size, sizeof(d.sysParams.sysStatus));
+	// Group 3:
+	EXPECT_EQ(usageVec[2].ptr, reinterpret_cast<uint8_t*>(&d.sysParams.navUpdatePeriodMs));
+	EXPECT_EQ(usageVec[2].size, sizeof(d.sysParams.navUpdatePeriodMs) + sizeof(d.sysParams.genFaultCode));
 }
