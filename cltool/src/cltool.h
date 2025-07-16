@@ -128,8 +128,6 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     std::string roverConnection; 			// -rover=type:IP/URL:port:mountpoint:user:password   (server)
     std::string baseConnection; 			// -base=IP:port    (client)	
     
-    uint32_t setDidDid;	
-    std::string setDidString;
     bool imxflashCfgSet;
     bool gpxflashCfgSet;
     std::string imxFlashCfg;

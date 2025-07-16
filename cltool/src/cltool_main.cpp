@@ -242,9 +242,8 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         return;
     }
 
-    if (g_commandLineOptions.outputOnceDid.size() > 0)
+    if (!g_commandLineOptions.outputOnceDid.empty())
     {   // Prevent processing of data if outputOnceDid is set
-
         if (g_commandLineOptions.getNode && !g_commandLineOptions.getNode.IsNull() && g_commandLineOptions.getNode.size() > 0)
         {
             for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); )
@@ -278,9 +277,8 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
             }
         }
 
-        if (g_commandLineOptions.outputOnceDid.empty())
-        {
-            // Exit cltool now and report success code
+        if (g_commandLineOptions.outputOnceDid.empty() && g_commandLineOptions.setAckDid.empty())
+        {   // Exit cltool now and report success code
             std::exit(0);
             return;
         }
@@ -313,8 +311,8 @@ static void cltool_ackCallback(InertialSense* i, p_ack_t* ack, unsigned char pac
         return;
     }
 
-    if (g_commandLineOptions.setDidDid)
-    {   // Prevent processing of data if setDidDid is set
+    if (!g_commandLineOptions.setAckDid.empty())
+    {   
         for (auto it = g_commandLineOptions.setAckDid.begin(); it != g_commandLineOptions.setAckDid.end(); )
         {
             if (ack->body.dataHdr.id == *it)
@@ -545,8 +543,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         }
     }
 
-    bool exitNow = false;
-
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
     	uDatasets d = {};
@@ -561,13 +557,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             for (auto& usage : usageVec)
             {   // Upload data to device
                 uint32_t offset = usage.ptr - (uint8_t*)&d;
-                cout << "Uploading data for DID: " << cISDataMappings::DataName(did) << " at offset: " << offset << ", size: " << usage.size << endl;
+                cout << "Uploading " << cISDataMappings::DataName(did) << ", size: " << usage.size << ", offset: " << offset << endl;
                 inertialSenseInterface.SendData(did, usage.ptr, usage.size, offset);
                 g_commandLineOptions.setAckDid.push_back(did);
             }
         }
     }
 
+    bool exitNow = false;
     if (g_commandLineOptions.imxflashCfgSet)
     {
         if (!cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))

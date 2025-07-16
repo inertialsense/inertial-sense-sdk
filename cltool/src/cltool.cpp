@@ -98,7 +98,7 @@ bool read_get_did_argument(string s, stream_did_t *dataset, std::string &fields)
     return false;
 }
 
-bool read_get_did_argument2(std::string s, YAML::Node &getNode)
+bool read_get_set_argument(std::string s, YAML::Node &getNode)
 {
     try {
         getNode = YAML::Load(s);
@@ -110,13 +110,10 @@ bool read_get_did_argument2(std::string s, YAML::Node &getNode)
         return false;
     }
 
-	std::cout << getNode << std::endl;      // Print the YAML node for debugging
-
     g_commandLineOptions.datasets.clear();
     g_commandLineOptions.outputOnceDid.clear();
 
     YAML::Node newNode;
-
     for (const auto& topLevel : getNode) 
     {
         std::string key = topLevel.first.as<std::string>();
@@ -133,13 +130,35 @@ bool read_get_did_argument2(std::string s, YAML::Node &getNode)
             g_commandLineOptions.datasets.push_back(dataset);
             g_commandLineOptions.outputOnceDid.push_back(dataset.did);
 
+            // Validate fields
+            const auto& dataSetMap = *cISDataMappings::NameToInfoMap(did);
+            if (value.IsMap())
+            {
+                for (const auto& field : value)
+                {
+                    std::string fieldName = field.first.as<std::string>();
+                    if (dataSetMap.find(fieldName) == dataSetMap.end())
+                    {
+                        std::cerr << "Invalid field '" << fieldName << "' in " << cISDataMappings::DataName(did) << "\n";
+                        return false;
+                    }
+                }
+            }
+
             std::string canonicalName = cISDataMappings::DataName(did);
             newNode[canonicalName] = value;
         }
+        else
+        {
+            std::cerr << "Invalid DID name or number: " << key << "\n";
+            return false;
+        }
     }
 
-    // Update yaml node to ensure keys DID names instead of numbers 
-    g_commandLineOptions.getNode = newNode;
+    // Update yaml node to ensure keys are DID names instead of DID numbers 
+    getNode = newNode;
+
+    // cout << "Parsed YAML: " << getNode << endl;
 
     if (g_commandLineOptions.datasets.empty())
     {
@@ -232,7 +251,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
     g_commandLineOptions.surveyIn.minAccuracy = 0;
     g_commandLineOptions.outputOnceDid.clear();
-    g_commandLineOptions.setDidDid = 0;
     g_commandLineOptions.platformType = -1;
     g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;
     g_commandLineOptions.runDurationMs = 0; // run until interrupted, by default
@@ -511,7 +529,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
         {
-            if (!read_get_did_argument2(argv[++i], g_commandLineOptions.getNode))    // use next argument
+            if (!read_get_set_argument(argv[++i], g_commandLineOptions.getNode))    // use next argument
             {
                 return false;
             }
@@ -519,7 +537,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-set") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
         {
-            if (!read_get_did_argument2(argv[++i], g_commandLineOptions.setNode))    // use next argument
+            if (!read_get_set_argument(argv[++i], g_commandLineOptions.setNode))    // use next argument
             {
                 return false;
             }
@@ -993,20 +1011,23 @@ void cltool_outputUsage()
 	cout << "    Command line utility for communicating, logging, and updating firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << boldOff << " # stream same as line above" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password" << boldOff << "    # Connect to RTK NTRIP base" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << " # stream DID messages" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << " # stream same as line above" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << " # stream post processing data (PPD) with INS2" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << " # edit DID_FLASH_CONFIG message" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1}\"                                          # Return entire DID" << endlbOff;
+    cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"   # Return portion of two DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << boldOff << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << endlbOff;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
@@ -1059,13 +1080,13 @@ void cltool_outputUsage()
     cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
 
 	cout << endlbOn;
-	cout << "OPTIONS (IMX/GPX Messages)" << endl;
-    cout << "    -get {<DID>: {<FIELD1>,<FIELD2>,...}} " << boldOff << " Return values of dataset(s). DID may be a name or number. YAML input format." << endlbOn;
-    cout << "                                          " << boldOff << " Examples: `-get {DID_INS_1}`" << endlbOn;
-    cout << "                                          " << boldOff << "           `-get {DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}`" << endlbOn;
-    cout << "    -set {<DID>: {<FIELD1>: <VALUE>, ...}}" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
-    cout << "                                          " << boldOff << " Examples: `-set {DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}`" << endlbOn;
-    cout << "                                          " << boldOff << "           `-set {12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}`" << endlbOn;
+	cout << "OPTIONS (Messages)" << endl;
+    cout << "    -get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\" " << boldOff << " Return values of dataset(s). DID may be a name or number. YAML input format." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -get \"{DID_INS_1}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"" << endlbOn;
+    cout << "    -set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
