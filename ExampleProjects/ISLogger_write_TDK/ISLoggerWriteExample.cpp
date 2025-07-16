@@ -96,7 +96,7 @@ int parseInputFile()
         parsedData[parseCnt].gyZ = stoi(subStrings[6]);
         parsedData[parseCnt].temperature = stod(subStrings[7]);
 
-        parsedData[parseCnt].timeMs = parseCnt * DELTA_TIME_MS * 1000 + 1;
+        parsedData[parseCnt].timeMs = parseCnt * DELTA_TIME_MS * 1000;
 
         if (parseCnt % 100000 == 1)
             cout << "Parsed line: " << parseCnt << ".\r\n";
@@ -147,7 +147,7 @@ void step_lpf_sens_comp(sensor_comp_unit_t& scu, float alpha, float beta, float 
 void runScompLpf(int i)
 {
     // convert input to propper value
-    sensors_w_temp_t input;
+    static sensors_w_temp_t input;
 
     // Assign temperature in C
     input.temp[0] = parsedData[i].temperature;
@@ -318,14 +318,15 @@ int writeOutputFile()
 
     for (int i = 0; i < parseCnt; i++)
     {
+
+        if (i == 800 * 15)
+            cout << "asdf";
+
         // run LPF
         runScompLpf(i);
 
-        if (i == (800 * 40))
-            cout << "HALF";
-
         // log scomp
-        if ((i > 0) && ((i % 800)))
+        if ((i > 48000) && ((i % 800) == 0))
         {
             // set time
             tmpScomp.timeMs = parsedData[i].timeMs;
@@ -336,6 +337,7 @@ int writeOutputFile()
         if ((i % 10) == 0 && (i > 9))
         {
             setCurrentPimu(i);
+            //cout << "time: " << tmpPimu.time << "s.\r\n";
             logger.LogData(devLog, &pimuHdr, (const uint8_t*)&tmpPimu);
         }
 
@@ -343,7 +345,7 @@ int writeOutputFile()
         if ((i % BROAD_CAST_RATE) == (BROAD_CAST_RATE/2))
             logger.LogData(devLog, &devInfoHdr, (const uint8_t*)&tmpDevInfo);
 
-        if (i % 1000 == 1)
+        if (i % 100000 == 1)
             cout << "Writing line: " << i << ".\r\n";
     }
 
