@@ -559,7 +559,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); ++it )
         {
             int did = *it;
-            cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&d, &usageVec);
+            if (!cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&d, &usageVec))
+            {
+                cout << "Failed to convert -set input " << g_commandLineOptions.setNode << endl;
+                exit(-1);
+            }
 
             for (auto& usage : usageVec)
             {   // Upload data to device

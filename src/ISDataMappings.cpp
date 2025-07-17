@@ -2027,10 +2027,11 @@ bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& ou
             arr.SetStyle(YAML::EmitterStyle::Flow);     // Make array display on one line
             for (unsigned int i = 0; i < info.arraySize; ++i)
             {
-                if (DataToString(info, nullptr, dataPtr, stringBuffer, i))
+                if (!DataToString(info, nullptr, dataPtr, stringBuffer, i))
                 {
-                    arr.push_back(stringBuffer);
+                    return false;
                 }
+                arr.push_back(stringBuffer);
             }
             if (arr.size() > 0)
             {
@@ -2039,10 +2040,12 @@ bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& ou
         }
         else
         {
-            if (DataToString(info, nullptr, dataPtr, stringBuffer))
+            if (!DataToString(info, nullptr, dataPtr, stringBuffer))
             {
-                map[info.name] = stringBuffer;
+                return false;
             }
+
+            map[info.name] = stringBuffer;
         }
     }
 
@@ -2060,6 +2063,7 @@ bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataP
     const std::string didName = std::string(cISDataMappings::DataName(did));
     const auto& dataSetMap = *NameToInfoMap(did);
     const YAML::Node& map = yaml[didName];
+    bool success = false;
 
     if (!map || !map.IsMap()) {
         return false;
@@ -2087,26 +2091,37 @@ bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataP
             size_t count = _MIN(static_cast<size_t>(info.arraySize), valueNode.size());
             for (size_t i = 0; i < count; ++i)
             {
+                if (valueNode[i].IsNull()) continue;
                 std::string valStr = valueNode[i].as<std::string>();
-                StringToData(valStr.c_str(), static_cast<int>(valStr.length()), nullptr, dataPtr, info, static_cast<unsigned int>(i));
+                // std::cout << "Parsing array " << name << "[" << i << "]: " << valStr << std::endl;
+                if (!StringToData(valStr.c_str(), static_cast<int>(valStr.length()), nullptr, dataPtr, info, static_cast<unsigned int>(i)))
+                {
+                    return false;
+                }
                 if (usageVec)
                 {
                     AppendMemoryUsage(*usageVec, dataPtr + info.offset + i * info.elementSize, info.elementSize);
                 }
+                success = true;
             }
         }
         else
         {
             std::string valStr = valueNode.as<std::string>();
-            StringToData(valStr.c_str(), static_cast<int>(valStr.length()), nullptr, dataPtr, info);
+            // std::cout << "Parsing " << name << ": " << valStr << std::endl;
+            if (!StringToData(valStr.c_str(), static_cast<int>(valStr.length()), nullptr, dataPtr, info))
+            {
+                return false;
+            }
             if (usageVec)
             {
                 AppendMemoryUsage(*usageVec, dataPtr + info.offset, info.size);
             }
+            success = true;
         }
     }
 
-    return true;
+    return success;
 }
 
 void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void* newPtr, size_t newSize)

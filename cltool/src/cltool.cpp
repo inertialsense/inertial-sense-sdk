@@ -98,7 +98,63 @@ bool read_get_did_argument(string s, stream_did_t *dataset, std::string &fields)
     return false;
 }
 
-bool read_get_set_argument(std::string s, YAML::Node &getNode)
+void ConvertIndexedKeysToSequences(YAML::Node& node)
+{
+    if (!node.IsMap()) return;
+
+    static const std::regex indexedKeyRegex(R"((.+)\[(\d+)\]$)");
+    std::vector<std::string> keysToRemove;
+
+    // Copy key-value pairs to avoid iterator invalidation
+    std::vector<std::pair<std::string, YAML::Node>> entries;
+    for (const auto& it : node)
+    {
+        const std::string key = it.first.as<std::string>();
+        entries.emplace_back(key, it.second);
+    }
+
+    for (const auto& [key, value] : entries)
+    {
+        // Recurse into maps
+        if (value.IsMap())
+        {
+            YAML::Node subNode = value;  // Safe copy
+            ConvertIndexedKeysToSequences(subNode);
+            node[key] = subNode;  // Assign back
+        }
+
+        std::smatch match;
+        if (std::regex_match(key, match, indexedKeyRegex))
+        {
+            const std::string baseKey = match[1];
+            const int index = std::stoi(match[2]);
+
+            // Ensure the base key exists and is a sequence
+            YAML::Node tmpBase = node[baseKey];
+            if (!tmpBase || !tmpBase.IsSequence()) {
+                tmpBase = YAML::Node(YAML::NodeType::Sequence);
+            }
+
+            // Resize sequence to fit index
+            while (tmpBase.size() <= static_cast<size_t>(index)) {
+                tmpBase.push_back(YAML::Node());
+            }
+
+            tmpBase[index] = value;
+
+            node[baseKey] = tmpBase;  // Write it back
+            keysToRemove.push_back(key);
+        }
+    }
+
+    // Remove indexed keys
+    for (const std::string& k : keysToRemove)
+    {
+        node.remove(k);
+    }
+}
+
+bool read_get_set_argument(std::string s, YAML::Node &node)
 {
     // Preprocess s: wrap with braces if it contains no braces at all
     if (!s.empty() && s.find('{') == std::string::npos && s.find('}') == std::string::npos)
@@ -119,9 +175,13 @@ bool read_get_set_argument(std::string s, YAML::Node &getNode)
         }
     }
 
+    // Replace each match with quoted version.  This regex matches unquoted keys like: gps1AntOffset[0] or myField[12]
+    static const std::regex keyWithIndexRegex(R"((\{[^{}]*?)\b([A-Za-z_][A-Za-z0-9_]*\[\d+\])(?=\s*:))");
+    s = std::regex_replace(s, keyWithIndexRegex, "$1\"$2\"");
+    
     // Attempt to parse the string as YAML
     try {
-        getNode = YAML::Load(s);
+        node = YAML::Load(s);
     } catch (const YAML::ParserException& e) {
         std::cerr << "Parser error: " << e.what() << "\n";
         return false;
@@ -130,11 +190,16 @@ bool read_get_set_argument(std::string s, YAML::Node &getNode)
         return false;
     }
 
+    // cout << "Parsed YAML: " << node << endl;
+    // Convert indexed keys to sequences i.e. {gps1AntOffset[0]: 1.5, gps1AntOffset[1]: 2.5} becomes {gps1AntOffset: [1.5, 2.5]}
+    ConvertIndexedKeysToSequences(node);
+    // cout << "Revised YAML: " << node << endl;
+
     g_commandLineOptions.datasets.clear();
     g_commandLineOptions.outputOnceDid.clear();
 
     YAML::Node newNode;
-    for (const auto& topLevel : getNode) 
+    for (const auto& topLevel : node) 
     {
         std::string key = topLevel.first.as<std::string>();
         const YAML::Node& value = topLevel.second;
@@ -176,9 +241,9 @@ bool read_get_set_argument(std::string s, YAML::Node &getNode)
     }
 
     // Update yaml node to ensure keys are DID names instead of DID numbers 
-    getNode = newNode;
+    node = newNode;
 
-    // cout << "Parsed YAML: " << getNode << endl;
+    // cout << "Parsed YAML: " << node << endl;
 
     if (g_commandLineOptions.datasets.empty())
     {
@@ -1043,6 +1108,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GPS1_POS                                    # Return specific DIDs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"   # Return portion of two DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
@@ -1108,6 +1174,7 @@ void cltool_outputUsage()
     cout << "                                            " << boldOff << "           -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"" << endlbOn;
     cout << "    -set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
     cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gps1AntOffset[2]: 1.2}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
