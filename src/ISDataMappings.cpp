@@ -2084,7 +2084,7 @@ bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataP
         {
             if (!valueNode.IsSequence()) continue;
 
-            size_t count = std::min(static_cast<size_t>(info.arraySize), valueNode.size());
+            size_t count = _MIN(static_cast<size_t>(info.arraySize), valueNode.size());
             for (size_t i = 0; i < count; ++i)
             {
                 std::string valStr = valueNode[i].as<std::string>();
@@ -2124,8 +2124,8 @@ void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void
         if (!(newEnd < existing.ptr || newPtr8 > existingEnd))
         {
             // Expand existing range to include new range
-            uint8_t* newStart = std::min(existing.ptr, newPtr8);
-            uint8_t* mergedEnd = std::max(existingEnd, newEnd);
+            uint8_t* newStart = _MIN(existing.ptr, newPtr8);
+            uint8_t* mergedEnd = _MAX(existingEnd, newEnd);
 
             existing.ptr = newStart;
             existing.size = mergedEnd - newStart;
@@ -2139,8 +2139,8 @@ void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void
                     if (!(existing.end() < other.ptr || existing.ptr > other.end()))
                     {
                         // Merge this block too
-                        uint8_t* mergedStart = std::min(existing.ptr, other.ptr);
-                        uint8_t* mergedEnd = std::max(existing.end(), other.end());
+                        uint8_t* mergedStart = _MIN(existing.ptr, other.ptr);
+                        uint8_t* mergedEnd = _MAX(existing.end(), other.end());
 
                         existing.ptr = mergedStart;
                         existing.size = mergedEnd - mergedStart;
@@ -2353,7 +2353,7 @@ bool cISDataMappings::StringToDidBuffer(int did, const std::string& fields, uint
             nullptr,
             dataPtr,
             info,
-            std::max(0, arrayIndex)
+            _MAX(0, arrayIndex)
         );
 
         success |= fieldSuccess;
