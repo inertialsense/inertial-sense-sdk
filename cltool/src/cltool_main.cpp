@@ -245,7 +245,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
     if (!g_commandLineOptions.outputOnceDid.empty())
     {
         if (g_commandLineOptions.getNode && !g_commandLineOptions.getNode.IsNull() && g_commandLineOptions.getNode.size() > 0)
-        {   // Prevent processing of data if outputOnceDid is set
+        {   
             for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); )
             {
                 if (data->hdr.id == *it)
@@ -295,11 +295,12 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
                 return;
             }
 
+            // Prevent further processing if -get option is set
             return; 
         }
 
         if (std::find(g_commandLineOptions.outputOnceDid.begin(), g_commandLineOptions.outputOnceDid.end(), data->hdr.id) == g_commandLineOptions.outputOnceDid.end())
-        {   // Return DID is not in the outputOnceDid list
+        {   // Prevent further processing if this DID is not in the outputOnceDid list
             return;
         }
     }
