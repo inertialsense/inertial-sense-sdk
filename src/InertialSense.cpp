@@ -978,127 +978,102 @@ bool InertialSense::GpxFlashConfigUploadFailure(int pHandle)
 
     ISDevice& device = m_comManagerState.devices[pHandle];
     return device.gpxFlashCfgUploadChecksum && (device.gpxFlashCfgUploadChecksum != device.gpxStatus.flashCfgChecksum);
-} 
+}
 
-bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
+bool InertialSense::UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut)
 {
-    if ((size_t)pHandle >= m_comManagerState.devices.size())
-    {
-        return 0;
+    if ((size_t)pHandle >= m_comManagerState.devices.size()) {
+        return false;
     }
-    ISDevice& device = m_comManagerState.devices[pHandle];
 
-    device.imxFlashCfg.checksum = flashChecksum32(&device.imxFlashCfg, sizeof(nvm_flash_cfg_t));
+    std::vector<cISDataMappings::MemoryUsage> usageVec;
+    const auto& dataSetMap = *cISDataMappings::NameToInfoMap(did);
 
-    // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
-    static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
-    uint32_t *newCfg = (uint32_t*)&flashCfg;
-    uint32_t *curCfg = (uint32_t*)&device.imxFlashCfg; 
-    int iSize = sizeof(nvm_flash_cfg_t) / 4;
-    bool failure = false;
-    // Exclude updateIoConfig bit from flash config and keep track of it separately so it does not affect whether the platform config gets uploaded
-    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
-    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
-
-    for (int i = 2; i < iSize; i++)     // Start with index 2 to exclude size and checksum
+    for (const auto& [fieldName, info] : dataSetMap)
     {
-        if (newCfg[i] != curCfg[i])
-        {   // Found start
-            uint8_t *head = (uint8_t*)&(newCfg[i]);
+        if (info.size == 0) continue;
 
-            // Search for end
-            for (; i < iSize && newCfg[i] != curCfg[i]; i++);
+        // Handle arrays element by element
+        size_t elemSize = (info.arraySize > 0) ? info.elementSize : info.size;
+        size_t count = (info.arraySize > 0) ? info.arraySize : 1;
 
-            // Found end
-            uint8_t *tail = (uint8_t*)&(newCfg[i]);
-            int size = tail-head;
-            int offset = head-((uint8_t*)newCfg);
+        for (size_t i = 0; i < count; ++i)
+        {
+            uint8_t* newPtr = newData + info.offset + i * elemSize;
+            uint8_t* curPtr = curData + info.offset + i * elemSize;
 
-            if (platformCfgUpdateIoConfig &&
-                head <= (uint8_t*)&(flashCfg.platformConfig) &&
-                tail >  (uint8_t*)&(flashCfg.platformConfig))
-            {   // Re-apply updateIoConfig bit prior to upload
-                flashCfg.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
+            if (memcmp(newPtr, curPtr, elemSize) != 0)
+            {
+                cISDataMappings::AppendMemoryUsage(usageVec, newPtr, elemSize);
             }
-            
-            DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
-            int fail = comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);            
-            failure = failure || fail;
-            device.imxFlashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
         }
     }
 
-    if (device.imxFlashCfgUploadTimeMs == 0)
+    bool failure = false;
+    for (const cISDataMappings::MemoryUsage& usage : usageVec)
     {
-        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
+        int offset = static_cast<int>(usage.ptr - newData);
+        cout << "Sending " << cISDataMappings::DataName(did) << ": size " << usage.size << ", offset " << offset << endl;
+        failure |= comManagerSendData(pHandle, usage.ptr, did, static_cast<int>(usage.size), offset);
+        if (!failure)
+        {
+            uploadTimeMsOut = current_timeMs();
+        }
     }
 
-    // Update checksum
-    UpdateFlashConfigChecksum(flashCfg);
-
-    // Save checksum to ensure upload happened correctly
-    if (device.imxFlashCfgUploadTimeMs)
-    {
-        device.imxFlashCfgUploadChecksum = flashCfg.checksum;
-    }
-
-    // Update local copy of flash config
-    device.imxFlashCfg = flashCfg;
-
-    // Success
     return !failure;
+}
+
+bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
+{
+    ISDevice& device = m_comManagerState.devices[pHandle];
+
+    // Temporarily clear updateIoConfig for checksum
+    bool updateIo = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+    UpdateFlashConfigChecksum(flashCfg);
+    if (updateIo) flashCfg.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    bool success = UploadFlashConfigDiff(
+        pHandle,
+        reinterpret_cast<uint8_t*>(&flashCfg),
+        reinterpret_cast<uint8_t*>(&device.imxFlashCfg),
+        sizeof(nvm_flash_cfg_t),
+        DID_FLASH_CONFIG,
+        device.imxFlashCfgUploadTimeMs,
+        device.imxFlashCfgUploadChecksum
+    );
+
+    if (!device.imxFlashCfgUploadTimeMs)
+        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
+    else
+        device.imxFlashCfgUploadChecksum = flashCfg.checksum;
+
+    device.imxFlashCfg = flashCfg;
+    return success;
 }
 
 bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
 {
-    if ((size_t)pHandle >= m_comManagerState.devices.size())
-    {
-        return 0;
-    }
     ISDevice& device = m_comManagerState.devices[pHandle];
-    
-    // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
-    static_assert(sizeof(gpx_flash_cfg_t) % 4 == 0, "Size of gpx_flash_cfg_t must be a 4 bytes in size!!!");
-    uint32_t *newCfg = (uint32_t*)&flashCfg;
-    uint32_t *curCfg = (uint32_t*)&device.gpxFlashCfg; 
-    int iSize = sizeof(gpx_flash_cfg_t) / 4;
-    bool failure = false;
-    for (int i = 2; i < iSize; i++)
-    {
-        if (newCfg[i] != curCfg[i])
-        {   // Found start
-            uint8_t *head = (uint8_t*)&(newCfg[i]);
 
-            // Search for end
-            for (; i < iSize && newCfg[i] != curCfg[i]; i++);
+    bool success = UploadFlashConfigDiff(
+        pHandle,
+        reinterpret_cast<uint8_t*>(&flashCfg),
+        reinterpret_cast<uint8_t*>(&device.gpxFlashCfg),
+        sizeof(gpx_flash_cfg_t),
+        DID_GPX_FLASH_CFG,
+        device.gpxFlashCfgUploadTimeMs,
+        device.gpxFlashCfgUploadChecksum
+    );
 
-            // Found end
-            uint8_t *tail = (uint8_t*)&(newCfg[i]);
-            int size = tail-head;
-            int offset = head-((uint8_t*)newCfg);
-            DEBUG_PRINT("Sending DID_GPX_FLASH_CFG: size %d, offset %d\n", size, offset);
-            failure = failure || comManagerSendData(pHandle, head, DID_GPX_FLASH_CFG, size, offset);
-            device.gpxFlashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
-        }
-    }
-
-    if (device.gpxFlashCfgUploadTimeMs == 0)
-    {
+    if (!device.gpxFlashCfgUploadTimeMs)
         printf("DID_GPX_FLASH_CONFIG in sync.  No upload.\n");
-    }
-
-    // Update checksum
-    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(gpx_flash_cfg_t));
-    if (device.gpxFlashCfgUploadTimeMs)
-    {
+    else
         device.gpxFlashCfgUploadChecksum = flashCfg.checksum;
-    }
 
-    // Update local copy of flash config
     device.gpxFlashCfg = flashCfg;
-
-    // Success
-    return !failure;
+    return success;
 }
 
 bool InertialSense::WaitForImxFlashCfgSynced(int pHandle)

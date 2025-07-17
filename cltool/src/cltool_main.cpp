@@ -262,6 +262,19 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
                         out << output;
                         if (out.good()) {
                             std::cout << out.c_str() << std::endl;
+                            if (!g_commandLineOptions.getNodeOutputFilename.empty())
+                            {   // Write to file
+                                std::ofstream outFile(g_commandLineOptions.getNodeOutputFilename, std::ios::app);
+                                if (outFile.is_open())
+                                {
+                                    outFile << out.c_str() << std::endl;
+                                    outFile.close();
+                                }
+                                else
+                                {
+                                    std::cerr << "Failed to open output file: " << g_commandLineOptions.getNodeOutputFilename << std::endl;
+                                }
+                            }
                         } else {
                             std::cerr << "YAML emitter error: " << out.GetLastError() << std::endl;
                         }
@@ -563,6 +576,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
                 g_commandLineOptions.setAckDid.push_back(did);
             }
         }
+    }
+
+    if (!g_commandLineOptions.getNodeOutputFilename.empty() && !g_commandLineOptions.getNodeOutputFileAppend)
+    {
+        std::remove(g_commandLineOptions.getNodeOutputFilename.c_str()); // Silently does nothing if file doesn't exist
     }
 
     bool exitNow = false;

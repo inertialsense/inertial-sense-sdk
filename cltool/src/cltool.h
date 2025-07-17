@@ -139,6 +139,8 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 
     YAML::Node getNode;
     YAML::Node setNode;
+    std::string getNodeOutputFilename;		// -get-output-file FILENAME
+    bool getNodeOutputFileAppend;		    // -get-output-file FILENAME --append
     
     uint32_t sysCommand;
     int32_t platformType;

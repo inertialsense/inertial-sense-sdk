@@ -364,6 +364,7 @@ public:
     * @param pHandle the pHandle to set flash config for
     * @return true if success
     */
+    bool UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
     bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
     bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
