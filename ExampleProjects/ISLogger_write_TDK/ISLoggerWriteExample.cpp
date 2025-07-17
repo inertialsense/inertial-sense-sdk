@@ -326,7 +326,7 @@ int writeOutputFile()
         runScompLpf(i);
 
         // log scomp
-        if ((i > 48000) && ((i % 800) == 0))
+        if ((i > 0) && ((i % 800) == 0))
         {
             // set time
             tmpScomp.timeMs = parsedData[i].timeMs;
@@ -348,6 +348,8 @@ int writeOutputFile()
         if (i % 100000 == 1)
             cout << "Writing line: " << i << ".\r\n";
     }
+
+    logger.CloseAllFiles();
 
     return 0;
 }
