@@ -236,10 +236,13 @@ string cInertialSenseDisplay::Hello()
 
 string cInertialSenseDisplay::Connected()
 {
-	if (!m_outputOnceDid.empty())
-	{	// Don't print connected message if outputOnceDid is set
-		return "";
-	}
+	// Apply this breaking change in Develop and document in change_log.md
+	// Uncomment this to prevent printing "Connected" message when outputOnceDid is set.  
+	// You also need to remove " << endl" from all instances of "cout << Connected() << endl;"
+	// if (!m_outputOnceDid.empty())
+	// {	// Don't print connected message if outputOnceDid is set
+	// 	return "";
+	// }
 
 	if (m_startMs==0)
 	{	// Initialize start time
@@ -275,7 +278,7 @@ string cInertialSenseDisplay::Connected()
 		}
 		stream << " (" << bytesPerS << " bytes/s)";
 	}
-	stream << "     " << endl << endl;
+	stream << "     " << endl;
 
 	return stream.str();
 }
@@ -571,7 +574,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 		if (m_enableReplay)
 			cout << Replay(m_replaySpeedX) << endl;
 		else
-			cout << Connected();
+			cout << Connected() << endl;
 
 		cout << VectorToString();
 		return true;
@@ -581,7 +584,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 		if (m_enableReplay)
 			cout << Replay(m_replaySpeedX) << endl;
 		else
-			cout << Connected();
+			cout << Connected() << endl;
 
 		// Generic column format
 		cout << DatasetToString(&m_editData.pData);
@@ -589,7 +592,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 
 	case DMODE_STATS:
 		Home();
-		cout << Connected();
+		cout << Connected() << endl;
 		PrintStats();
 		return true;
 

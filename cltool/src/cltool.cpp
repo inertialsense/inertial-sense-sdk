@@ -105,7 +105,20 @@ bool read_get_set_argument(std::string s, YAML::Node &getNode)
     {
         s = "{" + s + "}";
     }
-        
+
+    // Ensure there is a space after each colon
+    for (size_t i = 0; i < s.length(); ++i)
+    {
+        if (s[i] == ':')
+        {
+            // If not followed by space and not end of string
+            if (i + 1 >= s.length() || s[i + 1] != ' ')
+            {
+                s.insert(i + 1, " ");
+            }
+        }
+    }
+
     // Attempt to parse the string as YAML
     try {
         getNode = YAML::Load(s);
@@ -1090,11 +1103,9 @@ void cltool_outputUsage()
 	cout << "OPTIONS (Messages)" << endl;
     cout << "    -get <DID1>,<DID2>,...                  " << boldOff << " Return values of dataset(s). DID may be a name or number." << endlbOn;
     cout << "    -get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\" " << boldOff << " Return values of dataset(s). DID may be a name or number. YAML input format." << endlbOn;
-    cout << "    -get-output-file <FILENAME> <--append>  " << boldOff << " Save output of -get to FILENAME file in current directory. --append to file." << endlbOn;
     cout << "                                            " << boldOff << " Examples: -get 1,4,12,DID_GPS1_POS" << endlbOn;
-    cout << "                                            " << boldOff << "           -get \"{DID_INS_1}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -get \"{DID_INS_1,DID_GPS1_POS}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"" << endlbOn;
-    cout << "                                            " << boldOff << "           -get \"{DID_INS_1, DID_GPS1_POS}\" -get-output-file out.yaml --append" << endlbOn;
     cout << "    -set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
     cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
