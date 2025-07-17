@@ -236,6 +236,11 @@ string cInertialSenseDisplay::Hello()
 
 string cInertialSenseDisplay::Connected()
 {
+	if (!m_outputOnceDid.empty())
+	{	// Don't print connected message if outputOnceDid is set
+		return "";
+	}
+
 	if (m_startMs==0)
 	{	// Initialize start time
 		m_startMs = current_timeMs();
@@ -270,7 +275,7 @@ string cInertialSenseDisplay::Connected()
 		}
 		stream << " (" << bytesPerS << " bytes/s)";
 	}
-	stream << "     " << endl;
+	stream << "     " << endl << endl;
 
 	return stream.str();
 }
@@ -566,7 +571,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 		if (m_enableReplay)
 			cout << Replay(m_replaySpeedX) << endl;
 		else
-			cout << Connected() << endl;
+			cout << Connected();
 
 		cout << VectorToString();
 		return true;
@@ -576,7 +581,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 		if (m_enableReplay)
 			cout << Replay(m_replaySpeedX) << endl;
 		else
-			cout << Connected() << endl;
+			cout << Connected();
 
 		// Generic column format
 		cout << DatasetToString(&m_editData.pData);
@@ -584,7 +589,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 
 	case DMODE_STATS:
 		Home();
-		cout << Connected() << endl;
+		cout << Connected();
 		PrintStats();
 		return true;
 

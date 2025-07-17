@@ -262,19 +262,6 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
                         out << output;
                         if (out.good()) {
                             std::cout << out.c_str() << std::endl;
-                            if (!g_commandLineOptions.getNodeOutputFilename.empty())
-                            {   // Write to file
-                                std::ofstream outFile(g_commandLineOptions.getNodeOutputFilename, std::ios::app);
-                                if (outFile.is_open())
-                                {
-                                    outFile << out.c_str() << std::endl;
-                                    outFile.close();
-                                }
-                                else
-                                {
-                                    std::cerr << "Failed to open output file: " << g_commandLineOptions.getNodeOutputFilename << std::endl;
-                                }
-                            }
                         } else {
                             std::cerr << "YAML emitter error: " << out.GetLastError() << std::endl;
                         }
@@ -335,7 +322,7 @@ static void cltool_ackCallback(InertialSense* i, p_ack_t* ack, unsigned char pac
         for (auto it = g_commandLineOptions.setAckDid.begin(); it != g_commandLineOptions.setAckDid.end(); )
         {
             if (ack->body.dataHdr.id == *it)
-            {   // Erase the matched DID from the vector and move to next
+            {   // Remove DID from the vector and move to next
                 it = g_commandLineOptions.setAckDid.erase(it);
             }
             else
@@ -345,7 +332,7 @@ static void cltool_ackCallback(InertialSense* i, p_ack_t* ack, unsigned char pac
         }
 
         if (g_commandLineOptions.setAckDid.empty())
-        {   // Exit cltool now and report success code
+        {   // All expected acks have been received. Exit cltool now and report success code
             std::exit(0);
             return;
         }
@@ -582,11 +569,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
                 g_commandLineOptions.setAckDid.push_back(did);
             }
         }
-    }
-
-    if (!g_commandLineOptions.getNodeOutputFilename.empty() && !g_commandLineOptions.getNodeOutputFileAppend)
-    {
-        std::remove(g_commandLineOptions.getNodeOutputFilename.c_str()); // Silently does nothing if file doesn't exist
     }
 
     bool exitNow = false;

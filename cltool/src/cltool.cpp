@@ -100,6 +100,13 @@ bool read_get_did_argument(string s, stream_did_t *dataset, std::string &fields)
 
 bool read_get_set_argument(std::string s, YAML::Node &getNode)
 {
+    // Preprocess s: wrap with braces if it contains no braces at all
+    if (!s.empty() && s.find('{') == std::string::npos && s.find('}') == std::string::npos)
+    {
+        s = "{" + s + "}";
+    }
+        
+    // Attempt to parse the string as YAML
     try {
         getNode = YAML::Load(s);
     } catch (const YAML::ParserException& e) {
@@ -526,15 +533,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.gpxflashCfgSet = true;
             enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
-        }
-        else if (startsWith(a, "-get-output-file") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
-        {
-            g_commandLineOptions.getNodeOutputFilename = argv[++i];    // use next argument
-            if (i+1 < argc && startsWith(argv[i+1], "--append"))
-            {
-                i++;    // use next argument
-                g_commandLineOptions.getNodeOutputFileAppend = true;    // Append to file if "--append" is specified
-            }
         }
         else if (startsWith(a, "-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
         {
@@ -1030,8 +1028,8 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1}\" -get-output-file out.yaml                # Return entire DID and save to file" << endlbOff;
-    cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"   # Return portion of two DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GPS1_POS                                    # Return specific DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"   # Return portion of two DIDs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
@@ -1090,11 +1088,13 @@ void cltool_outputUsage()
 
 	cout << endlbOn;
 	cout << "OPTIONS (Messages)" << endl;
+    cout << "    -get <DID1>,<DID2>,...                  " << boldOff << " Return values of dataset(s). DID may be a name or number." << endlbOn;
     cout << "    -get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\" " << boldOff << " Return values of dataset(s). DID may be a name or number. YAML input format." << endlbOn;
-    cout << "    -get-output-file <FILENAME> <--append>  " << boldOff << " Save output of -get to FILENAME file in current directory. --append to append to file." << endlbOn;
-    cout << "                                            " << boldOff << " Examples: -get \"{DID_INS_1}\"" << endlbOn;
+    cout << "    -get-output-file <FILENAME> <--append>  " << boldOff << " Save output of -get to FILENAME file in current directory. --append to file." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -get 1,4,12,DID_GPS1_POS" << endlbOn;
+    cout << "                                            " << boldOff << "           -get \"{DID_INS_1}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"" << endlbOn;
-    cout << "                                            " << boldOff << "           -get \"{DID_INS_1, DID_GPS_1}\" -get-output-file out.yaml --append" << endlbOn;
+    cout << "                                            " << boldOff << "           -get \"{DID_INS_1, DID_GPS1_POS}\" -get-output-file out.yaml --append" << endlbOn;
     cout << "    -set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
     cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
