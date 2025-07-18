@@ -1200,13 +1200,13 @@ void cltool_outputUsage()
 	cout << "    -rp " << boldOff << "PATH        Replay data log from PATH" << endlbOn;
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (READ flash config - DEPRECATED, use `-getdid` and `-setdid` instead)" << endl;
+	cout << "OPTIONS (READ flash config) - DEPRECATED, use `-get` instead" << endl;
 	cout << "    -imxFlashCfg" << boldOff  <<  "                                # List all \"keys\" and \"values\" in IMX" << endlbOn;
 	cout << "    -gpxFlashCfg" << boldOff  <<  "                                # List all \"keys\" and \"values\" in GPX" << endlbOn;
 	cout << "    \"-imxFlashCfg=[key]|[key]|[key]\"" << boldOff << "            # List specific IMX values" <<  endlbOn;
 	cout << "    \"-gpxFlashCfg=[key]|[key]|[key]\"" << boldOff << "            # List specific GPX values" <<  endlbOn;
 	cout << endl;
-	cout << "OPTIONS (WRITE flash config)" << endl;
+	cout << "OPTIONS (WRITE flash config) - DEPRECATED, use `-set` instead" << endl;
 	cout << "    \"-imxFlashCfg=[key]=[value]|[key]=[value]\"" << boldOff << "  # Set key / value pairs in IMX flash config. " << endlbOn;
 	cout << "    \"-gpxFlashCfg=[key]=[value]|[key]=[value]\"" << boldOff << "  # Set key / value pairs in GPX flash config. " << endlbOn;
 	cout << "        " << boldOff <<   "                                        # Surround with \"quotes\" when using pipe operator." << endlbOn;
