@@ -14,8 +14,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __ISDATAMAPPINGS_H_
 
 #include <string>
+#include <vector>
 #include <map>
 #include <inttypes.h>
+#include <yaml-cpp/yaml.h>
 #include "com_manager.h"
 
 #include <type_traits>
@@ -89,8 +91,8 @@ typedef struct
 	uint32_t    elementSize;	// Element size in bytes
 	eDataFlags  flags;
 	std::string name;
-	std::string units;			// Units (after conversion)
-	std::string description;
+	std::vector<std::string> units;			// Units (after conversion)
+	std::vector<std::string> description;
 	double conversion;			// Unit conversion when converting to string
 } data_info_t;
 
@@ -232,8 +234,8 @@ public:
             elementSize,
             eDataFlags(flags), 
             name, 
-            units, 
-            description, 
+            std::vector<std::string>{units}, 
+            std::vector<std::string>{description}, 
             conversion 
         };
 
@@ -257,20 +259,33 @@ public:
 		}
     }
 
-    template <typename MemberType>
+	template <typename MemberType>
 	void AddArray(const std::string& name, 
 		MemberType member,
 		eDataType type,
 		uint32_t arraySize,
-		const std::string& units = "", 
-		const std::string& description = "",
-        int flags = 0,
+		const std::vector<std::string>& units = {},
+		const std::vector<std::string>& description = {},
+		int flags = 0,
 		double conversion = 1.0) 	
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
 		uint32_t size = (uint32_t)sizeof(FieldType);
 		uint32_t elementSize = size/arraySize;
+
+		std::vector<std::string> unitsCopy = units;
+		if (unitsCopy.size() && unitsCopy.size() < arraySize)
+		{	// Extend the units vector to match the array size
+			std::string lastUnit = unitsCopy.empty() ? "" : unitsCopy.back();
+			unitsCopy.resize(arraySize, lastUnit);
+		}
+		std::vector<std::string> descriptionCopy = description;
+		if (descriptionCopy.size() && descriptionCopy.size() < arraySize)
+		{	// Extend the description vector to match the array size
+			std::string lastDesc = descriptionCopy.empty() ? "" : descriptionCopy.back();
+			descriptionCopy.resize(arraySize, lastDesc);
+		}
 
         // Populate the map with the new entry
         ds.nameToInfo[name] = { 
@@ -281,8 +296,8 @@ public:
 			elementSize,
             eDataFlags(flags),
             name, 
-            units, 
-            description, 
+            unitsCopy, 
+            descriptionCopy, 
             conversion 
         };
 
@@ -329,8 +344,8 @@ public:
             elementSize,
             eDataFlags(flags), 
             name, 
-            units, 
-            description, 
+            std::vector<std::string>{units}, 
+            std::vector<std::string>{description}, 
             conversion 
         };
 
@@ -358,8 +373,8 @@ public:
 		uint32_t offset,
 		eDataType type,
 		uint32_t arraySize,
-		const std::string& units = "", 
-		const std::string& description = "",
+		const std::vector<std::string>& units = {},
+		const std::vector<std::string>& description = {},
         int flags = 0,
 		double conversion = 1.0,
 		uint32_t typeSize = 0)
@@ -367,6 +382,19 @@ public:
 		uint32_t elementSize = (typeSize ? typeSize : s_eDataTypeSize[type]);
 		uint32_t size = elementSize * arraySize;
 
+		std::vector<std::string> unitsCopy = units;
+		if (unitsCopy.size() && unitsCopy.size() < arraySize)
+		{	// Extend the units vector to match the array size
+			std::string lastUnit = unitsCopy.empty() ? "" : unitsCopy.back();
+			unitsCopy.resize(arraySize, lastUnit);
+		}
+		std::vector<std::string> descriptionCopy = description;
+		if (descriptionCopy.size() && descriptionCopy.size() < arraySize)
+		{	// Extend the description vector to match the array size
+			std::string lastDesc = descriptionCopy.empty() ? "" : descriptionCopy.back();
+			descriptionCopy.resize(arraySize, lastDesc);
+		}
+		
         // Populate the map with the new entry
         ds.nameToInfo[name] = { 
             offset,
@@ -375,10 +403,10 @@ public:
 			arraySize,
 			elementSize,
             eDataFlags(flags),
-            name, 
-            units, 
-            description, 
-            conversion 
+            name,
+            unitsCopy,
+            descriptionCopy,
+            conversion
         };
 
         // Add the entry to the index
@@ -410,43 +438,9 @@ public:
     {
 		eDataType type = DATA_TYPE_F64;
 		flags &= ~DATA_FLAGS_FIXED_DECIMAL_MASK;
-		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, "°", description + " latitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
-		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, "°", description + " longitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
-		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, "m", description + " " + descriptionAltitude, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+		AddArray2(name, offset, type, 3, {"°", "°", "m"}, {description + " latitude", description + " longitude", description + " " + descriptionAltitude}, flags | DATA_FLAGS_FIXED_DECIMAL_8);
 	}
-
-	void AddVec3(const std::string& name, 
-		uint32_t offset,
-		eDataType type,
-		const std::string& units = "",
-		const std::string& description1 = "",
-		const std::string& description2 = "",
-		const std::string& description3 = "",
-		int flags = 0,
-		double conversion = 1.0)
-    {
-		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, units, description1, flags, conversion);
-		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, units, description2, flags, conversion);
-		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, units, description3, flags, conversion);
-	}
-
-	void AddVec4(const std::string& name, 
-		uint32_t offset,
-		eDataType type,
-		const std::string& units = "",
-		const std::string& description1 = "",
-		const std::string& description2 = "",
-		const std::string& description3 = "",
-		const std::string& description4 = "",
-		int flags = 0,
-		double conversion = 1.0)
-    {
-		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, units, description1, flags, conversion);
-		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, units, description2, flags, conversion);
-		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, units, description3, flags, conversion);
-		AddMember2(name + "[3]", offset + 3*s_eDataTypeSize[type], type, units, description4, flags, conversion);
-	}
-
+	
 	void AddVec3Xyz(const std::string& name, 
 		uint32_t offset,
 		eDataType type,
@@ -455,7 +449,7 @@ public:
 		int flags = 0,
 		double conversion = 1.0)
 	{
-		AddVec3(name, offset, type, units, "X "+description, "Y "+description, "Z "+description, flags, conversion);
+		AddArray2(name, offset, type, 3, {units}, {"X "+description, "Y "+description, "Z "+description}, flags, conversion);
 	}
 
 	void AddVec3Rpy(const std::string& name, 
@@ -466,7 +460,7 @@ public:
 		int flags = 0,
 		double conversion = 1.0)
 	{
-		AddVec3(name, offset, type, units, "Roll "+description, "Pitch "+description, "Yaw "+description, flags, conversion);
+		AddArray2(name, offset, type, 3, {units}, {"Roll "+description, "Pitch "+description, "Yaw "+description}, flags, conversion);
 	}
 
 private:
@@ -484,6 +478,14 @@ public:
 
 	virtual ~cISDataMappings() {}
 
+	struct MemoryUsage
+	{
+		uint8_t* ptr;
+		size_t size;
+
+		uint8_t* end() const { return ptr + size; }
+	};
+
 	/**
 	* Get a data set name from an id
 	* @param did the data id to get a data set name from
@@ -492,11 +494,19 @@ public:
 	static const char* DataName(uint32_t did);
 
 	/**
-	* Get a data set id from name
-	* @param did the data id to get a data set name from
-	* @return data set name or NULL if not found
+	* Get a data set id from a numeric or alphabetic string (i.e. "DID_INS_1" or "4")
+	* @param string the string to convert to a data id
+	* @return data set ID or NULL if not found
 	*/
-	static uint32_t Did(std::string name);
+	static uint32_t Did(std::string string);
+
+	/**
+	 * @brief Convert a name to a data set id
+	 * 
+	 * @param name the name to convert
+	* @return data set ID or NULL if not found
+	 */
+	static uint32_t NameToDid(std::string name);
 
 	/**
 	* Get the size of a given data id
@@ -595,6 +605,45 @@ public:
 	*/
 	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
 
+	/*** Convert a did data set buffer to a YAML node
+	* @param did the data ID
+	* @param dataPtr pointer to the did buffer
+	* @param output the YAML node representation of the data set
+	* @param filter optional filter to apply to the output
+	* @return true if successful, false if error
+	*/
+	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output);
+	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter);
+
+	/*** Convert a YAML node to a did data set buffer
+	* @param did the data ID
+	* @param yaml the YAML node to convert
+	* @param dataPtr pointer to the did buffer
+	* @param usageVec optional vector to hold memory usage information
+	* @return true if successful, false if error
+	*/
+	static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec = nullptr);
+
+	/**
+	 * @brief Convert a did data set buffer to a string representation
+	 *
+	 * @param did the data ID
+	 * @param dataPtr pointer to the did buffer
+	 * @param output the string representation of the data set
+	 * @param fields optional fields to include in the output
+	 * @return true if successful, false if error
+	 */
+	static bool DidBufferToString(int did, const uint8_t* dataPtr, std::string &output, std::string fields="");
+
+	/**
+	* Convert a string representation to a did data set buffer
+	* @param did the data ID
+	* @param fields optional fields to include in the output
+	* @param dataPtr pointer to the did buffer
+	* @return true if successful, false if error
+	*/
+	static bool StringToDidBuffer(int did, const std::string& fields, uint8_t* dataPtr);
+
 	/**
 	* Get a timestamp from data if available
 	* @param hdr data header
@@ -621,7 +670,12 @@ public:
 	*/
 	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
+	static void AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void* newPtr, size_t newSize);
+
 protected:
+
+	static int ExtractArrayIndex(std::string &str);
+
 	static const char* const m_dataIdNames[];
 
 	data_set_t m_data_set[DID_COUNT];

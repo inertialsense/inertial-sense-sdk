@@ -458,7 +458,11 @@ typedef struct
 typedef struct
 {
     /** Packet info of the received packet */
-    uint16_t            pktInfo;
+    struct ISComm
+    {
+        uint8_t         flags;             //!< Packet flags of received packet (see eISBPacketFlags)
+        uint8_t         id;                //!< DID of received packet
+    }                   pktInfo;
 
     /** Packet counter of the received packet */
     uint16_t            pktCounter;

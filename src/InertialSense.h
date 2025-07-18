@@ -53,6 +53,7 @@ extern "C"
 class InertialSense;
 
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
+typedef std::function<void(InertialSense* i, p_ack_t* ack, unsigned char packetIdentifier, int pHandle)> pfnHandleAckData;
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pHandle);
 
 /**
@@ -69,6 +70,7 @@ public:
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
+        pfnHandleAckData binaryAckCallback;     // acknowledgment command and set data callback
 #define SIZE_BINARY_CALLBACK	256
         pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK];
         pfnStepLogFunction stepLogFunction;
@@ -96,6 +98,7 @@ public:
     */
     InertialSense(
             pfnHandleBinaryData    callbackIsb = NULL,
+            pfnHandleAckData       handlerAck = NULL,
             pfnIsCommAsapMsg       callbackRmc = NULL,
             pfnIsCommGenMsgHandler callbackNmea = NULL,
             pfnIsCommGenMsgHandler callbackUblox = NULL,
@@ -361,6 +364,7 @@ public:
     * @param pHandle the pHandle to set flash config for
     * @return true if success
     */
+    bool UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
     bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
     bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
