@@ -124,7 +124,7 @@ void ConvertIndexedKeysToSequences(YAML::Node& node)
         }
 
         std::smatch match;
-        if (std::regex_match(key, match, indexedKeyRegex))
+        if (std::regex_match(static_cast<const std::string&>(key), match, indexedKeyRegex))
         {
             const std::string baseKey = match[1];
             const int index = std::stoi(match[2]);
