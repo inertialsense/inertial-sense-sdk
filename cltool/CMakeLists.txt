@@ -2,6 +2,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
 project(cltool)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 

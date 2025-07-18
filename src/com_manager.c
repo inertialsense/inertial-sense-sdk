@@ -920,19 +920,21 @@ int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 
 void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags)
 {
-    int ackSize;
-
     // Create and Send request packet
     p_ack_t ack = { 0 };
-    ack.hdr.pktInfo = pkt->hdr.flags;
-    ackSize = sizeof(p_ack_hdr_t);
+    ack.hdr.pktInfo.flags = pkt->hdr.flags;
+    ack.hdr.pktInfo.id = pkt->hdr.id;
 
     // Set ack body
     switch (pkt->hdr.flags & PKT_TYPE_MASK)
     {
     case PKT_TYPE_SET_DATA:
-        ack.body.dataHdr = *((p_data_hdr_t*)(pkt->data.ptr));
-        ackSize += sizeof(p_data_hdr_t);
+        ack.body.dataHdr.id = pkt->hdr.id;
+        ack.body.dataHdr.size = pkt->hdr.payloadSize;
+        if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
+        {
+            ack.body.dataHdr.offset += pkt->offset; // add offset to size
+        }
         break;
     }
 
