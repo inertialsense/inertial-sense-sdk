@@ -538,7 +538,7 @@ typedef struct PACKED
  *
  *  Upper 6 bits are the hardware type (IMX, GPX, uINS, etc; 64 possible values)
  *  Middle 4 bits are the major hardware version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
- *  Lower 6 bits are the minor hardware version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
+ *  Lower 6 bits are the minor hardware version (IMX-6, uINS-3.2, GPX-1.0; 64 possible values)
  *
  *  If the TYPE and MAJOR are 0, then fall back to eIsHardwareType to determine the type from the legacy map:
  *      0 = Unknown
