@@ -378,6 +378,8 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
 // All DID messages are found in data_sets.h
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
+    bool exitApp = false;
+
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
     if (!g_commandLineOptions.listenMode)
     {   
@@ -461,8 +463,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cout << "Sending software reset." << endl;
         inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        // return false;
-        exit(0); // Exit cltool now and report success code
+        exitApp = true; // Exit cltool now and report success code
     }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX
@@ -510,7 +511,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        return false;
+        exitApp = true; // Exit cltool now and report success code
     }
     if (g_commandLineOptions.platformType >= 0 && g_commandLineOptions.platformType < PLATFORM_CFG_TYPE_COUNT)
     {   // Confirm
@@ -525,7 +526,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }
-
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
         vector<string> pieces;
@@ -549,7 +549,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             cout << "Failed to connect to server (base)." << endl;
         }
     }
-
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
     	uDatasets d = {};
@@ -562,7 +561,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             if (!cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&d, &usageVec))
             {
                 cout << "Failed to convert -set input " << g_commandLineOptions.setNode << endl;
-                exit(-1);
+                std::exit(-1);
             }
 
             for (auto& usage : usageVec)
@@ -574,15 +573,13 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             }
         }
     }
-
-    bool exitNow = false;
     if (g_commandLineOptions.imxflashCfgSet)
     {
         if (!cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
         {   // Exit cltool now and report error code
             std::exit(-1);
         }
-        exitNow = true;
+        exitApp = true;
     }
     if (g_commandLineOptions.gpxflashCfgSet)
     {
@@ -590,9 +587,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         {   // Exit cltool now and report error code
             std::exit(-2);
         }
-        exitNow = true;
+        exitApp = true;
     }
-    if (exitNow)
+
+    if (exitApp)
     {   // Exit cltool now and report success code
         std::exit(0);
     }
