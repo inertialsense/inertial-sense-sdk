@@ -524,7 +524,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         // Write key (uint32_t) and platformType (int32_t), 8 bytes
         inertialSenseInterface.SendRawData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        return false;
+        exitApp = true;
     }
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
