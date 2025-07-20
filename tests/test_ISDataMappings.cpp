@@ -107,7 +107,6 @@ TEST(ISDataMappings, DataToYamlToData)
 	d.ins1.hdwStatus = 0x05060708; // Hardware status flags
 	testDataToYamlToData(d, DID_INS_1);
 
-	d.sysParams.navOutputPeriodMs = 100; // Navigation output period in milliseconds
 	d.sysParams.insStatus = 0x01020304; // INS status flags
 	d.sysParams.hdwStatus = 0x05060708; // Hardware status flags
 	d.sysParams.imuTemp = 25.0f; // IMU temperature in degrees
@@ -118,7 +117,7 @@ TEST(ISDataMappings, DataToYamlToData)
 	d.sysParams.navOutputPeriodMs = 100; // Navigation output period in milliseconds
 	d.sysParams.sensorTruePeriod = 0.001; // Sensor true period in seconds
 	d.sysParams.flashCfgChecksum = 0x12345678; // Flash config checksum
-	d.sysParams.navUpdatePeriodMs = 200; // Navigation update period in milliseconds
+	d.sysParams.navUpdatePeriodMs = 100; // Navigation update period in milliseconds
 	d.sysParams.genFaultCode = 0x0F0E0D0C; // General fault code
 	d.sysParams.upTime = 3600.0; // System up time in seconds
 	testDataToYamlToData(d, DID_SYS_PARAMS);
