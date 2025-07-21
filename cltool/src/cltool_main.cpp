@@ -44,6 +44,7 @@ using namespace std;
 #define XMIT_CLOSE_DELAY_MS    1000     // (ms) delay prior to cltool close to ensure data transmission
 
 static bool g_killThreadsNow = false;
+static bool g_cmdSuccessExitAppNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 InertialSense *g_inertialSenseInterface = NULL;
@@ -461,8 +462,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cout << "Sending software reset." << endl;
         inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        // return false;
-        exit(0); // Exit cltool now and report success code
+        g_cmdSuccessExitAppNow = true; // Exit cltool now and report success code
     }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX
@@ -510,7 +510,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        return false;
+        g_cmdSuccessExitAppNow = true; // Exit cltool now and report success code
     }
     if (g_commandLineOptions.platformType >= 0 && g_commandLineOptions.platformType < PLATFORM_CFG_TYPE_COUNT)
     {   // Confirm
@@ -523,9 +523,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         // Write key (uint32_t) and platformType (int32_t), 8 bytes
         inertialSenseInterface.SendRawData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        return false;
+        g_cmdSuccessExitAppNow = true;
     }
-
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
         vector<string> pieces;
@@ -549,7 +548,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             cout << "Failed to connect to server (base)." << endl;
         }
     }
-
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
     	uDatasets d = {};
@@ -562,7 +560,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             if (!cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&d, &usageVec))
             {
                 cout << "Failed to convert -set input " << g_commandLineOptions.setNode << endl;
-                exit(-1);
+                std::exit(-1);
             }
 
             for (auto& usage : usageVec)
@@ -574,15 +572,13 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             }
         }
     }
-
-    bool exitNow = false;
     if (g_commandLineOptions.imxflashCfgSet)
     {
         if (!cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
         {   // Exit cltool now and report error code
             std::exit(-1);
         }
-        exitNow = true;
+        g_cmdSuccessExitAppNow = true;
     }
     if (g_commandLineOptions.gpxflashCfgSet)
     {
@@ -590,11 +586,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         {   // Exit cltool now and report error code
             std::exit(-2);
         }
-        exitNow = true;
+        g_cmdSuccessExitAppNow = true;
     }
-    if (exitNow)
-    {   // Exit cltool now and report success code
-        std::exit(0);
+
+    if (g_cmdSuccessExitAppNow)
+    {   // Exit cltool now and report success code.  Return false to tell cltool to close.
+        return false;
     }
 
     return true;
@@ -1048,7 +1045,12 @@ static int cltool_dataStreaming()
         }
     }
     else
-    {   // Failed to setup communications
+    {   if (g_cmdSuccessExitAppNow)
+        {   // Exit cltool now and report success code
+            return EXIT_CODE_SUCCESS;
+        }
+
+        // Exit Failed to setup communications
         cout << "Failed to setup communications!" << endl;
         exitCode = EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
     }
