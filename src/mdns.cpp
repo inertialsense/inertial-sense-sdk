@@ -10,48 +10,11 @@
 #include <random>
 #include <mutex>
 #include "libmdns/mdns.h"
+
+#include <functional>
+#include <system_error>
+
 #include "core/msg_logger.h"
-
-/**
- * Get all discovered MDNS records (newest record in first)
- * @return A vector containing all discovered MDNS records
- */
-std::vector<mdns::mdns_record_cpp_t> mdns::getRecords() {
-    std::shared_lock lock(mutex, std::defer_lock);
-    bool locked = false;
-    try {
-        lock.lock();
-        locked = true;
-    } catch (std::system_error &e) {
-        if (e.code() != std::errc::resource_deadlock_would_occur) { // If this thread already has a lock it likely being called from tick() and that is Ok.
-            throw e;
-        }
-    }
-
-    // Copy responses map to vector
-    std::vector<std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>>> sortedMap;
-    sortedMap.reserve(responses.size());
-    for (std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>> pair: responses) {
-        sortedMap.push_back(pair);
-    }
-    if (locked) lock.unlock();
-
-    // Sort responses by time
-    std::sort(sortedMap.begin(), sortedMap.end(),
-              [](const std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>>& a,
-                       const std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>>& b) -> bool {
-        return a.second > b.second; // Greater than causes the newest record to be first
-    });
-
-    // Copy sorted responses into final vector
-    std::vector<mdns_record_cpp_t> returnList;
-    returnList.reserve(sortedMap.size());
-    for (const std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>>& pair: sortedMap) {
-        returnList.push_back(pair.first);
-    }
-
-    return returnList;
-}
 
 /**
  * Handles incoming mdns responses and removes timed out old values
@@ -66,13 +29,13 @@ void mdns::tick() {
     }
 
     handleMdnsQueryResponses();
-    getRecords();
+    cleanupExpiredResponses();
 }
 
 /**
  * Sends out a MDNS Query on all interfaces/sockets
  */
-void mdns::send_mdns_query(mdns_record_type_t type, std::string query) {
+void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
     size_t capacity = 2048;
     void* buffer = malloc(capacity);
     if (buffer == nullptr) {
@@ -98,6 +61,92 @@ void mdns::send_mdns_query(mdns_record_type_t type, std::string query) {
     }
 
     free(buffer);
+}
+
+/**
+ * Get discovered MDNS records (newest record in first) where filter returns true
+ * @param filter Function describing filter for search
+ * @return A vector containing all discovered MDNS records
+ */
+std::vector<mdns::mdns_record_cpp_t> mdns::getRecords(const std::function<bool (mdns_record_cpp_t)>& filter) {
+    std::shared_lock lock(mutex, std::defer_lock);
+    bool locked = false;
+    try {
+        lock.lock();
+        locked = true;
+    } catch (std::system_error &e) {
+        if (e.code() != std::errc::resource_deadlock_would_occur) { // If this thread already has a lock it likely being called from tick() and that is Ok.
+            throw e;
+        }
+    }
+
+    // Copy responses map to vector
+    std::vector<std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>>> sortedMap;
+    sortedMap.reserve(responses.size());
+    for (std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>> pair: responses) {
+        if (filter(pair.first)) {
+            sortedMap.push_back(pair);
+        }
+    }
+    if (locked) lock.unlock();
+
+    // Sort responses by time
+    std::sort(sortedMap.begin(), sortedMap.end(),
+              [](const std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>>& a,
+                       const std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>>& b) -> bool {
+        return a.second > b.second; // Greater than causes the newest record to be first
+    });
+
+    // Copy sorted responses into final vector
+    std::vector<mdns_record_cpp_t> returnList;
+    returnList.reserve(sortedMap.size());
+    for (const std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>>& pair: sortedMap) {
+        returnList.push_back(pair.first);
+    }
+
+    return returnList;
+}
+
+/**
+ * Get all discovered MDNS records (newest record in first)
+ * @return A vector containing all discovered MDNS records
+ */
+std::vector<mdns::mdns_record_cpp_t> mdns::getRecords() {
+    return getRecords([](mdns_record_cpp_t x) -> bool {return true;});
+}
+
+/**
+ * Resolve hostname using MDNS
+ * @return A sockaddr_storage struct representing either a IPv6 or IPv4 Address, or type of AF_UNSPEC if you need to try again or the address doesn't exist
+ */
+sockaddr_storage mdns::resolveName(const std::string& name) {
+    std::vector<mdns_record_cpp_t> records = getRecords();
+    sockaddr_storage result = {.ss_family = AF_UNSPEC};
+    for (mdns_record_cpp_t& record : records) {
+        if (record.name != name) {
+            continue;
+        }
+        switch (record.type) {
+            case MDNS_RECORDTYPE_A: {
+                memcpy(&result, &record.data.a.addr, sizeof(record.data.a.addr));
+                break;
+            }
+            case MDNS_RECORDTYPE_AAAA: {
+                memcpy(&result, &record.data.aaaa.addr, sizeof(record.data.aaaa.addr));
+                break;
+            }
+            default: continue;
+        }
+        if (result.ss_family != AF_UNSPEC) {
+            break;
+        }
+    }
+    if (result.ss_family == AF_UNSPEC) {
+        sendQuery(MDNS_RECORDTYPE_AAAA, name);
+        sendQuery(MDNS_RECORDTYPE_A, name);
+    }
+
+    return result;
 }
 
 // Private functions below here
@@ -322,7 +371,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             debug_message("[WRN] Unable to process unknown MDNS record type: Not Supported")
             return -ENOTSUP;
         }
-        newRecord.type = (mdns_record_type)rtype;
+        newRecord.type = static_cast<mdns_record_type>(rtype);
         responses.insert_or_assign(newRecord,std::chrono::steady_clock::now()-std::chrono::microseconds(100*backtick));
         backtick++;
     } else { // TXT records
@@ -387,7 +436,7 @@ int mdns::handleMdnsQueryResponses() {
     // Cleanup used query ids
     std::list<used_query_id_t>::iterator i = usedQueryIds.begin();
     while (i != usedQueryIds.end()) {
-        if (i->queryRecieved || (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - i->querySent).count() > MDNS_RECORD_TIMEOUT)) {
+        if (i->queryRecieved || (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - i->querySent).count() > MDNS_REQUEST_TIMEOUT_MS)) {
             i = usedQueryIds.erase(i);
         } else {
             i++;
@@ -395,4 +444,25 @@ int mdns::handleMdnsQueryResponses() {
     }
 
     return records;
+}
+
+/**
+ * Cleanup expired responses that have either had their TTLs expire or are older than the MDNS_RECORD_TIMEOUT_MS
+ */
+void mdns::cleanupExpiredResponses() {
+    std::vector<mdns_record_cpp_t> deadRecords;
+    for (std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>> response: responses) {
+        // Delete records with expired TTLs
+        if (response.second < std::chrono::steady_clock::now() - std::chrono::seconds(response.first.ttl)) {
+            deadRecords.push_back(response.first);
+        }
+
+        // Delete records that exceed our timeout
+        if (response.second < std::chrono::steady_clock::now() - std::chrono::milliseconds(MDNS_RECORD_TIMEOUT_MS)) {
+            deadRecords.push_back(response.first);
+        }
+    }
+    for (mdns_record_cpp_t deadRecord: deadRecords) {
+        responses.erase(deadRecord);
+    }
 }

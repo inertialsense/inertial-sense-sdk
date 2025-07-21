@@ -683,10 +683,10 @@ uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2)
  * @return utils:URL that represents the parsed URL
  */
 utils::URL utils::parseURL(const std::string& pName) {
-    std::regex regexp(R"(^([^:\/?#]+):\/\/:?([^\/ ]*)?:([^\/?#\D]*)\/?([^?#]*)?\??([^#]*)?#?(.*)?$)");
+    std::regex regexp(R"(^([^:\/?#]+):\/\/:?([^\/?#: ]*):?([^\/?#\D]*)?\/?([^?#]*)?\??([^#]*)?#?(.*)?$)");
     std::smatch match;
     URL retval = {};
-    if (std::regex_search(pName, match, regexp)) {
+    if (std::regex_match(pName, match, regexp)) {
         retval.fullurl = match[0].str();
         retval.protocol = match[1].str();
         retval.address = match[2].str();
@@ -696,4 +696,10 @@ utils::URL utils::parseURL(const std::string& pName) {
         retval.tags = match[6].str();
     }
     return retval;
+}
+
+bool utils::validDomainName(const std::string& domainName) {
+    std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
+    std::smatch match;
+    return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
 }

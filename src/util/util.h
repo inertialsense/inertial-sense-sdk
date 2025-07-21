@@ -262,6 +262,8 @@ namespace utils {
     };
 
     URL parseURL(const std::string& pName);
+
+    bool validDomainName(const std::string& domainName);
 };
 
 class ByteBuffer : public std::streambuf {

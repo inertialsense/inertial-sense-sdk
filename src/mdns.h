@@ -5,9 +5,11 @@
 #ifndef IS_SDK__MDNS_H
 #define IS_SDK__MDNS_H
 
-#define MDNS_RECORD_TIMEOUT 100
+#define MDNS_RECORD_TIMEOUT_MS 200 // Max time that any record will last for
+#define MDNS_REQUEST_TIMEOUT_MS 100 // How long to wait for a response
 
 #include <chrono>
+#include <functional>
 #include <random>
 #include <unordered_map>
 #include <shared_mutex>
@@ -91,6 +93,11 @@ public:
             addr.sin_family = other.addr.sin_family;
             other.addr.sin_family = placeholderFamily;
         }
+
+        mdns_record_a_cpp_t() = default;
+        explicit mdns_record_a_cpp_t(struct sockaddr_in addr) {
+            this->addr = addr;
+        };
     };
     typedef struct mdns_record_a_cpp_t mdns_record_a_cpp_t;
 
@@ -131,6 +138,11 @@ public:
                 other.addr.sin6_addr.s6_addr[i] = placeholderAddr;
             }
         }
+
+        mdns_record_aaaa_cpp_t() = default;
+        explicit mdns_record_aaaa_cpp_t(const struct sockaddr_in6& addr) {
+            this->addr = addr;
+        };
     };
     typedef struct mdns_record_aaaa_cpp_t mdns_record_aaaa_cpp_t;
 
@@ -153,7 +165,7 @@ public:
 
     struct mdns_record_cpp_t {
         std::string name;
-        mdns_record_type_t type{};
+        mdns_record_type_t type{MDNS_RECORDTYPE_IGNORE};
         union mdns_record_data {
             mdns_record_ptr_cpp_t ptr;
             mdns_record_srv_cpp_t srv;
@@ -174,7 +186,7 @@ public:
                 case MDNS_RECORDTYPE_TXT: data.txt.~mdns_record_txt_cpp_t(); break;
                 case MDNS_RECORDTYPE_PTR: data.ptr.~mdns_record_ptr_cpp_t(); break;
                 case MDNS_RECORDTYPE_AAAA: data.aaaa.~mdns_record_aaaa_cpp_t(); break;
-                case MDNS_RECORDTYPE_SRV: data.srv.~mdns_record_srv_cpp_t(); break;
+                //case MDNS_RECORDTYPE_SRV: data.srv.~mdns_record_srv_cpp_t(); break; // I don't know why this isn't needed for SRV records but needed for all the other records but calling it causes segfaults with a double free ¯\_(ツ)_/¯
                 case MDNS_RECORDTYPE_ANY: break;
             }
         }
@@ -299,8 +311,11 @@ public:
 
     // Public functions
     static void tick();
-    static void send_mdns_query(mdns_record_type_t type, std::string query);
+    static void sendQuery(mdns_record_type_t type, const std::string& query);
+    static std::vector<mdns::mdns_record_cpp_t> getRecords(const std::function<bool(mdns_record_cpp_t)>& filter);
     static std::vector<mdns_record_cpp_t> getRecords();
+    static sockaddr_storage resolveName(const std::string& name);
+
 private:
     // Mutex
     inline static std::shared_mutex mutex;
@@ -330,6 +345,7 @@ private:
                              uint16_t rtype, uint16_t rclass, uint32_t ttl, const void* data, size_t size, size_t name_offset,
                              size_t name_length, size_t record_offset, size_t record_length, void* user_data);
     static int handleMdnsQueryResponses();
+    static void cleanupExpiredResponses();
 };
 
 #endif //IS_SDK__MDNS_H
