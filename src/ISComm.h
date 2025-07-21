@@ -151,7 +151,7 @@ typedef enum
     IS_BAUDRATE_19200           = 19200,
     IS_BAUDRATE_38400           = 38400,
     IS_BAUDRATE_57600           = 57600,
-    IS_BAUDRATE_115200          = 115200,       //  IMX-5.0,  uINS-3,  Actual baudrates                                             
+    IS_BAUDRATE_115200          = 115200,       //  IMX-5,  uINS-3,  Actual baudrates                                             
     IS_BAUDRATE_230400          = 230400,       //   230547,  232700, 
     IS_BAUDRATE_460800          = 460800,       //   462428,  468600, 
     IS_BAUDRATE_921600          = 921600,       //   930233,  937734,
