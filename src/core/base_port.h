@@ -227,6 +227,13 @@ static inline const char *portName(port_handle_t port) {
 }
 
 /**
+ * Returns the associated port_stats_t pointer, if any that is attached to this port
+ * @param port the port to query
+ * @return a port_stats_t*
+ */
+static inline port_stats_t* portStats(port_handle_t port) { return portIsValid(port) ? BASE_PORT(port)->stats : (port_stats_t *)0; }
+
+/**
  * Opens or establishes a connection to port. This function may not be supported on all port implementations.
  * @param port the port to open
  * @return
@@ -315,7 +322,7 @@ static inline void portSetLogger(port_handle_t port, pfnPortLogger portLogger, v
 }
 
 /**
- * a callback function called internally when a particular action (usually read or write) are
+ * A callback function called internally when a particular action (usually read or write) are
  * performed on the port, which is useful in logging or monitoring the data which goes through
  * the port
  * @param port the port which the operation was performed on
@@ -330,6 +337,7 @@ static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, un
     return (BASE_PORT(port)->portLogger) ? BASE_PORT(port)->portLogger(port, op, buf, len, userData) : PORT_ERROR__NOT_SUPPORTED;
 }
 
+
 /**
  * Reads upto/at most 'len' number of bytes, copying those bytes into the buffer pointed to by 'buf'. Data copied into 'buf' is
  * removed from the internal RX buffer of the port, releasing 'len' bytes from the underlying buffer. It cannot be read again.
@@ -338,12 +346,28 @@ static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, un
  * @param len the maximum number of bytes to read; if fewer than 'len' bytes are available, only those bytes available will be returned.
  * @return the number of actual bytes read from the internal RX buffer.
  */
-static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
+static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) 
+{
+    int bytesRead = 0;
+
+    // If the port is not valid, return an error
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    
+    // If the port does not support reading, return an error
     if (!BASE_PORT(port)->portRead) return PORT_ERROR__NOT_SUPPORTED;
-    int bytesRead = BASE_PORT(port)->portRead(port, buf, len);
-    if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, BASE_PORT(port)->portLoggerData);
-    if (BASE_PORT(port)->stats) BASE_PORT(port)->stats->rxBytes += bytesRead;
+
+    // Read the port, copying the data into the buffer
+    bytesRead = BASE_PORT(port)->portRead(port, buf, len);
+
+    // If stats are enabled, update the stats
+    if (BASE_PORT(port)->stats) {
+        if (bytesRead > 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
+        else                BASE_PORT(port)->stats->rxOverflows++;  // Note the error  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
+    }
+
+    // If the portLogger is set, log the read operation
+    if ((bytesRead > 0) && (BASE_PORT(port)->portLogger)) portLog(port, PORT_OP__READ, buf, bytesRead, BASE_PORT(port)->portLoggerData);
+
     return bytesRead;
 }
 
@@ -356,12 +380,28 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
  * @param timeout the maximum time, in milliseconds, to wait for 'len' bytes to be received before returning.
  * @return the number of actual bytes read from the internal RX buffer.
  */
-static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, unsigned int timeout) {
+static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, unsigned int timeout) 
+{
+    int bytesRead = 0;
+
+    // If the port is not valid, return an error
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+
+    // If the port does not support reading, return an error
     if (!BASE_PORT(port)->portReadTimeout) return portReadTimeout_internal(port, buf, len, timeout); // PORT_ERROR__NOT_SUPPORTED;
-    int bytesRead =  BASE_PORT(port)->portReadTimeout(port, buf, len, timeout);
-    if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__READ, buf, bytesRead, BASE_PORT(port)->portLoggerData);
-    if (BASE_PORT(port)->stats) BASE_PORT(port)->stats->rxBytes += bytesRead;
+
+    // Read the port, copying the data into the buffer
+    bytesRead = BASE_PORT(port)->portReadTimeout(port, buf, len, timeout);
+
+    // If stats are enabled, update the stats
+    if (BASE_PORT(port)->stats) {
+        if (bytesRead > 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
+        else                BASE_PORT(port)->stats->rxOverflows++;  // note the error  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
+    }
+
+    // If the portLogger is set, log the read operation
+    if ((bytesRead > 0) && (BASE_PORT(port)->portLogger)) portLog(port, PORT_OP__READ, buf, bytesRead, BASE_PORT(port)->portLoggerData);
+
     return bytesRead;
 }
 
@@ -376,9 +416,13 @@ static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
     if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, BASE_PORT(port)->portLoggerData);
     int bytesWritten = (BASE_PORT(port)->portWrite) ? BASE_PORT(port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
-    if ((bytesWritten > 0) && BASE_PORT(port)->stats) BASE_PORT(port)->stats->txBytes += bytesWritten;
+    if (BASE_PORT(port)->stats) {
+        if (bytesWritten > 0) BASE_PORT(port)->stats->txBytes += bytesWritten;
+        else BASE_PORT(port)->stats->txDataDrops++, BASE_PORT(port)->stats->txBytesDropped += len;  // note the error, and the bytes dropped  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
+    }
     return bytesWritten;
 }
+
 
 #ifdef __cplusplus
 }

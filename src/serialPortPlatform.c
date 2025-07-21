@@ -30,6 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <termios.h>
 #include <unistd.h>
 #include <poll.h>
+#include <linux/serial.h>
 
 // cygwin defines FIONREAD in socket.h instead of ioctl.h
 #ifndef FIONREAD
@@ -201,9 +202,16 @@ static int configure_serial_port(int fd, int baudRate)
     cfsetospeed(&tty, baudRate);
     cfsetispeed(&tty, baudRate);
 
+    // Attempt to configure LOW_LATENCY for UART/serial ports - though doesn't appear to improve things much.
+    struct serial_struct serial;
+    ioctl(fd, TIOCGSERIAL, &serial);
+    serial.flags |= ASYNC_LOW_LATENCY;
+    ioctl(fd, TIOCSSERIAL, &serial);
+
+
 #endif
 
-    // Set 8N1 (8 data bits, No parity, 1 stop bit)
+    // Control Flags: Set 8N1 (8 data bits, No parity, 1 stop bit)
     tty.c_cflag &= ~PARENB;                     // Clear parity bit, disabling parity (most common)
     tty.c_cflag &= ~CSTOPB;                     // Clear stop field, only one stop bit used in communication (most common)
     tty.c_cflag &= ~CSIZE;                      // Clear all bits that set the data size
@@ -211,17 +219,17 @@ static int configure_serial_port(int fd, int baudRate)
     tty.c_cflag &= ~CRTSCTS;                    // Disable RTS/CTS hardware flow control (most common)
     tty.c_cflag |= CREAD | CLOCAL;              // Turn on READ & ignore model ctrl lines (CLOCAL = 1)
 
-    // Set in non-canonical mode
-    tty.c_lflag &= ~ICANON;
+    // Local Modes: Set in non-canonical mode - Canonical mode is line-by-line processing; we want this DISABLED
+    tty.c_lflag &= ~ICANON;                     // Disable Canonical Mode
     tty.c_lflag &= ~ECHO;                       // Disable echo
     tty.c_lflag &= ~ECHOE;                      // Disable erasure
     tty.c_lflag &= ~ECHONL;                     // Disable new-line echo
     tty.c_lflag &= ~ISIG;                       // Disable interpretation of INTR, QUIT and SUSP
 
     // Disable input processing options (raw mode)
-    tty.c_iflag &= ~IGNBRK;                     // Disable break processing
+    tty.c_iflag &= ~(IGNBRK | BRKINT);          // Disable break processing
     tty.c_iflag &= ~(IXON | IXOFF | IXANY);     // Turn off xon/xoff software flow ctrl
-    tty.c_iflag &= ~(ICRNL | INLCR);            // Disable any special handling of received bytes
+    tty.c_iflag &= ~(ICRNL | INLCR | IGNCR );   // Disable any special handling of received bytes
 
     // Disable output processing options (raw mode)
     tty.c_oflag &= ~OPOST;                      // Prevent special interpretation of output bytes (e.g. newline chars)
@@ -283,6 +291,9 @@ int set_nonblocking(int fd)
         error_message("set_nonblocking():: error setting O_NONBLOCK : %s (%d)\n", strerror(errno), errno);
         return -1;
     }
+
+    // Alternate method - this maybe redundant, but better to be safe, eh?
+    flock(fd, LOCK_EX | LOCK_NB);
 
     return 0;
 }
@@ -389,32 +400,21 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
     if (configure_serial_port(fd, baudRate) != 0)
     {
-        error_message("[%s] open():: Error configuring port: %s (%d)\n", portName, strerror(errno), errno);
+        error_message("[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)\n", port, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
-    // FIXME: This is currently disabled to work around ARMv7 issues.. THIS MUST NOT GO TO RELEASE without at least a switch
+    ioctl(fd, TIOCEXCL);            // Exclusive Access Mode: prevent other processes from opening the port while its open
+    flock(fd, LOCK_EX | LOCK_NB);   // Exclusive & Non-Blocking Lock: prevent other process read/write of the fd file
+
     // Disable blocking port reads and writes.
-/*
     if (set_nonblocking(fd) != 0) 
     {
         close(fd);
         return 0;
     }
-*/
-
-
-    if (configure_serial_port(fd, baudRate) != 0)
-    {
-        error_message("[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)\n", port, strerror(errno), errno);
-        serialPort->errorCode = errno;
-        return 0;
-    }
-
-    ioctl(fd, TIOCEXCL);            // Exclusive Access Mode: prevent other processes from opening the port while its open
-    flock(fd, LOCK_EX | LOCK_NB);   // Exclusive & Non-Blocking Lock: prevent other process read/write of the fd file  
 
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->fd = fd;

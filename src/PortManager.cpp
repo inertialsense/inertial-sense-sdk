@@ -101,8 +101,8 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
 }
 
 /**
- * @return a vector of available ports
- * NOTE that this may return ports which do not have a corresponding ISDevice
+ * Returns a vector of all currently discovered/managed ports
+ * @return
  */
 std::vector<port_handle_t> PortManager::getPorts() {
     std::vector<port_handle_t> ports;
@@ -112,7 +112,17 @@ std::vector<port_handle_t> PortManager::getPorts() {
     return ports;
 }
 
-size_t PortManager::getPortCount() { return size(); }
-
-
+/**
+ * Attempts to locate and return a previously discovered/managed port by its name, and optionally port type flags
+ * @param name the name of the port to locate and return
+ * @param portType an optional bitmask indicating the port type to match
+ * @return the port handle if found, otherwise returns NULL
+ */
+port_handle_t PortManager::getPort(const std::string& name, uint16_t portType) {
+    for (auto& [entry, port] : knownPorts) {
+        if (((entry.type & portType) == entry.type) && (entry.name == name))
+            return port;
+    }
+    return NULLPTR;
+}
 
