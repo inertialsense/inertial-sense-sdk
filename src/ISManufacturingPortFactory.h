@@ -5,7 +5,7 @@
 #ifndef IS_SDK__IS_MANUFACTURING_PORT_FACTORY_H
 #define IS_SDK__IS_MANUFACTURING_PORT_FACTORY_H
 
-#define IS_MANUFACTURING_PORT_FACTORY_TIME_BETWEEN_QUERIES_MS 150 // How long to wait between sending MDNS queries
+#define IS_MANUFACTURING_PORT_FACTORY_TIME_BETWEEN_QUERIES_MS 200 // How long to wait between sending MDNS queries
 
 #include "PortFactory.h"
 #include "core/tcpPort.h"
@@ -30,8 +30,6 @@ public:
     bool releasePort(port_handle_t port) override;
     static void tick();
 
-    static bool validatePortName(const std::string& pName);
-
     static inline const std::unordered_map<uint16_t, std::string> majorAtlas = {
         {166, "ttyACM"}
     };
@@ -47,8 +45,11 @@ private:
 
     inline static std::chrono::time_point<std::chrono::steady_clock> lastQueryTime;
 
-    std::unordered_map<std::string, std::vector<port_t>> getPorts();
-    std::pair<std::string, ISManufacturingPortFactory::port_t> parsePortName(const std::string& pName);
+    static std::unordered_map<std::string, std::vector<port_t>> getPorts();
+    static std::pair<std::string, ISManufacturingPortFactory::port_t> parsePortName(const std::string& pName);
+    static bool validatePortName(const std::string& pName);
+    static std::pair<std::string, ISManufacturingPortFactory::port_t> getCanonicalPortData(const std::pair<std::string, ISManufacturingPortFactory::port_t>& partialPortPair);
+    static std::string getPortURL(const std::pair<std::string, ISManufacturingPortFactory::port_t> &port);
 };
 
 #endif //IS_SDK__IS_MANUFACTURING_PORT_FACTORY_H

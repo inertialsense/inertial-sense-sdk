@@ -13,8 +13,6 @@
 #include "PortManager.h"
 #include "mdns.h"
 
-static std::chrono::time_point<std::chrono::steady_clock> lastQueryTime;
-
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
  * when passed a URL in the format is-manu://hostname/port to pName and a pType of PORT_TYPE__TCP | PORT_TYPE__COMM
@@ -23,27 +21,30 @@ static std::chrono::time_point<std::chrono::steady_clock> lastQueryTime;
  * @return A port_handle_t bound to the newly created TCP port for the connection pName represents
  */
 port_handle_t ISManufacturingPortFactory::bindPort(const std::string& pName, uint16_t pType) {
+    tick(); // Tick everything to ensure we have the latest data
     if (!validatePort(pName, pType)) {
         return nullptr;
     }
 
-    // Parse pName for address
-    const utils::URL url = utils::parseURL(pName);
-    if (url.protocol != "is-manu") {
+    std::pair<std::string, ISManufacturingPortFactory::port_t> portPair = parsePortName(pName);
+    portPair = getCanonicalPortData(portPair);
+    std::string URL = getPortURL(portPair);
+    sockaddr_storage addr = mdns::resolveName(portPair.first);
+    if (addr.ss_family == AF_INET) {
+        const auto ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
+        ipv4->sin_port = htons(portPair.second.port);
+    } else if (addr.ss_family == AF_INET6) {
+        const auto ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
+        ipv6->sin6_port = htons(portPair.second.port);
+    } else {
         return nullptr;
     }
-
-    tick(); // Tick everything to ensure we have the latest data
-
-    // MDNS / DNS-SD Resolve goes here
-
-    return nullptr;
 
     auto* tcpPort = new tcp_port_t;
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    //tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), &addr);
+    tcpPortInit(port, id, this->portOptions.defaultBlocking, URL.c_str(), &addr);
 
     return port;
 }
@@ -72,19 +73,18 @@ bool ISManufacturingPortFactory::releasePort(port_handle_t port) {
  * @return True if port can be created, false otherwise
  */
 bool ISManufacturingPortFactory::validatePort(const std::string& pName, uint16_t pType) {
-    const utils::URL url = utils::parseURL(pName);
-    if (url.protocol != "is-manu") {
-        return false;
-    }
-
-    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) {
-        return false;
-    }
+    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) return false;
+    if (!validatePortName(pName)) return false;
 
     tick(); // Tick everything to ensure we have the latest data
 
-    return false;
-    // Validate existence of MDNS / DNS-SD records
+    std::pair<std::string, ISManufacturingPortFactory::port_t> portPair = parsePortName(pName);
+    try {
+        getCanonicalPortData(portPair);
+    } catch (std::domain_error &e) {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -94,14 +94,20 @@ bool ISManufacturingPortFactory::validatePort(const std::string& pName, uint16_t
  * @param pType Ignored
  */
 void ISManufacturingPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
+    std::regex regexPattern = std::regex(pattern);
     tick(); // Tick everything to ensure we have the latest data
 
     std::unordered_map<std::string, std::vector<port_t>> portsAndHosts = getPorts();
-    for (const std::pair<std::string, std::vector<port_t>> ph : portsAndHosts) {
-        std::string hostname = ph.first;
-        std::vector<port_t> ports = ph.second;
-        for (const port_t port : ports) {
-            std::string portString;
+    for (std::pair<std::string, std::vector<port_t>> hostPorts : portsAndHosts) {
+        std::string hostname = hostPorts.first;
+        std::vector<port_t> ports = hostPorts.second;
+        for (port_t port : ports) {
+            std::pair<std::string, port_t> portPair = {hostname, port};
+            portPair = getCanonicalPortData(portPair);
+            std::string portURL = getPortURL(portPair);
+            if (std::regex_match(portURL, regexPattern)) {
+                portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, portURL);
+            }
         }
     }
 }
@@ -134,7 +140,7 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
 
     std::string hostname = url.address;
     if (!hostname.ends_with(".")) {
-        hostname.append("");
+        hostname.append(".");
     }
 
     uint32_t devid = 0;
@@ -194,8 +200,9 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
             if (minor > 1048575) throw std::invalid_argument("Device number is out of bounds");
             devid = makedev(major, minor);
         } else {
-            throw std::invalid_argument("Unknow format for URL path");
+            throw std::invalid_argument("Unknown format for URL path");
         }
+        if (devid == 0) throw std::invalid_argument("device number is still zero despite passing a path");
     }
 
     port_t portData = {devid, port};
@@ -208,32 +215,94 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
  * @return True if port name is valid
  */
 bool ISManufacturingPortFactory::validatePortName(const std::string& pName) {
-    const utils::URL url = utils::parseURL(pName);
-    if (url.protocol != "is-manu") return false;
-
-    if (!utils::validDomainName(url.address)) return false;
-    if (!(url.address.ends_with(".local") || url.address.ends_with(".local."))) return false;
-
-    if (url.port.empty() && url.path.empty()) return false;
-    if (!url.port.empty() && std::find_if(url.port.begin(), url.port.end(), [](unsigned char c) { return !std::isdigit(c); }) != url.port.end()) return false;
-
-    std::regex regexp(R"(^[0-9]+:[0-9]+$)");
-    std::smatch match;
-    if (!url.path.empty() && !std::regex_match(url.path, match, regexp)) {
-        std::regex regexp2(R"(^dev\/(.*)$)");
-        std::smatch match2;
-        if (std::regex_match(url.path, match2, regexp2)) {
-            for (std::pair<uint16_t, std::string> majorPair: majorAtlas) {
-                if (match2[1].str().starts_with( majorPair.second)) {
-                    return true;
-                }
-            }
-        }
+    try {
+        parsePortName(pName);
+        return true;
+    } catch (std::invalid_argument &e) {
         return false;
     }
-    return true;
 }
 
+/**
+ * Take partial port data and fills out the rest via data obtained via MDNS
+ * @param partialPortPair A pair representing the hostname and partial port data
+ * @return A pair representing the hostname and all port data
+ * @throws std::invalid_argument if the partial port data doesn't have enough data
+ * @throws std::domain_error if the full port data couldn't be resolved
+ */
+std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFactory::getCanonicalPortData(const std::pair<std::string, ISManufacturingPortFactory::port_t>& partialPortPair) {
+    std::string hostname = partialPortPair.first;
+    port_t partialPort = partialPortPair.second;
+    port_t returnPort = {};
+
+    std::unordered_map<std::string, std::vector<port_t>> portsMap = getPorts();
+    if (!portsMap.contains(hostname)) throw std::domain_error("Hostname not found");
+    std::vector<port_t> ports = portsMap[hostname];
+    if (partialPort.port != 0 && partialPort.devid != 0) {
+        for (port_t fullPort : ports) {
+            if (partialPort.port == fullPort.port && partialPort.devid == fullPort.devid) {
+                returnPort = fullPort;
+                break;
+            }
+        }
+    } else if (partialPort.devid != 0) {
+        for (port_t fullPort : ports) {
+            if (partialPort.devid == fullPort.devid) {
+                returnPort = fullPort;
+                break;
+            }
+        }
+    } else if (partialPort.port != 0) {
+        for (port_t fullPort: ports) {
+            if (partialPort.port == fullPort.devid) {
+                returnPort = fullPort;
+                break;
+            }
+        }
+    } else throw std::invalid_argument("Partial port data doesn't have port or device id");
+
+    if (returnPort.devid == 0 || returnPort.port == 0) throw std::domain_error("Couldn't find port");
+
+    return {hostname, returnPort};
+}
+
+/**
+ * Encode a port described as a hostname and port_t pair into a URL
+ * @param port A pair representing the hostname and port data to encode into a URL
+ * @return A string representing a URL describing the passed port
+ */
+std::string ISManufacturingPortFactory::getPortURL(const std::pair<std::string, ISManufacturingPortFactory::port_t>& port) {
+    std::string returnValue = "is-manu://";
+    if (port.first.ends_with(".")) {
+        returnValue = returnValue.append(port.first.substr(0, port.first.length()-1));
+    } else {
+        returnValue = returnValue.append(port.first);
+    }
+
+    if (port.second.port != 0) {
+        returnValue = returnValue.append(":");
+        returnValue = returnValue.append(std::to_string(port.second.port));
+    }
+
+    if (port.second.devid != 0) {
+        returnValue = returnValue.append("/");
+        const uint16_t majorVal = major(port.second.devid);
+        if (majorAtlas.contains(majorVal)) {
+            returnValue = returnValue.append("dev/");
+            returnValue = returnValue.append(majorAtlas.at(majorVal));
+        } else {
+            returnValue = returnValue.append(std::to_string(majorVal));
+            returnValue = returnValue.append(":");
+        }
+        returnValue = returnValue.append(std::to_string(minor(port.second.devid)));
+    }
+    return returnValue;
+}
+
+/**
+ * Gets a list of discovered port over MDNS
+ * @return An unordered map of ports keys as hostnames and a vector of ports as values
+ */
 std::unordered_map<std::string, std::vector<ISManufacturingPortFactory::port_t>> ISManufacturingPortFactory::getPorts() {
     // Locate ports matching pattern using MDNS / DNS-SD records
     std::vector<mdns::mdns_record_cpp_t> PTRrecords = mdns::getRecords([](const mdns::mdns_record_cpp_t& record) -> bool {
