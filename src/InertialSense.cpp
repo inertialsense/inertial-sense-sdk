@@ -1747,20 +1747,21 @@ void InertialSense::CloseSerialPorts(bool drainBeforeClose)
     m_comManagerState.devices.clear();
 }
 
-void InertialSense::SaveImxFlashConfigToFile(std::string path, int pHandle)
+template<typename T>
+bool SaveFlashConfigToFile(const std::string& path, int did, std::function<bool(T&, int)> getCfg, int pHandle)
 {
-    nvm_flash_cfg_t flashCfg;
-    if (!ImxFlashConfig(flashCfg, pHandle))
+    T flashCfg;
+    if (!getCfg(flashCfg, pHandle))
     {
-        printf("[ERROR] --- Failed to get IMX flash config\n");
-        return;
+        printf("[ERROR] --- Failed to get flash config\n");
+        return false;
     }
 
     YAML::Node yaml;
-    if (!cISDataMappings::DataToYaml(DID_FLASH_CONFIG, reinterpret_cast<const uint8_t*>(&flashCfg), yaml))
+    if (!cISDataMappings::DataToYaml(did, reinterpret_cast<const uint8_t*>(&flashCfg), yaml))
     {
         printf("[ERROR] --- Failed to serialize flash config to YAML\n");
-        return;
+        return false;
     }
 
     YAML::Emitter emitter;
@@ -1769,77 +1770,62 @@ void InertialSense::SaveImxFlashConfigToFile(std::string path, int pHandle)
 
     std::ofstream fout(path);
     fout << emitter.c_str();
+    return true;
+}
+
+template<typename T>
+int LoadFlashConfigFromFile(const std::string& path, int did, std::function<bool(T&, int)> setCfg, int pHandle)
+{
+    try
+    {
+        YAML::Node yaml = YAML::LoadFile(path);
+        T flashCfg;
+        if (!cISDataMappings::YamlToData(did, yaml, reinterpret_cast<uint8_t*>(&flashCfg)))
+        {
+            printf("[ERROR] --- Failed to parse YAML into flash config structure\n");
+            return -1;
+        }
+
+        setCfg(flashCfg, pHandle);
+    }
+    catch (const YAML::Exception& ex)
+    {
+        printf("[ERROR] --- There was an error parsing the YAML file: %s\n", ex.what());
+        return -1;
+    }
+
+    return 0;
+}
+
+void InertialSense::SaveImxFlashConfigToFile(std::string path, int pHandle)
+{
+    SaveFlashConfigToFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
+        [this](nvm_flash_cfg_t& cfg, int handle) { return ImxFlashConfig(cfg, handle); },
+        pHandle);
 }
 
 void InertialSense::SaveGpxFlashConfigToFile(std::string path, int pHandle)
 {
-    gpx_flash_cfg_t flashCfg;
-    if (!GpxFlashConfig(flashCfg, pHandle))
-    {
-        printf("[ERROR] --- Failed to get GPX flash config\n");
-        return;
-    }
-
-    YAML::Node yaml;
-    if (!cISDataMappings::DataToYaml(DID_GPX_FLASH_CFG, reinterpret_cast<const uint8_t*>(&flashCfg), yaml))
-    {
-        printf("[ERROR] --- Failed to serialize flash config to YAML\n");
-        return;
-    }
-
-    YAML::Emitter emitter;
-    emitter.SetSeqFormat(YAML::Flow);
-    emitter << yaml;
-
-    std::ofstream fout(path);
-    fout << emitter.c_str();
+    SaveFlashConfigToFile<gpx_flash_cfg_t>(path, DID_GPX_FLASH_CFG,
+        [this](gpx_flash_cfg_t& cfg, int handle) { return GpxFlashConfig(cfg, handle); },
+        pHandle);
 }
 
 int InertialSense::LoadImxFlashConfigFromFile(std::string path, int pHandle)
 {
-    try
-    {
-        YAML::Node yaml = YAML::LoadFile(path);
-        nvm_flash_cfg_t flashCfg;
-        if (!cISDataMappings::YamlToData(DID_FLASH_CONFIG, yaml, reinterpret_cast<uint8_t*>(&flashCfg)))
-        {
-            printf("[ERROR] --- Failed to parse YAML into flash config structure\n");
-            return -1;
-        }
-
-        SetImxFlashConfig(flashCfg, pHandle);
-    }
-    catch (const YAML::Exception& ex)
-    {
-        printf("[ERROR] --- There was an error parsing the YAML file: %s\n", ex.what());
-        return -1;
-    }
-
-    return 0;
+    return LoadFlashConfigFromFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
+        [this](nvm_flash_cfg_t& cfg, int handle) { return SetImxFlashConfig(cfg, handle); },
+        pHandle);
 }
 
 int InertialSense::LoadGpxFlashConfigFromFile(std::string path, int pHandle)
 {
-    try
-    {
-        YAML::Node yaml = YAML::LoadFile(path);
-        gpx_flash_cfg_t flashCfg;
-        if (!cISDataMappings::YamlToData(DID_GPX_FLASH_CFG, yaml, reinterpret_cast<uint8_t*>(&flashCfg)))
-        {
-            printf("[ERROR] --- Failed to parse YAML into flash config structure\n");
-            return -1;
-        }
-
-        SetGpxFlashConfig(flashCfg, pHandle);
-    }
-    catch (const YAML::Exception& ex)
-    {
-        printf("[ERROR] --- There was an error parsing the YAML file: %s\n", ex.what());
-        return -1;
-    }
-
-    return 0;
+    return LoadFlashConfigFromFile<gpx_flash_cfg_t>(path, DID_GPX_FLASH_CFG,
+        [this](gpx_flash_cfg_t& cfg, int handle) { return SetGpxFlashConfig(cfg, handle); },
+        pHandle);
 }
+
+
 
 /**
 * Get the device info
