@@ -1783,7 +1783,7 @@ int LoadFlashConfigFromFile(const std::string& path, int did, std::function<bool
         if (!cISDataMappings::YamlToData(did, yaml, reinterpret_cast<uint8_t*>(&flashCfg)))
         {
             printf("[ERROR] --- Failed to parse YAML into flash config structure\n");
-            return -1;
+            return false;
         }
 
         setCfg(flashCfg, pHandle);
@@ -1791,34 +1791,34 @@ int LoadFlashConfigFromFile(const std::string& path, int did, std::function<bool
     catch (const YAML::Exception& ex)
     {
         printf("[ERROR] --- There was an error parsing the YAML file: %s\n", ex.what());
-        return -1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
-void InertialSense::SaveImxFlashConfigToFile(std::string path, int pHandle)
+bool InertialSense::SaveImxFlashConfigToFile(std::string path, int pHandle)
 {
-    SaveFlashConfigToFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
+    return SaveFlashConfigToFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
         [this](nvm_flash_cfg_t& cfg, int handle) { return ImxFlashConfig(cfg, handle); },
         pHandle);
 }
 
-void InertialSense::SaveGpxFlashConfigToFile(std::string path, int pHandle)
+bool InertialSense::SaveGpxFlashConfigToFile(std::string path, int pHandle)
 {
-    SaveFlashConfigToFile<gpx_flash_cfg_t>(path, DID_GPX_FLASH_CFG,
+    return SaveFlashConfigToFile<gpx_flash_cfg_t>(path, DID_GPX_FLASH_CFG,
         [this](gpx_flash_cfg_t& cfg, int handle) { return GpxFlashConfig(cfg, handle); },
         pHandle);
 }
 
-int InertialSense::LoadImxFlashConfigFromFile(std::string path, int pHandle)
+bool InertialSense::LoadImxFlashConfigFromFile(std::string path, int pHandle)
 {
     return LoadFlashConfigFromFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
         [this](nvm_flash_cfg_t& cfg, int handle) { return SetImxFlashConfig(cfg, handle); },
         pHandle);
 }
 
-int InertialSense::LoadGpxFlashConfigFromFile(std::string path, int pHandle)
+bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, int pHandle)
 {
     return LoadFlashConfigFromFile<gpx_flash_cfg_t>(path, DID_GPX_FLASH_CFG,
         [this](gpx_flash_cfg_t& cfg, int handle) { return SetGpxFlashConfig(cfg, handle); },

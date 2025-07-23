@@ -577,16 +577,16 @@ public:
      * @param pHandle - Handle of current device
      * @return -1 for failure to upload file, 0 for success.
      */
-    int LoadImxFlashConfigFromFile(std::string path, int pHandle = 0);
-    int LoadGpxFlashConfigFromFile(std::string path, int pHandle = 0);
+    bool LoadImxFlashConfigFromFile(std::string path, int pHandle = 0);
+    bool LoadGpxFlashConfigFromFile(std::string path, int pHandle = 0);
 
     /**
      * @brief SaveImxFlashConfigToFile
      * @param path - Path to YAML flash config file
      * @param pHandle - Handle of current device
      */
-    void SaveImxFlashConfigToFile(std::string path, int pHandle = 0);
-    void SaveGpxFlashConfigToFile(std::string path, int pHandle = 0);
+    bool SaveImxFlashConfigToFile(std::string path, int pHandle = 0);
+    bool SaveGpxFlashConfigToFile(std::string path, int pHandle = 0);
 
     std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
     std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
