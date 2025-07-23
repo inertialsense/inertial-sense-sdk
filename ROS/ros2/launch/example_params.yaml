@@ -103,6 +103,10 @@ sensors:
       topic: "imu"
       enable: false
       period: 1
+    imu_raw:          # Publish raw IMU data at sensor rate
+      topic: "imu_raw"
+      enable: true
+      period: 5         # 5 = 200Hz (1000Hz / 5)
     pimu:             # Publish preintegrated IMU delta theta and delta velocity
       topic: "pimu"
       enable: true
