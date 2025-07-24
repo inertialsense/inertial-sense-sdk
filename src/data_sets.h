@@ -178,13 +178,15 @@ typedef uint32_t eDataIDs;
 #define DEVINFO_MANUFACTURER_STRLEN 24
 #define DEVINFO_ADDINFO_STRLEN      24
 
+/** Communications Protocol Version. See release notes. */
 
-/** Defines the 4 parts to the communications version. See release notes. */
-// TODO: Update release notes for v2
-// #define PROTOCOL_VERSION_CHAR0       // Major (in ISComm.h)
-// #define PROTOCOL_VERSION_CHAR1
-#define PROTOCOL_VERSION_CHAR2 0
-#define PROTOCOL_VERSION_CHAR3 0
+// Increment w/ breaking changes (in ISComm.cpp) that prevent backwards compatibility with older protocols. 
+// #define PROTOCOL_VERSION_CHAR0   .   // Breaking changes (Packet)        (defined in ISComm.h) 
+#define PROTOCOL_VERSION_CHAR1      1   // Breaking changes (Payload)
+
+// Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
+// #define PROTOCOL_VERSION_CHAR2   .   // Non-breaking changes (Packet):   (defined in ISComm.h)
+#define PROTOCOL_VERSION_CHAR3      0   // Non-breaking changes (Payload):  
 
 /** Rtk rover receiver index */
 #define RECEIVER_INDEX_GPS1             1 // DO NOT CHANGE
@@ -426,6 +428,9 @@ enum eSysStatusFlags
     SYS_STATUS_TBED3_LEDS_ENABLED   = (int)0x00000001,
 
     SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
+
+    SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2         = (int)0x00000004, // 0 = GPS1 is the primary NMEA GNSS source 1 = GPS2 is the primary NMEA GNSS source
+    SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2_offest  = 2,
 };
 
 // Used to validate GPS position (and velocity)
@@ -499,6 +504,9 @@ enum eGpsStatus2
     GPS_STATUS2_FLAGS_GNSS_JAM_DETECTED             = (uint8_t) 0x02,
     GPS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT    = (uint8_t) 0x04,
     GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED           = (uint8_t) 0x08,
+    
+    GPS_STATUS2_FLAGS_JAM_SPOOF_POSSIBLE_MASK       = (uint8_t) 0x05,
+    GPS_STATUS2_FLAGS_JAM_SPOOF_DETECTED_MASK       = (uint8_t) 0x0A,
     GPS_STATUS2_FLAGS_JAM_SPOOF_MASK                = (uint8_t) 0x0F,
 
     GPS_STATUS2_FLAGS_UNUSED                        = 0xF0,
@@ -533,7 +541,7 @@ typedef struct PACKED
  *
  *  Upper 6 bits are the hardware type (IMX, GPX, uINS, etc; 64 possible values)
  *  Middle 4 bits are the major hardware version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
- *  Lower 6 bits are the minor hardware version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
+ *  Lower 6 bits are the minor hardware version (IMX-6, uINS-3.2, GPX-1.0; 64 possible values)
  *
  *  If the TYPE and MAJOR are 0, then fall back to eIsHardwareType to determine the type from the legacy map:
  *      0 = Unknown
@@ -3559,26 +3567,29 @@ typedef struct PACKED
     /** IMU gyro fault rejection threshold high */
     uint8_t                 imuRejectThreshGyroHigh;
 
-    /** (ms/10) IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.  */
-    uint8_t                 imuShockDetectLatencyMsDiv10;
+    /** (ms) IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.  */
+    uint8_t                 imuShockDetectLatencyMs;
 
-    /** (ms/10) IMU shock rejection latch time.  Time required following detected shock to disable shock rejection.  */
-    uint8_t                 imuShockRejectLatchMsDiv10;
+    /** (ms) IMU shock rejection latch time.  Time required following detected shock end to disable shock rejection.  */
+    uint8_t                 imuShockRejectLatchMs;
 
     /* IMU shock rejection options (see eImuShockOptions) */
     uint8_t                 imuShockOptions;
 
-    /* (m/s^2/ms) IMU shock detection. Min acceleration change in 1 ms to detect the start of a shock. */
-    uint8_t                 imuShockDeltaAccPerMsHighThreshold;
+    /* (m/s^2) IMU shock detection. Min acceleration difference between the 3 IMUs to detect the start of a shock. */
+    uint8_t                 imuShockDeltaAccHighThreshold;
 
-    /* (m/s^2/ms) IMU shock detection. Max acceleration change in 1 ms within the latch time to detect the end of a shock. */
-    uint8_t                 imuShockDeltaAccPerMsLowThreshold;
+    /* (m/s^2) IMU shock detection. Max acceleration difference between the 3 IMUs within the latch time to detect the end of a shock. */
+    uint8_t                 imuShockDeltaAccLowThreshold;
+
+    /* (deg/s) IMU shock detection. Min angular rate difference between the 3 IMUs to detect the start of a shock. */
+    uint8_t                 imuShockDeltaGyroHighThreshold;
+
+    /* (deg/s) IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect the end of a shock. */
+    uint8_t                 imuShockDeltaGyroLowThreshold;
 
     /** Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2). */
     uint8_t                 ioConfig2;
-
-    /** Reserved */
-    uint16_t                reserved1;
 
 } nvm_flash_cfg_t;
 
@@ -3767,7 +3778,7 @@ typedef struct
     int32_t navsys;
 
     /** elevation mask angle (rad) */
-    double elmin;
+    float elmin;
 
     /** Min snr to consider satellite for rtk */
     int32_t snrmin;
@@ -3821,9 +3832,6 @@ typedef struct
     /** dynamics model (0:none,1:velociy,2:accel) */
     int32_t dynamics;
 
-    /** number of filter iteration */
-    int32_t niter;
-
     /** interpolate reference obs (for post mission) */
     int32_t intpref;
 
@@ -3834,60 +3842,60 @@ typedef struct
     int32_t refpos;
 
     /** code/phase error ratio */
-    double eratio[NFREQ];
+    float eratio[NFREQ];
 
     /** measurement error factor */
-    double err[7];
+    float err[7];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
-    double std[3];
+    float std[3];
 
     /** process-noise std [0]bias,[1]iono [2]trop [3]acch [4]accv [5] pos */
-    double prn[6];
+    float prn[6];
 
     /** satellite clock stability (sec/sec) */
     double sclkstab;
 
     /** AR validation threshold */
-    double thresar[8];
+    float thresar[8];
 
     /** elevation mask of AR for rising satellite (rad) */
-    double elmaskar;
+    float elmaskar;
 
     /** elevation mask to hold ambiguity (rad) */
-    double elmaskhold;
+    float elmaskhold;
 
     /** slip threshold of geometry-free phase (m) */
-    double thresslip;
+    float thresslip;
 
     /* slip threshold of doppler (m) */
-    double thresdop;
+    float thresdop;
 
     /** variance for fix-and-hold pseudo measurements (cycle^2) */
-    double varholdamb;
+    float varholdamb;
 
     /** gain used for GLO and SBAS sats to adjust ambiguity */
-    double gainholdamb;
+    float gainholdamb;
 
     /** max difference of time (sec) */
-    double maxtdiff;
+    float maxtdiff;
 
     /** reset sat biases after this long trying to get fix if not acquired */
     int fix_reset_base_msgs;
 
     /** reject threshold of innovation for phase [0] and code [1] (m) */
-    double maxinno[2];
+    float maxinno[2];
     /** reject thresholds of NIS for phase [0] and code [1] */
-    double maxnis_lo[2];
-    double maxnis_hi[2];
+    float maxnis_lo[2];
+    float maxnis_hi[2];
 
     /** reject threshold of gdop */
     double maxgdop;
 
     /** baseline length constraint {const,sigma before fix, sigma after fix} (m) */
-    double baseline[3];
-    double max_baseline_error;
-    double reset_baseline_error;
+    float baseline[3];
+    float max_baseline_error;
+    float reset_baseline_error;
 
     /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
     float max_ubx_error;

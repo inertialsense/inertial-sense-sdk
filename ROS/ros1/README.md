@@ -37,6 +37,8 @@ mkdir -p catkin_ws/src
 cd catkin_ws/src
 catkin_init_workspace
 git clone https://github.com/inertialsense/inertial-sense-sdk
+git submodule update --init --recursive
+touch inertial-sense-sdk/ROS/ros2/CATKIN_IGNORE
 cd ..
 catkin_make
 ```

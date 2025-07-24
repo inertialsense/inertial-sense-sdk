@@ -124,15 +124,15 @@ typedef enum
 /** Binary checksum start value */
 #define CHECKSUM_SEED 0x00AAAAAA
 
-/** Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
+/** Communications Protocol Version. See release notes. */
 
-// Major (in com_manager.h)
-#define PROTOCOL_VERSION_CHAR0      (2)
-#define PROTOCOL_VERSION_CHAR1      (0)
+// Increment w/ breaking changes (in ISComm.cpp) that prevent backwards compatibility with older protocols. 
+#define PROTOCOL_VERSION_CHAR0		2   // Breaking changes (Packet)
+// #define PROTOCOL_VERSION_CHAR1   .   // Breaking changes (Payload)       (defined in data_sets.h)
 
-// Minor (in data_sets.h)
-// #define PROTOCOL_VERSION_CHAR2   0
-// #define PROTOCOL_VERSION_CHAR3   0
+// Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
+#define PROTOCOL_VERSION_CHAR2		0   // Non-breaking changes (Packet)
+// #define PROTOCOL_VERSION_CHAR3   .   // Non-breaking changes (Payload)   (defined in data_sets.h)
 
 #define UBLOX_HEADER_SIZE           6
 #define RTCM3_HEADER_SIZE           3
@@ -154,7 +154,7 @@ typedef enum
     IS_BAUDRATE_19200           = 19200,
     IS_BAUDRATE_38400           = 38400,
     IS_BAUDRATE_57600           = 57600,
-    IS_BAUDRATE_115200          = 115200,       //  IMX-5.0,  uINS-3,  Actual baudrates                                             
+    IS_BAUDRATE_115200          = 115200,       //  IMX-5,  uINS-3,  Actual baudrates                                             
     IS_BAUDRATE_230400          = 230400,       //   230547,  232700, 
     IS_BAUDRATE_460800          = 460800,       //   462428,  468600, 
     IS_BAUDRATE_921600          = 921600,       //   930233,  937734,
@@ -389,7 +389,7 @@ typedef struct
             uint8_t         flags;
 
             /** Data offset (optional) */
-            p_data_hdr_t     dataHdr;
+            p_data_hdr_t    dataHdr;
         };
     };
 
@@ -461,7 +461,11 @@ typedef struct
 typedef struct
 {
     /** Packet info of the received packet */
-    uint16_t            pktInfo;
+    struct ISComm
+    {
+        uint8_t         flags;             //!< Packet flags of received packet (see eISBPacketFlags)
+        uint8_t         id;                //!< DID of received packet
+    }                   pktInfo;
 
     /** Packet counter of the received packet */
     uint16_t            pktCounter;
@@ -559,7 +563,7 @@ typedef enum {
     EPARSE_INCOMPLETE_PACKET,       //!< Stream/Sentence(NMEA) is too short/incomplete to identify as a packet
     EPARSE_INVALID_HEADER,
     EPARSE_INVALID_PAYLOAD,
-    EPARSE_RXBUFFER_FLUSHED,
+    EPARSE_RXBUFFER_FLUSHED,        //!< RX buffer flushed during parse, packet too large to fit
     EPARSE_STREAM_UNPARSABLE,
     NUM_EPARSE_ERRORS
 } eParseErrorType;
@@ -1013,9 +1017,9 @@ static inline void is_comm_to_isb_p_data(const is_comm_instance_t *comm, p_data_
 }
 
 /** Get ISB packet type from is_comm_instance */
-static inline uint8_t is_comm_to_isb_pkt_type(const is_comm_instance_t *comm)
+static inline eISBPacketFlags is_comm_to_isb_pkt_type(const is_comm_instance_t *comm)
 {
-    return comm->rxPkt.hdr.flags&PKT_TYPE_MASK;
+    return (eISBPacketFlags)(comm->rxPkt.hdr.flags&PKT_TYPE_MASK);
 }
 
 /** Returns -1 if the baudrate is not a standard baudrate. */

@@ -95,6 +95,16 @@ static int staticProcessRxData(void *ctx, p_data_t* data, port_handle_t port)
     return 0;
 }
 
+static int staticProcessAck(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)
+{
+    pfnHandleAckData handler = s_cm_state->binaryAckCallback;
+    if (handler != NULLPTR)
+    {
+        handler(s_cm_state->inertialSenseInterface, ack, packetIdentifier, port);
+    }
+    return 0;
+}
+
 static int staticProcessRxNmea(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port)
 {
     if (port)
@@ -165,13 +175,13 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
     m_handlerSpartn = nullptr;
 }
 
-InertialSense::InertialSense() : InertialSense( { }, { }) {
+InertialSense::InertialSense() : InertialSense(std::vector<PortFactory*>(), std::vector<DeviceFactory*>()) {
     s_is = this;
 }
 
-
 InertialSense::InertialSense(
         pfnHandleBinaryData     handlerIsb,
+        pfnHandleAckData        handlerIsbAck,
         pfnComManagerRmcHandler handlerRmc,
         pfnIsCommGenMsgHandler  handlerNmea,
         pfnIsCommGenMsgHandler  handlerUblox,
@@ -200,6 +210,7 @@ InertialSense::InertialSense(
         m_comManagerState.binaryCallback[i] = {};
     }
     m_comManagerState.binaryCallbackGlobal = handlerIsb;
+    m_comManagerState.binaryAckCallback = handlerIsbAck;
     m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
     m_comManagerState.inertialSenseInterface = this;
     m_comManagerState.clientBuffer = m_clientBuffer;
@@ -840,105 +851,77 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
         comManagerSendData(port, data, DID_EVENT, DID_EVENT_HEADER_SIZE + event.length, 0);
 }
 
-// This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
-void InertialSense::SyncFlashConfig(unsigned int timeMs)
-{
-    if (timeMs - m_syncCheckTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
-    {
-        return;
-    }
-    m_syncCheckTimeMs = timeMs;
-
-    for (auto device : m_comManagerState.devices)
-    {
-        if (device->flashCfgUploadTimeMs)
-        {   // Upload in progress
-            if (timeMs - device->flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
-            {   // Wait for upload to process.  Pause sync.
-                device->sysParams.flashCfgChecksum = 0;
-            }
-        }
-
-        // Require valid sysParams checksum
-        if (device->sysParams.flashCfgChecksum)
-        {   
-            if (device->sysParams.flashCfgChecksum == device->flashCfg.checksum)
-            {
-                if (device->flashCfgUploadTimeMs)
-                {   // Upload complete.  Allow sync.
-                    device->flashCfgUploadTimeMs = 0;
-
-                    if (device->flashCfgUpload.checksum == device->sysParams.flashCfgChecksum)
-                    {
-                        printf("DID_FLASH_CONFIG upload complete.\n");
-                    }
-                    else
-                    {
-                        printf("DID_FLASH_CONFIG upload rejected.\n");
-                    }
-                }
-            }
-            else
-            {   // Out of sync.  Request flash config.
-                DEBUG_PRINT("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
-                comManagerGetData(device->port, DID_FLASH_CONFIG, 0, 0, 0);
-            }
-        } 
-    }
-}
-
-void InertialSense::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg)
-{
-    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
-
-    // Exclude from the checksum update the following which does not get saved in the flash config
-    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
-
-    if (platformCfgUpdateIoConfig)
-    {   // Update ioConfig
-        imxPlatformConfigToFlashCfgIoConfig(&flashCfg.ioConfig, &flashCfg.ioConfig2, flashCfg.platformConfig);
-    }
-
-    // Update checksum
-    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
-}
-
-bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
-{
-    ISDevice* device = NULL;
-    if (!port) {
-        device = m_comManagerState.devices.front();
-    } else {
-        device = DeviceByPort(port);
-    }
-
-    return (device ? device->FlashConfig(flashCfg) : false);
-}
-
-bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
-{
-    ISDevice* device = NULL;
-    if (!port) {
-        device = m_comManagerState.devices.front();
-    } else {
-        device = DeviceByPort(port);
-    }
-
-    return (device ? device->SetFlashConfig(flashCfg) : false);
-}
-
-bool InertialSense::WaitForFlashSynced(port_handle_t port)
-{
-    ISDevice* device = NULL;
-    if (!port) {
-        device = m_comManagerState.devices.front();
-    } else {
-        device = DeviceByPort(port);
-    }
-
-    return (device ? device->WaitForFlashSynced() : false);
-}
 #endif
+
+bool InertialSense::ImxFlashConfig(nvm_flash_cfg_t& flashCfg, port_handle_t port)
+{
+    return WithDevice(port, [&](ISDevice* dev) { return dev->ImxFlashConfig(flashCfg); });
+}
+
+bool InertialSense::GpxFlashConfig(gpx_flash_cfg_t& flashCfg, port_handle_t port)
+{
+    return WithDevice(port, [&](ISDevice* dev) { return dev->GpxFlashConfig(flashCfg); });
+}
+
+bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t& flashCfg, port_handle_t port)
+{
+    return WithDevice(port, [&](ISDevice* dev) { return dev->SetImxFlashConfig(flashCfg); });
+}
+
+bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg, port_handle_t port)
+{
+    return WithDevice(port, [&](ISDevice* dev) { return dev->SetGpxFlashConfig(flashCfg); });
+}
+
+bool InertialSense::ImxFlashConfigSynced(port_handle_t port)
+{
+    return WithDevice(port, [](ISDevice* dev) { return dev->ImxFlashConfigSynced(); });
+}
+
+bool InertialSense::GpxFlashConfigSynced(port_handle_t port)
+{
+    return WithDevice(port, [](ISDevice* dev) { return dev->GpxFlashConfigSynced(); });
+}
+
+bool InertialSense::ImxFlashConfigUploadFailure(port_handle_t port)
+{
+    return WithDevice(port, [](ISDevice* dev) { return dev->ImxFlashConfigUploadFailure(); });
+}
+
+bool InertialSense::GpxFlashConfigUploadFailure(port_handle_t port)
+{
+    return WithDevice(port, [](ISDevice* dev) { return dev->GpxFlashConfigUploadFailure(); });
+}
+
+bool InertialSense::WaitForImxFlashCfgSynced(port_handle_t port)
+{
+    return WithDevice(port, [](ISDevice* dev) { return dev->WaitForImxFlashCfgSynced(); });
+}
+
+bool InertialSense::WaitForGpxFlashCfgSynced(port_handle_t port)
+{
+    return WithDevice(port, [](ISDevice* dev) { return dev->WaitForGpxFlashCfgSynced(); });
+}
+
+bool InertialSense::SaveImxFlashConfigToFile(std::string path, port_handle_t port)
+{
+    return WithDevice(port, [&](ISDevice* dev) { return dev->SaveImxFlashConfigToFile(path); });
+}
+
+bool InertialSense::SaveGpxFlashConfigToFile(std::string path, port_handle_t port)
+{
+    return WithDevice(port, [&](ISDevice* dev) { return dev->SaveGpxFlashConfigToFile(path); });
+}
+
+bool InertialSense::LoadImxFlashConfigFromFile(std::string path, port_handle_t port)
+{
+    return WithDevice(port, [&](ISDevice* dev) { return dev->LoadImxFlashConfigFromFile(path); });
+}
+
+bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, port_handle_t port)
+{
+    return WithDevice(port, [&](ISDevice* dev) { return dev->LoadGpxFlashConfigFromFile(path); });
+}
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
 {
@@ -947,45 +930,61 @@ void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
         return;
     }
 
-    ISDevice* device = getDevice(port);
-    if (!device) {
-        if (data->hdr.id != DID_DEV_INFO)
-            return;
-    }
+    // THIS IS MOVED TO ISDevice::ProcessRxData()
+    // ISDevice* device = getDevice(port);
+    // if (!device) {
+    //     if (data->hdr.id != DID_DEV_INFO)
+    //         return;
+    // }
 
-    switch (data->hdr.id)
-    {
-        case DID_DEV_INFO:
-            if (!device) {
-                device = deviceManager.registerNewDevice(port, *(dev_info_t*)data->ptr);
-                device->devInfo.hdwRunState = HDW_STATE_APP; // we know this for a fact
-            } else {
-                device->devInfo = *(dev_info_t*)data->ptr;
-            }
-            break;
-        case DID_SYS_CMD:
-            device->sysCmd = *(system_command_t*)data->ptr;
-            break;
-        case DID_SYS_PARAMS:
-            copyDataPToStructP(&(device->sysParams), data, sizeof(sys_params_t));
-            DEBUG_PRINT("Received DID_SYS_PARAMS\n");
-            break;
-        case DID_FLASH_CONFIG:
-            copyDataPToStructP(&(device->flashCfg), data, sizeof(nvm_flash_cfg_t));
-            if (dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data))
-            {   // Checksum received
-                device->sysParams.flashCfgChecksum = device->flashCfg.checksum;
-            }
-            DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
-            break;
-        case DID_FIRMWARE_UPDATE:
-            // we don't respond to messages if we don't already have an active Updater
-            if (device->fwUpdater) {
-                device->fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
-                device->fwUpdate();
-            }
-            break;
-    }
+    // switch (data->hdr.id)
+    // {
+    //     case DID_DEV_INFO:
+    //         if (!device) {
+    //             device = deviceManager.registerNewDevice(port, *(dev_info_t*)data->ptr);
+    //             device->devInfo.hdwRunState = HDW_STATE_APP; // we know this for a fact
+    //         } else {
+    //             device->devInfo = *(dev_info_t*)data->ptr;
+    //         }
+    //         break;
+    //     case DID_GPX_DEV_INFO:
+    //         device->gpxDevInfo = *(dev_info_t*)data->ptr;
+    //         break;
+    //     case DID_SYS_CMD:
+    //         device->sysCmd = *(system_command_t*)data->ptr;
+    //         break;
+    //     case DID_SYS_PARAMS:
+    //         copyDataPToStructP(&(device->sysParams), data, sizeof(sys_params_t));
+    //         DEBUG_PRINT("Received DID_SYS_PARAMS\n");
+    //         break;
+    //     case DID_GPX_STATUS:
+    //         copyDataPToStructP(&(device->gpxStatus), data, sizeof(gpx_status_t));
+    //         DEBUG_PRINT("Received DID_GPX_STATUS\n");
+    //         break;
+    //     case DID_FLASH_CONFIG:
+    //         copyDataPToStructP(&(device->flashCfg), data, sizeof(nvm_flash_cfg_t));
+    //         if (dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data))
+    //         {   // Checksum received
+    //             device->sysParams.flashCfgChecksum = device->flashCfg.checksum;
+    //         }
+    //         DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
+    //         break;
+    //     case DID_GPX_FLASH_CFG:
+    //         copyDataPToStructP(&(device->gpxFlashCfg), data, sizeof(gpx_flash_cfg_t));
+    //         if ( dataOverlap( offsetof(gpx_flash_cfg_t, checksum), 4, data ) )
+    //         {	// Checksum received
+    //             device.gpxStatus.flashCfgChecksum = device->gpxFlashCfg.checksum;
+    //         }
+    //         DEBUG_PRINT("Received DID_GPX_FLASH_CFG\n");
+    //         break;
+    //     case DID_FIRMWARE_UPDATE:
+    //         // we don't respond to messages if we don't already have an active Updater
+    //         if (device->fwUpdater) {
+    //             device->fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
+    //             device->fwUpdate();
+    //         }
+    //         break;
+    // }
 }
 
 // return 0 on success, -1 on failure
@@ -1355,7 +1354,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         if (device->hasDeviceInfo()) {
             device->GetData(DID_SYS_PARAMS);
             device->GetData(DID_FLASH_CONFIG);
-            // device->GetData(DID_EVB_FLASH_CFG);
+            device->GetData(DID_GPX_FLASH_CFG);
         }
     }
 
@@ -1380,239 +1379,6 @@ void InertialSense::CloseSerialPorts(bool drainBeforeClose)
 }
 
 #if 0
-void InertialSense::SaveFlashConfigFile(std::string path, port_handle_t port)
-{
-    ISDevice* device = DeviceByPort(port);
-    if (!device)
-        return;
-
-    nvm_flash_cfg_t* outData = &device->flashCfg;
-
-    YAML::Node map = YAML::Node(YAML::NodeType::Map);
-
-    map["size"]             = outData->size;
-    map["checksum"]         = outData->checksum;
-    map["key"]              = outData->key;
-    map["startupImuDtMs"]   = outData->startupImuDtMs;
-    map["startupNavDtMs"]   = outData->startupNavDtMs;
-    map["ser0BaudRate"]     = outData->ser0BaudRate;
-    map["ser1BaudRate"]     = outData->ser1BaudRate;
-
-    YAML::Node insRotation = YAML::Node(YAML::NodeType::Sequence);
-    insRotation.push_back(outData->insRotation[0]);
-    insRotation.push_back(outData->insRotation[1]);
-    insRotation.push_back(outData->insRotation[2]);
-    map["insRotation"]                 = insRotation;
-
-    YAML::Node insOffset = YAML::Node(YAML::NodeType::Sequence);
-    insOffset.push_back(outData->insOffset[0]);
-    insOffset.push_back(outData->insOffset[1]);
-    insOffset.push_back(outData->insOffset[2]);
-    map["insOffset"]                 = insOffset;
-
-    YAML::Node gps1AntOffset = YAML::Node(YAML::NodeType::Sequence);
-    gps1AntOffset.push_back(outData->gps1AntOffset[0]);
-    gps1AntOffset.push_back(outData->gps1AntOffset[1]);
-    gps1AntOffset.push_back(outData->gps1AntOffset[2]);
-    map["gps1AntOffset"]    = gps1AntOffset;
-
-    map["dynamicModel"]     = (uint16_t)outData->dynamicModel;
-    map["debug"]            = (uint16_t)outData->debug;
-    map["gnssSatSigConst"]  = outData->gnssSatSigConst;
-    map["sysCfgBits"]       = outData->sysCfgBits;
-
-    YAML::Node refLla = YAML::Node(YAML::NodeType::Sequence);
-    refLla.push_back(outData->refLla[0]);
-    refLla.push_back(outData->refLla[1]);
-    refLla.push_back(outData->refLla[2]);
-    map["refLla"]                     = refLla;
-
-    YAML::Node lastLla = YAML::Node(YAML::NodeType::Sequence);
-    lastLla.push_back(outData->lastLla[0]);
-    lastLla.push_back(outData->lastLla[1]);
-    lastLla.push_back(outData->lastLla[2]);
-    map["lastLla"]                     = lastLla;
-
-    map["lastLlaTimeOfWeekMs"]      = outData->lastLlaTimeOfWeekMs;
-    map["lastLlaWeek"]              = outData->lastLlaWeek;
-    map["lastLlaUpdateDistance"]    = outData->lastLlaUpdateDistance;
-    map["ioConfig"]                 = outData->ioConfig;
-    map["platformConfig"]           = outData->platformConfig;
-
-    YAML::Node gps2AntOffset = YAML::Node(YAML::NodeType::Sequence);
-    gps2AntOffset.push_back(outData->gps2AntOffset[0]);
-    gps2AntOffset.push_back(outData->gps2AntOffset[1]);
-    gps2AntOffset.push_back(outData->gps2AntOffset[2]);
-    map["gps2AntOffset"]            = gps2AntOffset;
-
-    YAML::Node zeroVelRotation = YAML::Node(YAML::NodeType::Sequence);
-    zeroVelRotation.push_back(outData->zeroVelRotation[0]);
-    zeroVelRotation.push_back(outData->zeroVelRotation[1]);
-    zeroVelRotation.push_back(outData->zeroVelRotation[2]);
-    map["zeroVelRotation"]          = zeroVelRotation;
-
-    YAML::Node zeroVelOffset = YAML::Node(YAML::NodeType::Sequence);
-    zeroVelOffset.push_back(outData->zeroVelOffset[0]);
-    zeroVelOffset.push_back(outData->zeroVelOffset[1]);
-    zeroVelOffset.push_back(outData->zeroVelOffset[2]);
-    map["zeroVelOffset"]            = zeroVelOffset;
-
-    map["gpsTimeUserDelay"]         = outData->gpsTimeUserDelay;
-    map["magDeclination"]           = outData->magDeclination;
-    map["gpsTimeSyncPeriodMs"]      = outData->gpsTimeSyncPeriodMs;
-    map["startupGPSDtMs"]           = outData->startupGPSDtMs;
-    map["RTKCfgBits"]               = outData->RTKCfgBits;
-    map["sensorConfig"]             = outData->sensorConfig;
-    map["gpsMinimumElevation"]      = outData->gpsMinimumElevation;
-    map["ser2BaudRate"]             = outData->ser2BaudRate;
-
-    YAML::Node wheelCfgTransE_b2w   = YAML::Node(YAML::NodeType::Sequence);
-    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[0]);
-    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[1]);
-    wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[2]);
-    map["wheelCfgTransE_b2w"]       = wheelCfgTransE_b2w;
-
-    YAML::Node wheelCfgTransE_b2wsig = YAML::Node(YAML::NodeType::Sequence);
-    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[0]);
-    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[1]);
-    wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[2]);
-    map["wheelCfgTransE_b2wsig"]    = wheelCfgTransE_b2wsig;
-
-    YAML::Node wheelCfgTransT_b2w = YAML::Node(YAML::NodeType::Sequence);
-    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[0]);
-    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[1]);
-    wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[2]);
-    map["wheelCfgTransT_b2w"]       = wheelCfgTransT_b2w;
-
-    YAML::Node wheelCfgTransT_b2wsig = YAML::Node(YAML::NodeType::Sequence);
-    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[0]);
-    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[1]);
-    wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[2]);
-    map["wheelCfgTransT_b2wsig"]    = wheelCfgTransT_b2wsig;
-
-    map["wheelConfigTrackWidth"]    = outData->wheelConfig.track_width;
-    map["wheelConfigRadius"]        = outData->wheelConfig.radius;
-    map["wheelConfigBits"]          = outData->wheelConfig.bits;
-
-    std::ofstream fout(path);
-
-    YAML::Emitter emitter;
-    emitter.SetSeqFormat(YAML::Flow);
-    emitter << map;
-    fout << emitter.c_str();
-    fout.close();
-}
-
-int InertialSense::LoadFlashConfig(std::string path, port_handle_t port)
-{
-    try
-    {
-        nvm_flash_cfg_t loaded_flash;
-        FlashConfig(loaded_flash);
-
-        YAML::Node inData = YAML::LoadFile(path);
-        loaded_flash.size                     = inData["size"].as<uint32_t>();
-        loaded_flash.checksum                 = inData["checksum"].as<uint32_t>();
-        loaded_flash.key                      = inData["key"].as<uint32_t>();
-        loaded_flash.startupImuDtMs           = inData["startupImuDtMs"].as<uint32_t>();
-        loaded_flash.startupNavDtMs           = inData["startupNavDtMs"].as<uint32_t>();
-        loaded_flash.ser0BaudRate             = inData["ser0BaudRate"].as<uint32_t>();
-        loaded_flash.ser1BaudRate             = inData["ser1BaudRate"].as<uint32_t>();
-
-        YAML::Node insRotation                = inData["insRotation"];
-        loaded_flash.insRotation[0]           = insRotation[0].as<float>();
-        loaded_flash.insRotation[1]           = insRotation[1].as<float>();
-        loaded_flash.insRotation[2]           = insRotation[2].as<float>();
-
-        YAML::Node insOffset                  = inData["insOffset"];
-        loaded_flash.insOffset[0]             = insOffset[0].as<float>();
-        loaded_flash.insOffset[1]             = insOffset[1].as<float>();
-        loaded_flash.insOffset[2]             = insOffset[2].as<float>();
-
-        YAML::Node gps1AntOffset              = inData["gps1AntOffset"];
-        loaded_flash.gps1AntOffset[0]         = gps1AntOffset[0].as<float>();
-        loaded_flash.gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
-        loaded_flash.gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
-
-        loaded_flash.dynamicModel             = (uint8_t)inData["dynamicModel"].as<uint16_t>();
-        loaded_flash.debug                    = (uint8_t)inData["debug"].as<uint16_t>();
-        loaded_flash.gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
-        loaded_flash.sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();
-
-        YAML::Node refLla                     = inData["refLla"];
-        loaded_flash.refLla[0]                = refLla[0].as<double>();
-        loaded_flash.refLla[1]                = refLla[1].as<double>();
-        loaded_flash.refLla[2]                = refLla[2].as<double>();
-
-        YAML::Node lastLla                    = inData["lastLla"];
-        loaded_flash.lastLla[0]               = lastLla[0].as<double>();
-        loaded_flash.lastLla[1]               = lastLla[1].as<double>();
-        loaded_flash.lastLla[2]               = lastLla[2].as<double>();
-
-        loaded_flash.lastLlaTimeOfWeekMs      = inData["lastLlaTimeOfWeekMs"].as<uint32_t>();
-        loaded_flash.lastLlaWeek              = inData["lastLlaWeek"].as<uint32_t>();
-        loaded_flash.lastLlaUpdateDistance    = inData["lastLlaUpdateDistance"].as<float>();
-        loaded_flash.ioConfig                 = inData["ioConfig"].as<uint32_t>();
-        loaded_flash.platformConfig           = inData["platformConfig"].as<uint32_t>();
-
-        YAML::Node gps2AntOffset              = inData["gps2AntOffset"];
-        loaded_flash.gps2AntOffset[0]         = gps2AntOffset[0].as<float>();
-        loaded_flash.gps2AntOffset[1]         = gps2AntOffset[1].as<float>();
-        loaded_flash.gps2AntOffset[2]         = gps2AntOffset[2].as<float>();
-
-        YAML::Node zeroVelRotation            = inData["zeroVelRotation"];
-        loaded_flash.zeroVelRotation[0]       = zeroVelRotation[0].as<float>();
-        loaded_flash.zeroVelRotation[1]       = zeroVelRotation[1].as<float>();
-        loaded_flash.zeroVelRotation[2]       = zeroVelRotation[2].as<float>();
-
-        YAML::Node zeroVelOffset              = inData["zeroVelOffset"];
-        loaded_flash.zeroVelOffset[0]         = zeroVelOffset[0].as<float>();
-        loaded_flash.zeroVelOffset[1]         = zeroVelOffset[1].as<float>();
-        loaded_flash.zeroVelOffset[2]         = zeroVelOffset[2].as<float>();
-
-        loaded_flash.gpsTimeUserDelay         = inData["gpsTimeUserDelay"].as<float>();
-        loaded_flash.magDeclination           = inData["magDeclination"].as<float>();
-        loaded_flash.gpsTimeSyncPeriodMs      = inData["gpsTimeSyncPeriodMs"].as<uint32_t>();
-        loaded_flash.startupGPSDtMs           = inData["startupGPSDtMs"].as<uint32_t>();
-        loaded_flash.RTKCfgBits               = inData["RTKCfgBits"].as<uint32_t>();
-        loaded_flash.sensorConfig             = inData["sensorConfig"].as<uint32_t>();
-        loaded_flash.gpsMinimumElevation      = inData["gpsMinimumElevation"].as<float>();
-        loaded_flash.ser2BaudRate             = inData["ser2BaudRate"].as<uint32_t>();
-
-        loaded_flash.wheelConfig.bits         = inData["wheelConfigBits"].as<uint32_t>();
-        loaded_flash.wheelConfig.radius       = inData["wheelConfigRadius"].as<float>();
-        loaded_flash.wheelConfig.track_width  = inData["wheelConfigTrackWidth"].as<float>();
-
-        YAML::Node wheelCfgTransE_b2w                       = inData["wheelCfgTransE_b2w"];
-        loaded_flash.wheelConfig.transform.e_b2w[0]         = wheelCfgTransE_b2w[0].as<float>();
-        loaded_flash.wheelConfig.transform.e_b2w[1]         = wheelCfgTransE_b2w[1].as<float>();
-        loaded_flash.wheelConfig.transform.e_b2w[2]         = wheelCfgTransE_b2w[2].as<float>();
-
-        YAML::Node wheelCfgTransE_b2wsig                    = inData["wheelCfgTransE_b2wsig"];
-        loaded_flash.wheelConfig.transform.e_b2w_sigma[0]   = wheelCfgTransE_b2wsig[0].as<float>();
-        loaded_flash.wheelConfig.transform.e_b2w_sigma[1]   = wheelCfgTransE_b2wsig[1].as<float>();
-        loaded_flash.wheelConfig.transform.e_b2w_sigma[2]   = wheelCfgTransE_b2wsig[2].as<float>();
-
-        YAML::Node wheelCfgTransT_b2w                       = inData["wheelCfgTransT_b2wsig"];
-        loaded_flash.wheelConfig.transform.t_b2w[0]         = wheelCfgTransT_b2w[0].as<float>();
-        loaded_flash.wheelConfig.transform.t_b2w[1]         = wheelCfgTransT_b2w[1].as<float>();
-        loaded_flash.wheelConfig.transform.t_b2w[2]         = wheelCfgTransT_b2w[2].as<float>();
-
-        YAML::Node wheelCfgTransT_b2wsig                    = inData["wheelCfgTransT_b2wsig"];
-        loaded_flash.wheelConfig.transform.t_b2w_sigma[0]   = wheelCfgTransT_b2wsig[0].as<float>();
-        loaded_flash.wheelConfig.transform.t_b2w_sigma[1]   = wheelCfgTransT_b2wsig[1].as<float>();
-        loaded_flash.wheelConfig.transform.t_b2w_sigma[2]   = wheelCfgTransT_b2wsig[2].as<float>();
-
-        SetFlashConfig(loaded_flash);
-    }
-    catch (const YAML::Exception& ex)
-    {
-        printf("[ERROR] --- There was an error parsing the YAML file: %s", ex.what());
-        return -1;
-    }
-
-    return 0;
-}
 
 /**
 * Get the device info
@@ -1642,23 +1408,21 @@ system_command_t InertialSense::GetSysCmd(port_handle_t port)
     return { 0, 0 };    // nothing...
 }
 
+#endif
+
 /**
  * Returns the device associated with the specified port
  * @param port
  * @return ISDevice* which is connected to port, otherwise NULL
  */
-ISDevice* InertialSense::DeviceByPort(port_handle_t port) {
-    if (port == nullptr)
-        return (!m_comManagerState.devices.empty() ? m_comManagerState.devices.front() : nullptr);
-
-    for (auto device: m_comManagerState.devices) {
+ISDevice* InertialSense::DeviceByPort(port_handle_t port)
+{
+    for (auto device : deviceManager) {
         if (device->port == port)
             return device;
     }
     return nullptr;
 }
-
-#endif
 
 /**
  * Resturns the device associated with the specified port name
@@ -1961,12 +1725,12 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port) {
     return (device ? device->FlashConfig(flashCfg) : false);
 }
 
-bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port) {
+bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port) {
     ISDevice* device = port ? getDevice(port) : deviceManager.front();
-    return (device ? device->SetFlashConfig(flashCfg) : false);}
+    return (device ? device->SetImxFlashConfig(flashCfg) : false);}
 
-bool InertialSense::WaitForFlashSynced(port_handle_t port) {
+bool InertialSense::WaitForImxFlashCfgSynced(port_handle_t port) {
     ISDevice* device = port ? getDevice(port) : deviceManager.front();
-    return (device ? device->WaitForFlashSynced() : false);
+    return (device ? device->WaitForImxFlashCfgSynced() : false);
 }
 */

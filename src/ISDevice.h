@@ -65,7 +65,10 @@ public:
 
     explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
-        flashCfg.checksum = (uint32_t)-1; // 0xFFFFFFFF
+        imxFlashCfg.checksum = 0xFFFFFFFF;
+        gpxFlashCfg.checksum = 0xFFFFFFFF;
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
+        gpxStatus.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
         hdwId = _hdwId;
         assignPort(_port);
     }
@@ -74,7 +77,10 @@ public:
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
         hdwId = ENCODE_DEV_INFO_TO_HDW_ID(_devInfo);
         devInfo = _devInfo;
-        flashCfg.checksum = (uint32_t)-1;
+        imxFlashCfg.checksum = 0xFFFFFFFF;
+        gpxFlashCfg.checksum = 0xFFFFFFFF;
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
+        gpxStatus.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
         assignPort(_port);
     }
 
@@ -83,11 +89,10 @@ public:
 
         hdwId = src.hdwId;
         devInfo = src.devInfo;
-        flashCfg = src.flashCfg;
-        flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
-        flashCfgUpload = src.flashCfgUpload;
-        evbFlashCfg = src.evbFlashCfg;
+        imxFlashCfg = src.imxFlashCfg;
+        gpxFlashCfg = src.gpxFlashCfg;
         sysParams = src.sysParams;
+        gpxStatus = src.gpxStatus;
         sysCmd = src.sysCmd;
         // devLogger = src.devLogger.get();
         closeStatus = src.closeStatus;
@@ -121,10 +126,14 @@ public:
         port = src.port;
         hdwId = src.hdwId;
         devInfo = src.devInfo;
-        flashCfg = src.flashCfg;
-        flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
-        flashCfgUpload = src.flashCfgUpload;
-        evbFlashCfg = src.evbFlashCfg;
+        imxFlashCfg = src.imxFlashCfg;
+        gpxFlashCfg = src.gpxFlashCfg;
+        sysParams = src.sysParams;
+        gpxStatus = src.gpxStatus;
+        imxFlashCfgUploadTimeMs = src.imxFlashCfgUploadTimeMs;
+        gpxFlashCfgUploadTimeMs = src.gpxFlashCfgUploadTimeMs;
+        imxFlashCfgUpload = src.imxFlashCfgUpload;
+        gpxFlashCfgUpload = src.gpxFlashCfgUpload;
         sysParams = src.sysParams;
         sysCmd = src.sysCmd;
         // devLogger = src.devLogger.get();
@@ -205,6 +214,16 @@ public:
      * @return the previously registered handler, if any.
      */
     pfnIsCommIsbDataHandler registerIsbDataHandler(pfnIsCommIsbDataHandler cbHandler);
+
+    /**
+     * Specifies an alternate handler for non-Inertial Sense protocol messages, which will be called when
+     * any PTYPE message is successfully parsed. This function will return the previously registered handler. It is the
+     * callers responsibility to restore the previous handler, when this handler is no longer required.
+     * @param ptype the PTYPE_* protocol type indicating which protocol will trigger a callback to this handler
+     * @param cbHandler a function pointer or lambda function which will be called when an ISB Data packet is received
+     * @returns the previously registered handler, if any.
+     */
+    pfnIsCommIsbDataHandler registerIsbAckHandler(pfnIsCommIsbDataHandler cbHandler);
 
     /**
      * Specifies an alternate handler for non-Inertial Sense protocol messages, which will be called when
@@ -322,7 +341,7 @@ public:
     int SetSysCmd(const uint32_t command);
     int StopBroadcasts(bool allPorts = false) { return SendRaw((allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
-    bool hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite);
+    bool hasPendingImxFlashWrites(uint32_t& ageSinceLastPendingWrite);
 
     bool lockPort() { return portMutex.try_lock(); }
     void unlockPort() { return portMutex.unlock(); }
@@ -337,83 +356,75 @@ public:
      * @param flashCfg_ a reference to a nvm_flash_cfg_t struct to be populated
      * @returns true if the flashCfg has been synchronized with the device (and can thus be trusted), otherwise false.
      */
-    bool FlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
+    bool ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
+    bool GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
 
     /**
      * Uploads the provided flashCfg to the remove device, but makes NO checks that it was successfully synchronized.
      * This method attempt to "intelligently" upload only the portions of the flashCfg that has actually changed, reducing
      * traffic and minimizing the risk of a sync-failure due to elements which maybe programmatically changed, however it
      * may make multiple sends, if the new and previous configurations have non-contiguous modifications.
-     * Use WaitForFlashSynced() or SetFlashConfigAndConfirm() to actually confirm that the new config was applied to the
+     * Use WaitForImxFlashCfgSynced() or SetImxFlashCfgAndConfirm() to actually confirm that the new config was applied to the
      * device correctly.
      * @param flashCfg_ the new flash_config to upload
      * @return true if the ANY of the changes failed to send to the remove device.
      */
-    bool SetFlashConfig(nvm_flash_cfg_t& flashCfg_);
-
-    /**
-     * A fancy function that attempts to synchronize flashCfg between host and device - Honestly, I'm not sure its use case
-     * This function DOES NOT BLOCK, it is a (not-so-)simple state check as to whether the flash is currently synced or not.
-     * This is actually called internally by step(), and its result is ignored; as such, if step() is being called regularly
-     * the local flashCfg should be regularly synced with the remote device. Use FlashConfigSynced() to test whether the
-     * local flashCfg is actually synchronized.  TODO this function should probably be made "protected"
-     * @param timeMs the current time...
-     * @return true if the config is synchronized, otherwise false.
-     */
-    bool SyncFlashConfig();
+    bool SetImxFlashConfig(nvm_flash_cfg_t& flashCfg_);
+    bool SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg_);
 
     /**
      * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
      * @param port the port to get flash config for
      * @return true if the flash config is valid, currently synchronized, otherwise false.
      */
-    bool FlashConfigSynced() {
-        step();   // let's give it a very, very brief chance to processing any pendind data before we check our status...
-        if (flashCfgUpload.checksum && (flashCfgUpload.checksum == sysParams.flashCfgChecksum) && (flashCfg.checksum == sysParams.flashCfgChecksum)) {
-            flashCfgUpload = {};
-            flashCfgUploadTimeMs = 0;
-            return true;    // a 3-way match between upload, device, and sysParams
-        }
-        if (flashCfg.checksum == sysParams.flashCfgChecksum) {
-            return true;    // a 2-way check between just the device and the sysParams
-        }
-
-        return false;
-    }
-
-    /**
-     * Another fancy function that blocks until a flash sync has actually occurred.
-     * @return true if successful or otherwise false if it couldn't (timeout? validation? bad connection?  -- who knows?)
-     */
-    bool WaitForFlashSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
-
-    /**
-     * A blocking call which uploads and then waits for synchronization confirmation that the new configuration was applied.
-     * As part of the validation/synchronization, it downloads the newest FlashCfg from the device and performs a byte-for-byte
-     * comparison* to ensure it was uploaded/downloaded correctly.  This could fail where the WaitForFlashSynced() might pass,
-     * because some parts of the flashCfg are programmatically set to reflect state. For example, sending a rtkConfig = 0x08,
-     * may return a rtkConfig of 0x00400008 because the 0x4 reflects that it was persisted (or something like that).
-     * @param flashCfg the config to upload (and later match against the downloaded firmware)
-     * @param timeout a timeout value for how long to wait for the new flash to sync/download before failing
-     * @return true if the new config was uploaded, synced, downloaded and matched with the original flashCfg, otherwise false
-     */
-    bool SetFlashConfigAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
-
-    /**
-     * A kind-of-redundant function?? I'm not sure how this is exactly different (or better?) than WaitForFlashSynced() or SetFlashConfigAndConfirm()?
-     * @return true if the local flashConfig was successfully uploaded and synchronization is confirmed, otherwise false
-     */
-    bool verifyFlashConfigUpload();
+    bool ImxFlashConfigSynced();
+    bool GpxFlashConfigSynced();
 
     /**
      * @returns true if the local flashConfig upload was either not received or rejected.
      * TODO: this REALLY only does a checksum comparison of the sysParams and the uploaded flashCfg to confirm they match.
      *  Maybe this is enough, but this function name maybe
      */
-    bool FlashConfigUploadFailure() {
-        // a failed flash upload is considered when flashCfgUploadChecksum is non-zero, and DOES NOT match sysParams.flashCfgChecksum
-        return flashCfgUpload.checksum && (flashCfgUpload.checksum != sysParams.flashCfgChecksum);
-    }
+    bool ImxFlashConfigUploadFailure();
+    bool GpxFlashConfigUploadFailure();
+
+    /**
+     * Another fancy function that blocks until a flash sync has actually occurred.
+     * @return true if successful or otherwise false if it couldn't (timeout? validation? bad connection?  -- who knows?)
+     */
+    bool WaitForImxFlashCfgSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+    bool WaitForGpxFlashCfgSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+
+    /**
+     * A blocking call which uploads and then waits for synchronization confirmation that the new configuration was applied.
+     * As part of the validation/synchronization, it downloads the newest FlashCfg from the device and performs a byte-for-byte
+     * comparison* to ensure it was uploaded/downloaded correctly.  This could fail where the WaitForImxFlashCfgSynced() might pass,
+     * because some parts of the flashCfg are programmatically set to reflect state. For example, sending a rtkConfig = 0x08,
+     * may return a rtkConfig of 0x00400008 because the 0x4 reflects that it was persisted (or something like that).
+     * @param flashCfg the config to upload (and later match against the downloaded firmware)
+     * @param timeout a timeout value for how long to wait for the new flash to sync/download before failing
+     * @return true if the new config was uploaded, synced, downloaded and matched with the original flashCfg, otherwise false
+     */
+    bool SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+    bool SetGpxFlashCfgAndConfirm(gpx_flash_cfg_t& flashCfg, uint32_t timeout);
+ 
+    /**
+     * @brief SaveImxFlashConfigToFile
+     * @param path - Path to YAML flash config file
+     * @param pHandle - Handle of current device
+     * @return true for failure to upload file, false for success.
+     */
+    bool SaveImxFlashConfigToFile(std::string path);
+    bool SaveGpxFlashConfigToFile(std::string path);
+
+    /**
+     * @brief LoadFlashConfigFromFile
+     * @param path - Path to YAML flash config file
+     * @param pHandle - Handle of current device
+     * @return true for failure to upload file, false for success.
+     */
+    bool LoadImxFlashConfigFromFile(std::string path);
+    bool LoadGpxFlashConfigFromFile(std::string path);
 
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
 
@@ -433,17 +444,22 @@ public:
 
     is_hardware_t               hdwId = IS_HARDWARE_TYPE_UNKNOWN;    //!< hardware type and version (ie, IMX-5.0)
 
-    dev_info_t                  devInfo = { };
+    dev_info_t                  devInfo = { };                      //!< Populated with IMX info if present, otherwise GPX info if present
+    dev_info_t                  gpxDevInfo = { };                   //!< Only populated if a GPX device is present
     sys_params_t                sysParams = { };
     gpx_status_t                gpxStatus = { };
-    nvm_flash_cfg_t             flashCfg = { };
-    nvm_flash_cfg_t             flashCfgUpload = { };                //!< This is the flashConfig that was most recently sent to the device
-    unsigned int                flashCfgUploadTimeMs = 0;            //!< (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
-    unsigned int                flashSyncCheckTimeMs = 0;            //!< (ms) indicates that last time when the host confirmed synchronization of the remote and local flashCfg
-    evb_flash_cfg_t             evbFlashCfg = { };
+    nvm_flash_cfg_t             imxFlashCfg = { };
+    gpx_flash_cfg_t             gpxFlashCfg = { };
+    nvm_flash_cfg_t             imxFlashCfgUpload = { };             //!< This is the flashConfig that was most recently sent to the device
+    gpx_flash_cfg_t             gpxFlashCfgUpload = { };             //!< This is the flashConfig that was most recently sent to the device
+    unsigned int                imxFlashCfgUploadTimeMs = 0;         //!< (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+    unsigned int                gpxFlashCfgUploadTimeMs = 0;         //!< (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+    unsigned int                imxFlashSyncCheckTimeMs = 0;         //!< (ms) indicates that last time when the host confirmed synchronization of the remote and local flashCfg
+    unsigned int                gpxFlashSyncCheckTimeMs = 0;         //!< (ms) indicates that last time when the host confirmed synchronization of the remote and local flashCfg
+    uint32_t                    imxFlashCfgUploadChecksum = 0;
+    uint32_t                    gpxFlashCfgUploadChecksum = 0;
     system_command_t            sysCmd = { };
     manufacturing_info_t        manfInfo = {};
-
 
     std::shared_ptr<cDeviceLog> devLogger = { };
     fwUpdate::update_status_e closeStatus = { };
@@ -474,6 +490,8 @@ public:
 
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);
+    virtual int onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port);
+
     virtual int onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t port);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
@@ -491,6 +509,7 @@ public:
 private:
 
     uint32_t validationStartMs = 0;                                  //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
+    unsigned int syncCheckTimeMs = 0;
 
     pfnIsCommHandler packetHandler = nullptr;
     pfnIsCommIsbDataHandler defaultISBHandler = nullptr;
@@ -501,12 +520,17 @@ private:
 
     static int processPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     static int processIsbMsgs(void* ctx, p_data_t* data, port_handle_t port);
+    static int processIsbAck(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port);
     static int processNmeaMsgs(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port);
 
     void stepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
     bool queryDeviceInfoISbl(uint32_t timeout = 3000);
     bool handshakeISbl();
+
+    void SyncFlashConfig();
+    void DeviceSyncFlashCfg(unsigned int timeMs, uint16_t did, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
+    bool UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
 
 };
 

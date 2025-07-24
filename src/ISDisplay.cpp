@@ -529,7 +529,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
     }
 
     // if we are doing a onceDid for any other display type, and we got it, shutdown normally, ASAP, but not immediately...
-    if (m_outputOnceDid == data->hdr.id)
+    if (std::find(m_outputOnceDid.begin(), m_outputOnceDid.end(), data->hdr.id) != m_outputOnceDid.end())
     {
         SetExitProgram();
     }
@@ -552,8 +552,9 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
     // Display Data
     switch (m_displayMode)
     {
-    default:    // Do not display
-        // fall through
+    default:	// Do not display
+        break;
+
     case DMODE_PRETTY:
         Home();
         if (m_enableReplay)
@@ -1355,9 +1356,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
         }
 
         // Spoof/Jamming Dectect
-        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT)         { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam possible, "); };
         if (gps.status2&GPS_STATUS2_FLAGS_GNSS_JAM_DETECTED)                { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam detected, "); };
-        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT)       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof possible, "); };
         if (gps.status2&GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED)              { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof detected, "); };
 
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
@@ -2244,9 +2243,6 @@ void cInertialSenseDisplay::GetKeyboardInput()
 
     // Keyboard was pressed
     c = tolower(c);
-
-    // printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
-    // return;
 
     if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || c == '.' || c == '-')
     {   // Number
