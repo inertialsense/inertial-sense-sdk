@@ -282,16 +282,16 @@ int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
             if (g_commandLineOptions.outputOnceDid.empty() && g_commandLineOptions.setAckDid.empty())
             {   // Exit cltool now and report success code
                 std::exit(0);
-                return;
+                return 0;
             }
 
             // Prevent further processing if -get option is set
-            return; 
+            return 0;
         }
 
         if (std::find(g_commandLineOptions.outputOnceDid.begin(), g_commandLineOptions.outputOnceDid.end(), data->hdr.id) == g_commandLineOptions.outputOnceDid.end())
         {   // Prevent further processing if this DID is not in the outputOnceDid list
-            return;
+            return 0;
         }
     }
 
@@ -322,7 +322,7 @@ int CltoolDevice::onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, 
     
     if (!g_enableDataCallback)
     {   // Receive disabled
-        return;
+        return 0;
     }
 
     if (!g_commandLineOptions.setAckDid.empty())
@@ -342,11 +342,13 @@ int CltoolDevice::onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, 
         if (g_commandLineOptions.setAckDid.empty())
         {   // All expected acks have been received. Exit cltool now and report success code
             std::exit(0);
-            return;
+            return 0;
         }
 
-        return;
+        return 0;
     }
+
+    return 0;
 }
 
 /**

@@ -153,6 +153,7 @@ public:
     }
     // void SetSerialPort(serial_port_t* port) { m_port = port; }
     // void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
+    void setDevice(ISDevice* activeDevice) { m_device = activeDevice; }
 
 private:
     std::string VectorToString();

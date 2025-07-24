@@ -170,8 +170,8 @@ bool cltool_extractEventData();
 void cltool_outputUsage();
 void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
-void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
-void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
+void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
+void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
 
@@ -184,7 +184,7 @@ class CltoolDevice : public ISDevice {
     ~CltoolDevice() override = default;
 
     int onIsbDataHandler(p_data_t *data, port_handle_t port) override;
-    int onIsbAckHandler(p_data_t *data, port_handle_t port) override;
+    int onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port) override;
     int onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) override;
 };
 
