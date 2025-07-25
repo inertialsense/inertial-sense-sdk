@@ -706,68 +706,6 @@ static void PopulateMapSurveyIn(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddLlaDegM("lla", offsetof(survey_in_t, lla), "Surveyed", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapEvbStatus(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<evb_status_t> mapper(data_set, did);
-    mapper.AddMember("week", &evb_status_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("timeOfWeekMs", &evb_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("firmwareVer", &evb_status_t::firmwareVer, DATA_TYPE_UINT8, 4, {""}, {"Firmware version"}, DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("evbStatus", &evb_status_t::evbStatus, DATA_TYPE_UINT32, "", "EVB status bits", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("loggerMode", &evb_status_t::loggerMode, DATA_TYPE_UINT32, "", std::to_string(EVB2_LOG_CMD_START) + "=start, " + std::to_string(EVB2_LOG_CMD_STOP) + "=stop");
-    mapper.AddMember("loggerElapsedTimeMs", &evb_status_t::loggerElapsedTimeMs, DATA_TYPE_UINT32, "ms", "Elapsed time of the current data log.");
-    mapper.AddMember("wifiIpAddr", &evb_status_t::wifiIpAddr, DATA_TYPE_UINT32, "", "WiFi IP address", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("sysCommand", &evb_status_t::sysCommand, DATA_TYPE_UINT32, "", "99=software reset, 1122334455=unlock, 1357924681=chip erase");
-    mapper.AddMember("towOffset", &evb_status_t::towOffset, DATA_TYPE_F64, "sec", "Time sync offset from local clock", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
-}
-
-static void PopulateMapEvbFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<evb_flash_cfg_t> mapper(data_set, did);
-    string str = to_string(EVB2_CB_PRESET_RS232) + "=Wireless Off, " 
-        + to_string(EVB2_CB_PRESET_RS232_XBEE) + "=XBee On, " 
-        + to_string(EVB2_CB_PRESET_RS422_WIFI) + "=WiFi On & RS422, " 
-        + to_string(EVB2_CB_PRESET_USB_HUB_RS232) + "=USB hub, " 
-        + to_string(EVB2_CB_PRESET_USB_HUB_RS422) + "=USB hub w/ RS422";
-    mapper.AddMember("cbPreset", &evb_flash_cfg_t::cbPreset, DATA_TYPE_UINT8, "", str);
-    mapper.AddArray("reserved1", &evb_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 3);
-    mapper.AddArray("cbf", &evb_flash_cfg_t::cbf, DATA_TYPE_UINT32, EVB2_PORT_COUNT, {""}, {"Communications bridge forwarding"}, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("cbOptions", &evb_flash_cfg_t::cbOptions, DATA_TYPE_UINT32, "", "Communications bridge options (see eEvb2ComBridgeOptions)", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("uinsComPort", &evb_flash_cfg_t::uinsComPort, DATA_TYPE_UINT8, "", "EVB port for uINS communications and SD card logging. 0=uINS0 (default), 1=uINS1, SP330=5, 6=GPIO_H8 (use eEvb2CommPorts)");
-    mapper.AddMember("uinsAuxPort", &evb_flash_cfg_t::uinsAuxPort, DATA_TYPE_UINT8, "", "EVB port for uINS aux com and RTK corrections. 0=uINS0, 1=uINS1 (default), 5=SP330, 6=GPIO_H8 (use eEvb2CommPorts)");
-    mapper.AddMember("portOptions", &evb_flash_cfg_t::portOptions, DATA_TYPE_UINT32, "", "EVB port options:  0x1=radio RTK filter ", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("bits", &evb_flash_cfg_t::bits, DATA_TYPE_UINT32, "", "Configuration bits (see eEvb2ConfigBits). 0x10=stream PPD on log button", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("radioPID", &evb_flash_cfg_t::radioPID, DATA_TYPE_UINT32, "", "Radio Preamble ID in hexadecimal. 0x0 to 0x9", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("radioNID", &evb_flash_cfg_t::radioNID, DATA_TYPE_UINT32, "", "Radio Network ID in hexadecimal. 0x0 to 0x7FFF", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("radioPowerLevel", &evb_flash_cfg_t::radioPowerLevel, DATA_TYPE_UINT32, "", "Radio transmitter output power level. (XBee PRO SX 0=20dBm, 1=27dBm, 2=30dBm)");
-
-    for (int i=0; i<NUM_WIFI_PRESETS; i++)
-    {
-        mapper.AddMember2("wifi[0].ssid", i*sizeof(evb_wifi_t) + offsetof(evb_flash_cfg_t, wifi[0].ssid), DATA_TYPE_STRING, "", "WiFi Service Set Identifier (SSID) or network name.", 0, 1.0, WIFI_SSID_PSK_SIZE);
-        mapper.AddMember2("wifi[0].psk",  i*sizeof(evb_wifi_t) + offsetof(evb_flash_cfg_t, wifi[0].psk),  DATA_TYPE_STRING, "", "WiFi Pre-Shared Key (PSK) authentication or network password.", 0, 1.0, WIFI_SSID_PSK_SIZE);
-    }
-
-    for (int i=0; i<NUM_WIFI_PRESETS; i++)
-    {
-        mapper.AddArray2("server" + to_string(i) + ".ipAddr", i*sizeof(evb_server_t) + offsetof(evb_flash_cfg_t, server[0].ipAddr.u8), DATA_TYPE_UINT8, 4, {""}, {"Server IP address"});
-        mapper.AddMember2("server" + to_string(i) + ".port",   i*sizeof(evb_server_t) + offsetof(evb_flash_cfg_t, server[0].port), DATA_TYPE_UINT32, "", "Sever port");
-    }
-
-    mapper.AddMember("encoderTickToWheelRad", &evb_flash_cfg_t::encoderTickToWheelRad, DATA_TYPE_F32, "rad/tick", "Wheel encoder tick to wheel rotation scalar");
-    mapper.AddMember("CANbaud_kbps", &evb_flash_cfg_t::CANbaud_kbps, DATA_TYPE_UINT32, "kbps", "CAN baud rate");
-    mapper.AddMember("can_receive_address", &evb_flash_cfg_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("reserved2", &evb_flash_cfg_t::reserved2, DATA_TYPE_UINT8, 2);
-
-    mapper.AddMember("h3sp330BaudRate", &evb_flash_cfg_t::h3sp330BaudRate, DATA_TYPE_UINT32, "", "Baud rate for EVB serial port on H3 (SP330 RS233 and RS485/422).");
-    mapper.AddMember("h4xRadioBaudRate", &evb_flash_cfg_t::h4xRadioBaudRate, DATA_TYPE_UINT32, "", "Baud rate for EVB serial port H4 (TLL to external radio).");
-    mapper.AddMember("h8gpioBaudRate", &evb_flash_cfg_t::h8gpioBaudRate, DATA_TYPE_UINT32, "", "Baud rate for EVB serial port H8 (TLL).");
-    mapper.AddMember("wheelCfgBits", &evb_flash_cfg_t::wheelCfgBits, DATA_TYPE_UINT32, "", "(eWheelCfgBits). Reverse encoder [0x100 left, 0x200 right, 0x300 both], enable [0x2 encoder, 0x4 wheel]", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("velocityControlPeriodMs", &evb_flash_cfg_t::velocityControlPeriodMs, DATA_TYPE_UINT32, "ms", "Wheel encoder and control update period");
-
-    mapper.AddMember("size", &evb_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
-    mapper.AddMember("checksum", &evb_flash_cfg_t::checksum, DATA_TYPE_UINT32, "", "Flash checksum");
-    mapper.AddMember("key", &evb_flash_cfg_t::key, DATA_TYPE_UINT32, "", "Flash key");
-}
-
 static void PopulateMapDebugArray(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<debug_array_t> mapper(data_set, did);
@@ -1341,10 +1279,10 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_RTK_PHASE_RESIDUAL",           // 77
     "DID_RTK_CODE_RESIDUAL",            // 78
     "DID_RTK_DEBUG",                    // 79
-    "DID_EVB_STATUS",                   // 80
-    "DID_EVB_FLASH_CFG",                // 81
-    "DID_EVB_DEBUG_ARRAY",              // 82
-    "DID_EVB_RTOS_INFO",                // 83
+    "DID_UNUSED_80",                    // 80
+    "DID_UNUSED_81",                    // 81
+    "DID_UNUSED_82",                    // 82
+    "DID_UNUSED_83",                    // 83
     "DID_GPS2_SIG",                     // 84
     "DID_IMU_MAG",                      // 85
     "DID_PIMU_MAG",                     // 86
@@ -1354,7 +1292,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_CAN_CONFIG",                   // 90
     "DID_GPS2_RTK_CMP_REL",             // 91
     "DID_GPS2_RTK_CMP_MISC",            // 92
-    "DID_EVB_DEV_INFO",                 // 93
+    "UNUSED_93",                        // 93
     "DID_INFIELD_CAL",                  // 94 
     "DID_REFERENCE_IMU",                // 95 
     "DID_IMU3_RAW",                     // 96 
@@ -1502,13 +1440,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapRmc(m_data_set, DID_RMC);
     PopulateMapRmc(m_data_set, DID_GPX_RMC);
     PopulateMapISEvent(m_data_set, DID_EVENT);
-
-    // EVB
-    PopulateMapEvbStatus(m_data_set, DID_EVB_STATUS);
-    PopulateMapEvbFlashCfg(m_data_set, DID_EVB_FLASH_CFG);
-    PopulateMapDebugArray(m_data_set, DID_EVB_DEBUG_ARRAY);
-    // PopulateMapEvbRtosInfo(m_data_set, DID_EVB_RTOS_INFO);
-    PopulateMapDeviceInfo(m_data_set, DID_EVB_DEV_INFO);
 
     // MANUFACTURING
     PopulateMapManufacturingInfo(   m_data_set, DID_MANUFACTURING_INFO);

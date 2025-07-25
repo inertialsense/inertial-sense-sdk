@@ -82,11 +82,11 @@ DID_RTK_STATE                   = 76
 DID_RTK_PHASE_RESIDUAL          = 77
 DID_RTK_CODE_RESIDUAL           = 78
 DID_RTK_DEBUG                   = 79
-DID_EVB_STATUS                  = 80
-DID_EVB_CONFIG                  = 81
-DID_EVB_DEBUG_ARRAY             = 82
-DID_EVB_RTOS_INFO               = 83
-# DID_UNUSED_84                 = 84
+DID_UNUSED_80                   = 80
+DID_UNUSED_81                   = 81
+DID_UNUSED_82                   = 82
+DID_UNUSED_83                   = 83
+DID_UNUSED_84                   = 84
 DID_IMU_MAG                     = 85
 DID_PIMU_MAG                    = 86
 DID_GROUND_VEHICLE              = 87
@@ -95,7 +95,7 @@ DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
 DID_GPS2_RTK_CMP_REL            = 91
 DID_GPS2_RTK_CMP_MISC           = 92
-DID_EVB_DEV_INFO                = 93
+DID_UNUSED_93                   = 93
 DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
 DID_IMU3_RAW                    = 96
@@ -192,13 +192,8 @@ did_name_lookup = {
  DID_RTK_PHASE_RESIDUAL : "rtkPhaseResidual",
  DID_RTK_CODE_RESIDUAL : "rtkCodeResidual",
  DID_RTK_DEBUG : "rtkDebug",
- DID_EVB_STATUS : "evbStatus",
- DID_EVB_CONFIG : "evbConfig",
- DID_EVB_DEBUG_ARRAY : "evbDebugArray",
- DID_EVB_RTOS_INFO : "evbRtosInfo",
  DID_RTK_DEBUG_2 : "rtkDebug2",
  DID_CAN_CONFIG : "canconfig",
- DID_EVB_DEV_INFO : "evbDevInfo",
  DID_REFERENCE_IMU : "referenceImu",
  DID_REFERENCE_PIMU : "referencePImu",
  DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",

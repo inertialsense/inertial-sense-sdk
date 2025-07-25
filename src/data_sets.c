@@ -344,10 +344,10 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 77: DID_RTK_RESIDUAL
         0,                      // 78: DID_RTK_PHASE_RESIDUAL
         0,                      // 79: DID_RTK_CODE_RESIDUAL
-        0,                      // 80: DID_EVB_STATUS
-        0,                      // 81: DID_EVB_FLASH_CFG
-        offsetsDebugArray,      // 82: DID_EVB_DEBUG_ARRAY
-        0,                      // 83: DID_EVB_RTOS_INFO
+        0,                      // 80: 
+        0,                      // 81: 
+        0,                      // 82: 
+        0,                      // 83: 
         0,                      // 84: 
         offsetsImuMag,          // 85: DID_IMU_MAG
         offsetsPreImuMag,       // 86: DID_PIMU_MAG
@@ -357,7 +357,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 90: DID_CAN_CONFIG
         0,                      // 91: DID_GPS2_RTK_CMP_REL
         offsetsRtkNav,          // 92: DID_GPS2_RTK_CMP_MISC
-        0,                      // 93: DID_EVB_DEV_INFO
+        0,                      // 93: 
         0,                      // 94: DID_INFIELD_CAL
         offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
         offsetsOnlyTimeFirst,   // 96: DID_IMU3_RAW
@@ -534,10 +534,10 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 77: DID_RTK_RESIDUAL
         0,                      // 78: DID_RTK_PHASE_RESIDUAL
         0,                      // 79: DID_RTK_CODE_RESIDUAL
-        0,                      // 80: DID_EVB_STATUS
-        0,                      // 81: DID_EVB_FLASH_CFG
-        0,                      // 82: DID_EVB_DEBUG_ARRAY
-        0,                      // 83: DID_EVB_RTOS_INFO
+        0,                      // 80: 
+        0,                      // 81: 
+        0,                      // 82: 
+        0,                      // 83: 
         0,                      // 84: 
         0,                      // 85: DID_IMU_MAG
         0,                      // 86: DID_PIMU_MAG
@@ -547,7 +547,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 90: DID_CAN_CONFIG
         0,                      // 91: DID_GPS2_RTK_CMP_REL
         0,                      // 92: DID_GPS2_RTK_CMP_MISC
-        0,                      // 93: DID_EVB_DEV_INFO
+        0,                      // 93: 
         0,                      // 94: DID_INFIELD_CAL
         0,                      // 95: DID_REFERENCE_IMU
         0,                      // 96: DID_IMU3_RAW

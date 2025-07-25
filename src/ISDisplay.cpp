@@ -716,7 +716,6 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
     string str;
     switch (data->hdr.id)
     {
-        case DID_EVB_DEV_INFO:      // FALL THROUGH
         case DID_GPX_DEV_INFO:      // FALL THROUGH
         case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);            break;
         case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                    break;

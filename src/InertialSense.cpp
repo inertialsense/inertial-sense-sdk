@@ -962,10 +962,10 @@ void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
     //         DEBUG_PRINT("Received DID_GPX_STATUS\n");
     //         break;
     //     case DID_FLASH_CONFIG:
-    //         copyDataPToStructP(&(device->flashCfg), data, sizeof(nvm_flash_cfg_t));
+    //         copyDataPToStructP(&(device->imxFlashCfg), data, sizeof(nvm_flash_cfg_t));
     //         if (dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data))
     //         {   // Checksum received
-    //             device->sysParams.flashCfgChecksum = device->flashCfg.checksum;
+    //             device->sysParams.flashCfgChecksum = device->imxFlashCfg.checksum;
     //         }
     //         DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
     //         break;

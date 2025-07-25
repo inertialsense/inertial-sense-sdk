@@ -97,12 +97,6 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
             return IS_IMAGE_SIGN_NONE;
         }
     }
-    messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, buffer, messageSize))
-    {
-        //serialPortClose(m_port);
-        return IS_IMAGE_SIGN_NONE;
-    }
 
     protocol_type_t ptype;
     n = is_comm_free(&comm);        // is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.start.
@@ -125,17 +119,6 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                     dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
                     m_sn = dev_info->serialNumber;
                     valid_signatures = devInfoToValidSignatures(dev_info);
-                    return (eImageSignature)valid_signatures;
-                case DID_EVB_DEV_INFO:
-                    dev_info_t* evb_dev_info;
-                    evb_dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
-                    if (evb_dev_info->hardwareVer[0] == 2)
-                    {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
-                        valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
-                        valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
-                        valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
-                        valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
-                    }
                     return (eImageSignature)valid_signatures;
                 }
                 break;
@@ -221,18 +204,6 @@ uint32_t cISBootloaderAPP::get_device_info()
         // serialPortClose(&ctx->handle.port);
         return 0;
     }
-    messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
-    {
-        // serialPortClose(&ctx->handle.port);
-        return 0;
-    }
-    messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_STATUS, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
-    {
-        // serialPortClose(&ctx->handle.port);
-        return 0;
-    }
 
     // Wait 10ms for messages to come back
     serialPortSleep(m_port, 10);
@@ -258,17 +229,6 @@ uint32_t cISBootloaderAPP::get_device_info()
                     dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
                     memcpy(m_app.uins_version, dev_info->hardwareVer, 4);
                     m_sn = dev_info->serialNumber;
-                    break;
-                case DID_EVB_DEV_INFO:
-                    dev_info_t* evb_dev_info;
-                    evb_dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
-                    memcpy(evb_version, evb_dev_info->hardwareVer, 4);
-                    break;
-                case DID_EVB_STATUS:
-                    evb_status_t* evb_status;
-                    evb_status = (evb_status_t*)comm.rxPkt.data.ptr;
-                    if (evb_status->firmwareVer[0]) memcpy(m_app.evb_version, evb_version, 4);
-                    else memset(m_app.evb_version, 0, 4);
                     break;
                 }
                 break;
