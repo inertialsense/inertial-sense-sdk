@@ -113,19 +113,19 @@ int portReadTimeout_internal(port_handle_t port, uint8_t *buffer, unsigned int r
 int portWaitForTimeout(port_handle_t port, const uint8_t* waitFor, unsigned int waitForLength, unsigned int timeoutMs);
 int portWaitFor(port_handle_t port, const uint8_t* waitFor, unsigned int waitForLength);
 
-int portReadCharTimeout(port_handle_t port, unsigned char* c, int timeoutMs);
+int portReadCharTimeout(port_handle_t port, unsigned char* c, unsigned int timeoutMs);
 int portReadChar(port_handle_t port, unsigned char* c);
 
-int portReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMs);
+int portReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned int timeoutMs);
 int portReadLine(port_handle_t port, unsigned char* buffer, unsigned int bufferLength);
 
-int portReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMs, unsigned char** asciiData);
+int portReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned int timeoutMs, unsigned char** asciiData);
 int portReadAscii(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned char** asciiData);
 
 int portWriteLine(port_handle_t port, const unsigned char* buffer, unsigned int writeCount);
 int portWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLength);
 
-int portWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const int timeoutMs);
+int portWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const unsigned int timeoutMs);
 int portWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength);
 
 /**

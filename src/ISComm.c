@@ -1337,11 +1337,11 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                           // Header
     if (pkt->offset)
     {
-        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));               // Offset (optional)
+        n += portWriteUpdateChecksum(port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));               // Offset (optional)
     }
     if (pkt->data.size)
     {
-        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));   // Payload
+        n += portWriteUpdateChecksum(port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));   // Payload
     }
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                            // Footer (checksum)
 #else
