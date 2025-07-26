@@ -225,10 +225,8 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG(DID_GPS2_RAW, dev_log_->gps2Raw);
         HANDLE_MSG(DID_WHEEL_ENCODER, dev_log_->wheelEncoder);
         HANDLE_MSG(DID_GROUND_VEHICLE, dev_log_->groundVehicle);
-        HANDLE_MSG(DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl);
         HANDLE_MSG(DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage);
         HANDLE_MSG(DID_SURVEY_IN, dev_log_->surveyIn);
-        // HANDLE_MSG(DID_EVB2, dev_log_->evb2);
         HANDLE_MSG(DID_PORT_MONITOR, dev_log_->portMonitor);
         // HANDLE_MSG(DID_RTK_STATE, dev_log_->rtkState);
         HANDLE_MSG(DID_RTK_CODE_RESIDUAL, dev_log_->rtkCodeResidual);

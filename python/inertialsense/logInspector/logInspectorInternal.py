@@ -96,8 +96,6 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('Wheel Encoder', 'wheelEncoder')
         self.addListItem('Ground Vehicle Status', 'groundVehicleStatus')
         self.addListItem('Ground Vehicle', 'groundVehicle')
-        self.addListItem('Whl Ctrl Time', 'wheelControllerTime')
-        self.addListItem('Whl Ctrl Vel', 'wheelControllerVel')
 
     def createListGeneral(self):
         super(logInspectorInternal, self).createListGeneral()
