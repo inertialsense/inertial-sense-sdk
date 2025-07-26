@@ -32,16 +32,16 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
         return nullptr;
     }
 
-    sockaddr addr = {};
+    sockaddr_storage addr = {};
     sockaddr ipaddr = {};
     if (inet_pton(AF_INET, url.address.c_str(), &ipaddr)) {
-        addr.sa_family = AF_INET;
-        const auto ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
+        addr.ss_family = AF_INET;
+        auto* ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
         ipv4->sin_port = htons(stoi(url.port));
         ipv4->sin_addr = *reinterpret_cast<in_addr*>(&ipaddr);
     } else if (inet_pton(AF_INET6, url.address.c_str(), &ipaddr)) {
-        addr.sa_family = AF_INET6;
-        const auto ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
+        addr.ss_family = AF_INET6;
+        auto* ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
         ipv6->sin6_port = htons(stoi(url.port));
         ipv6->sin6_addr = *reinterpret_cast<in6_addr*>(&ipaddr);
     } else {
@@ -52,7 +52,7 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), &addr);
+    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), reinterpret_cast<const sockaddr*>(&addr));
 
     return port;
 }
@@ -90,7 +90,7 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
         return false;
     }
 
-    sockaddr addr = {};
+    sockaddr_storage addr = {};
     if (inet_pton(AF_INET, url.address.c_str(), &addr)) {
         return true;
     }
