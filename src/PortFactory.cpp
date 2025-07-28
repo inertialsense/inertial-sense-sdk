@@ -82,7 +82,12 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
 }
 
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
-    printf("%s :: Error %d : %s\n", portName(port), errCode, (errMsg ? errMsg : "(null)"));
+    const char* portStr = portName(port);
+    const char* safeErrMsg = errMsg ? errMsg : "";
+    // Split the printf into two calls (helps avoid inlining inference)
+    printf("%s :: Error %d : ", portStr, errCode);
+    printf("%s\n", safeErrMsg);
+
     // decide which of these should result in a port-closure, vs a port invalid, vs nothing...
     switch (errCode) {
 
