@@ -59,8 +59,8 @@ enum eExitCodes
 
 typedef struct
 {
-    eDataIDs        did;
-    int             periodMultiple;
+    eDataIDs	did;
+    int			periodMultiple;
     struct {
         uint64_t    lastRxTime;
         double      rxCount;
@@ -94,12 +94,12 @@ typedef struct
 
 typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
-    std::string comPort;                    // -c com_port
-    std::string updateAppFirmwareFilename;  // -uf file_name
-    std::string updateBootloaderFilename;   // -ub file_name
+    std::string comPort; 					// -c com_port
+    std::string updateAppFirmwareFilename; 	// -uf file_name
+    std::string updateBootloaderFilename; 	// -ub file_name
     std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
-    bool forceBootloaderUpdate;             // -fb
-    bool bootloaderVerify;                  // -bv
+    bool forceBootloaderUpdate;				// -fb
+    bool bootloaderVerify; 					// -bv
     bool replayDataLog;
     bool softwareReset;
     bool magRecal;
@@ -144,14 +144,14 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     int32_t platformType;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
-    uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
-    bool list_devices = false;              // if true, dumps results of findDevices() including port name.
+    uint32_t runDurationMs = 0;				// Run for this many millis before exiting (0 = indefinitely)
+    bool list_devices = false;				// if true, dumps results of findDevices() including port name.
     EVFContainer_t evFCont = {0};
     EVMContainer_t evMCont = {0};
     EVOContainer_t evOCont;
 
-    bool disableDeviceValidation = false;   // Keep port(s) open even if no devices response is received.
-    bool listenMode = false;                // Disable device verification and don't send stop-broadcast command on start.
+    bool disableDeviceValidation = false;	// Keep port(s) open even if no devices response is received.
+    bool listenMode = false;				// Disable device verification and don't send stop-broadcast command on start.
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

@@ -84,16 +84,16 @@ typedef enum
 */
 typedef struct
 {
-    uint32_t    offset;
-    uint32_t    size;
-    eDataType   type;
-    uint32_t    arraySize;		// Number of elements in array.  Zero for single/non-array elements.
-    uint32_t    elementSize;	// Element size in bytes
-    eDataFlags  flags;
-    std::string name;
-    std::vector<std::string> units;			// Units (after conversion)
-    std::vector<std::string> description;
-    double conversion;			// Unit conversion when converting to string
+	uint32_t    offset;
+	uint32_t    size;
+	eDataType   type;
+	uint32_t    arraySize;		// Number of elements in array.  Zero for single/non-array elements.
+	uint32_t    elementSize;	// Element size in bytes
+	eDataFlags  flags;
+	std::string name;
+	std::vector<std::string> units;			// Units (after conversion)
+	std::vector<std::string> description;
+	double conversion;			// Unit conversion when converting to string
 } data_info_t;
 
 CONST_EXPRESSION uint32_t s_eDataTypeSize[DATA_TYPE_COUNT] =
@@ -225,6 +225,19 @@ public:
         uint32_t arraySize = 0;     // Zero for single element
         uint32_t elementSize = size;
 
+		std::vector<std::string> unitsCopy = { units };
+		if (unitsCopy.size() && unitsCopy.size() < arraySize)
+		{	// Extend the units vector to match the array size
+			std::string lastUnit = unitsCopy.empty() ? "" : unitsCopy.back();
+			unitsCopy.resize(arraySize, lastUnit);
+		}
+		std::vector<std::string> descriptionCopy = { description };
+		if (descriptionCopy.size() && descriptionCopy.size() < arraySize)
+		{	// Extend the description vector to match the array size
+			std::string lastDesc = descriptionCopy.empty() ? "" : descriptionCopy.back();
+			descriptionCopy.resize(arraySize, lastDesc);
+		}
+
         // Populate the map with the new entry
         ds.nameToInfo[name] = {
             offset,
@@ -274,13 +287,13 @@ public:
         uint32_t size = (uint32_t)sizeof(FieldType);
         uint32_t elementSize = size/arraySize;
 
-        std::vector<std::string> unitsCopy = units;
+        std::vector<std::string> unitsCopy = { units };
         if (unitsCopy.size() && unitsCopy.size() < arraySize)
         {	// Extend the units vector to match the array size
             std::string lastUnit = unitsCopy.empty() ? "" : unitsCopy.back();
             unitsCopy.resize(arraySize, lastUnit);
         }
-        std::vector<std::string> descriptionCopy = description;
+        std::vector<std::string> descriptionCopy = { description };
         if (descriptionCopy.size() && descriptionCopy.size() < arraySize)
         {	// Extend the description vector to match the array size
             std::string lastDesc = descriptionCopy.empty() ? "" : descriptionCopy.back();
@@ -369,12 +382,12 @@ public:
         }
     }
 
-    void AddArray2(const std::string& name,
-        uint32_t offset,
-        eDataType type,
-        uint32_t arraySize,
-        const std::vector<std::string>& units = {},
-        const std::vector<std::string>& description = {},
+	void AddArray2(const std::string& name,
+		uint32_t offset,
+		eDataType type,
+		uint32_t arraySize,
+		const std::vector<std::string>& units = {},
+		const std::vector<std::string>& description = {},
         int flags = 0,
         double conversion = 1.0,
         uint32_t typeSize = 0)
@@ -382,19 +395,19 @@ public:
         uint32_t elementSize = (typeSize ? typeSize : s_eDataTypeSize[type]);
         uint32_t size = elementSize * arraySize;
 
-        std::vector<std::string> unitsCopy = units;
-        if (unitsCopy.size() && unitsCopy.size() < arraySize)
-        {	// Extend the units vector to match the array size
-            std::string lastUnit = unitsCopy.empty() ? "" : unitsCopy.back();
-            unitsCopy.resize(arraySize, lastUnit);
-        }
-        std::vector<std::string> descriptionCopy = description;
-        if (descriptionCopy.size() && descriptionCopy.size() < arraySize)
-        {	// Extend the description vector to match the array size
-            std::string lastDesc = descriptionCopy.empty() ? "" : descriptionCopy.back();
-            descriptionCopy.resize(arraySize, lastDesc);
-        }
-        
+		std::vector<std::string> unitsCopy = units;
+		if (unitsCopy.size() && unitsCopy.size() < arraySize)
+		{	// Extend the units vector to match the array size
+			std::string lastUnit = unitsCopy.empty() ? "" : unitsCopy.back();
+			unitsCopy.resize(arraySize, lastUnit);
+		}
+		std::vector<std::string> descriptionCopy = description;
+		if (descriptionCopy.size() && descriptionCopy.size() < arraySize)
+		{	// Extend the description vector to match the array size
+			std::string lastDesc = descriptionCopy.empty() ? "" : descriptionCopy.back();
+			descriptionCopy.resize(arraySize, lastDesc);
+		}
+		
         // Populate the map with the new entry
         ds.nameToInfo[name] = {
             offset,
@@ -436,32 +449,32 @@ public:
         const std::string& descriptionAltitude = "",
         int flags = 0)
     {
-        eDataType type = DATA_TYPE_F64;
-        flags &= ~DATA_FLAGS_FIXED_DECIMAL_MASK;
-        AddArray2(name, offset, type, 3, {"°", "°", "m"}, {description + " latitude", description + " longitude", description + " " + descriptionAltitude}, flags | DATA_FLAGS_FIXED_DECIMAL_8);
-    }
-    
-    void AddVec3Xyz(const std::string& name, 
-        uint32_t offset,
-        eDataType type,
-        const std::string& units = "",
-        const std::string& description = "",
-        int flags = 0,
-        double conversion = 1.0)
-    {
-        AddArray2(name, offset, type, 3, {units}, {"X "+description, "Y "+description, "Z "+description}, flags, conversion);
-    }
+		eDataType type = DATA_TYPE_F64;
+		flags &= ~DATA_FLAGS_FIXED_DECIMAL_MASK;
+		AddArray2(name, offset, type, 3, {"°", "°", "m"}, {description + " latitude", description + " longitude", description + " " + descriptionAltitude}, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+	}
+	
+	void AddVec3Xyz(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description = "",
+		int flags = 0,
+		double conversion = 1.0)
+	{
+		AddArray2(name, offset, type, 3, {units}, {"X "+description, "Y "+description, "Z "+description}, flags, conversion);
+	}
 
-    void AddVec3Rpy(const std::string& name, 
-        uint32_t offset,
-        eDataType type,
-        const std::string& units = "",
-        const std::string& description = "",
-        int flags = 0,
-        double conversion = 1.0)
-    {
-        AddArray2(name, offset, type, 3, {units}, {"Roll "+description, "Pitch "+description, "Yaw "+description}, flags, conversion);
-    }
+	void AddVec3Rpy(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description = "",
+		int flags = 0,
+		double conversion = 1.0)
+	{
+		AddArray2(name, offset, type, 3, {units}, {"Roll "+description, "Pitch "+description, "Yaw "+description}, flags, conversion);
+	}
 
 private:
     data_set_t& ds;             // data set reference
@@ -617,51 +630,51 @@ public:
 	*/
 	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
 
-    /*** Convert a did data set buffer to a YAML node
-    * @param did the data ID
-    * @param dataPtr pointer to the did buffer
-    * @param output the YAML node representation of the data set
-    * @param filter optional filter to apply to the output
-    * @return true if successful, false if error
-    */
-    static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output);
-    static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter);
+	/*** Convert a did data set buffer to a YAML node
+	* @param did the data ID
+	* @param dataPtr pointer to the did buffer
+	* @param output the YAML node representation of the data set
+	* @param filter optional filter to apply to the output
+	* @return true if successful, false if error
+	*/
+	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output);
+	static bool DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output, const YAML::Node& filter);
 
-    /*** Convert a YAML node to a did data set buffer
-    * @param did the data ID
-    * @param yaml the YAML node to convert
-    * @param dataPtr pointer to the did buffer
-    * @param usageVec optional vector to hold memory usage information
-    * @return true if successful, false if error
-    */
-    static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec = nullptr);
+	/*** Convert a YAML node to a did data set buffer
+	* @param did the data ID
+	* @param yaml the YAML node to convert
+	* @param dataPtr pointer to the did buffer
+	* @param usageVec optional vector to hold memory usage information
+	* @return true if successful, false if error
+	*/
+	static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec = nullptr);
 
-    /**
-     * @brief Convert a did data set buffer to a string representation
-     *
-     * @param did the data ID
-     * @param dataPtr pointer to the did buffer
-     * @param output the string representation of the data set
-     * @param fields optional fields to include in the output
-     * @return true if successful, false if error
-     */
-    static bool DidBufferToString(int did, const uint8_t* dataPtr, std::string &output, std::string fields="");
+	/**
+	 * @brief Convert a did data set buffer to a string representation
+	 *
+	 * @param did the data ID
+	 * @param dataPtr pointer to the did buffer
+	 * @param output the string representation of the data set
+	 * @param fields optional fields to include in the output
+	 * @return true if successful, false if error
+	 */
+	static bool DidBufferToString(int did, const uint8_t* dataPtr, std::string &output, std::string fields="");
 
-    /**
-    * Convert a string representation to a did data set buffer
-    * @param did the data ID
-    * @param fields optional fields to include in the output
-    * @param dataPtr pointer to the did buffer
-    * @return true if successful, false if error
-    */
-    static bool StringToDidBuffer(int did, const std::string& fields, uint8_t* dataPtr);
+	/**
+	* Convert a string representation to a did data set buffer
+	* @param did the data ID
+	* @param fields optional fields to include in the output
+	* @param dataPtr pointer to the did buffer
+	* @return true if successful, false if error
+	*/
+	static bool StringToDidBuffer(int did, const std::string& fields, uint8_t* dataPtr);
 
-    /**
-    * Get a timestamp from data if available
-    * @param hdr data header
-    * @param buf data buffer
-    * @return timestamp, or 0.0 if no timestamp available
-    */
+	/**
+	* Get a timestamp from data if available
+	* @param hdr data header
+	* @param buf data buffer
+	* @return timestamp, or 0.0 if no timestamp available
+	*/
     static double Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
 
     /**

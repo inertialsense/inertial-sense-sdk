@@ -237,10 +237,18 @@ string cInertialSenseDisplay::Hello()
 
 string cInertialSenseDisplay::Connected()
 {
-    if (m_startMs==0)
-    {   // Initialize start time
-        m_startMs = current_timeMs();
-    }
+	// Apply this breaking change in Develop and document in change_log.md
+	// Uncomment this to prevent printing "Connected" message when outputOnceDid is set.  
+	// You also need to remove " << endl" from all instances of "cout << Connected() << endl;"
+	// if (!m_outputOnceDid.empty())
+	// {	// Don't print connected message if outputOnceDid is set
+	// 	return "";
+	// }
+
+	if (m_startMs==0)
+	{	// Initialize start time
+		m_startMs = current_timeMs();
+	}
 
     unsigned int timeMs = current_timeMs();
 
