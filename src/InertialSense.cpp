@@ -872,7 +872,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
         ISDevice& device = m_comManagerState.devices[i];
 
         if (device.devInfo.hardwareType == IS_HARDWARE_TYPE_IMX ||
-            (device.sysParams.timeOfWeekMs) || 
+            device.sysParams.timeOfWeekMs || 
             device.imxFlashCfg.checksum)
         {   // Sync IMX flash config if a IMX present
             DeviceSyncFlashCfg(i, timeMs, DID_FLASH_CONFIG,  device.imxFlashCfgUploadTimeMs, device.imxFlashCfg.checksum, device.sysParams.flashCfgChecksum, device.imxFlashCfgUploadChecksum);
