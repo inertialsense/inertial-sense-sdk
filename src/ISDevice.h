@@ -67,8 +67,8 @@ public:
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
         imxFlashCfg.checksum = 0xFFFFFFFF;
         gpxFlashCfg.checksum = 0xFFFFFFFF;
-        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
-        gpxStatus.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
+        gpxStatus.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
         hdwId = _hdwId;
         assignPort(_port);
     }
@@ -79,8 +79,8 @@ public:
         devInfo = _devInfo;
         imxFlashCfg.checksum = 0xFFFFFFFF;
         gpxFlashCfg.checksum = 0xFFFFFFFF;
-        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
-        gpxStatus.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
+        gpxStatus.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
         assignPort(_port);
     }
 
