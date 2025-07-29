@@ -3453,7 +3453,7 @@ typedef struct PACKED
     /** Size of group or union, which is nvm_group_x_t + padding */
     uint32_t                size;
 
-    /** Checksum, excluding size and checksum */
+    /** Checksum, excluding size and checksum.  0xFFFFFFFF is invalid. */
     uint32_t                checksum;
 
     /** Manufacturer method for restoring flash defaults */
@@ -4602,7 +4602,7 @@ typedef struct
     /** Size of this struct */
     uint32_t                size;
 
-    /** Checksum, excluding size and checksum */
+    /** Checksum, excluding size and checksum.  0xFFFFFFFF is invalid. */
     uint32_t                checksum;
 
     /** Manufacturer method for restoring flash defaults */

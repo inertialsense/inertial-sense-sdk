@@ -1348,6 +1348,8 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
     }
 
+    ISDevice* device = deviceManager.front();
+
     // request extended device info for remaining connected devices...
     for (auto device : deviceManager) {
         // but only if they are of a compatible protocol version
@@ -1357,6 +1359,8 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             device->GetData(DID_GPX_FLASH_CFG);
         }
     }
+
+    device->WaitForImxFlashCfgSynced();
 
     return (m_enableDeviceValidation ? !deviceManager.empty() : !portManager.empty());
 }

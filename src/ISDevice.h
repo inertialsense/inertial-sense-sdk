@@ -349,10 +349,42 @@ public:
     const dev_info_t& DeviceInfo() { return devInfo; }
     const sys_params_t& SysParams() { return sysParams; }
 
-    // OH, ALL THE FLASHY-SYNCY STUFF
+    /**
+     * @brief IMX/GPX Flash Configuration Synchronization
+     *
+     * The InertialSense class maintains synchronization between the host's local flash
+     * configuration and the configuration stored on the connected IMX or GPX device.
+     * 
+     * Key Concepts:
+     * - Each device maintains local copies of flash configuration:
+     *      - IMX: device.imxFlashCfg
+     *      - GPX: device.gpxFlashCfg
+     * - The device also reports its flash configuration checksum via:
+     *      - IMX: device.sysParams.flashCfgChecksum
+     *      - GPX: device.gpxStatus.flashCfgChecksum
+     * 
+     * Synchronization Mechanism:
+     * - Periodically (every SYNC_FLASH_CFG_CHECK_PERIOD_MS), SyncFlashConfig() compares
+     *   the local checksum with the device-reported checksum.
+     * - If mismatched, the full flash configuration is requested from the device.
+     * - Uploads are initiated via SetImxFlashConfig() / SetGpxFlashConfig(), which:
+     *      - Compute and send only the changed regions of the configuration.
+     *      - Update tracking variables (upload time, expected checksum).
+     * - The Update() function drives both synchronization and upload completion.
+     * 
+     * Validation:
+     * - ImxFlashConfigSynced() / GpxFlashConfigSynced() return true if:
+     *      - Local and device checksums match.
+     *      - No upload is pending.
+     *      - No upload failure is detected.
+     * - ImxFlashConfigUploadFailure() / GpxFlashConfigUploadFailure() detect if a
+     *   configuration update was rejected or not yet received by the device.
+     * - WaitForImxFlashCfgSynced() / WaitForGpxFlashCfgSynced() can be used to block
+     *   until synchronization is complete.
+     */
 
     /**
-     * Populates the passed reference flashCfg with the locally synchronized copy of the remove device's config.
+     * Populates the passed reference flashCfg with the locally synchronized copy of the remote device's config.
      * @param flashCfg_ a reference to a nvm_flash_cfg_t struct to be populated
      * @returns true if the flashCfg has been synchronized with the device (and can thus be trusted), otherwise false.
      */
@@ -425,8 +457,6 @@ public:
      */
     bool LoadImxFlashConfigFromFile(std::string path);
     bool LoadGpxFlashConfigFromFile(std::string path);
-
-    void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
 
     void SaveFlashConfigFile(std::string path);
 
@@ -531,6 +561,8 @@ private:
     void SyncFlashConfig();
     void DeviceSyncFlashCfg(unsigned int timeMs, uint16_t did, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
     bool UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
+    void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
+    bool ValidFlashCfgCksum(uint32_t checksum) { return (checksum != 0xFFFFFFFF); }
 
 };
 

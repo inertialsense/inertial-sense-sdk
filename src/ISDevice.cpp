@@ -619,39 +619,39 @@ void ISDevice::SyncFlashConfig()
     }
 }
 
-void ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t did, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
+void ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
 {
     if (uploadTimeMs)
     {	// Upload in progress
         if (timeMs - uploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
         {	// Wait for upload to process.  Pause sync.
-            syncChecksum = 0;
+            syncChecksum = 0xFFFFFFFF;      // Indicate out of sync
         }
     }
 
     // Require valid sysParams checksum
-    if (syncChecksum)  
-    {   
-        if (syncChecksum == flashCfgChecksum)
-        {
+    if (ValidFlashCfgCksum(syncChecksum))
+    {
+        if (ValidFlashCfgCksum(flashCfgChecksum) && syncChecksum == flashCfgChecksum)
+        {   // Checksum is valid and matches
             if (uploadTimeMs)
             {   // Upload complete.  Allow sync.
                 uploadTimeMs = 0;
 
                 if (uploadChecksum == syncChecksum)
                 {
-                    printf("%s upload complete.\n", cISDataMappings::DataName(did));
+                    printf("%s upload complete.\n", cISDataMappings::DataName(flashCfgDid));
                 }
                 else
                 {
-                    printf("%s upload rejected.\n", cISDataMappings::DataName(did));
+                    printf("%s upload rejected.\n", cISDataMappings::DataName(flashCfgDid));
                 }
             }
         }
         else
         {	// Out of sync.  Request flash config.
-            DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(did));
-            GetData(did, 0, 0, 0);
+            DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
+            GetData(flashCfgDid, 0, 0, 0);
         }
     } 
 }
@@ -699,7 +699,7 @@ bool ISDevice::ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout)
     flashCfg_ = imxFlashCfg;
 
     // Indicate whether the port connection is valid, open, and the flash config is synchronized; otherwise false
-    return sysParams.flashCfgChecksum == imxFlashCfg.checksum;
+    return ValidFlashCfgCksum(imxFlashCfg.checksum) && (sysParams.flashCfgChecksum == imxFlashCfg.checksum);
 }
 
 bool ISDevice::GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout)
@@ -719,7 +719,7 @@ bool ISDevice::GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout)
     flashCfg_ = gpxFlashCfg;
 
     // Indicate whether the port connection is valid, open, and the flash config is synchronized; otherwise false
-    return gpxStatus.flashCfgChecksum == gpxFlashCfg.checksum;
+    return ValidFlashCfgCksum(gpxStatus.flashCfgChecksum) && (gpxStatus.flashCfgChecksum == gpxFlashCfg.checksum);
 }
 
 /**
@@ -780,9 +780,9 @@ bool ISDevice::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg) {
     return success;
 }
 
-bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut) {
+bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t flashCfgDid, uint32_t& uploadTimeMsOut, uint32_t& checksumOut) {
     std::vector<cISDataMappings::MemoryUsage> usageVec;
-    const auto& dataSetMap = *cISDataMappings::NameToInfoMap(did);
+    const auto& dataSetMap = *cISDataMappings::NameToInfoMap(flashCfgDid);
 
     for (const auto& [fieldName, info] : dataSetMap)
     {
@@ -808,8 +808,8 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
     for (const cISDataMappings::MemoryUsage& usage : usageVec)
     {
         int offset = static_cast<int>(usage.ptr - newData);
-        std::cout << "Sending " << cISDataMappings::DataName(did) << ": size " << usage.size << ", offset " << offset << std::endl;
-        failure |= SendData(did, usage.ptr, static_cast<int>(usage.size), offset);
+        std::cout << "Sending " << cISDataMappings::DataName(flashCfgDid) << ": size " << usage.size << ", offset " << offset << std::endl;
+        failure |= SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset);
 
         if (!failure)
         {
@@ -821,25 +821,29 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
 }
 
 bool ISDevice::ImxFlashConfigSynced() {
-    return  (imxFlashCfg.checksum == sysParams.flashCfgChecksum) && 
+    return  ValidFlashCfgCksum(imxFlashCfg.checksum) &&
+            (imxFlashCfg.checksum == sysParams.flashCfgChecksum) && 
             (imxFlashCfgUploadTimeMs == 0) && 
-            !ImxFlashConfigUploadFailure(); 
+            !ImxFlashConfigUploadFailure();
 }
 
 bool ISDevice::GpxFlashConfigSynced() {
-    return  (gpxFlashCfg.checksum == gpxStatus.flashCfgChecksum) && 
+    return  ValidFlashCfgCksum(gpxFlashCfg.checksum) &&
+            (gpxFlashCfg.checksum == gpxStatus.flashCfgChecksum) && 
             (gpxFlashCfgUploadTimeMs == 0) && 
             !GpxFlashConfigUploadFailure(); 
 }
 
 bool ISDevice::ImxFlashConfigUploadFailure() {
     // a failed flash upload is considered when imxFlashCfgUploadChecksum is non-zero, and DOES NOT match sysParams.flashCfgChecksum
-    return  imxFlashCfgUpload.checksum && 
+    return  ValidFlashCfgCksum(imxFlashCfgUpload.checksum) &&
+            imxFlashCfgUpload.checksum && 
             (imxFlashCfgUpload.checksum != sysParams.flashCfgChecksum);
 }
 bool ISDevice::GpxFlashConfigUploadFailure() {
     // a failed flash upload is considered when gpxFlashCfgUploadChecksum is non-zero, and DOES NOT match gpxStatus.flashCfgChecksum
-    return  gpxFlashCfgUpload.checksum && 
+    return  ValidFlashCfgCksum(gpxFlashCfgUpload.checksum) &&
+            gpxFlashCfgUpload.checksum && 
             (gpxFlashCfgUpload.checksum != gpxStatus.flashCfgChecksum);
 }
 
@@ -985,7 +989,7 @@ bool ISDevice::SetGpxFlashCfgAndConfirm(gpx_flash_cfg_t& flashCfg, uint32_t time
 }
 
 template<typename T>
-bool SaveFlashConfigToFile(const std::string& path, int did, std::function<bool(T&)> getCfg)
+bool SaveFlashConfigToFile(const std::string& path, int flashCfgDid, std::function<bool(T&)> getCfg)
 {
     T flashCfg;
     if (!getCfg(flashCfg))
@@ -995,7 +999,7 @@ bool SaveFlashConfigToFile(const std::string& path, int did, std::function<bool(
     }
 
     YAML::Node yaml;
-    if (!cISDataMappings::DataToYaml(did, reinterpret_cast<const uint8_t*>(&flashCfg), yaml))
+    if (!cISDataMappings::DataToYaml(flashCfgDid, reinterpret_cast<const uint8_t*>(&flashCfg), yaml))
     {
         printf("[ERROR] --- Failed to serialize flash config to YAML\n");
         return false;
@@ -1011,13 +1015,13 @@ bool SaveFlashConfigToFile(const std::string& path, int did, std::function<bool(
 }
 
 template<typename T>
-bool LoadFlashConfigFromFile(const std::string& path, int did, std::function<bool(T&)> setCfg)
+bool LoadFlashConfigFromFile(const std::string& path, int flashCfgDid, std::function<bool(T&)> setCfg)
 {
     try
     {
         YAML::Node yaml = YAML::LoadFile(path);
         T flashCfg;
-        if (!cISDataMappings::YamlToData(did, yaml, reinterpret_cast<uint8_t*>(&flashCfg)))
+        if (!cISDataMappings::YamlToData(flashCfgDid, yaml, reinterpret_cast<uint8_t*>(&flashCfg)))
         {
             printf("[ERROR] --- Failed to parse YAML into flash config structure\n");
             return false;
