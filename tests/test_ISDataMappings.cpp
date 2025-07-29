@@ -287,7 +287,6 @@ TEST(ISDataMappings, DidBufferToStringToDidBuffer)
 	d.ins1.hdwStatus = 0x05060708; // Hardware status flags
 	testDidBufToStringToDidBuf(d, DID_INS_1);
 
-	d.sysParams.navOutputPeriodMs = 100; // Navigation output period in milliseconds
 	d.sysParams.insStatus = 0x01020304; // INS status flags
 	d.sysParams.hdwStatus = 0x05060708; // Hardware status flags
 	d.sysParams.imuTemp = 25.0f; // IMU temperature in degrees

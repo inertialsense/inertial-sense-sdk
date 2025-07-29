@@ -765,8 +765,8 @@ bool ISDevice::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg) {
     bool success = UploadFlashConfigDiff(
         reinterpret_cast<uint8_t*>(&flashCfg),
         reinterpret_cast<uint8_t*>(&gpxFlashCfg),
-        sizeof(nvm_flash_cfg_t),
-        DID_FLASH_CONFIG,
+        sizeof(gpx_flash_cfg_t),
+        DID_GPX_FLASH_CFG,
         gpxFlashCfgUploadTimeMs,
         gpxFlashCfgUploadChecksum
     );
