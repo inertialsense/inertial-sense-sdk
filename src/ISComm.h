@@ -127,12 +127,12 @@ typedef enum
 /** Communications Protocol Version. See release notes. */
 
 // Increment w/ breaking changes (in ISComm.cpp) that prevent backwards compatibility with older protocols. 
-#define PROTOCOL_VERSION_CHAR0		2   // Breaking changes (Packet)
-// #define PROTOCOL_VERSION_CHAR1   .   // Breaking changes (Payload)       (defined in data_sets.h)
+#define PROTOCOL_VERSION_CHAR0      2   // Breaking changes (Packet)
+// #define PROTOCOL_VERSION_CHAR1      .   // Breaking changes (Payload)       (defined in data_sets.h)
 
 // Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
-#define PROTOCOL_VERSION_CHAR2		0   // Non-breaking changes (Packet)
-// #define PROTOCOL_VERSION_CHAR3   .   // Non-breaking changes (Payload)   (defined in data_sets.h)
+#define PROTOCOL_VERSION_CHAR2      0   // Non-breaking changes (Packet)
+// #define PROTOCOL_VERSION_CHAR3      .   // Non-breaking changes (Payload)   (defined in data_sets.h)
 
 #define UBLOX_HEADER_SIZE           6
 #define RTCM3_HEADER_SIZE           3
