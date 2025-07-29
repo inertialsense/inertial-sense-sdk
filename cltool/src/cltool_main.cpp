@@ -555,8 +555,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
-    	uDatasets d = {};
-    	std::vector<cISDataMappings::MemoryUsage> usageVec;
+        uDatasets d = {};
+        std::vector<cISDataMappings::MemoryUsage> usageVec;
 
         // This code uploads only portion of each DID data set that has been set from the setNode yaml.
         for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); ++it )
