@@ -364,9 +364,6 @@ public:
      *   configuration update was rejected or not yet received by the device.
      * - WaitForImxFlashCfgSynced() / WaitForGpxFlashCfgSynced() can be used to block
      *   until synchronization is complete.
-     * 
-     * This mechanism ensures safe, efficient configuration updates without redundant writes,
-     * and robust handling of upload timing and verification.
      */
 
     /**
