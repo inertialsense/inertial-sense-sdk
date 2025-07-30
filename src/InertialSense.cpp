@@ -1079,15 +1079,24 @@ bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
     return success;
 }
 
-bool InertialSense::WaitForImxFlashCfgSynced(int pHandle)
+bool InertialSense::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout, int pHandle)
 {
+    if (m_comManagerState.devices.size() == 0)
+    {   // No devices
+        return false;
+    }
+    ISDevice& device = m_comManagerState.devices[pHandle];
+
+    if (forceSync)
+        device.sysParams.flashCfgChecksum = 0xFFFFFFFF;    // Invalidate to force re-sync
+
     unsigned int startMs = current_timeMs();
     while(!ImxFlashConfigSynced(pHandle))
     {   // Request and wait for IMX flash config
         Update();
         SLEEP_MS(100);
 
-        if (current_timeMs() - startMs > 3000)
+        if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for IMX flash config
             printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
 
@@ -1110,15 +1119,24 @@ bool InertialSense::WaitForImxFlashCfgSynced(int pHandle)
     return ImxFlashConfigSynced(pHandle);
 }
 
-bool InertialSense::WaitForGpxFlashCfgSynced(int pHandle)
+bool InertialSense::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout, int pHandle)
 {
+    if (m_comManagerState.devices.size() == 0)
+    {   // No devices
+        return false;
+    }
+    ISDevice& device = m_comManagerState.devices[pHandle];
+
+    if (forceSync)
+        device.gpxStatus.flashCfgChecksum = 0xFFFFFFFF;    // Invalidate to force re-sync
+
     unsigned int startMs = current_timeMs();
     while(!GpxFlashConfigSynced(pHandle))
     {   // Request and wait for GPX flash config
         Update();
         SLEEP_MS(100);
 
-        if (current_timeMs() - startMs > 3000)
+        if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for GPX flash config
             printf("Timeout waiting for DID_GPX_FLASH_CONFIG failure!\n");
 

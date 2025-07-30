@@ -48,8 +48,6 @@ extern "C"
 #include "serialPortPlatform.h"
 }
 
-#define SYNC_FLASH_CFG_CHECK_PERIOD_MS      200
-
 class InertialSense;
 
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
@@ -407,8 +405,8 @@ public:
      * @param pHandle the port pHandle
      * @return false When failed to synchronize
      */
-    bool WaitForImxFlashCfgSynced(int pHandle = 0);
-    bool WaitForGpxFlashCfgSynced(int pHandle = 0);
+    bool WaitForImxFlashCfgSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS, int pHandle = 0);
+    bool WaitForGpxFlashCfgSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS, int pHandle = 0);
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
@@ -625,6 +623,9 @@ public:
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
     ISDevice* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
+
+    static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
+    static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
