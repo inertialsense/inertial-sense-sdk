@@ -66,11 +66,6 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-set_source_files_properties(
-    src/libusb/libusb/core.c
-    PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable"
-)
-
 # Other settings
 if (WIN32)
     # yamlcpp needs to know it's a static lib.
@@ -87,6 +82,11 @@ else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
+    )
+
+    set_source_files_properties(
+        src/libusb/libusb/core.c
+        PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable"
     )
 
     # Linux compiler flags
