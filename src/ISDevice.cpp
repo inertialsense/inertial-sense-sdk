@@ -592,6 +592,11 @@ int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMas
     return SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
 }
 
+/**
+ * Synchronizes the flash configuration for this device, if necessary.
+ * This will check the last time the flash config was synchronized, and if it has been longer than the SYNC_FLASH_CFG_CHECK_PERIOD_MS,
+ * it will request the flash config from the device and update the local copy.
+ */
 void ISDevice::SyncFlashConfig()
 {
     std::lock_guard<std::recursive_mutex> lock(portMutex);

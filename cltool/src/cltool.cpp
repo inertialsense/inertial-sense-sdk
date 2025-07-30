@@ -71,7 +71,14 @@ static bool matches(const char* str, const char* pre)
 #define CL_DEFAULT_REPLAY_SPEED                     1.0
 #define CL_DEFAULT_BOOTLOAD_VERIFY                  false
 
-
+/**
+ * @brief Parses a string argument for a specific data ID and field.
+ * 
+ * @param s The input string to parse.
+ * @param dataset The dataset to populate with the parsed data ID.
+ * @param fields The fields to populate with the parsed field information.
+ * @return true if the argument was successfully parsed, false otherwise.
+ */
 bool read_get_did_argument(string s, stream_did_t *dataset, std::string &fields)
 {
     eDataIDs did = cISDataMappings::Did(s);
@@ -189,10 +196,8 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
         return false;
     }
 
-    // cout << "Parsed YAML: " << node << endl;
     // Convert indexed keys to sequences i.e. {gps1AntOffset[0]: 1.5, gps1AntOffset[1]: 2.5} becomes {gps1AntOffset: [1.5, 2.5]}
     ConvertIndexedKeysToSequences(node);
-    // cout << "Revised YAML: " << node << endl;
 
     g_commandLineOptions.datasets.clear();
     g_commandLineOptions.outputOnceDid.clear();
@@ -241,8 +246,6 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
 
     // Update yaml node to ensure keys are DID names instead of DID numbers 
     node = newNode;
-
-    // cout << "Parsed YAML: " << node << endl;
 
     if (g_commandLineOptions.datasets.empty())
     {

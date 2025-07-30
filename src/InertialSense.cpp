@@ -931,60 +931,6 @@ void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
     }
 
     // THIS IS MOVED TO ISDevice::ProcessRxData()
-    // ISDevice* device = getDevice(port);
-    // if (!device) {
-    //     if (data->hdr.id != DID_DEV_INFO)
-    //         return;
-    // }
-
-    // switch (data->hdr.id)
-    // {
-    //     case DID_DEV_INFO:
-    //         if (!device) {
-    //             device = deviceManager.registerNewDevice(port, *(dev_info_t*)data->ptr);
-    //             device->devInfo.hdwRunState = HDW_STATE_APP; // we know this for a fact
-    //         } else {
-    //             device->devInfo = *(dev_info_t*)data->ptr;
-    //         }
-    //         break;
-    //     case DID_GPX_DEV_INFO:
-    //         device->gpxDevInfo = *(dev_info_t*)data->ptr;
-    //         break;
-    //     case DID_SYS_CMD:
-    //         device->sysCmd = *(system_command_t*)data->ptr;
-    //         break;
-    //     case DID_SYS_PARAMS:
-    //         copyDataPToStructP(&(device->sysParams), data, sizeof(sys_params_t));
-    //         DEBUG_PRINT("Received DID_SYS_PARAMS\n");
-    //         break;
-    //     case DID_GPX_STATUS:
-    //         copyDataPToStructP(&(device->gpxStatus), data, sizeof(gpx_status_t));
-    //         DEBUG_PRINT("Received DID_GPX_STATUS\n");
-    //         break;
-    //     case DID_FLASH_CONFIG:
-    //         copyDataPToStructP(&(device->flashCfg), data, sizeof(nvm_flash_cfg_t));
-    //         if (dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data))
-    //         {   // Checksum received
-    //             device->sysParams.flashCfgChecksum = device->flashCfg.checksum;
-    //         }
-    //         DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
-    //         break;
-    //     case DID_GPX_FLASH_CFG:
-    //         copyDataPToStructP(&(device->gpxFlashCfg), data, sizeof(gpx_flash_cfg_t));
-    //         if ( dataOverlap( offsetof(gpx_flash_cfg_t, checksum), 4, data ) )
-    //         {	// Checksum received
-    //             device.gpxStatus.flashCfgChecksum = device->gpxFlashCfg.checksum;
-    //         }
-    //         DEBUG_PRINT("Received DID_GPX_FLASH_CFG\n");
-    //         break;
-    //     case DID_FIRMWARE_UPDATE:
-    //         // we don't respond to messages if we don't already have an active Updater
-    //         if (device->fwUpdater) {
-    //             device->fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
-    //             device->fwUpdate();
-    //         }
-    //         break;
-    // }
 }
 
 // return 0 on success, -1 on failure
