@@ -333,6 +333,40 @@ public:
     void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, int pHandle = -1);
 
     /**
+     * @brief IMX/GPX Flash Configuration Synchronization
+     *
+     * The InertialSense class maintains synchronization between the host's local flash
+     * configuration and the configuration stored on the connected IMX or GPX device.
+     * 
+     * Key Concepts:
+     * - Each device maintains local copies of flash configuration:
+     *      - IMX: device.imxFlashCfg
+     *      - GPX: device.gpxFlashCfg
+     * - The device also reports its flash configuration checksum via:
+     *      - IMX: device.sysParams.flashCfgChecksum
+     *      - GPX: device.gpxStatus.flashCfgChecksum
+     * 
+     * Synchronization Mechanism:
+     * - Periodically (every SYNC_FLASH_CFG_CHECK_PERIOD_MS), SyncFlashConfig() compares
+     *   the local checksum with the device-reported checksum.
+     * - If mismatched, the full flash configuration is requested from the device.
+     * - Uploads are initiated via SetImxFlashConfig() / SetGpxFlashConfig(), which:
+     *      - Compute and send only the changed regions of the configuration.
+     *      - Update tracking variables (upload time, expected checksum).
+     * - The Update() function drives both synchronization and upload completion.
+     * 
+     * Validation:
+     * - ImxFlashConfigSynced() / GpxFlashConfigSynced() return true if:
+     *      - Local and device checksums match.
+     *      - No upload is pending.
+     *      - No upload failure is detected.
+     * - ImxFlashConfigUploadFailure() / GpxFlashConfigUploadFailure() detect if a
+     *   configuration update was rejected or not yet received by the device.
+     * - WaitForImxFlashCfgSynced() / WaitForGpxFlashCfgSynced() can be used to block
+     *   until synchronization is complete.
+     */
+
+    /**
     * Get the flash config, returns the latest flash config read from the IMX flash memory
     * @param flashCfg the flash config value
     * @param pHandle the port pHandle to get flash config
@@ -364,7 +398,6 @@ public:
     * @param pHandle the pHandle to set flash config for
     * @return true if success
     */
-    bool UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
     bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
     bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
@@ -654,7 +687,10 @@ private:
 
     void CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t did);
     void SyncFlashConfig(unsigned int timeMs);
+    void DeviceSyncFlashCfg(int devIndex, unsigned int timeMs, uint16_t flashCfgDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
+    bool UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
+    bool ValidFlashCfgCksum(uint32_t checksum) { return (checksum != 0xFFFFFFFF); }
 };
 
 #endif

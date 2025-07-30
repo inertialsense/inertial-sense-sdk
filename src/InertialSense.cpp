@@ -800,7 +800,7 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
         comManagerSendData(pHandle, data, DID_EVENT, DID_EVENT_HEADER_SIZE + event.length, 0);
 }
 
-void InertialSense::CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t did)
+void InertialSense::CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t flashCfgDid)
 {
     if (uploadTimeMs)
     {	// Upload in progress
@@ -816,43 +816,44 @@ void InertialSense::CheckRequestFlashConfig(unsigned int timeMs, unsigned int &u
 
     if (!synced)
     {	// Out of sync.  Request flash config.
-        comManagerGetData(port, did, 0, 0, 0);
+        comManagerGetData(port, flashCfgDid, 0, 0, 0);
     }
 }
 
-void DeviceSyncFlashCfg(int devIndex, unsigned int timeMs, uint16_t did, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
+// Check if flash config is synchronized and if not request it from the device.
+void InertialSense::DeviceSyncFlashCfg(int devIndex, unsigned int timeMs, uint16_t flashCfgDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
 {
     if (uploadTimeMs)
     {	// Upload in progress
         if (timeMs - uploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
         {	// Wait for upload to process.  Pause sync.
-            syncChecksum = 0;
+            syncChecksum = 0xFFFFFFFF;      // invalidate checksum
         }
     }
 
     // Require valid sysParams checksum
-    if (syncChecksum)  
-    {   
-        if (syncChecksum == flashCfgChecksum)
-        {
+    if (ValidFlashCfgCksum(syncChecksum))
+    {
+        if (ValidFlashCfgCksum(flashCfgChecksum) && syncChecksum == flashCfgChecksum)
+        {   // Checksum is valid and matches
             if (uploadTimeMs)
             {   // Upload complete.  Allow sync.
                 uploadTimeMs = 0;
 
                 if (uploadChecksum == syncChecksum)
                 {
-                    printf("%s upload complete.\n", cISDataMappings::DataName(did));
+                    printf("%s upload complete.\n", cISDataMappings::DataName(flashCfgDid));
                 }
                 else
                 {
-                    printf("%s upload rejected.\n", cISDataMappings::DataName(did));
+                    printf("%s upload rejected.\n", cISDataMappings::DataName(flashCfgDid));
                 }
             }
         }
         else
         {	// Out of sync.  Request flash config.
-            DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(did));
-            comManagerGetData(devIndex, did, 0, 0, 0);
+            DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
+            comManagerGetData(devIndex, flashCfgDid, 0, 0, 0);
         }
     } 
 }
@@ -916,7 +917,7 @@ bool InertialSense::ImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     flashCfg = device.imxFlashCfg;
 
     // Indicate whether flash config is synchronized
-    return device.sysParams.flashCfgChecksum == device.imxFlashCfg.checksum;
+    return ValidFlashCfgCksum(device.imxFlashCfg.checksum) && device.sysParams.flashCfgChecksum == device.imxFlashCfg.checksum;
 }
 
 bool InertialSense::GpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
@@ -931,7 +932,7 @@ bool InertialSense::GpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle)
     flashCfg = device.gpxFlashCfg;
 
     // Indicate whether flash config is synchronized
-    return device.gpxStatus.flashCfgChecksum == device.gpxFlashCfg.checksum;
+    return ValidFlashCfgCksum(device.gpxFlashCfg.checksum) && device.gpxStatus.flashCfgChecksum == device.gpxFlashCfg.checksum;
 }
 
 bool InertialSense::ImxFlashConfigSynced(int pHandle) 
@@ -942,7 +943,8 @@ bool InertialSense::ImxFlashConfigSynced(int pHandle)
     }
 
     ISDevice& device = m_comManagerState.devices[pHandle];
-    return  (device.imxFlashCfg.checksum == device.sysParams.flashCfgChecksum) && 
+    return  ValidFlashCfgCksum(device.imxFlashCfg.checksum) &&
+            (device.imxFlashCfg.checksum == device.sysParams.flashCfgChecksum) && 
             (device.imxFlashCfgUploadTimeMs==0) && !ImxFlashConfigUploadFailure(pHandle); 
 }
 
@@ -954,7 +956,8 @@ bool InertialSense::GpxFlashConfigSynced(int pHandle)
     }
 
     ISDevice& device = m_comManagerState.devices[pHandle];
-    return  (device.gpxFlashCfg.checksum == device.gpxStatus.flashCfgChecksum) && 
+    return  ValidFlashCfgCksum(device.gpxFlashCfg.checksum) &&
+            (device.gpxFlashCfg.checksum == device.gpxStatus.flashCfgChecksum) && 
             (device.gpxFlashCfgUploadTimeMs==0) && !GpxFlashConfigUploadFailure(pHandle); 
 }
 
@@ -980,14 +983,14 @@ bool InertialSense::GpxFlashConfigUploadFailure(int pHandle)
     return device.gpxFlashCfgUploadChecksum && (device.gpxFlashCfgUploadChecksum != device.gpxStatus.flashCfgChecksum);
 }
 
-bool InertialSense::UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut)
+bool InertialSense::UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t flashCfgDid, uint32_t& uploadTimeMsOut, uint32_t& checksumOut)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size()) {
         return false;
     }
 
     std::vector<cISDataMappings::MemoryUsage> usageVec;
-    const auto& dataSetMap = *cISDataMappings::NameToInfoMap(did);
+    const auto& dataSetMap = *cISDataMappings::NameToInfoMap(flashCfgDid);
 
     for (const auto& [fieldName, info] : dataSetMap)
     {
@@ -1013,8 +1016,8 @@ bool InertialSense::UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t
     for (const cISDataMappings::MemoryUsage& usage : usageVec)
     {
         int offset = static_cast<int>(usage.ptr - newData);
-        cout << "Sending " << cISDataMappings::DataName(did) << ": size " << usage.size << ", offset " << offset << endl;
-        failure |= comManagerSendData(pHandle, usage.ptr, did, static_cast<int>(usage.size), offset);
+        cout << "Sending " << cISDataMappings::DataName(flashCfgDid) << ": size " << usage.size << ", offset " << offset << endl;
+        failure |= comManagerSendData(pHandle, usage.ptr, flashCfgDid, static_cast<int>(usage.size), offset);
         if (!failure)
         {
             uploadTimeMsOut = current_timeMs();

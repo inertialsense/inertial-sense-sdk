@@ -73,6 +73,8 @@ public:
     { 
         sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
         gpxStatus.flashCfgChecksum = 0xFFFFFFFF;		// Set invalid checksum to trigger synchronization
+        imxFlashCfg.checksum = 0xFFFFFFFF;			    // Set invalid checksum to trigger synchronization
+        gpxFlashCfg.checksum = 0xFFFFFFFF;			    // Set invalid checksum to trigger synchronization
     };
 
 };
