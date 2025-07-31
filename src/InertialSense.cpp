@@ -828,6 +828,7 @@ void InertialSense::DeviceSyncFlashCfg(int devIndex, unsigned int timeMs, uint16
         if (timeMs - uploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
         {	// Wait for upload to process.  Pause sync.
             syncChecksum = 0xFFFFFFFF;      // invalidate checksum
+            return;
         }
     }
 
