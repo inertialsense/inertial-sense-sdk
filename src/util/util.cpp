@@ -558,27 +558,28 @@ bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2
  * A comparitor function which can be used by std::map<> to order a map in reverse order by dev_info_t (key)
  * @param a dev_info_t representing a particular firmware version
  * @param b dev_info_t representing a particular firmware version
- * @return returns true if A is greater/newer than B.
+ * @return returns an integer representing a different between A & B.
  */
-bool utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b) {
+int64_t utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b) {
+    int64_t result = 0;
     if (a.firmwareVer[0] != b.firmwareVer[0])
-        return a.firmwareVer[0] > b.firmwareVer[0];
+        result |= ((a.firmwareVer[0] - b.firmwareVer[0]) & 0xFF) << 56;
     if (a.firmwareVer[1] != b.firmwareVer[1])
-        return a.firmwareVer[1] > b.firmwareVer[1];
+        result |= ((a.firmwareVer[1] - b.firmwareVer[1]) & 0xFF) << 48;
     if (a.firmwareVer[2] != b.firmwareVer[2])
-        return a.firmwareVer[2] > b.firmwareVer[2];
+        result |= ((a.firmwareVer[2] - b.firmwareVer[2]) & 0xFF) << 32;
     if (a.firmwareVer[3] != b.firmwareVer[3])
-        return a.firmwareVer[3] > b.firmwareVer[3];
+        result |= ((a.firmwareVer[3] > b.firmwareVer[3]) & 0xFF) << 24;
 
     uint64_t aDateTime = intDateTimeFromDevInfo(a);
     uint64_t bDateTime = intDateTimeFromDevInfo(b);
     if (aDateTime != bDateTime)
-        return aDateTime > bDateTime;
+        result |= ((aDateTime - bDateTime) & 0xFF) << 16;
 
     if (a.buildNumber != b.buildNumber)
-        return a.buildNumber > b.buildNumber;
+        result |= ((a.buildNumber - b.buildNumber) & 0xFF) << 8;
 
-    return a.buildType > b.buildType;
+    return result |= ((a.buildType - b.buildType) & 0xFF);
 }
 
 /**

@@ -122,7 +122,7 @@ public:
 
 
         for (auto l : factories) {
-            std::function<void(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, options);
+            std::function<bool(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, options);
             if (l->locateDevice(cb, port, hdwId, timeoutMs)) {
                 if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)  // locateDevice should already handle this, but just in case.
                     portClose(port);
@@ -290,8 +290,9 @@ protected:
      * @param factory - the factory which discovered this device
      * @param port - the port which the device was discovered on
      * @param devInfo - the name of the port (as determined by the factory, should be unique)
+     * @returns true if the device was properly allocated and added to the manager, otherwise false
      */
-    void deviceHandler(DeviceFactory* factory, const dev_info_t& devInfo, port_handle_t port, int options);
+    bool deviceHandler(DeviceFactory* factory, const dev_info_t& devInfo, port_handle_t port, int options);
 
 
 private:

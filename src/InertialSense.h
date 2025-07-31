@@ -164,7 +164,7 @@ public:
 
     ISDevice* getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
 
-    ISDevice* getDevice(uint64_t uid) { return deviceManager.getDevice((uid & 0xFFFFFF), ((uid >> 48) & 0xFFFF)); }
+    ISDevice* getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.

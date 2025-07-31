@@ -14,7 +14,7 @@
 #include "imx_defaults.h"
 #include "ISLogger.h"
 
-ISDevice ISDevice::invalidRef;
+const ISDevice ISDevice::invalidRef;
 
 /**
  * General Purpose IS-binary protocol handler for the InertialSense class.
@@ -109,10 +109,17 @@ float ISDevice::fwUpdatePercentCompleted() { return (fwUpdater && !fwUpdater->fw
  * @return true if the update is still in progress (calls inProgress()), or false if the update is finished and no further updates are needed.
  */
 bool ISDevice::fwUpdate() {
+    std::unique_lock<std::mutex> lock(fwUpdateMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+        return true;
+
     if (fwUpdater) {
+        // check if our mutex is already locked, if so, we're recursing into this function, and we shouldn't...
+
         fwUpdater->fwUpdate_step();
 
-        if (fwUpdater->getActiveCommand() == "upload") {
+        auto curCmd = fwUpdater->getActiveCommand();
+        if (curCmd == "upload") {
             if (fwUpdater->fwUpdate_getSessionTarget() != fwLastTarget) {
                 fwHasError = false;
                 fwLastStatus = fwUpdate::NOT_STARTED;
@@ -136,11 +143,11 @@ bool ISDevice::fwUpdate() {
                 }
             }
 
-        } else if (fwUpdater->getActiveCommand() == "waitfor") {
+        } else if (curCmd == "waitfor") {
             fwLastMessage = "Waiting for response from device.";
-        } else if (fwUpdater->getActiveCommand() == "reset") {
+        } else if (curCmd == "reset") {
             fwLastMessage = "Resetting device.";
-        } else if (fwUpdater->getActiveCommand() == "delay") {
+        } else if (curCmd == "delay") {
             fwLastMessage = "Waiting...";
         }
 
@@ -182,7 +189,7 @@ bool ISDevice::handshakeISbl() {
             return false;
         }
 
-        if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
+        if (portWaitForTimeout(port, &handshakerChar, 1, 100)) {
             return true;           // Success
         }
     }
@@ -377,10 +384,18 @@ std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
     return utils::string_format("%s-%d.%d::SN%ld", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
 }
 
-std::string ISDevice::getIdAsString() {
+std::string ISDevice::getIdAsString() const {
     return getIdAsString(devInfo);
 }
 
+/**
+ * Renders a string which can serve as a unique hardware identifier describing the device_info provided
+ * @param devInfo the device info used to render the string
+ * @param flags a bitmask of rendering options, specifically:
+ *   - COMPACT_SERIALNO     renders the device serial number without leading zeros
+ *   - COMPACT_HARWARE_VER  hides the 3rd and 4rth digits of the hardware version, unless they are non-zero
+ * @return
+ */
 std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
     // device serial no
     std::string out = utils::string_format( !(flags & COMPACT_SERIALNO) ? "SN%09d (" : "SN%d (", devInfo.serialNumber);
@@ -406,7 +421,7 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
     return out;
 }
 
-std::string ISDevice::getName(int flags) {
+std::string ISDevice::getName(int flags) const {
     return getName(devInfo, flags);
 }
 
@@ -444,25 +459,27 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
         if (devInfo.firmwareVer[3] != 0)
             out += utils::string_format(".%u", devInfo.firmwareVer[3]);
 
-        if (!(flags & OMIT_COMMIT_HASH)) {
+        if (devInfo.repoRevision && !(flags & OMIT_COMMIT_HASH)) {
             out += utils::string_format(" %08x", devInfo.repoRevision);
             if (devInfo.buildType == '^') {
                 out += "^";
             }
+        }
 
-            if (!(flags & OMIT_BUILD_DATE)) {
-                // build number/type
-                out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
+        if (devInfo.buildNumber && !(flags & OMIT_BUILD_KEY)) {
+            // build number/type
+            out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
+        }
 
-                if (!(flags & OMIT_BUILD_TIME)) {
-                    // build date/time
-                    out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
-                    out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
-                    if (!(flags & OMIT_BUILD_MILLIS)) {
+        if (!(flags & OMIT_BUILD_DATE)) {
+            // build date
+            out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
 
-                        if (devInfo.buildMillisecond)
-                            out += utils::string_format(".%03u", devInfo.buildMillisecond);
-                    }
+            if (!(flags & OMIT_BUILD_TIME)) {
+                // build time
+                out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+                if (devInfo.buildMillisecond && !(flags & OMIT_BUILD_MILLIS)) {
+                    out += utils::string_format(".%03u", devInfo.buildMillisecond);
                 }
             }
         }
@@ -471,7 +488,7 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
     return out;
 }
 
-std::string ISDevice::getFirmwareInfo(int flags) {
+std::string ISDevice::getFirmwareInfo(int flags) const {
     return getFirmwareInfo(devInfo, flags);
 }
 
@@ -804,8 +821,10 @@ bool ISDevice::WaitForFlashSynced(bool forceSync, uint32_t timeout)
         return false;   // No device, no flash-sync
 
     // If there are no upload pending, then just go ahead and check...
-    unsigned int now = current_timeMs();
-    unsigned int startMs = now;
+    unsigned int startMs = current_timeMs();
+    unsigned int now = 0;
+    unsigned int reqCnt = 0, stepCnt = 0;
+
 
     static unsigned int lastRequest = startMs;
 
@@ -820,20 +839,23 @@ bool ISDevice::WaitForFlashSynced(bool forceSync, uint32_t timeout)
     {   // no upload is in progress; we don't need to verify with our uploaded flashCfg
         while (flashCfg.checksum != sysParams.flashCfgChecksum)
         {
+            step();
+            stepCnt++;
+
+            now = current_timeMs();
             if ((now - startMs) > timeout)
             {   // timeout reached
                 return false;
             }
 
-            if ((current_timeMs() - lastRequest) > 50)
+            if ((now - lastRequest) > 25)
             {   // request both SYS_PARAMS and FLASH_CONFIG every 50ms until we get a response
-                lastRequest = current_timeMs();
                 GetData(DID_SYS_PARAMS);
                 GetData(DID_FLASH_CONFIG);
-                step();
+                lastRequest = now;
+                reqCnt++;
             }
             SLEEP_MS(5);
-            now = current_timeMs();
         }
         return true;
     }

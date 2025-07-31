@@ -53,14 +53,15 @@ public:
 
         // Version Options
         OMIT_COMMIT_HASH         = 0x0100,      //!< suppresses the output of the commit hash/dirty status
-        OMIT_BUILD_DATE          = 0x0200,      //!< suppresses the output of the build date
-        OMIT_BUILD_TIME          = 0x0400,      //!< suppresses the output of the build time
-        OMIT_BUILD_MILLIS        = 0x0800,      //!< suppresses the output of the build milliseconds when not zero
+        OMIT_BUILD_KEY           = 0x0200,      //!< suppresses the output of the build host key and number
+        OMIT_BUILD_DATE          = 0x0400,      //!< suppresses the output of the build date
+        OMIT_BUILD_TIME          = 0x0800,      //!< suppresses the output of the build time
+        OMIT_BUILD_MILLIS        = 0x1000,      //!< suppresses the output of the build milliseconds when not zero
     };
 
-    static ISDevice invalidRef;
+    const static ISDevice invalidRef;
     static std::string getIdAsString(const dev_info_t& devInfo);
-    static std::string getName(const dev_info_t& devInfo, int flags = 0);
+    static std::string getName(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER));
     static std::string getFirmwareInfo(const dev_info_t &devInfo, int flags = 0);
 
     explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
@@ -153,7 +154,7 @@ public:
     /**
      * @return true is this ISDevice has a valid, and open port
      */
-    bool isConnected() {
+    bool isConnected() const {
         return (portIsValid(port) && (portType(port) & PORT_TYPE__COMM)) && portIsOpened(port);
     }
 
@@ -187,6 +188,20 @@ public:
     virtual bool disconnect() {
         devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // once we disconnect, we don't actually know the status of the hardware anymore
         return (portClose(port) == PORT_ERROR__NONE);
+    }
+
+    /**
+     * Simple utility test to confirm if this device matches the specified HdwId and optional Hdw serial number
+     * @param hdwId_ the Hardware ID to match against
+     * @param serialNo the serial number to further match against, if not zero (default is zero)
+     * @return true if this device matches the criteria, otherwise false;
+     *
+     * Note that the HdwId is a bitwise check - meaning that a IS_HARDWARE_IMX and a IS_HARDWARE_IMX_5_0 will
+     * both match a device which is reporting as IS_HARDWARE_IMX_5_0
+     */
+    inline bool matchesHdwId(uint16_t hdwId_, uint32_t serialNo = 0) {
+        return ( ((hdwId == IS_HARDWARE_ANY) || (hdwId & hdwId_) == hdwId)) &&
+                 ((serialNo == 0) || (serialNo == devInfo.serialNumber));
     }
 
     /**
@@ -242,13 +257,13 @@ public:
      * formatted string appears as "<HdwType>-<HdwVer.Maj>.<HdrVer.Min>::SN<SerialNo>". This is sufficient to be used
      * in hashing or other comparison functions to identify a specific device.
      */
-    std::string getIdAsString();
+    std::string getIdAsString() const;
 
     /**
      * @returns a formatted string similar to getIdAsString(), but slightly more human-friendly.  The formatted string
      * appears as "SN<SerialNo> (<HdwType>-<HdwVer[0]>.<HdrVer[1]>[.<HdrVer[2]>.<HdrVer[3]>])"
      */
-    std::string getName(int flags = 0);
+    std::string getName(int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER)) const;
 
     /**
      * Returns a string representing the device firmware, as reported by its devInfo struct, with varying levels of
@@ -256,7 +271,7 @@ public:
      * @param flags an integer bitmask derived from DevInfoFormatFlags which alters the output format
      * @return the formatted Firmware Information string
      */
-    std::string getFirmwareInfo(int flags = 0);
+    std::string getFirmwareInfo(int flags = 0) const;
 
     /**
      * @returns a formatted string that completely describes the device as a concatenation of the following calls:
@@ -337,7 +352,7 @@ public:
      * @param flashCfg_ a reference to a nvm_flash_cfg_t struct to be populated
      * @returns true if the flashCfg has been synchronized with the device (and can thus be trusted), otherwise false.
      */
-    bool FlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
+    bool FlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 250);
 
     /**
      * Uploads the provided flashCfg to the remove device, but makes NO checks that it was successfully synchronized.
@@ -450,6 +465,7 @@ public:
 
 
     // TODO: make these private or protected
+    std::mutex                  fwUpdateMutex;                       //!< used to guard against re-entrant calls into fwUpdate functions
     ISFirmwareUpdater* fwUpdater = NULLPTR;
     bool fwHasError = false;
     std::vector<std::tuple<std::string, std::string, std::string>> fwErrors;

@@ -24,9 +24,6 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, const char* m
     static char buffer[256];
     size_t msg_len = 0;
 
-    if ((session_id == 0) || (session_status == fwUpdate::NOT_STARTED))
-        return false;
-
     memset(buffer, 0, sizeof(buffer));
     if (message) {
         va_list ap;
@@ -111,6 +108,8 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, int total_chu
 // this is called internally by processMessage() to do the things to do, it should also be called periodically to send status updated, etc.
 bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
     static int nextStep = 0;
+    static PortManager& portManager = PortManager::getInstance();
+    static DeviceManager& deviceManager = DeviceManager::getInstance();
 
     if (session_status == fwUpdate::NOT_STARTED)
         return false;
@@ -125,21 +124,17 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // is reporting as running in HDW_STATE_BOOTLOADER, then we can advance to ready. The InertialSense
         // class should handle most of this for us, we just need to tell it to look for new ISDevices.
 
-
         SLEEP_MS(500);
-        InertialSense* is = InertialSense::getLastInstance();
-        if (!is)
-            is = new InertialSense();
 
         // Wait upto 15 seconds this device to reboot into bootloader mode.
         bool foundIt = false;
         // FIXME: We're basically waiting around for the device to reboot into ISbootloader state.
         //   We want to keep looking for new devices, querying them, and hoping that one of them matches our original device
-        uint32_t timeout = current_timeMs() + 15000 * 10; // For debugging
+        uint32_t timeout = current_timeMs() + 30000;    // we should have been able to find the rebooted device after 30 seconds (probably in as little at 12-15)
         while ( (current_timeMs() < timeout) && !foundIt ) {
-            for (auto dev : is->getDevices()) {
-                if (dev->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-                    if ((dev == device) || (ENCODE_DEV_INFO_TO_UNIQUE_ID(dev->devInfo) == ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo))) {
+            for (auto dev: deviceManager.getDevices()) {
+                if ((dev == device) || (ENCODE_DEV_INFO_TO_UNIQUE_ID(dev->devInfo) == ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo))) {
+                    if (dev->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                         this->device = dev; // update the device reference to use the new device (though these should actually be the same pointer)
                         if (fwUpdate_handleInitialize(lastPayload) && (session_status >= fwUpdate::INITIALIZING)) {
                             foundIt = true;
@@ -150,14 +145,23 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s after rebooting into bootloader; but device failed compatibility check.", device->getIdAsString().c_str());
                         session_status = fwUpdate::ERR_COMMS;
                         return true;
+                    } else if (dev->devInfo.hdwRunState == HDW_STATE_UNKNOWN) {
+                        // devices were found, but they aren't in the bootloader... this suggests we ended up in the INITIALIZING state without successfully booting into ISbl.
+                        eImageSignature devSig;
+                        if (fetch_device_info_and_signature(&devSig) == IS_OP_OK) {
+
+                        }
+                    } else {
+                        // why are we still in APP mode?
+                        rebootToISB();
                     }
                 }
             }
             SLEEP_MS(500);
-            bool portsChanged = is->portManager.discoverPorts();
+            bool portsChanged = portManager.discoverPorts();
             SLEEP_MS(100);
-            if (portsChanged || (is->portManager.getPortCount() > 0))
-                is->deviceManager.discoverDevices(device->hdwId, 0, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+            if (portsChanged || (portManager.getPortCount() > 0))
+                deviceManager.discoverDevices(IS_HARDWARE_ANY, 0, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);  // We'll match back to our Hardware ID above - but we want to discover all devices
         }
 
         if (!foundIt) {
@@ -188,15 +192,19 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 if (doVerify) {
                     // do some verify step??
                 } else {
-                    updateState = UPDATE_DONE;
+                    updateState = REBOOT_TO_APP;
                     session_status = fwUpdate::FINALIZING;
                 }
                 break;
+            case REBOOT_TO_APP:
+                rebootToAPP(false);  // we should be able to keep the port open
+                updateState = UPDATE_DONE;
+                break;
             case UPDATE_DONE:
+                // at this point, we should have rebooted, and weare waiting for the device to reboot back up, so we can confirm the update succeeded.
                 if (imgStream) { delete imgStream; imgStream = nullptr; }
                 if (imgBuffer) { delete imgBuffer; imgBuffer = nullptr; }
-                rebootToAPP(true);  // we should be able to keep the port open
-                session_status = fwUpdate::FINALIZING;
+                session_status = fwUpdate::FINISHED;
                 break;
         }
     }
@@ -217,8 +225,10 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         nextStep = 0;
     }
 
-    if (session_status < fwUpdate::NOT_STARTED)
+    if ((session_status < fwUpdate::NOT_STARTED) || (session_status != last_session_status)) {
+        last_session_status = session_status;
         fwUpdate_sendProgress();
+    }
 
     // printf(" %s\n", fwUpdate_getStatusName(session_status)); fflush(stdout);
     return true;
@@ -249,9 +259,15 @@ int ISBFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUp
 
 // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
 bool ISBFirmwareUpdater::fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& dev_info) {
-    if (get_device_info() == IS_OP_OK) {
-        device->devInfo.serialNumber = m_sn;
-        device->devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
+    if (device->devInfo.hdwRunState != HDW_STATE_APP) {
+        eImageSignature devSig;
+        for (int retry = 3; retry > 0; retry--) {
+            if (fetch_device_info_and_signature(&devSig) == IS_OP_OK) {
+                device->devInfo.serialNumber = m_sn;
+                device->devInfo.hdwRunState = HDW_STATE_BOOTLOADER;
+                break;
+            }
+        }
     }
     if ((device->port != nullptr) && (device->hdwId != 0)) {
         dev_info = device->DeviceInfo();
@@ -266,7 +282,8 @@ fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdat
     session_image_size = msg.data.req_update.file_size;
 
     if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-        if (check_is_compatible()) {
+        eImageSignature devSig;
+        if (fetch_device_info_and_signature(&devSig) == IS_OP_OK) {
             if (!imgBuffer) // don't leak memory
                 imgBuffer = new ByteBuffer(session_image_size);
             if (!imgStream) // don't leak memory
@@ -311,176 +328,121 @@ bool ISBFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t
     return true;
 }
 
-
-uint32_t ISBFirmwareUpdater::get_device_info()
+is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSignature* out_signature)
 {
-    sync();
-    portFlush(device->port);
-
-    // Send command
-    portWrite(device->port, (uint8_t*)":020000041000EA", 15);
-    SLEEP_MS(10);
-
-    uint8_t buf[14] = { 0 };
-
-    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-    int count = portReadTimeout(device->port, buf, 14, 1000);
-
-    if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
-    {   // Bad read
-        m_isb_major = 0;
-        m_isb_minor = 0;
-        m_isb_props.rom_available = 1;
-        m_isb_props.processor = IS_PROCESSOR_SAMx70;
-        m_isb_props.is_evb = false;
-        m_sn = 0;
-
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) get_device_info bad read.");
+    if (!portIsValid(device->port))
         return IS_OP_ERROR;
+
+    if (!portIsOpened(device->port))
+        portOpen(device->port);
+
+    if (portType(device->port) & PORT_TYPE__COMM) {
+        COMM_PORT(device->port)->flags |= COMM_PORT_FLAG__EXPLICIT_READ;
     }
 
+    sync();
+    portFlush(device->port);
+    portRead(device->port, nullptr, 0); // Clear any old data
+
+    uint8_t buf[14] = {0};
+    int count = 0;
+
+    constexpr int READ_DELAY_MS = 500;
+    constexpr int MAX_RETRIES = 8;
+
+    for (int retry = 0; retry < MAX_RETRIES; ++retry) {
+        portFlush(device->port);
+        portRead(device->port, buf, sizeof(buf)); // Flush buffer again
+        portWrite(device->port, (uint8_t*)":020000041000EA", 15);
+        SLEEP_MS(10);
+
+        count = portReadTimeout(device->port, buf, sizeof(buf), READ_DELAY_MS);
+
+        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
+            break;
+
+        if (retry == MAX_RETRIES - 1) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) fetch_device_info_and_signature response missing.");
+            return IS_OP_ERROR;
+        }
+    }
+
+    // Parse buffer
     m_isb_major = buf[2];
     m_isb_minor = (char)buf[3];
     m_isb_props.rom_available = buf[4];
+    m_isb_props.is_evb = false;
+    m_sn = 0;
 
-    if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-    {
-        m_isb_props.processor = (eProcessorType)buf[5];
+    bool has_valid_terminator = (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n');
+    uint8_t processor = 0xFF;
+
+    if (has_valid_terminator) {
+        processor = buf[5];
         m_isb_props.is_evb = buf[6];
         memcpy(&m_sn, &buf[7], sizeof(uint32_t));
     }
-    else
-    {
-        m_sn = 0;
-    }
 
-    if (m_isb_major == 1)
-    {   // version 1
+    m_isb_props.processor = static_cast<eProcessorType>(processor);
+
+    // Determine app offset based on version
+    if (m_isb_major == 1) {
         m_isb_props.app_offset = 8192;
-    }
-    else if (m_isb_major >= 2 && m_isb_major <= 5)
-    {   // version 2, 3 (which sent v2), 4, 5
+    } else if (m_isb_major >= 2 && m_isb_major <= 5) {
         m_isb_props.app_offset = 16384;
-    }
-    else if (m_isb_major >= 6)
-    {   // version 6
+    } else if (m_isb_major >= 6) {
         m_isb_props.app_offset = 24576;
-    }
-    else
-    {
-        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) get_device_info invalid m_isb_major: %d", m_isb_major);
+    } else {
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR,
+                                       "(ISB) fetch_device_info_and_signature invalid m_isb_major: %d", m_isb_major);
         return IS_OP_ERROR;
     }
 
 #if PLATFORM_IS_WINDOWS
-    // EvalTool and multiple bootloads under Windows 10 have issues with dropped data if verify runs too fast
     m_isb_props.verify_size = 125;
 #else
     m_isb_props.verify_size = MAX_VERIFY_CHUNK_SIZE;
 #endif
 
+    // Determine valid image signatures
+    uint32_t valid_signatures = IS_IMAGE_SIGN_IMX_5p0;
+
+    if (!has_valid_terminator) {
+        char msg[200] = {0};
+        int n = SNPRINTF(msg, sizeof(msg), "(ISB) parse error:\n 0x ");
+        for (int i = 0; i < count; i++) {
+            if (i % 2 == 0) n += SNPRINTF(&msg[n], sizeof(msg) - n, " ");
+            n += SNPRINTF(&msg[n], sizeof(msg) - n, "%02x", buf[i]);
+        }
+        fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, msg);
+        *out_signature = static_cast<eImageSignature>(valid_signatures);
+        return IS_OP_OK;
+    }
+
+    if (m_isb_major >= 6) {
+        if (processor == IS_PROCESSOR_SAMx70) {
+            valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
+            if (m_isb_props.rom_available)
+                valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+        } else if (processor == IS_PROCESSOR_STM32L4) {
+            valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
+            if (m_isb_props.rom_available)
+                valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+        }
+    } else {
+        valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
+        if (m_isb_props.rom_available)
+            valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+    }
+
+    if (valid_signatures == 0) {
+        fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) fetch_device_info_and_signature no valid signature.");
+    }
+
+    *out_signature = static_cast<eImageSignature>(valid_signatures);
     return IS_OP_OK;
 }
 
-
-ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
-{
-    uint8_t buf[14] = { 0 };
-    int count = 0;
-
-    if (portType(device->port) & PORT_TYPE__COMM) {
-        COMM_PORT(device->port)->flags |= COMM_PORT_FLAG__EXPLICIT_READ;
-    }
-    portFlush(device->port);
-    portRead(device->port, buf, sizeof(buf));    // empty Rx buffer
-    sync();
-
-    SLEEP_MS(100);
-
-    for (int retry=0;; retry++)
-    {
-        // Send command
-        portFlush(device->port);
-        portRead(device->port, buf, sizeof(buf));    // empty Rx buffer
-        portWrite(device->port, (uint8_t*)":020000041000EA", 15);
-        SLEEP_MS(10);
-
-        // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-#define READ_DELAY_MS   500
-        count = portReadTimeout(device->port, buf, 14, READ_DELAY_MS);
-
-        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
-        {
-            break;
-        }
-
-        if (retry*READ_DELAY_MS > 4000)
-        {   // No response
-            // FIXME: m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", m_port->port);
-            fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) check_is_compatible response missing.");
-            return IS_IMAGE_SIGN_NONE;
-        }
-    }
-
-    uint32_t valid_signatures = IS_IMAGE_SIGN_IMX_5p0;  // Assume IMX-5
-
-    m_isb_major = buf[2];
-    m_isb_minor = (char)buf[3];
-    bool rom_available = buf[4];
-    uint8_t processor = 0xFF;
-    m_isb_props.is_evb = false;
-    m_sn = 0;
-
-    if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-    {   // Valid packet found
-        processor = (eProcessorType)buf[5];
-        m_isb_props.is_evb = buf[6];
-        memcpy(&m_sn, &buf[7], sizeof(uint32_t));
-    }
-    else
-    {   // Error parsing
-        char msg[200] = { 0 };
-        int n = SNPRINTF(msg, sizeof(msg), "(ISB) check_is_compatible parse error:\n 0x ");
-        for (int i=0; i<count; i++)
-        {
-            if (i%2 == 0)
-            {   // Add space every other
-                n += SNPRINTF(&msg[n], sizeof(msg)-n, " ");
-            }
-            n += SNPRINTF(&msg[n], sizeof(msg)-n, "%02x", buf[i]);
-        }
-        // FIXME: m_info_callback(NULL, IS_LOG_LEVEL_ERROR, msg);
-        fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, msg);
-        return (eImageSignature)valid_signatures;
-    }
-
-    if (m_isb_major >= 6)
-    {   // v6 and up has EVB detection built-in
-        if (processor == IS_PROCESSOR_SAMx70)
-        {
-            valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
-            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
-        }
-        else if (processor == IS_PROCESSOR_STM32L4)
-        {
-            valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
-            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
-        }
-    }
-    else
-    {
-        valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
-        if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
-    }
-
-    if (valid_signatures == 0)
-    {
-        // FIXME: m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", m_port->port);
-        fwUpdate_sendProgress(IS_LOG_LEVEL_INFO,"(ISB) check_is_compatible no valid signature.");
-    }
-
-    return (eImageSignature)valid_signatures;
-}
 
 is_operation_result ISBFirmwareUpdater::sync()
 {
@@ -558,6 +520,14 @@ bool ISBFirmwareUpdater::rebootToRomDfu()
  * the serial port, forcing a drop of the serial connection. If this device is connected
  * via USB, the USB port may get re-enumerated by the oS and assigned a new port.
  * @return true on success, otherwise false
+ *
+ * Note that this function may regularly return false, despite executing correctly, since
+ * particularly in the USB-CDC case, the device may become unreachable before it can get
+ * a confirmation that the device reset into Bootloader, before the port was lost.
+ *
+ * TODO: It may make some sense for this function to perform the discovery check to
+ *   relocate the device, and to confirm that its in ISB mode, before returning.
+ *   Currently, this is handled by the fwUpdate_step() function as part of INITIALIZING
  */
 bool ISBFirmwareUpdater::rebootToISB()
 {
@@ -607,7 +577,9 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     portFlush(device->port);
     SLEEP_MS(20);
 
-    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // invalidated, because we don't know until we rediscover the device
+    // invalidate, because we don't know until we rediscover the device
+    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+    device->devInfo = {};
     if (!keepPortOpen) {
         device->disconnect();
     }
@@ -787,13 +759,18 @@ is_operation_result ISBFirmwareUpdater::select_page(int page)
     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "Selecting flash page %d.", page);
     SNPRINTF((char*)changePage, 24, ":040000060301%04XCC", page);
     checksum(0, changePage, 1, 17, 17, 1);
-    if (portWriteAndWaitForTimeout(device->port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
-    {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "Failed to select page");
-        return IS_OP_ERROR;
+
+    // this is an operation we can retry if needed...
+    for (int retry = 3; retry > 0; retry--) {
+        if (portWriteAndWaitForTimeout(device->port, changePage, 19, (unsigned char *) ".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) != 0) {
+            return IS_OP_OK;
+        }
+        portFlush(device->port);
+        SLEEP_MS(15);
     }
 
-    return IS_OP_OK;
+    fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "Failed to select page");
+    return IS_OP_ERROR;
 }
 
 is_operation_result ISBFirmwareUpdater::begin_program_for_current_page(int startOffset, int endOffset)
@@ -1003,7 +980,7 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
             verifyCheckSum = 5381;
             writeState = WRITE;
             select_page(currentPage);
-            begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1);
+            begin_program_for_current_page(currentOffset, FLASH_PAGE_SIZE - 1);
             break;
         case WRITE:
         {
@@ -1073,7 +1050,6 @@ is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byt
         outputPtr = output;
     }
 
-
     if ((lineLength = is_isb_read_line(byteStream, line)) == 0)
         return IS_OP_CLOSED;
 
@@ -1091,11 +1067,19 @@ is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byt
         // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
         // that the bytes that were skipped get set to something
         if (subOffset > lastSubOffset) {
+
             // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
             pad = (subOffset - lastSubOffset);
             if (outputPtr + pad >= outputPtrEnd) {
-                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
-                return IS_OP_ERROR;
+                // FIXME: There is some race-condition here that occasionally allows lastSubOffset = 0 when the current page is 0, when it should be lastSubOffset = m_isb_props.app_offset
+                //  this results in pad being > the buffersize - for now we'll check for that condition and correct it, if necessary
+                if ((currentPage != 0) || (lastSubOffset != 0)) {
+                    fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
+                    return IS_OP_ERROR;
+                }
+
+                lastSubOffset = m_isb_props.app_offset;
+                pad = (subOffset - lastSubOffset);
             }
 
             while (pad-- != 0) {

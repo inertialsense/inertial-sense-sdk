@@ -220,7 +220,7 @@ namespace utils {
     bool devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2);
     bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags = DV_BIT_FIRMWARE_VER | DV_BIT_BUILD_COMMIT | DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME);
     bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
-    bool compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
+    int64_t compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
 
     // int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
     // bool devInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo);

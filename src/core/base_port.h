@@ -219,11 +219,11 @@ static inline uint16_t portError(port_handle_t port) {
 /**
  * Returns the name, if any, associated with this port
  * @param port
- * @return
+ * @return a pointer to a string representing the name of the port, or a nullptr if not supported
  */
 static inline const char *portName(port_handle_t port) {
-    // if (!portIsValid(port)) return (const char *)0;
-    return (port && BASE_PORT(port)->portName) ? BASE_PORT(port)->portName(port) : (const char *)0;
+    if (!portIsValid(port)) return "";
+    return (port && BASE_PORT(port)->portName) ? BASE_PORT(port)->portName(port) : "";
 }
 
 /**
