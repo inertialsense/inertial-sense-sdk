@@ -421,8 +421,9 @@ public:
     bool GpxFlashConfigUploadFailure();
 
     /**
-     * Another fancy function that blocks until a flash sync has actually occurred.
-     * @return true if successful or otherwise false if it couldn't (timeout? validation? bad connection?  -- who knows?)
+     * @returns true if the local flashConfig upload was either not received or rejected, and the local flashCfg is NOT synchronized with the device.
+     * This is a blocking call which will wait for the device to confirm that the new flash config was applied.
+     * @param timeout a timeout value for how long to wait for the new flash to sync/download before failing
      */
     bool WaitForImxFlashCfgSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
     bool WaitForGpxFlashCfgSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
@@ -438,7 +439,7 @@ public:
      * @return true if the new config was uploaded, synced, downloaded and matched with the original flashCfg, otherwise false
      */
     bool SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
-    bool SetGpxFlashCfgAndConfirm(gpx_flash_cfg_t& flashCfg, uint32_t timeout);
+    bool SetGpxFlashCfgAndConfirm(gpx_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
  
     /**
      * @brief SaveImxFlashConfigToFile
@@ -559,7 +560,7 @@ private:
     bool handshakeISbl();
 
     void SyncFlashConfig();
-    void DeviceSyncFlashCfg(unsigned int timeMs, uint16_t did, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
+    void DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
     bool UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
     bool ValidFlashCfgCksum(uint32_t checksum) { return (checksum != 0xFFFFFFFF); }

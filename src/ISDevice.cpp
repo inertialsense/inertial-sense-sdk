@@ -320,6 +320,12 @@ int ISDevice::validateAsync(uint32_t timeout) {
         // we got out Device Info, so reset our timer (stop trying) and return true
         validationStartMs = 0;
         previousQueryType = QUERYTYPE_NMEA;
+
+        // once we have device info, turn off these other messages
+        GetData(DID_DEV_INFO);
+        GetData(DID_SYS_PARAMS);
+        GetData(DID_FLASH_CONFIG);
+
         return 1;
     }
 
@@ -608,29 +614,26 @@ void ISDevice::SyncFlashConfig()
     }
     syncCheckTimeMs = timeMs;
 
-    if (devInfo.hardwareType == IS_HARDWARE_TYPE_IMX ||
-        sysParams.timeOfWeekMs || 
-        imxFlashCfg.checksum)
+    if (devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)
     {   // Sync IMX flash config if a IMX present
-        DeviceSyncFlashCfg(timeMs, DID_FLASH_CONFIG,  imxFlashCfgUploadTimeMs, imxFlashCfg.checksum, sysParams.flashCfgChecksum, imxFlashCfgUploadChecksum);
+        DeviceSyncFlashCfg(timeMs, DID_FLASH_CONFIG,  DID_SYS_PARAMS, imxFlashCfgUploadTimeMs, imxFlashCfg.checksum, sysParams.flashCfgChecksum, imxFlashCfgUploadChecksum);
     }
 
     if (devInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
-        gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
-        gpxStatus.timeOfWeekMs || 
-        gpxFlashCfg.checksum)
+        gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
     {   // Sync GPX flash config if a GPX present
-        DeviceSyncFlashCfg(timeMs, DID_GPX_FLASH_CFG, gpxFlashCfgUploadTimeMs, gpxFlashCfg.checksum, gpxStatus.flashCfgChecksum, gpxFlashCfgUploadChecksum);
+        DeviceSyncFlashCfg(timeMs, DID_GPX_FLASH_CFG, DID_GPX_STATUS, gpxFlashCfgUploadTimeMs, gpxFlashCfg.checksum, gpxStatus.flashCfgChecksum, gpxFlashCfgUploadChecksum);
     }
 }
 
-void ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
+void ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
 {
     if (uploadTimeMs)
     {	// Upload in progress
         if (timeMs - uploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
         {	// Wait for upload to process.  Pause sync.
             syncChecksum = 0xFFFFFFFF;      // Indicate out of sync
+            return;
         }
     }
 
@@ -659,6 +662,11 @@ void ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uns
             GetData(flashCfgDid, 0, 0, 0);
         }
     } 
+    else
+    {	// Out of sync.  Request sysParams or gpxStatus.
+        DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
+        GetData(syncDid, 0, 0, 0);
+    }
 }
 
 void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
@@ -866,10 +874,11 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
     if (!port)
         return false;   // No device, no flash-sync
 
-    // If there are no upload pending, then just go ahead and check...
-    unsigned int now = current_timeMs();
-    unsigned int startMs = now;
+    if (forceSync)
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;    // Invalidate to force re-sync
 
+    // If there are no upload pending, then just go ahead and check...
+    unsigned int startMs = current_timeMs();
     while(!ImxFlashConfigSynced())
     {   // Request and wait for IMX flash config
         step();
@@ -899,6 +908,15 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
 bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    if (!port)
+        return false;   // No device, no flash-sync
+
+    if (forceSync)
+        gpxStatus.flashCfgChecksum = 0xFFFFFFFF;    // Invalidate to force re-sync
+
+    // If there are no upload pending, then just go ahead and check...
     unsigned int startMs = current_timeMs();
     while(!GpxFlashConfigSynced())
     {   // Request and wait for GPX flash config
