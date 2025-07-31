@@ -46,10 +46,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define EXAMPLE_SPACE_2         "         "
 #endif
 
+enum eExitCodes
+{
+    EXIT_CODE_SUCCESS 	                            =  0,
+    EXIT_CODE_INVALID_COMMAND_LINE                  = -1,
+    EXIT_CODE_PARSE_COMMAND_LINE_FAILED             = -2,
+    EXIT_CODE_NO_DEVICES_FOUND                      = -3,
+    EXIT_CODE_DEVICE_DISCONNECTED                   = -4,
+    EXIT_CODE_FIRMWARE_UPDATE_FAILED                = -5,
+    EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS        = -6,
+};
+
 typedef struct
 {
-    eDataIDs        did;
-    int             periodMultiple;
+    eDataIDs    did;
+    int         periodMultiple;
     struct {
         uint64_t    lastRxTime;
         double      rxCount;
@@ -83,12 +94,12 @@ typedef struct
 
 typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
-    std::string comPort;                    // -c com_port
-    std::string updateAppFirmwareFilename;  // -uf file_name
-    std::string updateBootloaderFilename;   // -ub file_name
+    std::string comPort; 					// -c com_port
+    std::string updateAppFirmwareFilename; 	// -uf file_name
+    std::string updateBootloaderFilename; 	// -ub file_name
     std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
-    bool forceBootloaderUpdate;             // -fb
-    bool bootloaderVerify;                  // -bv
+    bool forceBootloaderUpdate;				// -fb
+    bool bootloaderVerify; 					// -bv
     bool replayDataLog;
     bool softwareReset;
     bool magRecal;
@@ -118,10 +129,17 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     std::string roverConnection;            // -rover=type:IP/URL:port:mountpoint:user:password   (server)
     std::string baseConnection;             // -base=IP:port    (client)
 
-    std::string flashCfg;
+    bool imxflashCfgSet;
+    bool gpxflashCfgSet;
+    std::string imxFlashCfg;
+    std::string gpxFlashCfg;
     uint32_t timeoutFlushLoggerSeconds;
-    uint32_t outputOnceDid;
+    std::vector<uint32_t> outputOnceDid;	
+    std::vector<uint32_t> setAckDid;
 
+    YAML::Node getNode;
+    YAML::Node setNode;
+    
     uint32_t sysCommand;
     int32_t platformType;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
@@ -154,7 +172,8 @@ void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
 void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
 void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
-bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
+bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
+bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
 
 /**
  * Override the ISDevice class so we can implement our own data handlers
@@ -165,6 +184,7 @@ class CltoolDevice : public ISDevice {
     ~CltoolDevice() override = default;
 
     int onIsbDataHandler(p_data_t *data, port_handle_t port) override;
+    int onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port) override;
     int onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) override;
 };
 

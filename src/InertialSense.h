@@ -61,6 +61,7 @@ typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& 
 typedef ISDevice*(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)> pfnHandleAckData;
 
 /**
 * Inertial Sense C++ interface
@@ -79,6 +80,7 @@ public:
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
+        pfnHandleAckData binaryAckCallback;    // acknowledgment command and set data callback
 #define SIZE_BINARY_CALLBACK    256
         pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK] = {};
         pfnStepLogFunction stepLogFunction = nullptr;
@@ -114,6 +116,7 @@ public:
     */
     explicit InertialSense(
             pfnHandleBinaryData     callbackIsb,
+            pfnHandleAckData        callbackHandlerAck = NULL,
             pfnComManagerRmcHandler callbackRmc = NULL,
             pfnIsCommGenMsgHandler  callbackNmea = NULL,
             pfnIsCommGenMsgHandler  callbackUblox = NULL,
@@ -264,7 +267,7 @@ public:
      * @param port
      * @return ISDevice* which is connected to port, otherwise NULL
      */
-    // ISDevice* DeviceByPort(port_handle_t port = 0);
+    ISDevice* DeviceByPort(port_handle_t port = 0);
 
     /**
      * Locates the device associated with the specified port name
@@ -278,7 +281,12 @@ public:
      */
     std::vector<std::string> checkForNewPorts(std::vector<std::string>& oldPorts);
 
-
+    /**
+     * @brief Process received data from a port
+     * 
+     * @param port 
+     * @param data 
+     */
     void ProcessRxData(port_handle_t port, p_data_t* data);
     void ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize);
 
@@ -523,7 +531,6 @@ public:
     */
     void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port = 0);
 
-#if 0
     // TODO - These have (generally) all been moved into ISDevice and are no longer needed here.
     //  these DO NOT operate a all devices, but on a single device, which is redudant at best
     //  and ambiguous at worst.
@@ -535,49 +542,8 @@ public:
     * @param port the port to get flash config for
     * @return bool whether the flash config is valid, currently synchronized
     */
-    bool FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
-
-    /**
-    * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
-    * @param port the port to get flash config for
-    * @return true if the flash config is valid, currently synchronized, otherwise false.
-    */
-    bool FlashConfigSynced(port_handle_t port = 0)
-    {
-        ISDevice* device = NULL;
-        if (!port) {
-            device = deviceManager.front();
-        } else {
-            device = getDevice(port);
-        }
-
-        if (device)
-            return  (device->flashCfg.checksum == device->sysParams.flashCfgChecksum) &&
-                    (device->flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(device->port);
-
-        return false;
-    }
-
-    /**
-     * @brief Failed to upload flash configuration for any reason.
-     *
-     * @param port the port to get flash config for
-     * @return true Flash config upload was either not received or rejected.
-     */
-    bool FlashConfigUploadFailure(port_handle_t port = 0)
-    {
-        ISDevice* device = NULL;
-        if (!port) {
-            device = deviceManager.front();
-        } else {
-            device = getDevice(port);
-        }
-
-        if (!device)
-            return true;
-
-        return device->flashCfgUpload.checksum && (device->flashCfgUpload.checksum != device->sysParams.flashCfgChecksum);
-    }
+    bool ImxFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
+    bool GpxFlashConfig(gpx_flash_cfg_t &flashCfg, port_handle_t port = 0);
 
     /**
     * Set the flash config and update flash config on the IMX flash memory
@@ -585,7 +551,25 @@ public:
     * @param port the port to set flash config for
     * @return true if success
     */
-    bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
+    bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
+    bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, port_handle_t port = 0);
+
+    /**
+    * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
+    * @param port the port to get flash config for
+    * @return true if the flash config is valid, currently synchronized, otherwise false.
+    */
+    bool ImxFlashConfigSynced(port_handle_t port = 0);
+    bool GpxFlashConfigSynced(port_handle_t port = 0);
+
+    /**
+     * @brief Failed to upload flash configuration for any reason.
+     *
+     * @param port the port to get flash config for
+     * @return true Flash config upload was either not received or rejected.
+     */
+    bool ImxFlashConfigUploadFailure(port_handle_t port = 0);
+    bool GpxFlashConfigUploadFailure(port_handle_t port = 0);
 
     /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized.
@@ -593,8 +577,26 @@ public:
      * @param port the port
      * @return false When failed to synchronize
      */
-    bool WaitForFlashSynced(port_handle_t port = 0);
-#endif
+    bool WaitForImxFlashCfgSynced(port_handle_t port = 0);
+    bool WaitForGpxFlashCfgSynced(port_handle_t port = 0);
+
+    /**
+     * @brief SaveImxFlashConfigToFile
+     * @param path - Path to YAML flash config file
+     * @param pHandle - Handle of current device
+     * @return true for failure to upload file, false for success.
+     */
+    bool SaveImxFlashConfigToFile(std::string path, port_handle_t port = 0);
+    bool SaveGpxFlashConfigToFile(std::string path, port_handle_t port = 0);
+
+    /**
+     * @brief LoadFlashConfigFromFile
+     * @param path - Path to YAML flash config file
+     * @param pHandle - Handle of current device
+     * @return true for failure to upload file, false for success.
+     */
+    bool LoadImxFlashConfigFromFile(std::string path, port_handle_t port = 0);
+    bool LoadGpxFlashConfigFromFile(std::string path, port_handle_t port = 0);
 
     std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
     std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
@@ -618,6 +620,14 @@ public:
         return oldHandler;
     }
 
+    template<typename Func>
+    bool WithDevice(port_handle_t port, Func&& func)
+    {
+        ISDevice* device = (port == NULL) ? deviceManager.front() : DeviceByPort(port);
+        return (device ? func(device) : false);
+    }
+
+
     // bool registerDevice(ISDevice* device);
     // ISDevice* registerNewDevice(const ISDevice& orig);
     // ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
@@ -633,7 +643,6 @@ protected:
     void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
 
     static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
-
 
 private:
     uint32_t m_timeMs;
@@ -669,7 +678,6 @@ private:
     bool m_disableBroadcastsOnClose;
 
     mul_msg_stats_t m_serverMessageStats = {};
-    unsigned int m_syncCheckTimeMs = 0;
 
     // these are used for RTCM3 corrections for RTK/NTRIP streams.
     is_comm_instance_t m_gpComm;
@@ -690,8 +698,6 @@ private:
     void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
-    void SyncFlashConfig(unsigned int timeMs);
-    void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
 
     void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port);
     void deviceManagerHandler(uint8_t event, ISDevice*);
