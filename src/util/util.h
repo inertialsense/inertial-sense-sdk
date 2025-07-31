@@ -217,6 +217,8 @@ namespace utils {
     std::string devInfoToString(const dev_info_t& devInfo, uint16_t flags = -1);
     uint16_t devInfoFromString(const std::string& str, dev_info_t& devInfo);
     uint64_t intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis = false);
+    std::string firmwareFileFromDevInfo(dev_info_t devInfo);
+
     bool devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2);
     bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags = DV_BIT_FIRMWARE_VER | DV_BIT_BUILD_COMMIT | DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME);
     bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);

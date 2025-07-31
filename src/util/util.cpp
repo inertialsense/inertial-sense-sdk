@@ -287,6 +287,27 @@ std::string utils::getBuildAsString(const dev_info_t &devInfo, uint16_t flags, c
 }
 
 /**
+ * This is a utility function that attempts to generate a potential/expected firmware filename
+ * based on the devInfo provided.  Ie, if given a devInfo that describes and IMX-5.0 running
+ * firmware version 2.5.1, which was built on 2025-05-31 at 20:10:07, this function should
+ * return something like "IS_IMX-5_v2.5.1+2025-05-31-201007.hex" which would typically be
+ * the firmware file that was used to load that firmware.
+ * @param devInfo
+ * @return
+ */
+std::string utils::firmwareFileFromDevInfo(dev_info_t devInfo) {
+    devInfo.buildMillisecond = 0;   // this is never in a Firmware file, so zero it out.
+    std::string filename = "IS_" + getHardwareAsString(devInfo) + "_" + getFirmwareAsString(devInfo, "v") + "+" + getBuildAsString(devInfo, DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME | DV_BIT_COMPACT_TIME, "-");
+
+    if (DEV_INFO_MATCHES_HDW_ID(devInfo, IS_HARDWARE_IMX_5_0))
+        return filename + ".hex";
+    else if (DEV_INFO_MATCHES_HDW_ID(devInfo, IS_HARDWARE_GPX_1_0))
+        return filename + ".encrypted.bin";
+    else
+        return filename;
+}
+
+/**
  * A convenience function to format and return a string representation
  * of (in a very specific format, that matching devInfoFromString())
  * the contents of dev_info_t devInfo. Note that this does not format/
@@ -563,23 +584,25 @@ bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2
 int64_t utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b) {
     int64_t result = 0;
     if (a.firmwareVer[0] != b.firmwareVer[0])
-        result |= ((a.firmwareVer[0] - b.firmwareVer[0]) & 0xFF) << 56;
+        result |= ((int64_t)(a.firmwareVer[0] - b.firmwareVer[0]) & 0xFF) << 56;
     if (a.firmwareVer[1] != b.firmwareVer[1])
-        result |= ((a.firmwareVer[1] - b.firmwareVer[1]) & 0xFF) << 48;
+        result |= ((int64_t)(a.firmwareVer[1] - b.firmwareVer[1]) & 0xFF) << 48;
     if (a.firmwareVer[2] != b.firmwareVer[2])
-        result |= ((a.firmwareVer[2] - b.firmwareVer[2]) & 0xFF) << 32;
+        result |= ((int64_t)(a.firmwareVer[2] - b.firmwareVer[2]) & 0xFF) << 32;
     if (a.firmwareVer[3] != b.firmwareVer[3])
-        result |= ((a.firmwareVer[3] > b.firmwareVer[3]) & 0xFF) << 24;
+        result |= ((int64_t)(a.firmwareVer[3] > b.firmwareVer[3]) & 0xFF) << 24;
 
     uint64_t aDateTime = intDateTimeFromDevInfo(a);
     uint64_t bDateTime = intDateTimeFromDevInfo(b);
     if (aDateTime != bDateTime)
-        result |= ((aDateTime - bDateTime) & 0xFF) << 16;
+        result |= ((int64_t)(aDateTime - bDateTime) & 0xFF) << 16;
 
     if (a.buildNumber != b.buildNumber)
-        result |= ((a.buildNumber - b.buildNumber) & 0xFF) << 8;
+        result |= ((int64_t)(a.buildNumber - b.buildNumber) & 0xFF) << 8;
 
-    return result |= ((a.buildType - b.buildType) & 0xFF);
+    result |= ((int64_t)(a.buildType - b.buildType) & 0xFF);
+
+    return result;
 }
 
 /**

@@ -703,9 +703,8 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
             }
         } else if (activeCommand == "reset") {
             bool hard = (args.size() == 1 && args[0] == "hard");
-           if (!hard) {
-                if (args.size() == 2 && args[1] == "tobl")
-                    fwUpdate_requestReset(target, fwUpdate::RESET_INTO_BOOTLOADER);
+            if (args.size() == 2 && args[1] == "tobl") {
+                fwUpdate_requestReset(target, fwUpdate::RESET_INTO_BOOTLOADER);
             } else {
                 fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
             }

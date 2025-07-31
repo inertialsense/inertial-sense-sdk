@@ -561,6 +561,7 @@ typedef struct PACKED
 #define ENCODE_DEV_INFO_TO_UNIQUE_ID(devinfo)  (((uint64_t)(ENCODE_DEV_INFO_TO_HDW_ID(devinfo)) << 48) | (uint64_t)devinfo.serialNumber)
 #define DECODE_UNIQUE_ID_TO_HDW_ID(devId)      ((uint16_t)((devId >> 48) & 0xFFFF))
 #define DECODE_UNIQUE_ID_TO_SERIALNO(devId)    ((uint32_t)devId)
+#define DEV_INFO_MATCHES_HDW_ID(di, hdwId)     ( (ENCODE_DEV_INFO_TO_HDW_ID(di) & hdwId) == ENCODE_DEV_INFO_TO_HDW_ID(di) )
 
 enum eIsHardwareType
 {

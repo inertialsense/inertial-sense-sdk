@@ -98,7 +98,7 @@ private:
     ImxDeviceFactory() = default;
     // ~ImxDeviceFactory() override = default;
 
-    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) override {
+    ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
             return new ISDevice(devInfo, port);
 
@@ -117,7 +117,7 @@ private:
     GpxDeviceFactory() = default;
     // ~GpxDeviceFactory() override = default;
 
-    ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) override {
+    ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_GPX_1_0)
             return new ISDevice(devInfo, port);
 
