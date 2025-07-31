@@ -52,9 +52,6 @@ extern "C"
 #include "serialPortPlatform.h"
 }
 
-#define SYNC_FLASH_CFG_CHECK_PERIOD_MS      200
-#define SYNC_FLASH_CFG_TIMEOUT_MS           3000
-
 class InertialSense;
 
 typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
