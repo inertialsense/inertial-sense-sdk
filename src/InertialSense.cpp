@@ -1328,7 +1328,33 @@ void InertialSense::CloseSerialPorts(bool drainBeforeClose)
     }
 }
 
-#if 0
+bool InertialSense::SaveImxFlashConfigToFile(std::string path, int pHandle)
+{
+    return SaveFlashConfigToFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
+        [this](nvm_flash_cfg_t& cfg, int handle) { return ImxFlashConfig(cfg, handle); },
+        pHandle);
+}
+
+bool InertialSense::SaveGpxFlashConfigToFile(std::string path, int pHandle)
+{
+    return SaveFlashConfigToFile<gpx_flash_cfg_t>(path, DID_GPX_FLASH_CFG,
+        [this](gpx_flash_cfg_t& cfg, int handle) { return GpxFlashConfig(cfg, handle); },
+        pHandle);
+}
+
+bool InertialSense::LoadImxFlashConfigFromFile(std::string path, int pHandle)
+{
+    return LoadFlashConfigFromFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
+        [this](nvm_flash_cfg_t& cfg, int handle) { return SetImxFlashConfig(cfg, handle); },
+        pHandle);
+}
+
+bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, int pHandle)
+{
+    return LoadFlashConfigFromFile<gpx_flash_cfg_t>(path, DID_GPX_FLASH_CFG,
+        [this](gpx_flash_cfg_t& cfg, int handle) { return SetGpxFlashConfig(cfg, handle); },
+        pHandle);
+}
 
 /**
 * Get the device info

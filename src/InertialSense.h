@@ -632,6 +632,9 @@ public:
     // bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
     // bool releaseDevice(ISDevice* device, bool closePort = true);
 
+    static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
+    static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
+
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
     void OnClientConnecting(cISTcpServer* server) OVERRIDE;
