@@ -854,24 +854,16 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
 
     // For some reason, the checksum doesn't always make it through to the IMX-5. Re-send until we get a response or timeout.
     // Update 8/25/22: Increasing the portReadTimeout from 10 to 100 seems to have fixed this. Still needs to be proven.
-    for (int i = 0; i < 10; i++)
-    {
-        if (portWrite(device->port, checkSumHex, 2) != 2)
-        {
+    for (int i = 0; i < 10; i++) {
+        if (portWrite(device->port, checkSumHex, 2) != 2) {
             fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
             return IS_OP_ERROR;
         }
 
-        SLEEP_MS(5);
-        unsigned char buf[5] = { 0 };
-        int count = portReadTimeout(device->port, buf, 3, 100);
-        if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
-        {
+        if (portWaitForTimeout(device->port, (const uint8_t *)".\r\n", 3, 100))
             break;
-        }
 
-        if (i == 9)
-        {
+        if (i == 9) {
             fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
             return IS_OP_ERROR;
         }
@@ -925,6 +917,12 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
 is_operation_result ISBFirmwareUpdater::fill_current_page()
 {
+    if (currentPage >= 7)
+    {
+        int i = 0;
+        i++;
+    }
+
     if (currentOffset < FLASH_PAGE_SIZE)
     {
         unsigned char hexData[256];
@@ -933,6 +931,11 @@ is_operation_result ISBFirmwareUpdater::fill_current_page()
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "Filling remainder of page %d with 0xFF (%d bytes).", currentPage, FLASH_PAGE_SIZE - currentOffset);
         while (currentOffset < FLASH_PAGE_SIZE)
         {
+            if (currentPage == 7 && currentOffset >= 36480)
+            {   // The last (7th) page of flash memory on the IMX-5 (STM32L4) is restricted to 36480 bytes.  We should NOT fill beyond this point on the 7th page.
+                break;
+            }
+
             int byteCount = (FLASH_PAGE_SIZE - currentOffset) * 2;
             if (byteCount > 256)
             {
@@ -943,8 +946,7 @@ is_operation_result ISBFirmwareUpdater::fill_current_page()
             if (upload_hex_page(hexData, byteCount / 2) != IS_OP_OK)
             {
                 fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Failed to fill page with bytes");
-                return IS_OP_OK; // FIXME - this should actually be an error  return IS_OP_ERROR;
-
+                return IS_OP_ERROR;
             }
         }
     }
