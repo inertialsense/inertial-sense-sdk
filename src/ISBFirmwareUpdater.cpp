@@ -516,7 +516,11 @@ bool ISBFirmwareUpdater::rebootToISB()
 {
     fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to Bootloader (ISbl)...");
 
-    if (device->devInfo.hdwRunState == HDW_STATE_APP) {
+    if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
+        // we're already in the bootloader, so just issue a reset to the bootloader (we should stay in bootloader)
+        if (device->SendRaw(":020000040500F5", 15) == 15)
+            return true;
+    } else if (device->devInfo.hdwRunState == HDW_STATE_APP) {
         // In case we are in program mode, try and send the commands to go into bootloader mode
         for (size_t loop = 0; loop < 10; loop++) {
             if (device->SendNmea("STPB") || device->SendNmea("BLEN"))
@@ -525,19 +529,17 @@ bool ISBFirmwareUpdater::rebootToISB()
             if (portReadCharTimeout(device->port, &c, 13) == 1) {
                 if (c == '$') {
                     // done, we got into bootloader mode
+                    device->devInfo.hdwRunState = HDW_STATE_BOOTLOADER;    // this confirms we're in bootloader, so save ourselves the discovery step
                     return true;
                 }
             }
             else portFlush(device->port);
         }
         device->disconnect();   // I think the intent here, is that we rebooted the device, and possibly got a new port - so disconnect the old one.
-        device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
-    } else if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-        if (device->SendRaw(":020000040500F5", 15) == 15)
-            return true;
     }
 
     // we never received a valid response.  We are in an unknown state.
+    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
     return false;
 }
 
@@ -558,11 +560,11 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     // send the "reboot to program mode" command and the device should start in program mode
     portWrite(device->port, (unsigned char*)":020000040300F7", 15);
     portFlush(device->port);
-    SLEEP_MS(20);
+    SLEEP_MS(2000); // this should allow enough time for the device to reboot
 
     // invalidate, because we don't know until we rediscover the device
-    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
-    device->devInfo = {};
+    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
+    // device->devInfo = {};
     if (!keepPortOpen) {
         device->disconnect();
     }
@@ -806,8 +808,8 @@ int ISBFirmwareUpdater::is_isb_read_line(ByteBufferStream& byteStream, char line
  * Formats and sends a single record (upto 255 bytes, or 510 characters) of HEX data to the
  * receiving device on the current page, and waits for confirmation back that the data was
  * successfully received.
- * @param hexData
- * @param byteCount
+ * @param hexData the hex data (a string of hexadecimal digits)
+ * @param byteCount the number of binary bytes the hexData string represents (should be strlen(hexData) / 2)
  * @return is_operation_result IS_OP_OK if no error, otherwise IS_OP_ERROR
  */
 is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, uint8_t byteCount)
@@ -823,7 +825,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     size_t count = strlen((char*)programLine);
     if (portWrite(device->port, programLine, count) != (int)count)
     {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to write start page");
+        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write start page");
         return IS_OP_ERROR;
     }
 
@@ -834,7 +836,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     int charsForThisPage = byteCount * 2;
     if (portWrite(device->port, hexData, charsForThisPage) != charsForThisPage)
     {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to write data to device");
+        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write data to device");
         return IS_OP_ERROR;
     }
 
@@ -856,7 +858,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     {
         if (portWrite(device->port, checkSumHex, 2) != 2)
         {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to write checksum to device");
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
             return IS_OP_ERROR;
         }
 
@@ -870,6 +872,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
 
         if (i == 9)
         {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
             return IS_OP_ERROR;
         }
     }
@@ -887,7 +890,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
     if (charCount > MAX_SEND_COUNT)
     {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Unexpected char count");
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): charCount (%d) exceeded MAX_SEND_COUNT (%d).", charCount, MAX_SEND_COUNT);
         return IS_OP_ERROR;
     }
     else if (charCount == 0)
@@ -903,7 +906,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
         int pageByteCount = FLASH_PAGE_SIZE - currentOffset;
         if ((pageByteCount < 0) || (pageByteCount > 255) || upload_hex_page(hexData, pageByteCount) != IS_OP_OK)
         {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Upload hex page error");
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): pageByteCount (%d) invalid or upload overruns current page.", pageByteCount);
             return IS_OP_ERROR;
         }
 
@@ -913,6 +916,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
     if (charCount != 0 && upload_hex_page(hexData, charCount / 2) != IS_OP_OK)
     {
+        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): Unknown!!");
         return IS_OP_ERROR;
     }
 
@@ -1092,6 +1096,7 @@ is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byt
             // keep buffering
             return IS_OP_OK;
         }
+
         // upload this chunk
         if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize)) != IS_OP_OK) {
             fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload chunk");
