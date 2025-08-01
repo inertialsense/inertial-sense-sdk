@@ -29,12 +29,23 @@ file(GLOB TESTS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
 list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
 if(WIN32)   # These do not run in Windows
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_conversion.cpp")
+    # yamlcpp needs to know it's a static lib
+    add_definitions(-DYAML_CPP_STATIC_DEFINE)
 endif()
 
 # Define the executable
 add_executable(${PROJECT_NAME} 
     ${TESTS_SOURCES}
     runtime/device_runtime_tests.cpp
+
+    # test_ISLogger.cpp
+    # test_data_utils.cpp
+
+    # test_protocol_nmea.cpp
+    # test_time_conversion.cpp    
+    # test_runtime_tests.cpp
+    # test_data_utils.cpp
+    # test_ISDataMappings.cpp
 )
 
 if(WIN32)   # Windows

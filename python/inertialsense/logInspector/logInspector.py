@@ -161,7 +161,7 @@ class FlashConfigDialog(QDialog):
         super(FlashConfigDialog, self).__init__(parent)
         self.setWindowTitle("Flash Config")
 
-        if np.shape(log.data[0,DID_FLASH_CONFIG])[0] == 0:
+        if np.shape(log.data[0, DID_FLASH_CONFIG])[0] == 0:
             self.label = QLabel('No DID_FLASH_CONFIG data available.')
             self.mainlayout = QVBoxLayout()
             self.mainlayout.addWidget(self.label)
@@ -170,36 +170,36 @@ class FlashConfigDialog(QDialog):
             return
 
         self.table = QTableWidget()
-        nfields = len(log.data[0, DID_FLASH_CONFIG].dtype.names)
-        field_names = []
-        vals = []
+        field_value_map = {}  # {field_name: [val_dev0, val_dev1, ...]}
 
         for d, dev in enumerate(log.data):
-            vals.append([])
-            for f, field in enumerate(dev[DID_FLASH_CONFIG].dtype.names):
-                if isinstance(dev[DID_FLASH_CONFIG][field][0], np.ndarray):
-                    length = len(dev[DID_FLASH_CONFIG][field][0])
-                    if d == 0: nfields +=  length-1 # add extra rows for arrays in flash config
-                    for i in range(length):
-                        if d == 0: field_names.append(field + "[" + str(i) + "]")
-                        vals[d].append(dev[DID_FLASH_CONFIG][field][0][i])
+            for field in dev[DID_FLASH_CONFIG].dtype.names:
+                val = dev[DID_FLASH_CONFIG][field][0]
+                if isinstance(val, np.ndarray):
+                    for i, v in enumerate(val):
+                        key = f"{field}[{i}]"
+                        field_value_map.setdefault(key, [None] * log.numDev)[d] = v
                 else:
-                    if d == 0: field_names.append(field)
-                    vals[d].append(dev[DID_FLASH_CONFIG][field][0])
+                    key = field
+                    field_value_map.setdefault(key, [None] * log.numDev)[d] = val
 
-        self.table.setRowCount(nfields)
+        # Sort the fields alphabetically, ignoring case
+        sorted_fields = sorted(field_value_map.keys(), key=str.lower)
+
+        self.table.setRowCount(len(sorted_fields))
         self.table.setColumnCount(log.numDev)
-
         self.table.setHorizontalHeaderLabels([str(ser) for ser in log.serials])
-        self.table.setVerticalHeaderLabels(field_names)
+        self.table.setVerticalHeaderLabels(sorted_fields)
 
-        hex_fields = ['ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits', 'gnssSatSigConst', 'sensorConfig']
-        for d in range(log.numDev):
-            for f, field in enumerate(field_names):
-                if field in hex_fields:
-                    self.table.setItem(f, d, QTableWidgetItem(hex(vals[d][f])))
-                else:
-                    self.table.setItem(f, d, QTableWidgetItem(str(vals[d][f])))
+        hex_fields = {'ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits', 'gnssSatSigConst', 'sensorConfig'}
+        for row, field in enumerate(sorted_fields):
+            for col in range(log.numDev):
+                val = field_value_map[field][col]
+                if val is not None:
+                    if any(h in field for h in hex_fields):
+                        self.table.setItem(row, col, QTableWidgetItem(hex(val)))
+                    else:
+                        self.table.setItem(row, col, QTableWidgetItem(str(val)))
 
         self.mainlayout = QVBoxLayout()
         self.mainlayout.addWidget(self.table)

@@ -108,6 +108,10 @@ else ()
 			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
 	)
 	add_dependencies(${PROJECT_NAME} gen_files)
+    set_source_files_properties(
+        src/libusb/libusb/core.c
+        PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable"
+    )
 
     # Linux compiler flags
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
