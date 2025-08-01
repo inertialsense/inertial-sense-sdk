@@ -222,7 +222,7 @@ static inline uint16_t portError(port_handle_t port) {
  * @return a pointer to a string representing the name of the port, or a nullptr if not supported
  */
 static inline const char *portName(port_handle_t port) {
-    if (!portIsValid(port)) return "";
+    // we intentionally do NOT check if port is valid here... This maybe a problem, but it causes even more if we do
     return (port && BASE_PORT(port)->portName) ? BASE_PORT(port)->portName(port) : "";
 }
 

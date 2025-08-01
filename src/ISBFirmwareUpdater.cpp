@@ -104,7 +104,6 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, int total_chu
 }
 
 
-
 // this is called internally by processMessage() to do the things to do, it should also be called periodically to send status updated, etc.
 bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
     static int nextStep = 0;
@@ -124,54 +123,35 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // is reporting as running in HDW_STATE_BOOTLOADER, then we can advance to ready. The InertialSense
         // class should handle most of this for us, we just need to tell it to look for new ISDevices.
 
-        SLEEP_MS(500);
+        bool portsChanged = portManager.discoverPorts();
+        if (portsChanged || (portManager.getPortCount() > 0))
+            deviceManager.discoverDevices(IS_HARDWARE_ANY, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);  // We'll match back to our Hardware ID above - but we want to discover all devices
 
-        // Wait upto 15 seconds this device to reboot into bootloader mode.
-        bool foundIt = false;
-        // FIXME: We're basically waiting around for the device to reboot into ISbootloader state.
-        //   We want to keep looking for new devices, querying them, and hoping that one of them matches our original device
-        uint32_t timeout = current_timeMs() + 30000;    // we should have been able to find the rebooted device after 30 seconds (probably in as little at 12-15)
-        while ( (current_timeMs() < timeout) && !foundIt ) {
-            for (auto dev: deviceManager.getDevices()) {
-                if ((dev == device) || (ENCODE_DEV_INFO_TO_UNIQUE_ID(dev->devInfo) == ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo))) {
-                    if (dev->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-                        this->device = dev; // update the device reference to use the new device (though these should actually be the same pointer)
-                        if (fwUpdate_handleInitialize(lastPayload) && (session_status >= fwUpdate::INITIALIZING)) {
-                            foundIt = true;
-                            session_status = fwUpdate::READY;
-                            return true;
-                        }
-
-                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s after rebooting into bootloader; but device failed compatibility check.", device->getIdAsString().c_str());
-                        session_status = fwUpdate::ERR_COMMS;
-                        return true;
-                    } else if (dev->devInfo.hdwRunState == HDW_STATE_UNKNOWN) {
-                        // devices were found, but they aren't in the bootloader... this suggests we ended up in the INITIALIZING state without successfully booting into ISbl.
-                        eImageSignature devSig;
-                        if (fetch_device_info_and_signature(&devSig) == IS_OP_OK) {
-
-                        }
-                    } else {
-                        // why are we still in APP mode?
-                        rebootToISB();
-                    }
+        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+        if (device) {
+            if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
+                session_status = fwUpdate::READY;   // we're ready, so send the response - note that handleInitialize() below can change this status if there is an internal error, and still return 'true'
+                if (!fwUpdate_handleInitialize(lastPayload)) {  //
+                    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s after rebooting into bootloader, but failed to initialize firmware update.", device->getIdAsString().c_str());
+                    session_status = fwUpdate::ERR_COMMS;
                 }
             }
-            SLEEP_MS(500);
-            bool portsChanged = portManager.discoverPorts();
-            SLEEP_MS(100);
-            if (portsChanged || (portManager.getPortCount() > 0))
-                deviceManager.discoverDevices(IS_HARDWARE_ANY, 0, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);  // We'll match back to our Hardware ID above - but we want to discover all devices
+            if (device->devInfo.hdwRunState == HDW_STATE_APP) {
+                // why are we still in APP mode?
+                rebootToISB();
+            }
+        } else {
+            if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
+                nextProgressReport = current_timeMs() + progress_interval;
+                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Waiting for device [%s] to reboot into ISbl mode.", ISDevice::getIdAsString(target_devInfo).c_str()); // note we use target_devInfo since we don't have a good device yet
+            }
         }
 
-        if (!foundIt) {
-            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Unable to locate %s, after rebooting into bootloader.", device->getIdAsString().c_str());
-            session_status = fwUpdate::ERR_COMMS;
-            return true;
-        }
+        // this isn't a failure - we'll just exit, and let the fwUpdater run a loop - since we're still INITIALIZING, it will try again until it finally times out.
+        return false;
     }
 
-    if ((session_status == fwUpdate::READY) || (session_status == fwUpdate::IN_PROGRESS) || (session_status == fwUpdate::FINALIZING)) {
+    if ((session_status >= fwUpdate::READY) && (session_status <= fwUpdate::FINALIZING)) {
         switch (updateState) {
             case UPLOADING: // transfer
                 if (transferProgress >= 1.0f)
@@ -197,11 +177,11 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 }
                 break;
             case REBOOT_TO_APP:
-                rebootToAPP(false);  // we should be able to keep the port open
+                // rebootToAPP(false);  // we should be able to keep the port open
                 updateState = UPDATE_DONE;
                 break;
             case UPDATE_DONE:
-                // at this point, we should have rebooted, and weare waiting for the device to reboot back up, so we can confirm the update succeeded.
+                // at this point, we should have rebooted, and we're waiting for the device to reboot back up, so we can confirm the update succeeded.
                 if (imgStream) { delete imgStream; imgStream = nullptr; }
                 if (imgBuffer) { delete imgBuffer; imgBuffer = nullptr; }
                 session_status = fwUpdate::FINISHED;
@@ -234,18 +214,19 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     return true;
 }
 
+
 // called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
 int ISBFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) {
 /*
     RESET_SOFT = 0,             // typically, a software reset (start the program over, but don't remove power or clear RAM)
     RESET_HARD = 1,             // a hard reset, in which the device is power-cycled; this may not always be possible since generally software on a device can't remove its own power
     RESET_INTO_BOOTLOADER = 2,  // indicates that the device should reset into the bootloader (this may not always be possible)
-    RESET_CONFIG = 4,           // indicates that the device should clear its configuration before performing the reset (Ie, factory restart?)
+    RESET_CONFIG = 4,           // indicates that the device should clear its configuration before performing the reset (Ie, factory reset?)
     RESET_UPSTREAM = 8,         // indicates that this device should reset all of its upstream devices, in addition to itself
 */
 
     if (reset_flags == fwUpdate::RESET_SOFT) {
-        rebootToISB();
+        rebootToAPP();
         return 0;
     }
 
@@ -280,6 +261,9 @@ bool ISBFirmwareUpdater::fwUpdate_queryVersionInfo(fwUpdate::target_t target_id,
 fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdate::payload_t& msg) {
     lastPayload = msg;
     session_image_size = msg.data.req_update.file_size;
+
+    if (device && device->hasDeviceInfo())
+        target_devInfo = device->DeviceInfo();
 
     if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
         eImageSignature devSig;
@@ -362,7 +346,7 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
             break;
 
         if (retry == MAX_RETRIES - 1) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) fetch_device_info_and_signature response missing.");
+            fwUpdate_sendProgress(IS_LOG_LEVEL_WARN, "(ISB) fetch_device_info_and_signature response missing.");
             return IS_OP_ERROR;
         }
     }
@@ -393,8 +377,7 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
     } else if (m_isb_major >= 6) {
         m_isb_props.app_offset = 24576;
     } else {
-        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR,
-                                       "(ISB) fetch_device_info_and_signature invalid m_isb_major: %d", m_isb_major);
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) fetch_device_info_and_signature invalid m_isb_major: %d", m_isb_major);
         return IS_OP_ERROR;
     }
 
@@ -436,7 +419,7 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
     }
 
     if (valid_signatures == 0) {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) fetch_device_info_and_signature no valid signature.");
+        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) fetch_device_info_and_signature no valid signature.");
     }
 
     *out_signature = static_cast<eImageSignature>(valid_signatures);

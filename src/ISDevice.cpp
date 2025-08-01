@@ -282,6 +282,9 @@ bool ISDevice::validate(uint32_t timeout) {
         if (SERIAL_PORT(port)->errorCode == ENOENT)
             return false;
 
+        if (!portIsOpened(port))
+            return false;
+
         switch (nextQueryType) {
             case QUERYTYPE_NMEA:
                 SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
@@ -327,6 +330,8 @@ int ISDevice::validateAsync(uint32_t timeout) {
         // we got out Device Info, so reset our timer (stop trying) and return true
         validationStartMs = 0;
         previousQueryType = QUERYTYPE_NMEA;
+        hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+
 
         // once we have device info, turn off these other messages
         GetData(DID_DEV_INFO);
@@ -398,6 +403,8 @@ std::string ISDevice::getIdAsString() const {
 
 /**
  * Renders a string which can serve as a unique hardware identifier describing the device_info provided
+ *   The output string looks like "SN<number> (<hdwType>-<hdwVersion>)". Flags can be used to modify the
+ *   output slightly, as desired.
  * @param devInfo the device info used to render the string
  * @param flags a bitmask of rendering options, specifically:
  *   - COMPACT_SERIALNO     renders the device serial number without leading zeros
@@ -434,15 +441,23 @@ std::string ISDevice::getName(int flags) const {
 }
 
 /**
- * Generates a single string representing the firmware version & build information for this specified device.
- * @param dev the dev_data_s device for which to format the version info
- * @param flags an indicator for the amount of detail that should be provided in the resulting string.
- *      a value of 0 will output the firmware version only.
- *      a value of 1 will output the firmware version and build number.
- *      a value of 2 will output the firmware version, build number, and build date/time.
- * @return the resulting string
+ * @brief Generates a string representing the firmware version & build information provided in the provided dev_info_t struct
+ *
+ * This function constructs a string that represents the firmware version and additional build details
+ * of a device based on its current state and provided flags. It handles both bootloader and normal
+ * firmware states, appending relevant versioning and build information.
+ *
+ * @param devInfo A reference to a `dev_info_t` structure containing device information.
+ * @param flags An integer representing various flags that control the output format.
+ *              - `COMPACT_BUILD_TYPE`: If set, the build type is represented compactly.
+ *              - `OMIT_COMMIT_HASH`: If set, the commit hash is omitted from the output.
+ *              - `OMIT_BUILD_KEY`: If set, the build key is omitted from the output.
+ *              - `OMIT_BUILD_DATE`: If set, the build date is omitted from the output.
+ *              - `OMIT_BUILD_TIME`: If set, the build time is omitted from the output.
+ *              - `OMIT_BUILD_MILLIS`: If set, the build milliseconds are omitted from the output.
+ *
+ * @return A string containing the formatted firmware information.
  */
-
 std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
     std::string out;
 
@@ -500,7 +515,7 @@ std::string ISDevice::getFirmwareInfo(int flags) const {
     return getFirmwareInfo(devInfo, flags);
 }
 
-std::string ISDevice::getDescription(int flags) {
+std::string ISDevice::getDescription(int flags) const {
     std::string desc = getName(flags);
     if (!(flags & OMIT_FIRMWARE_VERSION)) {
         desc += " " + getFirmwareInfo(flags);

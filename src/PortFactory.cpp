@@ -45,7 +45,7 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
     serialPort->pfnError = SerialPortFactory::onPortError;
 
     serialPort->baudRate = portOptions.defaultBaudRate;
-    serialPort->blocking = portOptions.defaultBlocking
+    serialPort->blocking = portOptions.defaultBlocking;
 
     debug_message("[DBG] Allocated new serial port '%s'\n", portName(port));
     return port;

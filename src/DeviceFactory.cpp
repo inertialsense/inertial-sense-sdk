@@ -41,7 +41,7 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
     // can we open the port?
     if (!portIsOpened(port)) {
         debug_message("[DBG] Opening serial port '%s'\n", portName(port));
-        if (portValidate(port) && portOpen(port) != PORT_ERROR__NONE) {
+        if (!portValidate(port) || (portOpen(port) != PORT_ERROR__NONE)) {
             debug_message("[DBG] Error opening serial port '%s'.  Ignoring.  Error was: %s\n", portName(port), SERIAL_PORT(port)->error);
             portClose(port);              // failed to open
             portInvalidate(port);

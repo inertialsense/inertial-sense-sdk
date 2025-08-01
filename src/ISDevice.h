@@ -208,16 +208,16 @@ public:
      * Note that the HdwId is a bitwise check - meaning that a IS_HARDWARE_IMX and a IS_HARDWARE_IMX_5_0 will
      * both match a device which is reporting as IS_HARDWARE_IMX_5_0
      */
-    inline bool matchesHdwId(uint16_t hdwId_, uint32_t serialNo = 0) {
-        return ( ((hdwId == IS_HARDWARE_ANY) || (hdwId & hdwId_) == hdwId)) &&
-                 ((serialNo == 0) || (serialNo == devInfo.serialNumber));
+    inline bool matchesHdwId(uint16_t hdwId_, uint32_t serialNo = 0) const {
+        return ((hdwId == IS_HARDWARE_ANY) || ((hdwId & hdwId_) == hdwId)) &&
+                    ((serialNo == 0) || (serialNo == devInfo.serialNumber));
     }
 
     /**
      * @return true if the device has valid, minimal required devInfo values sufficient to indicate that it genuinely
      * identifies an Inertial Sense device.
      */
-    bool hasDeviceInfo() {
+    bool hasDeviceInfo() const {
         return (hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY) && (devInfo.hdwRunState != HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0) && (devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0);
     }
 
@@ -269,7 +269,7 @@ public:
     /**
      * @returns the name of the currently bound port, or an empty string if none.
      */
-    std::string getPortName() {  std::lock_guard<std::recursive_mutex> lock(portMutex); return (port && portIsValid(port) && portName(port) ? portName(port) : ""); }
+    std::string getPortName() const { return (port && portIsValid(port) && portName(port) ? portName(port) : ""); }
 
     /**
      * @returns a formatted string which can be used to uniquely identify the hardware associated with this device. The
@@ -296,7 +296,7 @@ public:
      * @returns a formatted string that completely describes the device as a concatenation of the following calls:
      *   getName() + getFirmwareInfo(1) + portName()
      */
-    std::string getDescription(int flags = 0);
+    std::string getDescription(int flags = 0) const;
 
     /**
      * Registers this device with the specified ISLogger instance, allowing the logger instance to capture and

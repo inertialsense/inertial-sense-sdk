@@ -177,7 +177,8 @@ private:
 
     static const int HEX_BUFFER_SIZE = 1024;
 
-    ISDevice* device;
+    ISDevice* device;                       //!< an ISDevice instance to which are are communicating/updating
+    dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
 
     uint32_t m_sn = 0;                      //!< Inertial Sense serial number, i.e. SN60000
     uint16_t hardwareId = 0;                //!< Inertial Sense Hardware Type (IMX, GPX, etc)
@@ -197,10 +198,8 @@ private:
     } m_isb_props = {};
 
     static std::vector<uint32_t> serial_list;
-    static std::mutex serial_list_mutex;
 
     static std::vector<uint32_t> rst_serial_list;
-    static std::mutex rst_serial_list_mutex;
 
     fwUpdate::target_t getTargetType();
 

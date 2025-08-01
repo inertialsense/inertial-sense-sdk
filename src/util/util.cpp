@@ -579,7 +579,10 @@ bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2
  * A comparitor function which can be used by std::map<> to order a map in reverse order by dev_info_t (key)
  * @param a dev_info_t representing a particular firmware version
  * @param b dev_info_t representing a particular firmware version
- * @return returns an integer representing a different between A & B.
+ * @return returns an integer representing a different between A & B; 0 == both are equal, >0 indicates A > B,
+ *   and <0 indicated A < B. The size of the value has meaning indicating the distance apart, with each
+ *   compared component having a bit-place in the final value, however the value itself is insufficient to
+ *   determine the specific differences between versions.
  */
 int64_t utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b) {
     int64_t result = 0;
