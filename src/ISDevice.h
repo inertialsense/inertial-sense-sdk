@@ -53,14 +53,15 @@ public:
 
         // Version Options
         OMIT_COMMIT_HASH         = 0x0100,      //!< suppresses the output of the commit hash/dirty status
-        OMIT_BUILD_DATE          = 0x0200,      //!< suppresses the output of the build date
-        OMIT_BUILD_TIME          = 0x0400,      //!< suppresses the output of the build time
-        OMIT_BUILD_MILLIS        = 0x0800,      //!< suppresses the output of the build milliseconds when not zero
+        OMIT_BUILD_KEY           = 0x0200,      //!< suppresses the output of the build host key and number
+        OMIT_BUILD_DATE          = 0x0400,      //!< suppresses the output of the build date
+        OMIT_BUILD_TIME          = 0x0800,      //!< suppresses the output of the build time
+        OMIT_BUILD_MILLIS        = 0x1000,      //!< suppresses the output of the build milliseconds when not zero
     };
 
-    static ISDevice invalidRef;
+    const static ISDevice invalidRef;
     static std::string getIdAsString(const dev_info_t& devInfo);
-    static std::string getName(const dev_info_t& devInfo, int flags = 0);
+    static std::string getName(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER));
     static std::string getFirmwareInfo(const dev_info_t &devInfo, int flags = 0);
 
     explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
@@ -162,7 +163,7 @@ public:
     /**
      * @return true is this ISDevice has a valid, and open port
      */
-    bool isConnected() {
+    bool isConnected() const {
         return (portIsValid(port) && (portType(port) & PORT_TYPE__COMM)) && portIsOpened(port);
     }
 
@@ -199,10 +200,24 @@ public:
     }
 
     /**
+     * Simple utility test to confirm if this device matches the specified HdwId and optional Hdw serial number
+     * @param hdwId_ the Hardware ID to match against
+     * @param serialNo the serial number to further match against, if not zero (default is zero)
+     * @return true if this device matches the criteria, otherwise false;
+     *
+     * Note that the HdwId is a bitwise check - meaning that a IS_HARDWARE_IMX and a IS_HARDWARE_IMX_5_0 will
+     * both match a device which is reporting as IS_HARDWARE_IMX_5_0
+     */
+    inline bool matchesHdwId(uint16_t hdwId_, uint32_t serialNo = 0) const {
+        return ((hdwId == IS_HARDWARE_ANY) || ((hdwId & hdwId_) == hdwId)) &&
+                    ((serialNo == 0) || (serialNo == devInfo.serialNumber));
+    }
+
+    /**
      * @return true if the device has valid, minimal required devInfo values sufficient to indicate that it genuinely
      * identifies an Inertial Sense device.
      */
-    bool hasDeviceInfo() {
+    bool hasDeviceInfo() const {
         return (hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY) && (devInfo.hdwRunState != HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0) && (devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0);
     }
 
@@ -254,20 +269,20 @@ public:
     /**
      * @returns the name of the currently bound port, or an empty string if none.
      */
-    std::string getPortName() {  std::lock_guard<std::recursive_mutex> lock(portMutex); return (port && portIsValid(port) && portName(port) ? portName(port) : ""); }
+    std::string getPortName() const { return (port && portIsValid(port) && portName(port) ? portName(port) : ""); }
 
     /**
      * @returns a formatted string which can be used to uniquely identify the hardware associated with this device. The
      * formatted string appears as "<HdwType>-<HdwVer.Maj>.<HdrVer.Min>::SN<SerialNo>". This is sufficient to be used
      * in hashing or other comparison functions to identify a specific device.
      */
-    std::string getIdAsString();
+    std::string getIdAsString() const;
 
     /**
      * @returns a formatted string similar to getIdAsString(), but slightly more human-friendly.  The formatted string
      * appears as "SN<SerialNo> (<HdwType>-<HdwVer[0]>.<HdrVer[1]>[.<HdrVer[2]>.<HdrVer[3]>])"
      */
-    std::string getName(int flags = 0);
+    std::string getName(int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER)) const;
 
     /**
      * Returns a string representing the device firmware, as reported by its devInfo struct, with varying levels of
@@ -275,13 +290,13 @@ public:
      * @param flags an integer bitmask derived from DevInfoFormatFlags which alters the output format
      * @return the formatted Firmware Information string
      */
-    std::string getFirmwareInfo(int flags = 0);
+    std::string getFirmwareInfo(int flags = 0) const;
 
     /**
      * @returns a formatted string that completely describes the device as a concatenation of the following calls:
      *   getName() + getFirmwareInfo(1) + portName()
      */
-    std::string getDescription(int flags = 0);
+    std::string getDescription(int flags = 0) const;
 
     /**
      * Registers this device with the specified ISLogger instance, allowing the logger instance to capture and
@@ -354,7 +369,7 @@ public:
      *
      * The InertialSense class maintains synchronization between the host's local flash
      * configuration and the configuration stored on the connected IMX or GPX device.
-     * 
+     *
      * Key Concepts:
      * - Each device maintains local copies of flash configuration:
      *      - IMX: device.imxFlashCfg
@@ -362,7 +377,7 @@ public:
      * - The device also reports its flash configuration checksum via:
      *      - IMX: device.sysParams.flashCfgChecksum
      *      - GPX: device.gpxStatus.flashCfgChecksum
-     * 
+     *
      * Synchronization Mechanism:
      * - Periodically (every SYNC_FLASH_CFG_CHECK_PERIOD_MS), SyncFlashConfig() compares
      *   the local checksum with the device-reported checksum.
@@ -371,7 +386,7 @@ public:
      *      - Compute and send only the changed regions of the configuration.
      *      - Update tracking variables (upload time, expected checksum).
      * - The Update() function drives both synchronization and upload completion.
-     * 
+     *
      * Validation:
      * - ImxFlashConfigSynced() / GpxFlashConfigSynced() return true if:
      *      - Local and device checksums match.
@@ -440,7 +455,7 @@ public:
      */
     bool SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
     bool SetGpxFlashCfgAndConfirm(gpx_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
- 
+
     /**
      * @brief SaveImxFlashConfigToFile
      * @param path - Path to YAML flash config file
@@ -497,6 +512,7 @@ public:
 
 
     // TODO: make these private or protected
+    std::mutex                  fwUpdateMutex;                       //!< used to guard against re-entrant calls into fwUpdate functions
     ISFirmwareUpdater* fwUpdater = NULLPTR;
     bool fwHasError = false;
     std::vector<std::tuple<std::string, std::string, std::string>> fwErrors;

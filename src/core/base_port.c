@@ -49,8 +49,8 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
     if ((port == 0) || (waitFor == 0) || (waitForLength < 1) || (waitForLength >= 128))
         return 0;
 
-    static unsigned char buf[132] = { 0 }; // note that we are padding this slightly (4 bytes)
-    static uint8_t* bPtr = buf;
+    unsigned char buf[132] = { 0 }; // note that we are padding this slightly (4 bytes)
+    uint8_t* bPtr = buf;
     int bytesWaiting = 0;
 
     uint32_t timeout = current_timeMs() + timeoutMs;
@@ -86,7 +86,7 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
         } else if (bytesWaiting < 0) {
             return 0;   // error while reading
         } else {
-            SLEEP_US(1000);
+            SLEEP_US(1);
         }
     }
 
@@ -259,14 +259,12 @@ int portWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLe
 
 int portWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const unsigned int timeoutMs)
 {
-    if (!portIsValid(port)) return 0;
+    if (!portIsValid(port))
+        return 0;
 
     int actuallyWrittenCount = portWrite(port, buffer, writeCount);
-
     if (actuallyWrittenCount != (int)writeCount)
-    {
         return 0;
-    }
 
     return portWaitForTimeout(port, waitFor, waitForLength, timeoutMs);
 }

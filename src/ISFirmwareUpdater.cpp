@@ -462,7 +462,9 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
     // TODO: end
 
     nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
-    int result = comManagerSendData(port, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
+
+    port_handle_t preferredPort = portIsOpened(device->port) ? device->port : (portIsOpened(port) ? port : nullptr);
+    int result = comManagerSendData(preferredPort, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
 }
 
@@ -701,9 +703,8 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
             }
         } else if (activeCommand == "reset") {
             bool hard = (args.size() == 1 && args[0] == "hard");
-           if (!hard) {
-                if (args.size() == 2 && args[1] == "tobl")
-                    fwUpdate_requestReset(target, fwUpdate::RESET_INTO_BOOTLOADER);
+            if (args.size() == 2 && args[1] == "tobl") {
+                fwUpdate_requestReset(target, fwUpdate::RESET_INTO_BOOTLOADER);
             } else {
                 fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
             }

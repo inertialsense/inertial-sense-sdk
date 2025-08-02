@@ -49,7 +49,7 @@ public:
     static const uint16_t DISCOVERY__CLOSE_PORT_ON_COMPLETION     = 0x0004;       //!< when set, this will cause the port to be closed once discovery is completed, regardless of failure.
     static const uint16_t DISCOVERY__FORCE_REVALIDATION           = 0x0010;       //!< when set, if an existing device entry if found for this port, the device will be forced to validate again.
 
-    static const uint16_t DISCOVERY__DEFAULTS                     = (DISCOVERY__IGNORE_CLOSED_PORTS | DISCOVERY__CLOSE_PORT_ON_FAILURE);
+    static const uint16_t DISCOVERY__DEFAULTS                     = DISCOVERY__CLOSE_PORT_ON_FAILURE; // (DISCOVERY__IGNORE_CLOSED_PORTS | DISCOVERY__CLOSE_PORT_ON_FAILURE);
 
     DeviceManager(DeviceManager const &) = delete;
     DeviceManager& operator=(DeviceManager const&) = delete;
@@ -70,7 +70,7 @@ public:
      * @param options a bitmask of misc options that will can affect the discovery behavior.
      * @return true if one more more devices were discovered, otherwise false
      */
-    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0, int options = OPTIONS_USE_DEFAULTS) {
+    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
         bool result = false;
         // options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
         for (auto port : portManager) {
@@ -92,7 +92,7 @@ public:
      * @param timeoutMs the number of milliseconds to wait for a device to respond before failing
      * @return true if a device was discovered on the specified port, otherwise false
      */
-    bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, int timeoutMs = 0, int options = OPTIONS_USE_DEFAULTS) {
+    bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
         options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
         options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
 
@@ -115,14 +115,14 @@ public:
         }
 
         // open the port, if needed - if we can't open it, fail.
-        if (!portIsOpened(port) &&
-            ((options & DISCOVERY__IGNORE_CLOSED_PORTS) ||
-             (portOpen(port) != PORT_ERROR__NONE)))
+        if (!portIsOpened(port)
+            && ( (options & DISCOVERY__IGNORE_CLOSED_PORTS)
+                 || (portOpen(port) != PORT_ERROR__NONE)) )
             return false;
 
 
         for (auto l : factories) {
-            std::function<void(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, options);
+            std::function<bool(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, options);
             if (l->locateDevice(cb, port, hdwId, timeoutMs)) {
                 if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)  // locateDevice should already handle this, but just in case.
                     portClose(port);
@@ -290,8 +290,9 @@ protected:
      * @param factory - the factory which discovered this device
      * @param port - the port which the device was discovered on
      * @param devInfo - the name of the port (as determined by the factory, should be unique)
+     * @returns true if the device was properly allocated and added to the manager, otherwise false
      */
-    void deviceHandler(DeviceFactory* factory, const dev_info_t& devInfo, port_handle_t port, int options);
+    bool deviceHandler(DeviceFactory* factory, const dev_info_t& devInfo, port_handle_t port, int options);
 
 
 private:

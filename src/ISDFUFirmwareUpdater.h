@@ -325,7 +325,7 @@ public:
      * @param target_id the device to reset
      * @return true if successful, otherwise false
      */
-    int fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
+    bool fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
 
     // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
     /**
