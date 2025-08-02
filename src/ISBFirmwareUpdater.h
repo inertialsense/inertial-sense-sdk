@@ -73,7 +73,7 @@ public:
      * @param target_id the device to reset
      * @return true if successful, otherwise false
      */
-    int fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
+    bool fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
 
     // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
     /**
@@ -186,7 +186,7 @@ private:
     char m_isb_minor = 0;                   //!< ISB Minor revision on device
     bool isb_mightUpdate = false;           //!< true if device will be updated if bootloader continues
 
-    fwUpdate::payload_t lastPayload{};      //!< the last receive payload (uses during initialization, if having to switch to bootloader mode, etc)
+    uint32_t last_reboot = 0;               //!< time when the last reboot to the device was issued
 
     struct {
         bool is_evb = false;                //!< Available on version 6+, otherwise false

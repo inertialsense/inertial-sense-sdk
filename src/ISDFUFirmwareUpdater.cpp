@@ -218,7 +218,7 @@ bool ISDFUFirmwareUpdater::fwUpdate_processMessage(int rxPort, const uint8_t* bu
 }
 
 // called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
-int ISDFUFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) {
+bool ISDFUFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) {
 /*
     RESET_SOFT = 0,             // typically, a software reset (start the program over, but don't remove power or clear RAM)
     RESET_HARD = 1,             // a hard reset, in which the device is power-cycled; this may not always be possible since generally software on a device can't remove its own power
@@ -231,8 +231,9 @@ int ISDFUFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fw
     //  Anything else should probably return not-supported
     if (curDevice->getTargetType() == target_id) {
         curDevice->reset();
+        return true;
     }
-    return 0;
+    return false;
 }
 
 // called internally (by the receiving device) to populate the dev_info_t struct for the requested device

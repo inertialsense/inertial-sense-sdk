@@ -499,7 +499,7 @@ namespace fwUpdate {
         session_id = payload.data.req_update.session_id;
         session_image_size = payload.data.req_update.file_size;
         session_chunk_size = payload.data.req_update.chunk_size;
-        // progress_interval = payload.data.req_update.progress_rate;
+        progress_interval = payload.data.req_update.progress_rate;
 
         if (session_status > NOT_STARTED) {
             session_image_slot = payload.data.req_update.image_slot;
@@ -685,8 +685,8 @@ namespace fwUpdate {
         if (payload.hdr.msg_type == MSG_VERSION_INFO_RESP)  // this is "sessionless", so respond even if we don't have a session
             return fwUpdate_handleVersionResponse(payload);
 
-        if (payload.data.update_resp.session_id != session_id)
-            return false; // this suggests the this message belongs to another session - we should ignore it.
+        if ((payload.data.update_resp.session_id != 0) && (payload.data.update_resp.session_id != session_id))
+            return false; // this suggests that this message belongs to another session - we should ignore it.
 
         bool result = false;
         fwUpdate_resetTimeout();
