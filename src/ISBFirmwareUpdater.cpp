@@ -601,12 +601,19 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
-    if (portWrite(device->port, (unsigned char*)":020000040300F7", 15) == 15) {
-        for (int i = 0; i < 3; i++)
-            portWrite(device->port, (unsigned char*)"\r\n", 2);
+    int retry = 5;
+    while (retry-- && portIsOpened(device->port) && !portError(device->port)) {
+        int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7", 15);
+        if (writeCnt == 15) {
+            for (int i = 0; i < 3; i++)
+                portWrite(device->port, (unsigned char *) "\r\n", 2);
+        } else if (writeCnt < 0) {
+            // write error?? is likely because the port closed
+            break;
+        }
+        SLEEP_MS(10);
+        portFlush(device->port);
     }
-    portFlush(device->port);
-    SLEEP_MS(100);
 
     // invalidate, because we don't know until we rediscover the device
     device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
@@ -614,7 +621,7 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     if (!keepPortOpen) {
         device->disconnect();
     }
-    return true;
+    return (retry > 0);
 }
 
 
