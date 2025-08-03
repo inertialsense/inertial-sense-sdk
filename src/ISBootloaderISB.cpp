@@ -419,7 +419,14 @@ is_operation_result cISBootloaderISB::select_page(int page)
     checksum(0, changePage, 1, 17, 17, 1);
     if (serialPortWriteAndWaitForTimeout(s, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) 
     {
-        status_update("(ISB) Failed to select page", IS_LOG_LEVEL_ERROR);
+        if (page == 7) 
+        {   // IMX-5 bootloader prior to v6i does not support writing to page 7
+            status_update("(ISB) Failed to select page.  Is app image too large for installed bootloader?  Try loading IMX-5 r2.5.1, updating to bootloader v6i, then loading latest IMX-5 firmware.", IS_LOG_LEVEL_ERROR);
+        }
+        else
+        {
+            status_update("(ISB) Failed to select page", IS_LOG_LEVEL_ERROR);
+        }
         return IS_OP_ERROR;
     }
 
