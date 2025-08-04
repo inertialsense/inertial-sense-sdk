@@ -169,7 +169,7 @@ typedef enum {
     IS_PROCESSOR_UNKNOWN = -1,
     IS_PROCESSOR_SAMx70 = 0,        // uINS-3/4, EVB-2
     IS_PROCESSOR_STM32L4,           // IMX-5
-    IS_PROCESSOR_STM32U5,           // GPX-1, IMX-5.1
+    IS_PROCESSOR_STM32U5,           // GPX-1, IMX-6
 
     IS_PROCESSOR_NUM,               // Must be last
 } eProcessorType;
@@ -325,7 +325,7 @@ public:
      * @param target_id the device to reset
      * @return true if successful, otherwise false
      */
-    int fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
+    bool fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
 
     // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
     /**

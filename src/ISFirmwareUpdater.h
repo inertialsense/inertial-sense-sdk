@@ -100,8 +100,8 @@ public:
         PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      //!< the image file's actual md5sum doesn't match the manifest's reported md5sum
     };
 
+    port_handle_t port = 0;                         //!< a handle to the comm port which we use to talk to the device - if possible, we should be using the device->port
     const ISDevice* device = nullptr;               //!< a handle to the device which is being updated; maybe null in some cases
-    port_handle_t port = 0;                         //!< a handle to the comm port which we use to talk to the device
     const dev_info_t *devInfo = nullptr;            //!< the root device info connected on this port
     dev_info_t *target_devInfo = nullptr;           //!< the target's device info, if any
 

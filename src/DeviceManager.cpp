@@ -148,13 +148,13 @@ bool DeviceManager::releaseDevice(ISDevice* device, bool closePort, bool deleteD
  * @param devInfo - the device info for the discovered device
  * @param port - the port the device was discovered on, if any
  */
-void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devInfo, port_handle_t port, int options) {
+bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devInfo, port_handle_t port, int options) {
     options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
     uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(devInfo);
     if (!devId) {
         if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
             portClose(port);
-        return; // this is an invalid device Id -- no hdwId and no serialNo
+        return false; // this is an invalid device Id -- no hdwId and no serialNo
     }
 
     device_entry_t deviceEntry(factory, devId, nullptr);
@@ -175,7 +175,9 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
             } else {
                 // FIXME: if we're here, it means we had a deviceEntry that matched the discovered device, but its associated device is invalid.
                 //  we don't want to reallocate the device, since there is already one there, but just need to reassign the devInfo, etc.
+                //  Don't forget to remove the old device entry from the primary device set!!
                 debug_message("[DBG] -- Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.\n", portName(port));
+                remove(deviceEntry.device);
                 delete deviceEntry.device;
                 deviceEntry.device = nullptr;
                 if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
@@ -185,7 +187,8 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
             if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
                 portClose(port);
-            return;
+
+            return true;    // successfully handled
         }
     }
 
@@ -194,7 +197,7 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     if (!deviceEntry.device) {
         if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
             portClose(port);
-        return;
+        return false;   // allocated returned null, so no device created
     }
 
     // debug_message("[DBG] Allocated new device: %s.\n", device->getDescription().c_str());
@@ -208,6 +211,8 @@ void DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
     if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
         portClose(port);
+
+    return true;    // successfully handled
 }
 
 
@@ -238,6 +243,11 @@ std::vector<ISDevice *> DeviceManager::getDevicesAsVector() {
     }
     return vecOut;
 }
+
+// TODO: FIXME: The following getDevice() should probably be refactored:
+//  -- to use an overridden [] operator to get a device by uid, port, and string.
+//  -- to consolidate the lookup as much as possible, so they are always consistent
+//     in how they operate, and fail, etc.
 
 /**
  * @returns an ISDevice* instance identified by the specified UID, or NULL if not found
@@ -279,10 +289,18 @@ ISDevice* DeviceManager::getDevice(const std::string& deviceId) {
  * @return an ISDevice* instance or NULL if not found
  */
 ISDevice* DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
-    for (auto device : *this) {
-        if ((device->hdwId == hdwId) && (device->devInfo.serialNumber == serialNum))
+    for (const auto device : *this) {
+        if (device && device->matchesHdwId(hdwId, serialNum))
             return device;
     }
+
+    // we didn't find it locally, so lets check out knownDevices set
+    uint64_t uid = ENCODE_UNIQUE_ID(hdwId, serialNum);
+    for (const auto de : knownDevices) {
+        if (de.hdwId == uid)
+            return de.device;
+    }
+
     return NULL;
 }
 

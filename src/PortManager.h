@@ -70,17 +70,37 @@ public:
 */
     }
 
+    /**
+     * Returns the number of currently discovered/managed ports
+     * @return the number of currently discovered/managed ports
+     */
+    size_t getPortCount() { return size(); }
+
+    /**
+     * Returns a vector of all currently discovered/managed ports
+     * @return
+     */
     std::vector<port_handle_t> getPorts();
 
-    size_t getPortCount();
+    /**
+     * Attempts to locate and return a previously discovered/managed port by its name, and optionally port type flags
+     * @param name the name of the port to locate and return
+     * @param portType an optional bitmask indicating the port type to match
+     * @return the port handle if found, otherwise returns NULL
+     */
+    port_handle_t getPort(const std::string& name, uint16_t portType = PORT_TYPE__UNKNOWN);
 
     /**
      * Release the requested port, deallocating any associated memory
      */
-    void releasePort(port_handle_t port) {
-        for (auto f : factories )
-            if (f->releasePort(port))
-                return;
+    bool releasePort(port_handle_t port) {
+        for (auto& [portEntry, knownPort] : knownPorts ) {
+            if ((port == knownPort) && portEntry.factory) {
+                portEntry.factory->releasePort(port);
+                return true;
+            }
+        }
+        return false;
     }
 
     void clear() {
