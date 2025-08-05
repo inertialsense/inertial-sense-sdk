@@ -525,7 +525,7 @@ namespace fwUpdate {
          * @param target_id the device to reset
          * @return true if successful, otherwise false
          */
-        virtual int fwUpdate_performReset(target_t target_id, reset_flags_e reset_flags) = 0;
+        virtual bool fwUpdate_performReset(target_t target_id, reset_flags_e reset_flags) = 0;
 
         /**
          * Internally called by fwUpdate_processMessage() when a REQ_VERSION_INFO message is received, to request version info for the target device.

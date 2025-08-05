@@ -41,25 +41,25 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     hints.ai_protocol = IPPROTO_TCP;
     if (inet_pton(AF_INET, url.address.c_str(), &ipaddr)) {
         addr.ss_family = AF_INET;
-        const auto ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
+        auto* ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
         ipv4->sin_port = htons(stoi(url.port));
         ipv4->sin_addr = *reinterpret_cast<in_addr*>(&ipaddr);
     } else if (inet_pton(AF_INET6, url.address.c_str(), &ipaddr)) {
         addr.ss_family = AF_INET6;
-        const auto ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
+        auto* ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
         ipv6->sin6_port = htons(stoi(url.port));
         ipv6->sin6_addr = *reinterpret_cast<in6_addr*>(&ipaddr);
     } else if (getaddrinfo(url.address.c_str(), url.port.c_str(), &hints, &dns_addr) == 0) {
         addr.ss_family = dns_addr->ai_family;
         if (addr.ss_family == AF_INET) {
-            const auto ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
-            const auto ipv4_from_dns = reinterpret_cast<sockaddr_in*>(dns_addr->ai_addr);
+            auto* ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
+            auto* ipv4_from_dns = reinterpret_cast<sockaddr_in*>(dns_addr->ai_addr);
             ipv4->sin_family = ipv4_from_dns->sin_family;
             ipv4->sin_port = ipv4_from_dns->sin_port;
             ipv4->sin_addr = ipv4_from_dns->sin_addr;
         } else if (addr.ss_family == AF_INET6) {
-            const auto ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
-            const auto ipv6_from_dns = reinterpret_cast<sockaddr_in6*>(dns_addr->ai_addr);
+            auto* ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
+            auto* ipv6_from_dns = reinterpret_cast<sockaddr_in6*>(dns_addr->ai_addr);
             ipv6->sin6_family = ipv6_from_dns->sin6_family;
             ipv6->sin6_port = ipv6_from_dns->sin6_port;
             ipv6->sin6_flowinfo = ipv6_from_dns->sin6_flowinfo;
@@ -75,7 +75,7 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), &addr);
+    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), reinterpret_cast<const sockaddr_storage*>(&addr));
 
     return port;
 }
@@ -90,7 +90,7 @@ bool TcpPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    debug_message("[DBG] Releasing network port '%s'\n", ((tcp_port_t*)port)->portName);
+    debug_message("[DBG] Releasing network port '%s'\n", portName(port));
     tcpPortDelete(port);
     delete static_cast<tcp_port_t*>(port);
 
@@ -113,7 +113,7 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
         return false;
     }
 
-    sockaddr addr = {};
+    sockaddr_storage addr = {};
     if (inet_pton(AF_INET, url.address.c_str(), &addr)) {
         return true;
     }

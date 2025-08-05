@@ -148,6 +148,7 @@ void InertialSenseROS::initializeROS()
 
    if (rs_.pimu.enabled)                   { rs_.pimu.pub_pimu = nh_->create_publisher<inertial_sense_ros2::msg::PIMU>(rs_.pimu.topic, 1); }
    if (rs_.imu.enabled)                    { rs_.imu.pub_imu = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
+   if (rs_.imu_raw.enabled)                { rs_.imu_raw.pub_imu = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu_raw.topic, 1); }
    if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub_bfield = nh_->create_publisher<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
    if (rs_.barometer.enabled)              { rs_.barometer.pub_fpres = nh_->create_publisher<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
    if (rs_.gps1.enabled)                   { rs_.gps1.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
@@ -287,6 +288,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
     bool imu_enable = nh_->declare_parameter<bool>("msg/imu/enable", false);
     int imu_period = nh_->declare_parameter<int>("msg/imu/period", 1);
     ph.msgParams(rs_.imu, "imu", "", false, imu_period, imu_enable);
+
+    bool imu_raw_enable = nh_->declare_parameter<bool>("msg/imu_raw/enable", false);
+    int imu_raw_period = nh_->declare_parameter<int>("msg/imu_raw/period", 1);
+    ph.msgParams(rs_.imu_raw, "imu_raw", "", false, imu_raw_period, imu_raw_enable);
 
     bool pimu_enable = nh_->declare_parameter<bool>("msg/pimu/enable", false);
     int pimu_period = nh_->declare_parameter<int>("msg/pimu/period", 1);
@@ -569,7 +574,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
     if (!NavSatFixConfigured)
     {
         if (rs_.gps1_navsatfix.enabled) {
@@ -635,6 +640,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     CONFIG_STREAM(rs_.magnetometer, DID_MAGNETOMETER, magnetometer_t, mag_callback);
     CONFIG_STREAM(rs_.barometer, DID_BAROMETER, barometer_t, baro_callback);
     CONFIG_STREAM(rs_.pimu, DID_PIMU, pimu_t, preint_IMU_callback);
+    CONFIG_STREAM(rs_.imu_raw, DID_IMU_RAW, imu_t, imu_raw_callback);
 
     if (!firstrun)
     {
@@ -791,7 +797,7 @@ void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg;
-    IS_.FlashConfig(current_flash_cfg);
+    IS_.ImxFlashConfig(current_flash_cfg);
     //RCLCPP_INFO(rclcpp::get_logger("E"),"InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
@@ -1847,6 +1853,24 @@ void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg
     }
 }
 
+void InertialSenseROS::imu_raw_callback(eDataIDs DID, const imu_t *const msg)
+{
+    if (rs_.imu_raw.enabled)
+    {
+        rs_.imu_raw.streamingCheck(DID);
+
+        msg_imu_raw.header.stamp = ros_time_from_start_time(msg->time);
+        msg_imu_raw.header.frame_id = frame_id_;
+        msg_imu_raw.angular_velocity.x = msg->I.pqr[0];
+        msg_imu_raw.angular_velocity.y = msg->I.pqr[1];
+        msg_imu_raw.angular_velocity.z = msg->I.pqr[2];
+        msg_imu_raw.linear_acceleration.x = msg->I.acc[0];
+        msg_imu_raw.linear_acceleration.y = msg->I.acc[1];
+        msg_imu_raw.linear_acceleration.z = msg->I.acc[2];
+        rs_.imu_raw.pub_imu->publish(msg_imu_raw);
+    }
+}
+
 void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *const msg)
 {
     inertial_sense_ros2::msg::RTKInfo rtk_info;
@@ -2277,7 +2301,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::srv::Trigger::Re
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
-    IS_.FlashConfig(current_flash);
+    IS_.ImxFlashConfig(current_flash);
     while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
@@ -2312,7 +2336,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdat
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
-    IS_.FlashConfig(current_flash);
+    IS_.ImxFlashConfig(current_flash);
     while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();

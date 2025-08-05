@@ -49,8 +49,8 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
     if ((port == 0) || (waitFor == 0) || (waitForLength < 1) || (waitForLength >= 128))
         return 0;
 
-    static unsigned char buf[132] = { 0 }; // note that we are padding this slightly (4 bytes)
-    static uint8_t* bPtr = buf;
+    unsigned char buf[132] = { 0 }; // note that we are padding this slightly (4 bytes)
+    uint8_t* bPtr = buf;
     int bytesWaiting = 0;
 
     uint32_t timeout = current_timeMs() + timeoutMs;
@@ -86,7 +86,7 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
         } else if (bytesWaiting < 0) {
             return 0;   // error while reading
         } else {
-            SLEEP_US(1000);
+            SLEEP_US(1);
         }
     }
 
@@ -99,7 +99,7 @@ int portWaitFor(port_handle_t port, const unsigned char* waitFor, unsigned int w
     return portWaitForTimeout(port, waitFor, waitForLength, PORT_DEFAULT_TIMEOUT);
 }
 
-int portReadCharTimeout(port_handle_t port, unsigned char* c, int timeoutMs)
+int portReadCharTimeout(port_handle_t port, unsigned char* c, unsigned int timeoutMs)
 {
     return portReadTimeout(port, c, 1, timeoutMs);
 }
@@ -118,7 +118,7 @@ int portReadChar(port_handle_t port, unsigned char* c)
  * @param timeoutMs the maximum time in milliseconds to wait for the data to arrive
  * @return the number of bytes read, including the newline or -1 if a timeout occurs
  */
-int portReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMs)
+int portReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned int timeoutMs)
 {
     if (!portIsValid(port))
         return PORT_ERROR__INVALID;
@@ -154,7 +154,7 @@ int portReadLine(port_handle_t port, unsigned char* buffer, unsigned int bufferL
     return portReadLineTimeout(port, buffer, bufferLength, PORT_DEFAULT_TIMEOUT);
 }
 
-int portReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMs, unsigned char** asciiData)
+int portReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned int timeoutMs, unsigned char** asciiData)
 {
     int count = portReadLineTimeout(port, buffer, bufferLength, timeoutMs);
     unsigned char* ptr = buffer;
@@ -257,16 +257,14 @@ int portWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLe
     return count;
 }
 
-int portWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const int timeoutMs)
+int portWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const unsigned int timeoutMs)
 {
-    if (!portIsValid(port)) return 0;
+    if (!portIsValid(port))
+        return 0;
 
     int actuallyWrittenCount = portWrite(port, buffer, writeCount);
-
     if (actuallyWrittenCount != (int)writeCount)
-    {
         return 0;
-    }
 
     return portWaitForTimeout(port, waitFor, waitForLength, timeoutMs);
 }

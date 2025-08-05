@@ -49,6 +49,7 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
     for (auto& [entry, port] : knownPorts ) {
         if (!this->contains(port)) {
             this->insert(port);
+            portsChanged = true;   // note that we added/updated the list of ports
         }
     }
     return portsChanged;

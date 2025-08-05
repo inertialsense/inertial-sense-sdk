@@ -73,7 +73,7 @@ public:
      * @param target_id the device to reset
      * @return true if successful, otherwise false
      */
-    int fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
+    bool fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
 
     // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
     /**
@@ -177,7 +177,8 @@ private:
 
     static const int HEX_BUFFER_SIZE = 1024;
 
-    ISDevice* device;
+    ISDevice* device;                       //!< an ISDevice instance to which are are communicating/updating
+    dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
 
     uint32_t m_sn = 0;                      //!< Inertial Sense serial number, i.e. SN60000
     uint16_t hardwareId = 0;                //!< Inertial Sense Hardware Type (IMX, GPX, etc)
@@ -185,7 +186,7 @@ private:
     char m_isb_minor = 0;                   //!< ISB Minor revision on device
     bool isb_mightUpdate = false;           //!< true if device will be updated if bootloader continues
 
-    fwUpdate::payload_t lastPayload{};      //!< the last receive payload (uses during initialization, if having to switch to bootloader mode, etc)
+    uint32_t last_reboot = 0;               //!< time when the last reboot to the device was issued
 
     struct {
         bool is_evb = false;                //!< Available on version 6+, otherwise false
@@ -197,10 +198,8 @@ private:
     } m_isb_props = {};
 
     static std::vector<uint32_t> serial_list;
-    static std::mutex serial_list_mutex;
 
     static std::vector<uint32_t> rst_serial_list;
-    static std::mutex rst_serial_list_mutex;
 
     fwUpdate::target_t getTargetType();
 
@@ -214,6 +213,7 @@ private:
     is_operation_result sync();
     uint32_t get_device_info();
     eImageSignature check_is_compatible();
+    is_operation_result fetch_device_info_and_signature(eImageSignature* out_signature);
     int checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum);
     is_operation_result select_page(int page);
     is_operation_result begin_program_for_current_page(int startOffset, int endOffset);
@@ -237,7 +237,8 @@ private:
         ERASING = 1,
         WRITING = 2,
         VERIFYING = 3,
-        UPDATE_DONE = 4
+        REBOOT_TO_APP = 4,
+        UPDATE_DONE = 5
     } updateState_t;
     updateState_t updateState = UPLOADING;
     float transferProgress = 0.f;       // the percentage complete of the data transfer step
@@ -291,8 +292,8 @@ private:
     unsigned char* outputPtr = output;
 
     int lastSubOffset = -1;
-    int subOffset = 0;
 
+    fwUpdate::update_status_e last_session_status = fwUpdate::NOT_STARTED;
 
     std::deque<uint8_t>& toHost;
 
