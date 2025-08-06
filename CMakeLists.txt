@@ -94,7 +94,6 @@ set(ENABLE_IPV6 ON)
 set(CURL_ENABLE_SSL OFF)
 set(CURL_USE_SCHANNEL OFF)
 set(USE_NGHTTP2 OFF)
-set(USE_LIBIDN2 ON)
 set(CURL_USE_LIBPSL OFF)
 set(CURL_USE_LIBSSH2 OFF)
 set(ENABLE_UNIX_SOCKETS OFF)
@@ -148,7 +147,7 @@ if (WIN32)
 	add_dependencies(${PROJECT_NAME} gen_files)
 
     # We need to ensure windows static libs are found
-    target_link_libraries(${PROJECT_NAME} Ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Ws2_32.lib)
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC

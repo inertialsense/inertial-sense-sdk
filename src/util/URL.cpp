@@ -41,7 +41,8 @@ std::unique_ptr<std::string> URL::parseURLPart(const CURLU *url, CURLUPart part,
     std::unique_ptr<std::string> returnValue = std::unique_ptr<std::string>(nullptr);
     rc = curl_url_get(url, part, &urlPart, flags);
     if (rc && rc != CURLUE_NO_USER && rc != CURLUE_NO_PASSWORD && rc != CURLUE_NO_OPTIONS && rc != CURLUE_NO_PORT
-           && rc != CURLUE_NO_QUERY && rc != CURLUE_NO_FRAGMENT && rc != CURLUE_NO_ZONEID) throw std::invalid_argument(exceptionMsg);
+           && rc != CURLUE_NO_QUERY && rc != CURLUE_NO_FRAGMENT && rc != CURLUE_NO_ZONEID && rc != CURLUE_LACKS_IDN)
+        throw std::invalid_argument(exceptionMsg);
     if (urlPart != nullptr) returnValue = std::make_unique<std::string>(urlPart);
     curl_free(urlPart);
     return returnValue;
