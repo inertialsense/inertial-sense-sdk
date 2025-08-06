@@ -5,13 +5,55 @@
 #include <util.h>
 #include <chrono>
 #include "ISManufacturingPortFactory.h"
-
-#include <sys/sysmacros.h>
-
 #include <regex>
 #include <URL.h>
 #include "PortManager.h"
 #include "mdns.h"
+
+/**
+ * Major function from glibc reimplemented as a normal C function instead of as a define
+ * See https://github.com/bminor/glibc/blob/c744519bad81067697600bd01e90b90ae338bf08/bits/sysmacros.h#L26 for more info
+ * @param devnum dev number
+ * @return Major number from dev number
+ */
+
+uint32_t major(uint64_t devnum) {
+    uint32_t major;
+    major = ((devnum & (uint64_t) 0x00000000000fff00u) >>  8);
+    major |= ((devnum & (uint64_t) 0xfffff00000000000u) >> 32);
+    return major;
+}
+
+/**
+ * Minor function from glibc reimplemented as a normal C function instead of as a define
+ * See https://github.com/bminor/glibc/blob/c744519bad81067697600bd01e90b90ae338bf08/bits/sysmacros.h#L26 for more info
+ * @param devnum dev number
+ * @return Minor number from dev number
+ */
+
+uint32_t minor(uint64_t devnum) {
+    uint32_t minor;
+    minor = ((devnum & (uint64_t) 0x00000000000000ffu) >>  0);
+    minor |= ((devnum & (uint64_t) 0x00000ffffff00000u) >> 12);
+    return minor;
+}
+
+/**
+ * makedev function from glibc reimplemented as a normal C function instead of as a define
+ * See https://github.com/bminor/glibc/blob/c744519bad81067697600bd01e90b90ae338bf08/bits/sysmacros.h#L26 for more info
+ * @param major Major number
+ * @param minor Minor number
+ * @return Device number from major and minor
+ */
+
+uint64_t makedev(uint32_t major, uint32_t minor) {
+    uint64_t devnum;
+    devnum  = (((uint64_t) (major & 0x00000fffu)) <<  8);	\
+    devnum |= (((uint64_t) (major & 0xfffff000u)) << 32);	\
+    devnum |= (((uint64_t) (minor & 0x000000ffu)) <<  0);	\
+    devnum |= (((uint64_t) (minor & 0xffffff00u)) << 12);	\
+    return devnum;
+}
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
