@@ -9,7 +9,7 @@
 #include <sys/sysmacros.h>
 
 #include <regex>
-
+#include <URL.h>
 #include "PortManager.h"
 #include "mdns.h"
 
@@ -132,28 +132,39 @@ void ISManufacturingPortFactory::tick() {
  * @return pair with first value as server hostname and second value as struct containing devnum and port
  */
 std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFactory::parsePortName(const std::string& pName) {
-    const utils::URL url = utils::parseURL(pName);
-    if (url.protocol != "is-manu") throw std::invalid_argument("Invalid URL Protocol");
+    std::string urlSchema;
+    std::string urlHost;
+    std::string urlPort;
+    std::string urlPath;
+    try {
+        URL url(pName);
+        urlSchema = url.getScheme();
+        urlHost = url.getHostCanonized();
+        urlPort = url.getPort();
+        urlPath = url.getPath();
+    } catch (std::exception &e) {
+        throw std::invalid_argument(e.what());
+    }
 
-    if (!utils::validDomainName(url.address)) throw std::invalid_argument("Address of URL is not a valid DNS Domain Name");
-    if (!(url.address.ends_with(".local") || url.address.ends_with(".local."))) throw std::invalid_argument("Address of URL doesn't end in .local");
+    if (urlSchema != "is-manu") throw std::invalid_argument("URL has incorrect schema");
+    if (!utils::validDomainName(urlHost)) throw std::invalid_argument("Address of URL is not a valid DNS Domain Name");
+    if (!(urlHost.ends_with(".local") || urlHost.ends_with(".local."))) throw std::invalid_argument("Address of URL doesn't end in .local");
 
-    std::string hostname = url.address;
-    if (!hostname.ends_with(".")) {
-        hostname.append(".");
+    if (!urlHost.ends_with(".")) {
+        urlHost.append(".");
     }
 
     uint32_t devid = 0;
     uint16_t port = 0;
 
-    if (url.port.empty() && url.path.empty()) throw std::invalid_argument("port or path must be specified in URL");
-    if (!url.port.empty()) {
-        if (std::find_if(url.port.begin(), url.port.end(), [](unsigned char c) { return !std::isdigit(c); }) != url.port.end()) {
+    if (urlPort.empty() && urlPort.empty()) throw std::invalid_argument("port or path must be specified in URL");
+    if (!urlPort.empty()) {
+        if (std::find_if(urlPort.begin(), urlPort.end(), [](unsigned char c) { return !std::isdigit(c); }) != urlPort.end()) {
             throw std::invalid_argument("port in URL is not a number");
         }
         int largePort = 0;
         try {
-            largePort = std::stoi(url.port);
+            largePort = std::stoi(urlPort);
         } catch (const std::invalid_argument& e) {
             throw std::invalid_argument("Unable to parse port number");
         }
@@ -161,14 +172,14 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
         port = static_cast<uint16_t>(largePort);
     }
 
-    if (!url.path.empty()) {
+    if (!urlPath.empty()) {
         int major = 0; // 12 bits
         int minor = 0; // 20 bits
-        std::regex regexp1(R"(^([0-9]+):([0-9]+)$)");
-        std::regex regexp2(R"(^dev\/(.*)$)");
+        std::regex regexp1(R"(^\/([0-9]+):([0-9]+)$)");
+        std::regex regexp2(R"(^\/dev\/(.*)$)");
         std::smatch match;
 
-        if (std::regex_match(url.path, match, regexp1)) {
+        if (std::regex_match(urlPath, match, regexp1)) {
             try {
                 major = stoi(match[1].str());
             } catch (const std::invalid_argument& e) {
@@ -183,7 +194,7 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
             if (major > 4095) throw std::invalid_argument("Major number is out of bounds");
             if (minor > 1048575) throw std::invalid_argument("Minor number is out of bounds");
             devid = makedev(major, minor);
-        } else if (std::regex_match(url.path, match, regexp2)) {
+        } else if (std::regex_match(urlPath, match, regexp2)) {
             for (std::pair<uint16_t, std::string> majorPair: majorAtlas) {
                 if (match[1].str().starts_with( majorPair.second)) {
                     major = majorPair.first;
@@ -206,7 +217,7 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
     }
 
     port_t portData = {devid, port};
-    return {hostname, portData};
+    return {urlHost, portData};
 }
 
 /**

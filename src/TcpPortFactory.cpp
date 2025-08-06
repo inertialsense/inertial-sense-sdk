@@ -13,7 +13,7 @@
 #include <netdb.h>
 #include <iostream>
 #include "PortManager.h"
-#include <util.h>
+#include <URL.h>
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
@@ -28,8 +28,13 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     }
 
     // Parse pName for address
-    const utils::URL url = utils::parseURL(pName);
-    if (url.protocol != "tcp") {
+    std::string urlHost;
+    std::string urlPort;
+    try {
+        URL url(pName);
+        urlHost = url.getHostCanonized();
+        urlPort = url.getPort();
+    } catch (std::exception &e) {
         return nullptr;
     }
 
@@ -39,17 +44,17 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-    if (inet_pton(AF_INET, url.address.c_str(), &ipaddr)) {
+    if (inet_pton(AF_INET, urlHost.c_str(), &ipaddr)) {
         addr.ss_family = AF_INET;
         auto* ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
-        ipv4->sin_port = htons(stoi(url.port));
+        ipv4->sin_port = htons(stoi(urlPort));
         ipv4->sin_addr = *reinterpret_cast<in_addr*>(&ipaddr);
-    } else if (inet_pton(AF_INET6, url.address.c_str(), &ipaddr)) {
+    } else if (inet_pton(AF_INET6, urlHost.c_str(), &ipaddr)) {
         addr.ss_family = AF_INET6;
         auto* ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
-        ipv6->sin6_port = htons(stoi(url.port));
+        ipv6->sin6_port = htons(stoi(urlPort));
         ipv6->sin6_addr = *reinterpret_cast<in6_addr*>(&ipaddr);
-    } else if (getaddrinfo(url.address.c_str(), url.port.c_str(), &hints, &dns_addr) == 0) {
+    } else if (getaddrinfo(urlHost.c_str(), urlPort.c_str(), &hints, &dns_addr) == 0) {
         addr.ss_family = dns_addr->ai_family;
         if (addr.ss_family == AF_INET) {
             auto* ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
@@ -75,7 +80,7 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), reinterpret_cast<const sockaddr_storage*>(&addr));
+    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), &addr);
 
     return port;
 }
@@ -104,27 +109,35 @@ bool TcpPortFactory::releasePort(port_handle_t port) {
  * @return True if port can be created, false otherwise
  */
 bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
-    const utils::URL url = utils::parseURL(pName);
-    if (url.protocol != "tcp") {
+    std::string urlScheme;
+    std::string urlHost;
+    std::string urlPort;
+    try {
+        URL url(pName);
+        urlScheme = url.getScheme();
+        urlHost = url.getHostCanonized();
+        urlPort = url.getPort();
+    } catch (std::exception &e) {
         return false;
     }
 
+    if (urlScheme != "tcp") return false;
     if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) {
         return false;
     }
 
     sockaddr_storage addr = {};
-    if (inet_pton(AF_INET, url.address.c_str(), &addr)) {
+    if (inet_pton(AF_INET, urlHost.c_str(), &addr)) {
         return true;
     }
-    if (inet_pton(AF_INET6, url.address.c_str(), &addr)) {
+    if (inet_pton(AF_INET6, urlHost.c_str(), &addr)) {
         return true;
     }
     struct addrinfo hints = {}, *dns_addr;
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-    if (getaddrinfo(url.address.c_str(), url.port.c_str(), &hints, &dns_addr) == 0) {
+    if (getaddrinfo(urlHost.c_str(), urlPort.c_str(), &hints, &dns_addr) == 0) {
         return true;
     }
 

@@ -253,18 +253,6 @@ namespace utils {
      */
     uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
 
-    struct URL {
-        std::string fullurl;
-        std::string protocol;
-        std::string address;
-        std::string port;
-        std::string path;
-        std::string params;
-        std::string tags;
-    };
-
-    URL parseURL(const std::string& pName);
-
     bool validDomainName(const std::string& domainName);
 };
 
