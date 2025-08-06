@@ -18,10 +18,9 @@
 #include <set>
 #include <utility>
 #include <stdint.h>
-#include "ISConstants.h"
 #include "libmdns/mdns.h"
 
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef _WIN32
 #define in_addr_t ULONG
 #define in_port_t USHORT
 #define sa_family_t ADDRESS_FAMILY

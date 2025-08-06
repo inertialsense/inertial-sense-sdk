@@ -4,17 +4,19 @@
 
 #include "mdns.h"
 #include <algorithm>
-#include <ifaddrs.h>
 #include <net/if.h>
-#include <chrono>
-#include <random>
 #include <mutex>
 #include "libmdns/mdns.h"
-
 #include <functional>
 #include <system_error>
-
 #include "core/msg_logger.h"
+
+#ifdef _WIN32
+#include <winsock2.h>
+#include <iphlpapi.h>
+#else
+#include <ifaddrs.h>
+#endif
 
 /**
  * Handles incoming mdns responses and removes timed out old values
