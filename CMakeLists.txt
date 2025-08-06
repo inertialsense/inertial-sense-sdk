@@ -118,7 +118,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         external
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE "CURL::libcurl_static" )
+target_link_libraries(${PROJECT_NAME} PRIVATE "CURL::libcurl_static")
 
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
@@ -128,7 +128,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Other settings
 if (WIN32)
     # yamlcpp needs to know it's a static lib.
-    add_definitions(-DYAML_CPP_STATIC_DEFINE)
+    add_definitions(-DYAML_CPP_STATIC_DEFINE -DCURL_STATICLIB)
 
     # Windows specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
@@ -147,7 +147,7 @@ if (WIN32)
 	add_dependencies(${PROJECT_NAME} gen_files)
 
     # We need to ensure windows static libs are found
-    target_link_libraries(${PROJECT_NAME} PRIVATE Ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} PRIVATE libcurl.lib Ws2_32.lib)
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
