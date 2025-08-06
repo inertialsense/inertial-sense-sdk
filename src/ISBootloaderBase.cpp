@@ -308,6 +308,7 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
     return IS_OP_OK;
 }
 
+// Update bootloader firmware
 is_operation_result cISBootloaderBase::mode_device_isb
 (
     firmwares_t filenames,
@@ -476,6 +477,7 @@ is_operation_result cISBootloaderBase::update_device
     return IS_OP_ERROR;
 }
 
+// Update application firmware
 is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
