@@ -4,7 +4,6 @@
 
 #include "mdns.h"
 #include <algorithm>
-#include <net/if.h>
 #include <mutex>
 #include "libmdns/mdns.h"
 #include <functional>
@@ -16,6 +15,7 @@
 #include <iphlpapi.h>
 #else
 #include <ifaddrs.h>
+#include <net/if.h>
 #endif
 
 /**
