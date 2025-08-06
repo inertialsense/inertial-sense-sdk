@@ -10,7 +10,7 @@ extern "C" {
 #include "drivers/d_flash.h"	// Contains overrides for macros below
 #endif
 
-// uINS-3 flash layout - uINS Flash Memory Map
+// IMX-5 flash layout - IMX Flash Memory Map
 /*
   page size:           512  (0x200)
   block size:          8192 (0x2000)
