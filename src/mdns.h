@@ -18,12 +18,13 @@
 #include <set>
 #include <utility>
 #include <stdint.h>
+#include "ISConstants.h"
 #include "libmdns/mdns.h"
 
 #ifdef PLATFORM_IS_WINDOWS
-#define in_addr_t uint32_t
-#define in_port_t uint16_t
-#define sa_family_t uint16_t
+#define in_addr_t ULONG
+#define in_port_t USHORT
+#define sa_family_t ADDRESS_FAMILY
 #endif
 
 class mdns {
