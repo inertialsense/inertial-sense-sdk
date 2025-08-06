@@ -21,6 +21,8 @@
 
 #ifdef PLATFORM_IS_WINDOWS
 #include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #define in_addr_t ULONG
 #define in_port_t USHORT
 #define sa_family_t ADDRESS_FAMILY
