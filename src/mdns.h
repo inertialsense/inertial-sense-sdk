@@ -19,6 +19,12 @@
 #include <utility>
 #include "libmdns/mdns.h"
 
+#ifdef PLATFORM_IS_WINDOWS
+#define in_addr_t ULONG
+#define in_port_t USHORT
+#define sa_family_t ADDRESS_FAMILY
+#endif
+
 class mdns {
 public:
     // Delete the constructor as this is a static class
