@@ -104,7 +104,8 @@ set(CURL_ZLIB OFF CACHE STRING "Build curl without zlib support" FORCE)
 set(CURL_BROTLI OFF CACHE STRING "Build curl without Brotli support" FORCE)
 set(CURL_ZSTD OFF CACHE STRING "Build curl without zstd support" FORCE)
 set(CURL_LTO ON)
-add_subdirectory(src/curl curl EXCLUDE_FROM_ALL)
+add_definitions(-DCURL_STATICLIB)
+add_subdirectory(src/curl curl)
 
 # Include paths
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -147,7 +148,7 @@ if (WIN32)
 	add_dependencies(${PROJECT_NAME} gen_files)
 
     # We need to ensure windows static libs are found
-    target_link_libraries(${PROJECT_NAME} PRIVATE libcurl.lib Ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} PRIVATE libcurl.lib Ws2_32.lib Iphlpapi.lib)
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
