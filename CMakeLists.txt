@@ -53,7 +53,7 @@ find_library(MDNS_LIB mdns PATHS src/libmdns)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 
-# Add CURL for parsing URLs (cause I couldn't find any other URL parsers that supported IPv6
+# Add CURL for parsing URLs (cause I couldn't find any other URL parsers that supported IPv6)
 set(BUILD_CURL_EXE OFF)
 set(CURL_DISABLE_INSTALL ON)
 set(CURL_DISABLE_HTTP ON)
@@ -98,16 +98,14 @@ set(USE_LIBIDN2 ON)
 set(CURL_USE_LIBPSL OFF)
 set(CURL_USE_LIBSSH2 OFF)
 set(ENABLE_UNIX_SOCKETS OFF)
-set(CURL_ZLIB OFF)
-set(ZLIB_FOUND OFF)
-set(CURL_BROTLI OFF)
-set(BROTLI_FOUND OFF)
-set(CURL_ZSTD OFF)
-set(ZSTD_FOUND OFF)
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_STATIC_LIBS ON)
-add_subdirectory(src/curl)
-target_link_libraries(${PROJECT_NAME} PRIVATE libcurl_static)
+set(CURL_USE_PKGCONFIG OFF)
+set(CURL_ZLIB OFF CACHE STRING "Build curl without zlib support" FORCE)
+set(CURL_BROTLI OFF CACHE STRING "Build curl without Brotli support" FORCE)
+set(CURL_ZSTD OFF CACHE STRING "Build curl without zstd support" FORCE)
+set(CURL_LTO ON)
+add_subdirectory(src/curl curl EXCLUDE_FROM_ALL)
 
 # Include paths
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -120,6 +118,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         tests/runtime
         external
 )
+
+target_link_libraries(${PROJECT_NAME} PRIVATE "CURL::libcurl_static" )
 
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
