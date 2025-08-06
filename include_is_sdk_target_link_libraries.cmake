@@ -8,8 +8,9 @@ if(WIN32)
     target_link_libraries(${PROJECT_NAME} libcurl.lib Ws2_32.lib Iphlpapi.lib InertialSenseSDK Threads::Threads)
 else()
     # Link InertialSenseSDK and all of it's dependencies to the executable
-    target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads curl idn2)
+    target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads curl)
+    check_library_exists(idn2 idn2_free "" HAVE_LIBRARY_IDN2)
+    if(HAVE_LIBRARY_IDN2)
+        target_link_libraries(${PROJECT_NAME} idn2)
+    endif()
 endif()
-
-
-
