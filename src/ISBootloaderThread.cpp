@@ -388,7 +388,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     /////////////////////////////////////////////////////////////////////////////
     // IMX-5 firmware/bootloader error checking
      if (!fileExists(firmware.fw_IMX_5.path)) {
-        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Update Aborted: IMX firmware file does not exist: %s\n", firmware.fw_IMX_5.path.c_str());
+        m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX firmware file does not exist: %s\n", firmware.fw_IMX_5.path.c_str());
         return cancel_update();
     }
 
@@ -396,15 +396,15 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     std::string error;
     bool valid = validateHexFile(firmware.fw_IMX_5.path, error);
     if (!valid) {
-        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Update Aborted: IMX firmware file corrupt: %s\n", firmware.fw_IMX_5.path.c_str());
-        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Error: %s\n", error.c_str());
+        m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX firmware file corrupt: %s\n", firmware.fw_IMX_5.path.c_str());
+        m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Error: %s\n", error.c_str());
         return cancel_update();
     }
 
     if (!firmware.bl_IMX_5.path.empty())
     {   // Bootloader file is specified
         if (!fileExists(firmware.bl_IMX_5.path)) {
-            m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Update Aborted: IMX bootloader file does not exist: %s\n", firmware.bl_IMX_5.path.c_str());
+            m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX bootloader file does not exist: %s\n", firmware.bl_IMX_5.path.c_str());
             if (m_waitAction) m_waitAction();   // refresh progress
             return cancel_update();
         }
@@ -413,7 +413,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         size_t pages = calculateFlashPagesUsed(firmware.fw_IMX_5.path, IMX5_FLASH_PAGE_SIZE);
         if (pages >= 8)
         {   // IMX-5 application requires bootloader v6i or newer to write into 8th page of flash memory
-            m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Update Aborted: IMX-5 bootloader incompatible with firmware. Bootloader v6i or newer required for selected IMX-5 firmware.\n");
+            m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX-5 bootloader incompatible with firmware. Bootloader v6i or newer required for selected IMX-5 firmware.\n");
             return cancel_update();
         }
     }

@@ -102,7 +102,41 @@ size_t calculateFlashPagesUsed(const std::string& hexFilename, size_t flashPageS
 // Intel HEX validation functions
 ///////////////////////////////////////////////////////////////////////////
 
-// ✅ Main validation function
+/**
+ * @brief Validates the format and contents of an Intel HEX file.
+ *
+ * This function performs a comprehensive set of checks on the provided Intel HEX file
+ * to ensure it adheres to the Intel HEX specification and does not contain overlapping data.
+ * 
+ * @note The function stops at the first error found and sets \p errorOut accordingly.
+ *
+ * **Validation checks performed:**
+ *  - File access:
+ *    - Ensures the file can be opened for reading.
+ *  - Line-level structure:
+ *    - Each line must begin with a colon (`:`).
+ *    - All characters after the initial colon must be valid hexadecimal digits (`0-9`, `A-F`, `a-f`).
+ *    - Line must be at least 11 characters long (minimum valid record length).
+ *  - Data consistency:
+ *    - Byte count field is parsed and used to compute the expected line length; actual line length must match.
+ *    - Record type field must be in the range `0x00` to `0x05` (valid Intel HEX record types).
+ *    - Line checksum must be valid according to the Intel HEX specification.
+ *  - Record-specific rules:
+ *    - End-of-file (EOF) record (`recordType == 0x01`):
+ *      - Only one EOF record is allowed; multiple EOF records are rejected.
+ *    - Data record (`recordType == 0x00`):
+ *      - Computes the absolute address using any active extended linear address.
+ *      - Ensures no byte of data overlaps with any previously written address.
+ *    - Extended linear address record (`recordType == 0x04`):
+ *      - Updates the high-order 16 bits of the absolute address for subsequent data records.
+ *  - File-level structure:
+ *    - At least one EOF record must be present before the end of file.
+ * 
+ * @param hexFilename The path to the HEX file.
+ * @param errorOut Output parameter for error messages.
+ * @return true If the file is valid.
+ * @return false If the file is invalid.
+ */
 bool validateHexFile(const std::string& hexFilename, std::string& errorOut) {
     std::ifstream file(hexFilename);
     if (!file.is_open()) {

@@ -24,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <mutex>
 
 #define IMX5_FLASH_PAGE_SIZE 65536      // 64K flash page size for IMX-5
-#define IMX5_BOOTLOADER_INCOMPATIBLE_MSG "Bootloader incompatible with IMX firmware. Update IMX-5 bootloader to v6i or newer required for selected IMX firmware."
+#define IMX5_BOOTLOADER_INCOMPATIBLE_MSG "IMX firmware incompatible with bootloader. Update IMX-5 bootloader to v6i or newer required for selected IMX firmware."
 
 namespace ISBootloader {
 
