@@ -2,6 +2,11 @@
 // Created by firiusfoxx on 7/3/25.
 //
 
+#ifdef _WIN32
+// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
+#define NOMINMAX
+#endif
+
 #include "ISManufacturingPortFactory.h"
 #include "PortManager.h"
 #include "mdns.hpp"

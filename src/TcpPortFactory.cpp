@@ -2,14 +2,18 @@
 // Created by firiusfoxx on 6/12/25.
 //
 
-#include <uri.hpp>
+#ifdef _WIN32
+// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
+#define NOMINMAX
+#endif
 
 #include "TcpPortFactory.h"
 #include "PortManager.h"
 #include <iostream>
+#include <uri.hpp>
 #include <util.h>
 
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef _WIN32
 #include <winsock2.h>
 #else
 #include <arpa/inet.h>
