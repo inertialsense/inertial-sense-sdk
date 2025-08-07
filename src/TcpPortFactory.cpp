@@ -2,10 +2,11 @@
 // Created by firiusfoxx on 6/12/25.
 //
 
+#include <uri.hpp>
+
 #include "TcpPortFactory.h"
 #include "PortManager.h"
 #include <iostream>
-#include <uri.hpp>
 #include <util.h>
 
 #ifdef PLATFORM_IS_WINDOWS
