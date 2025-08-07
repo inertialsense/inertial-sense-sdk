@@ -49,63 +49,8 @@ list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
 # find_package(udev)
 find_library(UDEV_LIB udev)
-find_library(MDNS_LIB mdns PATHS src/libmdns)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
-
-# Add CURL for parsing URLs (cause I couldn't find any other URL parsers that supported IPv6)
-set(BUILD_CURL_EXE OFF)
-set(CURL_DISABLE_INSTALL ON)
-set(CURL_DISABLE_HTTP ON)
-set(HTTP_ONLY ON)
-set(CURL_DISABLE_ALTSVC ON)
-set(CURL_DISABLE_SRP ON)
-set(CURL_DISABLE_SRP ON)
-set(CURL_DISABLE_BASIC_AUTH ON)
-set(CURL_DISABLE_BEARER_AUTH ON)
-set(CURL_DISABLE_DIGEST_AUTH ON)
-set(CURL_DISABLE_KERBEROS_AUTH ON)
-set(CURL_DISABLE_NEGOTIATE_AUTH ON)
-set(CURL_DISABLE_AWS ON)
-set(CURL_DISABLE_DICT ON)
-set(CURL_DISABLE_DOH ON)
-set(CURL_DISABLE_GETOPTIONS ON)
-set(CURL_DISABLE_HEADERS_API ON)
-set(CURL_DISABLE_HSTS ON)
-set(CURL_DISABLE_HTTP_AUTH ON)
-set(CURL_DISABLE_LIBCURL_OPTION ON)
-set(CURL_DISABLE_MIME ON)
-set(CURL_DISABLE_FORM_API ON)
-set(CURL_DISABLE_BINDLOCAL ON)
-set(CURL_DISABLE_NETRC ON)
-set(CURL_DISABLE_NTLM ON)
-set(CURL_DISABLE_PARSEDATE ON)
-set(CURL_DISABLE_PROXY ON)
-set(CURL_DISABLE_PROGRESS_METER ON)
-set(CURL_DISABLE_SHA512_256 ON)
-set(CURL_DISABLE_SHUFFLE_DNS ON)
-set(CURL_DISABLE_SOCKETPAIR ON)
-set(CURL_DISABLE_VERBOSE_STRINGS ON)
-set(CURL_DISABLE_WEBSOCKETS ON)
-set(BUILD_LIBCURL_DOCS OFF)
-set(BUILD_MISC_DOCS OFF)
-set(ENABLE_CURL_MANUAL OFF)
-set(ENABLE_IPV6 ON)
-set(CURL_ENABLE_SSL OFF)
-set(CURL_USE_SCHANNEL OFF)
-set(USE_NGHTTP2 OFF)
-set(CURL_USE_LIBPSL OFF)
-set(CURL_USE_LIBSSH2 OFF)
-set(ENABLE_UNIX_SOCKETS OFF)
-set(BUILD_SHARED_LIBS OFF)
-set(BUILD_STATIC_LIBS ON)
-set(CURL_USE_PKGCONFIG OFF)
-set(CURL_ZLIB OFF CACHE STRING "Build curl without zlib support" FORCE)
-set(CURL_BROTLI OFF CACHE STRING "Build curl without Brotli support" FORCE)
-set(CURL_ZSTD OFF CACHE STRING "Build curl without zstd support" FORCE)
-set(CURL_LTO ON)
-add_definitions(-DCURL_STATICLIB)
-add_subdirectory(src/curl curl)
 
 # Include paths
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -119,8 +64,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         external
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE "CURL::libcurl_static")
-
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
@@ -129,7 +72,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Other settings
 if (WIN32)
     # yamlcpp needs to know it's a static lib.
-    add_definitions(-DYAML_CPP_STATIC_DEFINE -DCURL_STATICLIB)
+    add_definitions(-DYAML_CPP_STATIC_DEFINE)
 
     # Windows specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
@@ -148,7 +91,7 @@ if (WIN32)
 	add_dependencies(${PROJECT_NAME} gen_files)
 
     # We need to ensure windows static libs are found
-    target_link_libraries(${PROJECT_NAME} PRIVATE libcurl.lib Ws2_32.lib Iphlpapi.lib)
+    target_link_libraries(${PROJECT_NAME} Ws2_32.lib Iphlpapi.lib)
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
@@ -178,5 +121,5 @@ else ()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
     # Link in Linux specific packages
-    target_link_libraries(${PROJECT_NAME} PRIVATE udev m)
+    target_link_libraries(${PROJECT_NAME} udev m)
 endif ()

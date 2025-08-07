@@ -1,9 +1,3 @@
 [submodule "src/libusb"]
 	path = src/libusb
 	url = https://github.com/inertialsense/libusb
-[submodule "src/libmdns"]
-	path = src/libmdns
-	url = https://github.com/mjansson/mdns.git
-[submodule "src/curl"]
-	path = src/curl
-	url = https://github.com/curl/curl.git

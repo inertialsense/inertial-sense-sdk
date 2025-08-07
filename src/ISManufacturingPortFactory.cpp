@@ -2,13 +2,13 @@
 // Created by firiusfoxx on 7/3/25.
 //
 
+#include "ISManufacturingPortFactory.h"
+#include "PortManager.h"
+#include "mdns.hpp"
+#include "uri.hpp"
 #include <util.h>
 #include <chrono>
-#include "ISManufacturingPortFactory.h"
 #include <regex>
-#include <URL.h>
-#include "PortManager.h"
-#include "mdns.h"
 
 /**
  * Major function from glibc reimplemented as a normal C function instead of as a define
@@ -16,7 +16,6 @@
  * @param devnum dev number
  * @return Major number from dev number
  */
-
 uint32_t major(uint64_t devnum) {
     uint32_t major;
     major = ((devnum & (uint64_t) 0x00000000000fff00u) >>  8);
@@ -48,12 +47,13 @@ uint32_t minor(uint64_t devnum) {
 
 uint64_t makedev(uint32_t major, uint32_t minor) {
     uint64_t devnum;
-    devnum  = (((uint64_t) (major & 0x00000fffu)) <<  8);	\
-    devnum |= (((uint64_t) (major & 0xfffff000u)) << 32);	\
-    devnum |= (((uint64_t) (minor & 0x000000ffu)) <<  0);	\
-    devnum |= (((uint64_t) (minor & 0xffffff00u)) << 12);	\
+    devnum  = (((uint64_t) (major & 0x00000fffu)) <<  8);    \
+    devnum |= (((uint64_t) (major & 0xfffff000u)) << 32);    \
+    devnum |= (((uint64_t) (minor & 0x000000ffu)) <<  0);    \
+    devnum |= (((uint64_t) (minor & 0xffffff00u)) << 12);    \
     return devnum;
 }
+
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
@@ -97,6 +97,7 @@ port_handle_t ISManufacturingPortFactory::bindPort(const std::string& pName, uin
  * @return True if successful, false otherwise
  */
 bool ISManufacturingPortFactory::releasePort(port_handle_t port) {
+    tick(); // Tick everything to ensure we have the latest data
     if (!port) {
         return false;
     }
@@ -115,10 +116,9 @@ bool ISManufacturingPortFactory::releasePort(port_handle_t port) {
  * @return True if port can be created, false otherwise
  */
 bool ISManufacturingPortFactory::validatePort(const std::string& pName, uint16_t pType) {
+    tick(); // Tick everything to ensure we have the latest data
     if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) return false;
     if (!validatePortName(pName)) return false;
-
-    tick(); // Tick everything to ensure we have the latest data
 
     std::pair<std::string, ISManufacturingPortFactory::port_t> portPair = parsePortName(pName);
     try {
@@ -136,8 +136,8 @@ bool ISManufacturingPortFactory::validatePort(const std::string& pName, uint16_t
  * @param pType Ignored
  */
 void ISManufacturingPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
-    std::regex regexPattern = std::regex(pattern);
     tick(); // Tick everything to ensure we have the latest data
+    std::regex regexPattern = std::regex(pattern);
 
     std::unordered_map<std::string, std::vector<port_t>> portsAndHosts = getPorts();
     for (std::pair<std::string, std::vector<port_t>> hostPorts : portsAndHosts) {
@@ -174,39 +174,30 @@ void ISManufacturingPortFactory::tick() {
  * @return pair with first value as server hostname and second value as struct containing devnum and port
  */
 std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFactory::parsePortName(const std::string& pName) {
-    std::string urlSchema;
-    std::string urlHost;
-    std::string urlPort;
-    std::string urlPath;
-    try {
-        URL url(pName);
-        urlSchema = url.getScheme();
-        urlHost = url.getHostCanonized();
-        urlPort = url.getPort();
-        urlPath = url.getPath();
-    } catch (std::exception &e) {
-        throw std::invalid_argument(e.what());
-    }
+    const FIX8::uri uri {pName};
+    if (uri.get_scheme() != "is-manu") throw std::invalid_argument("Invalid URI Protocol");
+    std::string uriHost {uri.get_host()};
+    std::string uriPort {uri.get_port()};
+    std::string uriPath {uri.get_path()};
 
-    if (urlSchema != "is-manu") throw std::invalid_argument("URL has incorrect schema");
-    if (!utils::validDomainName(urlHost)) throw std::invalid_argument("Address of URL is not a valid DNS Domain Name");
-    if (!(urlHost.ends_with(".local") || urlHost.ends_with(".local."))) throw std::invalid_argument("Address of URL doesn't end in .local");
+    if (!utils::validDomainName(uriHost)) throw std::invalid_argument("Address of URI is not a valid DNS Domain Name");
+    if (!(uriHost.ends_with(".local") || uriHost.ends_with(".local."))) throw std::invalid_argument("Address of URI doesn't end in .local");
 
-    if (!urlHost.ends_with(".")) {
-        urlHost.append(".");
+    if (!uriHost.ends_with(".")) {
+        uriHost.append(".");
     }
 
     uint32_t devid = 0;
     uint16_t port = 0;
 
-    if (urlPort.empty() && urlPort.empty()) throw std::invalid_argument("port or path must be specified in URL");
-    if (!urlPort.empty()) {
-        if (std::find_if(urlPort.begin(), urlPort.end(), [](unsigned char c) { return !std::isdigit(c); }) != urlPort.end()) {
-            throw std::invalid_argument("port in URL is not a number");
+    if (uriPort.empty() && uriPath.empty()) throw std::invalid_argument("port or path must be specified in URI");
+    if (!uriPort.empty()) {
+        if (std::find_if(uriPort.begin(), uriPort.end(), [](unsigned char c) { return !std::isdigit(c); }) != uriPort.end()) {
+            throw std::invalid_argument("port in URI is not a number");
         }
         int largePort = 0;
         try {
-            largePort = std::stoi(urlPort);
+            largePort = std::stoi(uriPort);
         } catch (const std::invalid_argument& e) {
             throw std::invalid_argument("Unable to parse port number");
         }
@@ -214,14 +205,14 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
         port = static_cast<uint16_t>(largePort);
     }
 
-    if (!urlPath.empty()) {
+    if (!uriPath.empty()) {
         int major = 0; // 12 bits
         int minor = 0; // 20 bits
-        std::regex regexp1(R"(^\/([0-9]+):([0-9]+)$)");
+        std::regex regexp1(R"(^([0-9]+):([0-9]+)$)");
         std::regex regexp2(R"(^\/dev\/(.*)$)");
         std::smatch match;
 
-        if (std::regex_match(urlPath, match, regexp1)) {
+        if (std::regex_match(uriPath, match, regexp1)) {
             try {
                 major = stoi(match[1].str());
             } catch (const std::invalid_argument& e) {
@@ -236,7 +227,7 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
             if (major > 4095) throw std::invalid_argument("Major number is out of bounds");
             if (minor > 1048575) throw std::invalid_argument("Minor number is out of bounds");
             devid = makedev(major, minor);
-        } else if (std::regex_match(urlPath, match, regexp2)) {
+        } else if (std::regex_match(uriPath, match, regexp2)) {
             for (std::pair<uint16_t, std::string> majorPair: majorAtlas) {
                 if (match[1].str().starts_with( majorPair.second)) {
                     major = majorPair.first;
@@ -253,13 +244,13 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
             if (minor > 1048575) throw std::invalid_argument("Device number is out of bounds");
             devid = makedev(major, minor);
         } else {
-            throw std::invalid_argument("Unknown format for URL path");
+            throw std::invalid_argument("Unknown format for URI path");
         }
         if (devid == 0) throw std::invalid_argument("device number is still zero despite passing a path");
     }
 
     port_t portData = {devid, port};
-    return {urlHost, portData};
+    return {uriHost, portData};
 }
 
 /**

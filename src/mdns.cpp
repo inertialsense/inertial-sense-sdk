@@ -2,13 +2,13 @@
 // Created by firiusfoxx on 7/14/25.
 //
 
+#include "mdns.hpp"
 #include "mdns.h"
+#include "core/msg_logger.h"
 #include <algorithm>
 #include <mutex>
-#include "libmdns/mdns.h"
 #include <functional>
 #include <system_error>
-#include "core/msg_logger.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -212,7 +212,7 @@ int mdns::createMdnsSockets() {
                         saddr->sin_port = htons((unsigned short)port);
                         int sock = mdns_socket_open_ipv4(saddr);
                         if (sock >= 0) {
-                            mdnsSockets[num_sockets++] = sock;
+                            mdnssockets[num_sockets++] = sock;
                         }
                     }
                 }
