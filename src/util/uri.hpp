@@ -435,7 +435,7 @@ public:
         const auto tolo([](auto c) noexcept -> auto { return std::tolower(c); });
         auto sch{bu.get_scheme()}, hst{bu.get_host()};
         if (has_bit<scheme>(components) && isup(sch)) // 1. scheme => lower case
-            transform(sch.begin(), sch.end(), std::string::iterator(result.data() + bu[scheme].first), tolo);
+            std::ranges::transform(sch, std::string::iterator(result.data() + bu[scheme].first), tolo);
         if (has_bit<host>(components) && isup(hst)) // 2. host => lower case
             transform(hst.begin(), hst.end(), std::string::iterator(result.data() + bu[host].first), tolo);
         if (has_hex(result)) {
