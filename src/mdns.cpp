@@ -212,7 +212,7 @@ int mdns::createMdnsSockets() {
                         saddr->sin_port = htons((unsigned short)port);
                         int sock = mdns_socket_open_ipv4(saddr);
                         if (sock >= 0) {
-                            mdnssockets[num_sockets++] = sock;
+                            mdnsSockets[num_sockets++] = sock;
                         }
                     }
                 }
