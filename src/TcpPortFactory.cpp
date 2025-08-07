@@ -3,6 +3,10 @@
 //
 
 #include "TcpPortFactory.h"
+#include "PortManager.h"
+#include <iostream>
+#include <uri.hpp>
+#include <util.h>
 
 #ifdef PLATFORM_IS_WINDOWS
 #include <winsock2.h>
@@ -10,11 +14,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #endif
-
-#include <iostream>
-#include "PortManager.h"
-#include <uri.hpp>
-#include <util.h>
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
