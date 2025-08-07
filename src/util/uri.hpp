@@ -434,10 +434,18 @@ public:
         const auto isup([](std::string_view src) noexcept -> bool { return std::any_of(std::cbegin(src), std::cend(src), [](const auto c) noexcept { return std::isupper(c); }); });
         const auto tolo([](auto c) noexcept -> auto { return std::tolower(c); });
         auto sch{bu.get_scheme()}, hst{bu.get_host()};
-        if (has_bit<scheme>(components) && isup(sch)) // 1. scheme => lower case
-            std::ranges::transform(sch, std::string::iterator(result.data() + bu[scheme].first), tolo);
-        if (has_bit<host>(components) && isup(hst)) // 2. host => lower case
-            transform(hst.begin(), hst.end(), std::string::iterator(result.data() + bu[host].first), tolo);
+        if (has_bit<scheme>(components) && isup(sch)) {
+            // 1. scheme => lower case
+            auto i = std::string::iterator(result.data());
+            std::advance(i, bu[scheme].first);
+            transform(sch.begin(), sch.end(), i, tolo);
+        }
+        if (has_bit<host>(components) && isup(hst)) {
+            // 2. host => lower case
+            auto i = std::string::iterator(result.data());
+            std::advance(i, bu[host].first);
+            transform(hst.begin(), hst.end(), i, tolo);
+        }
         if (has_hex(result)) {
             for (std::string_view::size_type hv, pos{}; (hv = find_hex(result, pos)) != std::string_view::npos; pos += 3) // 3. %hex => upper case
                 for (auto pos{hv + 1}; pos < hv + 3; ++pos)
