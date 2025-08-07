@@ -85,7 +85,7 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), reinterpret_cast<const sockaddr_storage*>(&addr));
+    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), &addr);
 
     return port;
 }
