@@ -1543,7 +1543,11 @@ is_operation_result InertialSense::BootloadFile(
     files.fw_EVB_2.path = fileName;
     files.bl_EVB_2.path = blFileName;
 
-    cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+    std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list = 
+        cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+
+	if (confirm_device_list.empty())
+		return IS_OP_ERROR;   // Error or no devices found
 
     cISSerialPort::GetComPorts(all_ports);
 

@@ -421,8 +421,8 @@ is_operation_result cISBootloaderISB::select_page(int page)
     if (serialPortWriteAndWaitForTimeout(s, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) 
     {
         if (page == 7) 
-        {   // IMX-5 bootloader prior to v6i does not support writing to page 7
-            status_update("(ISB) Failed to select page.  Is app image too large for installed bootloader?  Try loading IMX-5 r2.5.1, updating to bootloader v6i, then loading latest IMX-5 firmware.", IS_LOG_LEVEL_ERROR);
+        {   // IMX-5 bootloader prior to v6i does not support writing to 8th page of flash memory
+            status_update("(ISB) PAGE SELECTION FAILED: " IMX5_BOOTLOADER_INCOMPATIBLE_MSG "\n", IS_LOG_LEVEL_ERROR);
         }
         else
         {

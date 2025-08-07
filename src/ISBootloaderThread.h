@@ -67,6 +67,8 @@ public:
         void						            (*waitAction)()
     );
 
+    static std::vector<confirm_bootload_t> cancel_update();
+
     typedef struct 
     {
         void* thread;

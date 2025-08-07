@@ -127,6 +127,9 @@ int main(int argc, char* argv[])
 				bootloaderStatusText,
 				NULL);
 
+	if (confirm_device_list.empty())
+		return -1;   // Error or no devices found
+
     cISSerialPort::GetComPorts(all_ports);
 
     // Update the firmware on any port that wasn't initially deselected

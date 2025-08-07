@@ -10,6 +10,12 @@
 #include <map>
 #include <stdexcept>
 
+
+bool fileExists(const std::string& filename) {
+    std::ifstream file(filename);
+    return file.good();
+}
+
 // Convert two hex characters from a string to a byte
 static uint8_t parseHexByte(const std::string& str, size_t pos) {
     return static_cast<uint8_t>(std::stoi(str.substr(pos, 2), nullptr, 16));

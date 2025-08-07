@@ -4,6 +4,13 @@
 #include <cstddef>   // for size_t
 
 /**
+ * @brief Check if a file exists.
+ * @param filename Path to the file
+ * @return true if the file exists, false otherwise
+ */
+bool fileExists(const std::string& filename);
+
+/**
  * @brief Calculate the number of flash pages used by the given Intel HEX file. 
  * Throws std::runtime_error if the file cannot be read or parsed.
  * 

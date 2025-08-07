@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../hw-libs/bootloader/bootloaderShared.h"
 #include "libusb.h"
 #include "ISUtilities.h"
+#include "intel_hex_utils.h"
 
 using namespace ISBootloader;
 
@@ -635,6 +636,22 @@ is_operation_result cISBootloaderBase::update_device
                 delete obj;
                 return IS_OP_CLOSED;
             }
+
+            //////////////////////////////////////////////////////////////////////
+            // Check IMX-5 bootloader / application firmware compatibility
+            if (((obj)->m_isb_major < 6) || 
+                ((obj)->m_isb_major == 6 && (obj)->m_isb_minor < 'i'))
+            {
+                // Check that firmware size will fit with current bootloader
+                size_t pages = calculateFlashPagesUsed(filenames.fw_IMX_5.path, IMX5_FLASH_PAGE_SIZE);
+                if (pages >= 8)
+                {   // IMX-5 application requires bootloader v6i or newer to write into 8th page of flash memory
+                    (obj)->m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB) FIRMWARE UPDATE ABORTED! " IMX5_BOOTLOADER_INCOMPATIBLE_MSG);
+                    delete obj;
+                    return IS_OP_INCOMPATIBLE;
+                }
+            }
+            //////////////////////////////////////////////////////////////////////
 
             (obj)->m_use_progress = true;
             addMutex->lock();

@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderISB.h"
 #include "ISBootloaderSAMBA.h"
 #include "ISSerialPort.h"
+#include "intel_hex_utils.h"
 
 #include <algorithm>
 
@@ -384,6 +385,40 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
+    /////////////////////////////////////////////////////////////////////////////
+    // IMX-5 firmware/bootloader error checking
+     if (!fileExists(firmware.fw_IMX_5.path)) {
+        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Update Aborted: IMX firmware file does not exist: %s\n", firmware.fw_IMX_5.path.c_str());
+        return cancel_update();
+    }
+
+    // Validate the HEX file before starting
+    std::string error;
+    bool valid = validateHexFile(firmware.fw_IMX_5.path, error);
+    if (!valid) {
+        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Update Aborted: IMX firmware file corrupt: %s\n", firmware.fw_IMX_5.path.c_str());
+        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Error: %s\n", error.c_str());
+        return cancel_update();
+    }
+
+    if (!firmware.bl_IMX_5.path.empty())
+    {   // Bootloader file is specified
+        if (!fileExists(firmware.bl_IMX_5.path)) {
+            m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Update Aborted: IMX bootloader file does not exist: %s\n", firmware.bl_IMX_5.path.c_str());
+            if (m_waitAction) m_waitAction();   // refresh progress
+            return cancel_update();
+        }
+                
+        // Check that firmware size will fit using specified bootloader
+        size_t pages = calculateFlashPagesUsed(firmware.fw_IMX_5.path, IMX5_FLASH_PAGE_SIZE);
+        if (pages >= 8)
+        {   // IMX-5 application requires bootloader v6i or newer to write into 8th page of flash memory
+            m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Update Aborted: IMX-5 bootloader incompatible with firmware. Bootloader v6i or newer required for selected IMX-5 firmware.\n");
+            return cancel_update();
+        }
+    }
+    /////////////////////////////////////////////////////////////////////////////
+
     m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Initializing devices for update...");
 
     ////////////////////////////////////////////////////////////////////////////
@@ -627,8 +662,8 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         if(m_waitAction) m_waitAction(); 
         return vector<confirm_bootload_t>(); 
     }
-    m_ctx_mutex.lock();
 
+    m_ctx_mutex.lock();
     for(size_t i = 0; i < ctx.size(); i++)
     {
         if(ctx[i]->isb_mightUpdate)
@@ -641,7 +676,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             updatesPending.push_back(confirm);
         }
     }
-
     m_ctx_mutex.unlock();
 
     m_update_mutex.unlock();
@@ -980,4 +1014,13 @@ is_operation_result cISBootloaderThread::update(
     if(m_waitAction) m_waitAction();     // Final UI update
 
     return IS_OP_OK;
+}
+
+vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::cancel_update()
+{
+    m_continue_update = false; 
+    m_update_in_progress = false; 
+    m_update_mutex.unlock(); 
+    if(m_waitAction) m_waitAction(); 
+    return vector<confirm_bootload_t>();
 }
