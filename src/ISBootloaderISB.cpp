@@ -610,7 +610,7 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
         while (*currentOffset < FLASH_PAGE_SIZE)
         {
             if (*currentPage == 7 && *currentOffset >= 36480)
-            {   // The last (8th) page of flash memory on the IMX-5 (STM32L4) is restricted to 36480 bytes.  We should fill beyond this point on the 8th page.
+            {   // The last (8th) page of flash memory on the IMX-5 (STM32L4) is restricted to 36480 bytes.  We should NOT fill beyond this point on the 8th page.
                 break;
             }
 
