@@ -177,7 +177,7 @@ bool validateHexFile(const std::string& hexFilename, std::string& errorOut) {
             for (uint8_t i = 0; i < byteCount; ++i) {
                 uint32_t a = absAddr + i;
                 if (writtenAddresses.count(a)) {
-                    errorOut = "Overlapping data at address 0x" + std::to_string(a);
+                    { std::stringstream ss; ss << std::hex << std::uppercase << a; errorOut = "Overlapping data at address 0x" + ss.str(); }
                     return false;
                 }
                 writtenAddresses.insert(a);
