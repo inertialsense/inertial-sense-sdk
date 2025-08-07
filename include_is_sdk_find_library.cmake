@@ -9,6 +9,7 @@ else()
 endif()
 
 find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_BUILD_DIR})
+find_library(SDK_LIBRARY_PATH libcurl PATHS ${IS_SDK_BUILD_DIR}/curl/lib)
 
 if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
     # InertialSenseSDK library not prebuilt and not already included in project.  Include it in this project.
