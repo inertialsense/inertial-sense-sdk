@@ -436,13 +436,13 @@ public:
         auto sch{bu.get_scheme()}, hst{bu.get_host()};
         if (has_bit<scheme>(components) && isup(sch)) {
             // 1. scheme => lower case
-            auto i = std::string::iterator(result.data());
+            auto i = std::string::iterator(result.begin());
             std::advance(i, bu[scheme].first);
             transform(sch.begin(), sch.end(), i, tolo);
         }
         if (has_bit<host>(components) && isup(hst)) {
             // 2. host => lower case
-            auto i = std::string::iterator(result.data());
+            auto i = std::string::iterator(result.begin());
             std::advance(i, bu[host].first);
             transform(hst.begin(), hst.end(), i, tolo);
         }
