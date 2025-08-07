@@ -569,7 +569,7 @@ public:
 
 private:
     static constexpr bool is_reserved(char c) noexcept { return _reserved.find_first_of(c) != std::string_view::npos; }
-    static constexpr bool is_unreserved(char c) noexcept { return std::isalnum(c) || c == '-' || c == '.' || c == '_' || c == '~'; }
+    static constexpr bool is_unreserved(unsigned char c) noexcept { return (c > 0x60 && c < 0x7B) || (c > 0x40 && c < 0x5B) || (c > 0x2F && c < 0x3A) || c == '-' || c == '.' || c == '_' || c == '~'; }
 
     static constexpr bool is_unreserved_ascii(std::string_view src) noexcept // is %XX unreserved?
     {
