@@ -21,6 +21,25 @@ static uint8_t parseHexByte(const std::string& str, size_t pos) {
     return static_cast<uint8_t>(std::stoi(str.substr(pos, 2), nullptr, 16));
 }
 
+// Helper: trim trailing newline and whitespace
+void trimTrailing(std::string& line) {
+    line.erase(line.find_last_not_of(" \r\n") + 1);
+}
+
+// Helper: validate hex character
+bool isHexChar(char c) {
+    return std::isxdigit(static_cast<unsigned char>(c));
+}
+
+// Helper: validate Intel HEX line checksum
+bool validateLineChecksum(const std::string& line) {
+    uint8_t sum = 0;
+    for (size_t i = 1; i < line.length(); i += 2) {
+        sum += parseHexByte(line, i);
+    }
+    return sum == 0;
+}
+
 // Parse the HEX file and return a map of absolute address → data byte
 static std::map<uint32_t, uint8_t> parseIntelHex(const std::string& filename) {
     std::ifstream file(filename);
@@ -83,30 +102,6 @@ size_t calculateFlashPagesUsed(const std::string& hexFilename, size_t flashPageS
 // Intel HEX validation functions
 ///////////////////////////////////////////////////////////////////////////
 
-// Helper: convert two hex characters to a byte
-uint8_t hexByte(const std::string& str, size_t pos) {
-    return static_cast<uint8_t>(std::stoi(str.substr(pos, 2), nullptr, 16));
-}
-
-// Helper: trim trailing newline and whitespace
-void trimTrailing(std::string& line) {
-    line.erase(line.find_last_not_of(" \r\n") + 1);
-}
-
-// Helper: validate hex character
-bool isHexChar(char c) {
-    return std::isxdigit(static_cast<unsigned char>(c));
-}
-
-// Helper: validate Intel HEX line checksum
-bool validateLineChecksum(const std::string& line) {
-    uint8_t sum = 0;
-    for (size_t i = 1; i < line.length(); i += 2) {
-        sum += hexByte(line, i);
-    }
-    return sum == 0;
-}
-
 // ✅ Main validation function
 bool validateHexFile(const std::string& hexFilename, std::string& errorOut) {
     std::ifstream file(hexFilename);
@@ -144,9 +139,9 @@ bool validateHexFile(const std::string& hexFilename, std::string& errorOut) {
             return false;
         }
 
-        uint8_t byteCount = hexByte(line, 1);
+        uint8_t byteCount = parseHexByte(line, 1);
         uint16_t address = static_cast<uint16_t>(std::stoi(line.substr(3, 4), nullptr, 16));
-        uint8_t recordType = hexByte(line, 7);
+        uint8_t recordType = parseHexByte(line, 7);
 
         // Check expected length (1 ':' + 2 chars/byte * (byteCount + 4 fields) + 2 for checksum)
         size_t expectedLength = 9 + byteCount * 2 + 2; // 9 = 1B count + 2B addr + 1B type (all as hex)
