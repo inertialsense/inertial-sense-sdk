@@ -1,6 +1,5 @@
-#include "intel_hex_utils.h"
-
-#include <iostream>
+#include <cstdint>      // uint8_t, uint16_t, uint32_t
+#include <cstddef>      // size_t
 #include <sstream>
 #include <unordered_set>
 #include <iomanip>
@@ -9,6 +8,7 @@
 #include <string>
 #include <map>
 #include <stdexcept>
+#include "intel_hex_utils.h"
 
 
 bool fileExists(const std::string& filename) {
