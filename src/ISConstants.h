@@ -299,6 +299,10 @@ extern "C" {
 #define _MIN(a,b) (((a) < (b)) ? (a) : (b))
 #endif
 
+#ifndef _SQR
+#define _SQR(a) (a * a)
+#endif
+
 #ifndef _CLAMP
 #define _CLAMP(v, minV, maxV) ((v) < (minV) ? (minV) : ((v) > (maxV) ? (maxV) : (v)))
 #endif
