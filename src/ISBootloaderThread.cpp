@@ -972,7 +972,7 @@ is_operation_result cISBootloaderThread::update(
     // Only report run time if the update was successful
     if (overall_result == IS_OP_OK)
     {
-        tmp = "Update completed in " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
+        tmp = "Update succeeded in " + to_string(((double)timeDeltaMs) / 1000) + " seconds.";
         m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
     }
 
