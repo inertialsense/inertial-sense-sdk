@@ -78,6 +78,7 @@ public:
         bool done;
         bool reuse_port;
         bool force_isb;
+        is_operation_result result;      // defaults to IS_OP_OK
     } thread_serial_t;
 
     typedef struct 

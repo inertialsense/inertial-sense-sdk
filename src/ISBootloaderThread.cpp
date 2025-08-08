@@ -288,6 +288,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
     serialPortClose(&port);
 
     m_serial_thread_mutex.lock();
+    thread_info->result = result;
     thread_info->done = true;
     m_serial_thread_mutex.unlock();
 }
@@ -702,6 +703,7 @@ is_operation_result cISBootloaderThread::update(
     uint32_t timeDeltaMs; 
     uint32_t beginTimeMs;
     uint32_t timeout;
+    is_operation_result overall_result = IS_OP_OK;
 
     // Only allow one firmware update sequence to happen at a time
     m_update_mutex.lock();
@@ -879,8 +881,18 @@ is_operation_result cISBootloaderThread::update(
         {
             if (m_serial_threads[l]->thread != NULL && m_serial_threads[l]->done)
             {
+                // JOIN the finished worker
                 threadJoinAndFree(m_serial_threads[l]->thread);
                 m_serial_threads[l]->thread = NULL;
+
+                is_operation_result r = m_serial_threads[l]->result;        // set by update_thread_serial
+                if (r != IS_OP_OK && r != IS_OP_CANCELLED && r != IS_OP_CLOSED)
+                {
+                    if (overall_result == IS_OP_OK)      // keep the first non-OK as the return
+                    {
+                        overall_result = r;
+                    }
+                }
             }
 
             if (!m_serial_threads[l]->done)
@@ -966,11 +978,14 @@ is_operation_result cISBootloaderThread::update(
 
     timeDeltaMs = current_timeMs() - beginTimeMs;
 
-    tmp = "Update run time: " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
-
-    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
-
     threadJoinAndFree(libusb_thread);
+
+    // Only report run time if the update was successful
+    if (overall_result == IS_OP_OK)
+    {
+        tmp = "Update completed in " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
+        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
+    }
 
     if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
     { 
@@ -1015,8 +1030,13 @@ is_operation_result cISBootloaderThread::update(
     m_update_in_progress = false;
     m_update_mutex.unlock();
 
-    if(m_waitAction) m_waitAction();     // Final UI update
+    if (overall_result != IS_OP_OK) {
+        m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update failed!");
+        if(m_waitAction) m_waitAction();     // Final UI update
+        return overall_result;
+    }
 
+    if(m_waitAction) m_waitAction();     // Final UI update
     return IS_OP_OK;
 }
 

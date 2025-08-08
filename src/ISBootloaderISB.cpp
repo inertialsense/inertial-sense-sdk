@@ -67,7 +67,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     serialPortFlush(m_port);
     serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    handshake_sync(m_port);
+    bool handshake = handshake_sync(m_port) == IS_OP_OK;
 
     SLEEP_MS(100);
 
@@ -102,6 +102,8 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     uint8_t processor = 0xFF;
     m_isb_props.is_evb = false;
     m_sn = 0;
+
+    m_info_callback(NULL, IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {   // Valid packet found
@@ -240,7 +242,7 @@ is_operation_result cISBootloaderISB::reboot()
 
 uint32_t cISBootloaderISB::get_device_info()
 {
-    handshake_sync(m_port);
+    bool handshake = handshake_sync(m_port) == IS_OP_OK;
     serialPortFlush(m_port);
 
 	// Send command
@@ -267,6 +269,8 @@ uint32_t cISBootloaderISB::get_device_info()
     m_isb_major = buf[2];
     m_isb_minor = (char)buf[3];
     m_isb_props.rom_available = buf[4];
+
+    m_info_callback(NULL, IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {
@@ -322,7 +326,6 @@ is_operation_result cISBootloaderISB::handshake_sync(serial_port_t* s)
 
         if (serialPortWaitForTimeout(s, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
-            status_update("(ISB) Handshake", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
@@ -341,7 +344,6 @@ is_operation_result cISBootloaderISB::handshake_sync(serial_port_t* s)
     }
 #endif
 
-    status_update("(ISB) Handshake w/o response", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
