@@ -339,14 +339,15 @@ bool cISBootloaderThread::true_if_cancelled(void)
     return false;
 }
 
-vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_and_check_devices(
+bool cISBootloaderThread::set_mode_and_check_devices(
     vector<string>&                         comPorts,
     int                                     baudRate,
     const ISBootloader::firmwares_t&        firmware,
     ISBootloader::pfnBootloadProgress       uploadProgress, 
     ISBootloader::pfnBootloadProgress       verifyProgress,
     ISBootloader::pfnBootloadStatus         infoProgress,
-    void						            (*waitAction)()
+    void						            (*waitAction)(),
+    vector<confirm_bootload_t>*             updatesPending
 )
 {
     // Only allow one firmware update sequence to happen at a time
@@ -368,7 +369,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
     vector<string> ports;                       // List of all ports connected, including ignored ports
     vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
-    vector<confirm_bootload_t> updatesPending;
+    if (updatesPending) updatesPending->clear();// Clear the updates pending list
 
     m_serial_threads.clear();
 
@@ -389,7 +390,8 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     // IMX-5 firmware/bootloader error checking
      if (!fileExists(firmware.fw_IMX_5.path)) {
         m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX firmware file does not exist: %s\n", firmware.fw_IMX_5.path.c_str());
-        return cancel_update();
+        cancel_update();
+        return false;
     }
 
     // Validate the HEX file before starting
@@ -398,15 +400,16 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     if (!valid) {
         m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX firmware file corrupt: %s\n", firmware.fw_IMX_5.path.c_str());
         m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Error: %s\n", error.c_str());
-        return cancel_update();
+        cancel_update();
+        return false;
     }
 
     if (!firmware.bl_IMX_5.path.empty())
     {   // Bootloader file is specified
         if (!fileExists(firmware.bl_IMX_5.path)) {
             m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX bootloader file does not exist: %s\n", firmware.bl_IMX_5.path.c_str());
-            if (m_waitAction) m_waitAction();   // refresh progress
-            return cancel_update();
+            cancel_update();
+            return false;
         }
                 
         // Check that firmware size will fit using specified bootloader
@@ -414,7 +417,8 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         if (pages >= 8)
         {   // IMX-5 application requires bootloader v6i or newer to write into 8th page of flash memory
             m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX-5 bootloader incompatible with firmware. Bootloader v6i or newer required for selected IMX-5 firmware.\n");
-            return cancel_update();
+            cancel_update();
+            return false;
         }
     }
     /////////////////////////////////////////////////////////////////////////////
@@ -539,7 +543,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_update_in_progress = false; 
         m_update_mutex.unlock(); 
         if(m_waitAction) m_waitAction(); 
-        return vector<confirm_bootload_t>(); 
+        return false; 
     }
 
     m_continue_update = true;
@@ -660,7 +664,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_update_in_progress = false; 
         m_update_mutex.unlock(); 
         if(m_waitAction) m_waitAction(); 
-        return vector<confirm_bootload_t>(); 
+        return false; 
     }
 
     m_ctx_mutex.lock();
@@ -673,14 +677,14 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             confirm.minor = ctx[i]->m_isb_minor;
             confirm.sn = ctx[i]->m_sn;
 
-            updatesPending.push_back(confirm);
+            if (updatesPending) updatesPending->push_back(confirm);
         }
     }
     m_ctx_mutex.unlock();
 
     m_update_mutex.unlock();
 
-    return updatesPending;
+    return true;
 }
 
 is_operation_result cISBootloaderThread::update(
@@ -1016,11 +1020,10 @@ is_operation_result cISBootloaderThread::update(
     return IS_OP_OK;
 }
 
-vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::cancel_update()
+void cISBootloaderThread::cancel_update()
 {
     m_continue_update = false; 
     m_update_in_progress = false; 
     m_update_mutex.unlock(); 
     if(m_waitAction) m_waitAction(); 
-    return vector<confirm_bootload_t>();
 }

@@ -46,14 +46,15 @@ public:
         char minor;
     } confirm_bootload_t;
 
-    static std::vector<confirm_bootload_t> set_mode_and_check_devices(
+    static bool set_mode_and_check_devices(
         std::vector<std::string>&               comPorts,
         int                                     baudRate,
         const ISBootloader::firmwares_t&        firmware,
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
-        void						            (*waitAction)()
+        void						            (*waitAction)() = NULL,
+        std::vector<confirm_bootload_t>*        updatesPending = NULL
     );
 
     static is_operation_result update(
@@ -67,7 +68,7 @@ public:
         void						            (*waitAction)()
     );
 
-    static std::vector<confirm_bootload_t> cancel_update();
+    static void cancel_update();
 
     typedef struct 
     {
