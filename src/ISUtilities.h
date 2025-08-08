@@ -190,7 +190,7 @@ uint8_t getHexValue(unsigned char hex);
 * @param info the parameter to pass to the thread function
 * @return the thread handle
 */
-void* threadCreateAndStart(void(*function)(void* info), void* info);
+void* threadCreateAndStart(void(*function)(void*), void* info);
 
 /**
 * Join a thread with this thread, waiting for it to finish, then free the thread

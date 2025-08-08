@@ -88,6 +88,7 @@ public:
         char uid[100];
         ISBootloader::cISBootloaderBase* ctx;
         bool done;
+        is_operation_result result;      // defaults to IS_OP_OK
     } thread_libusb_t;
 
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
@@ -96,6 +97,8 @@ public:
     static bool m_update_in_progress;
     
 private:
+    static void create_and_start_serial_thread(const std::string& port, void(*function)(void*), bool force_isb_update = false);
+    static void create_and_start_libusb_thread(void(*function)(void*), libusb_device_handle* handle);
     static void get_device_isb_version_thread(void* context);
     static void mode_thread_serial_app(void* context);
     static void mode_thread_serial_isb(void* context);

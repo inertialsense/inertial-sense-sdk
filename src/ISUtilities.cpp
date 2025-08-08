@@ -434,7 +434,7 @@ uint8_t getHexValue(unsigned char hex)
 	return 9 * (hex >> 6) + (hex & 017);
 }
 
-void* threadCreateAndStart(void(*function)(void* info), void* info)
+void* threadCreateAndStart(void(*function)(void*), void* info)
 {
 #if PLATFORM_IS_EMBEDDED
 
