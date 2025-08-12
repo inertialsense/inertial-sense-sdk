@@ -1,6 +1,10 @@
-//
-// Created by firiusfoxx on 6/12/25.
-//
+/**
+ * @file TcpPortFactory.cpp
+ * @brief This is a port factory used to a single known devices over TCP/IP
+ *
+ * @author FiriusFoxx on 2025-06-12.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
+ */
 
 #ifdef _WIN32
 // Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp

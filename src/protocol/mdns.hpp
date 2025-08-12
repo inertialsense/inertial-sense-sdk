@@ -1,6 +1,10 @@
-//
-// Created by firiusfoxx on 7/14/25.
-//
+/**
+ * @file mdns.hpp
+ * @brief This is a C++ wrapper around mdns.h
+ *
+ * @author FiriusFoxx on 2025-07-14.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
+ */
 
 #ifndef IS_SDK__MDNS_HPP
 #define IS_SDK__MDNS_HPP
@@ -278,13 +282,25 @@ public:
             }
         }
         mdns_record_cpp_t& operator=(mdns_record_cpp_t other) {
+            // Deinitialize the data section of the struct to prevent std::strings from leaking memory
+            switch (this->type) {
+                case MDNS_RECORDTYPE_IGNORE: break;
+                case MDNS_RECORDTYPE_A: data.a.~mdns_record_a_cpp_t(); break;
+                case MDNS_RECORDTYPE_TXT: data.txt.~mdns_record_txt_cpp_t(); break;
+                case MDNS_RECORDTYPE_PTR: data.ptr.~mdns_record_ptr_cpp_t(); break;
+                case MDNS_RECORDTYPE_AAAA: data.aaaa.~mdns_record_aaaa_cpp_t(); break;
+                case MDNS_RECORDTYPE_SRV: data.srv.~mdns_record_srv_cpp_t(); break;
+                case MDNS_RECORDTYPE_ANY: break;
+            }
+            // Zero out the data to prevent any crashes when we try to reassign data
+            memset((void*)&(this->data), 0, sizeof(mdns_record_data));
+
             this->name = std::string(other.name);
 
             this->type = other.type;
             this->rclass = other.rclass;
             this->ttl = other.ttl;
 
-            memset((void*)&(this->data), 0, sizeof(mdns_record_data));
             if (other.type == MDNS_RECORDTYPE_PTR) {
                 this->data.ptr = other.data.ptr;
             } else if (other.type == MDNS_RECORDTYPE_SRV) {

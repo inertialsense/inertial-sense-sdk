@@ -1,6 +1,10 @@
-//
-// Created by firiusfoxx on 7/3/25.
-//
+/**
+ * @file ISManufacturingPortFactory.h
+ * @brief This is a port factory used to connect a large number of devices over TCP/IP
+ *
+ * @author FiriusFoxx on 2025-07-03.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
+ */
 
 #ifndef IS_SDK__IS_MANUFACTURING_PORT_FACTORY_H
 #define IS_SDK__IS_MANUFACTURING_PORT_FACTORY_H
@@ -11,6 +15,12 @@
 #include "core/tcpPort.h"
 #include <chrono>
 
+/**
+ * Singleton class passed to PortManager to autodiscover and connect to remote serial ports over the network
+ *
+ * @code{.cpp} portManager.addPortFactory((PortFactory*)&(ISManufacturingPortFactory::getInstance())); @endcode
+ * Call to a PortManager adding a ISManufacturingPortFactory as an available PortFactory
+ */
 class ISManufacturingPortFactory : public PortFactory {
 public:
     struct {

@@ -1,6 +1,10 @@
-//
-// Created by firiusfoxx on 7/14/25.
-//
+/**
+ * @file mdns.cpp
+ * @brief This is a C++ wrapper around mdns.h
+ *
+ * @author FiriusFoxx on 2025-07-14.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
+ */
 
 #include "mdns.hpp"
 #include "mdns.h"
@@ -36,6 +40,8 @@ void mdns::tick() {
 
 /**
  * Sends out a MDNS Query on all interfaces/sockets
+ * @param type Query Type to send
+ * @param query Name to resolve
  */
 void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
     size_t capacity = 2048;
@@ -119,6 +125,7 @@ std::vector<mdns::mdns_record_cpp_t> mdns::getRecords() {
 
 /**
  * Resolve hostname using MDNS
+ * @param name Hostname to resolve
  * @return A sockaddr_storage struct representing either a IPv6 or IPv4 Address, or type of AF_UNSPEC if you need to try again or the address doesn't exist
  */
 sockaddr_storage mdns::resolveName(const std::string& name) {
@@ -322,12 +329,14 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
                         size_t size, size_t name_offset, size_t name_length, size_t record_offset,
                         size_t record_length, void* user_data) {
 
+    // Find which query we sent that this is a response to
     std::list<used_query_id_t>::iterator foundQuery =
         std::find_if(usedQueryIds.begin(), usedQueryIds.end(),
                      [&query_id](used_query_id_t x) -> bool {
             return x.queryId == query_id;
         });
 
+    // Mark query as received and return an error if we can't find which query this is a response to
     if (foundQuery == usedQueryIds.end()) {
         debug_message("[ERR] Unable to find received query ID is local list")
         return -EBADMSG;
@@ -335,52 +344,76 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
         foundQuery->queryRecieved = true;
     }
 
+    // Do not process ANSWER messages
     if (entry != MDNS_ENTRYTYPE_ANSWER) {
         debug_message("[WRN] Unable to process non ANSWER responses: Not Supported")
         return -ENOTSUP;
     }
 
+    // Create buffers for strings
     char entrybuffer[256];
     char namebuffer[256];
 
+    // Extract the name of the mdns record
     mdns_string_t entryName = mdns_string_extract(data, size, &name_offset, entrybuffer, sizeof(entrybuffer));
+
+    // TXT records are received as an array of TXT records that all have the same name, class, and ttl
+    // but because of this they have slightly different logic for handling them
     if (rtype != MDNS_RECORDTYPE_TXT) {
+        // Not a TXT record create a new record and copy common values to it
         mdns_record_cpp_t newRecord;
         newRecord.name = std::string(MDNS_STRING_ARGS(entryName));
         newRecord.rclass = rclass;
         newRecord.ttl = ttl;
 
         if (rtype == MDNS_RECORDTYPE_A) {
+            // Record is an IPv4 Address
+            // Parse IPv4 from message
             struct sockaddr_in addr;
             mdns_record_parse_a(data, size, record_offset, record_length, &addr);
+            // Copy IPv4 address to new record
             newRecord.data.a = mdns_record_a_cpp_t(addr);
         } else if (rtype == MDNS_RECORDTYPE_PTR) {
+            // Record is a PTR record
+            // Parse PTR name from message
             mdns_string_t ptrTxt = mdns_record_parse_ptr(data, size, record_offset, record_length,
                                                       namebuffer, sizeof(namebuffer));
+            // Copy PTR name to new record
             mdns_record_ptr_cpp_t ptrRecord = mdns_record_ptr_cpp_t(std::string(MDNS_STRING_ARGS(ptrTxt)));
             newRecord.data.ptr = ptrRecord;
         } else if (rtype == MDNS_RECORDTYPE_AAAA) {
+            // Record is an IPv6 Address
+            // Parse IPv6 from message
             struct sockaddr_in6 addr;
             mdns_record_parse_aaaa(data, size, record_offset, record_length, &addr);
+            // Copy IPv6 address to new record
             mdns_record_aaaa_cpp_t aaaaRecord = mdns_record_aaaa_cpp_t(addr);
             newRecord.data.aaaa = aaaaRecord;
         } else if (rtype == MDNS_RECORDTYPE_SRV) {
+            // Record is an SRV record
+            // Parse data from SRV record
             mdns_record_srv_t srv = mdns_record_parse_srv(data, size, record_offset, record_length,
                                                           namebuffer, sizeof(namebuffer));
+            // Copy data in to new record
             mdns_record_srv_cpp_t srvRecord = mdns_record_srv_cpp_t(srv.priority, srv.weight, srv.port, std::string(MDNS_STRING_ARGS(srv.name)));
             newRecord.data.srv = srvRecord;
         } else {
             debug_message("[WRN] Unable to process unknown MDNS record type: Not Supported")
             return -ENOTSUP;
         }
+        // Save the type of record to struct so that we know how to parse the union
         newRecord.type = static_cast<mdns_record_type>(rtype);
+        // Store each record as slightly older then the last to keep message order when we sort messages
         responses.insert_or_assign(newRecord,std::chrono::steady_clock::now()-std::chrono::microseconds(100*backtick));
         backtick++;
     } else { // TXT records
+        // Allocate buffer to store TXT records on
         static mdns_record_txt_t txtbuffer[128];
+        // Parse all TXT records
         size_t parsed = mdns_record_parse_txt(data, size, record_offset, record_length, txtbuffer,
                                               sizeof(txtbuffer) / sizeof(mdns_record_txt_t));
         for (size_t itxt = 0; itxt < parsed; ++itxt) {
+            // Create new TXT record for each item in array and copy the data to each one
             mdns_record_cpp_t newRecord;
             newRecord.name = std::string(MDNS_STRING_ARGS(entryName));
             newRecord.rclass = rclass;
@@ -426,7 +459,7 @@ int mdns::handleMdnsQueryResponses() {
         if (res > 0) {
             for (int isock = 0; isock < socketsOpened; ++isock) {
                 if (FD_ISSET(mdnsSockets[isock], &readfs)) {
-                    backtick = 0;
+                    backtick = 0; // Reset this to zero so that records are sorted correctly
                     records += mdns_query_recv(mdnsSockets[isock], buffer, capacity, queryCallback, user_data, 0);
                 }
             }

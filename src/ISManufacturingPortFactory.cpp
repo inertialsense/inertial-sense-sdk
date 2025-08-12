@@ -1,9 +1,13 @@
-//
-// Created by firiusfoxx on 7/3/25.
-//
+/**
+ * @file ISManufacturingPortFactory.cpp
+ * @brief This is a port factory used to connect a large number of devices over TCP/IP
+ *
+ * @author FiriusFoxx on 2025-07-03.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
+ */
 
 #ifdef _WIN32
-// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
+// Windows.h is included somewhere and this prevents it from defining max as a macro which breaks uri.hpp
 #define NOMINMAX
 #endif
 
@@ -34,7 +38,6 @@ uint32_t major(uint64_t devnum) {
  * @param devnum dev number
  * @return Minor number from dev number
  */
-
 uint32_t minor(uint64_t devnum) {
     uint32_t minor;
     minor = ((devnum & (uint64_t) 0x00000000000000ffu) >>  0);
@@ -49,7 +52,6 @@ uint32_t minor(uint64_t devnum) {
  * @param minor Minor number
  * @return Device number from major and minor
  */
-
 uint64_t makedev(uint32_t major, uint32_t minor) {
     uint64_t devnum;
     devnum  = (((uint64_t) (major & 0x00000fffu)) <<  8);    \
