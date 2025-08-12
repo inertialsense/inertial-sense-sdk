@@ -6,14 +6,6 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
  */
 
-#include "mdns.hpp"
-#include "mdns.h"
-#include "core/msg_logger.h"
-#include <algorithm>
-#include <mutex>
-#include <functional>
-#include <system_error>
-
 #ifdef _WIN32
 #include <winsock2.h>
 #include <iphlpapi.h>
@@ -21,6 +13,14 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 #endif
+
+#include <algorithm>
+#include <mutex>
+#include <functional>
+#include <system_error>
+#include "core/msg_logger.h"
+#include "mdns.h"
+#include "mdns.hpp"
 
 /**
  * Handles incoming mdns responses and removes timed out old values

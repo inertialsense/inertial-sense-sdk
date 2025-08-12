@@ -11,13 +11,13 @@
 #define NOMINMAX
 #endif
 
-#include "ISManufacturingPortFactory.h"
-#include "PortManager.h"
-#include "mdns.hpp"
-#include "uri.hpp"
 #include <util.h>
 #include <chrono>
 #include <regex>
+#include "PortManager.h"
+#include "mdns.hpp"
+#include "uri.hpp"
+#include "ISManufacturingPortFactory.h"
 
 /**
  * Major function from glibc reimplemented as a normal C function instead of as a define

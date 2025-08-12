@@ -11,9 +11,9 @@
 
 #define IS_MANUFACTURING_PORT_FACTORY_TIME_BETWEEN_QUERIES_MS 200 // How long to wait between sending MDNS queries
 
-#include "PortFactory.h"
-#include "core/tcpPort.h"
 #include <chrono>
+#include "core/tcpPort.h"
+#include "PortFactory.h"
 
 /**
  * Singleton class passed to PortManager to autodiscover and connect to remote serial ports over the network
