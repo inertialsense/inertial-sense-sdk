@@ -1,15 +1,15 @@
 /**
- * @file ISManufacturingPortFactory.h
+ * @file ISmDnsPortFactory.h
  * @brief This is a port factory used to connect a large number of devices over TCP/IP
  *
  * @author FiriusFoxx on 2025-07-03.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
  */
 
-#ifndef IS_SDK__IS_MANUFACTURING_PORT_FACTORY_H
-#define IS_SDK__IS_MANUFACTURING_PORT_FACTORY_H
+#ifndef IS_SDK__IS_MDNS_PORT_FACTORY_H
+#define IS_SDK__IS_MDNS_PORT_FACTORY_H
 
-#define IS_MANUFACTURING_PORT_FACTORY_TIME_BETWEEN_QUERIES_MS 200 // How long to wait between sending MDNS queries
+#define IS_MDNS_PORT_FACTORY_TIME_BETWEEN_QUERIES_MS 200 // How long to wait between sending MDNS queries
 
 #include <chrono>
 #include "core/tcpPort.h"
@@ -18,22 +18,22 @@
 /**
  * Singleton class passed to PortManager to autodiscover and connect to remote serial ports over the network
  *
- * @code{.cpp} portManager.addPortFactory((PortFactory*)&(ISManufacturingPortFactory::getInstance())); @endcode
- * Call to a PortManager adding a ISManufacturingPortFactory as an available PortFactory
+ * @code{.cpp} portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance())); @endcode
+ * Call to a PortManager adding a ISmDnsPortFactory as an available PortFactory
  */
-class ISManufacturingPortFactory : public PortFactory {
+class ISmDnsPortFactory : public PortFactory {
 public:
     struct {
         bool defaultBlocking = false;
     } portOptions = {};
 
-    static ISManufacturingPortFactory& getInstance() {
-        static ISManufacturingPortFactory instance;
+    static ISmDnsPortFactory& getInstance() {
+        static ISmDnsPortFactory instance;
         return instance;
     }
 
-    ISManufacturingPortFactory(ISManufacturingPortFactory const &) = delete;
-    ISManufacturingPortFactory& operator=(ISManufacturingPortFactory const&) = delete;
+    ISmDnsPortFactory(ISmDnsPortFactory const &) = delete;
+    ISmDnsPortFactory& operator=(ISmDnsPortFactory const&) = delete;
 
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
     bool validatePort(const std::string& pName, uint16_t pType = 0) override;
@@ -46,8 +46,8 @@ public:
     };
 
 private:
-    ISManufacturingPortFactory() = default;
-    ~ISManufacturingPortFactory() = default;
+    ISmDnsPortFactory() = default;
+    ~ISmDnsPortFactory() = default;
 
     typedef struct {
         uint32_t devid;
@@ -57,10 +57,10 @@ private:
     inline static std::chrono::time_point<std::chrono::steady_clock> lastQueryTime;
 
     static std::unordered_map<std::string, std::vector<port_t>> getPorts();
-    static std::pair<std::string, ISManufacturingPortFactory::port_t> parsePortName(const std::string& pName);
+    static std::pair<std::string, ISmDnsPortFactory::port_t> parsePortName(const std::string& pName);
     static bool validatePortName(const std::string& pName);
-    static std::pair<std::string, ISManufacturingPortFactory::port_t> getCanonicalPortData(const std::pair<std::string, ISManufacturingPortFactory::port_t>& partialPortPair);
-    static std::string getPortURL(const std::pair<std::string, ISManufacturingPortFactory::port_t> &port);
+    static std::pair<std::string, ISmDnsPortFactory::port_t> getCanonicalPortData(const std::pair<std::string, ISmDnsPortFactory::port_t>& partialPortPair);
+    static std::string getPortURL(const std::pair<std::string, ISmDnsPortFactory::port_t> &port);
 };
 
-#endif //IS_SDK__IS_MANUFACTURING_PORT_FACTORY_H
+#endif //IS_SDK__IS_MDNS_PORT_FACTORY_H

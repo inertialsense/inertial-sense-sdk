@@ -1,5 +1,5 @@
 /**
- * @file ISManufacturingPortFactory.cpp
+ * @file ISmDnsPortFactory.cpp
  * @brief This is a port factory used to connect a large number of devices over TCP/IP
  *
  * @author FiriusFoxx on 2025-07-03.
@@ -17,7 +17,7 @@
 #include "PortManager.h"
 #include "mdns.hpp"
 #include "uri.hpp"
-#include "ISManufacturingPortFactory.h"
+#include "ISmDnsPortFactory.h"
 
 /**
  * Major function from glibc reimplemented as a normal C function instead of as a define
@@ -64,18 +64,18 @@ uint64_t makedev(uint32_t major, uint32_t minor) {
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
- * when passed a URL in the format is-manu://hostname/port to pName and a pType of PORT_TYPE__TCP | PORT_TYPE__COMM
+ * when passed a URL in the format is-mdns://hostname/port to pName and a pType of PORT_TYPE__TCP | PORT_TYPE__COMM
  * @param pName The URL and name of the new port to bind a port_handle_to
  * @param pType The port type requested to be generated
  * @return A port_handle_t bound to the newly created TCP port for the connection pName represents
  */
-port_handle_t ISManufacturingPortFactory::bindPort(const std::string& pName, uint16_t pType) {
+port_handle_t ISmDnsPortFactory::bindPort(const std::string& pName, uint16_t pType) {
     tick(); // Tick everything to ensure we have the latest data
     if (!validatePort(pName, pType)) {
         return nullptr;
     }
 
-    std::pair<std::string, ISManufacturingPortFactory::port_t> portPair = parsePortName(pName);
+    std::pair<std::string, ISmDnsPortFactory::port_t> portPair = parsePortName(pName);
     portPair = getCanonicalPortData(portPair);
     std::string URL = getPortURL(portPair);
     sockaddr_storage addr = mdns::resolveName(portPair.first);
@@ -103,7 +103,7 @@ port_handle_t ISManufacturingPortFactory::bindPort(const std::string& pName, uin
  * @param port The TCP Port handle to deinitialize
  * @return True if successful, false otherwise
  */
-bool ISManufacturingPortFactory::releasePort(port_handle_t port) {
+bool ISmDnsPortFactory::releasePort(port_handle_t port) {
     tick(); // Tick everything to ensure we have the latest data
     if (!port) {
         return false;
@@ -118,16 +118,16 @@ bool ISManufacturingPortFactory::releasePort(port_handle_t port) {
 
 /**
  * Validate that a provided pName can create a TCP Port
- * @param pName The URL to validate starting with is-manu://
+ * @param pName The URL to validate starting with is-mdns://
  * @param pType Must be PORT_TYPE__TCP | PORT_TYPE__COMM
  * @return True if port can be created, false otherwise
  */
-bool ISManufacturingPortFactory::validatePort(const std::string& pName, uint16_t pType) {
+bool ISmDnsPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     tick(); // Tick everything to ensure we have the latest data
     if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) return false;
     if (!validatePortName(pName)) return false;
 
-    std::pair<std::string, ISManufacturingPortFactory::port_t> portPair = parsePortName(pName);
+    std::pair<std::string, ISmDnsPortFactory::port_t> portPair = parsePortName(pName);
     try {
         getCanonicalPortData(portPair);
     } catch (std::domain_error &e) {
@@ -142,7 +142,7 @@ bool ISManufacturingPortFactory::validatePort(const std::string& pName, uint16_t
  * @param pattern The URL to validate and "discover"
  * @param pType Ignored
  */
-void ISManufacturingPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
+void ISmDnsPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     tick(); // Tick everything to ensure we have the latest data
     std::regex regexPattern = std::regex(pattern);
 
@@ -164,10 +164,10 @@ void ISManufacturingPortFactory::locatePorts(std::function<void(PortFactory*, ui
 /**
  * Tick function used to call the mdns::tick() function
  */
-void ISManufacturingPortFactory::tick() {
+void ISmDnsPortFactory::tick() {
     // Send a lookup for all devices advertising inertialsense-manufacturing every 150 ms
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - lastQueryTime).count() > IS_MANUFACTURING_PORT_FACTORY_TIME_BETWEEN_QUERIES_MS) {
-        mdns::sendQuery(MDNS_RECORDTYPE_PTR, "_inertialsense-manufacturing._tcp.local");
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - lastQueryTime).count() > IS_MDNS_PORT_FACTORY_TIME_BETWEEN_QUERIES_MS) {
+        mdns::sendQuery(MDNS_RECORDTYPE_PTR, "_inertialsense-discovery._tcp.local");
         lastQueryTime = std::chrono::steady_clock::now();
     }
 
@@ -180,9 +180,9 @@ void ISManufacturingPortFactory::tick() {
  * @param pName Name to parse
  * @return pair with first value as server hostname and second value as struct containing devnum and port
  */
-std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFactory::parsePortName(const std::string& pName) {
+std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortName(const std::string& pName) {
     const FIX8::uri uri {pName};
-    if (uri.get_scheme() != "is-manu") throw std::invalid_argument("Invalid URI Protocol");
+    if (uri.get_scheme() != "is-mdns") throw std::invalid_argument("Invalid URI Protocol");
     std::string uriHost {uri.get_host()};
     std::string uriPort {uri.get_port()};
     std::string uriPath {uri.get_path()};
@@ -265,7 +265,7 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
  * @param pName Name to validate
  * @return True if port name is valid
  */
-bool ISManufacturingPortFactory::validatePortName(const std::string& pName) {
+bool ISmDnsPortFactory::validatePortName(const std::string& pName) {
     try {
         parsePortName(pName);
         return true;
@@ -281,7 +281,7 @@ bool ISManufacturingPortFactory::validatePortName(const std::string& pName) {
  * @throws std::invalid_argument if the partial port data doesn't have enough data
  * @throws std::domain_error if the full port data couldn't be resolved
  */
-std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFactory::getCanonicalPortData(const std::pair<std::string, ISManufacturingPortFactory::port_t>& partialPortPair) {
+std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::getCanonicalPortData(const std::pair<std::string, ISmDnsPortFactory::port_t>& partialPortPair) {
     std::string hostname = partialPortPair.first;
     port_t partialPort = partialPortPair.second;
     port_t returnPort = {};
@@ -322,8 +322,8 @@ std::pair<std::string, ISManufacturingPortFactory::port_t> ISManufacturingPortFa
  * @param port A pair representing the hostname and port data to encode into a URL
  * @return A string representing a URL describing the passed port
  */
-std::string ISManufacturingPortFactory::getPortURL(const std::pair<std::string, ISManufacturingPortFactory::port_t>& port) {
-    std::string returnValue = "is-manu://";
+std::string ISmDnsPortFactory::getPortURL(const std::pair<std::string, ISmDnsPortFactory::port_t>& port) {
+    std::string returnValue = "is-mdns://";
     if (port.first.ends_with(".")) {
         returnValue = returnValue.append(port.first.substr(0, port.first.length()-1));
     } else {
@@ -354,10 +354,10 @@ std::string ISManufacturingPortFactory::getPortURL(const std::pair<std::string, 
  * Gets a list of discovered port over MDNS
  * @return An unordered map of ports keys as hostnames and a vector of ports as values
  */
-std::unordered_map<std::string, std::vector<ISManufacturingPortFactory::port_t>> ISManufacturingPortFactory::getPorts() {
+std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPortFactory::getPorts() {
     // Locate ports matching pattern using MDNS / DNS-SD records
     std::vector<mdns::mdns_record_cpp_t> PTRrecords = mdns::getRecords([](const mdns::mdns_record_cpp_t& record) -> bool {
-        return record.type == MDNS_RECORDTYPE_PTR && record.name == "_inertialsense-manufacturing._tcp.local.";
+        return record.type == MDNS_RECORDTYPE_PTR && record.name == "_inertialsense-discovery._tcp.local.";
     });
 
     std::unordered_map<std::string, std::vector<port_t>> returnValue;
