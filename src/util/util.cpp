@@ -703,3 +703,9 @@ uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2)
 
     return match;
 }
+
+bool utils::validDomainName(const std::string& domainName) {
+    std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
+    std::smatch match;
+    return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
+}

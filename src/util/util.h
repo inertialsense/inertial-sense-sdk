@@ -252,6 +252,8 @@ namespace utils {
      * @return a uint32_t with each bit indicating a match of a specific field in the struct
      */
     uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
+
+    bool validDomainName(const std::string& domainName);
 };
 
 class ByteBuffer : public std::streambuf {

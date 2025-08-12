@@ -64,7 +64,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         external
 )
 
-# Build using C11 and CXX20
+# Build using C17 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -91,7 +91,7 @@ if (WIN32)
 	add_dependencies(${PROJECT_NAME} gen_files)
 
     # We need to ensure windows static libs are found
-    target_link_libraries(${PROJECT_NAME} Ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} Ws2_32.lib Iphlpapi.lib)
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
