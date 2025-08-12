@@ -44,6 +44,15 @@ public:
             name = std::move(d);
         }
         bool operator==(const mdns_record_srv_cpp_t &other) const = default;
+#ifdef _WIN32
+        mdns_record_srv_cpp_t& operator=(const mdns_record_srv_cpp_t& other) {
+            this->priority = other.priority;
+            this->weight = other.weight;
+            this->port = other.port;;
+            this->name = std::string(other.name);
+            return *this;
+        }
+#endif
         void swap(mdns_record_srv_cpp_t &other) {
             uint16_t placeholder = priority;
             priority = other.priority;
@@ -70,6 +79,13 @@ public:
             name = std::move(a);
         }
         bool operator==(const mdns_record_ptr_cpp_t &other) const = default;
+
+#ifdef _WIN32
+        mdns_record_ptr_cpp_t& operator=(const mdns_record_ptr_cpp_t& other) {
+            this->name = std::string(other.name);
+            return *this;
+        }
+#endif
         void swap(mdns_record_ptr_cpp_t &other) {
             name.swap(other.name);
         }
@@ -161,6 +177,13 @@ public:
             value = std::move(b);
         }
         bool operator==(const mdns_record_txt_cpp_t &other) const = default;
+#ifdef _WIN32
+        mdns_record_txt_cpp_t& operator=(const mdns_record_txt_cpp_t& other) {
+            this->key = std::string(other.key);
+            this->value = std::string(other.value);
+            return *this;
+        }
+#endif
         void swap(mdns_record_txt_cpp_t &other) {
             key.swap(other.key);
             value.swap(other.value);
@@ -191,7 +214,7 @@ public:
                 case MDNS_RECORDTYPE_TXT: data.txt.~mdns_record_txt_cpp_t(); break;
                 case MDNS_RECORDTYPE_PTR: data.ptr.~mdns_record_ptr_cpp_t(); break;
                 case MDNS_RECORDTYPE_AAAA: data.aaaa.~mdns_record_aaaa_cpp_t(); break;
-                //case MDNS_RECORDTYPE_SRV: data.srv.~mdns_record_srv_cpp_t(); break; // I don't know why this isn't needed for SRV records but needed for all the other records but calling it causes segfaults with a double free ¯\_(ツ)_/¯
+                case MDNS_RECORDTYPE_SRV: data.srv.~mdns_record_srv_cpp_t(); break;
                 case MDNS_RECORDTYPE_ANY: break;
             }
         }
@@ -228,34 +251,51 @@ public:
             }
         };
         void swap(mdns_record_cpp_t &other) {
-            name.swap(other.name);
+            this->name.swap(other.name);
 
-            mdns_record_type_t typePlaceholder = type;
-            type = other.type;
+            mdns_record_type_t typePlaceholder = this->type;
+            this->type = other.type;
             other.type = typePlaceholder;
 
-            uint16_t rclassPlaceholder = rclass;
-            rclass = other.rclass;
+            uint16_t rclassPlaceholder = this->rclass;
+            this->rclass = other.rclass;
             other.rclass = rclassPlaceholder;
 
-            uint16_t ttlPlaceholder = ttl;
-            ttl = other.ttl;
+            uint16_t ttlPlaceholder = this->ttl;
+            this->ttl = other.ttl;
             other.ttl = ttlPlaceholder;
 
-            if (type == MDNS_RECORDTYPE_PTR) {
-                data.ptr.swap(other.data.ptr);
-            } else if (type == MDNS_RECORDTYPE_SRV) {
-                data.srv.swap(other.data.srv);
-            } else if (type == MDNS_RECORDTYPE_A) {
-                data.a.swap(other.data.a);
-            } else if (type == MDNS_RECORDTYPE_AAAA) {
-                data.aaaa.swap(other.data.aaaa);
-            } else if (type == MDNS_RECORDTYPE_TXT) {
-                data.txt.swap(other.data.txt);
+            if (other.type == MDNS_RECORDTYPE_PTR) {
+                this->data.ptr.swap(other.data.ptr);
+            } else if (other.type == MDNS_RECORDTYPE_SRV) {
+                this->data.srv.swap(other.data.srv);
+            } else if (other.type == MDNS_RECORDTYPE_A) {
+                this->data.a.swap(other.data.a);
+            } else if (other.type == MDNS_RECORDTYPE_AAAA) {
+                this->data.aaaa.swap(other.data.aaaa);
+            } else if (other.type == MDNS_RECORDTYPE_TXT) {
+                this->data.txt.swap(other.data.txt);
             }
         }
         mdns_record_cpp_t& operator=(mdns_record_cpp_t other) {
-            swap(other);
+            this->name = std::string(other.name);
+
+            this->type = other.type;
+            this->rclass = other.rclass;
+            this->ttl = other.ttl;
+
+            memset((void*)&(this->data), 0, sizeof(mdns_record_data));
+            if (other.type == MDNS_RECORDTYPE_PTR) {
+                this->data.ptr = other.data.ptr;
+            } else if (other.type == MDNS_RECORDTYPE_SRV) {
+                this->data.srv = other.data.srv;
+            } else if (other.type == MDNS_RECORDTYPE_A) {
+                this->data.a = other.data.a;
+            } else if (other.type == MDNS_RECORDTYPE_AAAA) {
+                this->data.aaaa = other.data.aaaa;
+            } else if (other.type == MDNS_RECORDTYPE_TXT) {
+                this->data.txt = other.data.txt;
+            }
             return *this;
         }
 
