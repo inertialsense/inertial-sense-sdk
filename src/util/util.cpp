@@ -364,7 +364,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
         std::regex(R"((\d){4}-(\d){1,2}-(\d){1,2})"),           //!< 2, build date
         std::regex(R"((\d){1,2}:(\d){2}:(\d){2}|[_-](\d{6}))"), //!< 3, build time
         std::regex(R"((IS_)?([\w]+)-([\d\.]+)[,]?)"),           //!< 4, hdw type & version
-        std::regex(R"(([0-9A-F]{5})(\.(\d+)))"),                //!< 5, build key and build number
+        std::regex(R"(([0-9A-Fa-f]{5})(\.(\d+)))"),                //!< 5, build key and build number
         std::regex(R"(b(\d{1}[\d.]*)([a-z]?))"),                //!< 6, legacy build number and type -- note that this MUST be tested before 5, because 5 CAN catch it...
         std::regex(R"(\(([^\)]*)\))"),                          //!< 7, additional info
         std::regex(R"(([0-9a-f]{6,8})(\*)?)"),                  //!< 8, repo hash & build status (dirty)
@@ -539,7 +539,16 @@ bool utils::devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2)
     return true;
 }
 
-
+/**
+ * Performs a series of tests, based on the flags bitmask, to determine if two dev_info_t structs are effective matches.
+ * This is not a byte-for-byte match, but rather a filter of specific sets of fields within the dev_info_t struct to
+ * make a determination of equality. For example, we can test is the main firmware version matches (major, minor, patch),
+ * but disregard whether the build date/time matches, etc.
+ * @param info1 the first dev_info_t to compare
+ * @param info2 the second dev_info_t to compare with
+ * @param flags a bitmask identifying the various fields to test, and other related comparison flags
+ * @return true if the two match the specified flags, otherwise false.
+ */
 bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags) {
     bool match = (info1.buildType == info2.buildType);              // release type
 
