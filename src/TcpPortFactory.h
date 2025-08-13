@@ -1,12 +1,22 @@
-//
-// Created by firiusfoxx on 6/12/25.
-//
+/**
+ * @file TcpPortFactory.h
+ * @brief This is a port factory used to a single known devices over TCP/IP
+ *
+ * @author FiriusFoxx on 2025-06-12.
+ * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
+ */
 
 #ifndef IS_SDK__TCP_PORT_FACTORY_H
 #define IS_SDK__TCP_PORT_FACTORY_H
 #include "PortFactory.h"
 #include "core/tcpPort.h"
 
+/**
+ * Singleton class passed to PortManager to allow a user to connect to a remote serial port over the network using a URL
+ *
+ * @code{.cpp} portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance())); @endcode
+ * Call to a PortManager adding a ISManufacturingPortFactory as an available PortFactory
+ */
 class TcpPortFactory : public PortFactory {
 public:
     struct {
@@ -32,18 +42,6 @@ public:
 private:
     TcpPortFactory() = default;
     ~TcpPortFactory() = default;
-
-    struct URL {
-        std::string fullurl;
-        std::string protocol;
-        std::string address;
-        std::string port;
-        std::string path;
-        std::string params;
-        std::string tags;
-    };
-
-    static URL parseURL(const std::string& pName);
 };
 
 #endif //IS_SDK__TCP_PORT_FACTORY_H

@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDevice.h"
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
+#include "ISmDnsPortFactory.h"
 #include "TcpPortFactory.h"
 #include "protocol/FirmwareUpdate.h"
 #include "imx_defaults.h"
@@ -142,6 +143,9 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
         TcpPortFactory& tpf = TcpPortFactory::getInstance();
         tpf.portOptions.defaultBlocking = false;
         portManager.addPortFactory(&tpf);
+        ISmDnsPortFactory& mdtf = ISmDnsPortFactory::getInstance();
+        mdtf.portOptions.defaultBlocking = false;
+        portManager.addPortFactory(&mdtf);
     } else {
         for (auto f : pFactories) portManager.addPortFactory(f);
     }
@@ -203,6 +207,7 @@ InertialSense::InertialSense(
 
     portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
     portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
+    portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
     portManager.addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4) { portManagerHandler(PH1, PH2, PH3, PH4); });
 
     for (int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
