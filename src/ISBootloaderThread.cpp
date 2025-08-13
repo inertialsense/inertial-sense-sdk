@@ -439,11 +439,16 @@ bool cISBootloaderThread::set_mode_and_check_devices(
                 
         // Check that firmware size will fit using specified bootloader
         size_t pages = calculateFlashPagesUsed(firmware.fw_IMX_5.path, IMX5_FLASH_PAGE_SIZE);
-        if (pages >= 8)
+        uint8_t major = 0, minor = 0;
+        if (pages >= 8 && extractBootloaderVersionFromHex(firmware.bl_IMX_5.path, major, minor))
         {   // IMX-5 application requires bootloader v6i or newer to write into 8th page of flash memory
-            m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX-5 bootloader incompatible with firmware. Bootloader v6i or newer required for selected IMX-5 firmware.\n");
-            cancel_update();
-            return false;
+            // std::cout << "Bootloader file: v" << static_cast<int>(major) << static_cast<char>(minor) << "\n";
+
+            if (major < 6 || (major == 6 && minor < 'i')) {
+                m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX-5 bootloader incompatible with firmware. Bootloader v6i or newer required for selected IMX-5 firmware.\n");
+                cancel_update();
+                return false;
+            } 
         }
     }
     /////////////////////////////////////////////////////////////////////////////
