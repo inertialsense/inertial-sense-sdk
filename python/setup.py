@@ -38,7 +38,7 @@ libraries = []
 library_dirs = []
 
 if sys.platform == 'win32':
-    extra_objects = ['..\\build\\Release\\InertialSenseSDK.lib']
+    extra_objects = [r'..\build-release\InertialSenseSDK.lib']
 else: # POSIX
     extra_objects = ['{}/build/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
 
@@ -115,6 +115,9 @@ class BuildExt(build_ext):
             opts.append(cpp_flag(self.compiler))
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
+            opts.append('/std:c++17')
+            opts.append('/DYAML_CPP_STATIC_DEFINE')  # if static yaml-cpp
+            # opts += ['/wd4251', '/wd4275']  # silence yaml-cpp DLL warnings
         for ext in self.extensions:
             ext.extra_compile_args = opts
         build_ext.build_extensions(self)
