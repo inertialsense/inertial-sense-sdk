@@ -9,6 +9,8 @@
 #ifndef IS_CORE__BASE_PORT_H
 #define IS_CORE__BASE_PORT_H
 
+#include <string.h>
+
 #include "types.h"
 
 /**
@@ -210,7 +212,7 @@ static inline uint16_t portFlags(port_handle_t port) {
 /**
  * returns the most recent operational error number (typically errno) for this port, or 0 if successful.
  * @param port the port handle
- * @return the error number, or 0 if there is no error
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
  */
 static inline uint16_t portError(port_handle_t port) {
     return (port) ? BASE_PORT(port)->perror : 0;
@@ -234,9 +236,22 @@ static inline const char *portName(port_handle_t port) {
 static inline port_stats_t* portStats(port_handle_t port) { return portIsValid(port) ? BASE_PORT(port)->stats : (port_stats_t *)0; }
 
 /**
+ * Resets the associated port stats, if enabled for this port.
+ * @param port the port to reset
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
+ */
+static inline uint16_t portStatsReset(port_handle_t port) {
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!BASE_PORT(port)->stats) return PORT_ERROR__NOT_SUPPORTED;
+
+    memset(BASE_PORT(port)->stats, 0, sizeof(port_stats_t)) ;
+    return PORT_ERROR__NONE;
+}
+
+/**
  * Opens or establishes a connection to port. This function may not be supported on all port implementations.
  * @param port the port to open
- * @return
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
  */
 static inline int portOpen(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
@@ -246,7 +261,7 @@ static inline int portOpen(port_handle_t port) {
 /**
  * Closes or disconnects a connection to port. This function may not be supported on all port implementations.
  * @param port the port to close
- * @return
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
  */
 static inline int portClose(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
@@ -259,7 +274,7 @@ static inline int portClose(port_handle_t port) {
  * on the port. It is the callers responsibility to detect this, and retain unsent data until all
  * data can be transmitted, or to discard the excess information.
  * @param port the port to query
- * @return the number of bytes which be be safely written to the port without data drop
+ * @return the number of bytes which be be safely written to the port without data drop, or a PORT_ERROR__* number (<0)
  */
 static inline int portFree(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
@@ -269,7 +284,7 @@ static inline int portFree(port_handle_t port) {
 /**
  * returns the number of bytes available to be read from the underlying RX buffer, if any.
  * @param port the port to query
- * @return
+ * @return the number of bytes which are available to be read from the port, or a PORT_ERROR__* number (<0)
  */
 static inline int portAvailable(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
