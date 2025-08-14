@@ -265,7 +265,7 @@ enum eInsStatusFlags
     /** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. HDW_STATUS_MAG_RECAL_COMPLETE is set when complete. */
     INS_STATUS_MAG_RECALIBRATING                = (int)0x00400000,
     /** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
-    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL      = (int)0x00800000,
+    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL = (int)0x00800000,
 
     /** GPS navigation fix type (see eGpsNavFixStatus) */
     INS_STATUS_GPS_NAV_FIX_MASK                 = (int)0x03000000,
@@ -297,7 +297,7 @@ enum eInsStatusFlags
     /** Bitmask of all insStatus errors */
     INS_STATUS_ERROR_MASK                       =   INS_STATUS_GENERAL_FAULT | 
                                                     INS_STATUS_RTK_COMPASSING_MASK | 
-                                                    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL |
+                                                    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL |
                                                     INS_STATUS_RTK_ERROR_MASK |
                                                     INS_STATUS_RTOS_TASK_PERIOD_OVERRUN,
 };
