@@ -344,7 +344,7 @@ public:
 
     constexpr int in_range(std::string_view::size_type pos) const noexcept {
         int result{};
-        for (int comp{}; const auto [start,len] : _ranges) {
+        for (int comp{}; const auto& [start,len] : _ranges) {
             if (pos >= start && pos < start + len)
                 result |= 1 << comp;
             ++comp;
@@ -558,7 +558,7 @@ public:
                             os << "   " << (!tag.empty() ? tag : "(empty)") << '\n';
                 if (ii == query)
                     if (const auto qresult{what.decode_query()}; qresult.size() > 1)
-                        for (const auto [tag,value] : qresult)
+                        for (const auto& [tag,value] : qresult)
                             os << "   " << std::setw(12) << std::left << tag << (!value.empty() ? value : "(empty)") << '\n';
             }
         }

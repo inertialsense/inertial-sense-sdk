@@ -177,9 +177,12 @@ public:
     virtual bool connect(bool dontValidate = true) {
         if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
             return false;
+
         if (portIsOpened(port))
             return true;
+
         bool result = (portOpen(port) == PORT_ERROR__NONE);
+        portStatsReset(port);
 
         if (!dontValidate && result) {
             SLEEP_MS(15);
