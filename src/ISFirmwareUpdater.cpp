@@ -627,7 +627,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             commands.clear();
             bool reportErrors = (args.size() == 1 && args[0] == "true");
             if (reportErrors && (pfnInfoProgress_cb != nullptr))
-                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "TODO: Give some kind of finish report (errors: %s)", reportErrors ? "true" : "false");
+                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Firmware Update completed %s", reportErrors ? "with errors. Please review update log for specifics." : "successfully.");
         } else {
             // unknown command - ignore it
             if (pfnInfoProgress_cb != nullptr)
