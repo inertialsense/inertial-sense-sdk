@@ -49,17 +49,23 @@ add_executable(${PROJECT_NAME}
 )
 
 if(WIN32)   # Windows
-    # Check if VCPKG_ROOT is defined
-    if(NOT DEFINED ENV{VCPKG_ROOT})
-        message(FATAL_ERROR "The environment variable VCPKG_ROOT is not defined. Please run install_build_tools.bat or set it to the path of your vcpkg installation.")
-    endif()
+    find_package(GTest CONFIG REQUIRED)  # <— note CONFIG
 
-    # Use the VCPKG_ROOT system variable
-    set(VCPKG_PATH $ENV{VCPKG_ROOT})
-    set(GTEST_LIBRARY "${VCPKG_PATH}/installed/x64-windows/lib/gtest.lib")
-    set(GTEST_MAIN_LIBRARY "${VCPKG_PATH}/installed/x64-windows/lib/manual-link/gtest_main.lib")
-    target_link_directories(${PROJECT_NAME} PRIVATE "${VCPKG_PATH}/installed/x64-windows/lib/manual-link")
-    set(PROJECT_PLATFORM_LIBS ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} GTest::GTest GTest::Main wsock32 ws2_32)
+    if (WIN32)
+    # Don't hardcode library paths; use vcpkg’s imported targets
+    set(PROJECT_PLATFORM_LIBS
+        GTest::gtest
+        GTest::gtest_main
+        ws2_32
+    )
+    else()
+    set(PROJECT_PLATFORM_LIBS
+        GTest::gtest
+        GTest::gtest_main
+        pthread
+        m
+    )
+    endif()
 else()      # Linux
     set(PROJECT_PLATFORM_LIBS gtest_main ${GTEST_LIBRARIES} udev pthread m)
 endif()
