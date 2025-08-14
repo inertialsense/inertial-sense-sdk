@@ -57,7 +57,7 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
             case IS_IMAGE_SIGN_UINS_3_24K: target_signature = bootloaderRequiredSignature_uINS_3_24K; break;
             case IS_IMAGE_SIGN_EVB_2_16K: target_signature = bootloaderRequiredSignature_EVB_2_16K; break;
             case IS_IMAGE_SIGN_EVB_2_24K: target_signature = bootloaderRequiredSignature_EVB_2_24K; break;
-            case IS_IMAGE_SIGN_IMX_5p0: target_signature = bootloaderRequiredSignature_uINS_5; break;
+            case IS_IMAGE_SIGN_IMX_5p0: target_signature = bootloaderRequiredSignature_IMX_5; break;
             case IS_IMAGE_SIGN_ISB_STM32L4: target_signature = bootloaderRequiredSignature_STM32L4_bootloader; break;
             case IS_IMAGE_SIGN_ISB_SAMx70_24K: target_signature = bootloaderRequiredSignature_SAMx70_bootloader_24K; break;
             default: continue;
