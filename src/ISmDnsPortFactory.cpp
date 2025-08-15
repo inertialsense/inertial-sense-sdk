@@ -385,7 +385,7 @@ std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPo
             std::string txtPortsIndex = TXTrecord.data.txt.key.substr(5);
             int portsIndex = std::stoi(txtPortsIndex);
             const char *portTxt = TXTrecord.data.txt.value.c_str();
-            for (int j = 0; j < TXTrecord.data.txt.value.length(); j = j + 6) {
+            for (int j = 0; j < (int)TXTrecord.data.txt.value.length(); j = j + 6) {
                 port_t port;
                 port.devid = ntohl(*(uint32_t*)&portTxt[j]);
                 port.port = ntohs(*(uint16_t*)&portTxt[j+4]);
