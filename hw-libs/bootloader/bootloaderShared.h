@@ -10,7 +10,7 @@ extern "C" {
 #include "drivers/d_flash.h"	// Contains overrides for macros below
 #endif
 
-// uINS-3 flash layout - uINS Flash Memory Map
+// IMX-5 flash layout - IMX Flash Memory Map
 /*
   page size:           512  (0x200)
   block size:          8192 (0x2000)
@@ -179,7 +179,7 @@ extern uint8_t bootloaderRequiredSignature_SAMx70_bootloader_16K[BOOTLOADER_SIGN
 extern uint8_t bootloaderRequiredSignature_EVB_2_24K[BOOTLOADER_SIGNATURE_SIZE];
 extern uint8_t bootloaderRequiredSignature_uINS_3_24K[BOOTLOADER_SIGNATURE_SIZE];
 extern uint8_t bootloaderRequiredSignature_SAMx70_bootloader_24K[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_uINS_5[BOOTLOADER_SIGNATURE_SIZE];
+extern uint8_t bootloaderRequiredSignature_IMX_5[BOOTLOADER_SIGNATURE_SIZE];
 extern uint8_t bootloaderRequiredSignature_STM32L4_bootloader[BOOTLOADER_SIGNATURE_SIZE];
 
 // calculate bootloader hash code over a set of data - hashCode should be BOOTLOADER_HASH_CODE_START_VALUE if just starting, otherwise previous value if continuing
