@@ -1800,6 +1800,8 @@ typedef struct PACKED
     #define NUM_COM_PORTS           6
 #endif
 
+#define NUM_SERIAL_PORTS            6
+
 #ifndef NUM_USR_PORTS
 #define NUM_USR_PORTS           NUM_COM_PORTS
 #endif
@@ -5206,7 +5208,7 @@ typedef port_stats_t port_monitor_set_t;
 typedef struct
 {
     /** Port monitor set */
-    port_stats_t port[NUM_COM_PORTS];
+    port_stats_t port[NUM_SERIAL_PORTS];
 
     /** Number of ports in the port[] array */
     uint8_t activePorts;        // FIXME: This should be moved to BEFORE the port definition, so on the receiving end, we know how many ports to expect.
