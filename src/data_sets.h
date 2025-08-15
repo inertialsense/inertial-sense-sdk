@@ -4955,7 +4955,7 @@ enum eEvb2CommPorts
     EVB2_PORT_GPIO_H8   = 6,        // H8-5 (brown) Tx, H8-6 (orange) Rx
     EVB2_PORT_USB       = 7,
     EVB2_PORT_WIFI      = 8,        
-    EVB2_PORT_CAN        = 9,        // H2-3 CANL (brown), H2-4 CANH (orange)
+    EVB2_PORT_CAN       = 9,        // H2-3 CANL (brown), H2-4 CANH (orange)
     EVB2_PORT_COUNT
 };
 
@@ -5201,39 +5201,12 @@ enum ePortMonPortType
 /** 
 * (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
 */
-typedef struct
-{
-    /** High nib port type (see ePortMonPortType) low nib index */
-    uint8_t         portInfo;
-    /** Status */
-    uint32_t        status;
-
-    /** Tx data rate (bytes/s) */
-    uint32_t        txBytesPerSec;
-    /** Rx data rate (bytes/s) */
-    uint32_t        rxBytesPerSec;
-
-    /** Tx byte count */
-    uint32_t        txBytes;
-    /** Rx byte count */
-    uint32_t        rxBytes;
-
-    /** Tx buffer data drop occurrences, times serWrite could not send all data */
-    uint32_t        txDataDrops;
-    /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
-    uint32_t        rxOverflows;
-
-    /** Tx number of bytes that were not sent */
-    uint32_t        txBytesDropped;
-    /** Rx number of checksum failures */
-    uint32_t        rxChecksumErrors;
-
-} port_monitor_set_t;
+typedef port_stats_t port_monitor_set_t;
 
 typedef struct
 {
     /** Port monitor set */
-    port_monitor_set_t port[NUM_COM_PORTS];
+    port_stats_t port[NUM_COM_PORTS];
 
     /** Number of ports in the port[] array */
     uint8_t activePorts;        // FIXME: This should be moved to BEFORE the port definition, so on the receiving end, we know how many ports to expect.
