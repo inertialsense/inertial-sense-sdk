@@ -1218,6 +1218,9 @@ class logPlot:
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000800) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'MAG aiding Hdg')
                 cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000008) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Wheel Enc. aiding Vel')
+                cnt += 1
                 cnt += 1
                 # ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00001000) != 0))
                 # if r: ax.text(p1, -cnt * 1.5, 'Nav Mode')
