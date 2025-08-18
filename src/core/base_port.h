@@ -410,7 +410,7 @@ static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int
 
     // If stats are enabled, update the stats
     if (BASE_PORT(port)->stats) {
-        if (bytesRead > 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
+        if (bytesRead >= 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
         else                BASE_PORT(port)->stats->rxOverflows++;  // note the error  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
     }
 
