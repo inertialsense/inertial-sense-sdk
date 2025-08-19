@@ -3174,9 +3174,9 @@ enum eIoConfig
     /** GPS type - NMEA */
     IO_CONFIG_GPS_TYPE_NMEA                     = (int)2,
     /** GPS type - InertialSense GPX */
-    IO_CONFIG_GPS_TYPE_GPX                      = (int)3,
+    IO_CONFIG_GPS_TYPE_GPX                        = (int)3,
     /** GPS type - last type */
-    IO_CONFIG_GPS_TYPE_LAST                     = IO_CONFIG_GPS_TYPE_GPX,        // Set to last type
+    IO_CONFIG_GPS_TYPE_LAST                        = IO_CONFIG_GPS_TYPE_GPX,        // Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
@@ -3265,7 +3265,6 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
     PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
-    PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
     PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3
     PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
     PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
