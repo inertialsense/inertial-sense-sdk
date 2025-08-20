@@ -877,14 +877,31 @@ static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 
 #else
 
-    int bytesAvailable;
-    if (ioctl(handle->fd, FIONREAD, &bytesAvailable) < 0) {
-        serialPort->errorCode = errno;
-        serialPort->error = strerror(serialPort->errorCode);
+    int bytesAvailable = 0;
+    struct pollfd p = { .fd = handle->fd, .events = POLLIN };
+
+    again:
+    int rc = poll(&p, 1, 0);
+    if (rc > 0) {
+        /* Treat POLLIN or urgent/hangup with data as readable */
+        if (p.revents & (POLLIN | POLLPRI)) {
+            if (ioctl(handle->fd, FIONREAD, &bytesAvailable) < 0) {
+                serialPort->errorCode = errno;
+                serialPort->error = strerror(serialPort->errorCode);
+            }
+            return bytesAvailable;
+        }
+        if (p.revents & (POLLHUP | POLLERR | POLLNVAL)) {
+            errno = EIO;
+            return -1;
+        }
+        return 0; // unexpected, but keep contract
+    } else if (rc == 0) {
+        return 0; // timeout
+    } else { // rc < 0
+        if (errno == EINTR) goto again;
+        return -1;
     }
-
-    return bytesAvailable;
-
 #endif
 
 }
@@ -946,6 +963,7 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     serialPort->base.portDrain = serialPortDrain;
     serialPort->base.portRead = serialPortRead;
     serialPort->base.portWrite = serialPortWrite;
+    serialPort->base.portReadTimeout = (pfnPortReadTimeout)serialPortReadTimeout;
 
     serialPort->base.stats = (port_stats_t*)&serialPort->stats;
 

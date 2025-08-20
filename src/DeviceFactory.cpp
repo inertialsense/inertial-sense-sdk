@@ -61,10 +61,12 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
     ISDevice *dev = DeviceManager::getInstance().getDevice(port);
     if (!dev) {
         // no previous device exists, so identify the device and then register it with the manager
+        int validationResult = 0;
         ISDevice localDev(hdwId, port);
         do {
             is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-        } while (!localDev.validateAsync(timeoutMs));
+            validationResult = localDev.validateAsync(timeoutMs);
+        } while (!validationResult);
 
         if (localDev.hasDeviceInfo() && localDev.matchesHdwId(hdwId)) {
             // note that the deviceHandler callback can still reject the device for reasons

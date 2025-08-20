@@ -70,6 +70,10 @@ int tcpPortOpen(port_handle_t port) {
         return tcpPort->socket; // Return error code to calling function
     }
 
+    // Disable SIGPIPE on socket
+    int set = 1;
+    setsockopt(tcpPort->socket, SOL_SOCKET, MSG_NOSIGNAL, (void *)&set, sizeof(int));
+
     // Connect socket to remote
     int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.storage));
     if (retval != 0) {
@@ -341,8 +345,11 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     tcpPortSetBlocking(port, tcpPort->blocking);
 
     // Receive data from the socket
+    errno = 0;
     ssize_t retval = send(tcpPort->socket, buf, len, 0);
     if (retval < 0) {
+        if (errno == EPIPE)
+            tcpPortClose(port); // remote has disconnected, so force this socket closed.
         tcpPort->base.perror = errno;
         return -errno;
     }

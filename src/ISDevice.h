@@ -66,11 +66,12 @@ public:
 
     explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
+        hdwId = _hdwId;
+        devInfo = {};
         imxFlashCfg.checksum = 0xFFFFFFFF;
         gpxFlashCfg.checksum = 0xFFFFFFFF;
         sysParams.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
         gpxStatus.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
-        hdwId = _hdwId;
         assignPort(_port);
     }
 
@@ -575,8 +576,9 @@ private:
 
     void stepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
-    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
+    bool hasHandshake = false;      // indicator that this device has already negotiated a handshake, and shouldn't keep trying
     bool handshakeISbl();
+    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
 
     void SyncFlashConfig();
     void DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);

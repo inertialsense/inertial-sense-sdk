@@ -8,6 +8,8 @@
 
 #ifndef IS_SDK__TCP_PORT_FACTORY_H
 #define IS_SDK__TCP_PORT_FACTORY_H
+
+#include <csignal>
 #include "PortFactory.h"
 #include "core/tcpPort.h"
 
@@ -40,7 +42,9 @@ public:
     bool releasePort(port_handle_t port) override;
 
 private:
-    TcpPortFactory() = default;
+    TcpPortFactory() {
+        signal(SIGPIPE, SIG_IGN); // ignore broken pipes
+    };
     ~TcpPortFactory() = default;
 };
 

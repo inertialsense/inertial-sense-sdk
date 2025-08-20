@@ -9,8 +9,8 @@
 #ifndef IS_SDK__MDNS_HPP
 #define IS_SDK__MDNS_HPP
 
-#define MDNS_RECORD_TIMEOUT_MS 1000 // Max time that any record will last for
-#define MDNS_REQUEST_TIMEOUT_MS 200 // How long to wait for a response
+#define MDNS_RECORD_TIMEOUT_MS 5000 // Max time that any record will last for
+#define MDNS_REQUEST_TIMEOUT_MS 1000 // How long to wait for a response
 
 #include <chrono>
 #include <functional>

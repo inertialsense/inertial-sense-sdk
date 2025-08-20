@@ -60,12 +60,14 @@ void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
             return x.queryId == queryId;
         }) != usedQueryIds.end());
 
+        queryId = 0; // Multicast Responders set all IDs to 0
+
         if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, queryId)) {
             debug_message("[WRN] Failed to send DNS-DS discovery: %s\n", strerror(errno));
         }
 
-        used_query_id_t newPair = {queryId, std::chrono::steady_clock::now(), false};
-        usedQueryIds.push_back(newPair);
+        //used_query_id_t newPair = {queryId, std::chrono::steady_clock::now(), false};
+        //usedQueryIds.push_back(newPair);
     }
 
     free(buffer);
@@ -174,7 +176,7 @@ int mdns::createMdnsSockets() {
     // Thus we need to open one socket for each interface and address family
     int num_sockets = 0;
     int max_sockets = sizeof(mdnsSockets) / sizeof(mdnsSockets[0]);
-    int port = 0;
+    int port = 5353; // 0 for random port
 
 #ifdef _WIN32
 
@@ -329,7 +331,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
                         size_t size, size_t name_offset, size_t name_length, size_t record_offset,
                         size_t record_length, void* user_data) {
 
-    // Find which query we sent that this is a response to
+    /*// Find which query we sent that this is a response to
     std::list<used_query_id_t>::iterator foundQuery =
         std::find_if(usedQueryIds.begin(), usedQueryIds.end(),
                      [&query_id](used_query_id_t x) -> bool {
@@ -342,7 +344,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
         return -EBADMSG;
     } else {
         foundQuery->queryRecieved = true;
-    }
+    }*/
 
     // Do not process ANSWER messages
     if (entry != MDNS_ENTRYTYPE_ANSWER) {
