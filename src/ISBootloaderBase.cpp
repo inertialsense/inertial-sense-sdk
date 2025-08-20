@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "libusb.h"
 #include "ISUtilities.h"
 #include "protocol/FirmwareUpdate.h"
+#include "intel_hex_utils.h"
 
 using namespace ISBootloader;
 
@@ -57,7 +58,7 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
                 case IS_IMAGE_SIGN_UINS_3_24K:      target_signature = bootloaderRequiredSignature_uINS_3_24K;              break;
                 case IS_IMAGE_SIGN_EVB_2_16K:       target_signature = bootloaderRequiredSignature_EVB_2_16K;               break;
                 case IS_IMAGE_SIGN_EVB_2_24K:       target_signature = bootloaderRequiredSignature_EVB_2_24K;               break;
-                case IS_IMAGE_SIGN_IMX_5p0:         target_signature = bootloaderRequiredSignature_uINS_5;                  break;
+                case IS_IMAGE_SIGN_IMX_5p0:         target_signature = bootloaderRequiredSignature_IMX_5;                   break;
                 case IS_IMAGE_SIGN_ISB_STM32L4:     target_signature = bootloaderRequiredSignature_STM32L4_bootloader;      break;
                 case IS_IMAGE_SIGN_ISB_SAMx70_24K:  target_signature = bootloaderRequiredSignature_SAMx70_bootloader_24K;   break;
                 default: continue;
@@ -294,6 +295,7 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
     return (device == IS_IMAGE_SIGN_ERROR) ? IS_OP_ERROR : IS_OP_INCOMPATIBLE;
 }
 
+// Update bootloader firmware
 is_operation_result cISBootloaderBase::mode_device_isb
 (
     firmwares_t filenames,
@@ -458,6 +460,7 @@ is_operation_result cISBootloaderBase::update_device
     return IS_OP_ERROR;
 }
 
+// Update application firmware
 is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
@@ -612,7 +615,23 @@ is_operation_result cISBootloaderBase::update_device
                 return IS_OP_CLOSED;
             }
 
-            obj->m_use_progress = true;
+            //////////////////////////////////////////////////////////////////////
+            // Check IMX-5 bootloader / application firmware compatibility
+            if (((obj)->m_isb_major < 6) || 
+                ((obj)->m_isb_major == 6 && (obj)->m_isb_minor < 'i'))
+            {
+                // Check that firmware size will fit with current bootloader
+                size_t pages = calculateFlashPagesUsed(filenames.fw_IMX_5.path, IMX5_FLASH_PAGE_SIZE);
+                if (pages >= 8)
+                {   // IMX-5 application requires bootloader v6i or newer to write into 8th page of flash memory
+                    (obj)->m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB) UPDATE ABORTED! " IMX5_BOOTLOADER_INCOMPATIBLE_MSG);
+                    delete obj;
+                    return IS_OP_INCOMPATIBLE;
+                }
+            }
+            //////////////////////////////////////////////////////////////////////
+
+            (obj)->m_use_progress = true;
             addMutex->lock();
             contexts.push_back(obj);
             *new_context = obj;

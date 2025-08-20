@@ -376,7 +376,7 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len)
 
     // If stats are enabled, update the stats
     if (BASE_PORT(port)->stats) {
-        if (bytesRead > 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
+        if (bytesRead >= 0) BASE_PORT(port)->stats->rxBytes += bytesRead;
         else                BASE_PORT(port)->stats->rxOverflows++;  // Note the error  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
     }
 
@@ -410,7 +410,7 @@ static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int
 
     // If stats are enabled, update the stats
     if (BASE_PORT(port)->stats) {
-        if (bytesRead > 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
+        if (bytesRead >= 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
         else                BASE_PORT(port)->stats->rxOverflows++;  // note the error  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
     }
 
@@ -431,8 +431,17 @@ static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
     if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, BASE_PORT(port)->portLoggerData);
     int bytesWritten = (BASE_PORT(port)->portWrite) ? BASE_PORT(port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
-    if (BASE_PORT(port)->stats) {
-        if (bytesWritten > 0) BASE_PORT(port)->stats->txBytes += bytesWritten;
+    if (BASE_PORT(port)->stats) 
+    {
+        if (bytesWritten >= 0) 
+        {
+            BASE_PORT(port)->stats->txBytes += bytesWritten;
+            if (bytesWritten < len)
+            {
+                BASE_PORT(port)->stats->txDataDrops++;
+                BASE_PORT(port)->stats->txBytesDropped += (len - bytesWritten);
+            }
+        }
         else BASE_PORT(port)->stats->txDataDrops++, BASE_PORT(port)->stats->txBytesDropped += len;  // note the error, and the bytes dropped  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
     }
     return bytesWritten;

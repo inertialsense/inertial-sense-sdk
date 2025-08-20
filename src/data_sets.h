@@ -269,7 +269,7 @@ enum eInsStatusFlags
     /** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. HDW_STATUS_MAG_RECAL_COMPLETE is set when complete. */
     INS_STATUS_MAG_RECALIBRATING                = (int)0x00400000,
     /** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
-    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL      = (int)0x00800000,
+    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL = (int)0x00800000,
 
     /** GPS navigation fix type (see eGpsNavFixStatus) */
     INS_STATUS_GPS_NAV_FIX_MASK                 = (int)0x03000000,
@@ -301,7 +301,7 @@ enum eInsStatusFlags
     /** Bitmask of all insStatus errors */
     INS_STATUS_ERROR_MASK                       =   INS_STATUS_GENERAL_FAULT | 
                                                     INS_STATUS_RTK_COMPASSING_MASK | 
-                                                    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL |
+                                                    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL |
                                                     INS_STATUS_RTK_ERROR_MASK |
                                                     INS_STATUS_RTOS_TASK_PERIOD_OVERRUN,
 };
@@ -1800,6 +1800,8 @@ typedef struct PACKED
     #define NUM_COM_PORTS           6
 #endif
 
+#define NUM_SERIAL_PORTS            6
+
 #ifndef NUM_USR_PORTS
 #define NUM_USR_PORTS           NUM_COM_PORTS
 #endif
@@ -3263,11 +3265,12 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
     PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
+    PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,          
     PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3
     PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
     PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 w/ IMX-5 and GPX-1
+    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 and IS-IMX-GPX-DEV-1 (w/ IMX-5 and GPX-1)
     PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,          // "
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
@@ -4955,7 +4958,7 @@ enum eEvb2CommPorts
     EVB2_PORT_GPIO_H8   = 6,        // H8-5 (brown) Tx, H8-6 (orange) Rx
     EVB2_PORT_USB       = 7,
     EVB2_PORT_WIFI      = 8,        
-    EVB2_PORT_CAN        = 9,        // H2-3 CANL (brown), H2-4 CANH (orange)
+    EVB2_PORT_CAN       = 9,        // H2-3 CANL (brown), H2-4 CANH (orange)
     EVB2_PORT_COUNT
 };
 
@@ -5201,39 +5204,12 @@ enum ePortMonPortType
 /** 
 * (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
 */
-typedef struct
-{
-    /** High nib port type (see ePortMonPortType) low nib index */
-    uint8_t         portInfo;
-    /** Status */
-    uint32_t        status;
-
-    /** Tx data rate (bytes/s) */
-    uint32_t        txBytesPerSec;
-    /** Rx data rate (bytes/s) */
-    uint32_t        rxBytesPerSec;
-
-    /** Tx byte count */
-    uint32_t        txBytes;
-    /** Rx byte count */
-    uint32_t        rxBytes;
-
-    /** Tx buffer data drop occurrences, times serWrite could not send all data */
-    uint32_t        txDataDrops;
-    /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
-    uint32_t        rxOverflows;
-
-    /** Tx number of bytes that were not sent */
-    uint32_t        txBytesDropped;
-    /** Rx number of checksum failures */
-    uint32_t        rxChecksumErrors;
-
-} port_monitor_set_t;
+typedef port_stats_t port_monitor_set_t;
 
 typedef struct
 {
     /** Port monitor set */
-    port_monitor_set_t port[NUM_COM_PORTS];
+    port_stats_t port[NUM_SERIAL_PORTS];
 
     /** Number of ports in the port[] array */
     uint8_t activePorts;        // FIXME: This should be moved to BEFORE the port definition, so on the receiving end, we know how many ports to expect.
