@@ -65,9 +65,6 @@ void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
         if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, queryId)) {
             debug_message("[WRN] Failed to send DNS-DS discovery: %s\n", strerror(errno));
         }
-
-        //used_query_id_t newPair = {queryId, std::chrono::steady_clock::now(), false};
-        //usedQueryIds.push_back(newPair);
     }
 
     free(buffer);
@@ -330,21 +327,6 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
                         uint16_t query_id, uint16_t rtype, uint16_t rclass, uint32_t ttl, const void* data,
                         size_t size, size_t name_offset, size_t name_length, size_t record_offset,
                         size_t record_length, void* user_data) {
-
-    /*// Find which query we sent that this is a response to
-    std::list<used_query_id_t>::iterator foundQuery =
-        std::find_if(usedQueryIds.begin(), usedQueryIds.end(),
-                     [&query_id](used_query_id_t x) -> bool {
-            return x.queryId == query_id;
-        });
-
-    // Mark query as received and return an error if we can't find which query this is a response to
-    if (foundQuery == usedQueryIds.end()) {
-        debug_message("[ERR] Unable to find received query ID is local list")
-        return -EBADMSG;
-    } else {
-        foundQuery->queryRecieved = true;
-    }*/
 
     // Do not process ANSWER messages
     if (entry != MDNS_ENTRYTYPE_ANSWER) {
