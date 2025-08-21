@@ -361,13 +361,13 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 #define CONFIG_STREAM_GPS(stream, did_pos, cb_fun_pos, did_vel, cb_fun_vel) \
     if ((stream.enabled) && !(stream.streaming_pos)){ \
         ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::DataName(did_pos), did_pos); \
-        SET_CALLBACK(did_pos, gps_pos_t, cb_fun_pos, stream.period); \
+        SET_CALLBACK(did_pos, gnss_pos_t, cb_fun_pos, stream.period); \
         if (!firstrun) \
             return; \
     } \
     if ((stream.enabled) && !(stream.streaming_vel)){ \
         ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::DataName(did_vel), did_vel); \
-        SET_CALLBACK(did_vel, gps_vel_t, cb_fun_vel, stream.period); \
+        SET_CALLBACK(did_vel, gnss_vel_t, cb_fun_vel, stream.period); \
         if (!firstrun) \
             return; \
     }
@@ -377,7 +377,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (!rs_.gps1.streaming_pos) // we always need GPS for Fix status
     {
         //ROS_DEBUG("InertialSenseROS: Attempting to enable GPS1 Pos data stream");
-        SET_CALLBACK(DID_GPS1_POS, gps_pos_t, GPS_pos_callback, rs_.gps1.period);
+        SET_CALLBACK(DID_GNSS1_POS, gnss_pos_t, GPS_pos_callback, rs_.gps1.period);
     }
     if (!flashConfigStreaming_)
     {
@@ -480,15 +480,15 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 
     if (rs_.gps1.enabled)
     {   // Set up the GPS ROS stream - we always need GPS information for time sync, just don't always need to publish it
-        CONFIG_STREAM_GPS(rs_.gps1, DID_GPS1_POS, GPS_pos_callback, DID_GPS1_VEL, GPS_vel_callback);
+        CONFIG_STREAM_GPS(rs_.gps1, DID_GNSS1_POS, GPS_pos_callback, DID_GPS1_VEL, GPS_vel_callback);
         CONFIG_STREAM(rs_.gps1_raw, DID_GPS1_RAW, gps_raw_t, GPS_raw_callback);
-        CONFIG_STREAM(rs_.gps1_info, DID_GPS1_SAT, gps_sat_t, GPS_info_callback);
+        CONFIG_STREAM(rs_.gps1_info, DID_GPS1_SAT, gnss_sat_t, GPS_info_callback);
     }
     if (rs_.gps2.enabled)
     {
-        CONFIG_STREAM_GPS(rs_.gps2, DID_GPS2_POS, GPS_pos_callback, DID_GPS2_VEL, GPS_vel_callback);
+        CONFIG_STREAM_GPS(rs_.gps2, DID_GNSS2_POS, GPS_pos_callback, DID_GPS2_VEL, GPS_vel_callback);
         CONFIG_STREAM(rs_.gps2_raw, DID_GPS2_RAW, gps_raw_t, GPS_raw_callback);
-        CONFIG_STREAM(rs_.gps2_info, DID_GPS2_SAT, gps_sat_t, GPS_info_callback);
+        CONFIG_STREAM(rs_.gps2_info, DID_GPS2_SAT, gnss_sat_t, GPS_info_callback);
     }
     CONFIG_STREAM(rs_.gpsbase_raw, DID_GPS_BASE_RAW, gps_raw_t, GPS_raw_callback);
 
@@ -843,7 +843,7 @@ void InertialSenseROS::configure_rtk()
                 rs_.rtk_pos.enabled = true;
                 connect_rtk_client(*(RtkRoverCorrectionProvider_Ntrip *) RTK_rover_->correction_input);
                 flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING;
-                SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
+                SET_CALLBACK(DID_GNSS1_RTK_POS_MISC, gnss_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
 
                 start_rtk_connectivity_watchdog_timer();
@@ -853,7 +853,7 @@ void InertialSenseROS::configure_rtk()
                 rs_.rtk_pos.enabled = true;
                 if (RTK_base_) RTK_base_->enable = false;
                 flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING;
-                SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
+                SET_CALLBACK(DID_GNSS1_RTK_POS_MISC, gnss_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
             }
         }
@@ -862,7 +862,7 @@ void InertialSenseROS::configure_rtk()
             ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             rs_.rtk_cmp.enabled = true;
             flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
-            SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
+            SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gnss_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
 
@@ -890,7 +890,7 @@ void InertialSenseROS::configure_rtk()
             ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             RTK_rover_->enable = false; // FIXME:  Is this right?  Rover is disabled when in Compassing?
             flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED;
-            SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
+            SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gnss_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
 
@@ -899,7 +899,7 @@ void InertialSenseROS::configure_rtk()
             ROS_INFO("InertialSenseROS: Configuring RTK Rover with radio enabled");
             if (RTK_base_) RTK_base_->enable = false;
             flashCfg.RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED);
-            SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
+            SET_CALLBACK(DID_GNSS1_RTK_POS_MISC, gnss_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
         else if (RTK_rover_ && RTK_rover_->enable && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
@@ -908,7 +908,7 @@ void InertialSenseROS::configure_rtk()
             if (RTK_base_) RTK_base_->enable = false;
             flashCfg.RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED);
             connect_rtk_client((RtkRoverCorrectionProvider_Ntrip&)*RTK_rover_->correction_input);
-            SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
+            SET_CALLBACK(DID_GNSS1_RTK_POS_MISC, gnss_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
 
             start_rtk_connectivity_watchdog_timer();
@@ -1408,18 +1408,18 @@ void InertialSenseROS::INS_covariance_callback(eDataIDs DID, const ros_covarianc
 }
 
 
-void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg)
+void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gnss_pos_t *const msg)
 {
-    static eDataIDs primaryGpsDid = DID_GPS2_POS;  // Use GPS2 if GPS1 is disabled 
+    static eDataIDs primaryGpsDid = DID_GNSS2_POS;  // Use GPS2 if GPS1 is disabled 
 
     switch (DID)
     {
-    case DID_GPS1_POS:
+    case DID_GNSS1_POS:
         rs_.gps1.streamingCheck(DID, rs_.gps1.streaming_pos);
         gps1_pos = *msg;
         primaryGpsDid = DID;
 
-        if (rs_.gps1.enabled && msg->status & GPS_STATUS_FIX_MASK)
+        if (rs_.gps1.enabled && msg->status & GNSS_STATUS_FIX_MASK)
         {
             msg_gps1.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeekMs / 1.0e3);
             msg_gps1.week = msg->week;
@@ -1441,10 +1441,10 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
         }
         break;
 
-    case DID_GPS2_POS:
+    case DID_GNSS2_POS:
         rs_.gps2.streamingCheck(DID, rs_.gps2.streaming_pos);
         gps2_pos = *msg;
-        if (rs_.gps2.enabled && msg->status & GPS_STATUS_FIX_MASK)
+        if (rs_.gps2.enabled && msg->status & GNSS_STATUS_FIX_MASK)
         {
             msg_gps2.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeekMs / 1.0e3);
             msg_gps2.week = msg->week;
@@ -1477,7 +1477,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
             msg_NavSatFix.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeekMs / 1.0e3);
             msg_NavSatFix.header.frame_id = frame_id_;
             msg_NavSatFix.status.status = -1;                           // Assume no Fix
-            if (msg->status & GPS_STATUS_FIX_MASK >= GPS_STATUS_FIX_2D) // Check for fix and set
+            if (msg->status & GNSS_STATUS_FIX_MASK >= GPS_STATUS_FIX_2D) // Check for fix and set
             {
                 msg_NavSatFix.status.status = NavSatFixStatusFixType::STATUS_FIX;
             }
@@ -1487,7 +1487,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
                 msg_NavSatFix.status.status = NavSatFixStatusFixType::STATUS_SBAS_FIX;
             }
 
-            if (msg->status & GPS_STATUS_FIX_MASK >= GPS_STATUS_FIX_RTK_SINGLE) // Check for any RTK fix
+            if (msg->status & GNSS_STATUS_FIX_MASK >= GPS_STATUS_FIX_RTK_SINGLE) // Check for any RTK fix
             {
                 msg_NavSatFix.status.status = NavSatFixStatusFixType::STATUS_GBAS_FIX;
             }
@@ -1512,7 +1512,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
     }
 }
 
-void InertialSenseROS::GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg)
+void InertialSenseROS::GPS_vel_callback(eDataIDs DID, const gnss_vel_t *const msg)
 {
     switch (DID)
     {
@@ -1611,7 +1611,7 @@ void InertialSenseROS::strobe_in_time_callback(eDataIDs DID, const strobe_in_tim
     }
 }
 
-void InertialSenseROS::GPS_info_callback(eDataIDs DID, const gps_sat_t *const msg)
+void InertialSenseROS::GPS_info_callback(eDataIDs DID, const gnss_sat_t *const msg)
 {
     switch (DID)
     {
@@ -1733,7 +1733,7 @@ void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg
     }
 }
 
-void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *const msg)
+void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gnss_rtk_misc_t *const msg)
 {
     inertial_sense_ros::RTKInfo rtk_info;
     if (abs(GPS_towOffset_) > 0.001)
@@ -1753,7 +1753,7 @@ void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *con
 
     switch (DID)
     {
-    case DID_GPS1_RTK_POS_MISC:
+    case DID_GNSS1_RTK_POS_MISC:
         rs_.rtk_pos.streamingCheck(DID);
         if (rs_.rtk_pos.pubInfo)
         {
@@ -1780,11 +1780,11 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
         rtk_rel.header.stamp = ros_time_from_week_and_tow(GPS_week_, msg->timeOfWeekMs / 1000.0);
         rtk_rel.differential_age = msg->differentialAge;
         rtk_rel.ar_ratio = msg->arRatio;
-        uint32_t fixStatus = msg->status & GPS_STATUS_FIX_MASK;
-        if (fixStatus == GPS_STATUS_FIX_3D)
+        uint32_t fixStatus = msg->status & GNSS_STATUS_FIX_MASK;
+        if (fixStatus == GNSS_STATUS_FIX_3D)
         {
-            rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_3D;
-            fixStatusString = "GPS_STATUS_FIX_3D";
+            rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GNSS_STATUS_FIX_3D;
+            fixStatusString = "GNSS_STATUS_FIX_3D";
         }
         else if (fixStatus == GPS_STATUS_FIX_RTK_SINGLE)
         {

@@ -255,21 +255,21 @@ public:
     void odom_ins_ned_callback(eDataIDs DID, const ins_2_t *const msg);
     void odom_ins_ecef_callback(eDataIDs DID, const ins_2_t *const msg);
     void odom_ins_enu_callback(eDataIDs DID, const ins_2_t *const msg);
-    void GPS_info_callback(eDataIDs DID, const gps_sat_t *const msg);
+    void GPS_info_callback(eDataIDs DID, const gnss_sat_t *const msg);
     void mag_callback(eDataIDs DID, const magnetometer_t *const msg);
     void baro_callback(eDataIDs DID, const barometer_t *const msg);
     void preint_IMU_callback(eDataIDs DID, const pimu_t *const msg);
     void imu_raw_callback(eDataIDs DID, const imu_t *const msg);
     void strobe_in_time_callback(eDataIDs DID, const strobe_in_time_t *const msg);
     void diagnostics_callback(ROS1_TIMEREVENT_ARG);
-    void GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg);
-    void GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg);
+    void GPS_pos_callback(eDataIDs DID, const gnss_pos_t *const msg);
+    void GPS_vel_callback(eDataIDs DID, const gnss_vel_t *const msg);
     void GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg);
     void GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, int nObs);
     void GPS_obs_bundle_timer_callback(ROS1_TIMEREVENT_ARG);
     void GPS_eph_callback(eDataIDs DID, const eph_t *const msg);
     void GPS_geph_callback(eDataIDs DID, const geph_t *const msg);
-    void RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *const msg);
+    void RTK_Misc_callback(eDataIDs DID, const gnss_rtk_misc_t *const msg);
     void RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const msg);
 
 #ifdef ROS2
@@ -509,10 +509,10 @@ public:
     GPSInfo msg_gps1_info;
     GPSInfo msg_gps2_info;
 #endif
-    gps_pos_t gps1_pos;
-    gps_pos_t gps2_pos;
-    gps_vel_t gps1_vel;
-    gps_vel_t gps2_vel;
+    gnss_pos_t gps1_pos;
+    gnss_pos_t gps2_pos;
+    gnss_vel_t gps1_vel;
+    gnss_vel_t gps2_vel;
     float poseCov_[36], twistCov_[36];
 
     // Connection to the uINS

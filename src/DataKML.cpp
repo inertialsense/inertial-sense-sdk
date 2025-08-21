@@ -88,12 +88,12 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
             deadreckoning = !(d.ins3.insStatus & INS_STATUS_GPS_AIDING_POS);
             data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, deadreckoning);
             break;
-        case DID_GPS1_POS:
-        case DID_GPS1_RCVR_POS:
-        case DID_GPS2_POS:
+        case DID_GNSS1_POS:
+        case DID_GNSS1_RCVR_POS:
+        case DID_GNSS2_POS:
             data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
             break;
-        case DID_GPS1_RTK_POS:
+        case DID_GNSS1_RTK_POS:
             data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
             break;
     }

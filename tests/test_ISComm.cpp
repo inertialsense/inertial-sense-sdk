@@ -264,7 +264,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
     {
         data_holder_t td = {};
         ins_1_t ins1 = { 0 };
-        gps_pos_t gps = { 0 };
+        gnss_pos_t gps = { 0 };
 
         if (i % 16 == 0)
         {   // INS 1
@@ -326,9 +326,9 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 
 #if TEST_PROTO_ISB
             td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
-            td.did = DID_GPS1_POS;
+            td.did = DID_GNSS1_POS;
             td.data.set.gpsPos = gps;
-            td.size = sizeof(gps_pos_t);
+            td.size = sizeof(gnss_pos_t);
             if (!generateDataAppend(testDeque, td, byteSize)) return;
 #endif
         }
@@ -737,7 +737,7 @@ static int generate_NMEAPkt_DevInfo(is_comm_instance_t* comm, uint8_t* buf, int 
 
 static int generate_ISBPkt_gps1Pos(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-    gps_pos_t gps;
+    gnss_pos_t gps;
 
     // GPS
     gps.week = 2270;
@@ -760,7 +760,7 @@ static int generate_ISBPkt_gps1Pos(is_comm_instance_t* comm, uint8_t* buf, int b
     gps.cnoMeanSigma = 2;
     gps.status2 = 0x05;
 
-    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_GNSS1_POS, sizeof(gnss_pos_t), 0, &gps);
 }
 
 static int generate_ISBPkt_ins2(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
@@ -1477,7 +1477,7 @@ int BufferParse_isb(void* ctx, p_data_t* data, port_handle_t port)
     {
         case DID_DEV_INFO:  s_buffParseMsgInCnt[BUFF_PARSE_DEV]++;  break;
         case DID_INS_2:     s_buffParseMsgInCnt[BUFF_PARSE_INS]++;  break;
-        case DID_GPS1_POS:  s_buffParseMsgInCnt[BUFF_PARSE_GPS]++;  break;
+        case DID_GNSS1_POS:  s_buffParseMsgInCnt[BUFF_PARSE_GPS]++;  break;
         case DID_IMU:       s_buffParseMsgInCnt[BUFF_PARSE_IMU]++;  break;
     }
 

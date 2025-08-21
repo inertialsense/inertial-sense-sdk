@@ -212,13 +212,13 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
     static uint16_t offsetsGps[] =
     {
         7,
-        offsetof(gps_pos_t, lla[0]),
-        offsetof(gps_pos_t, lla[1]),
-        offsetof(gps_pos_t, lla[2]),
-        offsetof(gps_pos_t, towOffset),
-        offsetof(gps_pos_t, ecef[0]),
-        offsetof(gps_pos_t, ecef[1]),
-        offsetof(gps_pos_t, ecef[2])
+        offsetof(gnss_pos_t, lla[0]),
+        offsetof(gnss_pos_t, lla[1]),
+        offsetof(gnss_pos_t, lla[2]),
+        offsetof(gnss_pos_t, towOffset),
+        offsetof(gnss_pos_t, ecef[0]),
+        offsetof(gnss_pos_t, ecef[1]),
+        offsetof(gnss_pos_t, ecef[2])
     };
 
     static uint16_t offsetsRmc[] =
@@ -649,8 +649,8 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_REFERENCE_PIMU]        = RMC_BITS_REFERENCE_PIMU,
     [DID_BAROMETER]             = RMC_BITS_BAROMETER,
     [DID_MAGNETOMETER]          = RMC_BITS_MAGNETOMETER,
-    [DID_GPS1_POS]              = RMC_BITS_GPS1_POS,
-    [DID_GPS2_POS]              = RMC_BITS_GPS2_POS,
+    [DID_GNSS1_POS]              = RMC_BITS_GPS1_POS,
+    [DID_GNSS2_POS]              = RMC_BITS_GPS2_POS,
     [DID_GPS1_VEL]              = RMC_BITS_GPS1_VEL,
     [DID_GPS2_VEL]              = RMC_BITS_GPS2_VEL,
     [DID_GPS1_SAT]              = RMC_BITS_GPS1_SAT,
@@ -660,10 +660,10 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GPS1_RAW]              = RMC_BITS_GPS1_RAW,
     [DID_GPS2_RAW]              = RMC_BITS_GPS2_RAW,
     [DID_GPS_BASE_RAW]          = RMC_BITS_GPS_BASE_RAW,
-    [DID_GPS1_RCVR_POS]         = RMC_BITS_GPS1_UBX_POS,
-    [DID_GPS1_RTK_POS]          = RMC_BITS_GPS1_RTK_POS,
+    [DID_GNSS1_RCVR_POS]         = RMC_BITS_GPS1_UBX_POS,
+    [DID_GNSS1_RTK_POS]          = RMC_BITS_GPS1_RTK_POS,
     [DID_GPS1_RTK_POS_REL]      = RMC_BITS_GPS1_RTK_POS_REL,
-    [DID_GPS1_RTK_POS_MISC]     = RMC_BITS_GPS1_RTK_POS_MISC,
+    [DID_GNSS1_RTK_POS_MISC]     = RMC_BITS_GPS1_RTK_POS_MISC,
     [DID_GPS2_RTK_CMP_REL]      = RMC_BITS_GPS1_RTK_HDG_REL,
     [DID_GPS2_RTK_CMP_MISC]     = RMC_BITS_GPS1_RTK_HDG_MISC,
     [DID_STROBE_IN_TIME]        = RMC_BITS_STROBE_IN_TIME,
@@ -704,7 +704,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
     [DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
     [DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
     [DID_GPS1_SAT]              = NMEA_RMC_BITS_GNGSV,
-    [DID_GPS1_POS] =
+    [DID_GNSS1_POS] =
         NMEA_RMC_BITS_POWGPS |
         NMEA_RMC_BITS_POWTLV |
         NMEA_RMC_BITS_INTEL |
@@ -716,7 +716,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
         NMEA_RMC_BITS_GNZDA |
         NMEA_RMC_BITS_GNVTG |
         NMEA_RMC_BITS_PASHR,
-    [DID_GPS2_POS] =
+    [DID_GNSS2_POS] =
         NMEA_RMC_BITS_POWGPS |
         NMEA_RMC_BITS_POWTLV |
         NMEA_RMC_BITS_INTEL |
@@ -739,20 +739,20 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_GPX_RTOS_INFO]         = GRMC_BITS_RTOS_INFO,
     [DID_GPX_STATUS]            = GRMC_BITS_STATUS,
     [DID_GPX_DEBUG_ARRAY]       = GRMC_BITS_DEBUG_ARRAY,
-    [DID_GPS1_POS]              = GRMC_BITS_GPS1_POS,
+    [DID_GNSS1_POS]              = GRMC_BITS_GPS1_POS,
     [DID_GPS1_VEL]              = GRMC_BITS_GPS1_VEL,
     [DID_GPS1_RAW]              = GRMC_BITS_GPS1_RAW,
     [DID_GPS1_SAT]              = GRMC_BITS_GPS1_SAT,
     [DID_GPS1_SIG]              = GRMC_BITS_GPS1_SIG,
     [DID_GPS1_VERSION]          = GRMC_BITS_GPS1_VERSION,
-    [DID_GPS2_POS]              = GRMC_BITS_GPS2_POS,
+    [DID_GNSS2_POS]              = GRMC_BITS_GPS2_POS,
     [DID_GPS2_VEL]              = GRMC_BITS_GPS2_VEL,
     [DID_GPS2_SAT]              = GRMC_BITS_GPS2_SAT,
     [DID_GPS2_SIG]              = GRMC_BITS_GPS2_SIG,
     [DID_GPS2_RAW]              = GRMC_BITS_GPS2_RAW,
     [DID_GPS2_VERSION]          = GRMC_BITS_GPS2_VERSION,
-    [DID_GPS1_RTK_POS]          = GRMC_BITS_GPS1_RTK_POS,
-    [DID_GPS1_RTK_POS_MISC]     = GRMC_BITS_GPS1_RTK_POS_MISC,
+    [DID_GNSS1_RTK_POS]          = GRMC_BITS_GPS1_RTK_POS,
+    [DID_GNSS1_RTK_POS_MISC]     = GRMC_BITS_GPS1_RTK_POS_MISC,
     [DID_GPS1_RTK_POS_REL]      = GRMC_BITS_GPS1_RTK_POS_REL,
     [DID_GPS2_RTK_CMP_MISC]     = GRMC_BITS_GPS2_RTK_CMP_MISC,
     [DID_GPS2_RTK_CMP_REL]      = GRMC_BITS_GPS2_RTK_CMP_REL,

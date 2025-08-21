@@ -444,14 +444,14 @@ enum eSysStatusFlags
 enum eGpsStatus
 {
     // TODO: THIS FIELD WILL END OF LIFE IN PROTOCOL 3
-    // PLEASE USE gps_pos_t.satsUsed for all new development
+    // PLEASE USE gnss_pos_t.satsUsed for all new development
     GPS_STATUS_NUM_SATS_USED_MASK                   = (int)0x000000FF,
 
     /** Fix */
-    GPS_STATUS_FIX_NONE                             = (int)0x00000000,
+    GNSS_STATUS_FIX_NONE                             = (int)0x00000000,
     GPS_STATUS_FIX_DEAD_RECKONING_ONLY              = (int)0x00000100,
     GPS_STATUS_FIX_2D                               = (int)0x00000200,
-    GPS_STATUS_FIX_3D                               = (int)0x00000300,
+    GNSS_STATUS_FIX_3D                               = (int)0x00000300,
     GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK               = (int)0x00000400,
     GPS_STATUS_FIX_TIME_ONLY                        = (int)0x00000500,
     GPS_STATUS_FIX_UNUSED1                          = (int)0x00000600,
@@ -461,7 +461,7 @@ enum eGpsStatus
     GPS_STATUS_FIX_RTK_SINGLE                       = (int)0x00000A00,
     GPS_STATUS_FIX_RTK_FLOAT                        = (int)0x00000B00,
     GPS_STATUS_FIX_RTK_FIX                          = (int)0x00000C00,
-    GPS_STATUS_FIX_MASK                             = (int)0x00001F00,
+    GNSS_STATUS_FIX_MASK                             = (int)0x00001F00,
     GPS_STATUS_FIX_BIT_OFFSET                       = (int)8,
 
     /** Flags  */
@@ -483,7 +483,7 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID         = (int)0x08000000,      // GPS2 RTK moving base heading.  Indicates RTK compassing heading valid and available in DID_GPS2_RTK_CMP_REL.
     GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD  = (int)0x00002000,
     GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET= (int)0x00004000,
-    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_MASK          = (GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED|
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK          = (GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET),
@@ -1053,7 +1053,7 @@ typedef struct PACKED
     /** (see eGpsStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused */
     uint8_t                 status2;
 
-} gps_pos_t;
+} gnss_pos_t;
 
 
 /** (DID_GPS1_VEL, DID_GPS2_VEL) GPS velocity data */
@@ -1070,7 +1070,7 @@ typedef struct PACKED
     
     /** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
     uint32_t                status;
-} gps_vel_t;
+} gnss_vel_t;
 
 
 /** GPS Satellite information */
@@ -1155,7 +1155,7 @@ typedef struct PACKED
     uint32_t                numSats;                    
     /** Satellite information list */
     gps_sat_sv_t            sat[MAX_NUM_SATELLITES];    
-} gps_sat_t;
+} gnss_sat_t;
 
 enum eSatSvSigId
 {
@@ -1258,7 +1258,7 @@ typedef struct PACKED
     uint32_t                numSigs;                    
     /** Satellite signal list */
     gps_sig_sv_t            sig[MAX_NUM_SAT_SIGNALS];    
-} gps_sig_t;
+} gnss_sig_t;
 
 typedef uint8_t         gps_extension_ver_t[30];
 #define GPS_VER_NUM_EXTENSIONS    6
@@ -1271,7 +1271,7 @@ typedef struct PACKED
     uint8_t                 hwVersion[10];        
     /** Extension 30 bytes array description  */
     gps_extension_ver_t     extension[GPS_VER_NUM_EXTENSIONS];        
-} gps_version_t;
+} gnss_version_t;
 
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
 typedef struct PACKED
@@ -2374,7 +2374,7 @@ enum eHdwBitStatusFlags
 {
     HDW_BIT_PASSED_MASK                     = (int)0x0000000F,
     HDW_BIT_PASSED_ALL                      = (int)0x00000001,
-    HDW_BIT_PASSED_NO_GPS                   = (int)0x00000002,    // Passed w/o valid GPS signal
+    HDW_BIT_PASSED_NO_GNSS                   = (int)0x00000002,    // Passed w/o valid GPS signal
     HDW_BIT_MODE_MASK                       = (int)0x000000F0,    // BIT mode run
     HDW_BIT_MODE_OFFSET                     = (int)4,
 #define HDW_BIT_MODE(hdwBitStatus)          (((hdwBitStatus)&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
@@ -2384,10 +2384,10 @@ enum eHdwBitStatusFlags
     HDW_BIT_FAULT_NOISE_ACC                 = (int)0x00000200,
     HDW_BIT_FAULT_MAGNETOMETER              = (int)0x00000400,
     HDW_BIT_FAULT_BAROMETER                 = (int)0x00000800,
-    HDW_BIT_FAULT_GPS_NO_COM                = (int)0x00001000,    // No GPS serial communications
-    HDW_BIT_FAULT_GPS_POOR_CNO              = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
+    HDW_BIT_FAULT_GNSS_NO_COM                = (int)0x00001000,    // No GPS serial communications
+    HDW_BIT_FAULT_GNSS_POOR_CNO              = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
     HDW_BIT_FAULT_GPS_POOR_ACCURACY         = (int)0x00002000,    // Low number of satellites, or bad accuracy 
-    HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00004000,    // (Not implemented)
+    HDW_BIT_FAULT_GNsS_NOISE                 = (int)0x00004000,    // (Not implemented)
     HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00008000,    // IMU fault rejection failure
     HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,    // Hardware type does not match firmware
 };
@@ -3283,19 +3283,19 @@ enum ePlatformConfig
 
     // RUG-3 - Presets
     PLATFORM_CFG_RUG3_PRESET__0__PRESETS_DISABLED                               = 0,    // Don't use presets.  IOEXP_BITS can be set directly.
-    PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GPS1          = 1,    // RUG-3-G0 default
-    PLATFORM_CFG_RUG3_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GPS1          = 2,
-    PLATFORM_CFG_RUG3_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GPS1          = 3,
-    PLATFORM_CFG_RUG3_PRESET__4__S0_RS232_7_9___S1_RS232_8_10__S2_GPS1          = 4,
-    PLATFORM_CFG_RUG3_PRESET__5__S1_RS485_7_8_9_10_____________S2_GPS1__S0_GPS2 = 5,
-    PLATFORM_CFG_RUG3_PRESET__6__SPI_7_8_9_10__________________S2_GPS1__S0_GPS2 = 6,
-    PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GPS1__S0_GPS2 = 7,    // RUG-3-G2 default
-    PLATFORM_CFG_RUG3_PRESET__8_________________CAN_11_12______S1_GPS1__S0_GPS2 = 8,
-    PLATFORM_CFG_RUG3_PRESET__9__S2_TTL_8_10___________________S1_GPS1__S0_GPS2 = 9,
+    PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS1          = 1,    // RUG-3-G0 default
+    PLATFORM_CFG_RUG3_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GNSS1          = 2,
+    PLATFORM_CFG_RUG3_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GNSS1          = 3,
+    PLATFORM_CFG_RUG3_PRESET__4__S0_RS232_7_9___S1_RS232_8_10__S2_GNSS1          = 4,
+    PLATFORM_CFG_RUG3_PRESET__5__S1_RS485_7_8_9_10_____________S2_GNSS1__S0_GNSS2 = 5,
+    PLATFORM_CFG_RUG3_PRESET__6__SPI_7_8_9_10__________________S2_GNSS1__S0_GNSS2 = 6,
+    PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GNSS1__S0_GNSS2 = 7,    // RUG-3-G2 default
+    PLATFORM_CFG_RUG3_PRESET__8_________________CAN_11_12______S1_GNSS1__S0_GNSS2 = 8,
+    PLATFORM_CFG_RUG3_PRESET__9__S2_TTL_8_10___________________S1_GNSS1__S0_GNSS2 = 9,
     PLATFORM_CFG_RUG3_PRESET__COUNT                                             = 10,
 
-    PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT    = PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GPS1,
-    PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT    = PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GPS1__S0_GPS2,
+    PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT    = PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS1,
+    PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT    = PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GNSS1__S0_GNSS2,
 
     // RUG-3 - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUG3_x.
     PLATFORM_CFG_RUG3_IOEXP_BIT_MASK            = (int)0x00FF0000,
@@ -3304,10 +3304,10 @@ enum ePlatformConfig
     RUG3_IOEXP_BIT_OFFSET_n232_485              = (int)0,
     RUG3_IOEXP_BIT_OFFSET_n232_TTL              = (int)1,
     RUG3_IOEXP_BIT_OFFSET_nRS_CAN               = (int)2,
-    RUG3_IOEXP_BIT_OFFSET_nGPS2_RS              = (int)3,
+    RUG3_IOEXP_BIT_OFFSET_nGNSS2_RS              = (int)3,
     RUG3_IOEXP_BIT_OFFSET_nSPIEN                = (int)4,
     RUG3_IOEXP_BIT_OFFSET_nSPI_SER              = (int)5,
-    RUG3_IOEXP_BIT_OFFSET_nGPSRST               = (int)6,
+    RUG3_IOEXP_BIT_OFFSET_nGNSSRST               = (int)6,
 
     PLATFORM_CFG_UPDATE_IO_CONFIG               = (int)0x01000000,    // Generate ioConfig based on platform config
 };
@@ -4767,20 +4767,20 @@ enum eGPXHdwStatusFlags
     /** Communications Rx buffer overrun */
     GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,    
     /** GPS1 PPS timepulse signal has not been received or is in error */
-    GPX_HDW_STATUS_ERR_NO_GPS1_PPS                      = (int)0x00040000,
+    GPX_HDW_STATUS_ERR_NO_GNSS1_PPS                      = (int)0x00040000,
     /** GPS2 PPS timepulse signal has not been received or is in error */
-    GPX_HDW_STATUS_ERR_NO_GPS2_PPS                      = (int)0x00080000,
+    GPX_HDW_STATUS_ERR_NO_GNSS2_PPS                      = (int)0x00080000,
     /** GPS PPS error mask */
     GPX_HDW_STATUS_ERR_PPS_MASK                         = (int)0x000C0000,
 
     /** GPS1 signal strength low (<20)*/
-    GPX_HDW_STATUS_ERR_LOW_CNO_GPS1                     = (int)0x00100000,
+    GPX_HDW_STATUS_ERR_LOW_CNO_GNSS1                     = (int)0x00100000,
     /** GPS2 signal strength low (<20)*/
-    GPX_HDW_STATUS_ERR_LOW_CNO_GPS2                     = (int)0x00200000,
+    GPX_HDW_STATUS_ERR_LOW_CNO_GNSS2                     = (int)0x00200000,
     /** GPS1 signal irregular. High Cno standard deviation over 5 second period detected. 10x CNO mean sigma (i.e. >1.0 dBHz) */
-    GPX_HDW_STATUS_ERR_CNO_GPS1_IR                      = (int)0x00400000,
+    GPX_HDW_STATUS_ERR_CNO_GNSS1_IR                      = (int)0x00400000,
     /** GPS2 signal irregular. High Cno standard deviation over 5 second period detected. 10x CNO mean sigma (i.e. >1.0 dBHz) */
-    GPX_HDW_STATUS_ERR_CNO_GPS2_IR                      = (int)0x00800000,
+    GPX_HDW_STATUS_ERR_CNO_GNSS2_IR                      = (int)0x00800000,
     /** GPS signal error mask*/
     GPX_HDW_STATUS_ERR_CNO_MASK                         = (int)0x00F00000,
 
@@ -5740,11 +5740,11 @@ typedef union PACKED
     ground_vehicle_t            groundVehicle;
     pos_measurement_t           posMeasurement;
     pimu_t                      pImu;
-    gps_pos_t                   gpsPos;
-    gps_vel_t                   gpsVel;
-    gps_sat_t                   gpsSat;
-    gps_sig_t                   gpsSig;
-    gps_version_t               gpsVer;
+    gnss_pos_t                   gpsPos;
+    gnss_vel_t                   gpsVel;
+    gnss_sat_t                   gpsSat;
+    gnss_sig_t                   gpsSig;
+    gnss_version_t               gpsVer;
     gps_rtk_rel_t               gpsRtkRel;
     gps_rtk_misc_t              gpsRtkMisc;
     inl2_states_t               inl2States;
@@ -5957,8 +5957,8 @@ void profiler_maintenance_1s(runtime_profiler_t *p);
 /****************************************
  * PROPOSED CHANGES FOR PROTOCOL IS V3.0
  * 
- * - Remove GPS_STATUS_NUM_SATS_USED_MASK bits in eGpsStatus this is reported in satsUsed in gps_pos_t.
- * - Move spoofing/jamming status into gps_pos_t.status and reclaim gps_pos_t.status2 as resevered.
+ * - Remove GPS_STATUS_NUM_SATS_USED_MASK bits in eGpsStatus this is reported in satsUsed in gnss_pos_t.
+ * - Move spoofing/jamming status into gnss_pos_t.status and reclaim gnss_pos_t.status2 as resevered.
  * - Change $INFO to conform to NMEA 0183 standard. $INFO is a proprietary message and should start with $P and have max of 79 characters. see SN-6231
  * 
  * 

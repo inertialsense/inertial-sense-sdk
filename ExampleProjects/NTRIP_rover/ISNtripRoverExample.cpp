@@ -39,7 +39,7 @@ int stop_message_broadcasting(port_handle_t port)
 
 int enable_message_broadcasting(port_handle_t port)
 {
-    if (is_comm_get_data(port, DID_GPS1_POS, 0, 0, 1))
+    if (is_comm_get_data(port, DID_GNSS1_POS, 0, 0, 1))
     {
         printf("Failed to encode and write get GPS message\r\n");
         return -5;
@@ -56,7 +56,7 @@ int enable_message_broadcasting(port_handle_t port)
 
 static struct
 {
-    gps_pos_t       gps;
+    gnss_pos_t       gps;
     gps_rtk_rel_t   rel;
     uint8_t         baseCount;
 } s_rx = {};
@@ -69,13 +69,13 @@ void handle_isbData(is_comm_instance_t *comm, cISStream *clientStream)
         is_comm_copy_to_struct(&s_rx.rel, comm, sizeof(s_rx.rel));        
         break;
 
-    case DID_GPS1_POS:        
+    case DID_GNSS1_POS:        
         is_comm_copy_to_struct(&s_rx.gps, comm, sizeof(s_rx.gps));
         string fix;
-        switch (s_rx.gps.status&GPS_STATUS_FIX_MASK)
+        switch (s_rx.gps.status&GNSS_STATUS_FIX_MASK)
         {
         default:                        fix = "None      ";        break;
-        case GPS_STATUS_FIX_3D:         fix = "3D        ";        break;
+        case GNSS_STATUS_FIX_3D:         fix = "3D        ";        break;
         case GPS_STATUS_FIX_RTK_SINGLE: fix = "RTK-Single";        break;
         case GPS_STATUS_FIX_RTK_FLOAT:  fix = "RTK-Float ";        break;
         case GPS_STATUS_FIX_RTK_FIX:    fix = "RTK       ";        break;
@@ -96,7 +96,7 @@ void handle_isbData(is_comm_instance_t *comm, cISStream *clientStream)
         if (abs(currentTime - lastTime) > 5)
         {   // Update every 5 seconds
             lastTime = currentTime;
-            if ((s_rx.gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
+            if ((s_rx.gps.status&GNSS_STATUS_FIX_MASK) >= GNSS_STATUS_FIX_3D)
             {   // GPS position is valid
                 char rxBuf[512];
                 int n = nmea_gga(rxBuf, sizeof(rxBuf), s_rx.gps);

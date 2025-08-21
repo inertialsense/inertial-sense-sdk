@@ -429,8 +429,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
             isTowMode = true;
             break;
 
-        case DID_GPS1_POS:
-        case DID_GPS1_RTK_POS:
+        case DID_GNSS1_POS:
+        case DID_GNSS1_RTK_POS:
             msgTimeMs = d.gpsPos.timeOfWeekMs;
             gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
             isTowMode = true;
@@ -441,7 +441,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
             isTowMode = true;
             break;
 
-        case DID_GPS1_RTK_POS_MISC:
+        case DID_GNSS1_RTK_POS_MISC:
             msgTimeMs = d.gpsPos.timeOfWeekMs;
             gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
             isTowMode = false;
@@ -738,11 +738,11 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);              break;
         case DID_GPS1_VERSION:      // FALL THROUGH
         case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);          break;
-        case DID_GPS1_POS:          // FALL THROUGH
-        case DID_GPS2_POS:          // FALL THROUGH
-        case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);              break;
+        case DID_GNSS1_POS:          // FALL THROUGH
+        case DID_GNSS2_POS:          // FALL THROUGH
+        case DID_GNSS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);              break;
         case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
+        case DID_GNSS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
         case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
         case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
         case DID_GPS1_RAW:          // FALL THROUGH
@@ -1266,7 +1266,7 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringGpsVersion(const gnss_version_t &ver, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1292,7 +1292,7 @@ string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, c
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringGpsPos(const gnss_pos_t &gps, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1304,7 +1304,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
     return string(buf) + DataToStringGpsPos(gps, m_displayMode != DMODE_SCROLL);
 }
 
-string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full)
+string cInertialSenseDisplay::DataToStringGpsPos(const gnss_pos_t &gps, bool full)
 {
     char buf[BUF_SIZE];
     char* ptr = buf;
@@ -1331,12 +1331,12 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tSats: %2d,  ",
             gps.status&GPS_STATUS_NUM_SATS_USED_MASK);    // Satellites used in solution
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status: 0x%08x (", gps.status);
-        switch (gps.status&GPS_STATUS_FIX_MASK)
+        switch (gps.status&GNSS_STATUS_FIX_MASK)
         {
             default:
-            case GPS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);    break;
+            case GNSS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GNSS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);    break;
             case GPS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
-            case GPS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
+            case GNSS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
             case GPS_STATUS_FIX_RTK_SINGLE:         ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");   break;
             case GPS_STATUS_FIX_RTK_FLOAT:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");    break;
             case GPS_STATUS_FIX_RTK_FIX:            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");      break;
@@ -1411,7 +1411,7 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringRtkMisc(const gnss_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     string didName = cISDataMappings::DataName(hdr.id);

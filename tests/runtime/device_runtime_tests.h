@@ -35,7 +35,7 @@ class DeviceRuntimeTests
             msgSize = msgSize_;
             memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
         }
-        sMsgHistory(gps_pos_t *gps, uint8_t *msg_ = NULL, int msgSize_ = 0)
+        sMsgHistory(gnss_pos_t *gps, uint8_t *msg_ = NULL, int msgSize_ = 0)
         {
             localTime = SYS_TIME_NOW;
             gpsTowMs = gps->timeOfWeekMs;

@@ -1189,14 +1189,14 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 
         // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
         //  this seems to be for RTK RTCM3/NTrip Correction services, to republish the device's current position as NMEA GGA
-        case DID_GPS1_POS:
+        case DID_GNSS1_POS:
             static time_t lastTime;
             time_t currentTime = time(NULLPTR);
             if (abs(currentTime - lastTime) > 5) 
             {   // Update every 5 seconds
                 lastTime = currentTime;
-                gps_pos_t &gps = *((gps_pos_t*)data->ptr);
-                if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D) {
+                gnss_pos_t &gps = *((gnss_pos_t*)data->ptr);
+                if ((gps.status&GNSS_STATUS_FIX_MASK) >= GNSS_STATUS_FIX_3D) {
                     // *s_cm_state->clientBytesToSend = nmea_gga(s_cm_state->clientBuffer, s_cm_state->clientBufferSize, gps);
                 }
             }

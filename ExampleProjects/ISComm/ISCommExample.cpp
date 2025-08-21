@@ -42,7 +42,7 @@ static void handleIns2Message(ins_2_t* ins)
         theta[0] * C_RAD2DEG_F, theta[1] * C_RAD2DEG_F, theta[2] * C_RAD2DEG_F);
 }
 
-static void handleGpsMessage(gps_pos_t* pos)
+static void handleGpsMessage(gnss_pos_t* pos)
 {
     printf("GPS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", pos->timeOfWeekMs, pos->lla[0], pos->lla[1], pos->lla[2]);
 }
@@ -107,7 +107,7 @@ int enable_message_broadcasting(port_handle_t port)
 
 #if 1
     // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-    if (is_comm_get_data(port, DID_GPS1_POS, 0, 0, 1) < 0)
+    if (is_comm_get_data(port, DID_GNSS1_POS, 0, 0, 1) < 0)
     {
         printf("Failed to encode and write get GPS message\r\n");
         return -5;
@@ -209,8 +209,8 @@ int main(int argc, char* argv[])
                     handleIns2Message((ins_2_t*)comm.rxPkt.data.ptr);
                     break;
 
-                case DID_GPS1_POS:
-                    handleGpsMessage((gps_pos_t*)comm.rxPkt.data.ptr);
+                case DID_GNSS1_POS:
+                    handleGpsMessage((gnss_pos_t*)comm.rxPkt.data.ptr);
                     break;
 
                 case DID_IMU:

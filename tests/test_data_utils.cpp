@@ -49,8 +49,8 @@ static const uint32_t s_gpsPeriodMs             = 200;
 
 static pimu_t s_pimu                            = {};
 static ins_1_t s_ins1                           = {};
-static gps_pos_t s_gpsPos                       = {};
-static gps_vel_t s_gpsVel                       = {};
+static gnss_pos_t s_gpsPos                       = {};
+static gnss_vel_t s_gpsVel                       = {};
 
 struct sTimeMs
 {
@@ -192,11 +192,11 @@ bool GenerateIns1(test_message_t &msg, ins_1_t &ins1, int i, float f, bool init=
     return true;
 }
 
-bool GenerateGpsPos(test_message_t &msg, gps_pos_t &gps, int i, float f, bool init=false)
+bool GenerateGpsPos(test_message_t &msg, gnss_pos_t &gps, int i, float f, bool init=false)
 {
     if (init)
     {
-        memset(&gps, 0, sizeof(gps_pos_t));
+        memset(&gps, 0, sizeof(gnss_pos_t));
         gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
         gps.week = s_gpsWeek;
         gps.ecef[0] = f*123.4;
@@ -236,16 +236,16 @@ gps.towOffset           = f;
 gps.leapS               = C_GPS_LEAP_SECONDS;
 
     msg.data.gpsPos = gps;
-    msg.dataHdr.id = DID_GPS1_POS;
-    msg.dataHdr.size = sizeof(gps_pos_t);
+    msg.dataHdr.id = DID_GNSS1_POS;
+    msg.dataHdr.size = sizeof(gnss_pos_t);
     return true;
 }
 
-bool GenerateGpsVel(test_message_t &msg, gps_vel_t &gps, int i, float f, bool init=false)
+bool GenerateGpsVel(test_message_t &msg, gnss_vel_t &gps, int i, float f, bool init=false)
 {
     if (init)
     {
-        memset(&gps, 0, sizeof(gps_vel_t));
+        memset(&gps, 0, sizeof(gnss_vel_t));
         gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
         return false;
     }
@@ -264,7 +264,7 @@ bool GenerateGpsVel(test_message_t &msg, gps_vel_t &gps, int i, float f, bool in
 
     msg.data.gpsVel = gps;
     msg.dataHdr.id = DID_GPS1_VEL;
-    msg.dataHdr.size = sizeof(gps_vel_t);
+    msg.dataHdr.size = sizeof(gnss_vel_t);
     return true;
 }
 

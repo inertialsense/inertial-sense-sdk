@@ -103,7 +103,7 @@ void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *
     }
         break;
 
-    case DID_GPS1_POS:      TestIsbGps(dataHdr, dataBuf);       break;
+    case DID_GNSS1_POS:      TestIsbGps(dataHdr, dataBuf);       break;
     }
 }
 
@@ -119,7 +119,7 @@ std::deque<DeviceRuntimeTests::msg_history_t>& DeviceRuntimeTests::AddMsgHistory
  */
 void DeviceRuntimeTests::TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf)
 {
-    std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.isb.gps1Pos, msg_history_t((gps_pos_t*)dataBuf));
+    std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.isb.gps1Pos, msg_history_t((gnss_pos_t*)dataBuf));
 
     WriteStatus("ISB GpsPos1 (%d towMs, %d week)\n", hist[0].gpsTowMs, hist[0].gpsWeek);
 
@@ -150,7 +150,7 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
 void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
 {
     int utcWeekday = m_hist.nmea.gga.size() ? gpsTowMsToUtcWeekday(m_hist.nmea.gga[0].gpsTowMs, C_GPS_LEAP_SECONDS) : 0;
-    gps_pos_t gpsPos = {};
+    gnss_pos_t gpsPos = {};
     utc_time_t t;
     nmea_parse_gga((const char *)msg, msgSize, gpsPos, t, utcWeekday);
     std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.nmea.gga, msg_history_t(gpsPos.timeOfWeekMs, gpsPos.week, (uint8_t*)msg, msgSize));
@@ -183,8 +183,8 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
 void DeviceRuntimeTests::TestNmeaIntel(const uint8_t* msg, int msgSize)
 {
     dev_info_t info;
-    gps_pos_t pos;
-    gps_vel_t vel;
+    gnss_pos_t pos;
+    gnss_vel_t vel;
     float ppsPhase[2];
     uint32_t ppsNoiseNs[1];
     nmea_parse_intel((char*)msg, msgSize, info, pos, vel, ppsPhase, ppsNoiseNs);

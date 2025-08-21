@@ -64,7 +64,7 @@ std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int
 
 /**
  * @brief Convert UTC date and time to GPS seconds in week and week number.  This function is 8x computationally 
- * more intensive than UtcDateTimeToGpsTime(). 
+ * more intensive than UtcDateTimeToGnssTime(). 
  * 
  * @param utcTime UTC time as std::tm.
  * @param gpsSecondsOfWeek Output GPS seconds of week.
@@ -82,7 +82,7 @@ void stdUtcDateTimeToGpsTime(const std::tm &utcTime, int leapSeconds, uint32_t &
  * @param gpsTowMs output GPS time of week in milliseconds 
  * @param gpsWeek output GPS week number
  */
-void UtcDateTimeToGpsTime(const int datetime[7], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek);
+void UtcDateTimeToGnssTime(const int datetime[7], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek);
 
 /** Convert Julian Date to calendar date. */
 void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond);

@@ -40,7 +40,7 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
             utcTime.tm_sec,
             (int)msec };
         uint32_t gpsTowMs4, gpsWeek4;
-        UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs4, gpsWeek4);
+        UtcDateTimeToGnssTime(datetime, leapS, gpsTowMs4, gpsWeek4);
 
         utc_time_t t;
         gpsTowMsToUtcTime(gpsTowMs, leapS, &t);
@@ -84,7 +84,7 @@ TEST(time_conversion, GPS_to_UTC_to_GPS_time)
             // Convert UTC date and time to GPS time and week         
             int datetime[7] = { d.year, d.month, d.day, t.hour, t.minute, t.second, (int)milliseconds };    // year,month,day,hour,min,sec,msec
             uint32_t gpsTowMs2, gpsWeek2;
-            UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs2, gpsWeek2);
+            UtcDateTimeToGnssTime(datetime, leapS, gpsTowMs2, gpsWeek2);
 
             ASSERT_EQ(gpsTowMs, gpsTowMs2);
             ASSERT_EQ(gpsWeek, gpsWeek2);
@@ -129,7 +129,7 @@ TEST(time_conversion, UTC_to_GPS_time_edge_cases)
 
     // Run tests
     for (const auto& testDate : testDates) {
-        UtcDateTimeToGpsTime(testDate.dateTime, leapS, resultTowMs, resultWeek);
+        UtcDateTimeToGnssTime(testDate.dateTime, leapS, resultTowMs, resultWeek);
 #if 0
         printf("{{");
         for (int i=0; i<6; i++)
