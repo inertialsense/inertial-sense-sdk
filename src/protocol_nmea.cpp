@@ -2013,13 +2013,17 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
     if (ptr < a + aSize)
         ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
 
-    // uint16_t        hardware;
+    // uint8_t        hardware;
     if (ptr < a + aSize)
         ptr = ASCII_to_u8(&info.hardwareType, ptr);
 
-    // uint16_t        hdwRunState;
-    if (ptr < a + aSize)
+    // uint8_t        hdwRunState;
+    if (ptr < a + aSize) {
         ptr = ASCII_to_u8(&info.hdwRunState, ptr);
+        // some older firmware incorrectly report this as '1' (HDW_STATE_BOOTLOADER), so correct them
+        if ((info.firmwareVer[0] <= 2) && (info.firmwareVer[1] <= 6))
+            info.hdwRunState = HDW_STATE_APP;
+    }
 
     // uint8_t         build type;
     if (ptr < a + aSize)

@@ -82,6 +82,9 @@ public:
      */
     std::vector<port_handle_t> getPorts();
 
+    port_handle_t getPort(uint16_t index);
+    inline port_handle_t operator[](int index) { return getPort(index); }
+
     /**
      * Attempts to locate and return a previously discovered/managed port by its name, and optionally port type flags
      * @param name the name of the port to locate and return

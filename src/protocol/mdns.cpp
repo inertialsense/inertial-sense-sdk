@@ -52,20 +52,9 @@ void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
     }
 
     for (int isock = 0; isock < socketsOpened; ++isock) {
-        // This code is slightly obtuse, but it simply generates random queryIds until it generates one that isn't already used in usedQueryIds
-        uint16_t queryId = 0;
-        do {
-            queryId = hwRandom();
-        } while (std::find_if(usedQueryIds.begin(), usedQueryIds.end(), [&queryId](used_query_id_t x) {
-            return x.queryId == queryId;
-        }) != usedQueryIds.end());
-
-        if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, queryId)) {
+        if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, 0)) {
             debug_message("[WRN] Failed to send DNS-DS discovery: %s\n", strerror(errno));
         }
-
-        used_query_id_t newPair = {queryId, std::chrono::steady_clock::now(), false};
-        usedQueryIds.push_back(newPair);
     }
 
     free(buffer);
@@ -174,7 +163,7 @@ int mdns::createMdnsSockets() {
     // Thus we need to open one socket for each interface and address family
     int num_sockets = 0;
     int max_sockets = sizeof(mdnsSockets) / sizeof(mdnsSockets[0]);
-    int port = 0;
+    int port = 5353; // 0 for random port
 
 #ifdef _WIN32
 
@@ -329,21 +318,6 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
                         size_t size, size_t name_offset, size_t name_length, size_t record_offset,
                         size_t record_length, void* user_data) {
 
-    // Find which query we sent that this is a response to
-    std::list<used_query_id_t>::iterator foundQuery =
-        std::find_if(usedQueryIds.begin(), usedQueryIds.end(),
-                     [&query_id](used_query_id_t x) -> bool {
-            return x.queryId == query_id;
-        });
-
-    // Mark query as received and return an error if we can't find which query this is a response to
-    if (foundQuery == usedQueryIds.end()) {
-        debug_message("[ERR] Unable to find received query ID is local list")
-        return -EBADMSG;
-    } else {
-        foundQuery->queryRecieved = true;
-    }
-
     // Do not process ANSWER messages
     if (entry != MDNS_ENTRYTYPE_ANSWER) {
         debug_message("[WRN] Unable to process non ANSWER responses: Not Supported")
@@ -467,16 +441,6 @@ int mdns::handleMdnsQueryResponses() {
     } while (res > 0);
 
     free(buffer);
-
-    // Cleanup used query ids
-    std::list<used_query_id_t>::iterator i = usedQueryIds.begin();
-    while (i != usedQueryIds.end()) {
-        if (i->queryRecieved || (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - i->querySent).count() > MDNS_REQUEST_TIMEOUT_MS)) {
-            i = usedQueryIds.erase(i);
-        } else {
-            i++;
-        }
-    }
 
     return records;
 }

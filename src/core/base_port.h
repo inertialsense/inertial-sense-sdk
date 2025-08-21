@@ -436,7 +436,7 @@ static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int
         if (bytesWritten >= 0) 
         {
             BASE_PORT(port)->stats->txBytes += bytesWritten;
-            if (bytesWritten < len)
+            if (bytesWritten < (int)len)
             {
                 BASE_PORT(port)->stats->txDataDrops++;
                 BASE_PORT(port)->stats->txBytesDropped += (len - bytesWritten);
