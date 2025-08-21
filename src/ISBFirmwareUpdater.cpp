@@ -608,7 +608,7 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
             for (int i = 0; i < 3; i++)
                 portWrite(device->port, (unsigned char *) "\r\n", 2);
         } else if (writeCnt < 0) {
-            // write error?? is likely because the port closed
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Failed to send 'JUMP-TO-APP' command to serial port: %s [%d]", portName(device->port), writeCnt);
             break;
         }
         SLEEP_MS(10);
@@ -616,8 +616,7 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     }
 
     // invalidate, because we don't know until we rediscover the device
-    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
-    // device->devInfo = {};
+    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
     if (!keepPortOpen) {
         device->disconnect();
     }
