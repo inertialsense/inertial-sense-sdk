@@ -52,17 +52,7 @@ void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
     }
 
     for (int isock = 0; isock < socketsOpened; ++isock) {
-        // This code is slightly obtuse, but it simply generates random queryIds until it generates one that isn't already used in usedQueryIds
-        uint16_t queryId = 0;
-        do {
-            queryId = hwRandom();
-        } while (std::find_if(usedQueryIds.begin(), usedQueryIds.end(), [&queryId](used_query_id_t x) {
-            return x.queryId == queryId;
-        }) != usedQueryIds.end());
-
-        queryId = 0; // Multicast Responders set all IDs to 0
-
-        if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, queryId)) {
+        if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, 0)) {
             debug_message("[WRN] Failed to send DNS-DS discovery: %s\n", strerror(errno));
         }
     }
@@ -451,16 +441,6 @@ int mdns::handleMdnsQueryResponses() {
     } while (res > 0);
 
     free(buffer);
-
-    // Cleanup used query ids
-    std::list<used_query_id_t>::iterator i = usedQueryIds.begin();
-    while (i != usedQueryIds.end()) {
-        if (i->queryRecieved || (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - i->querySent).count() > MDNS_REQUEST_TIMEOUT_MS)) {
-            i = usedQueryIds.erase(i);
-        } else {
-            i++;
-        }
-    }
 
     return records;
 }
