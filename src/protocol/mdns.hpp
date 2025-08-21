@@ -9,8 +9,8 @@
 #ifndef IS_SDK__MDNS_HPP
 #define IS_SDK__MDNS_HPP
 
-#define MDNS_RECORD_TIMEOUT_MS 1000 // Max time that any record will last for
-#define MDNS_REQUEST_TIMEOUT_MS 200 // How long to wait for a response
+#define MDNS_RECORD_TIMEOUT_MS 5000 // Max time that any record will last for
+#define MDNS_REQUEST_TIMEOUT_MS 1000 // How long to wait for a response
 
 #include <chrono>
 #include <functional>
@@ -385,8 +385,7 @@ private:
     inline static int mdnsSockets[32];
     inline static int socketsOpened;
 
-    // Random Number generator
-    inline static std::random_device hwRandom;
+    // Used to keep records in order
     inline static int backtick;
 
     // Structs
@@ -397,7 +396,6 @@ private:
     } used_query_id_t;
 
     // Lists
-    inline static std::list<used_query_id_t> usedQueryIds;
     inline static std::unordered_map<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>, mdns_record_cpp_tHash> responses;
 
     // Functions

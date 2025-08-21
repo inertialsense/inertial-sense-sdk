@@ -191,7 +191,7 @@ bool ISDevice::handshakeISbl() {
             return false;
         }
 
-        if (portWaitForTimeout(port, &handshakerChar, 1, 100)) {
+        if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
             return true;           // Success
         }
     }
@@ -202,18 +202,20 @@ bool ISDevice::handshakeISbl() {
 bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     uint8_t buf[64] = {};
 
-    handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
+    if (!hasHandshake) {
+        hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
+    }
 
     for (int i = 0; i < 5; i++) {
         portWrite(port, (uint8_t*)"\n", 1);
-        SLEEP_MS(10);
+        SLEEP_MS(2);
         portFlush(port);
         portRead(port, buf, sizeof(buf));    // empty Rx buffer
     }
 
     // Query device
     portWrite(port, (uint8_t*)":020000041000EA", 15);
-    SLEEP_MS(10);
+    SLEEP_MS(5);
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
     uint32_t timeoutExpires = current_timeMs() + timeout;
@@ -240,7 +242,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                         break;
                     case ISBootloader::IS_PROCESSOR_STM32U5:
                         // GPX-1
-                        devInfo.hardwareType = IS_HARDWARE_TYPE_GPX; // OR IMX-5.1
+                        devInfo.hardwareType = IS_HARDWARE_TYPE_GPX; // OR IMX-6.0
                         devInfo.hardwareVer[0] = 1;
                         devInfo.hardwareVer[1] = 0;
                         break;
@@ -275,8 +277,10 @@ bool ISDevice::validate(uint32_t timeout) {
     queryTypes nextQueryType = QUERYTYPE_NMEA;
     unsigned int startTime = current_timeMs();
     do {
-        if ((current_timeMs() - startTime) > timeout)
-            return false;
+        if ((current_timeMs() - startTime) > timeout) {
+            // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
+            return (queryDeviceInfoISbl(250) && hasDeviceInfo());
+        }
 
         // FIXME - Don't tolerate SERIAL_PORT specific conditions in ISDevice
         if (SERIAL_PORT(port)->errorCode == ENOENT)
@@ -293,8 +297,6 @@ bool ISDevice::validate(uint32_t timeout) {
                 GetData(DID_DEV_INFO);
                 break;
             case QUERYTYPE_ISbootloader:
-                queryDeviceInfoISbl(250);
-                break;
             case QUERYTYPE_mcuBoot:
                 break;
 
@@ -347,11 +349,18 @@ int ISDevice::validateAsync(uint32_t timeout) {
     }
 
     // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
-    if ((current_timeMs() - validationStartMs) > timeout) {
-        // We failed to get a response before the timeout occurred, so reset the timer (stop trying) and return false
-        debug_message("ISDevice::validateAsync() timed out after %dms.\n", current_timeMs() - validationStartMs);
+    if (((current_timeMs() - validationStartMs) > timeout)) {
         validationStartMs = 0;
         previousQueryType = QUERYTYPE_NMEA;
+
+        // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
+        if (!queryDeviceInfoISbl(250) && !hasDeviceInfo()) {
+            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+            return 1;
+        }
+
+        // We failed to get a response before the timeout occurred, so reset the timer (stop trying) and return false
+        debug_message("ISDevice::validateAsync() timed out after %dms.\n", current_timeMs() - validationStartMs);
         return -1;
     }
 
@@ -359,21 +368,19 @@ int ISDevice::validateAsync(uint32_t timeout) {
         case ISDevice::queryTypes::QUERYTYPE_NMEA :
             // debug_message("[DBG] Querying serial port '%s' using NMEA protocol.\n", SERIAL_PORT(port)->portName);
             SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
+            SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISB :
             // debug_message("[DBG] Querying serial port '%s' using ISB protocol.\n", SERIAL_PORT(port)->portName);
             GetData(DID_DEV_INFO);
+            SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
-            // debug_message("[DBG] Querying serial port '%s' using ISbootloader protocol.\n", SERIAL_PORT(port)->portName);
-            queryDeviceInfoISbl(250);
-            break;
         case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
             // debug_message("[DBG] Querying serial port '%s' mcuBoot/SMP protocol.\n", SERIAL_PORT(port)->portName);
             break;
     }
 
-    SLEEP_MS(5); // give just enough time for the device to receive, process and respond to the query
 
     previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
     return 0;
@@ -854,7 +861,7 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
     {
         int offset = static_cast<int>(usage.ptr - newData);
         std::cout << "Sending " << cISDataMappings::DataName(flashCfgDid) << ": size " << usage.size << ", offset " << offset << std::endl;
-        failure |= SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset);
+        failure |= (SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset) != 0);   // SendData() returns 0 on success
 
         if (!failure)
         {
@@ -1220,10 +1227,8 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
     {
         case NMEA_MSG_ID_INFO:
         {	// IMX device Info
-            dev_info_t info;
+            dev_info_t info = {};
             nmea_parse_info(info, (const char*)msg, msgSize);
-            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-            devInfo.hdwRunState = HDW_STATE_APP;
             switch (info.hardwareType)
             {
             case IS_HARDWARE_TYPE_IMX:
@@ -1239,6 +1244,7 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
                 gpxDevInfo = info;
                 break;
             }
+            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
         }
         break;
     }

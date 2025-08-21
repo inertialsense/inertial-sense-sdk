@@ -617,6 +617,11 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
 
     // invalidate, because we don't know until we rediscover the device
     device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
+    if ((portType(device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM) {
+        // ISbl can put a port in EXPLICIT READ mode; we need to clear that flag
+        COMM_PORT(device->port)->flags &= ~COMM_PORT_FLAG__EXPLICIT_READ;
+    }
+
     // device->devInfo = {};
     if (!keepPortOpen) {
         device->disconnect();

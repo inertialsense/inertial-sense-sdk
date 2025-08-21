@@ -89,15 +89,17 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
 
     // if not, then do we need to allocate it?
     port_handle_t port = factory->bindPort(portName, portType);
-    knownPorts[portEntry] = port;
-    insert(port);
+    if (port) {
+        knownPorts[portEntry] = port;
+        insert(port);
 
-    // finally, call our handler
-    for (port_listener& l : listeners) {
-        l(PORT_ADDED, portType, portName, port);
+        // finally, call our handler
+        for (port_listener &l: listeners) {
+            l(PORT_ADDED, portType, portName, port);
+        }
+
+        portsChanged = true;
     }
-
-    portsChanged = true;
 }
 
 /**
@@ -126,3 +128,11 @@ port_handle_t PortManager::getPort(const std::string& name, uint16_t portType) {
     return NULLPTR;
 }
 
+
+port_handle_t PortManager::getPort(uint16_t idx) {
+    for (auto iter = begin(); iter != end(); iter++, idx--  ) {
+        if (idx == 0)
+            return *iter;
+    }
+    return (port_handle_t)nullptr;
+}
