@@ -603,7 +603,7 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     // send the "reboot to program mode" command and the device should start in program mode
     int retry = 5;
     while (retry-- && portIsOpened(device->port) && !portError(device->port)) {
-        printf("Sending 'BOOT UP' command.\r\n");
+        fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Sending 'BOOT UP' command.");
         int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7", 15);
         if (writeCnt == 15) {
             for (int i = 0; i < 3; i++)
@@ -619,6 +619,7 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     // invalidate, because we don't know until we rediscover the device
     device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
     if (!keepPortOpen) {
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
         device->disconnect();
     }
     return (retry > 0);
