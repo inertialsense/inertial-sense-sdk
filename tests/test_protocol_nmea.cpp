@@ -53,7 +53,7 @@ void compareGpsPos(gnss_pos_t &g1, gnss_pos_t &g2)
     EXPECT_EQ(g1.status2, g2.status2);
 }
 
-void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
+void compareGpsVel(gnss_vel_t &g1, gnss_vel_t &g2)
 {
     EXPECT_NEAR(g1.timeOfWeekMs, g2.timeOfWeekMs, 1);
     for (int i=0; i<3; i++)
@@ -399,7 +399,7 @@ TEST(protocol_nmea, PGPSP)
     pos.week = 2309;
     pos.timeOfWeekMs = vel.timeOfWeekMs = 370659600;
     pos.satsUsed = 45;
-    pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+    pos.status = GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
     for (int i=0; i<3; i++)
     {
         // pos.ecef[i] = 20.0f+i;   // Not in full conversion
@@ -444,7 +444,7 @@ TEST(protocol_nmea, PGPSP_sweep_operating_range)
         pos.week = 2309;
         pos.timeOfWeekMs = vel.timeOfWeekMs = towMs;
         pos.satsUsed = 45;
-        pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+        pos.status = GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
         // for (int i=0; i<3; i++)
         // {
         //     // pos.ecef[i] = 20.0f+i;   // Not in full conversion
@@ -483,11 +483,11 @@ TEST(protocol_nmea, GGA)
     pos.timeOfWeekMs = 342678200;
     pos.satsUsed = 12;
     pos.status = 
-        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
-        GPS_STATUS_FLAGS_FIX_OK |
-        GPS_STATUS_FLAGS_DGPS_USED |
-        GPS_STATUS_FIX_DGPS |
-        GPS_STATUS_FLAGS_GPS_NMEA_DATA;        
+        GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GNSS_STATUS_FLAGS_FIX_OK |
+        GNSS_STATUS_FLAGS_DGPS_USED |
+        GNSS_STATUS_FIX_DGPS |
+        GNSS_STATUS_FLAGS_GNSS_NMEA_DATA;        
     pos.hMSL = 1438.2f;
     pos.lla[0] =  (40.0 +  3.34247/60.0);
     pos.lla[1] = -(111.0 + 39.51850/60.0);
@@ -532,11 +532,11 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
         pos.timeOfWeekMs = towMs;
         pos.satsUsed = 12;
         pos.status =
-            GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
-            GPS_STATUS_FLAGS_FIX_OK |
-            GPS_STATUS_FLAGS_DGPS_USED |
-            GPS_STATUS_FIX_DGPS |
-            GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+            GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+            GNSS_STATUS_FLAGS_FIX_OK |
+            GNSS_STATUS_FLAGS_DGPS_USED |
+            GNSS_STATUS_FIX_DGPS |
+            GNSS_STATUS_FLAGS_GNSS_NMEA_DATA;
         pos.hMSL = (float)(-100 + 50000 * scale);
         pos.lla[0] =  -90.0 + 180.0 * scale;
         pos.lla[1] = -180.0 + 230.0 * scale;
@@ -580,11 +580,11 @@ TEST(protocol_nmea, GGA2)
     pos.timeOfWeekMs = 152115400;
     pos.satsUsed = 12;
     pos.status =
-        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
-        GPS_STATUS_FLAGS_FIX_OK |
-        GPS_STATUS_FLAGS_DGPS_USED |
-        GPS_STATUS_FIX_DGPS |
-        GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+        GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GNSS_STATUS_FLAGS_FIX_OK |
+        GNSS_STATUS_FLAGS_DGPS_USED |
+        GNSS_STATUS_FIX_DGPS |
+        GNSS_STATUS_FLAGS_GNSS_NMEA_DATA;
     pos.hMSL = 1438.2f;
     pos.lla[0] = (39.0 + 3.80427 / 60.0);
     pos.lla[1] = -(77.0 + 9.29556 / 60.0);
@@ -623,11 +623,11 @@ TEST(protocol_nmea, GGA3)
     pos.timeOfWeekMs = 231726000;
     pos.satsUsed = 10;
     pos.status =
-            GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
-            GPS_STATUS_FLAGS_FIX_OK |
-            GPS_STATUS_FLAGS_DGPS_USED |
-            GPS_STATUS_FIX_DGPS |
-            GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+            GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+            GNSS_STATUS_FLAGS_FIX_OK |
+            GNSS_STATUS_FLAGS_DGPS_USED |
+            GNSS_STATUS_FIX_DGPS |
+            GNSS_STATUS_FLAGS_GNSS_NMEA_DATA;
     pos.hMSL = 1438.2f;
     pos.lla[0] = (51.0 + 50.60402 / 60.0);
     pos.lla[1] = -(0.0 + 58.30337 / 60.0);
@@ -666,11 +666,11 @@ TEST(protocol_nmea, GGA4)
     pos.timeOfWeekMs = 231726000;
     pos.satsUsed = 10;
     pos.status =
-            GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
-            GPS_STATUS_FLAGS_FIX_OK |
-            GPS_STATUS_FLAGS_DGPS_USED |
-            GPS_STATUS_FIX_DGPS |
-            GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+            GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+            GNSS_STATUS_FLAGS_FIX_OK |
+            GNSS_STATUS_FLAGS_DGPS_USED |
+            GNSS_STATUS_FIX_DGPS |
+            GNSS_STATUS_FLAGS_GNSS_NMEA_DATA;
     pos.hMSL = 1438.2f;
     pos.lla[0] = -(0.0 + 50.60402 / 60.0);
     pos.lla[1] = (0.0 + 35.30337 / 60.0);
@@ -706,7 +706,7 @@ TEST(protocol_nmea, GLL)
 
     pos.week = 2270;
     pos.timeOfWeekMs = 370659600;
-    pos.status = (GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GPS_STATUS_FIX_2D;
+    pos.status = (GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GNSS_STATUS_FIX_2D;
     pos.lla[0] = POS_LAT_DEG;
     pos.lla[1] = POS_LON_DEG;
     pos.leapS = LEAP_SEC;
@@ -741,7 +741,7 @@ TEST(protocol_nmea, GLL_noFixStat)
 
     pos.week = 2270;
     pos.timeOfWeekMs = 370659600;
-    pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+    pos.status = GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
     pos.lla[0] = POS_LAT_DEG;
     pos.lla[1] = POS_LON_DEG;
     pos.leapS = LEAP_SEC;
@@ -781,7 +781,7 @@ TEST(protocol_nmea, GLL_noLat)
 
     pos.week = 2270;
     pos.timeOfWeekMs = 370659600;
-    pos.status = (GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GPS_STATUS_FIX_2D;
+    pos.status = (GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GNSS_STATUS_FIX_2D;
     pos.lla[0] = POS_LAT_DEG;
     pos.lla[1] = 0;
     pos.leapS = LEAP_SEC;
@@ -821,7 +821,7 @@ TEST(protocol_nmea, GLL_noLon)
 
     pos.week = 2270;
     pos.timeOfWeekMs = 370659600;
-    pos.status = (GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GPS_STATUS_FIX_2D;
+    pos.status = (GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GNSS_STATUS_FIX_2D;
     pos.lla[0] = 0;
     pos.lla[1] = POS_LON_DEG;
     pos.leapS = LEAP_SEC;
@@ -861,7 +861,7 @@ TEST(protocol_nmea, GLL_void)
 
     pos.week = 0;
     pos.timeOfWeekMs = 370659600;
-    pos.status = (GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GPS_STATUS_FIX_2D;
+    pos.status = (GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GNSS_STATUS_FIX_2D;
     pos.lla[0] = POS_LAT_DEG;
     pos.lla[1] = POS_LON_DEG;
     pos.leapS = LEAP_SEC;
@@ -930,11 +930,11 @@ TEST(protocol_nmea, RMC)
     pos.timeOfWeekMs = 152115000;
     pos.satsUsed = 12;
     pos.status =
-        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
-        GPS_STATUS_FLAGS_FIX_OK |
-        GPS_STATUS_FLAGS_DGPS_USED |
-        GPS_STATUS_FIX_DGPS |
-        GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+        GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GNSS_STATUS_FLAGS_FIX_OK |
+        GNSS_STATUS_FLAGS_DGPS_USED |
+        GNSS_STATUS_FIX_DGPS |
+        GNSS_STATUS_FLAGS_GNSS_NMEA_DATA;
     pos.hMSL = 1438.2f;
     pos.lla[0] = (40.0 + 3.34252 / 60.0);
     pos.lla[1] = -(111.0 + 39.51903 / 60.0);
@@ -1324,8 +1324,8 @@ void compare_gps_sat_t(gnss_sat_t& dstSat, gnss_sat_t& srcSat) {
         return;
 
     for (uint32_t i = 0; i < dstSat.numSats; i++) {
-        gps_sat_sv_t &src = srcSat.sat[i];
-        gps_sat_sv_t &dst = dstSat.sat[i];
+        gnss_sat_sv_t &src = srcSat.sat[i];
+        gnss_sat_sv_t &dst = dstSat.sat[i];
         // printf("%d   gnss: %d %d,  svid: %d %d,  cno: %d %d,  ele: %d %d,  azm: %d %d\n",
         //     i,
         //     src.gnssId, dst.gnssId,
@@ -1348,8 +1348,8 @@ void compare_gps_sig_t(gnss_sig_t& dstSig, gnss_sig_t& srcSig) {
 
     for (uint32_t i=0; i<dstSig.numSigs; i++)
     {
-        gps_sig_sv_t &src = srcSig.sig[i];
-        gps_sig_sv_t &dst = dstSig.sig[i];
+        gnss_sig_sv_t &src = srcSig.sig[i];
+        gnss_sig_sv_t &dst = dstSig.sig[i];
         // printf("%d   gnss: %d %d,  svid: %d %d,  sigId: %d %d,  quality: %d %d,  cno: %d %d\n",
         //     i,
         //     src.gnssId, dst.gnssId,
@@ -1509,13 +1509,13 @@ TEST(protocol_nmea, GPGSV)
         EXPECT_TRUE(outSat.numSats == 12);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GNSS);
         }
 
         EXPECT_TRUE(outSig.numSigs == 19);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GNSS);
         }
     }
 
@@ -1536,13 +1536,13 @@ TEST(protocol_nmea, GPGSV)
         EXPECT_TRUE(outSat.numSats == 12);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GNSS);
         }
 
         EXPECT_TRUE(outSig.numSigs == 19);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GNSS);
         }
     }
 }
@@ -1842,20 +1842,20 @@ TEST(protocol_nmea, checksum)
 void init_sat_and_sig(gnss_sat_t* gpsSat, gnss_sig_t* gpsSig)
 {
     // Satellite data array
-    static const gps_sat_sv_t sat_data[] = 
+    static const gnss_sat_sv_t sat_data[] = 
     {
-        {SAT_SV_GNSS_ID_GPS, 2, 40, 310, 43, 95},
-        {SAT_SV_GNSS_ID_GPS, 8, 7, 324, 31, 95},
-        {SAT_SV_GNSS_ID_GPS, 10, 48, 267, 45, 31},
-        {SAT_SV_GNSS_ID_GPS, 15, 37, 53, 45, 31},
-        {SAT_SV_GNSS_ID_GPS, 16, 12, 268, 37, 95},
-        {SAT_SV_GNSS_ID_GPS, 18, 69, 78, 41, 31},
-        {SAT_SV_GNSS_ID_GPS, 23, 74, 336, 41, 31},
-        {SAT_SV_GNSS_ID_GPS, 24, 15, 111, 37, 31},
-        {SAT_SV_GNSS_ID_GPS, 26, 2, 239, 31, 31},
-        {SAT_SV_GNSS_ID_GPS, 27, 35, 307, 41, 95},
-        {SAT_SV_GNSS_ID_GPS, 29, 12, 162, 36, 31},
-        {SAT_SV_GNSS_ID_GPS, 32, 14, 199, 40, 95},
+        {SAT_SV_GNSS_ID_GNSS, 2, 40, 310, 43, 95},
+        {SAT_SV_GNSS_ID_GNSS, 8, 7, 324, 31, 95},
+        {SAT_SV_GNSS_ID_GNSS, 10, 48, 267, 45, 31},
+        {SAT_SV_GNSS_ID_GNSS, 15, 37, 53, 45, 31},
+        {SAT_SV_GNSS_ID_GNSS, 16, 12, 268, 37, 95},
+        {SAT_SV_GNSS_ID_GNSS, 18, 69, 78, 41, 31},
+        {SAT_SV_GNSS_ID_GNSS, 23, 74, 336, 41, 31},
+        {SAT_SV_GNSS_ID_GNSS, 24, 15, 111, 37, 31},
+        {SAT_SV_GNSS_ID_GNSS, 26, 2, 239, 31, 31},
+        {SAT_SV_GNSS_ID_GNSS, 27, 35, 307, 41, 95},
+        {SAT_SV_GNSS_ID_GNSS, 29, 12, 162, 36, 31},
+        {SAT_SV_GNSS_ID_GNSS, 32, 14, 199, 40, 95},
         {SAT_SV_GNSS_ID_SBS, 131, 43, 188, 43, 95},
         {SAT_SV_GNSS_ID_SBS, 133, 40, 206, 43, 95},
         {SAT_SV_GNSS_ID_SBS, 138, 43, 173, 35, 95},
@@ -1880,30 +1880,30 @@ void init_sat_and_sig(gnss_sat_t* gpsSat, gnss_sig_t* gpsSig)
     };
 
     // Signal data array
-    static const gps_sig_sv_t sig_data[] = 
+    static const gnss_sig_sv_t sig_data[] = 
     {
-        {SAT_SV_GNSS_ID_GPS, 2, SAT_SV_SIG_ID_GPS_L1CA, 43, 7, 361},
-        {SAT_SV_GNSS_ID_GPS, 8, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 10, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 15, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 16, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 361},
-        {SAT_SV_GNSS_ID_GPS, 18, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 23, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 24, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 26, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 27, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 361},
-        {SAT_SV_GNSS_ID_GPS, 29, SAT_SV_SIG_ID_GPS_L1CA, 36, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 32, SAT_SV_SIG_ID_GPS_L1CA, 40, 7, 361},
+        {SAT_SV_GNSS_ID_GNSS, 2, SAT_SV_SIG_ID_GPS_L1CA, 43, 7, 361},
+        {SAT_SV_GNSS_ID_GNSS, 8, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 10, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 15, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 16, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 361},
+        {SAT_SV_GNSS_ID_GNSS, 18, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 23, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 24, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 26, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 27, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 361},
+        {SAT_SV_GNSS_ID_GNSS, 29, SAT_SV_SIG_ID_GPS_L1CA, 36, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 32, SAT_SV_SIG_ID_GPS_L1CA, 40, 7, 361},
         {2, 131, 0, 43, 7, 361}, 
         {2, 133, 0, 43, 7, 361}, 
         {2, 138, 0, 35, 7, 361},
-        {SAT_SV_GNSS_ID_GPS, 10, SAT_SV_SIG_ID_GPS_L2CL, 45, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 15, SAT_SV_SIG_ID_GPS_L2CL, 27, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 18, SAT_SV_SIG_ID_GPS_L2CL, 33, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 23, SAT_SV_SIG_ID_GPS_L2CL, 34, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 27, SAT_SV_SIG_ID_GPS_L2CL, 23, 7, 9},
-        {SAT_SV_GNSS_ID_GPS, 29, SAT_SV_SIG_ID_GPS_L2CL, 25, 7, 41},
-        {SAT_SV_GNSS_ID_GPS, 32, SAT_SV_SIG_ID_GPS_L5, 28, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 10, SAT_SV_SIG_ID_GPS_L2CL, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 15, SAT_SV_SIG_ID_GPS_L2CL, 27, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 18, SAT_SV_SIG_ID_GPS_L2CL, 33, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 23, SAT_SV_SIG_ID_GPS_L2CL, 34, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 27, SAT_SV_SIG_ID_GPS_L2CL, 23, 7, 9},
+        {SAT_SV_GNSS_ID_GNSS, 29, SAT_SV_SIG_ID_GPS_L2CL, 25, 7, 41},
+        {SAT_SV_GNSS_ID_GNSS, 32, SAT_SV_SIG_ID_GPS_L5, 28, 7, 41},
         {SAT_SV_GNSS_ID_GAL, 5, SAT_SV_SIG_ID_Galileo_E1C2, 41, 7, 41},
         {SAT_SV_GNSS_ID_GAL, 9, SAT_SV_SIG_ID_Galileo_E1C2, 43, 7, 41},
         {SAT_SV_GNSS_ID_GAL, 34, SAT_SV_SIG_ID_Galileo_E1C2, 42, 7, 41},
@@ -1932,7 +1932,7 @@ void init_sat_and_sig(gnss_sat_t* gpsSat, gnss_sig_t* gpsSig)
 
     // Initialize gpsSat
     gpsSat->timeOfWeekMs = 436693200;
-    gpsSat->numSats = sizeof(sat_data)/sizeof(gps_sat_sv_t);
+    gpsSat->numSats = sizeof(sat_data)/sizeof(gnss_sat_sv_t);
     for (size_t i = 0; i < gpsSat->numSats; i++) 
     {
         gpsSat->sat[i] = sat_data[i];
@@ -1940,7 +1940,7 @@ void init_sat_and_sig(gnss_sat_t* gpsSat, gnss_sig_t* gpsSig)
 
     // Initialize gpsSig
     gpsSig->timeOfWeekMs = 436693200;
-    gpsSig->numSigs = sizeof(sig_data)/sizeof(gps_sig_sv_t);
+    gpsSig->numSigs = sizeof(sig_data)/sizeof(gnss_sig_sv_t);
     for (size_t i = 0; i < gpsSig->numSigs; i++) 
     {
         gpsSig->sig[i] = sig_data[i];

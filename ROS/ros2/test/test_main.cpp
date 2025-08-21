@@ -58,9 +58,9 @@ TEST(test_main, basic)
  *
  * In inertial-sense-ros, we do some maths to try publish them both in RosTime::Time messages, as seconds/nanos.
  *
- * In this test, we subscribe to INS_1, GPS_1 and IMU, and also DID_GPS1_TIMEPULSE.  Once we get a GPS fix, we a set of messages over 10 seconds.  Then, we take the average difference between the INS timestamp
+ * In this test, we subscribe to INS_1, GPS_1 and IMU, and also DID_GNSS1_TIMEPULSE.  Once we get a GPS fix, we a set of messages over 10 seconds.  Then, we take the average difference between the INS timestamp
  * and the nearest GPS timestamp.  The average deviation should be below <0.5s, but ideally is below 0.1s.
- * DID_GPS1_TIMEPULSE provides the towOffset, timeMcu (effectively time since bootup)
+ * DID_GNSS1_TIMEPULSE provides the towOffset, timeMcu (effectively time since bootup)
  */
 TEST(test_main, gps_ins_time_sync)
 {

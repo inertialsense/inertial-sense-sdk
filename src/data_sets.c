@@ -184,9 +184,9 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
     static uint16_t offsetsGpsTimepulse[] =
     {
         3,
-        offsetof(gps_timepulse_t, towOffset),
-        offsetof(gps_timepulse_t, towGps),
-        offsetof(gps_timepulse_t, timeMcu)
+        offsetof(gnss_timepulse_t, towOffset),
+        offsetof(gnss_timepulse_t, towGps),
+        offsetof(gnss_timepulse_t, timeMcu)
     };
 
     static uint16_t offsetsSysParams[] =
@@ -236,9 +236,9 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
     static uint16_t offsetsRtkNav[] =
     {
         3,
-        offsetof(gps_rtk_misc_t, baseLla[0]),
-        offsetof(gps_rtk_misc_t, baseLla[1]),
-        offsetof(gps_rtk_misc_t, baseLla[2]),
+        offsetof(gnss_rtk_misc_t, baseLla[0]),
+        offsetof(gnss_rtk_misc_t, baseLla[1]),
+        offsetof(gnss_rtk_misc_t, baseLla[2]),
     };
 
     static uint16_t offsetsFlashConfig[] =
@@ -270,23 +270,23 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsOnlyTimeFirst,   //  3: DID_PIMU
         offsetsIns1,            //  4: DID_INS_1
         offsetsIns2,            //  5: DID_INS_2
-        offsetsGps,             //  6: DID_GPS1_POS
+        offsetsGps,             //  6: DID_GNSS1_POS
         0,                      //  7: DID_SYS_CMD
         0,                      //  8: DID_NMEA_BCAST_PERIOD
         offsetsRmc,             //  9: DID_RMC
         offsetsSysParams,       // 10: DID_SYS_PARAMS
         offsetsOnlyTimeFirst,   // 11: DID_SYS_SENSORS
         offsetsFlashConfig,     // 12: DID_FLASH_CONFIG
-        offsetsGps,             // 13: DID_GPS1_RCVR_POS
-        offsetsGps,             // 14: DID_GPS2_POS
-        0,                      // 15: DID_GPS1_SAT
-        0,                      // 16: DID_GPS2_SAT
-        0,                      // 17: DID_GPS1_VERSION
-        0,                      // 18: DID_GPS2_VERSION
+        offsetsGps,             // 13: DID_GNSS1_RCVR_POS
+        offsetsGps,             // 14: DID_GNSS2_POS
+        0,                      // 15: DID_GNSS1_SAT
+        0,                      // 16: DID_GNSS2_SAT
+        0,                      // 17: DID_GNSS1_VERSION
+        0,                      // 18: DID_GNSS2_VERSION
         0,                      // 19: DID_MAG_CAL
         0,                      // 20: DID_UNUSED_20
-        0,                      // 21: DID_GPS1_RTK_POS_REL
-        offsetsRtkNav,          // 22: DID_GPS1_RTK_POS_MISC
+        0,                      // 21: DID_GNSS1_RTK_POS_REL
+        offsetsRtkNav,          // 22: DID_GNSS1_RTK_POS_MISC
         0,                      // 23: DID_FEATURE_BITS
         0,                      // 24: DID_SENSORS_UCAL
         0,                      // 25: DID_SENSORS_TCAL
@@ -294,8 +294,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 27: DID_UNUSED_27
         offsetsOnlyTimeFirst,   // 28: DID_SENSORS_ADC
         0,                      // 29: DID_SCOMP
-        0,                      // 30: DID_GPS1_VEL
-        0,                      // 31: DID_GPS2_VEL
+        0,                      // 30: DID_GNSS1_VEL
+        0,                      // 31: DID_GNSS2_VEL
         0,                      // 32: DID_HDW_PARAMS
         0,                      // 33: DID_NVR_MANAGE_USERPAGE
         0,                      // 34: DID_NVR_USERPAGE_SN
@@ -305,7 +305,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 38: DID_RTOS_INFO
         offsetsDebugArray,      // 39: DID_DEBUG_ARRAY
         0,                      // 40: DID_SENSORS_MCAL
-        offsetsGpsTimepulse,    // 41: DID_GPS1_TIMEPULSE
+        offsetsGpsTimepulse,    // 41: DID_GNSS1_TIMEPULSE
         0,                      // 42: DID_CAL_SC
         0,                      // 43: DID_CAL_SC1
         0,                      // 44: DID_CAL_SC2
@@ -318,14 +318,14 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 51: DID_INL2_STATUS,
         offsetsOnlyTimeFirst,   // 52: DID_MAGNETOMETER
         offsetsOnlyTimeFirst,   // 53: DID_BAROMETER
-        0,                      // 54: DID_GPS1_RTK_POS
+        0,                      // 54: DID_GNSS1_RTK_POS
         offsetsOnlyTimeFirst,   // 55: DID_ROS_COVARIANCE_POSE_TWIST
         0,                      // 56: DID_COMMUNICATIONS_LOOPBACK
         offsetsOnlyTimeFirst,   // 57: DID_IMU3_UNCAL
         offsetsOnlyTimeFirst,   // 58: DID_IMU
         0,                      // 59: DID_INL2_MAG_OBS_INFO
-        0,                      // 60: DID_GPS_BASE_RAW
-        0,                      // 61: DID_GPS_RTK_OPT
+        0,                      // 60: DID_GNSS_BASE_RAW
+        0,                      // 61: DID_GNSS_RTK_OPT
         offsetsOnlyTimeFirst,   // 62: DID_REFERENCE_PIMU
         0,                      // 63: DID_MANUFACTURING_INFO
         0,                      // 64: DID_BIT
@@ -333,8 +333,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsIns4,            // 66: DID_INS_4
         0,                      // 67: DID_INL2_NED_SIGMA
         0,                      // 68: DID_STROBE_IN_TIME
-        0,                      // 69: DID_GPS1_RAW
-        0,                      // 70: DID_GPS2_RAW
+        0,                      // 69: DID_GNSS1_RAW
+        0,                      // 70: DID_GNSS2_RAW
         offsetsOnlyTimeFirst,   // 71: DID_WHEEL_ENCODER
         0,                      // 72: DID_DIAGNOSTIC_MESSAGE
         offsetsSurveyIn,        // 73: DID_SURVEY_IN
@@ -355,8 +355,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsOnlyTimeFirst,   // 88: DID_POSITION_MEASUREMENT
         0,                      // 89: DID_RTK_DEBUG_2
         0,                      // 90: DID_CAN_CONFIG
-        0,                      // 91: DID_GPS2_RTK_CMP_REL
-        offsetsRtkNav,          // 92: DID_GPS2_RTK_CMP_MISC
+        0,                      // 91: DID_GNSS2_RTK_CMP_REL
+        offsetsRtkNav,          // 92: DID_GNSS2_RTK_CMP_MISC
         0,                      // 93: DID_EVB_DEV_INFO
         0,                      // 94: DID_INFIELD_CAL
         offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
@@ -460,23 +460,23 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      //  3: DID_PIMU
         0,                      //  4: DID_INS_1
         0,                      //  5: DID_INS_2
-        0,                      //  6: DID_GPS1_POS
+        0,                      //  6: DID_GNSS1_POS
         0,                      //  7: DID_SYS_CMD
         0,                      //  8: DID_NMEA_BCAST_PERIOD
         0,                      //  9: DID_RMC
         0,                      // 10: DID_SYS_PARAMS
         0,                      // 11: DID_SYS_SENSORS
         0,                      // 12: DID_FLASH_CONFIG
-        0,                      // 13: DID_GPS1_RCVR_POS
-        0,                      // 14: DID_GPS2_POS
-        0,                      // 15: DID_GPS1_SAT
-        0,                      // 16: DID_GPS2_SAT
-        0,                      // 17: DID_GPS1_VERSION
-        0,                      // 18: DID_GPS2_VERSION
+        0,                      // 13: DID_GNSS1_RCVR_POS
+        0,                      // 14: DID_GNSS2_POS
+        0,                      // 15: DID_GNSS1_SAT
+        0,                      // 16: DID_GNSS2_SAT
+        0,                      // 17: DID_GNSS1_VERSION
+        0,                      // 18: DID_GNSS2_VERSION
         0,                      // 19: DID_MAG_CAL
         0,                      // 20: DID_UNUSED_20
-        0,                      // 21: DID_GPS1_RTK_POS_REL
-        0,                      // 22: DID_GPS1_RTK_POS_MISC,
+        0,                      // 21: DID_GNSS1_RTK_POS_REL
+        0,                      // 22: DID_GNSS1_RTK_POS_MISC,
         0,                      // 23: DID_FEATURE_BITS
         0,                      // 24: DID_SENSORS_UCAL
         0,                      // 25: DID_SENSORS_TCAL
@@ -484,8 +484,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 27: DID_UNUSED_27
         0,                      // 28: DID_SENSORS_ADC
         0,                      // 29: DID_SCOMP
-        0,                      // 30: DID_GPS1_VEL
-        0,                      // 31: DID_GPS2_VEL
+        0,                      // 30: DID_GNSS1_VEL
+        0,                      // 31: DID_GNSS2_VEL
         0,                      // 32: DID_HDW_PARAMS,
         0,                      // 33: DID_NVR_MANAGE_USERPAGE
         0,                      // 34: DID_NVR_USERPAGE_SN
@@ -508,14 +508,14 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 51: DID_INL2_STATUS
         0,                      // 52: DID_MAGNETOMETER
         0,                      // 53: DID_BAROMETER
-        0,                      // 54: DID_GPS1_RTK_POS
+        0,                      // 54: DID_GNSS1_RTK_POS
         0,                      // 55: DID_ROS_COVARIANCE_POSE_TWIST
         0,                      // 56: DID_COMMUNICATIONS_LOOPBACK
         0,                      // 57: DID_IMU3_UNCAL
         0,                      // 58: DID_IMU
         0,                      // 59: DID_INL2_MAG_OBS_INFO
-        0,                      // 60: DID_GPS_BASE_RAW
-        0,                      // 61: DID_GPS_RTK_OPT
+        0,                      // 60: DID_GNSS_BASE_RAW
+        0,                      // 61: DID_GNSS_RTK_OPT
         0,                      // 62: DID_REFERENCE_PIMU
         manufInfoOffsets,       // 63: DID_MANUFACTURING_INFO
         0,                      // 64: DID_BIT
@@ -523,8 +523,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 66: DID_INS_4
         0,                      // 67: DID_INL2_NED_SIGMA
         0,                      // 68: DID_STROBE_IN_TIME
-        0,                      // 69: DID_GPS1_RAW
-        0,                      // 70: DID_GPS2_RAW
+        0,                      // 69: DID_GNSS1_RAW
+        0,                      // 70: DID_GNSS2_RAW
         0,                      // 71: DID_WHEEL_ENCODER
         diagMsgOffsets,         // 72: DID_DIAGNOSTIC_MESSAGE
         0,                      // 73: DID_SURVEY_IN
@@ -545,8 +545,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 88: DID_POSITION_MEASUREMENT
         0,                      // 89: DID_RTK_DEBUG_2
         0,                      // 90: DID_CAN_CONFIG
-        0,                      // 91: DID_GPS2_RTK_CMP_REL
-        0,                      // 92: DID_GPS2_RTK_CMP_MISC
+        0,                      // 91: DID_GNSS2_RTK_CMP_REL
+        0,                      // 92: DID_GNSS2_RTK_CMP_MISC
         0,                      // 93: DID_EVB_DEV_INFO
         0,                      // 94: DID_INFIELD_CAL
         0,                      // 95: DID_REFERENCE_IMU
@@ -649,23 +649,23 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_REFERENCE_PIMU]        = RMC_BITS_REFERENCE_PIMU,
     [DID_BAROMETER]             = RMC_BITS_BAROMETER,
     [DID_MAGNETOMETER]          = RMC_BITS_MAGNETOMETER,
-    [DID_GNSS1_POS]              = RMC_BITS_GPS1_POS,
-    [DID_GNSS2_POS]              = RMC_BITS_GPS2_POS,
-    [DID_GPS1_VEL]              = RMC_BITS_GPS1_VEL,
-    [DID_GPS2_VEL]              = RMC_BITS_GPS2_VEL,
-    [DID_GPS1_SAT]              = RMC_BITS_GPS1_SAT,
-    [DID_GPS2_SAT]              = RMC_BITS_GPS2_SAT,
-    [DID_GPS1_SIG]              = RMC_BITS_GPS1_SIG,
-    [DID_GPS2_SIG]              = RMC_BITS_GPS2_SIG,
-    [DID_GPS1_RAW]              = RMC_BITS_GPS1_RAW,
-    [DID_GPS2_RAW]              = RMC_BITS_GPS2_RAW,
-    [DID_GPS_BASE_RAW]          = RMC_BITS_GPS_BASE_RAW,
-    [DID_GNSS1_RCVR_POS]         = RMC_BITS_GPS1_UBX_POS,
-    [DID_GNSS1_RTK_POS]          = RMC_BITS_GPS1_RTK_POS,
-    [DID_GPS1_RTK_POS_REL]      = RMC_BITS_GPS1_RTK_POS_REL,
-    [DID_GNSS1_RTK_POS_MISC]     = RMC_BITS_GPS1_RTK_POS_MISC,
-    [DID_GPS2_RTK_CMP_REL]      = RMC_BITS_GPS1_RTK_HDG_REL,
-    [DID_GPS2_RTK_CMP_MISC]     = RMC_BITS_GPS1_RTK_HDG_MISC,
+    [DID_GNSS1_POS]              = RMC_BITS_GNSS1_POS,
+    [DID_GNSS2_POS]              = RMC_BITS_GNSS2_POS,
+    [DID_GNSS1_VEL]              = RMC_BITS_GNSS1_VEL,
+    [DID_GNSS2_VEL]              = RMC_BITS_GNSS2_VEL,
+    [DID_GNSS1_SAT]              = RMC_BITS_GNSS1_SAT,
+    [DID_GNSS2_SAT]              = RMC_BITS_GNSS2_SAT,
+    [DID_GNSS1_SIG]              = RMC_BITS_GNSS1_SIG,
+    [DID_GNSS2_SIG]              = RMC_BITS_GNSS2_SIG,
+    [DID_GNSS1_RAW]              = RMC_BITS_GNSS1_RAW,
+    [DID_GNSS2_RAW]              = RMC_BITS_GNSS2_RAW,
+    [DID_GNSS_BASE_RAW]          = RMC_BITS_GNSS_BASE_RAW,
+    [DID_GNSS1_RCVR_POS]         = RMC_BITS_GNSS1_UBX_POS,
+    [DID_GNSS1_RTK_POS]          = RMC_BITS_GNSS1_RTK_POS,
+    [DID_GNSS1_RTK_POS_REL]      = RMC_BITS_GNSS1_RTK_POS_REL,
+    [DID_GNSS1_RTK_POS_MISC]     = RMC_BITS_GNSS1_RTK_POS_MISC,
+    [DID_GNSS2_RTK_CMP_REL]      = RMC_BITS_GNSS1_RTK_HDG_REL,
+    [DID_GNSS2_RTK_CMP_MISC]     = RMC_BITS_GNSS1_RTK_HDG_MISC,
     [DID_STROBE_IN_TIME]        = RMC_BITS_STROBE_IN_TIME,
     [DID_DIAGNOSTIC_MESSAGE]    = RMC_BITS_DIAGNOSTIC_MESSAGE,
     [DID_INL2_NED_SIGMA]        = RMC_BITS_INL2_NED_SIGMA,
@@ -703,7 +703,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
     [DID_IMU_RAW]               = NMEA_RMC_BITS_PRIMU,
     [DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
     [DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
-    [DID_GPS1_SAT]              = NMEA_RMC_BITS_GNGSV,
+    [DID_GNSS1_SAT]              = NMEA_RMC_BITS_GNGSV,
     [DID_GNSS1_POS] =
         NMEA_RMC_BITS_POWGPS |
         NMEA_RMC_BITS_POWTLV |
@@ -739,27 +739,27 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_GPX_RTOS_INFO]         = GRMC_BITS_RTOS_INFO,
     [DID_GPX_STATUS]            = GRMC_BITS_STATUS,
     [DID_GPX_DEBUG_ARRAY]       = GRMC_BITS_DEBUG_ARRAY,
-    [DID_GNSS1_POS]              = GRMC_BITS_GPS1_POS,
-    [DID_GPS1_VEL]              = GRMC_BITS_GPS1_VEL,
-    [DID_GPS1_RAW]              = GRMC_BITS_GPS1_RAW,
-    [DID_GPS1_SAT]              = GRMC_BITS_GPS1_SAT,
-    [DID_GPS1_SIG]              = GRMC_BITS_GPS1_SIG,
-    [DID_GPS1_VERSION]          = GRMC_BITS_GPS1_VERSION,
-    [DID_GNSS2_POS]              = GRMC_BITS_GPS2_POS,
-    [DID_GPS2_VEL]              = GRMC_BITS_GPS2_VEL,
-    [DID_GPS2_SAT]              = GRMC_BITS_GPS2_SAT,
-    [DID_GPS2_SIG]              = GRMC_BITS_GPS2_SIG,
-    [DID_GPS2_RAW]              = GRMC_BITS_GPS2_RAW,
-    [DID_GPS2_VERSION]          = GRMC_BITS_GPS2_VERSION,
-    [DID_GNSS1_RTK_POS]          = GRMC_BITS_GPS1_RTK_POS,
-    [DID_GNSS1_RTK_POS_MISC]     = GRMC_BITS_GPS1_RTK_POS_MISC,
-    [DID_GPS1_RTK_POS_REL]      = GRMC_BITS_GPS1_RTK_POS_REL,
-    [DID_GPS2_RTK_CMP_MISC]     = GRMC_BITS_GPS2_RTK_CMP_MISC,
-    [DID_GPS2_RTK_CMP_REL]      = GRMC_BITS_GPS2_RTK_CMP_REL,
+    [DID_GNSS1_POS]              = GRMC_BITS_GNSS1_POS,
+    [DID_GNSS1_VEL]              = GRMC_BITS_GNSS1_VEL,
+    [DID_GNSS1_RAW]              = GRMC_BITS_GNSS1_RAW,
+    [DID_GNSS1_SAT]              = GRMC_BITS_GNSS1_SAT,
+    [DID_GNSS1_SIG]              = GRMC_BITS_GNSS1_SIG,
+    [DID_GNSS1_VERSION]          = GRMC_BITS_GNSS1_VERSION,
+    [DID_GNSS2_POS]              = GRMC_BITS_GNSS2_POS,
+    [DID_GNSS2_VEL]              = GRMC_BITS_GNSS2_VEL,
+    [DID_GNSS2_SAT]              = GRMC_BITS_GNSS2_SAT,
+    [DID_GNSS2_SIG]              = GRMC_BITS_GNSS2_SIG,
+    [DID_GNSS2_RAW]              = GRMC_BITS_GNSS2_RAW,
+    [DID_GNSS2_VERSION]          = GRMC_BITS_GNSS2_VERSION,
+    [DID_GNSS1_RTK_POS]          = GRMC_BITS_GNSS1_RTK_POS,
+    [DID_GNSS1_RTK_POS_MISC]     = GRMC_BITS_GNSS1_RTK_POS_MISC,
+    [DID_GNSS1_RTK_POS_REL]      = GRMC_BITS_GNSS1_RTK_POS_REL,
+    [DID_GNSS2_RTK_CMP_MISC]     = GRMC_BITS_GNSS2_RTK_CMP_MISC,
+    [DID_GNSS2_RTK_CMP_REL]      = GRMC_BITS_GNSS2_RTK_CMP_REL,
     [DID_RTK_DEBUG]             = GRMC_BITS_DID_RTK_DEBUG,
     [DID_PORT_MONITOR]          = GRMC_BITS_PORT_MON,
     [DID_GPX_PORT_MONITOR]      = GRMC_BITS_GPX_PORT_MON,
-    [DID_GPS_BASE_RAW]          = GRMC_BITS_GPS_BASE_RAW,
+    [DID_GNSS_BASE_RAW]          = GRMC_BITS_GNSS_BASE_RAW,
 };
 
 const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
@@ -769,27 +769,27 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_STATUS]               = GRMC_PRESET_GPX_STATUS_PERIOD_MS,
     [GRMC_BIT_POS_RTOS_INFO]            = GRMC_PRESET_GPX_RTOS_INFO_PERIOD_MS,
     [GRMC_BIT_POS_DEBUG_ARRAY]          = GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS,
-    [GRMC_BIT_POS_GPS1_POS]             = 1,
-    [GRMC_BIT_POS_GPS1_VEL]             = 1,
-    [GRMC_BIT_POS_GPS1_SAT]             = 1,
-    [GRMC_BIT_POS_GPS1_SIG]             = 1,
-    [GRMC_BIT_POS_GPS1_RAW]             = 1,
-    [GRMC_BIT_POS_GPS1_VERSION]         = GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS,
-    [GRMC_BIT_POS_GPS2_POS]             = 1,
-    [GRMC_BIT_POS_GPS2_VEL]             = 1,
-    [GRMC_BIT_POS_GPS2_SAT]             = 1,
-    [GRMC_BIT_POS_GPS2_SIG]             = 1,
-    [GRMC_BIT_POS_GPS2_RAW]             = 1,
-    [GRMC_BIT_POS_GPS2_VERSION]         = GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS,
-    [GRMC_BIT_POS_GPS1_RTK_POS]         = 1,
-    [GRMC_BIT_POS_GPS1_RTK_POS_MISC]    = 1,
-    [GRMC_BIT_POS_GPS1_RTK_POS_REL]     = 1,
-    [GRMC_BIT_POS_GPS2_RTK_CMP_MISC]    = 1,
-    [GRMC_BIT_POS_GPS2_RTK_CMP_REL]     = 1, 
+    [GRMC_BIT_POS_GNSS1_POS]             = 1,
+    [GRMC_BIT_POS_GNSS1_VEL]             = 1,
+    [GRMC_BIT_POS_GNSS1_SAT]             = 1,
+    [GRMC_BIT_POS_GNSS1_SIG]             = 1,
+    [GRMC_BIT_POS_GNSS1_RAW]             = 1,
+    [GRMC_BIT_POS_GNSS1_VERSION]         = GRMC_PRESET_GPX_GNSS1_VERSION_PERIOD_MS,
+    [GRMC_BIT_POS_GNSS2_POS]             = 1,
+    [GRMC_BIT_POS_GNSS2_VEL]             = 1,
+    [GRMC_BIT_POS_GNSS2_SAT]             = 1,
+    [GRMC_BIT_POS_GNSS2_SAT]             = 1,
+    [GRMC_BIT_POS_GNSS2_RAW]             = 1,
+    [GRMC_BIT_POS_GNSS2_VERSION]         = GRMC_PRESET_GPX_GNSS2_VERSION_PERIOD_MS,
+    [GRMC_BIT_POS_GNSS1_RTK_POS]         = 1,
+    [GRMC_BIT_POS_GNSS1_RTK_POS_MISC]    = 1,
+    [GRMC_BIT_POS_GNSS1_RTK_POS_REL]     = 1,
+    [GRMC_BIT_POS_GNSS2_RTK_CMP_MISC]    = 1,
+    [GRMC_BIT_POS_GNSS2_RTK_CMP_REL]     = 1, 
     [GRMC_BIT_POS_DID_RTK_DEBUG]        = GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,  
     [GRMC_BIT_POS_DID_PORT_MON]         = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPX_PORT_MON]     = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
-    [GRMC_BIT_POS_DID_GPS_BASE_RAW]     = 1,
+    [GRMC_BIT_POS_DID_GNSS_BASE_RAW]     = 1,
 };
 
 #ifndef GPX_1

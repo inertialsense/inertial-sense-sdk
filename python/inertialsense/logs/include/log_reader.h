@@ -46,8 +46,8 @@ struct DeviceLog
     std::vector<gnss_version_t> gps1Version;
     std::vector<gnss_version_t> gps2Version;
     std::vector<mag_cal_t> magCal;
-    std::vector<gps_rtk_rel_t> gps1RtkPosRel;
-    std::vector<gps_rtk_rel_t> gps1RtkCmpRel;
+    std::vector<gnss_rtk_rel_t> gps1RtkPosRel;
+    std::vector<gnss_rtk_rel_t> gps1RtkCmpRel;
     std::vector<gnss_rtk_misc_t> gps1RtkPosMisc;
     std::vector<gnss_rtk_misc_t> gps1RtkCmpMisc;
     // std::vector<feature_bits_t> featureBits;
@@ -87,7 +87,7 @@ struct DeviceLog
     std::vector<imu_t> imu;
     std::vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     std::vector<gps_raw_wrapper_t> gpsBaseRaw {1};
-//    std::vector<gps_rtk_opt_t> gpsRtkOpt;
+//    std::vector<gnss_rtk_opt_t> gpsRtkOpt;
     std::vector<manufacturing_info_t> manufacturingInfo;
     std::vector<bit_t> bit;
     std::vector<ins_3_t> ins3;

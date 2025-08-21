@@ -53,7 +53,7 @@ extern "C" {
 #define _DID_PIMU               DID_PIMU                    /** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */    
 
 /** GPS */
-#define _DID_GPS1_POS           DID_GPS1_POS                /** (see gps_pos_t) GPS output */
+#define _DID_GPS1_POS           DID_GPS1_POS                /** (see gnss_pos_t) GPS output */
 
 /** Magnetometer, Barometer, and other Sensor */
 #define _DID_MAG_CAL            DID_MAG_CAL                 /** (see mag_cal_t) Magnetometer calibration */

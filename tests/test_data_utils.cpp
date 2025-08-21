@@ -263,7 +263,7 @@ bool GenerateGpsVel(test_message_t &msg, gnss_vel_t &gps, int i, float f, bool i
     gps.sAcc = fabsf(f);
 
     msg.data.gpsVel = gps;
-    msg.dataHdr.id = DID_GPS1_VEL;
+    msg.dataHdr.id = DID_GNSS1_VEL;
     msg.dataHdr.size = sizeof(gnss_vel_t);
     return true;
 }

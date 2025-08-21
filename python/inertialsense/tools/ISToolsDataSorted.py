@@ -321,7 +321,7 @@ class cDevice:
             ('gpsTimeUserDelay', f32),
             ('magDeclination', f32),
             ('gpsTimeSyncPulsePeriodMs', u32),
-            ('startupGPSDtMs', u32),
+            ('startupGNSSDtMs', u32),
             ('RTKCfgBits', u32),
             ('reserved', u32),
             ('ser2BaudRate', u32),

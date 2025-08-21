@@ -10,7 +10,7 @@ string gnssIdToGnssName(int gnssId)
     switch (gnssId)
     {
         default:                    return to_string(gnssId);
-        case SAT_SV_GNSS_ID_GPS:    return "GPS";
+        case SAT_SV_GNSS_ID_GNSS:    return "GPS";
         case SAT_SV_GNSS_ID_SBS:    return "SBAS";
         case SAT_SV_GNSS_ID_GAL:    return "Galileo";
         case SAT_SV_GNSS_ID_BEI:    return "BeiDou";
@@ -26,7 +26,7 @@ char gnssIdToGnssPrefix(int gnssId)
     switch (gnssId)
     {
         default:                    return ' ';
-        case SAT_SV_GNSS_ID_GPS:    return 'G';
+        case SAT_SV_GNSS_ID_GNSS:    return 'G';
         case SAT_SV_GNSS_ID_SBS:    return 'S';
         case SAT_SV_GNSS_ID_GAL:    return 'E';
         case SAT_SV_GNSS_ID_BEI:    return 'B';
@@ -41,7 +41,7 @@ string gnssIdSigIdToSignalName(int gnssId, int sigId)
 {
     switch(gnssId)
     {
-    case SAT_SV_GNSS_ID_GPS:
+    case SAT_SV_GNSS_ID_GNSS:
         switch (sigId)
         {
             case SAT_SV_SIG_ID_GPS_L1CA:        return "L1CA";

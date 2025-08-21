@@ -45,7 +45,7 @@ int enable_message_broadcasting(port_handle_t port)
         return -5;
     }
 
-    if (is_comm_get_data(port, DID_GPS1_RTK_POS_REL, 0, 0, 1))
+    if (is_comm_get_data(port, DID_GNSS1_RTK_POS_REL, 0, 0, 1))
     {
         printf("Failed to encode and write get GPS message\r\n");
         return -5;
@@ -57,7 +57,7 @@ int enable_message_broadcasting(port_handle_t port)
 static struct
 {
     gnss_pos_t       gps;
-    gps_rtk_rel_t   rel;
+    gnss_rtk_rel_t   rel;
     uint8_t         baseCount;
 } s_rx = {};
 
@@ -65,7 +65,7 @@ void handle_isbData(is_comm_instance_t *comm, cISStream *clientStream)
 {
     switch (comm->rxPkt.hdr.id)
     {
-    case DID_GPS1_RTK_POS_REL:
+    case DID_GNSS1_RTK_POS_REL:
         is_comm_copy_to_struct(&s_rx.rel, comm, sizeof(s_rx.rel));        
         break;
 
@@ -76,9 +76,9 @@ void handle_isbData(is_comm_instance_t *comm, cISStream *clientStream)
         {
         default:                        fix = "None      ";        break;
         case GNSS_STATUS_FIX_3D:         fix = "3D        ";        break;
-        case GPS_STATUS_FIX_RTK_SINGLE: fix = "RTK-Single";        break;
-        case GPS_STATUS_FIX_RTK_FLOAT:  fix = "RTK-Float ";        break;
-        case GPS_STATUS_FIX_RTK_FIX:    fix = "RTK       ";        break;
+        case GNSS_STATUS_FIX_RTK_SINGLE: fix = "RTK-Single";        break;
+        case GNSS_STATUS_FIX_RTK_FLOAT:  fix = "RTK-Float ";        break;
+        case GNSS_STATUS_FIX_RTK_FIX:    fix = "RTK       ";        break;
         }
 
         printf("LL %12.9f %12.9f, hacc %4.2fm, age %3.1fs, fix-%s  %s\n",
@@ -87,7 +87,7 @@ void handle_isbData(is_comm_instance_t *comm, cISStream *clientStream)
             s_rx.gps.hAcc,
             s_rx.rel.differentialAge,    // time since last base message
             fix.c_str(),
-            (s_rx.gps.status&GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING ? "BASE: No data" : (string("BASE: ")+to_string(s_rx.baseCount)).c_str())
+            (s_rx.gps.status&GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING ? "BASE: No data" : (string("BASE: ")+to_string(s_rx.baseCount)).c_str())
          );
 
         // Forward our position via GGA every 5 seconds to the RTK base.

@@ -26,7 +26,7 @@ static struct
 } s_dataSpeed;
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
-bool gsv_freq_ena(gps_sig_sv_t* sig);
+bool gsv_freq_ena(gnss_sig_sv_t* sig);
 
 static gsvMask_t s_gsvMask = {0};
 
@@ -173,7 +173,7 @@ static int gnssId_to_talkerId(char* a, uint8_t gnssId)
 
     switch (gnssId)
     {
-        case SAT_SV_GNSS_ID_GPS:
+        case SAT_SV_GNSS_ID_GNSS:
         case SAT_SV_GNSS_ID_SBS:
             a[1] = 'P';
             break;
@@ -233,7 +233,7 @@ void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint16_t &svId, uint8_t
                 gnssId = SAT_SV_GNSS_ID_SBS;
                 if (svId <= 64){ svId += 87; }
             }
-            else{ gnssId = SAT_SV_GNSS_ID_GPS; }        break;
+            else{ gnssId = SAT_SV_GNSS_ID_GNSS; }        break;
         case 'A':    gnssId = SAT_SV_GNSS_ID_GAL;        break;
         case 'B':    gnssId = SAT_SV_GNSS_ID_BEI;        break;    
         case 'L':    gnssId = SAT_SV_GNSS_ID_GLO;         break;
@@ -870,16 +870,16 @@ int nmea_gga(char a[], const int aSize, gnss_pos_t &pos)
     {
     default:
     case GNSS_STATUS_FIX_NONE:                   fixQuality = 0;    break;
-    case GPS_STATUS_FIX_SBAS:
-    case GPS_STATUS_FIX_2D:
-    case GPS_STATUS_FIX_RTK_SINGLE:
+    case GNSS_STATUS_FIX_SBAS:
+    case GNSS_STATUS_FIX_2D:
+    case GNSS_STATUS_FIX_RTK_SINGLE:
     case GNSS_STATUS_FIX_3D:                     fixQuality = 1;    break;
-    case GPS_STATUS_FIX_DGPS:                   fixQuality = 2;    break;
-    case GPS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;    break;   
-    case GPS_STATUS_FIX_RTK_FIX:                fixQuality = 4;    break;
-    case GPS_STATUS_FIX_RTK_FLOAT:              fixQuality = 5;    break;
-    case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
-    case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:     fixQuality = 6;    break;
+    case GNSS_STATUS_FIX_DGPS:                   fixQuality = 2;    break;
+    case GNSS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;    break;   
+    case GNSS_STATUS_FIX_RTK_FIX:                fixQuality = 4;    break;
+    case GNSS_STATUS_FIX_RTK_FLOAT:              fixQuality = 5;    break;
+    case GNSS_STATUS_FIX_DEAD_RECKONING_ONLY:
+    case GNSS_STATUS_FIX_GNSS_PLUS_DEAD_RECK:     fixQuality = 6;    break;
     }
         
     // NMEA GGA line - http://www.gpsinformation.org/dale/nmea.htm#GGA
@@ -913,7 +913,7 @@ int nmea_gga(char a[], const int aSize, gnss_pos_t &pos)
     nmea_latToDegMin(a, aSize, n, pos.lla[0]);                                                      // 2,3
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                                                      // 4,5
     nmea_sprint(a, aSize, n, ",%01u", (unsigned int)(fixQuality & 0xF));                            // 6 - GPS quality -- limit to available options (TODO: Overkill and probably unnecessary)
-    nmea_sprint(a, aSize, n, ",%02u", (unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));    // 7 - Satellites used
+    nmea_sprint(a, aSize, n, ",%02u", (unsigned int)(pos.status&GNSS_STATUS_NUM_SATS_USED_MASK));    // 7 - Satellites used
     nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);                                                    // 8 - HDop
     nmea_sprint(a, aSize, n, ",%.2f,M", pos.hMSL);                                                  // 9,10 - MSL altitude
     nmea_sprint(a, aSize, n, ",%.2f,M", pos.lla[2] - pos.hMSL);                                     // 11,12 - Geoid separation
@@ -960,13 +960,13 @@ int nmea_gsa(char a[], const int aSize, gnss_pos_t &pos, gnss_sat_t &sat)
     switch((pos.status&GNSS_STATUS_FIX_MASK))
     {
         default:                        fixQuality = 0; break;
-        case GPS_STATUS_FIX_2D:         fixQuality = 2; break;
+        case GNSS_STATUS_FIX_2D:         fixQuality = 2; break;
         case GNSS_STATUS_FIX_3D:         // FALL THROUGH                    
-        case GPS_STATUS_FIX_SBAS:       // FALL THROUGH
-        case GPS_STATUS_FIX_DGPS:       // FALL THROUGH                    
-        case GPS_STATUS_FIX_RTK_FIX:    // FALL THROUGH
-        case GPS_STATUS_FIX_RTK_SINGLE: // FALL THROUGH
-        case GPS_STATUS_FIX_RTK_FLOAT:  fixQuality = 3; break;
+        case GNSS_STATUS_FIX_SBAS:       // FALL THROUGH
+        case GNSS_STATUS_FIX_DGPS:       // FALL THROUGH                    
+        case GNSS_STATUS_FIX_RTK_FIX:    // FALL THROUGH
+        case GNSS_STATUS_FIX_RTK_SINGLE: // FALL THROUGH
+        case GNSS_STATUS_FIX_RTK_FLOAT:  fixQuality = 3; break;
     }
         
     // NMEA GSA line - http://www.gpsinformation.org/dale/nmea.htm#GSA
@@ -1020,7 +1020,7 @@ void update_nmea_speed(gnss_pos_t &pos, gnss_vel_t &vel)
     {
         s_dataSpeed.timeOfWeekMs = pos.timeOfWeekMs;
 
-        if (vel.status & GPS_STATUS_FLAGS_GPS_NMEA_DATA)
+        if (vel.status & GNSS_STATUS_FLAGS_GNSS_NMEA_DATA)
         {   // NED velocity
             cpy_Vec3_Vec3(s_dataSpeed.velNed, vel.vel);
         }
@@ -1140,18 +1140,18 @@ int nmea_vtg(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel, float 
     nmea_sprint(a, aSize, n, ",K");                                             // 8
     switch(pos.status & GNSS_STATUS_FIX_MASK)                                    // 9
     {
-    case GPS_STATUS_FIX_2D:
+    case GNSS_STATUS_FIX_2D:
     case GNSS_STATUS_FIX_3D:
         nmea_sprint(a, aSize, n, ",A");
         break;
-    case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:
-    case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
+    case GNSS_STATUS_FIX_GNSS_PLUS_DEAD_RECK:
+    case GNSS_STATUS_FIX_DEAD_RECKONING_ONLY:
         nmea_sprint(a, aSize, n, ",E");
         break;
-    case GPS_STATUS_FIX_DGPS:
-    case GPS_STATUS_FIX_RTK_SINGLE:
-    case GPS_STATUS_FIX_RTK_FLOAT:
-    case GPS_STATUS_FIX_RTK_FIX:
+    case GNSS_STATUS_FIX_DGPS:
+    case GNSS_STATUS_FIX_RTK_SINGLE:
+    case GNSS_STATUS_FIX_RTK_FLOAT:
+    case GNSS_STATUS_FIX_RTK_FIX:
         nmea_sprint(a, aSize, n, ",D");
         break;
     default:
@@ -1193,11 +1193,11 @@ int nmea_pashr(char a[], const int aSize, gnss_pos_t &pos, ins_1_t &ins1, float 
     nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[2]));     // 10 - heading accuracy
     
     int fix = 0;
-    if (INS_STATUS_NAV_FIX_STATUS(ins1.insStatus) >= GPS_NAV_FIX_POSITIONING_RTK_FLOAT)
+    if (INS_STATUS_NAV_FIX_STATUS(ins1.insStatus) >= GNSS_NAV_FIX_POSITIONING_RTK_FLOAT)
     {
         fix = 2;
     }
-    else if (INS_STATUS_NAV_FIX_STATUS(ins1.insStatus) >= GPS_NAV_FIX_POSITIONING_3D)
+    else if (INS_STATUS_NAV_FIX_STATUS(ins1.insStatus) >= GNSS_NAV_FIX_POSITIONING_3D)
     {
         fix = 1;
     }
@@ -1387,7 +1387,7 @@ int prnToSvId(int gnssId, int prn)
     return prn;
 }
 
-bool gsv_sig_match(uint8_t gnssId, uint8_t sigId, gps_sig_sv_t &s, bool noCno=false)
+bool gsv_sig_match(uint8_t gnssId, uint8_t sigId, gnss_sig_sv_t &s, bool noCno=false)
 {
     if ((s.cno==0) != noCno)
     {   // cno doesn't matches
@@ -1396,7 +1396,7 @@ bool gsv_sig_match(uint8_t gnssId, uint8_t sigId, gps_sig_sv_t &s, bool noCno=fa
 
     switch (gnssId)
     {
-    case SAT_SV_GNSS_ID_GPS:
+    case SAT_SV_GNSS_ID_GNSS:
         if ((s.gnssId != gnssId) && (s.gnssId != SAT_SV_GNSS_ID_SBS))
         {
             return false;
@@ -1423,7 +1423,7 @@ int nmea_gsv_num_sat_sigs(uint8_t gnssId, uint8_t sigId, gnss_sig_t &sig, bool n
 
     for (uint32_t i=0; i<sig.numSigs; i++)
     {
-        gps_sig_sv_t &s = sig.sig[i];
+        gnss_sig_sv_t &s = sig.sig[i];
         if (gsv_freq_ena(&sig.sig[i]) && gsv_sig_match(gnssId, sigId, s, noCno))
         {
             numSigs++;
@@ -1437,7 +1437,7 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
 {
     switch(gnssId)
     {
-        case SAT_SV_GNSS_ID_GPS:
+        case SAT_SV_GNSS_ID_GNSS:
             switch(sigId)
             {
                 case SAT_SV_SIG_ID_GPS_L1CA:        return '1';
@@ -1504,7 +1504,7 @@ uint8_t nmea4p11_signalId_to_sigId(uint8_t gnssId, char nmeaSignalId)
 {
     switch(gnssId)
     {
-    case SAT_SV_GNSS_ID_GPS:
+    case SAT_SV_GNSS_ID_GNSS:
         switch(nmeaSignalId)
         {
             case '1':   return SAT_SV_SIG_ID_GPS_L1CA;
@@ -1571,7 +1571,7 @@ uint16_t sigId_to_nmea2p3_svId(uint8_t gnssId, uint8_t sigId, uint16_t svId)
 {
     switch(gnssId)
     {
-    case SAT_SV_GNSS_ID_GPS:
+    case SAT_SV_GNSS_ID_GNSS:
         switch(sigId)
         {
             case SAT_SV_SIG_ID_GPS_L1CA:    return svId;
@@ -1645,7 +1645,7 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
     {   // L5/E5 - most common band
         switch(gnssId)
         {
-            case SAT_SV_GNSS_ID_GPS:    return SAT_SV_SIG_ID_GPS_L5Q;
+            case SAT_SV_GNSS_ID_GNSS:    return SAT_SV_SIG_ID_GPS_L5Q;
             case SAT_SV_GNSS_ID_SBS:    return 0;
             case SAT_SV_GNSS_ID_GAL:    return SAT_SV_SIG_ID_Galileo_E5;
             case SAT_SV_GNSS_ID_BEI:    return SAT_SV_SIG_ID_BeiDou_B2a;
@@ -1658,7 +1658,7 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
     {   // L2/E2 - most common band
         switch(gnssId)
         {
-            case SAT_SV_GNSS_ID_GPS:    return SAT_SV_SIG_ID_GPS_L2CL;
+            case SAT_SV_GNSS_ID_GNSS:    return SAT_SV_SIG_ID_GPS_L2CL;
             case SAT_SV_GNSS_ID_SBS:    return 0;
             case SAT_SV_GNSS_ID_GAL:    return SAT_SV_SIG_ID_Galileo_E5a;
             case SAT_SV_GNSS_ID_BEI:    return SAT_SV_SIG_ID_BeiDou_B2;
@@ -1687,10 +1687,10 @@ uint8_t gsv_get_const_mask(uint8_t constellation)
 }
 
 /**
- * Checks if for a given gps_sig_sv_t* sig 
+ * Checks if for a given gnss_sig_sv_t* sig 
  * the freqency accociated with sig is enabled
 */
-bool gsv_freq_ena(gps_sig_sv_t* sig)
+bool gsv_freq_ena(gnss_sig_sv_t* sig)
 {
     if (sig->gnssId >= SAT_SV_GNSS_ID_COUNT)
         return false;
@@ -1699,7 +1699,7 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
 
     switch(sig->gnssId)
     {
-        case SAT_SV_GNSS_ID_GPS:
+        case SAT_SV_GNSS_ID_GNSS:
             switch(sig->sigId)
             {
                 case SAT_SV_SIG_ID_GPS_L1CA:
@@ -1820,14 +1820,14 @@ int nmea_gsv_group(char a[], int aSize, gnss_sat_t &gsat, gnss_sig_t &gsig, uint
         // Write message payload: {svid,elv,az,cno} up to 4x
         for (int cnt=0; cnt<4 && i<=gsig.numSigs; i++)
         {
-            gps_sig_sv_t &sig = gsig.sig[i];
+            gnss_sig_sv_t &sig = gsig.sig[i];
 
             // check if freqency is enabled and that the signals match
             if (gsv_freq_ena(&gsig.sig[i]) && gsv_sig_match(gnssId, sigId, sig, noCno))
             {    
                 for (uint32_t j=0; j<=gsat.numSats; j++)
                 {
-                    gps_sat_sv_t &sat = gsat.sat[j];
+                    gnss_sat_sv_t &sat = gsat.sat[j];
                     if ((sat.gnssId == sig.gnssId) && (sat.svId == sig.svId))
                     {
                         uint16_t svId = prnToSvId(sig.gnssId, sig.svId);
@@ -1914,7 +1914,7 @@ int nmea_gsv_gnss(char a[], int aSize, gnss_sat_t &gsat, gnss_sig_t &gsig, uint8
     int n = 0;
     switch(gnssId)
     {
-        case SAT_SV_GNSS_ID_GPS:    sigIds = gpsSigIds; numSigIds = sizeof(gpsSigIds);  break;
+        case SAT_SV_GNSS_ID_GNSS:    sigIds = gpsSigIds; numSigIds = sizeof(gpsSigIds);  break;
         case SAT_SV_GNSS_ID_GAL:    sigIds = galSigIds; numSigIds = sizeof(galSigIds);  break;
         case SAT_SV_GNSS_ID_BEI:    sigIds = beiSigIds; numSigIds = sizeof(beiSigIds);  break;
         case SAT_SV_GNSS_ID_QZS:    sigIds = qzsSigIds; numSigIds = sizeof(qzsSigIds);  break;
@@ -2149,7 +2149,7 @@ int nmea_parse_pgpsp(gnss_pos_t &gpsPos, gnss_vel_t &gpsVel, const char a[], con
 
     // status
     ptr = ASCII_to_u32(&(gpsPos.status), ptr);
-    gpsPos.satsUsed = gpsPos.status & GPS_STATUS_NUM_SATS_USED_MASK;
+    gpsPos.satsUsed = gpsPos.status & GNSS_STATUS_NUM_SATS_USED_MASK;
 
     // LLA, MSL altitude
     ptr = ASCII_to_vec3d(gpsPos.lla, ptr);
@@ -2193,15 +2193,15 @@ int parseASCE_GSV(int inId, int period)
         {
             case SAT_SV_GNSS_ID_GNSS:
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
-                s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
                 break;
-            case SAT_SV_GNSS_ID_GPS:
-                s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+            case SAT_SV_GNSS_ID_GNSS:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
                 break;
             case SAT_SV_GNSS_ID_GAL:
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
@@ -2463,45 +2463,45 @@ int nmea_parse_gns(const char a[], const int aSize, gnss_pos_t &gpsPos, utc_time
         
     //Based off of ZED-F9P datasheet
     uint32_t fixType = GNSS_STATUS_FIX_NONE;
-    statusFlags |= GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+    statusFlags |= GNSS_STATUS_FLAGS_GNSS_NMEA_DATA;
     gpsPos.hAcc = 0.0f;
     if (pMode[0] == 'R' || pMode[1] == 'R' || pMode[2] == 'R' || pMode[3] == 'R')        // RTK fix
     {
-        fixType = GPS_STATUS_FIX_RTK_FIX;
+        fixType = GNSS_STATUS_FIX_RTK_FIX;
         statusFlags |= 
-            GPS_STATUS_FLAGS_FIX_OK |
-            GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
-            GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID |
-            GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
-            GPS_STATUS_FLAGS_DGPS_USED;
+            GNSS_STATUS_FLAGS_FIX_OK |
+            GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED |
+            GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID |
+            GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
+            GNSS_STATUS_FLAGS_DGPS_USED;
         gpsPos.hAcc = 0.05f;
     }
     else if (pMode[0] == 'F' || pMode[1] == 'F' || pMode[2] == 'F' || pMode[3] == 'F')    // RTK float
     {
-        fixType = GPS_STATUS_FIX_RTK_FLOAT;
+        fixType = GNSS_STATUS_FIX_RTK_FLOAT;
         statusFlags |=
-            GPS_STATUS_FLAGS_FIX_OK |
-            GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
-            GPS_STATUS_FLAGS_DGPS_USED;
+            GNSS_STATUS_FLAGS_FIX_OK |
+            GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED |
+            GNSS_STATUS_FLAGS_DGPS_USED;
         gpsPos.hAcc = 0.4f;
     }
     else if (pMode[0] == 'D' || pMode[1] == 'D' || pMode[2] == 'D' || pMode[3] == 'D')    // Differential (DGPS)
     {
-        fixType = GPS_STATUS_FIX_DGPS;
+        fixType = GNSS_STATUS_FIX_DGPS;
         statusFlags |= 
-            GPS_STATUS_FLAGS_FIX_OK |
-            GPS_STATUS_FLAGS_DGPS_USED;
+            GNSS_STATUS_FLAGS_FIX_OK |
+            GNSS_STATUS_FLAGS_DGPS_USED;
         gpsPos.hAcc = 0.8f;
     }
     else if (pMode[0] == 'A' || pMode[1] == 'A' || pMode[2] == 'A' || pMode[3] == 'A')    // Autonomous, 2D/3D
     {
         fixType = GNSS_STATUS_FIX_3D;
-        statusFlags |= GPS_STATUS_FLAGS_FIX_OK;
+        statusFlags |= GNSS_STATUS_FLAGS_FIX_OK;
         gpsPos.hAcc = 1.5f;
     }
     else if (pMode[0] == 'E' || pMode[1] == 'E' || pMode[2] == 'E' || pMode[3] == 'E')    // Dead reckoning
     {
-        fixType = GPS_STATUS_FIX_DEAD_RECKONING_ONLY;
+        fixType = GNSS_STATUS_FIX_DEAD_RECKONING_ONLY;
     }
     gpsPos.vAcc = 1.4f * gpsPos.hAcc;
             
@@ -2521,8 +2521,8 @@ int nmea_parse_gns(const char a[], const int aSize, gnss_pos_t &gpsPos, utc_time
     double sep = atof(ptr);
         
     //Store data        
-    set_gpsPos_status_mask(&(gpsPos.status), gpsPos.satsUsed, (uint32_t)GPS_STATUS_NUM_SATS_USED_MASK);
-    set_gpsPos_status_mask(&(gpsPos.status), statusFlags, (uint32_t)GPS_STATUS_FLAGS_MASK);
+    set_gpsPos_status_mask(&(gpsPos.status), gpsPos.satsUsed, (uint32_t)GNSS_STATUS_NUM_SATS_USED_MASK);
+    set_gpsPos_status_mask(&(gpsPos.status), statusFlags, (uint32_t)GNSS_STATUS_FLAGS_MASK);
     set_gpsPos_status_mask(&(gpsPos.status), fixType, (uint32_t)GNSS_STATUS_FIX_MASK);
         
     gpsPos.lla[0] = lla[0];
@@ -2567,45 +2567,45 @@ int nmea_parse_gga(const char a[], const int aSize, gnss_pos_t &gpsPos, utc_time
     switch(fixQuality)
     {
         case 6:        // Dead reckoning
-            fixType = GPS_STATUS_FIX_DEAD_RECKONING_ONLY;
+            fixType = GNSS_STATUS_FIX_DEAD_RECKONING_ONLY;
             break;
 
         case 5:        // RTK float
-            fixType = GPS_STATUS_FIX_RTK_FLOAT;
+            fixType = GNSS_STATUS_FIX_RTK_FLOAT;
             statusFlags |=
-                GPS_STATUS_FLAGS_FIX_OK |
-                GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
-                GPS_STATUS_FLAGS_DGPS_USED;
+                GNSS_STATUS_FLAGS_FIX_OK |
+                GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED |
+                GNSS_STATUS_FLAGS_DGPS_USED;
             gpsPos.hAcc = 0.4f;
             break;
         
         case 4:        // RTK fix
-            fixType = GPS_STATUS_FIX_RTK_FIX;
+            fixType = GNSS_STATUS_FIX_RTK_FIX;
             statusFlags |= 
-                GPS_STATUS_FLAGS_FIX_OK |
-                GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
-                GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID |
-                GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
-                GPS_STATUS_FLAGS_DGPS_USED;
+                GNSS_STATUS_FLAGS_FIX_OK |
+                GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED |
+                GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID |
+                GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
+                GNSS_STATUS_FLAGS_DGPS_USED;
             gpsPos.hAcc = 0.05f;
             break;
 
         case 3:        // Time only
-            fixType = GPS_STATUS_FIX_TIME_ONLY;
+            fixType = GNSS_STATUS_FIX_TIME_ONLY;
             gpsPos.hAcc = 0.8f;
             break;
 
         case 2:        // Differential
-            fixType = GPS_STATUS_FIX_DGPS;
+            fixType = GNSS_STATUS_FIX_DGPS;
             statusFlags |= 
-                GPS_STATUS_FLAGS_FIX_OK |
-                GPS_STATUS_FLAGS_DGPS_USED;
+                GNSS_STATUS_FLAGS_FIX_OK |
+                GNSS_STATUS_FLAGS_DGPS_USED;
             gpsPos.hAcc = 0.8f;
             break;
 
         case 1:        // Autonomous
             fixType = GNSS_STATUS_FIX_3D;
-            statusFlags |= GPS_STATUS_FLAGS_FIX_OK;
+            statusFlags |= GNSS_STATUS_FLAGS_FIX_OK;
             gpsPos.hAcc = 1.5f;
             break;
 
@@ -2615,7 +2615,7 @@ int nmea_parse_gga(const char a[], const int aSize, gnss_pos_t &gpsPos, utc_time
     // 7 - Satellites used
     ptr = ASCII_to_u8(&(gpsPos.satsUsed), ptr);
 
-    gpsPos.status = statusFlags | fixType | GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+    gpsPos.status = statusFlags | fixType | GNSS_STATUS_FLAGS_GNSS_NMEA_DATA;
     gpsPos.status |= gpsPos.satsUsed;
 
     // 8 - hDop
@@ -2667,7 +2667,7 @@ int nmea_parse_gll(const char a[], const int aSize, gnss_pos_t &gpsPos, utc_time
         // 3,4 - Longitude (deg)
         ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
         
-        gpsPos.status |= GPS_STATUS_FIX_2D;
+        gpsPos.status |= GNSS_STATUS_FIX_2D;
     }
 
     // 5 - UTC time HHMMSS.sss
@@ -2704,7 +2704,7 @@ int nmea_parse_gsa(const char a[], const int aSize, gnss_pos_t &gpsPos, gnss_sat
     switch(fixQuality)
     {
         default:    /* DO NOTHING */                    break;
-        case 2:     gpsPos.status |= GPS_STATUS_FIX_2D; break;
+        case 2:     gpsPos.status |= GNSS_STATUS_FIX_2D; break;
         case 3:     gpsPos.status |= GNSS_STATUS_FIX_3D; break;
     }
 
@@ -3061,7 +3061,7 @@ int nmea_parse_rmc(const char a[], int aSize, gnss_vel_t &gpsVel, utc_time_t &ut
     //dependencies_.gpsVel.sAcc = 0;
             
     //Indicate it is coming from NMEA
-    gpsVel.status = GPS_STATUS_FLAGS_GPS_NMEA_DATA | statusFlags;
+    gpsVel.status = GNSS_STATUS_FLAGS_GNSS_NMEA_DATA | statusFlags;
 
     return 0;    
 }
@@ -3093,7 +3093,7 @@ int nmea_parse_vtg(const char a[], int aSize, gnss_vel_t &vel, const double refL
     velNed[0] = speed2dMps * cosf(courseMadeTrue);
     velNed[1] = speed2dMps * sinf(courseMadeTrue);
     velNed[2] = 0.0f;
-    if (vel.status & GPS_STATUS_FLAGS_GPS_NMEA_DATA)
+    if (vel.status & GNSS_STATUS_FLAGS_GNSS_NMEA_DATA)
     {   // NED velocity
         cpy_Vec3_Vec3(vel.vel, velNed);
     }

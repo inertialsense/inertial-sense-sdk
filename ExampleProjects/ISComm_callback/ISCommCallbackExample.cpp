@@ -61,7 +61,7 @@ void enable_message_streaming(serial_port_t *serialPort, is_comm_instance_t *com
     if (len > 0) serialPortWrite(&s_serialPort, buf, len);
 
 #if 1
-    // Ask for GPS message (startupGpsDtMs x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
+    // Ask for GNSS message (startupGpsDtMs x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
     len = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GNSS1_POS, 0, 0, 1);
     if (len > 0) serialPortWrite(&s_serialPort, buf, len);
 #endif
@@ -104,7 +104,7 @@ int parse_isb(void* ctx, p_data_t* data, port_handle_t port)
             break;
 
         case DID_GNSS1_POS:
-            printf("GPS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", d->gpsPos.timeOfWeekMs, d->gpsPos.lla[0], d->gpsPos.lla[1], d->gpsPos.lla[2]);
+            printf("GNSS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", d->gpsPos.timeOfWeekMs, d->gpsPos.lla[0], d->gpsPos.lla[1], d->gpsPos.lla[2]);
             break;
     }
 

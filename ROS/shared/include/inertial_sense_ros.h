@@ -264,13 +264,13 @@ public:
     void diagnostics_callback(ROS1_TIMEREVENT_ARG);
     void GPS_pos_callback(eDataIDs DID, const gnss_pos_t *const msg);
     void GPS_vel_callback(eDataIDs DID, const gnss_vel_t *const msg);
-    void GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg);
+    void GPS_raw_callback(eDataIDs DID, const gnss_raw_t *const msg);
     void GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, int nObs);
     void GPS_obs_bundle_timer_callback(ROS1_TIMEREVENT_ARG);
     void GPS_eph_callback(eDataIDs DID, const eph_t *const msg);
     void GPS_geph_callback(eDataIDs DID, const geph_t *const msg);
     void RTK_Misc_callback(eDataIDs DID, const gnss_rtk_misc_t *const msg);
-    void RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const msg);
+    void RTK_Rel_callback(eDataIDs DID, const gnss_rtk_rel_t *const msg);
 
 #ifdef ROS2
     Node::SharedPtr nh_;

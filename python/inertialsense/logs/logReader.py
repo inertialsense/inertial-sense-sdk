@@ -24,8 +24,8 @@ RED = '\u001b[31m'
 RESET = '\u001b[0m'
 
 INS_STATUS_NAV_MODE                         = 0x00001000
-GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED  = 0x00100000
-GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED   = 0x00400000
+GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED  = 0x00100000
+GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED   = 0x00400000
 
 class Log:
     def __init__(self):
@@ -128,8 +128,8 @@ class Log:
             self.navMode    = (ins2['insStatus'][-1] & INS_STATUS_NAV_MODE) == INS_STATUS_NAV_MODE
         gps1Pos = self.data[0, DID_GPS1_POS]
         if len(gps1Pos):
-            self.rtk        = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED) == GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED
-            self.compassing = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED) == GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED
+            self.rtk        = (gps1Pos['status'][-1] & GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED) == GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED
+            self.compassing = (gps1Pos['status'][-1] & GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED) == GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED
 
         # Reference INS like Novatel may not have all status fields. Find a first device that is not reference
         uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
@@ -256,7 +256,7 @@ class Log:
 
             # If we are in compassing mode, then only calculate RMS after all devices have fix
             if self.compassing:
-                # time_of_fix_ms = [self.data[dev, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS2_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
+                # time_of_fix_ms = [self.data[dev, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GNSS2_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
                 time_of_fix_ms = [self.data[dev, DID_GPS1_POS]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS1_POS]['status'] & 0x08000000)] / 1000.0 for dev in range(self.numDev)]
                 # print time_of_fix_ms
                 self.min_time = max(time_of_fix_ms)
@@ -629,14 +629,14 @@ class Log:
         sum_delta = None
         sum_count = 1
         for d in range(self.numDev):
-            time = self.data[d, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs']
-            yaw  = self.data[d, DID_GPS2_RTK_CMP_REL]['baseToRoverHeading']
+            time = self.data[d, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs']
+            yaw  = self.data[d, DID_GNSS2_RTK_CMP_REL]['baseToRoverHeading']
             if len(yaw) == 0:
                 continue
 
             if ref_time is None:
                 # Find reference time and yaw starting at first fix
-                fix_type = self.arRatioToFixType(self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio'])
+                fix_type = self.arRatioToFixType(self.data[d, DID_GNSS2_RTK_CMP_REL]['arRatio'])
                 first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
                 ref_time = time[first_fix_index:]
                 ref_yaw = np.copy(yaw[first_fix_index:])
@@ -656,9 +656,9 @@ class Log:
 
         for d in range(self.numDev):
             serial_number = self.data[d, DID_DEV_INFO]['serialNumber'][0]
-            time_ms = self.data[d, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs']
-            yaw = self.data[d, DID_GPS2_RTK_CMP_REL]['baseToRoverHeading']
-            ar_ratio = self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio']
+            time_ms = self.data[d, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs']
+            yaw = self.data[d, DID_GNSS2_RTK_CMP_REL]['baseToRoverHeading']
+            ar_ratio = self.data[d, DID_GNSS2_RTK_CMP_REL]['arRatio']
 
             success = False
             str = "SN%6d    (no data)" % serial_number

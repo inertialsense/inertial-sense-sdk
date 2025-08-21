@@ -27,7 +27,7 @@ LogReader::~LogReader()
 template <>
 void LogReader::log_message(int did, uint8_t* msg, std::vector<gps_raw_wrapper_t>& vec)
 {
-  gps_raw_t* raw_msg = (gps_raw_t*)msg;
+  gnss_raw_t* raw_msg = (gnss_raw_t*)msg;
   switch (raw_msg->dataType)
   {
   case raw_data_type_observation:
@@ -172,15 +172,15 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_FLASH_CONFIG, dev_log_->flashCfg );
         HANDLE_MSG( DID_GNSS1_POS, dev_log_->gps1Pos );
         HANDLE_MSG( DID_GNSS2_POS, dev_log_->gps2Pos );
-        HANDLE_MSG( DID_GPS1_SAT, dev_log_->gps1Sat );
-        HANDLE_MSG( DID_GPS2_SAT, dev_log_->gps2Sat );
-        HANDLE_MSG( DID_GPS1_VERSION, dev_log_->gps1Version );
-        HANDLE_MSG( DID_GPS2_VERSION, dev_log_->gps2Version );
+        HANDLE_MSG( DID_GNSS1_SAT, dev_log_->gps1Sat );
+        HANDLE_MSG( DID_GNSS2_SAT, dev_log_->gps2Sat );
+        HANDLE_MSG( DID_GNSS1_VERSION, dev_log_->gps1Version );
+        HANDLE_MSG( DID_GNSS2_VERSION, dev_log_->gps2Version );
         HANDLE_MSG( DID_MAG_CAL, dev_log_->magCal );
-        HANDLE_MSG( DID_GPS1_RTK_POS_REL, dev_log_->gps1RtkPosRel );
+        HANDLE_MSG( DID_GNSS1_RTK_POS_REL, dev_log_->gps1RtkPosRel );
         HANDLE_MSG( DID_GNSS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc );
-        HANDLE_MSG( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
-        HANDLE_MSG( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc );
+        HANDLE_MSG( DID_GNSS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
+        HANDLE_MSG( DID_GNSS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc );
         // HANDLE_MSG( DID_FEATURE_BITS, dev_log_->featureBits );
         HANDLE_MSG( DID_SENSORS_UCAL, dev_log_->sensorsUcal );
         HANDLE_MSG( DID_SENSORS_TCAL, dev_log_->sensorsTcal );
@@ -191,8 +191,8 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_REFERENCE_IMU, dev_log_->refImu );
         HANDLE_MSG( DID_REFERENCE_PIMU, dev_log_->refPImu );
         HANDLE_MSG( DID_REFERENCE_MAGNETOMETER, dev_log_->refMag );
-        HANDLE_MSG( DID_GPS1_VEL, dev_log_->gps1Vel );
-        HANDLE_MSG( DID_GPS2_VEL, dev_log_->gps2Vel );
+        HANDLE_MSG( DID_GNSS1_VEL, dev_log_->gps1Vel );
+        HANDLE_MSG( DID_GNSS2_VEL, dev_log_->gps2Vel );
         // HANDLE_MSG( DID_HDW_PARAMS, dev_log_->hdwParams );
         // HANDLE_MSG( DID_NVR_MANAGE_USERPAGE, dev_log_->nvrManageUserpage );
         // HANDLE_MSG( DID_NVR_USERPAGE_SN, dev_log_->nvrUserpageSn );
@@ -217,16 +217,16 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_PIMU, dev_log_->pimu );
         HANDLE_MSG( DID_IMU, dev_log_->imu );
         HANDLE_MSG( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo );
-        HANDLE_MSG( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw );
-        // HANDLE_MSG( DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt );
+        HANDLE_MSG( DID_GNSS_BASE_RAW, dev_log_->gpsBaseRaw );
+        // HANDLE_MSG( DID_GNSS_RTK_OPT, dev_log_->gpsRtkOpt );
         HANDLE_MSG( DID_MANUFACTURING_INFO, dev_log_->manufacturingInfo );
         HANDLE_MSG( DID_BIT, dev_log_->bit );
         HANDLE_MSG( DID_INS_3, dev_log_->ins3 );
         HANDLE_MSG( DID_INS_4, dev_log_->ins4 );
         HANDLE_MSG( DID_INL2_NED_SIGMA, dev_log_->inl2NedSigma );
         HANDLE_MSG( DID_STROBE_IN_TIME, dev_log_->strobeInTime );
-        HANDLE_MSG( DID_GPS1_RAW, dev_log_->gps1Raw );
-        HANDLE_MSG( DID_GPS2_RAW, dev_log_->gps2Raw );
+        HANDLE_MSG( DID_GNSS1_RAW, dev_log_->gps1Raw );
+        HANDLE_MSG( DID_GNSS2_RAW, dev_log_->gps2Raw );
         HANDLE_MSG( DID_WHEEL_ENCODER, dev_log_->wheelEncoder );
         HANDLE_MSG( DID_GROUND_VEHICLE, dev_log_->groundVehicle );
         HANDLE_MSG( DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl );
@@ -264,15 +264,15 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_FLASH_CONFIG, dev_log_->flashCfg, device_id );
     forward_message( DID_GNSS1_POS, dev_log_->gps1Pos, device_id );
     forward_message( DID_GNSS2_POS, dev_log_->gps2Pos, device_id );
-    forward_message( DID_GPS1_SAT, dev_log_->gps1Sat, device_id );
-    forward_message( DID_GPS2_SAT, dev_log_->gps2Sat, device_id );
-    forward_message( DID_GPS1_VERSION, dev_log_->gps1Version, device_id );
-    forward_message( DID_GPS2_VERSION, dev_log_->gps2Version, device_id );
+    forward_message( DID_GNSS1_SAT, dev_log_->gps1Sat, device_id );
+    forward_message( DID_GNSS2_SAT, dev_log_->gps2Sat, device_id );
+    forward_message( DID_GNSS1_VERSION, dev_log_->gps1Version, device_id );
+    forward_message( DID_GNSS2_VERSION, dev_log_->gps2Version, device_id );
     forward_message( DID_MAG_CAL, dev_log_->magCal, device_id );
-    forward_message( DID_GPS1_RTK_POS_REL, dev_log_->gps1RtkPosRel, device_id );
+    forward_message( DID_GNSS1_RTK_POS_REL, dev_log_->gps1RtkPosRel, device_id );
     forward_message( DID_GNSS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc, device_id );
-    forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, device_id );
-    forward_message( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, device_id );
+    forward_message( DID_GNSS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, device_id );
+    forward_message( DID_GNSS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, device_id );
     // forward_message( DID_FEATURE_BITS, dev_log_->featureBits, device_id );
     forward_message( DID_SENSORS_UCAL, dev_log_->sensorsUcal, device_id );
     forward_message( DID_SENSORS_TCAL, dev_log_->sensorsTcal, device_id );
@@ -283,8 +283,8 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_REFERENCE_IMU, dev_log_->refImu, device_id );
     forward_message( DID_REFERENCE_PIMU, dev_log_->refPImu, device_id );
     forward_message( DID_REFERENCE_MAGNETOMETER, dev_log_->refMag, device_id );
-    forward_message( DID_GPS1_VEL, dev_log_->gps1Vel, device_id );
-    forward_message( DID_GPS2_VEL, dev_log_->gps2Vel, device_id );
+    forward_message( DID_GNSS1_VEL, dev_log_->gps1Vel, device_id );
+    forward_message( DID_GNSS2_VEL, dev_log_->gps2Vel, device_id );
     // forward_message( DID_HDW_PARAMS, dev_log_->hdwParams, device_id );
     // forward_message( DID_NVR_MANAGE_USERPAGE, dev_log_->nvrManageUserpage, device_id );
     // forward_message( DID_NVR_USERPAGE_SN, dev_log_->nvrUserpageSn, device_id );
@@ -309,16 +309,16 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_PIMU, dev_log_->pimu, device_id );
     forward_message( DID_IMU, dev_log_->imu, device_id );
     forward_message( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, device_id );
-    forward_message( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, device_id );
-    // forward_message( DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt, device_id );
+    forward_message( DID_GNSS_BASE_RAW, dev_log_->gpsBaseRaw, device_id );
+    // forward_message( DID_GNSS_RTK_OPT, dev_log_->gpsRtkOpt, device_id );
     forward_message( DID_MANUFACTURING_INFO, dev_log_->manufacturingInfo, device_id );
     forward_message( DID_BIT, dev_log_->bit, device_id );
     forward_message( DID_INS_3, dev_log_->ins3, device_id );
     forward_message( DID_INS_4, dev_log_->ins4, device_id );
     forward_message( DID_INL2_NED_SIGMA, dev_log_->inl2NedSigma, device_id );
     forward_message( DID_STROBE_IN_TIME, dev_log_->strobeInTime, device_id );
-    forward_message( DID_GPS1_RAW, dev_log_->gps1Raw, device_id );
-    forward_message( DID_GPS2_RAW, dev_log_->gps2Raw, device_id );
+    forward_message( DID_GNSS1_RAW, dev_log_->gps1Raw, device_id );
+    forward_message( DID_GNSS2_RAW, dev_log_->gps2Raw, device_id );
     forward_message( DID_WHEEL_ENCODER, dev_log_->wheelEncoder, device_id );
     forward_message( DID_GROUND_VEHICLE, dev_log_->groundVehicle, device_id );
     forward_message( DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl, device_id );
