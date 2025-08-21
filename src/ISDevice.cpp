@@ -1163,8 +1163,6 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
-            }
-
             break;
         case DID_SYS_CMD:
             sysCmd = *(system_command_t*)data->ptr;

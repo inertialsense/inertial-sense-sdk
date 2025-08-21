@@ -171,16 +171,16 @@ void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("activePorts", &port_monitor_t::activePorts, DATA_TYPE_UINT8, "", "Number of active ports", DATA_FLAGS_READ_ONLY);    
     for (int i=0; i<NUM_COM_PORTS; i++)
     {
-        mapper.AddMember2("[" + std::to_string(i) + "].portInfo",           i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, portInfo), DATA_TYPE_UINT8, "", "High nib port type (see ePortMonPortType) low nib index.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-        mapper.AddMember2("[" + std::to_string(i) + "].status",             i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, status), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
-        mapper.AddMember2("[" + std::to_string(i) + "].txBytesPerSec",      i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Tx data rate", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("[" + std::to_string(i) + "].rxBytesPerSec",      i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Rx data rate", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("[" + std::to_string(i) + "].txBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytes), DATA_TYPE_UINT32, "bytes", "Tx byte count");
-        mapper.AddMember2("[" + std::to_string(i) + "].rxBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytes), DATA_TYPE_UINT32, "bytes", "Rx byte count");
-        mapper.AddMember2("[" + std::to_string(i) + "].txDataDrops",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txDataDrops), DATA_TYPE_UINT32, "", "Tx buffer data drop occurrences");            
-        mapper.AddMember2("[" + std::to_string(i) + "].rxOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxOverflows), DATA_TYPE_UINT32, "", "Rx buffer overflow occurrences");        
-        mapper.AddMember2("[" + std::to_string(i) + "].txBytesDropped",     i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytesDropped), DATA_TYPE_UINT32, "bytes", "Tx number of bytes that were not sent");
-        mapper.AddMember2("[" + std::to_string(i) + "].rxChecksumErrors",   i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxChecksumErrors), DATA_TYPE_UINT32, "", "Rx number of checksum failures");
+        mapper.AddMember2("[" + std::to_string(i) + "].portInfo",           i*sizeof(port_stats_t) + offsetof(port_stats_t, portInfo), DATA_TYPE_UINT8, "", "High nib port type (see ePortMonPortType) low nib index.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+        mapper.AddMember2("[" + std::to_string(i) + "].status",             i*sizeof(port_stats_t) + offsetof(port_stats_t, status), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+        mapper.AddMember2("[" + std::to_string(i) + "].txBytesPerSec",      i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Tx data rate", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("[" + std::to_string(i) + "].rxBytesPerSec",      i*sizeof(port_stats_t) + offsetof(port_stats_t, rxBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Rx data rate", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("[" + std::to_string(i) + "].txBytes",            i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytes), DATA_TYPE_UINT32, "bytes", "Tx byte count");
+        mapper.AddMember2("[" + std::to_string(i) + "].rxBytes",            i*sizeof(port_stats_t) + offsetof(port_stats_t, rxBytes), DATA_TYPE_UINT32, "bytes", "Rx byte count");
+        mapper.AddMember2("[" + std::to_string(i) + "].txDataDrops",        i*sizeof(port_stats_t) + offsetof(port_stats_t, txDataDrops), DATA_TYPE_UINT32, "", "Tx buffer data drop occurrences");
+        mapper.AddMember2("[" + std::to_string(i) + "].rxOverflows",        i*sizeof(port_stats_t) + offsetof(port_stats_t, rxOverflows), DATA_TYPE_UINT32, "", "Rx buffer overflow occurrences");
+        mapper.AddMember2("[" + std::to_string(i) + "].txBytesDropped",     i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytesDropped), DATA_TYPE_UINT32, "bytes", "Tx number of bytes that were not sent");
+        mapper.AddMember2("[" + std::to_string(i) + "].rxChecksumErrors",   i*sizeof(port_stats_t) + offsetof(port_stats_t, rxChecksumErrors), DATA_TYPE_UINT32, "", "Rx number of checksum failures");
     }
 }
 
