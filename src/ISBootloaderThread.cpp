@@ -140,7 +140,7 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
         return;
     }
 
-    is_operation_result result = cISBootloaderBase::mode_device_app(m_firmware, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    is_operation_result result = cISBootloaderBase::mode_device_app(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
     serialPortFlush(port);
     serialPortClose(port);
