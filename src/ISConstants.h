@@ -303,7 +303,7 @@ extern "C" {
 #endif
 
 #ifndef _SQR
-#define _SQR(a) (a * a)
+#define _SQR(a) ((a) * (a))
 #endif
 
 #ifndef _CLAMP
