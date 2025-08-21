@@ -199,7 +199,7 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
         return;
     }
 
-    is_operation_result result = cISBootloaderBase::get_device_isb_version(m_firmware, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    is_operation_result result = cISBootloaderBase::get_device_isb_version(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
     serialPortFlush(port);
     serialPortClose(port);
@@ -235,7 +235,7 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
         return;
     }
 
-    is_operation_result result = cISBootloaderBase::mode_device_isb(m_firmware, thread_info->force_isb, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    is_operation_result result = cISBootloaderBase::mode_device_isb(m_firmware, thread_info->force_isb, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
     serialPortFlush(port);
     serialPortClose(port);
