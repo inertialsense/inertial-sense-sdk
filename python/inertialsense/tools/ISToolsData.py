@@ -275,10 +275,10 @@ class cCtypeStructures:
         return ('insMisc', sInsMisc)
     def sysParams(self):
         return ('sysParams', sSysParams)
-    def gpsPos(self):
-        return ('gpsPos', sGpsPos)   
-    def gpsVel(self):
-        return ('gpsVel', sGpsVel)   
+    def gnssPos(self):
+        return ('gnssPos', sGpsPos)   
+    def gnssVel(self):
+        return ('gnssVel', sGpsVel)   
     def gps(self):
         return ('gps', sGps)   
     def insResources(self):
@@ -311,8 +311,8 @@ class cCtypeStructures:
 #             10 : self.sysSensors,
 #             11 : self.flashCfg,
 #             12 : self.gpsRssi,
-            13 : self.gpsPos,
-            14 : self.gpsVel,
+            13 : self.gnssPos,
+            14 : self.gnssVel,
 #             15 : self.io,
 #             16 : self.ioServosPwm,
 #             17 : self.ioServosPpm,

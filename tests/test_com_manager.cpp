@@ -386,7 +386,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     #if TEST_PROTO_ISB
                         td.did = DID_GNSS1_POS;
                         td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
-                        td.data.set.gpsPos = gps;
+                        td.data.set.gnssPos = gps;
                         td.size = sizeof(gnss_pos_t);
                     #endif
                 }

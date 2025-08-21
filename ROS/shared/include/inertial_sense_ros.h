@@ -534,7 +534,7 @@ public:
     uint32_t rtkConfigBits_ = 0;                // this is read directly from the config
     uint32_t wheelConfigBits_ = 0;              // this is read directly from the config
 
-    float gpsTimeUserDelay_ = 0;
+    float gnssTimeUserDelay_ = 0;
 
     // EVB Flash Parameters
     struct evb_flash_parameters

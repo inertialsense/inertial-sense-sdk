@@ -300,7 +300,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
     ph.nodeParam("type", rs_.gps1.type);
-    ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_);
+    ph.nodeParam("gnssTimeUserDelay", gnssTimeUserDelay_);
     ph.nodeParamVec("antenna_offset", 3, rs_.gps1.antennaOffset);
     YAML::Node gps1Msgs = ph.node(gps1Node, "messages", 2);
     ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel");
@@ -678,12 +678,12 @@ void InertialSenseROS::configure_flash_parameters()
 
     if (!vecF32Match(flashCfg.insRotation, insRotation_) ||
         !vecF32Match(flashCfg.insOffset, insOffset_) ||
-        !vecF32Match(flashCfg.gps1AntOffset, rs_.gps1.antennaOffset) ||
-        !vecF32Match(flashCfg.gps2AntOffset, rs_.gps2.antennaOffset) ||
+        !vecF32Match(flashCfg.gnss1AntOffset, rs_.gps1.antennaOffset) ||
+        !vecF32Match(flashCfg.gnss2AntOffset, rs_.gps2.antennaOffset) ||
         (refLLA_valid && !vecF64Match(flashCfg.refLla, refLla_)) ||
         flashCfg.startupNavDtMs     != ins_nav_dt_ms_ ||
         flashCfg.ioConfig           != ioConfigBits_ ||
-        flashCfg.gpsTimeUserDelay   != gpsTimeUserDelay_ ||
+        flashCfg.gnssTimeUserDelay   != gnssTimeUserDelay_ ||
         // flashCfg.magDeclination  != magDeclination_ ||
         flashCfg.dynamicModel       != dynamicModel_ ||
         flashCfg.platformConfig     != platformConfig_
@@ -693,8 +693,8 @@ void InertialSenseROS::configure_flash_parameters()
         {
             flashCfg.insRotation[i] = insRotation_[i];
             flashCfg.insOffset[i] = insOffset_[i];
-            flashCfg.gps1AntOffset[i] = rs_.gps1.antennaOffset[i];
-            flashCfg.gps2AntOffset[i] = rs_.gps2.antennaOffset[i];
+            flashCfg.gnss1AntOffset[i] = rs_.gps1.antennaOffset[i];
+            flashCfg.gnss2AntOffset[i] = rs_.gps2.antennaOffset[i];
             if (refLLA_valid)
             {
                 flashCfg.refLla[i] = refLla_[i];
@@ -702,7 +702,7 @@ void InertialSenseROS::configure_flash_parameters()
         }
         flashCfg.startupNavDtMs     = ins_nav_dt_ms_;
         flashCfg.ioConfig           = ioConfigBits_;
-        flashCfg.gpsTimeUserDelay   = gpsTimeUserDelay_;
+        flashCfg.gnssTimeUserDelay   = gnssTimeUserDelay_;
         flashCfg.magDeclination     = magDeclination_;
         flashCfg.dynamicModel       = dynamicModel_;
         flashCfg.platformConfig     = platformConfig_;
@@ -1740,14 +1740,14 @@ void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gnss_rtk_misc_t *co
     {
         rtk_info.header.stamp = ros_time_from_week_and_tow(GPS_week_, msg->timeOfWeekMs / 1000.0);
         rtk_info.baseAntcount = msg->baseAntennaCount;
-        rtk_info.baseEph = msg->baseBeidouEphemerisCount + msg->baseGalileoEphemerisCount + msg->baseGlonassEphemerisCount + msg->baseGpsEphemerisCount;
-        rtk_info.baseObs = msg->baseBeidouObservationCount + msg->baseGalileoObservationCount + msg->baseGlonassObservationCount + msg->baseGpsObservationCount;
+        rtk_info.baseEph = msg->baseBeidouEphemerisCount + msg->baseGalileoEphemerisCount + msg->baseGlonassEphemerisCount + msg->baseGnssEphemerisCount;
+        rtk_info.baseObs = msg->baseBeidouObservationCount + msg->baseGalileoObservationCount + msg->baseGlonassObservationCount + msg->baseGnssObservationCount;
         rtk_info.BaseLLA[0] = msg->baseLla[0];
         rtk_info.BaseLLA[1] = msg->baseLla[1];
         rtk_info.BaseLLA[2] = msg->baseLla[2];
 
-        rtk_info.roverEph = msg->roverBeidouEphemerisCount + msg->roverGalileoEphemerisCount + msg->roverGlonassEphemerisCount + msg->roverGpsEphemerisCount;
-        rtk_info.roverObs = msg->roverBeidouObservationCount + msg->roverGalileoObservationCount + msg->roverGlonassObservationCount + msg->roverGpsObservationCount;
+        rtk_info.roverEph = msg->roverBeidouEphemerisCount + msg->roverGalileoEphemerisCount + msg->roverGlonassEphemerisCount + msg->roverGnssEphemerisCount;
+        rtk_info.roverObs = msg->roverBeidouObservationCount + msg->roverGalileoObservationCount + msg->roverGlonassObservationCount + msg->roverGnssObservationCount;
         rtk_info.cycle_slip_count = msg->cycleSlipCount;
     }
 

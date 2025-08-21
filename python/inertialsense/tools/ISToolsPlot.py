@@ -775,7 +775,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         #############################################
     # GPS Velocity - used to analyze GPS velocities
-    if peCheck('gpsVel'):
+    if peCheck('gnssVel'):
         pt.labels('GPS Vel NED', 'm/s')
         f += 1;    legend = []
         if rIns:
@@ -788,7 +788,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         # pt.plot3Axes(f, gps1Vel.time, gps1Vel.nedDot, options='m')
         # legend += ['GPS.ned dot']
         plt.legend(legend)
-        saveFigures('gpsVel.svg', f)
+        saveFigures('gnssVel.svg', f)
 
         #############################################
         # EKF States
@@ -1452,15 +1452,15 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         else:
             fig, ax = pt.subplots(f,3, 'GPS Stats', sharex=True)
 
-            gpsPos = log.data['gps1Pos']
-            time = getTimeFromGpsTowMs(gpsPos['timeOfWeekMs'])
+            gnssPos = log.data['gps1Pos']
+            time = getTimeFromGpsTowMs(gnssPos['timeOfWeekMs'])
 
-            pt.subplotSingle(ax[0], time, gpsPos['status'] & 0xFF, 'Satellites Used in Solution', '')
-            pt.subplotSingle(ax[1], time, gpsPos['pDop'], 'Accuracy', 'm', options='m')
+            pt.subplotSingle(ax[0], time, gnssPos['status'] & 0xFF, 'Satellites Used in Solution', '')
+            pt.subplotSingle(ax[1], time, gnssPos['pDop'], 'Accuracy', 'm', options='m')
             legend = ['pDop']
-            pt.subplotSingle(ax[1], time, gpsPos['hAcc'], 'Accuracy', 'm', options='r')
+            pt.subplotSingle(ax[1], time, gnssPos['hAcc'], 'Accuracy', 'm', options='r')
             legend += ['Hor']
-            pt.subplotSingle(ax[1], time, gpsPos['vAcc'], options='b')
+            pt.subplotSingle(ax[1], time, gnssPos['vAcc'], options='b')
             legend += ['Ver']
             if 'gps1RtkPos' in log.data.keys():
                 rtktime = getTimeFromGpsTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
@@ -1468,7 +1468,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
                 legend += ['rtkHor']
             ax[1].legend(legend)
 
-            pt.subplotSingle(ax[2], time, gpsPos['cnoMean'], 'CNO', 'dBHz', options='b')
+            pt.subplotSingle(ax[2], time, gnssPos['cnoMean'], 'CNO', 'dBHz', options='b')
             legend = ['Mean']
             ax[2].legend(legend)
 

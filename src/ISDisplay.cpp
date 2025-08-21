@@ -425,25 +425,25 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 
             // Time of week - uint32 ms
         case DID_SYS_PARAMS:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
+            msgTimeMs = d.gnssPos.timeOfWeekMs;
             isTowMode = true;
             break;
 
         case DID_GNSS1_POS:
         case DID_GNSS1_RTK_POS:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
-            gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
+            msgTimeMs = d.gnssPos.timeOfWeekMs;
+            gpsTowMsOffset = (unsigned int)(1000.0 * d.gnssPos.towOffset);
             isTowMode = true;
             break;
 
         case DID_GNSS1_RTK_POS_REL:
-            msgTimeMs = d.gpsRtkRel.timeOfWeekMs;
+            msgTimeMs = d.gnssRtkRel.timeOfWeekMs;
             isTowMode = true;
             break;
 
         case DID_GNSS1_RTK_POS_MISC:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
-            gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
+            msgTimeMs = d.gnssPos.timeOfWeekMs;
+            gpsTowMsOffset = (unsigned int)(1000.0 * d.gnssPos.towOffset);
             isTowMode = false;
             break;
         
@@ -737,17 +737,17 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);           break;
         case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);              break;
         case DID_GNSS1_VERSION:      // FALL THROUGH
-        case DID_GNSS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);          break;
+        case DID_GNSS2_VERSION:      str = DataToStringGpsVersion(d.gnssVer, data->hdr);          break;
         case DID_GNSS1_POS:          // FALL THROUGH
         case DID_GNSS2_POS:          // FALL THROUGH
-        case DID_GNSS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);              break;
-        case DID_GNSS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GNSS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
-        case DID_GNSS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GNSS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
+        case DID_GNSS1_RTK_POS:      str = DataToStringGpsPos(d.gnssPos, data->hdr);              break;
+        case DID_GNSS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gnssRtkRel, data->hdr);           break;
+        case DID_GNSS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gnssRtkMisc, data->hdr);         break;
+        case DID_GNSS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gnssRtkRel, data->hdr);           break;
+        case DID_GNSS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gnssRtkMisc, data->hdr);         break;
         case DID_GNSS1_RAW:          // FALL THROUGH
         case DID_GNSS2_RAW:          // FALL THROUGH
-        case DID_GNSS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
+        case DID_GNSS_BASE_RAW:      str = DataToStringRawGPS(d.gnssRaw, data->hdr);              break;
         case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
         case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
         case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;

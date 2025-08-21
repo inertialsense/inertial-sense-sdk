@@ -337,7 +337,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GPS leap seconds (GPS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GPS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gnss_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gnss_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGpsStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
+    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
 }
 
 static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -395,7 +395,7 @@ static void PopulateMapGpsTimepulse(data_set_t data_set[DID_COUNT], uint32_t did
 {
     DataMapper<gnss_timepulse_t> mapper(data_set, did);
     mapper.AddMember("towOffset", &gnss_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GPS time.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("towGps", &gnss_timepulse_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GPS week)", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("towGnss", &gnss_timepulse_t::towGnss, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GPS week)", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("timeMcu", &gnss_timepulse_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("msgTimeMs", &gnss_timepulse_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
     mapper.AddMember("plsTimeMs", &gnss_timepulse_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
@@ -538,12 +538,12 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("ser2BaudRate", &nvm_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
     mapper.AddVec3Rpy("insRotation", offsetof(nvm_flash_cfg_t, insRotation), DATA_TYPE_F32, SYM_DEG, "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: yaw, pitch, roll.", 0, C_RAD2DEG);
     mapper.AddVec3Xyz("insOffset", offsetof(nvm_flash_cfg_t, insOffset), DATA_TYPE_F32, "m", "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.");
-    mapper.AddVec3Xyz("gps1AntOffset", offsetof(nvm_flash_cfg_t,gps1AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS1 antenna.");
-    mapper.AddVec3Xyz("gps2AntOffset", offsetof(nvm_flash_cfg_t,gps2AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS2 antenna.");
+    mapper.AddVec3Xyz("gnss1AntOffset", offsetof(nvm_flash_cfg_t,gnss1AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS1 antenna.");
+    mapper.AddVec3Xyz("gnss2AntOffset", offsetof(nvm_flash_cfg_t,gnss2AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS2 antenna.");
 
     mapper.AddMember("gnssTimeSyncPeriodMs", &nvm_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.", 0, 1.0);
-    mapper.AddMember("gpsTimeUserDelay", &nvm_flash_cfg_t::gpsTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
-    mapper.AddMember("gpsMinimumElevation", &nvm_flash_cfg_t::gpsMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+    mapper.AddMember("gnssTimeUserDelay", &nvm_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
+    mapper.AddMember("gnssMinimumElevation", &nvm_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     mapper.AddMember("gnssSatSigConst", &nvm_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX, 1.0);
 
     mapper.AddMember("dynamicModel", &nvm_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist", 0, 1.0);
@@ -630,15 +630,15 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("ser2BaudRate", &gpx_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
     mapper.AddMember("startupGNSSDtMs", &gpx_flash_cfg_t::startupGNSSDtMs, DATA_TYPE_UINT32, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
     str = " offset from Sensor Frame origin to GPS1 antenna.";
-    mapper.AddArray("gps1AntOffset", &gpx_flash_cfg_t::gps1AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
+    mapper.AddArray("gnss1AntOffset", &gpx_flash_cfg_t::gnss1AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
     str = " offset from Sensor Frame origin to GPS2 antenna.";
-    mapper.AddArray("gps2AntOffset", &gpx_flash_cfg_t::gps2AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
+    mapper.AddArray("gnss2AntOffset", &gpx_flash_cfg_t::gnss2AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
     mapper.AddMember("gnssSatSigConst", &gpx_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("dynamicModel", &gpx_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist");
     mapper.AddMember("debug", &gpx_flash_cfg_t::debug, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("gnssTimeSyncPeriodMs", &gpx_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.");
-    mapper.AddMember("gpsTimeUserDelay", &gpx_flash_cfg_t::gpsTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("gpsMinimumElevation", &gpx_flash_cfg_t::gpsMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+    mapper.AddMember("gnssTimeUserDelay", &gpx_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("gnssMinimumElevation", &gpx_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
     str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
@@ -969,8 +969,8 @@ static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddLlaDegM("baseLla", offsetof(gnss_rtk_misc_t, baseLla), "Base position", "altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cycleSlipCount", &gnss_rtk_misc_t::cycleSlipCount, DATA_TYPE_UINT32, "int", "Cycle slip counter", DATA_FLAGS_READ_ONLY);
 
-    mapper.AddMember("roverGpsObservationCount", &gnss_rtk_misc_t::roverGpsObservationCount, DATA_TYPE_UINT32, "int", "Rover gps observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseGpsObservationCount", &gnss_rtk_misc_t::baseGpsObservationCount, DATA_TYPE_UINT32, "int", "Base gps observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverGnssObservationCount", &gnss_rtk_misc_t::roverGnssObservationCount, DATA_TYPE_UINT32, "int", "Rover gps observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseGnssObservationCount", &gnss_rtk_misc_t::baseGnssObservationCount, DATA_TYPE_UINT32, "int", "Base gps observation element counter", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("roverGlonassObservationCount", &gnss_rtk_misc_t::roverGlonassObservationCount, DATA_TYPE_UINT32, "int", "Rover glonass observation element counter", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("baseGlonassObservationCount", &gnss_rtk_misc_t::baseGlonassObservationCount, DATA_TYPE_UINT32, "int", "Base glonass observation element counter", DATA_FLAGS_READ_ONLY);
 
@@ -981,8 +981,8 @@ static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
 
     mapper.AddMember("roverQzsObservationCount", &gnss_rtk_misc_t::roverQzsObservationCount, DATA_TYPE_UINT32, "int", "Rover qzs observation element counter", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("baseQzsObservationCount", &gnss_rtk_misc_t::baseQzsObservationCount, DATA_TYPE_UINT32, "int", "Base qzs observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("roverGpsEphemerisCount", &gnss_rtk_misc_t::roverGpsEphemerisCount, DATA_TYPE_UINT32, "int", "Rover gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseGpsEphemerisCount", &gnss_rtk_misc_t::baseGpsEphemerisCount, DATA_TYPE_UINT32, "int", "Base gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverGnssEphemerisCount", &gnss_rtk_misc_t::roverGnssEphemerisCount, DATA_TYPE_UINT32, "int", "Rover gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseGnssEphemerisCount", &gnss_rtk_misc_t::baseGnssEphemerisCount, DATA_TYPE_UINT32, "int", "Base gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
 
     mapper.AddMember("roverGlonassEphemerisCount", &gnss_rtk_misc_t::roverGlonassEphemerisCount, DATA_TYPE_UINT32, "int", "Rover glonass ephemeris element counter", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("baseGlonassEphemerisCount", &gnss_rtk_misc_t::baseGlonassEphemerisCount, DATA_TYPE_UINT32, "int", "Base glonass ephemeris element counter", DATA_FLAGS_READ_ONLY);

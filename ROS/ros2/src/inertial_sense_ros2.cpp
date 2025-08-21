@@ -380,8 +380,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
     std::string rs_gps1_type = nh_->declare_parameter<std::string>("gps1_type", "F9P");
     ph.nodeParam("type", rs_.gps1.type, rs_gps1_type);
 
-    float gps_time_user_delay = nh_->declare_parameter<float>("gpsTimeUserDelay", 0);
-    ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_, gps_time_user_delay);
+    float gps_time_user_delay = nh_->declare_parameter<float>("gnssTimeUserDelay", 0);
+    ph.nodeParam("gnssTimeUserDelay", gnssTimeUserDelay_, gps_time_user_delay);
 
     std::vector<double>offset_vec = nh_->declare_parameter<std::vector<double>>("antenna_offset_gps1", {0,0,0});
     if (offset_vec.size() == 3) {
@@ -826,12 +826,12 @@ void InertialSenseROS::configure_flash_parameters()
 
     if (!vecF32Match(current_flash_cfg.insRotation, insRotation_) ||
         !vecF32Match(current_flash_cfg.insOffset, insOffset_) ||
-        !vecF32Match(current_flash_cfg.gps1AntOffset, rs_.gps1.antennaOffset) ||
-        !vecF32Match(current_flash_cfg.gps2AntOffset, rs_.gps2.antennaOffset) ||
+        !vecF32Match(current_flash_cfg.gnss1AntOffset, rs_.gps1.antennaOffset) ||
+        !vecF32Match(current_flash_cfg.gnss2AntOffset, rs_.gps2.antennaOffset) ||
         (refLLA_valid && !vecF64Match(current_flash_cfg.refLla, refLla_)) ||
         current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_ ||
         current_flash_cfg.ioConfig != ioConfigBits_ ||
-        current_flash_cfg.gpsTimeUserDelay != gpsTimeUserDelay_ ||
+        current_flash_cfg.gnssTimeUserDelay != gnssTimeUserDelay_ ||
         // current_flash_cfg.magDeclination != magDeclination_ ||
         current_flash_cfg.dynamicModel != dynamicModel_ ||
         current_flash_cfg.platformConfig != platformConfig_
@@ -841,8 +841,8 @@ void InertialSenseROS::configure_flash_parameters()
         {
             current_flash_cfg.insRotation[i] = insRotation_[i];
             current_flash_cfg.insOffset[i] = insOffset_[i];
-            current_flash_cfg.gps1AntOffset[i] = rs_.gps1.antennaOffset[i];
-            current_flash_cfg.gps2AntOffset[i] = rs_.gps2.antennaOffset[i];
+            current_flash_cfg.gnss1AntOffset[i] = rs_.gps1.antennaOffset[i];
+            current_flash_cfg.gnss2AntOffset[i] = rs_.gps2.antennaOffset[i];
             if (refLLA_valid)
             {
                 current_flash_cfg.refLla[i] = refLla_[i];
@@ -850,7 +850,7 @@ void InertialSenseROS::configure_flash_parameters()
         }
         current_flash_cfg.startupNavDtMs = ins_nav_dt_ms_;
         current_flash_cfg.ioConfig = ioConfigBits_;
-        current_flash_cfg.gpsTimeUserDelay = gpsTimeUserDelay_;
+        current_flash_cfg.gnssTimeUserDelay = gnssTimeUserDelay_;
         current_flash_cfg.magDeclination = magDeclination_;
         current_flash_cfg.dynamicModel = dynamicModel_;
         current_flash_cfg.platformConfig = platformConfig_;
@@ -1878,14 +1878,14 @@ void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gnss_rtk_misc_t *co
     {
         rtk_info.header.stamp = ros_time_from_week_and_tow(GPS_week_, msg->timeOfWeekMs / 1000.0);
         rtk_info.base_ant_count = msg->baseAntennaCount;
-        rtk_info.base_eph = msg->baseBeidouEphemerisCount + msg->baseGalileoEphemerisCount + msg->baseGlonassEphemerisCount + msg->baseGpsEphemerisCount;
-        rtk_info.base_obs = msg->baseBeidouObservationCount + msg->baseGalileoObservationCount + msg->baseGlonassObservationCount + msg->baseGpsObservationCount;
+        rtk_info.base_eph = msg->baseBeidouEphemerisCount + msg->baseGalileoEphemerisCount + msg->baseGlonassEphemerisCount + msg->baseGnssEphemerisCount;
+        rtk_info.base_obs = msg->baseBeidouObservationCount + msg->baseGalileoObservationCount + msg->baseGlonassObservationCount + msg->baseGnssObservationCount;
         rtk_info.base_lla[0] = msg->baseLla[0];
         rtk_info.base_lla[1] = msg->baseLla[1];
         rtk_info.base_lla[2] = msg->baseLla[2];
 
-        rtk_info.rover_eph = msg->roverBeidouEphemerisCount + msg->roverGalileoEphemerisCount + msg->roverGlonassEphemerisCount + msg->roverGpsEphemerisCount;
-        rtk_info.rover_obs = msg->roverBeidouObservationCount + msg->roverGalileoObservationCount + msg->roverGlonassObservationCount + msg->roverGpsObservationCount;
+        rtk_info.rover_eph = msg->roverBeidouEphemerisCount + msg->roverGalileoEphemerisCount + msg->roverGlonassEphemerisCount + msg->roverGnssEphemerisCount;
+        rtk_info.rover_obs = msg->roverBeidouObservationCount + msg->roverGalileoObservationCount + msg->roverGlonassObservationCount + msg->roverGnssObservationCount;
         rtk_info.cycle_slip_count = msg->cycleSlipCount;
     }
 

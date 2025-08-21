@@ -104,7 +104,7 @@ int parse_isb(void* ctx, p_data_t* data, port_handle_t port)
             break;
 
         case DID_GNSS1_POS:
-            printf("GNSS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", d->gpsPos.timeOfWeekMs, d->gpsPos.lla[0], d->gpsPos.lla[1], d->gpsPos.lla[2]);
+            printf("GNSS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", d->gnssPos.timeOfWeekMs, d->gnssPos.lla[0], d->gnssPos.lla[1], d->gnssPos.lla[2]);
             break;
     }
 

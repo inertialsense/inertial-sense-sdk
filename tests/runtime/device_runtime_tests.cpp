@@ -150,12 +150,12 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
 void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
 {
     int utcWeekday = m_hist.nmea.gga.size() ? gpsTowMsToUtcWeekday(m_hist.nmea.gga[0].gpsTowMs, C_GPS_LEAP_SECONDS) : 0;
-    gnss_pos_t gpsPos = {};
+    gnss_pos_t gnssPos = {};
     utc_time_t t;
-    nmea_parse_gga((const char *)msg, msgSize, gpsPos, t, utcWeekday);
-    std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.nmea.gga, msg_history_t(gpsPos.timeOfWeekMs, gpsPos.week, (uint8_t*)msg, msgSize));
+    nmea_parse_gga((const char *)msg, msgSize, gnssPos, t, utcWeekday);
+    std::deque<msg_history_t> &hist = AddMsgHistory(m_hist.nmea.gga, msg_history_t(gnssPos.timeOfWeekMs, gnssPos.week, (uint8_t*)msg, msgSize));
 
-    // WriteStatus("NMEA GGA (%d ms, %d wkday): %.*s", gpsPos.timeOfWeekMs, utcWeekday, msgSize, msg);
+    // WriteStatus("NMEA GGA (%d ms, %d wkday): %.*s", gnssPos.timeOfWeekMs, utcWeekday, msgSize, msg);
 
     CheckGpsTime("NMEA GGA Error", m_errorCount.nmeaGgaTime, hist);
 }

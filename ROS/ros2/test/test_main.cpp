@@ -90,7 +90,7 @@ TEST(test_main, gps_ins_time_sync)
                        "\n"
                        "gps1:\n"
                        "  type: 'F9P'\n"
-                       "  gpsTimeUserDelay: 0.0\n"
+                       "  gnssTimeUserDelay: 0.0\n"
                        "  messages:\n"
                        "    pos_vel:\n"
                        "      topic: \"gps1/pos_vel\"\n"

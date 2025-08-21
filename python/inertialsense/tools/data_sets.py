@@ -206,7 +206,7 @@ did_name_lookup = {
  DID_GPX_DEBUG_ARRAY : "debugArray",
 }
 
-class eGpsNavFixStatus(Enum):
+class eGnssNavFixStatus(Enum):
     """ Navigation Fix Type """
     NAV_FIX_STATUS_NONE                = 0x00000000
     NAV_FIX_STATUS_3D                  = 0x00000001
@@ -219,7 +219,7 @@ class eGpsNavFixStatus(Enum):
     def from_ins_status(insStatus):
         INS_STATUS_NAV_FIX_STATUS_MASK   = 0x07000000
         INS_STATUS_NAV_FIX_STATUS_OFFSET = 24
-        return eGpsNavFixStatus((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
+        return eGnssNavFixStatus((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
     def __str__(self):
         return self.name

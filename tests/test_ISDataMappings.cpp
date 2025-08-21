@@ -39,19 +39,19 @@ TEST(ISDataMappings, StringToDataToString)
 #endif
 
     {   // Floating Point Test
-        string key = "gps1AntOffset";
+        string key = "gnss1AntOffset";
         if (flashMap.find(key) == flashMap.end())
         {   // Key not present.  Include brackets.  In ISDataMappings, we use both multi-element single-variables and single-element multi-variables to represent arrays.
             key += "[0]";
         }
         const data_info_t& info = flashMap.at(key);
-        float gps1AntOffset1 = 1.234f;
-        str1 = to_string(gps1AntOffset1);
+        float gnss1AntOffset1 = 1.234f;
+        str1 = to_string(gnss1AntOffset1);
 
         // float - string to data
         cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, 1);
 
-        EXPECT_EQ(d.flashCfg.gps1AntOffset[1], gps1AntOffset1);
+        EXPECT_EQ(d.flashCfg.gnss1AntOffset[1], gnss1AntOffset1);
 
         // float - data to string
         data_mapping_string_t stringBuffer;
@@ -132,9 +132,9 @@ TEST(ISDataMappings, DataToYamlToData)
     d.flashCfg.insOffset[0] = 0.1f; // X offset
     d.flashCfg.insOffset[1] = 0.2f; // Y offset
     d.flashCfg.insOffset[2] = 0.3f; // Z offset
-    d.flashCfg.gps1AntOffset[0] = 0.01f; // X antenna offset
-    d.flashCfg.gps1AntOffset[1] = 0.02f; // Y antenna offset
-    d.flashCfg.gps1AntOffset[2] = 0.03f; // Z antenna offset
+    d.flashCfg.gnss1AntOffset[0] = 0.01f; // X antenna offset
+    d.flashCfg.gnss1AntOffset[1] = 0.02f; // Y antenna offset
+    d.flashCfg.gnss1AntOffset[2] = 0.03f; // Z antenna offset
     d.flashCfg.dynamicModel = 4; // Ground vehicle
     d.flashCfg.debug = 1; // Debug enabled
     d.flashCfg.gnssSatSigConst = 0x0003; // GPS constellation
@@ -165,7 +165,7 @@ TEST(ISDataMappings, MemoryUsageTracking)
     EXPECT_EQ(usage.size(), 1);
 
     // size: 1, adjacent to ser2BaudRate, should merge with existing
-    cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.gpsMinimumElevation, sizeof(d.flashCfg.gpsMinimumElevation));        
+    cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.gnssMinimumElevation, sizeof(d.flashCfg.gnssMinimumElevation));        
     EXPECT_EQ(usage.size(), 1);
 
     // size: 2, adds new
@@ -184,8 +184,8 @@ TEST(ISDataMappings, MemoryUsageTracking)
     cISDataMappings::AppendMemoryUsage(usage, &d.flashCfg.ser1BaudRate, sizeof(d.flashCfg.ser1BaudRate));        
     EXPECT_EQ(usage.size(), 2);
 
-    EXPECT_EQ((void*)usage[0].ptr, (void*)&d.flashCfg.gpsMinimumElevation);
-    EXPECT_EQ(usage[0].size, sizeof(d.flashCfg.gpsMinimumElevation) + sizeof(d.flashCfg.ser2BaudRate));
+    EXPECT_EQ((void*)usage[0].ptr, (void*)&d.flashCfg.gnssMinimumElevation);
+    EXPECT_EQ(usage[0].size, sizeof(d.flashCfg.gnssMinimumElevation) + sizeof(d.flashCfg.ser2BaudRate));
 
     EXPECT_EQ((void*)usage[1].ptr, (void*)&d.flashCfg.ser1BaudRate);
     EXPECT_EQ(usage[1].size, sizeof(d.flashCfg.ser1BaudRate) + 3*sizeof(d.flashCfg.insRotation[0]));
@@ -212,7 +212,7 @@ TEST(ISDataMappings, YamlToDataMemoryUsage)
     std::vector<cISDataMappings::MemoryUsage> usageVec;
 
     YAML::Node cfg = YAML::Node(YAML::NodeType::Map);
-    cfg["gpsMinimumElevation"] = 0.1;
+    cfg["gnssMinimumElevation"] = 0.1;
     cfg["insRotation"] = YAML::Load("[0.1, 0.2, 0.3]");
     cfg["ser2BaudRate"] = 9600;
     cfg["ser1BaudRate"] = 115200;
@@ -233,8 +233,8 @@ TEST(ISDataMappings, YamlToDataMemoryUsage)
     // PrintUsageVec(usageVec);
     EXPECT_EQ(usageVec.size(), 2);
     // Group 1:    
-    EXPECT_EQ(usageVec[0].ptr, reinterpret_cast<uint8_t*>(&d.flashCfg.gpsMinimumElevation));
-    EXPECT_EQ(usageVec[0].size, sizeof(d.flashCfg.gpsMinimumElevation) + sizeof(d.flashCfg.ser2BaudRate));
+    EXPECT_EQ(usageVec[0].ptr, reinterpret_cast<uint8_t*>(&d.flashCfg.gnssMinimumElevation));
+    EXPECT_EQ(usageVec[0].size, sizeof(d.flashCfg.gnssMinimumElevation) + sizeof(d.flashCfg.ser2BaudRate));
     // Group 2:
     EXPECT_EQ(usageVec[1].ptr, reinterpret_cast<uint8_t*>(&d.flashCfg.ser1BaudRate));
     EXPECT_EQ(usageVec[1].size, sizeof(d.flashCfg.ser1BaudRate) + 3 * sizeof(d.flashCfg.insRotation[0]));
@@ -312,9 +312,9 @@ TEST(ISDataMappings, DidBufferToStringToDidBuffer)
     d.flashCfg.insOffset[0] = 0.1f; // X offset
     d.flashCfg.insOffset[1] = 0.2f; // Y offset
     d.flashCfg.insOffset[2] = 0.3f; // Z offset
-    d.flashCfg.gps1AntOffset[0] = 0.01f; // X antenna offset
-    d.flashCfg.gps1AntOffset[1] = 0.02f; // Y antenna offset
-    d.flashCfg.gps1AntOffset[2] = 0.03f; // Z antenna offset
+    d.flashCfg.gnss1AntOffset[0] = 0.01f; // X antenna offset
+    d.flashCfg.gnss1AntOffset[1] = 0.02f; // Y antenna offset
+    d.flashCfg.gnss1AntOffset[2] = 0.03f; // Z antenna offset
     d.flashCfg.dynamicModel = 4; // Ground vehicle
     d.flashCfg.debug = 1; // Debug enabled
     d.flashCfg.gnssSatSigConst = 0x0003; // GPS constellation

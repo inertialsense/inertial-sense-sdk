@@ -56,8 +56,8 @@ struct sTimeMs
 {
     uint32_t pimu;
     uint32_t ins1;
-    uint32_t gpsPos;
-    uint32_t gpsVel;
+    uint32_t gnssPos;
+    uint32_t gnssVel;
 
     uint32_t nmeaPImu;
     uint32_t nmeaIns1;
@@ -214,7 +214,7 @@ bool GenerateGpsPos(test_message_t &msg, gnss_pos_t &gps, int i, float f, bool i
         return false;
     }
 
-    if (!periodCheck(s_msgTimeMs.gpsPos, s_gpsPeriodMs))
+    if (!periodCheck(s_msgTimeMs.gnssPos, s_gpsPeriodMs))
     {   // Not time yet
         return false;
     }
@@ -235,7 +235,7 @@ gps.pDop                = fabsf(f);
 gps.towOffset           = f;
 gps.leapS               = C_GPS_LEAP_SECONDS;
 
-    msg.data.gpsPos = gps;
+    msg.data.gnssPos = gps;
     msg.dataHdr.id = DID_GNSS1_POS;
     msg.dataHdr.size = sizeof(gnss_pos_t);
     return true;
@@ -250,7 +250,7 @@ bool GenerateGpsVel(test_message_t &msg, gnss_vel_t &gps, int i, float f, bool i
         return false;
     }
 
-    if (!periodCheck(s_msgTimeMs.gpsVel, s_gpsPeriodMs))
+    if (!periodCheck(s_msgTimeMs.gnssVel, s_gpsPeriodMs))
     {   // Not time yet
         return false;
     }
@@ -262,7 +262,7 @@ bool GenerateGpsVel(test_message_t &msg, gnss_vel_t &gps, int i, float f, bool i
     gps.vel[2] = f*34.56f;
     gps.sAcc = fabsf(f);
 
-    msg.data.gpsVel = gps;
+    msg.data.gnssVel = gps;
     msg.dataHdr.id = DID_GNSS1_VEL;
     msg.dataHdr.size = sizeof(gnss_vel_t);
     return true;
@@ -315,7 +315,7 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
         return true;
     }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gpsPos))
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gnssPos))
     {   
         msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
         msg.ptype = _PTYPE_NMEA;
@@ -323,14 +323,14 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
         return true;
     }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gpsPos))
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gnssPos))
     {   
         msg.pktSize = nmea_gga((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
         msg.ptype = _PTYPE_NMEA;
         return true;
     }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaGpsPos, s_msgTimeMs.gpsPos))
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaGpsPos, s_msgTimeMs.gnssPos))
     {
         msg.pktSize = nmea_pgpsp((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos, s_gpsVel);
         msg.ptype = _PTYPE_NMEA;
@@ -683,7 +683,7 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
             {
                 DEBUG_PRINT("ADDING REVERSAL: \n");
                 s_timeMs -= s_gpsPeriodMs;
-                s_msgTimeMs.gpsPos = 0;
+                s_msgTimeMs.gnssPos = 0;
                 s_msgTimeMs.ins1 = 0;
                 s_msgTimeMs.nmeaGpsPos = 0;
                 s_msgTimeMs.nmeaZda = 0;

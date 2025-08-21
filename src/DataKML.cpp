@@ -91,10 +91,10 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
         case DID_GNSS1_POS:
         case DID_GNSS1_RCVR_POS:
         case DID_GNSS2_POS:
-            data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
+            data = sKmlLogData(d.gnssPos.timeOfWeekMs, d.gnssPos.lla);
             break;
         case DID_GNSS1_RTK_POS:
-            data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
+            data = sKmlLogData(d.gnssPos.timeOfWeekMs, d.gnssPos.lla);
             break;
     }
 

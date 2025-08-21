@@ -181,7 +181,7 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
         }
     }
 
-    // Replace each match with quoted version.  This regex matches unquoted keys like: gps1AntOffset[0] or myField[12]
+    // Replace each match with quoted version.  This regex matches unquoted keys like: gnss1AntOffset[0] or myField[12]
     static const std::regex keyWithIndexRegex(R"((\{[^{}]*?)\b([A-Za-z_][A-Za-z0-9_]*\[\d+\])(?=\s*:))");
     s = std::regex_replace(s, keyWithIndexRegex, "$1\"$2\"");
     
@@ -196,7 +196,7 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
         return false;
     }
 
-    // Convert indexed keys to sequences i.e. {gps1AntOffset[0]: 1.5, gps1AntOffset[1]: 2.5} becomes {gps1AntOffset: [1.5, 2.5]}
+    // Convert indexed keys to sequences i.e. {gnss1AntOffset[0]: 1.5, gnss1AntOffset[1]: 2.5} becomes {gnss1AntOffset: [1.5, 2.5]}
     ConvertIndexedKeysToSequences(node);
 
     g_commandLineOptions.datasets.clear();
@@ -1142,8 +1142,8 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GNSS1_POS                                    # Return specific DIDs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"   # Return portion of two DIDs" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << endlbOff;
@@ -1207,8 +1207,8 @@ void cltool_outputUsage()
     cout << "                                            " << boldOff << "           -get \"{DID_INS_1,DID_GNSS1_POS}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"" << endlbOn;
     cout << "    -set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
-    cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
-    cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gps1AntOffset[2]: 1.2}}\"" << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;

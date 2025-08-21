@@ -271,7 +271,7 @@ enum eInsStatusFlags
     /** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
     INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL = (int)0x00800000,
 
-    /** GNSS navigation fix type (see eGpsNavFixStatus) */
+    /** GNSS navigation fix type (see eGnssNavFixStatus) */
     INS_STATUS_GNSS_NAV_FIX_MASK                 = (int)0x03000000,
     INS_STATUS_GNSS_NAV_FIX_OFFSET               = 24,
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)    (((insStatus)&INS_STATUS_GNSS_NAV_FIX_MASK)>>INS_STATUS_GNSS_NAV_FIX_OFFSET)
@@ -307,9 +307,9 @@ enum eInsStatusFlags
 };
 
 /** GNSS navigation fix type */
-/* NOTE: If you modify this enum, please also modify the eGpsNavFixStatus enum
+/* NOTE: If you modify this enum, please also modify the eGnssNavFixStatus enum
  *       in IS-src/python/src/ci_hdw/data_sets.py */
-enum eGpsNavFixStatus
+enum eGnssNavFixStatus
 {
     GNSS_NAV_FIX_NONE                           = (int)0x00000000,
     GNSS_NAV_FIX_POSITIONING_3D                 = (int)0x00000001,
@@ -441,7 +441,7 @@ enum eSysStatusFlags
 #define GNSS_THRESH_S_ACC           2.0f
 
 /** GNSS Status */
-enum eGpsStatus
+enum eGnssStatus
 {
     // TODO: THIS FIELD WILL END OF LIFE IN PROTOCOL 3
     // PLEASE USE gnss_pos_t.satsUsed for all new development
@@ -498,7 +498,7 @@ enum eGpsStatus
     GNSS_STATUS_FLAGS_UNUSED_4                      = (int)0x80000000,
 };
 
-enum eGpsStatus2
+enum eGnssStatus2
 {
     GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT     = (uint8_t) 0x01,
     GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED            = (uint8_t) 0x02,
@@ -846,7 +846,7 @@ typedef struct PACKED
 /** (DID_IMU, DID_REFERENCE_IMU) Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
-    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gps.towOffset */
+    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gnss.towOffset */
     double      time;
 
     /** IMU Status (eImuStatus) */
@@ -860,7 +860,7 @@ typedef struct PACKED
 /** (DID_IMU3_UNCAL) Dual Inertial Measurement Units (IMUs) data */
 typedef struct PACKED
 {
-    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gps.towOffset */
+    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gnss.towOffset */
     double                  time;
 
     /** IMU Status (eImuStatus) */
@@ -875,7 +875,7 @@ typedef struct PACKED
 /** (DID_MAGNETOMETER) Magnetometer sensor data */
 typedef struct PACKED
 {
-    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gps.towOffset */
+    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gnss.towOffset */
     double                  time;
     
     /** Magnetometers */
@@ -886,7 +886,7 @@ typedef struct PACKED
 /** (DID_BAROMETER) Barometric pressure sensor data */
 typedef struct PACKED
 {
-    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gps.towOffset */
+    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gnss.towOffset */
     double                  time;
     
     /** Barometric pressure in kilopascals */
@@ -906,7 +906,7 @@ typedef struct PACKED
 /** (DID_PIMU, DID_REFERENCE_PIMU) Preintegraed IMU (a.k.a. Coning and Sculling integral) in body/IMU frame. */
 typedef struct PACKED
 {
-    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gps.towOffset */
+    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gnss.towOffset */
     double                  time;
 
     /** Integral period in seconds for delta theta and delta velocity.  This is configured using DID_FLASH_CONFIG.startupNavDtMs. */
@@ -1014,7 +1014,7 @@ typedef struct PACKED
     /** GNSS time of week (since Sunday morning) in milliseconds */
     uint32_t                timeOfWeekMs;
 
-    /** (see eGpsStatus) GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
+    /** (see eGnssStatus) GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
     uint32_t                status;
 
     /** Position in ECEF {x,y,z} (m) */
@@ -1050,7 +1050,7 @@ typedef struct PACKED
     /** Standard deviation of cnoMean over past 5 seconds (dBHz x10) */
     uint8_t                 cnoMeanSigma;
 
-    /** (see eGpsStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused */
+    /** (see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused */
     uint8_t                 status2;
 
 } gnss_pos_t;
@@ -1068,7 +1068,7 @@ typedef struct PACKED
     /** Speed accuracy in meters / second */
     float                    sAcc;
     
-    /** (see eGpsStatus) GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
+    /** (see eGnssStatus) GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
     uint32_t                status;
 } gnss_vel_t;
 
@@ -1260,7 +1260,7 @@ typedef struct PACKED
     gnss_sig_sv_t            sig[MAX_NUM_SAT_SIGNALS];    
 } gnss_sig_t;
 
-typedef uint8_t         gps_extension_ver_t[30];
+typedef uint8_t         gnss_extension_ver_t[30];
 #define GNSS_VER_NUM_EXTENSIONS    6
 /** (DID_GNSS1_VERSION) GNSS version strings */
 typedef struct PACKED
@@ -1270,7 +1270,7 @@ typedef struct PACKED
     /** Hardware version */
     uint8_t                 hwVersion[10];        
     /** Extension 30 bytes array description  */
-    gps_extension_ver_t     extension[GNSS_VER_NUM_EXTENSIONS];        
+    gnss_extension_ver_t     extension[GNSS_VER_NUM_EXTENSIONS];        
 } gnss_version_t;
 
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
@@ -1327,7 +1327,7 @@ typedef struct PACKED
     int             accel_motion;
     int             rot_motion;
     int             zero_vel;
-    int             ahrs_gps_cnt;       // Counter of sequential valid GNSS data (for switching from AHRS to navigation)
+    int             ahrs_gnss_cnt;       // Counter of sequential valid GNSS data (for switching from AHRS to navigation)
     float           hdg_err;
     int             hdg_coarse;         // Flag whether initial attitude error converged
     int             hdg_aligned;        // Flag whether initial attitude error converged
@@ -1384,7 +1384,7 @@ typedef struct PACKED
 /** (DID_SYS_SENSORS) Output from system sensors */
 typedef struct PACKED
 {
-    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gps.towOffset */
+    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gnss.towOffset */
     double                  time;
 
     /** Temperature in Celsius */
@@ -1728,7 +1728,7 @@ typedef struct PACKED
 // (DID_SENSORS_TC_BIAS)
 typedef struct PACKED
 {
-    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gps.towOffset */
+    /** Time since boot up in seconds.  Convert to GNSS time of week by adding gnss.towOffset */
     double                  time;                                       // Units only apply for calibrated data
 
     sensors_mpu_t           mpu[NUM_IMU_DEVICES];
@@ -3487,7 +3487,7 @@ typedef struct PACKED
     float                   insOffset[3];
 
     /** X,Y,Z offset in meters in Sensor Frame to GNSS 1 antenna. */
-    float                   gps1AntOffset[3];
+    float                   gnss1AntOffset[3];
  
     /** INS dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GNSS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t                 dynamicModel;
@@ -3523,7 +3523,7 @@ typedef struct PACKED
     uint32_t                platformConfig;
 
     /** X,Y,Z offset in meters in Sensor Frame origin to GNSS 2 antenna. */
-    float                   gps2AntOffset[3];
+    float                   gnss2AntOffset[3];
 
     /** Euler (roll, pitch, yaw) rotation in radians from INS Sensor Frame to Intermediate ZeroVelocity Frame.  Order applied: heading, pitch, roll. */
     float                   zeroVelRotation[3];
@@ -3532,7 +3532,7 @@ typedef struct PACKED
     float                   zeroVelOffset[3];
 
     /** (sec) User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.  */
-    float                   gpsTimeUserDelay;
+    float                   gnssTimeUserDelay;
 
     /** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
     float                   magDeclination;
@@ -3550,7 +3550,7 @@ typedef struct PACKED
     uint32_t                sensorConfig;
 
     /** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
-    float                   gpsMinimumElevation;
+    float                   gnssMinimumElevation;
 
     /** Serial port 2 baud rate in bits per second */
     uint32_t                ser2BaudRate;
@@ -3800,7 +3800,7 @@ typedef struct
     int32_t glomodear;
 
     /** GNSS AR mode (0:off,1:on) */
-    int32_t gpsmodear;
+    int32_t gnssmodear;
 
     /** SBAS AR mode (0:off,1:on) */
     int32_t sbsmodear;
@@ -4109,10 +4109,10 @@ typedef struct
     /** satellite age of operation */
     int32_t age;
 
-    /** Ephemeris reference epoch in seconds within the week in GPS time gpst (s) */
+    /** Ephemeris reference epoch in seconds within the week in GNSS time gnsst (s) */
     gtime_t toe;
 
-    /** message frame time in gpst (s) */
+    /** message frame time in gnsst (s) */
     gtime_t tof;
 
     /** satellite position (ecef) (m) */
@@ -4184,7 +4184,7 @@ typedef struct
     /** as and sv config */
     int32_t svconf;
 
-    /* GPS/QZS: gps week, GAL: galileo week */
+    /* GPS/QZS: gnss week, GAL: galileo week */
     int32_t week;
 
     /* Toa */
@@ -4289,7 +4289,7 @@ typedef struct PACKED
     /** Accuracy of baseToRoverHeading. (rad) */
     float                   baseToRoverHeadingAcc;
 
-    /** (see eGpsStatus) GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
+    /** (see eGnssStatus) GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
     uint32_t                status;
     
 } gnss_rtk_rel_t;
@@ -4326,11 +4326,11 @@ typedef struct PACKED
     
 
 
-    /** Rover gps observation element counter */
-    uint32_t                roverGpsObservationCount;
+    /** Rover gnss observation element counter */
+    uint32_t                roverGnssObservationCount;
 
-    /** Base station gps observation element counter */
-    uint32_t                baseGpsObservationCount;
+    /** Base station gnss observation element counter */
+    uint32_t                baseGnssObservationCount;
 
     /** Rover glonass observation element counter */
     uint32_t                roverGlonassObservationCount;
@@ -4358,11 +4358,11 @@ typedef struct PACKED
     /** Base station qzs observation element counter */
     uint32_t                baseQzsObservationCount;
 
-    /** Rover gps ephemeris element counter */
-    uint32_t                roverGpsEphemerisCount;
+    /** Rover gnss ephemeris element counter */
+    uint32_t                roverGnssEphemerisCount;
 
-    /** Base station gps ephemeris element counter */
-    uint32_t                baseGpsEphemerisCount;
+    /** Base station gnss ephemeris element counter */
+    uint32_t                baseGnssEphemerisCount;
 
 
     /** Rover glonass ephemeris element counter */
@@ -4462,7 +4462,7 @@ typedef union PACKED
     /** Byte buffer */
     uint8_t             buf[GNSS_RAW_MESSAGE_BUF_SIZE];
 
-} uGpsRawData;
+} uGnssRawData;
 
 /** Message wrapper for DID_GNSS1_RAW, DID_GNSS2_RAW, and DID_GNSS_BASE_RAW.  The contents of data can vary for this message and are determined by `dataType` field. */
 typedef struct PACKED
@@ -4480,7 +4480,7 @@ typedef struct PACKED
     uint8_t reserved;
 
     /** Interpret based on dataType (see eRawDataType) */    
-    uGpsRawData data;
+    uGnssRawData data;
 } gnss_raw_t;
 
 // (DID_GNSS1_TIMEPULSE)
@@ -4490,7 +4490,7 @@ typedef struct
     double      towOffset;
 
     /*! (s)    Week seconds for next timepulse (from start of GNSS week) */
-    double      towGps;
+    double      towGnss;
 
     /*! (s)    Local MCU week seconds */
     double      timeMcu;
@@ -4630,10 +4630,10 @@ typedef struct
     uint32_t                startupGNSSDtMs;
 
     /** X,Y,Z offset in meters in Sensor Frame to GNSS 1 antenna. */
-    float                   gps1AntOffset[3];
+    float                   gnss1AntOffset[3];
 
     /** X,Y,Z offset in meters in Sensor Frame to GNSS 2 antenna. */
-    float                   gps2AntOffset[3];
+    float                   gnss2AntOffset[3];
  
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t                gnssSatSigConst;
@@ -4648,10 +4648,10 @@ typedef struct
     uint32_t                gnssTimeSyncPeriodMs;
 
     /** (sec) User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.  */
-    float                   gpsTimeUserDelay;
+    float                   gnssTimeUserDelay;
 
     /** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
-    float                   gpsMinimumElevation;
+    float                   gnssMinimumElevation;
 
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t                RTKCfgBits;
@@ -5740,13 +5740,13 @@ typedef union PACKED
     ground_vehicle_t            groundVehicle;
     pos_measurement_t           posMeasurement;
     pimu_t                      pImu;
-    gnss_pos_t                   gpsPos;
-    gnss_vel_t                   gpsVel;
-    gnss_sat_t                   gpsSat;
-    gnss_sig_t                   gpsSig;
-    gnss_version_t               gpsVer;
-    gnss_rtk_rel_t               gpsRtkRel;
-    gnss_rtk_misc_t              gpsRtkMisc;
+    gnss_pos_t                  gnssPos;
+    gnss_vel_t                  gnssVel;
+    gnss_sat_t                  gnssSat;
+    gnss_sig_t                  gnssSig;
+    gnss_version_t              gnssVer;
+    gnss_rtk_rel_t              gnssRtkRel;
+    gnss_rtk_misc_t             gnssRtkMisc;
     inl2_states_t               inl2States;
     inl2_ned_sigma_t            inl2NedSigma;
     nvm_flash_cfg_t             flashCfg;
@@ -5755,7 +5755,7 @@ typedef union PACKED
     sys_sensors_t               sysSensors;
     rtos_info_t                 rtosInfo;
     gpx_rtos_info_t             gRtosInfo;
-    gnss_raw_t                   gpsRaw;
+    gnss_raw_t                  gnssRaw;
     sys_sensors_adc_t           sensorsAdc;
     rmc_t                       rmc;
     evb_status_t                evbStatus;
@@ -5957,7 +5957,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p);
 /****************************************
  * PROPOSED CHANGES FOR PROTOCOL IS V3.0
  * 
- * - Remove GNSS_STATUS_NUM_SATS_USED_MASK bits in eGpsStatus this is reported in satsUsed in gnss_pos_t.
+ * - Remove GNSS_STATUS_NUM_SATS_USED_MASK bits in eGnssStatus this is reported in satsUsed in gnss_pos_t.
  * - Move spoofing/jamming status into gnss_pos_t.status and reclaim gnss_pos_t.status2 as resevered.
  * - Change $INFO to conform to NMEA 0183 standard. $INFO is a proprietary message and should start with $P and have max of 79 characters. see SN-6231
  * 
