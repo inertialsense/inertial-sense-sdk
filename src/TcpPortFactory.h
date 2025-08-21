@@ -43,7 +43,9 @@ public:
 
 private:
     TcpPortFactory() {
+#ifdef PLATFORM_IS_LINUX
         signal(SIGPIPE, SIG_IGN); // ignore broken pipes
+#endif
     };
     ~TcpPortFactory() = default;
 };

@@ -71,8 +71,10 @@ int tcpPortOpen(port_handle_t port) {
     }
 
     // Disable SIGPIPE on socket
+#ifdef PLATFORM_IS_LINUX
     int set = 1;
     setsockopt(tcpPort->socket, SOL_SOCKET, MSG_NOSIGNAL, (void *)&set, sizeof(int));
+#endif
 
     // Connect socket to remote
     int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.storage));
@@ -345,7 +347,9 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     tcpPortSetBlocking(port, tcpPort->blocking);
 
     // Receive data from the socket
-    errno = 0;
+#ifdef PLATFORM_IS_LINUX
+    errno = 0;      // reset errno, so we make sure we're not looking at stale errors
+#endif
     ssize_t retval = send(tcpPort->socket, buf, len, 0);
     if (retval < 0) {
         if (errno == EPIPE)

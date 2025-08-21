@@ -861,7 +861,7 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
     {
         int offset = static_cast<int>(usage.ptr - newData);
         std::cout << "Sending " << cISDataMappings::DataName(flashCfgDid) << ": size " << usage.size << ", offset " << offset << std::endl;
-        failure |= SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset);
+        failure |= (SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset) != 0);   // SendData() returns 0 on success
 
         if (!failure)
         {
