@@ -131,7 +131,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
         if (device && device->isConnected() && device->hasDeviceInfo()) {
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl mode.", device->getIdAsString().c_str());
+                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 
                 for (int retry = 3; retry > 0; retry--) {
                     eImageSignature devSig;
@@ -603,12 +603,13 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     // send the "reboot to program mode" command and the device should start in program mode
     int retry = 5;
     while (retry-- && portIsOpened(device->port) && !portError(device->port)) {
+        fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Sending 'BOOT UP' command.");
         int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7", 15);
         if (writeCnt == 15) {
             for (int i = 0; i < 3; i++)
                 portWrite(device->port, (unsigned char *) "\r\n", 2);
         } else if (writeCnt < 0) {
-            // write error?? is likely because the port closed
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Failed to send 'JUMP-TO-APP' command to serial port: %s [%d]", portName(device->port), writeCnt);
             break;
         }
         SLEEP_MS(10);
@@ -622,8 +623,8 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
         COMM_PORT(device->port)->flags &= ~COMM_PORT_FLAG__EXPLICIT_READ;
     }
 
-    // device->devInfo = {};
     if (!keepPortOpen) {
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
         device->disconnect();
     }
     return (retry > 0);

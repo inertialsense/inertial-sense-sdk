@@ -19,6 +19,7 @@
 #endif
 
 #include "util/util.h"
+#include "ISUtilities.h"
 
 #include "PortManager.h"
 #include "serialPort.h"
@@ -84,13 +85,34 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
     const char* portStr = portName(port);
     const char* safeErrMsg = errMsg ? errMsg : "";
-    // Split the printf into two calls (helps avoid inlining inference)
-    printf("%s :: Error %d : ", portStr, errCode);
-    printf("%s\n", safeErrMsg);
+
+    static int lastErrorCode = 0;       // the previous error code
+    static int repeatCount = 0;         // number of time the same code has repeated
+    static uint32_t lastErrorMs = 0;    // the time when the lastErrorCode changed to the current error code
+
+    if (errCode != lastErrorCode) {
+        repeatCount = 0;
+        lastErrorMs = current_timeMs();
+
+        // Split the printf into two calls (helps avoid inlining inference)
+        printf("%s :: Error %d : ", portStr, errCode);
+        printf("%s\n", safeErrMsg);
+    } else {
+        repeatCount++;
+        // Split the printf into two calls (helps avoid inlining inference)
+        printf("%s :: Error %d : ", portStr, errCode);
+        printf("%s (%d count)\n", safeErrMsg, repeatCount);
+
+        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount >= 10)){
+            // any error which repeats for more than 30 seconds, and more than 10 times, close & invalidate
+            portClose(port);
+            portInvalidate(port);
+            return 0;
+        }
+    }
 
     // decide which of these should result in a port-closure, vs a port invalid, vs nothing...
     switch (errCode) {
-
         // close but don't invalidate
         case EIO:       /* I/O error */
         case ENXIO:     /* No such device or address */
