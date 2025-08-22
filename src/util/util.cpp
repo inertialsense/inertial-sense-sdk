@@ -358,7 +358,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
 
     // These are a list of Regex patterns that match different components of a firmware string;
     // these MUST be in order of the most restrictive first, and least restrictive last, otherwise the least restrictive will consume everything.
-    static std::vector<std::regex> componentPatterns = {
+    static const std::vector<std::regex> componentPatterns = {
         std::regex(R"(SN(\d+)[:]?)"),                           //!< 0, serial number
         std::regex(R"((fw|v)([\d.]+)(-([\w]+)\.([\d]+))?)"),    //!< 1, firmware version w/ optional release type
         std::regex(R"((\d){4}-(\d){1,2}-(\d){1,2})"),           //!< 2, build date
@@ -714,7 +714,7 @@ uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2)
 }
 
 bool utils::validDomainName(const std::string& domainName) {
-    std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
+    static const std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
     std::smatch match;
     return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
 }

@@ -75,7 +75,7 @@ bool ISDevice::step() {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
 
     if (!hasDeviceInfo()) {
-        validateAsync(30000);
+        validateAsync();
     } else if (fwUpdater) {
         fwUpdate();
     } else {

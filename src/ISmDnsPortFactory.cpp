@@ -215,8 +215,8 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
     if (!uriPath.empty()) {
         int major = 0; // 12 bits
         int minor = 0; // 20 bits
-        std::regex regexp1(R"(^([0-9]+):([0-9]+)$)");
-        std::regex regexp2(R"(^\/dev\/(.*)$)");
+        static const std::regex regexp1(R"(^([0-9]+):([0-9]+)$)");
+        static const std::regex regexp2(R"(^\/dev\/(.*)$)");
         std::smatch match;
 
         if (std::regex_match(uriPath, match, regexp1)) {

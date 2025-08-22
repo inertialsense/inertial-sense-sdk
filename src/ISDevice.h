@@ -536,8 +536,8 @@ public:
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
 
-    bool validate(uint32_t timeout = 3000);
-    int validateAsync(uint32_t timeout = 3000);
+    bool validate(uint32_t timeout = 1000);
+    int validateAsync(uint32_t timeout = 1000);
 
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);

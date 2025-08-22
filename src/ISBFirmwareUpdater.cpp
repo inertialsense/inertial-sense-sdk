@@ -696,6 +696,10 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
         return false;
 
     int count = portRead(device->port, rxWorkBufPtr, ackStr.length());
+    if (count < 0) {
+        return false; // FIXME: handle read errors more appropriately
+    }
+
     rxWorkBufPtr += count;
 
     // we want to have a calculated progress which seems reasonable.
@@ -711,9 +715,9 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
 
     // This loop here looks for our 'ack' string in the rxWorkBuf (a queue), which gets appended
     // to with any received data. Any data which is not our ack string gets pulled from the start
-    // of the buffer.  As soon as our act string is found anywhere in the work buffer, we will
+    // of the buffer.  As soon as our ack string is found anywhere in the work buffer, we will
     // denote our progress at 100%, and return true.
-    while ((size_t)(rxWorkBufPtr - rxWorkBuf) >= ackStr.length()) {
+    while ((rxWorkBufPtr - rxWorkBuf) >= (int)ackStr.length()) {
         if (memcmp(rxWorkBuf, ackStr.c_str(), ackStr.length()) == 0) {
             rxWorkBufPtr = rxWorkBuf;
             memset(rxWorkBuf, 0, sizeof(rxWorkBuf));
