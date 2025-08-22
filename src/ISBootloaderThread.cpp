@@ -850,6 +850,7 @@ is_operation_result cISBootloaderThread::update(
         return IS_OP_CANCELLED; 
     }
     m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Updating...");
+    SLEEP_MS(2500);
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mgmt_thread_libusb` to update DFU devices
