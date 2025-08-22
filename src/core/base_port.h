@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "types.h"
+#include "ISConstants.h"
 
 /**
  * Port definitions used across the entire product line & SDK.
@@ -64,6 +65,7 @@ typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int 
 typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData);
 // typedef int(*pfnPortSetName)(port_handle_t port, const char* name, unsigned int len);
 
+PUSH_PACK_1
 typedef struct
 {
     uint8_t         portInfo;               //!< High nib port type (see ePortMonPortType) low nib index
@@ -81,6 +83,7 @@ typedef struct
     uint32_t        txBytesDropped;         //!< Tx number of bytes that were not sent
     uint32_t        rxChecksumErrors;       //!< Rx number of errors while reading (not bytes)
 } port_stats_t;
+POP_PACK
 
 
 typedef struct base_port_s {
