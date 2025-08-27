@@ -849,6 +849,8 @@ void InertialSense::DeviceSyncFlashCfg(int devIndex, unsigned int timeMs, uint16
                 {
                     printf("%s upload rejected.\n", cISDataMappings::DataName(flashCfgDid));
                 }
+
+                PrintImxFlashConfig(devIndex);
             }
         }
         else
@@ -1795,6 +1797,31 @@ bool SaveFlashConfigToFile(const std::string& path, int did, std::function<bool(
 }
 
 template<typename T>
+bool printFlashConfig(int did, std::function<bool(T&, int)> getCfg, int pHandle)
+{
+    T flashCfg;
+    if (!getCfg(flashCfg, pHandle))
+    {
+        printf("[ERROR] --- Failed to get flash config\n");
+        return false;
+    }
+
+    YAML::Node yaml;
+    if (!cISDataMappings::DataToYaml(did, reinterpret_cast<const uint8_t*>(&flashCfg), yaml))
+    {
+        printf("[ERROR] --- Failed to serialize flash config to YAML\n");
+        return false;
+    }
+
+    YAML::Emitter emitter;
+    emitter.SetSeqFormat(YAML::Flow);
+    emitter << yaml;
+
+    cout << emitter.c_str();
+    return true;
+}
+
+template<typename T>
 int LoadFlashConfigFromFile(const std::string& path, int did, std::function<bool(T&, int)> setCfg, int pHandle)
 {
     try
@@ -1821,6 +1848,13 @@ int LoadFlashConfigFromFile(const std::string& path, int did, std::function<bool
 bool InertialSense::SaveImxFlashConfigToFile(std::string path, int pHandle)
 {
     return SaveFlashConfigToFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
+        [this](nvm_flash_cfg_t& cfg, int handle) { return ImxFlashConfig(cfg, handle); },
+        pHandle);
+}
+
+bool InertialSense::PrintImxFlashConfig(int pHandle)
+{
+    return printFlashConfig<nvm_flash_cfg_t>(DID_FLASH_CONFIG,
         [this](nvm_flash_cfg_t& cfg, int handle) { return ImxFlashConfig(cfg, handle); },
         pHandle);
 }

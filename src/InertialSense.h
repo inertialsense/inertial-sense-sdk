@@ -610,6 +610,8 @@ public:
     bool SaveImxFlashConfigToFile(std::string path, int pHandle = 0);
     bool SaveGpxFlashConfigToFile(std::string path, int pHandle = 0);
 
+    bool PrintImxFlashConfig(int pHandle=0);
+
     /**
      * @brief LoadFlashConfig
      * @param path - Path to YAML flash config file

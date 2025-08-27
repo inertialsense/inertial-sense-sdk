@@ -1245,6 +1245,7 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
     }
     nvm_flash_cfg_t imxFlashCfg;
     inertialSenseInterface.ImxFlashConfig(imxFlashCfg);
+    inertialSenseInterface.PrintImxFlashConfig();
 
     if (flashCfgString.find('=') != std::string::npos)
     {   // Write to flash config

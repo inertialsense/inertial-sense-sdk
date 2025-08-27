@@ -3411,144 +3411,191 @@ typedef enum
 typedef struct PACKED
 {
     /** Size of group or union, which is nvm_group_x_t + padding */
+    // offset: 0
     uint32_t				size;
 
     /** Checksum, excluding size and checksum */
+    // offset: 4    
     uint32_t                checksum;
 
     /** Manufacturer method for restoring flash defaults */
+    // offset: 8
     uint32_t                key;
 
     /** IMU sample (system input) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
+    // offset: 12 
     uint32_t				startupImuDtMs;
 
     /** Navigation filter (system output) output period in milliseconds set on startup.  Used to initialize sysParams.navOutputPeriodMs. */
+    // offset: 16
     uint32_t				startupNavDtMs;
 
     /** Serial port 0 baud rate in bits per second */
+    // offset: 20
     uint32_t				ser0BaudRate;
 
     /** Serial port 1 baud rate in bits per second */
+    // offset: 24
     uint32_t				ser1BaudRate;
 
     /** Rotation in radians about the X,Y,Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z,Y,X. */
+    // offset: 28,32,36
     float					insRotation[3];
 
     /** X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame. */
+    // offset: 40,44,48
     float					insOffset[3];
 
     /** X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna. */
+    // offset: 52,56,60
     float					gps1AntOffset[3];
  
     /** INS dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    // offset: 64
     uint8_t					dynamicModel;
 
     /** Debug */
+    // offset: 65
     uint8_t					debug;
 
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
+    // offset: 66
     uint16_t				gnssSatSigConst;
 
     /** System configuration bits (see eSysConfigBits). */
+    // offset: 68
     uint32_t				sysCfgBits;
 
     /** Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
+    // offset: 72,80,88
     double                  refLla[3];
 
     /** Last latitude, longitude, HAE (height above ellipsoid) used to aid GPS startup (deg, deg, m).  Updated when the distance between current LLA and lastLla exceeds lastLlaUpdateDistance. */
+    // offset: 96,104,112
     double					lastLla[3];
 
     /** Last LLA GPS time since week start (Sunday morning) in milliseconds */
-    uint32_t				lastLlaTimeOfWeekMs;
+    // offset: 120
+    uint32_t				lastLlaTimeOfWeekMs;//30
 
     /** Last LLA GPS number of weeks since January 6th, 1980 */
+    // offset: 124
     uint32_t				lastLlaWeek;
 
     /** Distance between current and last LLA that triggers an update of lastLla  */
+    // offset: 128
     float					lastLlaUpdateDistance;
 
     /** Hardware interface configuration bits (see eIoConfig). */
+    // offset: 132
     uint32_t				ioConfig;
 
     /** Hardware platform specifying the IMX carrier board type (i.e. RUG, EVB, IG) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.  Bit PLATFORM_CFG_UPDATE_IO_CONFIG is excluded from the flashConfig checksum and from determining whether to upload. */
+    // offset: 136
     uint32_t				platformConfig;
 
     /** X,Y,Z offset in meters in Sensor Frame origin to GPS 2 antenna. */
+    // offset: 140,144,148
     float					gps2AntOffset[3];
 
     /** Euler (roll, pitch, yaw) rotation in radians from INS Sensor Frame to Intermediate ZeroVelocity Frame.  Order applied: heading, pitch, roll. */
+    // offset: 152,156,160
     float					zeroVelRotation[3];
 
     /** X,Y,Z offset in meters from Intermediate ZeroVelocity Frame to Zero Velocity Frame. */
+    // offset: 164,168,172
     float					zeroVelOffset[3];
 
     /** (sec) User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.  */
-    float                   gpsTimeUserDelay;
+    // offset: 176
+    float                   gpsTimeUserDelay;//43
 
     /** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
+    // offset: 180
     float                   magDeclination;
 
     /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
+    // offset: 184
     uint32_t				gpsTimeSyncPeriodMs;
     
     /** GPS measurement (system input) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
+    // offset: 188
     uint32_t				startupGPSDtMs;
     
     /** RTK configuration bits (see eRTKConfigBits). */
+    // offset: 192
     uint32_t				RTKCfgBits;
 
     /** Sensor config to specify the full-scale sensing ranges and output rotation for the IMU and magnetometer (see eSensorConfig) */
+    // offset: 196
     uint32_t                sensorConfig;
 
     /** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
+    // offset: 200
     float                   gpsMinimumElevation;
 
     /** Serial port 2 baud rate in bits per second */
+    // offset: 204
     uint32_t				ser2BaudRate;
 
     /** Wheel encoder: euler angles describing the rotation from imu to left wheel */
+    // offset: 208
     wheel_config_t          wheelConfig;
 
 	/** Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection. */
+    // offset: 252
 	float                   magInterferenceThreshold;
 
 	/** Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good. */
+    // offset: 256
 	float                   magCalibrationQualityThreshold;
 
     /** (dBHz) GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution. */
+    // offset: 260
     uint8_t                 gnssCn0Minimum;
 
     /** (dBHz) GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum. */
+    // offset: 261
     uint8_t                 gnssCn0DynMinOffset;
 
     /** IMU gyro fault rejection threshold low */
+    // offset: 262
     uint8_t                 imuRejectThreshGyroLow;
 
     /** IMU gyro fault rejection threshold high */
+    // offset: 263
     uint8_t                 imuRejectThreshGyroHigh;
 
     /** (ms) IMU shock detection latency.  Time used for EKF rewind to prevent shock from influencing EKF estimates.  */
+    // offset: 264
     uint8_t                 imuShockDetectLatencyMs;
 
     /** (ms) IMU shock rejection latch time.  Time required following detected shock end to disable shock rejection.  */
+    // offset: 265
     uint8_t                 imuShockRejectLatchMs;
 
     /* IMU shock rejection options (see eImuShockOptions) */
+    // offset: 266
     uint8_t                 imuShockOptions;
 
     /* (m/s^2) IMU shock detection. Min acceleration difference between the 3 IMUs to detect the start of a shock. */
+    // offset: 267
     uint8_t                 imuShockDeltaAccHighThreshold;
 
     /* (m/s^2) IMU shock detection. Max acceleration difference between the 3 IMUs within the latch time to detect the end of a shock. */
+    // offset: 268
     uint8_t                 imuShockDeltaAccLowThreshold;
 
     /* (deg/s) IMU shock detection. Min angular rate difference between the 3 IMUs to detect the start of a shock. */
+    // offset: 269
     uint8_t                 imuShockDeltaGyroHighThreshold;
 
     /* (deg/s) IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect the end of a shock. */
+    // offset: 270
     uint8_t                 imuShockDeltaGyroLowThreshold;
 
     /** Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2). */
+    // offset: 271
     uint8_t				    ioConfig2;
 
 } nvm_flash_cfg_t;
