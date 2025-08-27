@@ -49,21 +49,25 @@ extern "C" {
 
 #define UNWRAP_VEC3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
-#define VEC3_ANY_LESS_THAN_X(v,x)	( ((v[0])<(x)) || ((v[1])<(x)) || ((v[2])<(x)) )
-#define VEC3_ANY_GRTR_THAN_X(v,x)	( ((v[0])>(x)) || ((v[1])>(x)) || ((v[2])>(x)) )
-#define VEC3_ALL_LESS_THAN_X(v,x)	( ((v[0])<(x)) && ((v[1])<(x)) && ((v[2])<(x)) )
-#define VEC3_ALL_GRTR_THAN_X(v,x)	( ((v[0])>(x)) && ((v[1])>(x)) && ((v[2])>(x)) )
-#define VEC3_ALL_ZERO(v)			( ((v[0])==(0.0f)) && ((v[1])==(0.0f)) && ((v[2])==(0.0f)) )
-#define VEC3_ANY_ZERO(v)			( ((v[0])==(0.0f)) || ((v[1])==(0.0f)) || ((v[2])==(0.0f)) )
-#define VEC3_ANY_NOT_ZERO(v)		( ((v[0])!=(0.0f)) || ((v[1])!=(0.0f)) || ((v[2])!=(0.0f)) )
+#define VEC3_ANY_LESS_THAN_X(v,x)           ( ((v[0])<(x)) || ((v[1])<(x)) || ((v[2])<(x)) )
+#define VEC3_ANY_GRTR_THAN_X(v,x)           ( ((v[0])>(x)) || ((v[1])>(x)) || ((v[2])>(x)) )
+#define VEC3_ALL_LESS_THAN_X(v,x)           ( ((v[0])<(x)) && ((v[1])<(x)) && ((v[2])<(x)) )
+#define VEC3_ALL_GRTR_THAN_X(v,x)           ( ((v[0])>(x)) && ((v[1])>(x)) && ((v[2])>(x)) )
+#define VEC3_ABS_ALL_LESS_THAN_X(v,x)       ( (fabs(v[0])<(x)) && (fabs(v[1])<(x)) && (fabs(v[2])<(x)) )
+#define VEC3_ABS_ALL_GRTR_THAN_X(v,x)       ( (fabs(v[0])>(x)) && (fabs(v[1])>(x)) && (fabs(v[2])>(x)) )
+#define VEC3_ABSF_ALL_LESS_THAN_X(v,x)      ( (fabsf(v[0])<(x)) && (fabsf(v[1])<(x)) && (fabsf(v[2])<(x)) )
+#define VEC3_ABSF_ALL_GRTR_THAN_X(v,x)      ( (fabsf(v[0])>(x)) && (fabsf(v[1])>(x)) && (fabsf(v[2])>(x)) )
+#define VEC3_ALL_ZERO(v)                    ( ((v[0])==(0.0f)) && ((v[1])==(0.0f)) && ((v[2])==(0.0f)) )
+#define VEC3_ANY_ZERO(v)                    ( ((v[0])==(0.0f)) || ((v[1])==(0.0f)) || ((v[2])==(0.0f)) )
+#define VEC3_ANY_NOT_ZERO(v)                ( ((v[0])!=(0.0f)) || ((v[1])!=(0.0f)) || ((v[2])!=(0.0f)) )
 
-#define INT3_ANY_NOT_ZERO(v)		( ((v[0])!=(0)) || ((v[1])!=(0)) || ((v[2])!=(0)) )
+#define INT3_ANY_NOT_ZERO(v)                ( ((v[0])!=(0)) || ((v[1])!=(0)) || ((v[2])!=(0)) )
 
-#define SET_VEC3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
-#define SET_VEC4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
+#define SET_VEC3_X(v,x)                     { (v[0])=(x); (v[1])=(x); (v[2])=(x); }
+#define SET_VEC4_X(v,x)                     { (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
 
-#define IS_NAN(v)					((v) != (v))
-#define IS_INF(v)                   (isinf(v))
+#define IS_NAN(v)                           ((v) != (v))
+#define IS_INF(v)                           (isinf(v))
 
 // Zero order low-pass filter 
 typedef struct
@@ -76,10 +80,10 @@ typedef struct
 // First order low-pass filter
 typedef struct
 {
-	ixVector3               v;
-	ixVector3               c1;
-	f_t                   alpha;  // alpha gain
-	f_t                   beta;   // beta  gain
+    ixVector3               v;
+    ixVector3               c1;
+    f_t                   alpha;  // alpha gain
+    f_t                   beta;   // beta  gain
 } sLpfO1;
 
 //_____ G L O B A L S ______________________________________________________
@@ -98,8 +102,8 @@ typedef struct
 #endif
 static __inline char is_zero( const f_t * f )
 {
-	const uint32_t *x = (const uint32_t*) f;
-	return (*x == 0) ? 1 : 0;
+    const uint32_t *x = (const uint32_t*) f;
+    return (*x == 0) ? 1 : 0;
 }
 #if !defined(PLATFORM_IS_WINDOWS)
 #pragma GCC diagnostic pop
@@ -382,15 +386,15 @@ void mean_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d 
  */
 static __inline f_t min_Vec3_X(const ixVector3 v )
 {
-	f_t val = v[0];
-	
+    f_t val = v[0];
+    
     if( val > v[1] )
-		val = v[1];
+        val = v[1];
 
     if( val > v[2] )
-		val = v[2];
-		
-	return val;
+        val = v[2];
+        
+    return val;
 }
 
 /* Max of vector elements
@@ -398,15 +402,15 @@ static __inline f_t min_Vec3_X(const ixVector3 v )
  */
 static __inline f_t max_Vec3_X(const ixVector3 v )
 {
-	f_t val = v[0];
-	
+    f_t val = v[0];
+    
     if( val < v[1] )
-		val = v[1];
+        val = v[1];
 
     if( val < v[2] )
-		val = v[2];
-		
-	return val;
+        val = v[2];
+        
+    return val;
 }
 
 /* Max of vector elements
@@ -423,7 +427,7 @@ static __inline f_t abs_Vec3_X(const ixVector3 v )
 
     if( result < val2 )
         result = val2;
-		
+        
     return result;
 }
 
@@ -432,9 +436,9 @@ static __inline f_t abs_Vec3_X(const ixVector3 v )
  */
 static __inline void min_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
 {
-	result[0] = _MIN(v1[0], v2[0]);
-	result[1] = _MIN(v1[1], v2[1]);
-	result[2] = _MIN(v1[2], v2[2]);
+    result[0] = _MIN(v1[0], v2[0]);
+    result[1] = _MIN(v1[1], v2[1]);
+    result[2] = _MIN(v1[2], v2[2]);
 }
 
 /* Max of vector elements
@@ -442,9 +446,9 @@ static __inline void min_Vec3( ixVector3 result, const ixVector3 v1, const ixVec
  */
 static __inline void max_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
 {
-	result[0] = _MAX(v1[0], v2[0]);
-	result[1] = _MAX(v1[1], v2[1]);
-	result[2] = _MAX(v1[2], v2[2]);
+    result[0] = _MAX(v1[0], v2[0]);
+    result[1] = _MAX(v1[1], v2[1]);
+    result[2] = _MAX(v1[2], v2[2]);
 }
 
 /* Zero vector
@@ -452,13 +456,13 @@ static __inline void max_Vec3( ixVector3 result, const ixVector3 v1, const ixVec
  */
 static __inline void zero_Vec2( ixVector2 v )
 {
-	v[0] = 0.0f;
-	v[1] = 0.0f;
+    v[0] = 0.0f;
+    v[1] = 0.0f;
 }
 static __inline void zero_Vec2d( ixVector2d v )
 {
-	v[0] = 0.0;
-	v[1] = 0.0;
+    v[0] = 0.0;
+    v[1] = 0.0;
 }
 
 /* Zero vector
@@ -466,15 +470,15 @@ static __inline void zero_Vec2d( ixVector2d v )
  */
 static __inline void zero_Vec3( ixVector3 v )
 {
-	v[0] = 0.0f;
-	v[1] = 0.0f;
-	v[2] = 0.0f;
+    v[0] = 0.0f;
+    v[1] = 0.0f;
+    v[2] = 0.0f;
 }
 static __inline void zero_Vec3d( ixVector3d v )
 {
-	v[0] = 0.0;
-	v[1] = 0.0;
-	v[2] = 0.0;
+    v[0] = 0.0;
+    v[1] = 0.0;
+    v[2] = 0.0;
 }
 
 /* Zero vector
@@ -482,17 +486,17 @@ static __inline void zero_Vec3d( ixVector3d v )
  */
 static __inline void zero_Vec4( ixVector4 v )
 {
-	v[0] = 0.0f;
-	v[1] = 0.0f;
-	v[2] = 0.0f;
-	v[3] = 0.0f;
+    v[0] = 0.0f;
+    v[1] = 0.0f;
+    v[2] = 0.0f;
+    v[3] = 0.0f;
 }
 static __inline void zero_Vec4d( ixVector4d v )
 {
-	v[0] = 0.0;
-	v[1] = 0.0;
-	v[2] = 0.0;
-	v[3] = 0.0;
+    v[0] = 0.0;
+    v[1] = 0.0;
+    v[2] = 0.0;
+    v[3] = 0.0;
 }
 
 /* Zero vector
@@ -500,10 +504,10 @@ static __inline void zero_Vec4d( ixVector4d v )
 */
 static __inline void zero_VecN( f_t *v, i_t n )
 {
-	for (int i=0; i<n; i++)
-	{
-		v[i] = 0.0f;
-	}
+    for (int i=0; i<n; i++)
+    {
+        v[i] = 0.0f;
+    }
 }
 
 /* Zero matrix
@@ -511,10 +515,10 @@ static __inline void zero_VecN( f_t *v, i_t n )
 */
 static __inline void zero_MatMxN( f_t *M, i_t m, i_t n )
 {
-	for (int i=0; i<(m*n); i++)
-	{
-		M[i] = 0.0f;
-	}
+    for (int i=0; i<(m*n); i++)
+    {
+        M[i] = 0.0f;
+    }
 }
 
 /**
@@ -527,27 +531,27 @@ int mat3x3_IsIdentity(const f_t m[]);
  */
 static __inline void cpy_Vec3_Vec3( ixVector3 result, const ixVector3 v )
 {
-	result[0] = v[0];
-	result[1] = v[1];
-	result[2] = v[2];
+    result[0] = v[0];
+    result[1] = v[1];
+    result[2] = v[2];
 }
 static __inline void cpy_Vec3d_Vec3d( ixVector3d result, const ixVector3d v )
 {
-	result[0] = v[0];
-	result[1] = v[1];
-	result[2] = v[2];
+    result[0] = v[0];
+    result[1] = v[1];
+    result[2] = v[2];
 }
 static __inline void cpy_Vec3d_Vec3( ixVector3d result, const  ixVector3 v )
 {
-	result[0] = (double)v[0];
-	result[1] = (double)v[1];
-	result[2] = (double)v[2];
+    result[0] = (double)v[0];
+    result[1] = (double)v[1];
+    result[2] = (double)v[2];
 }
 static __inline void cpy_Vec3_Vec3d( ixVector3 result, const ixVector3d v )
 {
-	result[0] = (f_t)v[0];
-	result[1] = (f_t)v[1];
-	result[2] = (f_t)v[2];
+    result[0] = (f_t)v[0];
+    result[1] = (f_t)v[1];
+    result[2] = (f_t)v[2];
 }
 
 /* Copy vector
@@ -555,31 +559,31 @@ static __inline void cpy_Vec3_Vec3d( ixVector3 result, const ixVector3d v )
  */
 static __inline void cpy_Vec4_Vec4( ixVector4 result, const ixVector4 v )
 {
-	result[0] = v[0];
-	result[1] = v[1];
-	result[2] = v[2];
-	result[3] = v[3];
+    result[0] = v[0];
+    result[1] = v[1];
+    result[2] = v[2];
+    result[3] = v[3];
 }
 static __inline void cpy_Vec4d_Vec4d( ixVector4d result, const ixVector4d v )
 {
-	result[0] = v[0];
-	result[1] = v[1];
-	result[2] = v[2];
-	result[3] = v[3];
+    result[0] = v[0];
+    result[1] = v[1];
+    result[2] = v[2];
+    result[3] = v[3];
 }
 static __inline void cpy_Vec4d_Vec4( ixVector4d result, const ixVector4 v )
 {
-	result[0] = (double)v[0];
-	result[1] = (double)v[1];
-	result[2] = (double)v[2];
-	result[3] = (double)v[3];
+    result[0] = (double)v[0];
+    result[1] = (double)v[1];
+    result[2] = (double)v[2];
+    result[3] = (double)v[3];
 }
 static __inline void cpy_Vec4_Vec4d( ixVector4 result, const ixVector4d v )
 {
-	result[0] = (f_t)v[0];
-	result[1] = (f_t)v[1];
-	result[2] = (f_t)v[2];
-	result[3] = (f_t)v[3];
+    result[0] = (f_t)v[0];
+    result[1] = (f_t)v[1];
+    result[2] = (f_t)v[2];
+    result[3] = (f_t)v[3];
 }
 
 /* Copy vector
@@ -587,10 +591,10 @@ static __inline void cpy_Vec4_Vec4d( ixVector4 result, const ixVector4d v )
 */
 static __inline void cpy_VecN_VecN( f_t *result, const f_t *v, i_t n )
 {
-	for (int i=0; i<n; i++)
-	{
-		result[i] = v[i];
-	}
+    for (int i=0; i<n; i++)
+    {
+        result[i] = v[i];
+    }
 }
 
 /* Copy matrix
@@ -598,10 +602,10 @@ static __inline void cpy_VecN_VecN( f_t *result, const f_t *v, i_t n )
 */
 static __inline void cpy_MatMxN( f_t *result, const f_t *M, i_t m, i_t n )
 {
-	for (int i=0; i<(m*n); i++)
-	{
-		result[i] = M[i];
-	}
+    for (int i=0; i<(m*n); i++)
+    {
+        result[i] = M[i];
+    }
 }
 
 /* Copy matrix A(mxn) into result(rxc) matrix, starting at offset_r, offset_c.  Matrix A must fit inside result matrix dimensions.
@@ -657,7 +661,7 @@ static __inline void normalize_Vec2( ixVector2 v )
 static __inline void normalize_Vec3( ixVector3 result, const ixVector3 v )
 {
     // Normalize vector
-	mul_Vec3_X( result, v, RECIPNORM_VEC3(v) );
+    mul_Vec3_X( result, v, RECIPNORM_VEC3(v) );
 }
 
 /*
@@ -670,8 +674,8 @@ static __inline void normalize_Vec4( ixVector4 result, const ixVector4 v )
 }
 static __inline void normalize_Vec4d( ixVector4d result, const ixVector4d v )
 {
-	// Normalize vector
-	mul_Vec4d_X( result, v, RECIPNORM_VEC4D(v) );
+    // Normalize vector
+    mul_Vec4d_X( result, v, RECIPNORM_VEC4D(v) );
 }
 
 /*
@@ -679,9 +683,9 @@ static __inline void normalize_Vec4d( ixVector4d result, const ixVector4d v )
 */
 static __inline int is_equal_Vec2(const ixVector2 v1, const ixVector2 v2)
 {
-	return
-		(v1[0] == v2[0]) &&
-		(v1[1] == v2[1]);
+    return
+        (v1[0] == v2[0]) &&
+        (v1[1] == v2[1]);
 }
 
 /*
@@ -689,10 +693,10 @@ static __inline int is_equal_Vec2(const ixVector2 v1, const ixVector2 v2)
 */
 static __inline int is_equal_Vec3(const ixVector3 v1, const ixVector3 v2)
 {
-	return
-		(v1[0] == v2[0]) &&
-		(v1[1] == v2[1]) &&
-		(v1[2] == v2[2]);
+    return
+        (v1[0] == v2[0]) &&
+        (v1[1] == v2[1]) &&
+        (v1[2] == v2[2]);
 }
 
 /*
@@ -700,11 +704,11 @@ static __inline int is_equal_Vec3(const ixVector3 v1, const ixVector3 v2)
 */
 static __inline int is_equal_Vec4(const ixVector4 v1, const ixVector4 v2)
 {
-	return
-		(v1[0] == v2[0]) &&
-		(v1[1] == v2[1]) &&
-		(v1[2] == v2[2]) &&
-		(v1[3] == v2[3]);
+    return
+        (v1[0] == v2[0]) &&
+        (v1[1] == v2[1]) &&
+        (v1[2] == v2[2]) &&
+        (v1[3] == v2[3]);
 }
 
 /*
@@ -712,9 +716,9 @@ static __inline int is_equal_Vec4(const ixVector4 v1, const ixVector4 v2)
 */
 static __inline void limit_Vec3( ixVector3 v, f_t limit )
 { 	
-	_LIMIT( v[0], limit );
-	_LIMIT( v[1], limit );
-	_LIMIT( v[2], limit );
+    _LIMIT( v[0], limit );
+    _LIMIT( v[1], limit );
+    _LIMIT( v[2], limit );
 }
 
 /*
@@ -722,9 +726,9 @@ static __inline void limit_Vec3( ixVector3 v, f_t limit )
 */
 static __inline void limit2_Vec3( ixVector3 v, f_t min, f_t max )
 {
-	_LIMIT2( v[0], min, max );
-	_LIMIT2( v[1], min, max );
-	_LIMIT2( v[2], min, max );
+    _LIMIT2( v[0], min, max );
+    _LIMIT2( v[1], min, max );
+    _LIMIT2( v[2], min, max );
 }
 
 
@@ -791,18 +795,18 @@ static __inline int isInf_array( f_t *a, int size )
 */
 static __inline int isInf_array_d(double *a, int size)
 {
-	int i;
+    int i;
 
-	double tmp = 1.0l;
-	double inf = 1.0l / (tmp - 1.0l);
+    double tmp = 1.0l;
+    double inf = 1.0l / (tmp - 1.0l);
 
-	for (i = 0; i<size; i++)
-	{
-		if (a[i] == inf)
-			return 1;
-	}
+    for (i = 0; i<size; i++)
+    {
+        if (a[i] == inf)
+            return 1;
+    }
 
-	return 0;
+    return 0;
 }
 
 #if defined(PLATFORM_IS_WINDOWS)
@@ -829,13 +833,13 @@ static __inline int isFinite_array( f_t *a, int size )
 */
 static __inline int isFinite_array_d(double *a, int size)
 {
-	if (isNan_array_d(a, size))
-		return 0;
+    if (isNan_array_d(a, size))
+        return 0;
 
-	if (isInf_array_d(a, size))
-		return 0;
+    if (isInf_array_d(a, size))
+        return 0;
 
-	return 1;
+    return 1;
 }
 
 
@@ -847,33 +851,33 @@ void LPFO0_Vec3( sLpfO0 *lpf, const ixVector3 input );
 // Zero order Low-Pass Filter
 static __inline void O0_LPF_Vec3( ixVector3 result, const ixVector3 input, f_t alph, f_t beta )
 {
-	ixVector3 tmp3;
+    ixVector3 tmp3;
 
-	// val[n+1] = beta*val[n] + alpha*input
-	mul_Vec3_X(		tmp3,	input,	alph );
-	mul_Vec3_X(		result,	result,	beta );
-	add_Vec3_Vec3(  result,	result,	tmp3 );
+    // val[n+1] = beta*val[n] + alpha*input
+    mul_Vec3_X(		tmp3,	input,	alph );
+    mul_Vec3_X(		result,	result,	beta );
+    add_Vec3_Vec3(  result,	result,	tmp3 );
 }
 
 
 // First order Low-Pass Filter
 static __inline void O1_LPF_Vec3( ixVector3 result, const ixVector3 input, ixVector3 c1, f_t alph, f_t beta, f_t dt )
 {
-	ixVector3 tmp3;
+    ixVector3 tmp3;
 
-	// Estimate next models coefficients:			d1 = (input - result) / dt
-	sub_Vec3_Vec3( tmp3, input, result );
-	div_Vec3_X( tmp3, tmp3, dt );
+    // Estimate next models coefficients:			d1 = (input - result) / dt
+    sub_Vec3_Vec3( tmp3, input, result );
+    div_Vec3_X( tmp3, tmp3, dt );
 
-	// LPF these coefficients:						c1 = beta*c1 + alph*d1
-	O0_LPF_Vec3( c1, tmp3, alph, beta );
+    // LPF these coefficients:						c1 = beta*c1 + alph*d1
+    O0_LPF_Vec3( c1, tmp3, alph, beta );
 
-	// Current state estimates:						est = (last result) + c1*dt
-	mul_Vec3_X( tmp3, c1, dt );
-	add_Vec3_Vec3( result, result, tmp3 );
-	
-	// LPF input into state estimates:				result = beta*est + alph*input
-	O0_LPF_Vec3( result, input, alph, beta );	
+    // Current state estimates:						est = (last result) + c1*dt
+    mul_Vec3_X( tmp3, c1, dt );
+    add_Vec3_Vec3( result, result, tmp3 );
+    
+    // LPF input into state estimates:				result = beta*est + alph*input
+    O0_LPF_Vec3( result, input, alph, beta );	
 }
 
 
