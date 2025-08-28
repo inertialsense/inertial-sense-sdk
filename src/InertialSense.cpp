@@ -1560,7 +1560,7 @@ void InertialSense::SavePersistent()
 
 void InertialSense::SoftwareReset()
 {
-    for (auto device : DeviceManager::getInstance()) { device->SoftwareReset(); }
+    for (auto device : DeviceManager::getInstance()) { device->reset(); }
 }
 
 void InertialSense::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)

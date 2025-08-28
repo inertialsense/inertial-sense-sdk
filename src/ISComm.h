@@ -580,13 +580,30 @@ typedef protocol_type_t (*pFnProcessPkt)(void*);
 // broadcast message handler
 // typedef int(*pfnIsCommAsapMsg)(p_data_get_t* req, port_handle_t port);
 
-// InertialSense binary (ISB) data message handler function   - returns 0 if this message was successfully processed by a protocol-specific handler; Do not process it again with the raw callback
+/**
+ * InertialSense binary (ISB) data message handler function
+ * @returns 0 if this message was successfully processed by the handler and should not be processed further;
+ *   any other value will cause the message to be processed by additional handlers (if registered), and may
+ *   cause "duplication of data"-type errors (ie, double accumulation of values, etc).
+ */
 typedef int(*pfnIsCommIsbDataHandler)(void* ctx, p_data_t* data, port_handle_t port);
 
-// Generic message handler function with message pointer and size   - returns 0 if this message was successfully processed by a protocol-specific handler; Do not process it again with the raw callback
+/**
+ * Generic message handler function with message pointer and size - this is used for non ISB messages
+ * such as NMEA, Ublox, and other "packet-like" messages in which the entire message can be reduced to a
+ * byte stream of msgSize length.
+ * @returns 0 if this message was successfully processed by the handler and should not be processed further;
+ *   any other value will cause the message to be processed by additional handlers (if registered), and may
+ *   cause "duplication of data"-type errors (ie, double accumulation of values, etc).
+ */
 typedef int(*pfnIsCommGenMsgHandler)(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port);
 
-// raw packet handler function with is_comm_instance_t
+/**
+ * raw packet handler function with is_comm_instance_t
+ * @returns 0 if this message was successfully processed by the handler and should not be processed further;
+ *   any other value will cause the message to be processed by additional handlers (if registered), and may
+ *   cause "duplication of data"-type errors (ie, double accumulation of values, etc).
+ */
 typedef int(*pfnIsCommHandler)(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 
