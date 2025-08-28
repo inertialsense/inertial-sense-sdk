@@ -327,6 +327,7 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 
     // Reset socket timeout
 #ifdef PLATFORM_IS_WINDOWS
+    const int MSG_NOSIGNAL = 0;
     DWORD tv = 0;
 #else
     struct timeval tv;
