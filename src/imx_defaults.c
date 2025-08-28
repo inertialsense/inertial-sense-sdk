@@ -195,6 +195,7 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     case PLATFORM_CFG_TYPE_NONE:
         break;
         // G8
+    case PLATFORM_CFG_TYPE_EVB2_G2:
     case PLATFORM_CFG_TYPE_IG1_0_G2:
         *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G8<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;

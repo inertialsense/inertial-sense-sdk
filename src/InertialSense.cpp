@@ -1125,8 +1125,6 @@ is_operation_result InertialSense::BootloadFile(
         return IS_OP_ERROR;
     }
 
-    printf("\n\r");
-
     ISBootloader::firmwares_t files;
     files.fw_uINS_3.path = fileName;
     files.bl_uINS_3.path = blFileName;
