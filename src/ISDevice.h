@@ -165,7 +165,10 @@ public:
      * @return true is this ISDevice has a valid, and open port
      */
     bool isConnected() const {
-        return (portIsValid(port) && (portType(port) & PORT_TYPE__COMM)) && portIsOpened(port);
+        bool valid = portIsValid(port);
+        bool comPort = portType(port) & PORT_TYPE__COMM;
+        bool open = portIsOpened(port);
+        return valid && comPort && open;
     }
 
     /**
