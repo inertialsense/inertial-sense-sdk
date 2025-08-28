@@ -1137,6 +1137,8 @@ bool ISDevice::reset() {
             SetSysCmd(SYS_CMD_SOFTWARE_RESET);
             SLEEP_MS(10);
         }
+        disconnect();
+        portClose(port);
         nextResetTime = current_timeMs() + resetRequestThreshold;
         return true;
     }

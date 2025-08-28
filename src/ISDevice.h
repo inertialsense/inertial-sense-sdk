@@ -354,7 +354,9 @@ public:
     int SendNmea(const std::string& nmeaMsg);
     int QueryDeviceInfo() { return SendRaw(NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
     int SavePersistent() { return SendRaw(NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
-    int SoftwareReset() { return SendRaw(NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
+
+    [[deprecated("Use ISDevice::reset() instead")]]
+    int SoftwareReset() { return (int)reset(); }
 
     int SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
     int SetSysCmd(const uint32_t command);

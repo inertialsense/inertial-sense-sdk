@@ -165,13 +165,13 @@ is_operation_result cISBootloaderISB::reboot_up()
     m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
-    if (serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15) == 15) {
+    if (portWrite(m_port, (unsigned char*)":020000040300F7", 15) == 15) {
         for (int i = 0; i < 3; i++)
-            serialPortWrite(m_port, (unsigned char*)"\r\n", 2);
+            portWrite(m_port, (unsigned char*)"\r\n", 2);
     }
-    serialPortFlush(m_port);
+    portFlush(m_port);
     SLEEP_MS(100);
-    serialPortClose(m_port);
+    portClose(m_port);
     return IS_OP_OK;
 }
 
@@ -219,7 +219,8 @@ is_operation_result cISBootloaderISB::reboot_force()
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error in reboot force");
         return IS_OP_ERROR;
     }
-   
+
+    portClose(m_port);
     return IS_OP_OK;
 }
 
@@ -238,14 +239,15 @@ is_operation_result cISBootloaderISB::reboot()
     // restart bootloader command
     if (reboot_force() == IS_OP_OK)
     {
+        portClose(m_port);
         rst_serial_list.push_back(m_sn);
         rst_serial_list_mutex.unlock();
 
         return IS_OP_OK;
     }
 
+    portClose(m_port);
     rst_serial_list_mutex.unlock();
-
     return IS_OP_CLOSED;
 }
 
