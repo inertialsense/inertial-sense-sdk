@@ -887,7 +887,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
         if (device.devInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
             device.gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
         {   // Sync GPX flash config if a GPX present
-            DeviceSyncFlashCfg(i, timeMs, DID_GPX_FLASH_CFG, DID_GPX_STATUS, device.gpxFlashCfgUploadTimeMs, device.gpxFlashCfg.checksum, device.gpxStatus.flashCfgChecksum, device.gpxFlashCfgUploadChecksum);
+        // TODO:DO NOT MERGE THIS CHANGE // DeviceSyncFlashCfg(i, timeMs, DID_GPX_FLASH_CFG, DID_GPX_STATUS, device.gpxFlashCfgUploadTimeMs, device.gpxFlashCfg.checksum, device.gpxStatus.flashCfgChecksum, device.gpxFlashCfgUploadChecksum);
         }
     }
 }
