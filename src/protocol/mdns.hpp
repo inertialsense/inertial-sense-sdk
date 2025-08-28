@@ -182,7 +182,7 @@ public:
         }
 
         bool operator==(const mdns_record_txt_cpp_t &other) const = default;
-        std::string valueAsString() const { return std::string(value.begin(), value.end()); }
+        // std::string valueAsString() const { return std::string(value.begin(), value.end()); }
 #ifdef _WIN32
         mdns_record_txt_cpp_t& operator=(const mdns_record_txt_cpp_t& other) {
             this->key = std::string(other.key);
