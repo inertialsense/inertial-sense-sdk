@@ -15,7 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
-#include "../../src/serialPortPlatform.h"
+#include "../../src/serialPort.h"
 #include "../../src/ISPose.h"
 #include "../../src/ISUtilities.h"
 #include "../../src/protocol_nmea.h"
@@ -69,18 +69,6 @@ int set_configuration(port_handle_t port)
 }
 
 
-int stop_message_broadcasting(port_handle_t port)
-{
-    // Stop all broadcasts on the device
-    if (is_comm_stop_broadcasts_all_ports(port) < 0)
-    {
-        printf("Failed to encode and write stop broadcasts message\r\n");
-        return -3;
-    }
-    return 0;
-}
-
-
 int save_persistent_messages(port_handle_t port)
 {
     system_command_t cfg;
@@ -105,24 +93,6 @@ int enable_message_broadcasting(port_handle_t port)
         return -4;
     }
 
-#if 1
-    // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-    if (is_comm_get_data(port, DID_GPS1_POS, 0, 0, 1) < 0)
-    {
-        printf("Failed to encode and write get GPS message\r\n");
-        return -5;
-    }
-#endif
-
-#if 0
-    // Ask for IMU message at period of 100ms (1ms source period x 100).  This could be as high as 1000 times a second (period multiple of 1)
-    if (is_comm_get_data(port, DID_IMU, 0, 0, 100) < 0)
-    {
-        printf("Failed to encode and write get IMU message\r\n");
-        return -6;
-    }
-#endif
-    return 0;
 }
 
 
@@ -135,39 +105,31 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // STEP 2: Init comm instance
-    is_comm_instance_t comm;
-    uint8_t buffer[2048];
+    // // STEP 2: Init comm instance
+    // is_comm_instance_t comm;
+    // uint8_t buffer[2048];
 
-    // Initialize the comm instance, sets up state tracking, packet parsing, etc.
-    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
-    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
-    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
-
+    // // Initialize the comm instance, sets up state tracking, packet parsing, etc.
+    // is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+    
 
     // STEP 3: Initialize and open serial port
 
     // Initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
     //  you will need to handle the serial port creation, open and reads yourself. In this
     //  case, you do not need to include serialPort.h/.c and serialPortPlatform.h/.c in your project.
-    serialPortPlatformInit(&s_serialPort);
 
-    // Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
-    // you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
-    //  if you are changing baud rates, you only need to do this when you are changing baud rates.
-    if (!serialPortOpen(&s_serialPort, argv[1], IS_BAUDRATE_921600, 1))
-    {
-        printf("Failed to open serial port on com port %s\r\n", argv[1]);
-        return -2;
-    }
+
+    port_handle_t serialPort = (port_handle_t)&s_serialPort;
+    serialPortInit(serialPort, 0, 0);
+    serialPortOpen(serialPort, argv[1], 921600, 1);
+    
+
 
     int error = 0;
 
     // STEP 4: Stop any message broadcasting
-    if ((error = stop_message_broadcasting(&s_serialPort)))
-    {
-        return error;
-    }
+    is_comm_stop_broadcasts_all_ports(serialPort);
 
 
 #if 0    // STEP 5: Set configuration
@@ -177,65 +139,66 @@ int main(int argc, char* argv[])
     }
 #endif
 
-    // STEP 6: Enable message broadcasting
-    if ((error = enable_message_broadcasting(&s_serialPort)))
-    {
-        return error;
-    }
+//     // STEP 6: Enable message broadcasting
+//     if ((error = enable_message_broadcasting(&s_serialPort)))
+//     {
+//         return error;
+//     }
 
-#if 0   // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
-    save_persistent_messages(&serialPort, &comm);
-#endif
+// #if 0   // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
+//     save_persistent_messages(&serialPort, &comm);
+// #endif
 
-    // STEP 8: Handle received data
-    uint8_t inByte;
+//     // STEP 8: Handle received data
+//     uint8_t inByte;
 
-    while (running)
-    {
-        // Read one byte with a 20 millisecond timeout
-        while (serialPortReadCharTimeout(&s_serialPort, &inByte, 20) > 0)
-        {
-            // timeMs = current_timeMs();
-            switch (is_comm_parse_byte(&comm, inByte))
-            {
-            case _PTYPE_INERTIAL_SENSE_DATA:
-                switch (comm.rxPkt.hdr.id)
-                {
-                case DID_INS_1:
-                    handleIns1Message((ins_1_t*)comm.rxPkt.data.ptr);
-                    break;
+//     while (running)
+//     {
+//         s_serialPort.portRead(serialPort, &inByte, 1);
+//         // Read one byte with a 20 millisecond timeout
+//     //     while (serialPortReadCharTimeout(&s_serialPort, &inByte, 20) > 0)
+//     //     {
+//     //         // timeMs = current_timeMs();
+//     //         switch (is_comm_parse_byte(&comm, inByte))
+//     //         {
+//     //         case _PTYPE_INERTIAL_SENSE_DATA:
+//     //             switch (comm.rxPkt.hdr.id)
+//     //             {
+//     //             case DID_INS_1:
+//     //                 handleIns1Message((ins_1_t*)comm.rxPkt.data.ptr);
+//     //                 break;
 
-                case DID_INS_2:
-                    handleIns2Message((ins_2_t*)comm.rxPkt.data.ptr);
-                    break;
+//     //             case DID_INS_2:
+//     //                 handleIns2Message((ins_2_t*)comm.rxPkt.data.ptr);
+//     //                 break;
 
-                case DID_GPS1_POS:
-                    handleGpsMessage((gps_pos_t*)comm.rxPkt.data.ptr);
-                    break;
+//     //             case DID_GPS1_POS:
+//     //                 handleGpsMessage((gps_pos_t*)comm.rxPkt.data.ptr);
+//     //                 break;
 
-                case DID_IMU:
-                    handleImuMessage((imu_t*)comm.rxPkt.data.ptr);
-                    break;
+//     //             case DID_IMU:
+//     //                 handleImuMessage((imu_t*)comm.rxPkt.data.ptr);
+//     //                 break;
 
-                    // TODO: add other cases for other data ids that you care about
-                }
-                break;
+//     //                 // TODO: add other cases for other data ids that you care about
+//     //             }
+//     //             break;
 
-            case _PTYPE_NMEA:
-                switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.dataHdr.size))
-                {
-                case NMEA_MSG_ID_GNGGA:
-                    // Access NMEA message here:
-                    // comm.dataPtr 
-                    // comm.dataHdr.size
-                    break;
-                }
-                break;
+//     //         case _PTYPE_NMEA:
+//     //             switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.dataHdr.size))
+//     //             {
+//     //             case NMEA_MSG_ID_GNGGA:
+//     //                 // Access NMEA message here:
+//     //                 // comm.dataPtr 
+//     //                 // comm.dataHdr.size
+//     //                 break;
+//     //             }
+//     //             break;
 
-            default:
-                break;
-            }
-        }
-    }
+//     //         default:
+//     //             break;
+//     //         }
+//     //     }
+    // }
 }
 
