@@ -133,6 +133,19 @@ public:
     }
 
     /**
+     * Tests if a given ISDevice pointer references a known ISDevice instance
+     * @param device a pointer to a device instance
+     * @return true if the device is a known device, otherwise false
+     */
+    bool contains(ISDevice* device) {
+        for (auto kd : knownDevices) {
+            if (kd.device == device)
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * Removed all previously registered DeviceFactories
      */
     void clearDeviceFactories() { factories.clear(); }

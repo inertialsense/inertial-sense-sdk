@@ -72,7 +72,7 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-    static is_operation_result handshake_sync(port_handle_t port);
+    is_operation_result handshake_sync(port_handle_t port);
 
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
 
@@ -101,6 +101,8 @@ private:
     is_operation_result upload_hex(unsigned char* hexData, int charCount, int* currentOffset, int* currentPage, int* totalBytes, int* verifyCheckSum);
     is_operation_result fill_current_page(int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum);
     is_operation_result download_data(int startOffset, int endOffset);
+
+    bool hasHandshake = false;          // true if we've negotiated a handshake previously on this port/connection
 
     // Verification parameters
     int m_currentPage;

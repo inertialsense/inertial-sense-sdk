@@ -392,7 +392,13 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             newRecord.name = std::string(MDNS_STRING_ARGS(entryName));
             newRecord.rclass = rclass;
             newRecord.ttl = ttl;
-            mdns_record_txt_cpp_t txtRecord = mdns_record_txt_cpp_t(std::string(MDNS_STRING_ARGS(txtbuffer[itxt].key)), std::string(MDNS_STRING_ARGS(txtbuffer[itxt].value)));
+            //mdns_record_txt_cpp_t txtRecord = mdns_record_txt_cpp_t(std::string(MDNS_STRING_ARGS(txtbuffer[itxt].key)), std::string(MDNS_STRING_ARGS(txtbuffer[itxt].value)));
+            std::string key(MDNS_STRING_ARGS(txtbuffer[itxt].key));
+            // std::string value(MDNS_STRING_ARGS(txtbuffer[itxt].value));
+            std::vector<unsigned char> value;
+            for (std::size_t p = 0; p < txtbuffer[itxt].value.length; p++) { value.push_back(txtbuffer[itxt].value.str[p]); }
+
+            mdns_record_txt_cpp_t txtRecord = mdns_record_txt_cpp_t(key, value);
             newRecord.data.txt = txtRecord;
             newRecord.type = (mdns_record_type)rtype;
             responses.insert_or_assign(newRecord, std::chrono::steady_clock::now()-std::chrono::microseconds(100*backtick));

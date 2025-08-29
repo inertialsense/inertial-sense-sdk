@@ -357,7 +357,9 @@ public:
     int SendNmea(const std::string& nmeaMsg);
     int QueryDeviceInfo() { return SendRaw(NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
     int SavePersistent() { return SendRaw(NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
-    int SoftwareReset() { return SendRaw(NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
+
+    [[deprecated("Use ISDevice::reset() instead")]]
+    int SoftwareReset() { return (int)reset(); }
 
     int SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
     int SetSysCmd(const uint32_t command);
@@ -539,8 +541,8 @@ public:
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
 
-    bool validate(uint32_t timeout = 3000);
-    int validateAsync(uint32_t timeout = 3000);
+    bool validate(uint32_t timeout = 1000);
+    int validateAsync(uint32_t timeout = 1000);
 
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);

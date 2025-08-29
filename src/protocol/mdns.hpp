@@ -173,18 +173,20 @@ public:
 
     struct mdns_record_txt_cpp_t {
         std::string key;
-        std::string value;
+        std::vector<unsigned char> value;
 
-        mdns_record_txt_cpp_t() : mdns_record_txt_cpp_t("", "") {} // Delegate to the other constructor.
-        explicit mdns_record_txt_cpp_t(std::string a, std::string b) {
+        mdns_record_txt_cpp_t() : mdns_record_txt_cpp_t("", {}) {} // Delegate to the other constructor.
+        explicit mdns_record_txt_cpp_t(std::string a, std::vector<unsigned char> b) {
             key = std::move(a);
             value = std::move(b);
         }
+
         bool operator==(const mdns_record_txt_cpp_t &other) const = default;
+        std::string valueAsString() const { return std::string(value.begin(), value.end()); }
 #ifdef _WIN32
         mdns_record_txt_cpp_t& operator=(const mdns_record_txt_cpp_t& other) {
             this->key = std::string(other.key);
-            this->value = std::string(other.value);
+            this->value = std::vector(other.value);
             return *this;
         }
 #endif
@@ -318,6 +320,14 @@ public:
     };
     typedef struct mdns_record_cpp_t mdns_record_cpp_t;
 
+    static std::size_t hashVector(const std::vector<unsigned char>& v) {
+        std::size_t seed = v.size();
+        for (int i : v) {
+            seed ^= std::hash<int>()(i) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+
     // We need to write our own hash function to store mdns records in a hashmap
     struct mdns_record_cpp_tHash {
         std::size_t operator()(const mdns::mdns_record_cpp_t& r) const noexcept {
@@ -361,7 +371,7 @@ public:
                     hash1 = hash1 ^ (hash2 << 1);
                 }
             } else if (r.type == MDNS_RECORDTYPE_TXT) {
-                hash2 = std::hash<std::string>{}(r.data.txt.value);
+                hash2 = hashVector(r.data.txt.value);
                 hash1 = hash1 ^ (hash2 << 1);
                 hash2 = std::hash<std::string>{}(r.data.txt.key);
                 hash1 = hash1 ^ (hash2 << 1);

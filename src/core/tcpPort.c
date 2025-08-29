@@ -70,12 +70,6 @@ int tcpPortOpen(port_handle_t port) {
         return tcpPort->socket; // Return error code to calling function
     }
 
-    // Disable SIGPIPE on socket
-#ifdef PLATFORM_IS_LINUX
-    int set = 1;
-    setsockopt(tcpPort->socket, SOL_SOCKET, MSG_NOSIGNAL, (void *)&set, sizeof(int));
-#endif
-
     // Connect socket to remote
     int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.storage));
     if (retval != 0) {
@@ -333,12 +327,14 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 
     // Reset socket timeout
 #ifdef PLATFORM_IS_WINDOWS
+    const int MSG_NOSIGNAL = 0;
     DWORD tv = 0;
 #else
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 #endif
+
     if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
         tcpPort->base.perror = errno;
         return -errno;
@@ -350,7 +346,7 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 #ifdef PLATFORM_IS_LINUX
     errno = 0;      // reset errno, so we make sure we're not looking at stale errors
 #endif
-    ssize_t retval = send(tcpPort->socket, buf, len, 0);
+    ssize_t retval = send(tcpPort->socket, buf, len, MSG_NOSIGNAL);
     if (retval < 0) {
         if (errno == EPIPE)
             tcpPortClose(port); // remote has disconnected, so force this socket closed.
