@@ -668,8 +668,12 @@ void printProgress()
         if (display == displayLast && display!=0)
         {
             printf("%d%% ", display);
+            // if (display == 100)
+            // {   // Print new line after progress
+            //     printf("\n");
+            // }
+            fflush(stdout);
         }
-        fflush(stdout);
 
         while (display < displayLast)
         {   // Decrement
