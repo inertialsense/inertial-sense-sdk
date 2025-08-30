@@ -869,7 +869,7 @@ is_operation_result cISBootloaderThread::update(
 
     beginTimeMs = current_timeMs();
 
-    is_operation_result overall_result = IS_OP_OK;
+    is_operation_result overall_result = IS_OP_UNKNOWN;
     while (m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
@@ -890,10 +890,11 @@ is_operation_result cISBootloaderThread::update(
                 m_serial_threads[l]->thread = NULL;
 
                 thread_serial_t* t = m_serial_threads[l];        // set by update_thread_serial
-                if (t->result != IS_OP_OK && t->result != IS_OP_CANCELLED && t->result != IS_OP_CLOSED)
-                {
-                    if (overall_result == IS_OP_OK)      // keep the first non-OK as the return
-                    {
+                if (t->result != IS_OP_CLOSED)
+                {   // Skip non-CLOSED
+                    if ((overall_result == IS_OP_UNKNOWN) || 
+                        (overall_result == IS_OP_OK && t->result != IS_OP_OK))
+                    {   // keep the first non-OK
                         overall_result = t->result;
                     }
                 }
@@ -975,12 +976,7 @@ is_operation_result cISBootloaderThread::update(
 
     threadJoinAndFree(libusb_thread);
 
-    // Only report run time if the update was successful
-    if (overall_result == IS_OP_OK)
-    {
-        tmp = "Update succeeded in " + to_string(((double)timeDeltaMs) / 1000) + " seconds.";
-        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
-    }
+    printf("\n\r"); // Insert new line after progress
 
     if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
     { 
@@ -1025,14 +1021,22 @@ is_operation_result cISBootloaderThread::update(
     m_update_in_progress = false;
     m_update_mutex.unlock();
 
-    if (overall_result != IS_OP_OK) {
-        m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update failed!");
-        if(m_waitAction) m_waitAction();     // Final UI update
-        return overall_result;
+    switch (overall_result)
+    {
+        case IS_OP_OK:
+            tmp = "Update succeeded in " + to_string(((double)timeDeltaMs) / 1000) + " seconds.";
+            m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
+            break;
+        case IS_OP_CANCELLED:
+            m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update cancelled!");
+            break;
+        default:
+            m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update failed!");
+            break;
     }
 
     if(m_waitAction) m_waitAction();     // Final UI update
-    return IS_OP_OK;
+    return overall_result;
 }
 
 void cISBootloaderThread::cancel_update()

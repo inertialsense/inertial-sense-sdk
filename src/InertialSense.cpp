@@ -1334,12 +1334,6 @@ is_operation_result InertialSense::updateFirmware(
         }
     }
 
-    printf("\n\r");
-
-#if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25h", stdout);	// Turn cursor back on
-#endif
-
     return IS_OP_OK;
 }
 
@@ -1363,12 +1357,6 @@ is_operation_result InertialSense::updateFirmware(
     device.fwUpdate.fwUpdater->setInfoProgressCb(infoProgress);
 
     device.fwUpdate.fwUpdater->setCommands(cmds);
-
-    printf("\n\r");
-
-#if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25h", stdout);	// Turn cursor back on
-#endif
 
     return IS_OP_OK;
 }
@@ -1551,15 +1539,7 @@ is_operation_result InertialSense::BootloadFile(
             ports_user_ignore.begin(), ports_user_ignore.end(),
             back_inserter(update_ports));
 
-    cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
-
-    printf("\n\r");
-
-    #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25h", stdout);	// Turn cursor back on
-    #endif
-
-    return IS_OP_OK;
+    return cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 }
 
 bool InertialSense::OnClientPacketReceived(const uint8_t* data, uint32_t dataLength)

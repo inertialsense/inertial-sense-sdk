@@ -612,7 +612,7 @@ static int cltool_updateFirmware()
     cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 
     firmwareProgressContexts.clear();
-    if(InertialSense::BootloadFile(
+    return InertialSense::BootloadFile(
             g_commandLineOptions.comPort,
             0,
             g_commandLineOptions.updateAppFirmwareFilename,
@@ -623,8 +623,7 @@ static int cltool_updateFirmware()
             (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
             cltool_bootloadUpdateInfo,
             cltool_firmwareUpdateWaiter
-    ) == IS_OP_OK) return 0;
-    return -1;
+    ) != IS_OP_OK ? EXIT_CODE_FIRMWARE_UPDATE_FAILED : EXIT_CODE_SUCCESS;
 }
 
 std::mutex print_mutex;

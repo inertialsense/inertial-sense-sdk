@@ -848,6 +848,7 @@ typedef enum {
     IS_OP_INCOMPATIBLE = -3,
     IS_OP_RETRY = -4,
     IS_OP_CLOSED = -5,
+    IS_OP_UNKNOWN = -6,
 } is_operation_result;
 
 PUSH_PACK_8
