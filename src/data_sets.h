@@ -1310,21 +1310,29 @@ typedef struct PACKED
     /** GPS time of week (since Sunday morning) in seconds */
     double                  timeOfWeek;
 
-    /** (rad^2, m^2)  Packed array containing covariance matrix (main diagonal and below) of EKF attitude error (in body frame) and position error (in ECEF frame) */
+    /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF pose errors:
+     *  - Attitude (roll,pitch,yaw) error (body frame, rad²)
+     *  - Position (x,y,z) error (ECEF frame, m²)
+     *  Index layout: 
+     *    0 __ __ __ __ __
+     *    1  2 __ __ __ __
+     *    3  4  5 __ __ __
+     *    6  7  8  9 __ __
+     *   10 11 12 13 14 __
+     *   15 16 17 18 19 20  */
     float					covPoseLD[21];
-    // 0 _ _ _ _ _
-    // 1 2 _ _ _ _
-    // 3 4 5 _ _ _
-    // 6 7 8 9 _ _
-    // ...
 
-    /** ((m/s)^2, (rad/s)^2)  Packed array containing covariance matrix (main diagonal and below) of EKF velocity error (in ECEF frame) and angular rate error (in body frame) */
+    /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF twist errors:
+     *  - Velocity (x,y,z) error (ECEF frame, (m/s)^2)
+     *  - Angular rate (p,q,r) error (body frame, (rad/s)^2)
+     *  Index layout: 
+     *   0 __ __ __ __ __
+     *   1  2 __ __ __ __
+     *   3  4  5 __ __ __
+     *   6  7  8  9 __ __
+     *  10 11 12 13 14 __
+     *  15 16 17 18 19 20  */
     float					covTwistLD[21];
-    // 0 _ _ _ _ _
-    // 1 2 _ _ _ _
-    // 3 4 5 _ _ _
-    // 6 7 8 9 _ _
-    // ...
 } ros_covariance_pose_twist_t;
 
 // (DID_INL2_STATUS)
