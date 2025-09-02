@@ -88,7 +88,7 @@ typedef uint32_t eDataIDs;
 #define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
-#define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF covariances matrix lower diagonals */
+#define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_IMU3_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imu3_t) Uncalibrated triple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
@@ -1287,12 +1287,29 @@ typedef struct PACKED
     /** GPS time of week (since Sunday morning) in seconds */
     double                  timeOfWeek;
 
-    /** (rad^2, m^2)  EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames */
+    /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF pose errors:
+     *  - Attitude (roll,pitch,yaw) error (body frame, rad²)
+     *  - Position (x,y,z) error (ECEF frame, m²)
+     *  Index layout: 
+     *    0 __ __ __ __ __
+     *    1  2 __ __ __ __
+     *    3  4  5 __ __ __
+     *    6  7  8  9 __ __
+     *   10 11 12 13 14 __
+     *   15 16 17 18 19 20  */
     float					covPoseLD[21];
 
-    /** ((m/s)^2, (rad/s)^2)   EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames */
+    /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF twist errors:
+     *  - Velocity (x,y,z) error (ECEF frame, (m/s)^2)
+     *  - Angular rate (p,q,r) error (body frame, (rad/s)^2)
+     *  Index layout: 
+     *   0 __ __ __ __ __
+     *   1  2 __ __ __ __
+     *   3  4  5 __ __ __
+     *   6  7  8  9 __ __
+     *  10 11 12 13 14 __
+     *  15 16 17 18 19 20  */
     float					covTwistLD[21];
-
 } ros_covariance_pose_twist_t;
 
 // (DID_INL2_STATUS)
