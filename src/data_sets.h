@@ -2245,6 +2245,9 @@ enum eMagCalState
 
     /** STATUS: Mag recalibration has completed */
     MAG_CAL_STATE_RECAL_COMPLETE	= (int)201,
+
+    /** STATUS: Mag recalibration mode not supported */
+    MAG_CAL_STATE_RECAL_MODE_NOT_SUPPORTED = (int)202,
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
