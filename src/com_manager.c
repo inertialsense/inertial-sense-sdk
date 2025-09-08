@@ -612,9 +612,8 @@ int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
         {
             p_data_get_t *gdata = (p_data_get_t*)(comm->rxPkt.data.ptr);
             // Forward to gpx
-            if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && 
-                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) ||
-                gdata->id == DID_RTK_DEBUG))
+            if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && gdata->id != DID_GPX_FLASH_CFG &&
+                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || gdata->id == DID_RTK_DEBUG))
             {
                 comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, gdata->id, gdata->size, gdata->offset, gdata->period);
 
