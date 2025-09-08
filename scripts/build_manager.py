@@ -331,7 +331,8 @@ class BuildTestManager:
         self.test_header(test_name)
         result = 0
         try:
-            subprocess.check_call(exec_path, cwd=test_dir)
+            host_env = os.environ.copy()
+            subprocess.check_call(exec_path, cwd=test_dir, shell=True, env=host_env)
         except subprocess.CalledProcessError as e:
             print(f"Error testing {test_name}!")
             result = e.returncode

@@ -1623,6 +1623,8 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
     SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
+    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967287)
+    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967287)
 
     // TODO: DEBUG REMOVE ONCE TX->RX bug (TM)
     SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
@@ -2833,7 +2835,7 @@ enum eGnssSatSigConst
 /** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
 enum eRTKConfigBits
 {
-    /** Enable onboard RTK GNSS precision positioning (GPS1) */
+    /** Enable onboard RTK GNSS precision positioning (GPS1) DEPRECATED */
     RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED  = (int)0x00000001,
 
     /** Enable external RTK GNSS positioning (GPS1) */
@@ -2842,11 +2844,11 @@ enum eRTKConfigBits
     /** Enable dual GNSS RTK compassing (GPS2 to GPS1) */
     RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING              = (int)0x00000004,    
 
-    /** Enable dual GNSS RTK compassing (GPS2 to GPS1) DECPRECATED*/
+    /** Enable dual GNSS RTK compassing (GPS2 to GPS1) DEPRECATED */
     RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED   = (int)0x00000008,
 
     /** Mask of RTK GNSS positioning types */
-    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK        = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED | RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING),
+    RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK        = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING | RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED),
 
     /** Mask of dual GNSS RTK compassing types */
     RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK         = (RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED),

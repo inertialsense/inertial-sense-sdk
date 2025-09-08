@@ -18,6 +18,7 @@
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"
+#include "ISClient.h"
 
 extern "C"
 {
@@ -366,6 +367,7 @@ public:
     int StopBroadcasts(bool allPorts = false) { return SendRaw((allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
     bool hasPendingImxFlashWrites(uint32_t& ageSinceLastPendingWrite);
+    bool waitForImxFlashWrite(uint32_t timeoutMs);
 
     bool lockPort() { return portMutex.try_lock(); }
     void unlockPort() { return portMutex.unlock(); }

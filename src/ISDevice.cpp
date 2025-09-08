@@ -1358,3 +1358,42 @@ pfnIsCommGenMsgHandler ISDevice::registerProtocolHandler(int ptype, pfnIsCommGen
     return oldHandler;
 }
 
+/**
+ * blocks until the pending flashConfig changes have been successfully written to the device.
+ * @return true if a pending write was detected and cleared, otherwise false.  NOTE that this
+ * may return false if previous pending writes were successfull written prior to calling this
+ * function. To be truly effective, this call should be made immediately after a call to
+ * SetImxFlashConfig()
+ */
+bool ISDevice::waitForImxFlashWrite(uint32_t timeoutMs)
+{
+    bool pendingWrites = false;
+    uint32_t writeAge = 0;
+
+    if (!isConnected())
+        return false;
+
+    // StopBroadcasts();   // TODO: do we really want to stop broadcasts??  probably not...
+
+    // First, let's assume that haven't received a PENDING_FLASH_WRITES, but that we will within 250ms
+    for (int i = 0; i < 5 && !pendingWrites; i++) {
+        BroadcastBinaryData(DID_SYS_PARAMS, 0);
+        SLEEP_MS(50);   // give a millisecond or 50 for the device to respond.
+        step();
+        pendingWrites = hasPendingImxFlashWrites(writeAge);
+    }
+    if (pendingWrites == false)
+        return false;   // we never got a message that writes were pending... maybe there aren't any?
+
+    // At this point, pendingWrites must be true, so now we wait for it to clear, or timeout to occur
+    unsigned int startTimeMs = current_timeMs();
+    do {
+        BroadcastBinaryData(DID_SYS_PARAMS, 0);
+        SLEEP_MS(50);   // give a millisecond or 50 for the device to respond.
+        step();
+
+        if (!hasPendingImxFlashWrites(writeAge))
+            return true;    // no more pendingWrites, so return true that's we've seen it clear
+    } while ((current_timeMs() - startTimeMs) < timeoutMs);
+    return false;
+}
