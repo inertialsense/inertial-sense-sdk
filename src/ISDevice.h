@@ -176,10 +176,10 @@ public:
      * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
      * Can be overridden to provide custom configuration, etc on connection - just remember
      *  to call back into ISDevice::connect() in your new method.
-     * @param dontValidate if true (default), skips device validation after successfully connecting
+     * @param revalidate if true causes the device to validate after connecting (default = false)
      * @return true if the connection is made/port opened, otherwise false
      */
-    virtual bool connect(bool dontValidate = true) {
+    virtual bool connect(bool revalidate = false) {
         if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
             return false;
 
@@ -189,7 +189,7 @@ public:
         bool result = (portOpen(port) == PORT_ERROR__NONE);
         portStatsReset(port);
 
-        if (!dontValidate && result) {
+        if (!revalidate && result) {
             SLEEP_MS(15);
             result = validate();
         }
