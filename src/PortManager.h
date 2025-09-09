@@ -52,7 +52,11 @@ public:
 
     void addPortFactory(PortFactory* pl) {
         factories.push_back(pl);
-    };
+    }
+
+    std::vector<PortFactory*> getPortFactories() {
+        return factories;
+    }
 
     void addPortListener(const port_listener& listener) {
         listeners.push_back(listener);
