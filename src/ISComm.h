@@ -716,8 +716,8 @@ uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance);
 
 
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
-void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);
-void is_comm_port_parse_messages(port_handle_t port);
+int is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);
+int is_comm_port_parse_messages(port_handle_t port);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.

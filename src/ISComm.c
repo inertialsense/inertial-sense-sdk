@@ -1147,11 +1147,12 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
-static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
+static inline int parse_messages(is_comm_instance_t* comm, port_handle_t port)
 {
     if (!comm)
-        return;
+        return -1;
 
+    int msgCount = 0;
     // Search comm buffer for valid packets
     protocol_type_t ptype;
     while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
@@ -1182,10 +1183,12 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
         {
             comm->cb.all(comm->cb.context, ptype, &(comm->rxPkt), port);
         }
+        msgCount++;
     }
+    return msgCount;
 }
 
-void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm)
+int is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm)
 {
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = (int)_MIN((int)buf_size, is_comm_free(comm));
@@ -1196,16 +1199,16 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
     comm->rxBuf.tail += n;
 
     // Parse messages and call corresponding callback functions
-    parse_messages(comm, NULL);
+    return parse_messages(comm, NULL);
 }
 
-void is_comm_port_parse_messages(port_handle_t port)
+int is_comm_port_parse_messages(port_handle_t port)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
-        return;
+        return -1;  // Invalid port
 
     if (COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)
-        return;
+        return -2;  // Port marked EXPLICIT_READ
 
     is_comm_instance_t* comm = &COMM_PORT(port)->comm;
 
@@ -1216,14 +1219,14 @@ void is_comm_port_parse_messages(port_handle_t port)
 
     if (n <= 0)
     {   // No update
-        return;
+        return 0;   // no data, no messages
     }
 
     // Update comm buffer tail pointer
     comm->rxBuf.tail += n;
 
     // Parse messages and call corresponding callback functions
-    parse_messages(comm, port);
+    return parse_messages(comm, port);
 }
 
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
