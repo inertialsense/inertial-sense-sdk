@@ -236,6 +236,14 @@ string cInertialSenseDisplay::Hello()
 
 string cInertialSenseDisplay::Connected()
 {
+	// Apply this breaking change in Develop and document in change_log.md
+	// Uncomment this to prevent printing "Connected" message when outputOnceDid is set.  
+	// You also need to remove " << endl" from all instances of "cout << Connected() << endl;"
+	// if (!m_outputOnceDid.empty())
+	// {	// Don't print connected message if outputOnceDid is set
+	// 	return "";
+	// }
+
 	if (m_startMs==0)
 	{	// Initialize start time
 		m_startMs = current_timeMs();
@@ -535,10 +543,10 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	}
 
     // if we are doing a onceDid for any other display type, and we got it, shutdown normally, ASAP, but not immediately...
-    if (m_outputOnceDid == data->hdr.id)
-    {
-        SetExitProgram();
-    }
+	if (std::find(m_outputOnceDid.begin(), m_outputOnceDid.end(), data->hdr.id) != m_outputOnceDid.end())
+	{
+		SetExitProgram();
+	}
 }
 
 // Print data to standard out at the following refresh rate.  Return true to refresh display.
@@ -559,7 +567,8 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	switch (m_displayMode)
 	{
 	default:	// Do not display
-		// fall through
+		break;
+
 	case DMODE_PRETTY:
 		Home();
 		if (m_enableReplay)

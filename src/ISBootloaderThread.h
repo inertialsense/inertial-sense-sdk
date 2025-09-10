@@ -46,14 +46,15 @@ public:
         char minor;
     } confirm_bootload_t;
 
-    static std::vector<confirm_bootload_t> set_mode_and_check_devices(
+    static bool set_mode_and_check_devices(
         std::vector<std::string>&               comPorts,
         int                                     baudRate,
         const ISBootloader::firmwares_t&        firmware,
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
-        void						            (*waitAction)()
+        void						            (*waitAction)() = NULL,
+        std::vector<confirm_bootload_t>*        updatesPending = NULL
     );
 
     static is_operation_result update(
@@ -67,6 +68,8 @@ public:
         void						            (*waitAction)()
     );
 
+    static void cancel_update();
+
     typedef struct 
     {
         void* thread;
@@ -75,6 +78,7 @@ public:
         bool done;
         bool reuse_port;
         bool force_isb;
+        is_operation_result result;      // defaults to IS_OP_OK
     } thread_serial_t;
 
     typedef struct 
@@ -84,6 +88,7 @@ public:
         char uid[100];
         ISBootloader::cISBootloaderBase* ctx;
         bool done;
+        is_operation_result result;      // defaults to IS_OP_OK
     } thread_libusb_t;
 
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
@@ -92,6 +97,8 @@ public:
     static bool m_update_in_progress;
     
 private:
+    static void create_and_start_serial_thread(const std::string& port, void(*function)(void*), bool force_isb_update = false);
+    static void create_and_start_libusb_thread(void(*function)(void*), libusb_device_handle* handle);
     static void get_device_isb_version_thread(void* context);
     static void mode_thread_serial_app(void* context);
     static void mode_thread_serial_isb(void* context);

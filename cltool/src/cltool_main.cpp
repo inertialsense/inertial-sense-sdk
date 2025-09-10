@@ -44,8 +44,10 @@ using namespace std;
 #define XMIT_CLOSE_DELAY_MS    1000     // (ms) delay prior to cltool close to ensure data transmission
 
 static bool g_killThreadsNow = false;
+static bool g_cmdSuccessExitAppNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
+InertialSense *g_inertialSenseInterface = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
@@ -241,9 +243,54 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         return;
     }
 
-    if (g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid != data->hdr.id)
-    {   // ignore all other received data, except the "onceDid"
-        return; 
+    if (!g_commandLineOptions.outputOnceDid.empty())
+    {
+        if (g_commandLineOptions.getNode && !g_commandLineOptions.getNode.IsNull() && g_commandLineOptions.getNode.size() > 0)
+        {   
+            for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); )
+            {
+                if (data->hdr.id == *it)
+                {
+                    // Print the data to terminal
+                    YAML::Node output;
+                    if (!cISDataMappings::DataToYaml(data->hdr.id, data->ptr, output, g_commandLineOptions.getNode))
+                    {
+                        cout << "Error parsing: " << *it << "\n";
+                    }
+                    else
+                    {
+                        YAML::Emitter out;
+                        out << output;
+                        if (out.good()) {
+                            std::cout << out.c_str() << std::endl;
+                        } else {
+                            std::cerr << "YAML emitter error: " << out.GetLastError() << std::endl;
+                        }
+                    }
+
+                    // Erase the matched DID from the vector and move to next
+                    it = g_commandLineOptions.outputOnceDid.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+
+            if (g_commandLineOptions.outputOnceDid.empty() && g_commandLineOptions.setAckDid.empty())
+            {   // Exit cltool now and report success code
+                std::exit(0);
+                return;
+            }
+
+            // Prevent further processing if -get option is set
+            return; 
+        }
+
+        if (std::find(g_commandLineOptions.outputOnceDid.begin(), g_commandLineOptions.outputOnceDid.end(), data->hdr.id) == g_commandLineOptions.outputOnceDid.end())
+        {   // Prevent further processing if this DID is not in the outputOnceDid list
+            return;
+        }
     }
 
     (void)i;
@@ -264,6 +311,36 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         g_inertialSenseDisplay.ProcessData(data);
 }
 
+static void cltool_ackCallback(InertialSense* i, p_ack_t* ack, unsigned char packetIdentifier, int pHandle)
+{
+    if (!g_enableDataCallback)
+    {   // Receive disabled
+        return;
+    }
+
+    if (!g_commandLineOptions.setAckDid.empty())
+    {   
+        for (auto it = g_commandLineOptions.setAckDid.begin(); it != g_commandLineOptions.setAckDid.end(); )
+        {
+            if (ack->body.dataHdr.id == *it)
+            {   // Remove DID from the vector and move to next
+                it = g_commandLineOptions.setAckDid.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+
+        if (g_commandLineOptions.setAckDid.empty())
+        {   // All expected acks have been received. Exit cltool now and report success code
+            std::exit(0);
+            return;
+        }
+
+        return;
+    }
+}
 
 /**
  * requests any data which is not being actively received
@@ -385,7 +462,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cout << "Sending software reset." << endl;
         inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        return false;
+        g_cmdSuccessExitAppNow = true; // Exit cltool now and report success code
     }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX
@@ -433,7 +510,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        return false;
+        g_cmdSuccessExitAppNow = true; // Exit cltool now and report success code
     }
     if (g_commandLineOptions.platformType >= 0 && g_commandLineOptions.platformType < PLATFORM_CFG_TYPE_COUNT)
     {   // Confirm
@@ -446,9 +523,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         // Write key (uint32_t) and platformType (int32_t), 8 bytes
         inertialSenseInterface.SendRawData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
-        return false;
+        g_cmdSuccessExitAppNow = true;
     }
-
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
         vector<string> pieces;
@@ -472,27 +548,50 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             cout << "Failed to connect to server (base)." << endl;
         }
     }
+    if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
+    {
+    	uDatasets d = {};
+    	std::vector<cISDataMappings::MemoryUsage> usageVec;
 
-    bool exitNow = false;
-    if (g_commandLineOptions.imxFlashCfg.length() != 0)
+        // This code uploads only portion of each DID data set that has been set from the setNode yaml.
+        for (auto it = g_commandLineOptions.outputOnceDid.begin(); it != g_commandLineOptions.outputOnceDid.end(); ++it )
+        {
+            int did = *it;
+            if (!cISDataMappings::YamlToData(did, g_commandLineOptions.setNode, (uint8_t*)&d, &usageVec))
+            {
+                cout << "Failed to convert -set input " << g_commandLineOptions.setNode << endl;
+                std::exit(-1);
+            }
+
+            for (auto& usage : usageVec)
+            {   // Upload data to device
+                uint32_t offset = usage.ptr - (uint8_t*)&d;
+                cout << "Uploading " << cISDataMappings::DataName(did) << ", size: " << usage.size << ", offset: " << offset << endl;
+                inertialSenseInterface.SendData(did, usage.ptr, usage.size, offset);
+                g_commandLineOptions.setAckDid.push_back(did);
+            }
+        }
+    }
+    if (g_commandLineOptions.imxflashCfgSet)
     {
         if (!cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
         {   // Exit cltool now and report error code
             std::exit(-1);
         }
-        exitNow = true;
+        g_cmdSuccessExitAppNow = true;
     }
-    if (g_commandLineOptions.gpxFlashCfg.length() != 0)
+    if (g_commandLineOptions.gpxflashCfgSet)
     {
         if (!cltool_updateGpxFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg))
         {   // Exit cltool now and report error code
             std::exit(-2);
         }
-        exitNow = true;
+        g_cmdSuccessExitAppNow = true;
     }
-    if (exitNow)
-    {   // Exit cltool now and report success code
-        std::exit(0);
+
+    if (g_cmdSuccessExitAppNow)
+    {   // Exit cltool now and report success code.  Return false to tell cltool to close.
+        return false;
     }
 
     return true;
@@ -700,12 +799,12 @@ static int cltool_createHost()
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
         return -1;
     }
-    else if (g_commandLineOptions.imxFlashCfg.length() != 0 && !cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
+    else if (g_commandLineOptions.imxflashCfgSet && !cltool_updateImxFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg))
     {
         cout << "Failed to update IMX flash config" << endl;
         return -1;
     }
-    else if (g_commandLineOptions.gpxFlashCfg.length() != 0 && !cltool_updateGpxFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg))
+    else if (g_commandLineOptions.gpxflashCfgSet && !cltool_updateGpxFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg))
     {
         cout << "Failed to update GPX flash config" << endl;
         return -1;
@@ -791,7 +890,8 @@ static int cltool_dataStreaming()
 {
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface(cltool_dataCallback);
+    InertialSense inertialSenseInterface(cltool_dataCallback, cltool_ackCallback);
+    g_inertialSenseInterface = &inertialSenseInterface;
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
 
@@ -877,7 +977,7 @@ static int cltool_dataStreaming()
                     g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
             // before we start, if we are doing a run-once, set a default runDurationMs, so we don't hang indefinitely
-            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDurationMs)
+            if (g_commandLineOptions.outputOnceDid.size() && !g_commandLineOptions.runDurationMs)
                 g_commandLineOptions.runDurationMs = 10000; // 10 second timeout, if none is specified
 
             // Main loop. Could be in separate thread if desired.
@@ -945,7 +1045,12 @@ static int cltool_dataStreaming()
         }
     }
     else
-    {   // Failed to setup communications
+    {   if (g_cmdSuccessExitAppNow)
+        {   // Exit cltool now and report success code
+            return EXIT_CODE_SUCCESS;
+        }
+
+        // Exit Failed to setup communications
         cout << "Failed to setup communications!" << endl;
         exitCode = EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
     }
@@ -990,7 +1095,7 @@ static int inertialSenseMain()
 {
     g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
-    g_inertialSenseDisplay.Clear();     // clear display
+    // g_inertialSenseDisplay.Clear();     // clear display
 
     // if replay data log specified on command line, do that now and return
     if (g_commandLineOptions.replayDataLog)
@@ -1008,8 +1113,11 @@ static int inertialSenseMain()
     // if app firmware was specified on the command line, do that now and return
     else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
     {
-        // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-5.1)
+        // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-6)
+
+        // Set up signal handler for SIGINT too prevent ctrl+c from interrupting the update and still allowing cleanup
         signal(SIGINT, sigint_cb);
+        
         return cltool_updateFirmware();
     }
     else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)

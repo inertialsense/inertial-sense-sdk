@@ -23,6 +23,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <mutex>
 
+#define IMX5_FLASH_PAGE_SIZE 65536      // 64K flash page size for IMX-5
+#define IMX5_BOOTLOADER_INCOMPATIBLE_MSG "IMX firmware incompatible with bootloader. Update IMX-5 bootloader to v6i or newer required for selected IMX firmware."
+
 namespace ISBootloader {
 
 static constexpr int IS_DEVICE_LIST_LEN = 256;
@@ -51,7 +54,7 @@ typedef enum {
     IS_PROCESSOR_UNKNOWN = -1,
     IS_PROCESSOR_SAMx70 = 0,        // uINS-3/4, EVB-2
     IS_PROCESSOR_STM32L4,           // IMX-5
-    IS_PROCESSOR_STM32U5,           // GPX-1, IMX-5.1
+    IS_PROCESSOR_STM32U5,           // GPX-1, IMX-6
 
     IS_PROCESSOR_NUM,               // Must be last
 } eProcessorType;

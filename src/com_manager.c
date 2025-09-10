@@ -612,9 +612,8 @@ int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
         {
             p_data_get_t *gdata = (p_data_get_t*)(comm->rxPkt.data.ptr);
             // Forward to gpx
-            if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && 
-                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) ||
-                gdata->id == DID_RTK_DEBUG))
+            if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && gdata->id != DID_GPX_FLASH_CFG &&
+                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || gdata->id == DID_RTK_DEBUG))
             {
                 comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, gdata->id, gdata->size, gdata->offset, gdata->period);
 
@@ -920,19 +919,21 @@ int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 
 void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags)
 {
-    int ackSize;
-
     // Create and Send request packet
     p_ack_t ack = { 0 };
-    ack.hdr.pktInfo = pkt->hdr.flags;
-    ackSize = sizeof(p_ack_hdr_t);
+    ack.hdr.pktInfo.flags = pkt->hdr.flags;
+    ack.hdr.pktInfo.id = pkt->hdr.id;
 
     // Set ack body
     switch (pkt->hdr.flags & PKT_TYPE_MASK)
     {
     case PKT_TYPE_SET_DATA:
-        ack.body.dataHdr = *((p_data_hdr_t*)(pkt->data.ptr));
-        ackSize += sizeof(p_data_hdr_t);
+        ack.body.dataHdr.id = pkt->hdr.id;
+        ack.body.dataHdr.size = pkt->hdr.payloadSize;
+        if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
+        {
+            ack.body.dataHdr.offset += pkt->offset; // add offset to size
+        }
         break;
     }
 

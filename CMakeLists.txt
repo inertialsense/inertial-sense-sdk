@@ -84,6 +84,11 @@ else ()
         ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
     )
 
+    set_source_files_properties(
+        src/libusb/libusb/core.c
+        PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable"
+    )
+
     # Linux compiler flags
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")

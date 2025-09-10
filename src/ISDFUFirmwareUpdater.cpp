@@ -159,7 +159,7 @@ namespace dfu {
 
         SLEEP_MS(100);
         // TODO make this IMX/GPX aware (OTP location maybe processor and/or product/device dependent)
-        // Its important to note that if this is a BRAND NEW, NEVER BEEN PROGRAMMED STM32, it will have no OTP data. Even if we know the MCU type, we still don't know the application its in (ie, IMX-5.1 vs GPX-1).
+        // Its important to note that if this is a BRAND NEW, NEVER BEEN PROGRAMMED STM32, it will have no OTP data. Even if we know the MCU type, we still don't know the application its in (ie, IMX-6 vs GPX-1).
 
         libusb_device *usb_device = libusb_get_device(usbHandle);
         if (libusb_get_device_descriptor(usb_device, &desc) != LIBUSB_SUCCESS) {
@@ -255,7 +255,7 @@ namespace dfu {
             md5_update(fingerprint, (uint8_t *) dfuDesc.c_str(), dfuDesc.size());
         }
 
-        // TODO: make this work for both GPX-1 and IMX-5.1
+        // TODO: make this work for both GPX-1 and IMX-6
         uint16_t hardwareType = 0;
         processorType = IS_PROCESSOR_UNKNOWN;
 
@@ -285,7 +285,7 @@ namespace dfu {
 
         if ((hardwareId == 0xFFFF) && (processorType != IS_PROCESSOR_UNKNOWN)) {
             if (processorType == IS_PROCESSOR_STM32L4) hardwareType = IS_HARDWARE_TYPE_IMX; // only the IMX-5 uses the STM32L4
-            else if (processorType == IS_PROCESSOR_STM32U5) hardwareType = IS_HARDWARE_TYPE_GPX; // TODO: Both the GPX-1 and IMX-5.1 will use the STM32U5 (at the moment)
+            else if (processorType == IS_PROCESSOR_STM32U5) hardwareType = IS_HARDWARE_TYPE_GPX; // TODO: Both the GPX-1 and IMX-6 will use the STM32U5 (at the moment)
         }
 
         // based on what we know so far, let's try and figure out a hardware type

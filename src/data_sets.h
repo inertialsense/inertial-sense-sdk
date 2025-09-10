@@ -88,7 +88,7 @@ typedef uint32_t eDataIDs;
 #define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
-#define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF covariances matrix lower diagonals */
+#define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_IMU3_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imu3_t) Uncalibrated triple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
@@ -265,14 +265,14 @@ enum eInsStatusFlags
     /** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. HDW_STATUS_MAG_RECAL_COMPLETE is set when complete. */
     INS_STATUS_MAG_RECALIBRATING                = (int)0x00400000,
     /** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
-    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL      = (int)0x00800000,
+    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL = (int)0x00800000,
 
     /** GPS navigation fix type (see eGpsNavFixStatus) */
     INS_STATUS_GPS_NAV_FIX_MASK                 = (int)0x03000000,
     INS_STATUS_GPS_NAV_FIX_OFFSET               = 24,
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)    (((insStatus)&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
 
-    /** RTK compassing heading is accurate.  (RTK fix and hold status) */
+    /** RTK compassing heading is accurate and aiding INS heading.  (RTK fix and hold status) */
     INS_STATUS_RTK_COMPASSING_VALID             = (int)0x04000000,
 
     /* NOTE: If you add or modify these INS_STATUS_RTK_ values, please update eInsStatusRtkBase in IS-src/python/src/ci_hdw/data_sets.py */
@@ -297,7 +297,7 @@ enum eInsStatusFlags
     /** Bitmask of all insStatus errors */
     INS_STATUS_ERROR_MASK                       =   INS_STATUS_GENERAL_FAULT | 
                                                     INS_STATUS_RTK_COMPASSING_MASK | 
-                                                    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL |
+                                                    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL |
                                                     INS_STATUS_RTK_ERROR_MASK |
                                                     INS_STATUS_RTOS_TASK_PERIOD_OVERRUN,
 };
@@ -476,7 +476,7 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR|
                                                        GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MASK),
     GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID        = (int)0x04000000,      // GPS1 RTK precision position and carrier phase range solution with fixed ambiguities (i.e. < 6cm horizontal accuracy).  The carrier phase range solution with floating ambiguities occurs if GPS_STATUS_FIX_RTK_FIX is set and GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID is not set (i.e. > 6cm horizontal accuracy).
-    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID         = (int)0x08000000,      // GPS2 RTK moving base heading.  Indicates RTK fix and hold with single band RTK compassing.
+    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID         = (int)0x08000000,      // GPS2 RTK moving base heading.  Indicates RTK compassing heading valid and available in DID_GPS2_RTK_CMP_REL.
     GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD  = (int)0x00002000,
     GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET= (int)0x00004000,
     GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_MASK          = (GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED|
@@ -538,7 +538,7 @@ typedef struct PACKED
  *
  *  Upper 6 bits are the hardware type (IMX, GPX, uINS, etc; 64 possible values)
  *  Middle 4 bits are the major hardware version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
- *  Lower 6 bits are the minor hardware version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
+ *  Lower 6 bits are the minor hardware version (IMX-6, uINS-3.2, GPX-1.0; 64 possible values)
  *
  *  If the TYPE and MAJOR are 0, then fall back to eIsHardwareType to determine the type from the legacy map:
  *      0 = Unknown
@@ -1287,12 +1287,29 @@ typedef struct PACKED
     /** GPS time of week (since Sunday morning) in seconds */
     double                  timeOfWeek;
 
-    /** (rad^2, m^2)  EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames */
+    /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF pose errors:
+     *  - Attitude (roll,pitch,yaw) error (body frame, rad²)
+     *  - Position (x,y,z) error (ECEF frame, m²)
+     *  Index layout: 
+     *    0 __ __ __ __ __
+     *    1  2 __ __ __ __
+     *    3  4  5 __ __ __
+     *    6  7  8  9 __ __
+     *   10 11 12 13 14 __
+     *   15 16 17 18 19 20  */
     float					covPoseLD[21];
 
-    /** ((m/s)^2, (rad/s)^2)   EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames */
+    /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF twist errors:
+     *  - Velocity (x,y,z) error (ECEF frame, (m/s)^2)
+     *  - Angular rate (p,q,r) error (body frame, (rad/s)^2)
+     *  Index layout: 
+     *   0 __ __ __ __ __
+     *   1  2 __ __ __ __
+     *   3  4  5 __ __ __
+     *   6  7  8  9 __ __
+     *  10 11 12 13 14 __
+     *  15 16 17 18 19 20  */
     float					covTwistLD[21];
-
 } ros_covariance_pose_twist_t;
 
 // (DID_INL2_STATUS)
@@ -1582,6 +1599,8 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
+    SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
+
     // TODO: DEBUG REMOVE ONCE TX->RX bug (TM)
     SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
     SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
@@ -1796,8 +1815,8 @@ typedef struct PACKED
 #define RMC_BITS_PIMU                   0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-// #define RMC_BITS_UNUSED              0x0000000000000100
-// #define RMC_BITS_UNUSED              0x0000000000000200 
+// #define RMC_BITS_UNUSED                 0x0000000000000100
+// #define RMC_BITS_UNUSED                 0x0000000000000200 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1820,7 +1839,7 @@ typedef struct PACKED
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
 #define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
-// #define RMC_BITS_UNUSED              0x0000000200000000
+// #define RMC_BITS_UNUSED                 0x0000000200000000
 #define RMC_BITS_IMU_MAG                0x0000000400000000
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
@@ -1836,7 +1855,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_STATUS             0x0000400000000000
 #define RMC_BITS_GPX_DEV_INFO           0x0000800000000000
 #define RMC_BITS_GPX_RMC                0x0001000000000000
-#define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
+// #define RMC_BITS_UNUSED                 0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 
@@ -2226,6 +2245,9 @@ enum eMagCalState
 
     /** STATUS: Mag recalibration has completed */
     MAG_CAL_STATE_RECAL_COMPLETE	= (int)201,
+
+    /** STATUS: Mag recalibration mode not supported */
+    MAG_CAL_STATE_RECAL_MODE_NOT_SUPPORTED = (int)202,
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
@@ -3217,11 +3239,12 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
     PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
+    PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
     PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3
     PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
     PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 w/ IMX-5 and GPX-1
+    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 and IS-IMX-GPX-DEV-1 (w/ IMX-5 and GPX-1)
     PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_LAMBDA_G2              	= (int)18,          // "
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
@@ -3738,7 +3761,7 @@ typedef struct
     int32_t navsys;
 
     /** elevation mask angle (rad) */
-    double elmin;
+    float elmin;
 
     /** Min snr to consider satellite for rtk */
     int32_t snrmin;
@@ -3792,9 +3815,6 @@ typedef struct
     /** dynamics model (0:none,1:velociy,2:accel) */
     int32_t dynamics;
 
-    /** number of filter iteration */
-    int32_t niter;
-
     /** interpolate reference obs (for post mission) */
     int32_t intpref;
 
@@ -3805,60 +3825,60 @@ typedef struct
     int32_t refpos;
 
     /** code/phase error ratio */
-    double eratio[NFREQ];
+    float eratio[NFREQ];
 
     /** measurement error factor */
-    double err[7];
+    float err[7];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
-    double std[3];
+    float std[3];
 
     /** process-noise std [0]bias,[1]iono [2]trop [3]acch [4]accv [5] pos */
-    double prn[6];
+    float prn[6];
 
     /** satellite clock stability (sec/sec) */
     double sclkstab;
 
     /** AR validation threshold */
-    double thresar[8];
+    float thresar[8];
 
     /** elevation mask of AR for rising satellite (rad) */
-    double elmaskar;
+    float elmaskar;
 
     /** elevation mask to hold ambiguity (rad) */
-    double elmaskhold;
+    float elmaskhold;
 
     /** slip threshold of geometry-free phase (m) */
-    double thresslip;
+    float thresslip;
 
     /* slip threshold of doppler (m) */
-    double thresdop;
+    float thresdop;
 
     /** variance for fix-and-hold pseudo measurements (cycle^2) */
-    double varholdamb;
+    float varholdamb;
 
     /** gain used for GLO and SBAS sats to adjust ambiguity */
-    double gainholdamb;
+    float gainholdamb;
 
     /** max difference of time (sec) */
-    double maxtdiff;
+    float maxtdiff;
 
     /** reset sat biases after this long trying to get fix if not acquired */
     int fix_reset_base_msgs;
 
     /** reject threshold of innovation for phase [0] and code [1] (m) */
-    double maxinno[2];
+    float maxinno[2];
     /** reject thresholds of NIS for phase [0] and code [1] */
-    double maxnis_lo[2];
-    double maxnis_hi[2];
+    float maxnis_lo[2];
+    float maxnis_hi[2];
 
     /** reject threshold of gdop */
     double maxgdop;
 
     /** baseline length constraint {const,sigma before fix, sigma after fix} (m) */
-    double baseline[3];
-    double max_baseline_error;
-    double reset_baseline_error;
+    float baseline[3];
+    float max_baseline_error;
+    float reset_baseline_error;
 
     /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
     float max_ubx_error;

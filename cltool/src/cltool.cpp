@@ -72,29 +72,198 @@ static bool matches(const char* str, const char* pre)
 #define CL_DEFAULT_REPLAY_SPEED                     1.0
 #define CL_DEFAULT_BOOTLOAD_VERIFY                  false
 
-bool read_did_argument(stream_did_t *dataset, string s)
+
+bool read_get_did_argument(string s, stream_did_t *dataset, std::string &fields)
 {
-    // Try to use DID number
-    eDataIDs did = strtol(s.c_str(), NULL, 10);
+    eDataIDs did = cISDataMappings::Did(s);
 
-    std::string::size_type pos = s.find('=');
-
-    if (did <= DID_NULL || did >= DID_COUNT)
-    {   // Number is invalid.  Use DID name.
-        string name = s;
+    if (did > DID_NULL && did < DID_COUNT)
+    {   // DID is valid
+        fields = "";
+        std::string::size_type pos = s.find('=');
         if (pos != std::string::npos)
-        {   // Remove equal sign
-            name = s.substr(0, pos);
+        {   // Contains '=' specifying a specific field to get
+            fields = s.substr(pos + 1);
+            
+            // // Validate that the field exists
+            // const map_name_to_info_t* map = cISDataMappings::NameToInfoMap(did);
         }
 
-        did = cISDataMappings::Did(name);
+        dataset->did = did;
+
+        return true;
     }
+
+    cout << "Invalid argument: " << s << endl;
+    return false;
+}
+
+void ConvertIndexedKeysToSequences(YAML::Node& node)
+{
+    if (!node.IsMap()) return;
+
+    static const std::regex indexedKeyRegex(R"((.+)\[(\d+)\]$)");
+    std::vector<std::string> keysToRemove;
+
+    // Copy key-value pairs to avoid iterator invalidation
+    std::vector<std::pair<std::string, YAML::Node>> entries;
+    for (const auto& it : node)
+    {
+        const std::string key = it.first.as<std::string>();
+        entries.emplace_back(key, it.second);
+    }
+
+    for (const auto& [key, value] : entries)
+    {
+        // Recurse into maps
+        if (value.IsMap())
+        {
+            YAML::Node subNode = value;  // Safe copy
+            ConvertIndexedKeysToSequences(subNode);
+            node[key] = subNode;  // Assign back
+        }
+
+        std::smatch match;
+        if (std::regex_match(static_cast<const std::string&>(key), match, indexedKeyRegex))
+        {
+            const std::string baseKey = match[1];
+            const int index = std::stoi(match[2]);
+
+            // Ensure the base key exists and is a sequence
+            YAML::Node tmpBase = node[baseKey];
+            if (!tmpBase || !tmpBase.IsSequence()) {
+                tmpBase = YAML::Node(YAML::NodeType::Sequence);
+            }
+
+            // Resize sequence to fit index
+            while (tmpBase.size() <= static_cast<size_t>(index)) {
+                tmpBase.push_back(YAML::Node());
+            }
+
+            tmpBase[index] = value;
+
+            node[baseKey] = tmpBase;  // Write it back
+            keysToRemove.push_back(key);
+        }
+    }
+
+    // Remove indexed keys
+    for (const std::string& k : keysToRemove)
+    {
+        node.remove(k);
+    }
+}
+
+bool read_get_set_argument(std::string s, YAML::Node &node)
+{
+    // Preprocess s: wrap with braces if it contains no braces at all
+    if (!s.empty() && s.find('{') == std::string::npos && s.find('}') == std::string::npos)
+    {
+        s = "{" + s + "}";
+    }
+
+    // Ensure there is a space after each colon
+    for (size_t i = 0; i < s.length(); ++i)
+    {
+        if (s[i] == ':')
+        {
+            // If not followed by space and not end of string
+            if (i + 1 >= s.length() || s[i + 1] != ' ')
+            {
+                s.insert(i + 1, " ");
+            }
+        }
+    }
+
+    // Replace each match with quoted version.  This regex matches unquoted keys like: gps1AntOffset[0] or myField[12]
+    static const std::regex keyWithIndexRegex(R"((\{[^{}]*?)\b([A-Za-z_][A-Za-z0-9_]*\[\d+\])(?=\s*:))");
+    s = std::regex_replace(s, keyWithIndexRegex, "$1\"$2\"");
+    
+    // Attempt to parse the string as YAML
+    try {
+        node = YAML::Load(s);
+    } catch (const YAML::ParserException& e) {
+        std::cerr << "Parser error: " << e.what() << "\n";
+        return false;
+    } catch (const YAML::Exception& e) {
+        std::cerr << "General YAML error: " << e.what() << "\n";
+        return false;
+    }
+
+    // cout << "Parsed YAML: " << node << endl;
+    // Convert indexed keys to sequences i.e. {gps1AntOffset[0]: 1.5, gps1AntOffset[1]: 2.5} becomes {gps1AntOffset: [1.5, 2.5]}
+    ConvertIndexedKeysToSequences(node);
+    // cout << "Revised YAML: " << node << endl;
+
+    g_commandLineOptions.datasets.clear();
+    g_commandLineOptions.outputOnceDid.clear();
+
+    YAML::Node newNode;
+    for (const auto& topLevel : node) 
+    {
+        std::string key = topLevel.first.as<std::string>();
+        const YAML::Node& value = topLevel.second;
+
+        stream_did_t dataset = {};
+        eDataIDs did = cISDataMappings::Did(key);
+
+        if (did > DID_NULL && did < DID_COUNT)
+        {
+            dataset.did = did;
+            dataset.periodMultiple = 0;
+
+            g_commandLineOptions.datasets.push_back(dataset);
+            g_commandLineOptions.outputOnceDid.push_back(dataset.did);
+
+            // Validate fields
+            const auto& dataSetMap = *cISDataMappings::NameToInfoMap(did);
+            if (value.IsMap())
+            {
+                for (const auto& field : value)
+                {
+                    std::string fieldName = field.first.as<std::string>();
+                    if (dataSetMap.find(fieldName) == dataSetMap.end())
+                    {
+                        std::cerr << "Invalid field '" << fieldName << "' in " << cISDataMappings::DataName(did) << "\n";
+                        return false;
+                    }
+                }
+            }
+
+            std::string canonicalName = cISDataMappings::DataName(did);
+            newNode[canonicalName] = value;
+        }
+        else
+        {
+            std::cerr << "Invalid DID name or number: " << key << "\n";
+            return false;
+        }
+    }
+
+    // Update yaml node to ensure keys are DID names instead of DID numbers 
+    node = newNode;
+
+    // cout << "Parsed YAML: " << node << endl;
+
+    if (g_commandLineOptions.datasets.empty())
+    {
+        std::cout << "Invalid argument: " << s << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool read_did_argument(string s, stream_did_t *dataset)
+{
+    eDataIDs did = cISDataMappings::Did(s);
 
     if (did > DID_NULL && did < DID_COUNT)
     {   // DID is valid
         dataset->did = did;
         dataset->periodMultiple = cISDataMappings::DefaultPeriodMultiple(did);      // Use default to prevent 1ms period streaming for non-rmc messages
 
+        std::string::size_type pos = s.find('=');
         if (pos != std::string::npos)
         {   // Contains '='
             string m = s.substr(pos + 1);
@@ -166,7 +335,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
     g_commandLineOptions.surveyIn.minAccuracy = 0;
-    g_commandLineOptions.outputOnceDid = 0;
+    g_commandLineOptions.outputOnceDid.clear();
     g_commandLineOptions.platformType = -1;
     g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;
     g_commandLineOptions.runDurationMs = 0; // run until interrupted, by default
@@ -220,24 +389,19 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-did") && (i + 1) < argc)
         {
-            while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // next argument doesn't start with "-"
+            while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // loop through next arguments that don't start with "-"
             {
-                if (g_commandLineOptions.outputOnceDid)
+                i++;
+                stream_did_t dataset = {};
+                if (read_did_argument(argv[i], &dataset))    // use next argument
                 {
-                    i++; // if we've previously parsed a "onceDid" then ignore all others (and all before it)
-                }
-                else
-                {
-                    stream_did_t dataset = {};
-                    if (read_did_argument(&dataset, argv[++i]))    // use next argument
+                    if (dataset.periodMultiple == 0)
                     {
-                        if (dataset.periodMultiple == 0)
-                        {
-                            g_commandLineOptions.outputOnceDid = dataset.did;
-                            g_commandLineOptions.datasets.clear();
-                        }
-                        g_commandLineOptions.datasets.push_back(dataset);
+                        g_commandLineOptions.outputOnceDid.push_back(dataset.did);
+                        g_commandLineOptions.datasets.clear();
+                        g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
                     }
+                    g_commandLineOptions.datasets.push_back(dataset);
                 }
             }
             enable_display_mode();
@@ -245,7 +409,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-edit"))
         {
             stream_did_t dataset = {};
-            if (((i + 1) < argc) && read_did_argument(&dataset, argv[++i]))    // use next argument
+            if (((i + 1) < argc) && read_did_argument(argv[++i], &dataset))    // use next argument
             {
                 g_commandLineOptions.datasetEdit = dataset;
             }
@@ -419,28 +583,50 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-flashCfg="))
         {
+            g_commandLineOptions.imxflashCfgSet = true;
             g_commandLineOptions.imxFlashCfg = &a[10];
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            std::replace(g_commandLineOptions.imxFlashCfg.begin(), g_commandLineOptions.imxFlashCfg.end(), '|', ',');     // Replace '|' with ',' to match the expected format
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-imxFlashCfg="))
         {
+            g_commandLineOptions.imxflashCfgSet = true;
             g_commandLineOptions.imxFlashCfg = &a[13];
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            std::replace(g_commandLineOptions.imxFlashCfg.begin(), g_commandLineOptions.imxFlashCfg.end(), '|', ',');     // Replace '|' with ',' to match the expected format
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-flashCfg") || startsWith(a, "-imxFlashCfg"))
         {
-            g_commandLineOptions.imxFlashCfg = ".";
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            g_commandLineOptions.imxflashCfgSet = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-gpxFlashCfg="))
         {
+            g_commandLineOptions.gpxflashCfgSet = true;
             g_commandLineOptions.gpxFlashCfg = &a[13];
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            std::replace(g_commandLineOptions.gpxFlashCfg.begin(), g_commandLineOptions.gpxFlashCfg.end(), '|', ',');     // Replace '|' with ',' to match the expected format
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-gpxFlashCfg"))
         {
-            g_commandLineOptions.gpxFlashCfg = ".";
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+            g_commandLineOptions.gpxflashCfgSet = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
+        {
+            if (!read_get_set_argument(argv[++i], g_commandLineOptions.getNode))    // use next argument
+            {
+                return false;
+            }
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-set") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
+        {
+            if (!read_get_set_argument(argv[++i], g_commandLineOptions.setNode))    // use next argument
+            {
+                return false;
+            }
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-hi") || startsWith(a, "--hi"))
         {
@@ -599,7 +785,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 
             // DID_GPS1_POS must be enabled for NTRIP VRS to supply rover position.
             stream_did_t dataset = {};
-            read_did_argument(&dataset, "DID_GPS1_POS");
+            read_did_argument("DID_GPS1_POS", &dataset);
             g_commandLineOptions.datasets.push_back(dataset);
             enable_display_mode();
         }
@@ -910,20 +1096,24 @@ void cltool_outputUsage()
 	cout << "    Command line utility for communicating, logging, and updating firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << boldOff << " # stream same as line above" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password" << boldOff << "    # Connect to RTK NTRIP base" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << " # stream DID messages" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << " # stream same as line above" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << " # stream post processing data (PPD) with INS2" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << " # edit DID_FLASH_CONFIG message" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GPS1_POS                                    # Return specific DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"   # Return portion of two DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << boldOff << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << endlbOff;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
@@ -976,7 +1166,16 @@ void cltool_outputUsage()
     cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
 
 	cout << endlbOn;
-	cout << "OPTIONS (Message Streaming)" << endl;
+	cout << "OPTIONS (Messages)" << endl;
+    cout << "    -get <DID1>,<DID2>,...                  " << boldOff << " Return values of dataset(s). DID may be a name or number." << endlbOn;
+    cout << "    -get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\" " << boldOff << " Return values of dataset(s). DID may be a name or number. YAML input format." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -get 1,4,12,DID_GPS1_POS" << endlbOn;
+    cout << "                                            " << boldOff << "           -get \"{DID_INS_1,DID_GPS1_POS}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"" << endlbOn;
+    cout << "    -set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gps1AntOffset[2]: 1.2}}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
@@ -1001,19 +1200,19 @@ void cltool_outputUsage()
 	cout << "    -rp " << boldOff << "PATH        Replay data log from PATH" << endlbOn;
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (READ flash config)" << endl;
+	cout << "OPTIONS (READ flash config) - DEPRECATED, use `-get` instead" << endl;
 	cout << "    -imxFlashCfg" << boldOff  <<  "                                # List all \"keys\" and \"values\" in IMX" << endlbOn;
 	cout << "    -gpxFlashCfg" << boldOff  <<  "                                # List all \"keys\" and \"values\" in GPX" << endlbOn;
 	cout << "    \"-imxFlashCfg=[key]|[key]|[key]\"" << boldOff << "            # List specific IMX values" <<  endlbOn;
 	cout << "    \"-gpxFlashCfg=[key]|[key]|[key]\"" << boldOff << "            # List specific GPX values" <<  endlbOn;
 	cout << endl;
-	cout << "OPTIONS (WRITE flash config)" << endl;
+	cout << "OPTIONS (WRITE flash config) - DEPRECATED, use `-set` instead" << endl;
 	cout << "    \"-imxFlashCfg=[key]=[value]|[key]=[value]\"" << boldOff << "  # Set key / value pairs in IMX flash config. " << endlbOn;
 	cout << "    \"-gpxFlashCfg=[key]=[value]|[key]=[value]\"" << boldOff << "  # Set key / value pairs in GPX flash config. " << endlbOn;
 	cout << "        " << boldOff <<   "                                        # Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -imxFlashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " \"-imxFlashCfg=insOffset[1]=1.2|=ser2BaudRate=115200\"  " << boldOff << "# Set multiple values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " \"-imxFlashCfg=insOffset[1]=1.2|ser2BaudRate=115200\"  " << boldOff << "# Set multiple values" << endlbOn;
 	cout << endl;
 	cout << "OPTIONS (RTK Rover / Base)" << endlbOn;
 	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
@@ -1037,24 +1236,6 @@ void cltool_outputHelp()
     cout << endlbOff << "Run \"" << boldOn << "cltool -h" << boldOff << "\" to display the help menu." << endl;
 }
 
-// Return the index into an array if specified and remove from string.  i.e. `insOffset[2]` returns 2 and str is reduced to `insOffset`.
-int extract_array_index(std::string &str)
-{    
-    int arrayIndex = -1;
-    size_t openBracketPos  = str.find('[');
-    size_t closeBracketPos = str.find(']');
-    if (openBracketPos != std::string::npos && closeBracketPos != std::string::npos && openBracketPos < closeBracketPos) 
-    {   // Extract array index
-        std::string indexStr = str.substr(openBracketPos + 1, closeBracketPos - openBracketPos - 1);
-        arrayIndex = std::stoi(indexStr);
-
-        // Remove index from variable name
-        str = str.substr(0, openBracketPos);
-    } 
-
-    return arrayIndex;
-}
-
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
     if (!inertialSenseInterface.WaitForImxFlashCfgSynced())
@@ -1064,7 +1245,35 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
     }
     nvm_flash_cfg_t imxFlashCfg;
     inertialSenseInterface.ImxFlashConfig(imxFlashCfg);
-    return cltool_updateFlashCfg(inertialSenseInterface, flashCfgString, DID_FLASH_CONFIG, (uint8_t*)&imxFlashCfg);
+
+    if (flashCfgString.find('=') != std::string::npos)
+    {   // Write to flash config
+        if (!cISDataMappings::StringToDidBuffer(DID_FLASH_CONFIG, flashCfgString, (uint8_t*)&imxFlashCfg))
+        {
+            cout << "Failed to parse flash config string." << endl;
+            return false;
+        }
+        if (!inertialSenseInterface.SetImxFlashConfig(imxFlashCfg) ||
+            !inertialSenseInterface.WaitForImxFlashCfgSynced())
+        {
+            cout << "Failed to set IMX flash config." << endl;
+            return false;
+        }
+    }
+    else
+    {   // Read from flash config
+        string output;
+        if (cISDataMappings::DidBufferToString(DID_FLASH_CONFIG, (uint8_t*)&imxFlashCfg, output, flashCfgString))
+        {
+            cout << output;
+        }
+        else
+        {
+            cout << "Failed to read flash config." << endl;
+        }
+    }
+
+    return true;
 }
 
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
@@ -1076,164 +1285,34 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
     }
     gpx_flash_cfg_t gpxFlashCfg;
     inertialSenseInterface.GpxFlashConfig(gpxFlashCfg);
-    return cltool_updateFlashCfg(inertialSenseInterface, flashCfgString, DID_GPX_FLASH_CFG, (uint8_t*)&gpxFlashCfg);
-}
 
-bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString, uint32_t did, uint8_t* dataPtr)
-{
-    bool success = false;
-    const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfoMap(did);
-
-    if (flashCfgString.length() < 2)
-    {   // Read and display entire flash config
-        data_mapping_string_t stringBuffer;
-        cout << "Current flash config" << endl;
-        for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
+    if (flashCfgString.find('=') != std::string::npos)
+    {   // Write to flash config
+        if (!cISDataMappings::StringToDidBuffer(DID_GPX_FLASH_CFG, flashCfgString, (uint8_t*)&gpxFlashCfg))
         {
-            const data_info_t& info = i->second;
-            if (info.arraySize)
-            {   // Array
-                for (int i=0; i < info.arraySize; i++)
-                {
-                    if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer, i))
-                    {
-                        cout << info.name << "[" << i << "] = " << stringBuffer << endl;
-                        success = true;
-                    }
-                }
-            }
-            else
-            {   // Single Elements
-                if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer))
-                {
-                    cout << info.name << " = " << stringBuffer << endl;
-                    success = true;
-                }
-            }
+            cout << "Failed to parse flash config string." << endl;
+            return false;
+        }
+        g_gpxFlashCfg_upload = gpxFlashCfg; // Save for later use
+        if (!inertialSenseInterface.SetGpxFlashConfig(gpxFlashCfg) ||
+            !inertialSenseInterface.WaitForGpxFlashCfgSynced())
+        {
+            cout << "Failed to set GPX flash config." << endl;
+            return false;
         }
     }
     else
-    {   // Read or write specific flash config parameters
-        vector<string> keyValues;
-        bool modified = false;
-
-        splitString(flashCfgString, '|', keyValues);
-        for (size_t i = 0; i < keyValues.size(); i++)
+    {   // Read from flash config
+        string output;
+        if (cISDataMappings::DidBufferToString(DID_GPX_FLASH_CFG, (uint8_t*)&gpxFlashCfg, output, flashCfgString))
         {
-            vector<string> keyAndValue;
-            splitString(keyValues[i], '=', keyAndValue);
-            if (keyAndValue.size() == 1) 
-            {   // Display only select flash config value(s)
-                int arrayIndex = -1;
-                // Some arrays are multi-element single-variable and some are single-element multi-variable. 
-                if (flashMap.find(keyAndValue[0]) == flashMap.end())
-                {   // Unrecognized key.  See if we are using a multi-element single-variable.
-                    arrayIndex = extract_array_index(keyAndValue[0]);
-                }
-
-                data_mapping_string_t stringBuffer;
-                for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
-                {
-                    const data_info_t& info = i->second;
-                    if (info.name == keyAndValue[0])
-                    {
-                        if (info.arraySize)
-                        {   // Array
-                            if (arrayIndex == -1)
-                            {   // Array: all elements 
-                                for (int arrayIndex=0; arrayIndex<info.arraySize; arrayIndex++)
-                                {
-                                    if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer, arrayIndex))
-                                    {
-                                        cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
-                                    }
-                                }
-                                success = true;
-                            }
-                            else
-                            {   // Array: Single element
-                                if (arrayIndex >= info.arraySize)
-                                {   // Index out of bound
-                                    cout << info.name << "[" << arrayIndex << "] " << " invalid array index" << endl;
-                                    return false;
-                                }
-                     
-                                if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer, _MAX(0, arrayIndex)))
-                                {
-                                    cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
-                                    success = true;
-                                }
-                            }
-                        }
-                        else
-                        {   // Single element
-                            if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)dataPtr, stringBuffer))
-                            {
-                                cout << info.name << " = " << stringBuffer << endl;
-                                success = true;
-                            }
-                        }
-                    }
-                }
-            } 
-            else if (keyAndValue.size() == 2)
-            {   // Set select flash config values
-                int arrayIndex = -1;
-
-                // Some arrays are multi-element single-variable and some are single-element multi-variable. 
-                if (flashMap.find(keyAndValue[0]) == flashMap.end())
-                {   // Unrecognized key.  See if we are using a multi-element single-variable.
-                    arrayIndex = extract_array_index(keyAndValue[0]);
-                }
-
-                if (flashMap.find(keyAndValue[0]) == flashMap.end())
-                {   
-                    cout << "Unrecognized " << cISDataMappings::DataName(did) << " key '" << keyAndValue[0] << "' specified, ignoring." << endl;
-                }
-                else
-                {
-                    const data_info_t& info = flashMap.at(keyAndValue[0]);
-                    if (info.arraySize && arrayIndex >= info.arraySize)
-                    {   // Array index out of bound
-                        cout << info.name << "[" << arrayIndex << "] " << " invalid array index" << endl;
-                        return false;
-                    }
-                    string str = keyAndValue[1];
-                    if (str.compare(0, 2, "0x") == 0)
-                    {   // Remove "0x" from hexidecimal
-                        str = str.substr(2);
-                    }
-                    // Address how elem 
-                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)dataPtr, info, _MAX(0, arrayIndex));
-                    cout << "Setting " << cISDataMappings::DataName(did) << "." << keyAndValue[0] << " = " << keyAndValue[1].c_str() << endl;
-                    modified = true;
-                    success = true;
-                }
-            }
+            cout << output;
         }
-
-        if (modified)
-        {   // Upload flash config
-            nvm_flash_cfg_t *imxFlashCfg;
-            gpx_flash_cfg_t *gpxFlashCfg;
-            switch (did)
-            {
-            case DID_FLASH_CONFIG:  
-                imxFlashCfg = (nvm_flash_cfg_t*)dataPtr; 
-                inertialSenseInterface.SetImxFlashConfig(*imxFlashCfg);  
-                inertialSenseInterface.WaitForImxFlashCfgSynced();
-                break;
-
-            case DID_GPX_FLASH_CFG: 
-                gpxFlashCfg = (gpx_flash_cfg_t*)dataPtr; 
-                inertialSenseInterface.SetGpxFlashConfig(*gpxFlashCfg);
-                g_gpxFlashCfg_upload = *gpxFlashCfg; // Save for later use
-                inertialSenseInterface.WaitForGpxFlashCfgSynced();
-                break;
-            }
+        else
+        {
+            cout << "Failed to read flash config." << endl;
         }
     }
 
-    // Successfully read/wrote flash config
-    return success;
+    return true;
 }

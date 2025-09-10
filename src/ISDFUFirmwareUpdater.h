@@ -169,7 +169,7 @@ typedef enum {
     IS_PROCESSOR_UNKNOWN = -1,
     IS_PROCESSOR_SAMx70 = 0,        // uINS-3/4, EVB-2
     IS_PROCESSOR_STM32L4,           // IMX-5
-    IS_PROCESSOR_STM32U5,           // GPX-1, IMX-5.1
+    IS_PROCESSOR_STM32U5,           // GPX-1, IMX-6
 
     IS_PROCESSOR_NUM,               // Must be last
 } eProcessorType;

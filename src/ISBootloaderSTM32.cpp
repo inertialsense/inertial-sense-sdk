@@ -80,10 +80,10 @@ uint8_t cISBootloaderSTM32::check_is_compatible(uint32_t imgSign)
     {
     case 0x62: 
         m_info_callback(this, "Detected STM32L4 device", IS_LOG_LEVEL_DEBUG);
-        return IS_IMAGE_SIGN_STM_L4;   // STM32L452 (IMX-5.0)
+        return IS_IMAGE_SIGN_STM_L4;   // STM32L452 (IMX-5)
     case 0x82: 
         m_info_callback(this, "Detected STM32U5 device", IS_LOG_LEVEL_DEBUG);
-        return IS_IMAGE_SIGN_STM_U5;   // STM32U575/STM32U585 (GPX-1/IMX-5.1)
+        return IS_IMAGE_SIGN_STM_U5;   // STM32U575/STM32U585 (GPX-1/IMX-6)
     default: 
         m_info_callback(this, "No STM32 device detected", IS_LOG_LEVEL_DEBUG);
         return IS_IMAGE_SIGN_NONE;
@@ -154,7 +154,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
         // Check the address range
         switch(m_pid)
         {
-        case 0x62:      // STM32L452 (IMX-5.0)
+        case 0x62:      // STM32L452 (IMX-5)
             // TODO: Add support for other areas.
             if(image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x0807FFFF)
             {
@@ -162,7 +162,7 @@ is_operation_result cISBootloaderSTM32::download_image(void)
                 continue;
             }
             break;
-        case 0x82:      // STM32U575/STM32U585 (GPX-1/IMX-5.1)
+        case 0x82:      // STM32U575/STM32U585 (GPX-1/IMX-6)
             // TODO: Add support for other areas.
             if(image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x08200000)
             {
