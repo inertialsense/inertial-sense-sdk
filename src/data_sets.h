@@ -2366,9 +2366,9 @@ enum eHdwBitStatusFlags
     HDW_BIT_FAULT_BAROMETER                 = (int)0x00000800,
     HDW_BIT_FAULT_GPS_NO_COM                = (int)0x00001000,    // No GPS serial communications
     HDW_BIT_FAULT_GPS_POOR_CNO              = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
-    HDW_BIT_FAULT_GPS_POOR_ACCURACY         = (int)0x00002000,    // Low number of satellites, or bad accuracy 
-    HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00004000,    // (Not implemented)
-    HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00008000,    // IMU fault rejection failure
+    HDW_BIT_FAULT_GPS_POOR_ACCURACY         = (int)0x00004000,    // Low number of satellites, or bad accuracy 
+    HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00008000,    // (Not implemented)
+    HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00010000,    // IMU fault rejection failure
     HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,    // Hardware type does not match firmware
 };
 
