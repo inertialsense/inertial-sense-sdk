@@ -25,6 +25,7 @@
  */
 class CorrectionService {
 public:
+    typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;
 
     /**
      * The base constructor, binds the specified port as the source for corrections data that
@@ -83,14 +84,63 @@ public:
     bool hasDevice(ISDevice* device);
 
     /**
+     * Adds a callback to be called when a Msg 1029 is received from RTCM3
+     * @param callback Callback to call when receiving a Msg 1029 over RTCM3
+     * @return id That can be used to remove this callback later
+     */
+    uint32_t addRTCM3Msg1029Listeners(const tRTCM3Msg1029ListenerCallback &callback);
+
+    /**
+     * Remove a callback from being called on Msg 1029
+     * @param id The id returned from addRTCM3Msg1029Listeners
+     */
+    void removeRTCM3Msg1029Listeners(uint32_t id);
+
+    /**
      * Checks the source port for data and forwards it to all devices
      * @return 0 if no packets processed, positive number representing number of packets processed, negative number representing errno
      */
     int step();
 
-private:
+protected:
     port_handle_t source{};
     std::vector<ISDevice*> devices;
+
+private:
+    std::vector<tRTCM3Msg1029ListenerCallback> rtcm3Msg1029Listeners;
+    is_comm_instance_t packetParser{};
+    uint8_t packetBuffer[PKT_BUF_SIZE]{};
+
+    /**
+     * Transforms one format (like NTRIP) to RTCM3 to be processed by the device
+     * You should overload this if your implementing another corrections protocol in a host side application
+     * @param inputBuffer Data to be transformed
+     * @param inputLength Length of input buffer
+     * @param finalBuffer To be transmitted to the device
+     * @param finalBufferSize The size of the final buffer
+     * @return Number of bytes processed
+     */
+    virtual int packetTransformer(const uint8_t *inputBuffer, uint32_t inputLength, uint8_t *finalBuffer, uint32_t finalBufferSize);
+
+    /**
+     * Final packet filter ensures only RTCM3 packets are sent to the device
+     * Also processes callbacks for RTCM3 1029 messages
+     * @param inputBuffer Data to be filter on
+     * @param inputLength Length of input buffer
+     * @param finalBuffer To be transmitted to the device
+     * @param finalBufferSize The size of the final buffer
+     * @param bytesProcessed A pointer to a uint32_t to store the number of bytes to be sent to the device
+     * @return Number of packets processed
+     */
+    int finalPacketFilter(const uint8_t *inputBuffer, uint32_t inputLength, uint8_t *finalBuffer,
+                          uint32_t finalBufferSize, uint32_t *bytesProcessed);
+
+    /**
+     * Send data to all devices
+     * @param inputBuffer Input buffer of bytes to send
+     * @param inputLength Number of bytes to send
+     */
+    void sendData(const uint8_t *inputBuffer, uint32_t inputLength);
 };
 
 
