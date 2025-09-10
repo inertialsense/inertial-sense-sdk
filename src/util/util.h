@@ -190,6 +190,22 @@ namespace utils {
      */
     std::vector<std::string> split_string(const std::string& str, const std::string& delimiter);
 
+
+    /**
+     * Returns the index of an entry (type E) within a container (type T)
+     * @tparam E the data type of the collection; defaults to std::string
+     * @tparam T the collection type; defaults to std::vector
+     * @param c a reference to the collection containing the element to index
+     * @param e a reference to the element to locate in the collection
+     * @returns the index number of the element e within collection c, or -1 if not found.
+     */
+    template <typename E=std::string, typename T=std::vector<E>>
+    int indexOf(const T& c, const E& e) {
+        ptrdiff_t pos = find(c.begin(), c.end(), e) - c.begin();
+        if(pos >= c.size()) return -1;
+        return (int)pos;
+    }
+
     std::string raw_hexdump(const char* raw_data, int bytesLen, int bytesPerLine);
     std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
 
