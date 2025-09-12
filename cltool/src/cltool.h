@@ -26,6 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISBootloaderBase.h"
 #include "util/util.h"
+#include "CorrectionService.h"
 
 #define APP_NAME                "cltool"
 #if PLATFORM_IS_WINDOWS

@@ -38,6 +38,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "cltool.h"
 #include "protocol_nmea.h"
 #include "util/natsort.h"
+#include "CorrectionService.h"
 
 using namespace std;
 
@@ -48,6 +49,7 @@ static bool g_cmdSuccessExitAppNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 InertialSense *g_inertialSenseInterface = NULL;
+CorrectionService *g_roverConnection = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
@@ -91,7 +93,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
         }
         else
         {
-            outstream << "Client: " << i->ClientConnectionInfo()     << "     Rx: ";
+            //outstream << "Client: " << i->ClientConnectionInfo()     << "     Rx: ";
         }
         outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->ClientServerByteCount() << " bytes    \n";
 
@@ -532,26 +534,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
-        vector<string> pieces;
-        splitString(g_commandLineOptions.roverConnection, ':', pieces);
-        if (pieces[0] != "TCP" &&
-            pieces[0] != "SERIAL")
-        {
-            cout << "Invalid base connection, 1st field must be: TCP or SERIAL\n  -rover=" << g_commandLineOptions.roverConnection << endl;
-            return false;
-        }
-        if (pieces[1] != "RTCM3" &&
-            pieces[1] != "IS" &&
-            pieces[1] != "UBLOX")
-        {
-            cout << "Invalid base connection, 2nd field must be: RTCM3, UBLOX, or IS\n  -rover=" << g_commandLineOptions.roverConnection << endl;
-            return false;
-        }
-
-        if (!inertialSenseInterface.OpenConnectionToServer(g_commandLineOptions.roverConnection))
-        {
-            cout << "Failed to connect to server (base)." << endl;
-        }
+        g_roverConnection = new CorrectionService(g_commandLineOptions.roverConnection);
+        g_roverConnection->addDevices(reinterpret_cast<const vector<ISDevice *> &>(inertialSenseInterface.getDevices()));
     }
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
@@ -1009,6 +993,11 @@ static int cltool_dataStreaming()
             {
                 if (!inertialSenseInterface.Update())
                 {   // device disconnected, exit
+                    exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
+                    break;
+                }
+
+                if (g_roverConnection && (g_roverConnection->step() < 0)) {
                     exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
                     break;
                 }

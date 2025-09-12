@@ -121,7 +121,6 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
     s_cm_state = &m_comManagerState;
     m_logThread = NULLPTR;
     m_lastLogReInit = time(0);
-    m_clientStream = NULLPTR;
     m_clientBufferBytesToSend = 0;
     m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;  // For Intel.
@@ -166,8 +165,6 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
     // memset(&m_cmInit, 0, sizeof(m_cmInit));
     // m_cmPorts = NULLPTR;
 
-    is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer), NULL);
-
     m_newDeviceHandler = nullptr; // handlerNewDevice;
     // m_cloneDeviceHandler = handleClonedDevices;
 
@@ -197,7 +194,6 @@ InertialSense::InertialSense(
     s_cm_state = &m_comManagerState;
     m_logThread = NULLPTR;
     m_lastLogReInit = time(0);
-    m_clientStream = NULLPTR;
     m_clientBufferBytesToSend = 0;
     m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;  // For Intel.
@@ -224,8 +220,6 @@ InertialSense::InertialSense(
     comManagerGetGlobal()->assignUserPointer(&m_comManagerState);
     // memset(&m_cmInit, 0, sizeof(m_cmInit));
     // m_cmPorts = NULLPTR;
-
-    is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer), NULL);
 
     m_newDeviceHandler = handlerNewDevice;
     // m_cloneDeviceHandler = handleClonedDevices;
@@ -412,27 +406,10 @@ bool InertialSense::SetLoggerEnabled(
     return EnableLogger(logEnable, logPath, logOptions, rmcPreset, rmcOptions);
 }
 
-// [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
-bool InertialSense::OpenConnectionToServer(const string& connectionString)
-{
-    CloseServerConnection();
-
-    // calls new cISTcpClient or new cISSerialPort
-    m_clientStream = cISClient::OpenConnectionToServer(connectionString, &m_forwardGpgga);
-
-    return m_clientStream!=NULLPTR;
-}
-
 void InertialSense::CloseServerConnection()
 {
     m_tcpServer.Close();
     // m_serialServer.Close();
-
-    if (m_clientStream != NULLPTR)
-    {
-        delete m_clientStream;
-        m_clientStream = NULLPTR;
-    }
 }
 
 // [type]:[ip/url]:[port]
@@ -536,8 +513,6 @@ bool InertialSense::Update()
     }
     else
     {
-        UpdateClient();
-
         // [C COMM INSTRUCTION]  2.) Update each device at regular interval to send and receive data.
         // Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
         // task system with serial port read function that does NOT incorporate a timeout.
@@ -628,81 +603,6 @@ bool InertialSense::UpdateServer()
         }
     }
     m_tcpServer.Update();
-
-    return true;
-}
-
-/**
- *
- * @return
- */
-bool InertialSense::UpdateClient()
-{
-    if (m_clientStream == NULLPTR)
-    {
-        return false;
-    }
-
-    // Forward only valid uBlox and RTCM3 packets
-    is_comm_instance_t *comm = &(m_gpComm);
-    protocol_type_t ptype = _PTYPE_NONE;
-    static int error = 0;
-
-    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
-    int n = is_comm_free(comm);
-
-    // Read data directly into comm buffer
-    if ((n = m_clientStream->Read(comm->rxBuf.tail, n)))
-    {
-        // Update comm buffer tail pointer
-        comm->rxBuf.tail += n;
-
-        // Search comm buffer for valid packets
-        while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-        {
-            string str;
-
-            switch (ptype)
-            {
-                case _PTYPE_UBLOX:
-                case _PTYPE_RTCM3:
-                    m_clientServerByteCount += comm->rxPkt.data.size;
-                    OnClientPacketReceived(comm->rxPkt.data.ptr, comm->rxPkt.data.size);
-
-                    if (ptype == _PTYPE_RTCM3)
-                    {
-                        if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
-                        {
-                            str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
-                        }
-                    }
-                    break;
-
-                case _PTYPE_PARSE_ERROR:
-                    if (error)
-                    {   // Don't print first error.  Likely due to port having been closed.
-                        printf("InertialSense::UpdateClient() PARSE ERROR count: %d\n", error);
-                    }
-                    error++;
-                    break;
-
-                default:
-                    break;
-            }
-
-            if (ptype != _PTYPE_NONE)
-            {   // Record message info
-                messageStatsAppend(str, m_clientMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
-            }
-        }
-    }
-
-    // Send data to client if available, i.e. nmea gga pos
-    if (m_clientBufferBytesToSend > 0 && m_forwardGpgga)
-    {
-        m_clientStream->Write(m_clientBuffer, m_clientBufferBytesToSend);
-    }
-    m_clientBufferBytesToSend = 0;
 
     return true;
 }
