@@ -41,6 +41,7 @@ public:
     enum device_event_e : uint8_t {
         DEVICE_ADDED,
         DEVICE_REMOVED,
+        DEVICE_PORT_CHANGED,
     };
 
     static const uint16_t OPTIONS_USE_DEFAULTS                    = 0xFFFF;       //!< used to indicate that higher-order options, if set should be used
@@ -275,6 +276,17 @@ public:
      * @return a vector of ISDevice* which match the filter criteria (hdwId)
      */
     std::vector<ISDevice*> selectByHdwId(const uint16_t hdwId = 0xFFFF);
+
+
+    /**
+     * Provided a directory of firmware files, this call returns a tuple of ISDevice* and
+     * a path to a firmware file which can be used to update that device to the latest version.
+     * @param firmwarePath a string indicating a base directory which contains firmware files to
+     *  evaluate to determine if any are suitable for each device.
+     * @returns a vector of pairs of devices (first) which can be upgraded using the firmware
+     *  file (second).
+     */
+    std::vector<std::pair<ISDevice*, std::string>> getUpgradableDevices(const std::string& firmwarePath);
 
 protected:
     void portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port);

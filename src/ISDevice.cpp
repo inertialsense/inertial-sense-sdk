@@ -519,9 +519,9 @@ std::string ISDevice::getDescription(int flags) const {
     std::string desc = getName(flags);
     if (!(flags & OMIT_FIRMWARE_VERSION)) {
         desc += " " + getFirmwareInfo(flags);
-        if (!(flags & OMIT_PORT_NAME))
-            desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
     }
+    if (!(flags & OMIT_PORT_NAME) && portIsValid(port))
+        desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
     return desc;
 }
 

@@ -172,6 +172,7 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
             if (device && portIsValid(port)) {
                 device->assignPort(port);
                 device->devInfo = devInfo;
+                for (device_listener& l : listeners) l(DEVICE_PORT_CHANGED, device);    // notify that this device's port has been updated
             } else {
                 // FIXME: if we're here, it means we had a deviceEntry that matched the discovered device, but its associated device is invalid.
                 //  we don't want to reallocate the device, since there is already one there, but just need to reassign the devInfo, etc.
@@ -182,7 +183,7 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                 deviceEntry.device = nullptr;
                 if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
                     portClose(port);
-                break;
+                break;  // we'll drop out of the 'for' loop, and still update known_devices and call the listeners, etc.
             }
 
             if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
@@ -227,6 +228,9 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
             ISDevice* device = getDevice(port);
             if (device) {
                 device->assignPort(nullptr); // revoke the removed port from the device...
+                for (device_listener& l : listeners) {
+                    l(DEVICE_PORT_CHANGED, device);
+                }
             }
             break;
     }
@@ -364,3 +368,48 @@ std::vector<ISDevice *> DeviceManager::selectByHdwId(const uint16_t hdwId) {
     return selectByDevInfo(devInfo, filterFlags);
 }
 
+/**
+ * @returns a map of devices (key) which can be upgraded with the firmware image version (value) to
+ *  which it can be upgraded to.
+ */
+std::vector<std::pair<ISDevice*, std::string>> DeviceManager::getUpgradableDevices(const std::string& firmwarePath) {
+    std::vector<std::pair<ISDevice*, std::string>> results;
+
+    // first, let's check the images path and find the latest firmware image
+    std::vector<std::string> fwImageFiles;
+    ISFileManager::GetAllFilesInDirectory(firmwarePath, true, "", fwImageFiles);
+
+    // build a map of devInfo to files; we want to use a custom sorted map, where the map is ordered by version info
+    std::map<uint16_t, std::map<dev_info_t, std::string, decltype(&utils::compareFirmwareVersions)>> fwImages;
+
+    for (auto imgPath : fwImageFiles) {
+        std::string imgDir, imgFile, imgExt;
+        ISFileManager::getPathComponents(imgPath, imgDir, imgFile, imgExt);
+        dev_info_t tmpDevInfo = {};
+        printf("Evaluating %s\n", imgFile.c_str());
+        if (utils::devInfoFromString(imgFile, tmpDevInfo)) {
+            auto hdwId = ENCODE_DEV_INFO_TO_HDW_ID(tmpDevInfo);
+            if (!fwImages.contains(hdwId))
+                fwImages[hdwId] = std::map<dev_info_t, std::string, decltype(&utils::compareFirmwareVersions)>(&utils::compareFirmwareVersions);
+            fwImages[hdwId][tmpDevInfo] = imgPath;
+        }
+    }
+
+    for (auto device : *this) {
+        auto hdwId = ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo);
+        for (auto& img : fwImages[hdwId]) {
+            if (utils::isDevInfoCompatible(device->devInfo, (const dev_info_t&)img.first)) {
+                // check if the img version is newer than the device's version
+                const dev_info_t& deviceVersion = (const dev_info_t&)device->devInfo;
+                const dev_info_t& imageVersion = (const dev_info_t&)img.first;
+                // returns true if imageVersion is greater than deviceVersion
+                if (utils::compareFirmwareVersions(imageVersion, deviceVersion)) {
+                    results.push_back(std::make_pair(device, img.second));
+                    break;
+                }
+            }
+        }
+    }
+
+    return results;
+}

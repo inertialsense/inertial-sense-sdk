@@ -58,21 +58,29 @@ namespace testing
 #define ANSI_DEFAULT     ""
 #define ANSI_RESET       ""
 
-#define TEST_PRINTF(...)  do { printf("[          ] "); printf(__VA_ARGS__); fflush(stdout); } while (0);
+#define TEST_PRINTF(...)        do { printf("[%10c] ", ' '); printf(__VA_ARGS__); fflush(stdout); } while (0);
+
+#define TEST_PRINTF_TS(...)     do { struct timeval tv; gettimeofday(&tv, NULL); printf("[%10.1f] ", (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0); printf(__VA_ARGS__); fflush(stdout); } while (0);
+
 #endif
-
-
 
 // C++ stream interface
 class TestCout : public std::stringstream
 {
 public:
-    ~TestCout()
-    {
-        TEST_PRINTF("%s",str().c_str());
-    }
+    ~TestCout() { TEST_PRINTF("%s", str().c_str()); }
 };
 
 #define TEST_COUT  TestCout()
+
+
+// C++ stream interface
+class TestCoutTs : public std::stringstream
+{
+public:
+    ~TestCoutTs() { TEST_PRINTF_TS("%s", str().c_str()); }
+};
+
+#define TEST_COUT_TS  TestCoutTs()
 
 #endif // GTEST_HELPERS_H

@@ -57,6 +57,8 @@ public:
         OMIT_BUILD_DATE          = 0x0400,      //!< suppresses the output of the build date
         OMIT_BUILD_TIME          = 0x0800,      //!< suppresses the output of the build time
         OMIT_BUILD_MILLIS        = 0x1000,      //!< suppresses the output of the build milliseconds when not zero
+
+        ESSENTIAL_FIRMWARE_INFO  = (ISDevice::OMIT_COMMIT_HASH | ISDevice::OMIT_BUILD_KEY | ISDevice::OMIT_BUILD_MILLIS | ISDevice::OMIT_BUILD_DATE | ISDevice::OMIT_BUILD_TIME),
     };
 
     const static ISDevice invalidRef;

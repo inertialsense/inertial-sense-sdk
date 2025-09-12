@@ -109,7 +109,7 @@ bool ISmDnsPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    debug_message("[DBG] Releasing network port '%s'\n", ((tcp_port_t*)port)->portName);
+    debug_message("[DBG] Releasing network port '%s'\n", portName(port));
     tcpPortDelete(port);
     delete static_cast<tcp_port_t*>(port);
 

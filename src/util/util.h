@@ -19,6 +19,7 @@
 #include <ostream>
 #include <cstring>
 #include <algorithm>
+#include <chrono>
 
 #include <sstream>
 #include <functional>
@@ -367,5 +368,39 @@ private:
     ByteBuffer& buffer_;
 };
 
+
+class FnProfiler {
+public:
+    // Constructor records the start time and function name
+    FnProfiler(const std::string& functionName, uint32_t threshold = 100) : m_functionName(functionName), m_threshold(threshold), m_startTime(std::chrono::high_resolution_clock::now()) { }
+
+    // Destructor calculates and prints the duration
+    ~FnProfiler() {
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - m_startTime);
+        if (duration.count() < m_threshold)
+            return;
+
+        std::cout << utils::string_format("'%s' executed in %lluus", m_functionName.c_str(), duration.count()) << std::endl;
+        auto lastMark = m_startTime;
+        for (auto [m, msg] : markers) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(m - m_startTime);
+            auto span = std::chrono::duration_cast<std::chrono::microseconds>(m - lastMark);
+            float pct = ((double)span.count() / (double)duration.count()) * 100.0f;
+            std::cout << utils::string_format("    %7uus (%7uus, %4.1f%%) ::  %s", elapsed, span, pct, msg.c_str()) << std::endl;
+            lastMark = m;
+        }
+    }
+
+    void mark(const std::string& msg) {
+        markers.emplace_back(std::make_pair(std::chrono::high_resolution_clock::now(), msg));
+    }
+
+private:
+    std::string m_functionName;
+    uint32_t m_threshold;
+    std::chrono::high_resolution_clock::time_point m_startTime;
+    std::vector<std::pair<std::chrono::high_resolution_clock::time_point, std::string>> markers;
+};
 
 #endif //IS_SDK__UTIL_H
