@@ -344,7 +344,7 @@ public:
 
     constexpr int in_range(std::string_view::size_type pos) const noexcept {
         int result{};
-        for (int comp{}; const auto [start,len] : _ranges) {
+        for (int comp{}; const auto& [start,len] : _ranges) {
             if (pos >= start && pos < start + len)
                 result |= 1 << comp;
             ++comp;
@@ -352,7 +352,7 @@ public:
         return result;
     }
 
-    constexpr segments decode_segments(bool filter = true) const noexcept {
+    inline segments decode_segments(bool filter = true) const noexcept {
         segments result;
         if (has_path()) {
             constexpr auto decruntil([](std::string_view src) noexcept -> std::string_view {
@@ -381,14 +381,14 @@ public:
         return result;
     }
 
-    static constexpr void sort_query(query_result& query) noexcept { std::sort(query.begin(), query.end(), query_comp); }
+    static inline void sort_query(query_result& query) noexcept { std::sort(query.begin(), query.end(), query_comp); }
 
     static constexpr std::string_view find_port(std::string_view what) noexcept {
         const auto result{std::equal_range(_default_ports.cbegin(), _default_ports.cend(), value_pair(what, std::string_view()), query_comp)};
         return result.first == result.second ? std::string_view() : result.first->second;
     }
 
-    static constexpr std::string_view find_query(std::string_view what, const query_result& from) noexcept {
+    static inline std::string_view find_query(std::string_view what, const query_result& from) noexcept {
         const auto result{std::equal_range(from.cbegin(), from.cend(), value_pair(what, std::string_view()), query_comp)};
         return result.first == result.second ? std::string_view() : result.first->second;
     }
@@ -406,13 +406,13 @@ public:
 
     static constexpr bool has_hex(std::string_view src) noexcept { return find_hex(src) != std::string_view::npos; }
 
-    static constexpr std::string decode_hex(std::string_view src, bool unreserved = false) {
+    static inline std::string decode_hex(std::string_view src, bool unreserved = false) {
         std::string result{src};
         decode_to(result, unreserved);
         return result;
     }
 
-    static constexpr std::string& decode_hex(std::string& result, bool unreserved = false) // inplace decode
+    static inline std::string& decode_hex(std::string& result, bool unreserved = false) // inplace decode
     {
         return decode_to(result, unreserved);
     }
@@ -427,7 +427,7 @@ public:
             return std::string_view();
     }
 
-    static constexpr std::string normalize_str(std::string_view src, int components = all_components) noexcept {
+    static inline std::string normalize_str(std::string_view src, int components = all_components) noexcept {
         using namespace std::literals::string_view_literals;
         std::string result{src};
         basic_uri bu{result};
@@ -483,7 +483,7 @@ public:
         return result;
     }
 
-    static constexpr std::string normalize_http_str(std::string_view src) noexcept {
+    static inline std::string normalize_http_str(std::string_view src) noexcept {
         auto result{normalize_str(src)};
         if (basic_uri bu{result}; bu.has_port()) {
             if (auto prec{basic_uri::find_port(bu.get_scheme())}; prec == bu.get_port()
@@ -497,7 +497,7 @@ public:
         return result;
     }
 
-    static constexpr std::string make_edit(const auto& what, std::initializer_list<comp_pair> from) {
+    static inline std::string make_edit(const auto& what, std::initializer_list<comp_pair> from) {
         basic_uri ibase;
         comp_list ilist{countof};
         for (component ii{}; ii != countof; ii = component(ii + 1)) {
@@ -521,7 +521,7 @@ public:
         return make_uri(ibase, std::move(ilist));
     }
 
-    static constexpr std::string encode_hex(std::string_view src) noexcept {
+    static inline std::string encode_hex(std::string_view src) noexcept {
         std::string result;
         for (const auto pp : src) {
             if (is_reserved(pp) || std::isspace(pp) || !std::isprint(static_cast<unsigned char>(pp)))
@@ -532,7 +532,7 @@ public:
         return result;
     }
 
-    static constexpr std::string make_uri(std::initializer_list<comp_pair> from) noexcept {
+    static inline std::string make_uri(std::initializer_list<comp_pair> from) noexcept {
         basic_uri ibase;
         comp_list ilist{countof};
         for (const auto& [comp,str] : from) {
@@ -558,14 +558,14 @@ public:
                             os << "   " << (!tag.empty() ? tag : "(empty)") << '\n';
                 if (ii == query)
                     if (const auto qresult{what.decode_query()}; qresult.size() > 1)
-                        for (const auto [tag,value] : qresult)
+                        for (const auto& [tag,value] : qresult)
                             os << "   " << std::setw(12) << std::left << tag << (!value.empty() ? value : "(empty)") << '\n';
             }
         }
         return os;
     }
 
-    friend constexpr auto operator==(const basic_uri& lhs, const basic_uri& rhs) noexcept { return lhs._source == rhs._source; }
+    friend auto operator==(const basic_uri& lhs, const basic_uri& rhs) noexcept { return lhs._source == rhs._source; }
 
 private:
     static constexpr bool is_reserved(char c) noexcept { return _reserved.find_first_of(c) != std::string_view::npos; }
@@ -579,7 +579,7 @@ private:
     static constexpr bool query_comp(const value_pair& pl, const value_pair& pr) noexcept { return pl.first < pr.first; }
     static constexpr char cvt_hex_octet(char c) noexcept { return (c & 0xF) + (c >> 6) * 9; }
 
-    static constexpr std::string& decode_to(std::string& result, bool unreserved) // inplace decode
+    static inline std::string& decode_to(std::string& result, bool unreserved) // inplace decode
     {
         for (std::string_view::size_type fnd{}; ((fnd = find_hex(result, fnd))) != std::string_view::npos;)
             if (unreserved ? is_unreserved_ascii(result.substr(fnd, 3)) : true)
@@ -589,7 +589,7 @@ private:
         return result;
     }
 
-    static constexpr std::string make_uri(basic_uri ibase, comp_list ilist) noexcept {
+    static inline std::string make_uri(basic_uri ibase, comp_list ilist) noexcept {
         if (!ibase.has_any())
             return {};
         using namespace std::literals::string_view_literals;
@@ -675,11 +675,11 @@ class uri_storage {
     size_t _sz{};
 
 protected:
-    constexpr uri_storage(std::string src) noexcept : _sz(src.size() > sz ? 0 : src.size()) { std::copy_n(src.cbegin(), _sz, _buffer.begin()); }
-    constexpr uri_storage() = default;
-    constexpr ~uri_storage() = default;
+    inline uri_storage(std::string src) noexcept : _sz(src.size() > sz ? 0 : src.size()) { std::copy_n(src.cbegin(), _sz, _buffer.begin()); }
+    uri_storage() = default;
+    ~uri_storage() = default;
 
-    constexpr std::string swap(std::string src) noexcept {
+    inline std::string swap(std::string src) noexcept {
         if (src.size() > sz)
             return {};
         std::string old(_buffer.cbegin(), _sz);
@@ -688,7 +688,7 @@ protected:
     }
 
 public:
-    constexpr std::string_view buffer() const noexcept { return {_buffer.cbegin(), _sz}; }
+    inline std::string_view buffer() const noexcept { return {_buffer.cbegin(), _sz}; }
     static constexpr auto max_storage() noexcept { return sz; }
 };
 
@@ -699,15 +699,15 @@ class uri_storage<0> {
     std::string _buffer;
 
 protected:
-    constexpr uri_storage(std::string src) noexcept : _buffer(std::move(src)) {
+    inline uri_storage(std::string src) noexcept : _buffer(std::move(src)) {
     }
 
-    constexpr uri_storage() = default;
-    constexpr ~uri_storage() = default;
-    constexpr std::string swap(std::string src) noexcept { return std::exchange(_buffer, std::move(src)); }
+    uri_storage() = default;
+    ~uri_storage() = default;
+    inline std::string swap(std::string src) noexcept { return std::exchange(_buffer, std::move(src)); }
 
 public:
-    constexpr std::string_view buffer() const noexcept { return _buffer; }
+    inline std::string_view buffer() const noexcept { return _buffer; }
     static constexpr auto max_storage() noexcept { return basic_uri::uri_max_len; }
 };
 
@@ -715,39 +715,39 @@ public:
 template <size_t sz>
 class uri_base : public uri_storage<sz>, public basic_uri {
 public:
-    constexpr uri_base(std::string src) noexcept
+    inline uri_base(std::string src) noexcept
         : uri_storage<sz>(std::move(src)), basic_uri(this->buffer()) {
     }
 
-    constexpr uri_base(std::string_view src) noexcept : uri_base(std::string(src)) {
+    inline uri_base(std::string_view src) noexcept : uri_base(std::string(src)) {
     }
 
-    constexpr uri_base(const char* src) noexcept : uri_base(std::string(src)) {
+    inline uri_base(const char* src) noexcept : uri_base(std::string(src)) {
     }
 
-    constexpr uri_base() = default;
-    constexpr ~uri_base() = default;
+    uri_base() = default;
+    ~uri_base() = default;
 
-    constexpr std::string replace(std::string src) noexcept {
+    inline std::string replace(std::string src) noexcept {
         auto oldstr{this->swap(std::move(src))};
         assign(this->buffer());
         return oldstr;
     }
 
-    constexpr int edit(std::initializer_list<comp_pair> from) noexcept {
+    inline int edit(std::initializer_list<comp_pair> from) noexcept {
         replace(make_edit(*this, std::move(from)));
         return count();
     }
 
-    constexpr auto normalize() noexcept { return replace(normalize_str(this->get_uri())); }
-    constexpr auto normalize_http() noexcept { return replace(normalize_http_str(this->get_uri())); }
+    inline auto normalize() noexcept { return replace(normalize_str(this->get_uri())); }
+    inline auto normalize_http() noexcept { return replace(normalize_http_str(this->get_uri())); }
 
-    static constexpr auto factory(std::initializer_list<comp_pair> from) noexcept { return uri_base(make_uri(std::move(from))); }
+    static inline auto factory(std::initializer_list<comp_pair> from) noexcept { return uri_base(make_uri(std::move(from))); }
 
     /// normalize equality
-    friend constexpr auto operator==(const uri_base& lhs, const uri_base& rhs) noexcept { return normalize_str(lhs.get_uri()) == normalize_str(rhs.get_uri()); }
+    friend auto operator==(const uri_base& lhs, const uri_base& rhs) noexcept { return normalize_str(lhs.get_uri()) == normalize_str(rhs.get_uri()); }
     /// normalize_http equality
-    friend constexpr auto operator%(const uri_base& lhs, const uri_base& rhs) noexcept { return normalize_http_str(lhs.get_uri()) == normalize_http_str(rhs.get_uri()); }
+    friend auto operator%(const uri_base& lhs, const uri_base& rhs) noexcept { return normalize_http_str(lhs.get_uri()) == normalize_http_str(rhs.get_uri()); }
 };
 
 //-----------------------------------------------------------------------------------------

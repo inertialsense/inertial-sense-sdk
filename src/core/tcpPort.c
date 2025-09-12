@@ -327,12 +327,14 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 
     // Reset socket timeout
 #ifdef PLATFORM_IS_WINDOWS
+    const int MSG_NOSIGNAL = 0;
     DWORD tv = 0;
 #else
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 #endif
+
     if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
         tcpPort->base.perror = errno;
         return -errno;
@@ -341,8 +343,13 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     tcpPortSetBlocking(port, tcpPort->blocking);
 
     // Receive data from the socket
-    ssize_t retval = send(tcpPort->socket, buf, len, 0);
+#ifdef PLATFORM_IS_LINUX
+    errno = 0;      // reset errno, so we make sure we're not looking at stale errors
+#endif
+    ssize_t retval = send(tcpPort->socket, buf, len, MSG_NOSIGNAL);
     if (retval < 0) {
+        if (errno == EPIPE)
+            tcpPortClose(port); // remote has disconnected, so force this socket closed.
         tcpPort->base.perror = errno;
         return -errno;
     }

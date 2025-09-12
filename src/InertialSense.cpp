@@ -1125,12 +1125,6 @@ is_operation_result InertialSense::BootloadFile(
         return IS_OP_ERROR;
     }
 
-    #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25l", stdout);    // Turn off cursor during firmware update
-    #endif
-
-    printf("\n\r");
-
     ISBootloader::firmwares_t files;
     files.fw_uINS_3.path = fileName;
     files.bl_uINS_3.path = blFileName;
@@ -1139,7 +1133,9 @@ is_operation_result InertialSense::BootloadFile(
     files.fw_EVB_2.path = fileName;
     files.bl_EVB_2.path = blFileName;
 
-    cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+    std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
+    if (!cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction, &confirm_device_list))
+		return IS_OP_ERROR;   // Error or no devices found
 
     cISSerialPort::GetComPorts(all_ports);
 
@@ -1564,7 +1560,7 @@ void InertialSense::SavePersistent()
 
 void InertialSense::SoftwareReset()
 {
-    for (auto device : DeviceManager::getInstance()) { device->SoftwareReset(); }
+    for (auto device : DeviceManager::getInstance()) { device->reset(); }
 }
 
 void InertialSense::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)

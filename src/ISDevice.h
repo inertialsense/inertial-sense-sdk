@@ -18,6 +18,7 @@
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"
+#include "ISClient.h"
 
 extern "C"
 {
@@ -68,11 +69,12 @@ public:
 
     explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
+        hdwId = _hdwId;
+        devInfo = {};
         imxFlashCfg.checksum = 0xFFFFFFFF;
         gpxFlashCfg.checksum = 0xFFFFFFFF;
         sysParams.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
         gpxStatus.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
-        hdwId = _hdwId;
         assignPort(_port);
     }
 
@@ -166,24 +168,30 @@ public:
      * @return true is this ISDevice has a valid, and open port
      */
     bool isConnected() const {
-        return (portIsValid(port) && (portType(port) & PORT_TYPE__COMM)) && portIsOpened(port);
+        bool valid = portIsValid(port);
+        bool comPort = portType(port) & PORT_TYPE__COMM;
+        bool open = portIsOpened(port);
+        return valid && comPort && open;
     }
 
     /**
      * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
      * Can be overridden to provide custom configuration, etc on connection - just remember
      *  to call back into ISDevice::connect() in your new method.
-     * @param dontValidate if true (default), skips device validation after successfully connecting
+     * @param revalidate if true causes the device to validate after connecting (default = false)
      * @return true if the connection is made/port opened, otherwise false
      */
-    virtual bool connect(bool dontValidate = true) {
+    virtual bool connect(bool revalidate = false) {
         if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
             return false;
+
         if (portIsOpened(port))
             return true;
-        bool result = (portOpen(port) == PORT_ERROR__NONE);
 
-        if (!dontValidate && result) {
+        bool result = (portOpen(port) == PORT_ERROR__NONE);
+        portStatsReset(port);
+
+        if (!revalidate && result) {
             SLEEP_MS(15);
             result = validate();
         }
@@ -352,13 +360,16 @@ public:
     int SendNmea(const std::string& nmeaMsg);
     int QueryDeviceInfo() { return SendRaw(NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
     int SavePersistent() { return SendRaw(NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
-    int SoftwareReset() { return SendRaw(NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
+
+    [[deprecated("Use ISDevice::reset() instead")]]
+    int SoftwareReset() { return (int)reset(); }
 
     int SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
     int SetSysCmd(const uint32_t command);
     int StopBroadcasts(bool allPorts = false) { return SendRaw((allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
     bool hasPendingImxFlashWrites(uint32_t& ageSinceLastPendingWrite);
+    bool waitForImxFlashWrite(uint32_t timeoutMs);
 
     bool lockPort() { return portMutex.try_lock(); }
     void unlockPort() { return portMutex.unlock(); }
@@ -534,8 +545,8 @@ public:
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
 
-    bool validate(uint32_t timeout = 3000);
-    int validateAsync(uint32_t timeout = 3000);
+    bool validate(uint32_t timeout = 1000);
+    int validateAsync(uint32_t timeout = 1000);
 
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);
@@ -574,8 +585,9 @@ private:
 
     void stepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
-    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
+    bool hasHandshake = false;      // indicator that this device has already negotiated a handshake, and shouldn't keep trying
     bool handshakeISbl();
+    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
 
     void SyncFlashConfig();
     void DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);

@@ -77,6 +77,8 @@ private:
     fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
     dev_info_t remoteDevInfo = {};
 
+    eLogLevel logLevel = IS_LOG_LEVEL_INFO;     //!< default log level to show
+
     std::vector<std::tuple<std::string, std::string, std::string>> stepErrors;
 
     void runCommand(const std::string& cmd);
@@ -129,6 +131,10 @@ public:
     bool hasPendingCommands() { return !commands.empty(); }
 
     bool hasErrors() { return !stepErrors.empty(); }
+
+    void setLogLevel(eLogLevel level) { logLevel = level; }
+
+    eLogLevel getLogLevel() { return logLevel; }
 
     std::vector<std::tuple<std::string, std::string, std::string>> getStepErrors() { return stepErrors; }
 

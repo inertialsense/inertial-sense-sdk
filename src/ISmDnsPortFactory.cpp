@@ -215,8 +215,8 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
     if (!uriPath.empty()) {
         int major = 0; // 12 bits
         int minor = 0; // 20 bits
-        std::regex regexp1(R"(^([0-9]+):([0-9]+)$)");
-        std::regex regexp2(R"(^\/dev\/(.*)$)");
+        static const std::regex regexp1(R"(^([0-9]+):([0-9]+)$)");
+        static const std::regex regexp2(R"(^\/dev\/(.*)$)");
         std::smatch match;
 
         if (std::regex_match(uriPath, match, regexp1)) {
@@ -373,7 +373,7 @@ std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPo
             if (record.type == MDNS_RECORDTYPE_TXT && record.name == PTRrecord.data.ptr.name && record.data.txt.key.length() > 5 && record.data.txt.key.starts_with("ports")) {
                 std::string txtPortsIndex = record.data.txt.key.substr(5);
                 if (std::find_if(txtPortsIndex.begin(), txtPortsIndex.end(), [](unsigned char c) { return !std::isdigit(c); }) == txtPortsIndex.end()) {
-                    return record.data.txt.value.length() % 6 == 0 && record.data.txt.value.length() > 0; // Length of value must be divide by 6 with no remainder and be greater then 0
+                    return record.data.txt.value.size() % 6 == 0 && record.data.txt.value.size() > 0; // Length of value must be divide by 6 with no remainder and be greater then 0
                 }
             }
             return false;
@@ -384,11 +384,11 @@ std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPo
         for (const mdns::mdns_record_cpp_t& TXTrecord : TXTrecords) {
             std::string txtPortsIndex = TXTrecord.data.txt.key.substr(5);
             int portsIndex = std::stoi(txtPortsIndex);
-            const char *portTxt = TXTrecord.data.txt.value.c_str();
-            for (int j = 0; j < TXTrecord.data.txt.value.length(); j = j + 6) {
+            std::vector<unsigned char> val = TXTrecord.data.txt.value;
+            for (int j = 0; j < (int)val.size(); j = j + 6) {
                 port_t port;
-                port.devid = ntohl(*(uint32_t*)&portTxt[j]);
-                port.port = ntohs(*(uint16_t*)&portTxt[j+4]);
+                port.devid = ntohl(*(uint32_t*)&val[j]);
+                port.port = ntohs(*(uint16_t*)&val[j+4]);
                 portListNonAssembled[portsIndex].push_back(port);
             }
         }

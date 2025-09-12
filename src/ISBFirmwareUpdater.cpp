@@ -131,7 +131,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
         if (device && device->isConnected() && device->hasDeviceInfo()) {
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl mode.", device->getIdAsString().c_str());
+                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 
                 for (int retry = 3; retry > 0; retry--) {
                     eImageSignature devSig;
@@ -603,12 +603,13 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     // send the "reboot to program mode" command and the device should start in program mode
     int retry = 5;
     while (retry-- && portIsOpened(device->port) && !portError(device->port)) {
+        fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Sending 'BOOT UP' command.");
         int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7", 15);
         if (writeCnt == 15) {
             for (int i = 0; i < 3; i++)
                 portWrite(device->port, (unsigned char *) "\r\n", 2);
         } else if (writeCnt < 0) {
-            // write error?? is likely because the port closed
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Failed to send 'JUMP-TO-APP' command to serial port: %s [%d]", portName(device->port), writeCnt);
             break;
         }
         SLEEP_MS(10);
@@ -617,8 +618,13 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
 
     // invalidate, because we don't know until we rediscover the device
     device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
-    // device->devInfo = {};
+    if ((portType(device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM) {
+        // ISbl can put a port in EXPLICIT READ mode; we need to clear that flag
+        COMM_PORT(device->port)->flags &= ~COMM_PORT_FLAG__EXPLICIT_READ;
+    }
+
     if (!keepPortOpen) {
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
         device->disconnect();
     }
     return (retry > 0);
@@ -690,6 +696,10 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
         return false;
 
     int count = portRead(device->port, rxWorkBufPtr, ackStr.length());
+    if (count < 0) {
+        return false; // FIXME: handle read errors more appropriately
+    }
+
     rxWorkBufPtr += count;
 
     // we want to have a calculated progress which seems reasonable.
@@ -705,9 +715,9 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
 
     // This loop here looks for our 'ack' string in the rxWorkBuf (a queue), which gets appended
     // to with any received data. Any data which is not our ack string gets pulled from the start
-    // of the buffer.  As soon as our act string is found anywhere in the work buffer, we will
+    // of the buffer.  As soon as our ack string is found anywhere in the work buffer, we will
     // denote our progress at 100%, and return true.
-    while ((size_t)(rxWorkBufPtr - rxWorkBuf) >= ackStr.length()) {
+    while ((rxWorkBufPtr - rxWorkBuf) >= (int)ackStr.length()) {
         if (memcmp(rxWorkBuf, ackStr.c_str(), ackStr.length()) == 0) {
             rxWorkBufPtr = rxWorkBuf;
             memset(rxWorkBuf, 0, sizeof(rxWorkBuf));

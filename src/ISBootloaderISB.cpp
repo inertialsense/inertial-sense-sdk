@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderISB.h"
 #include "ISUtilities.h"
+#include "intel_hex_utils.h"
 
 #include <algorithm>
 
@@ -66,7 +67,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     serialPortFlush(m_port);
     serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    handshake_sync(m_port);
+    bool handshake = handshake_sync(m_port) == IS_OP_OK;
 
     logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Checking for ISB compatibility.");
 
@@ -105,7 +106,9 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     m_isb_props.is_evb = false;
     m_sn = 0;
 
-    if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
+    logStatus(IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
+
+    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {   // Valid packet found
         processor = (eProcessorType)buf[5];
         m_isb_props.is_evb = buf[6];
@@ -148,10 +151,10 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     if (valid_signatures == 0)
     {
-        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | %s: (ISB) Error: Device has no valid ISB signature.", portName(m_port));
+        logStatus(IS_LOG_LEVEL_ERROR, "    | %s: (ISB) Error: Device has no valid ISB signature.", portName(m_port));
         // TODO?? m_info_callback(this, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", ((serial_port_t*)m_port)->portName);
     } else {
-        m_info_callback(NULL, IS_LOG_LEVEL_DEBUG, "    | %s: (ISB) Device is ISB compatible.", portName(m_port));
+        logStatus(IS_LOG_LEVEL_DEBUG, "    | %s: (ISB) Device is ISB compatible.", portName(m_port));
     }
 
     return (eImageSignature)valid_signatures;
@@ -162,13 +165,13 @@ is_operation_result cISBootloaderISB::reboot_up()
     m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
-    if (serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15) == 15) {
+    if (portWrite(m_port, (unsigned char*)":020000040300F7", 15) == 15) {
         for (int i = 0; i < 3; i++)
-            serialPortWrite(m_port, (unsigned char*)"\r\n", 2);
+            portWrite(m_port, (unsigned char*)"\r\n", 2);
     }
-    serialPortFlush(m_port);
+    portFlush(m_port);
     SLEEP_MS(100);
-    serialPortClose(m_port);
+    portClose(m_port);
     return IS_OP_OK;
 }
 
@@ -216,7 +219,8 @@ is_operation_result cISBootloaderISB::reboot_force()
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error in reboot force");
         return IS_OP_ERROR;
     }
-   
+
+    portClose(m_port);
     return IS_OP_OK;
 }
 
@@ -235,20 +239,21 @@ is_operation_result cISBootloaderISB::reboot()
     // restart bootloader command
     if (reboot_force() == IS_OP_OK)
     {
+        portClose(m_port);
         rst_serial_list.push_back(m_sn);
         rst_serial_list_mutex.unlock();
 
         return IS_OP_OK;
     }
 
+    portClose(m_port);
     rst_serial_list_mutex.unlock();
-
     return IS_OP_CLOSED;
 }
 
 uint32_t cISBootloaderISB::get_device_info()
 {
-    handshake_sync(m_port);
+    bool handshake = handshake_sync(m_port) == IS_OP_OK;
     serialPortFlush(m_port);
 
     // Send command
@@ -276,7 +281,9 @@ uint32_t cISBootloaderISB::get_device_info()
     m_isb_minor = (char)buf[3];
     m_isb_props.rom_available = buf[4];
 
-    if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
+    logStatus(IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
+
+    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {
         m_isb_props.processor = (eProcessorType)buf[5];
         m_isb_props.is_evb = buf[6];
@@ -301,7 +308,7 @@ uint32_t cISBootloaderISB::get_device_info()
     }
     else
     {
-        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "(ISB) (%s) (ISB) get_device_info invalid m_isb_major: %d", ((serial_port_t*)m_port)->portName, m_isb_major);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) (%s) (ISB) get_device_info invalid m_isb_major: %d", ((serial_port_t*)m_port)->portName, m_isb_major);
         return 0;
     }
 
@@ -319,6 +326,9 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
 {
     static const uint8_t handshakerChar = 'U';
 
+    if (hasHandshake)
+        return IS_OP_OK;
+
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms. 
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
@@ -329,8 +339,8 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
         }
 
         if (serialPortWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {   // Success
-            // FIXME: logStatus(IS_LOG_LEVEL_DEBUG_MORE, "(ISB) Handshake");
+        {	// Success
+            hasHandshake = true;
             return IS_OP_OK;
         }
     }
@@ -349,7 +359,6 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
     }
 #endif
 
-    // FIXME: logStatus(IS_LOG_LEVEL_DEBUG_MORE, "(ISB) Handshake w/o response");
     return IS_OP_ERROR;
 }
 
@@ -438,7 +447,14 @@ is_operation_result cISBootloaderISB::select_page(int page)
     checksum(0, changePage, 1, 17, 17, 1);
     if (serialPortWriteAndWaitForTimeout(m_port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
-        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to select page");
+        if (page == 7) 
+        {   // IMX-5 bootloader prior to v6i does not support writing to 8th page of flash memory
+            status_update("(ISB) PAGE SELECTION FAILED: " IMX5_BOOTLOADER_INCOMPATIBLE_MSG "\n", IS_LOG_LEVEL_ERROR);
+        }
+        else
+        {
+            status_update("(ISB) Failed to select page", IS_LOG_LEVEL_ERROR);
+        }
         return IS_OP_ERROR;
     }
 
@@ -618,7 +634,7 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
         while (*currentOffset < FLASH_PAGE_SIZE)
         {
             if (*currentPage == 7 && *currentOffset >= 36480)
-            {   // The last (7th) page of flash memory on the IMX-5 (STM32L4) is restricted to 36480 bytes.  We should fill beyond this point on the 7th page.
+            {   // The last (8th) page of flash memory on the IMX-5 (STM32L4) is restricted to 36480 bytes.  We should NOT fill beyond this point on the 8th page.
                 break;
             }
 

@@ -9,7 +9,10 @@
 #ifndef IS_CORE__BASE_PORT_H
 #define IS_CORE__BASE_PORT_H
 
+#include <string.h>
+
 #include "types.h"
+#include "ISConstants.h"
 
 /**
  * Port definitions used across the entire product line & SDK.
@@ -62,6 +65,7 @@ typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int 
 typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData);
 // typedef int(*pfnPortSetName)(port_handle_t port, const char* name, unsigned int len);
 
+PUSH_PACK_1
 typedef struct
 {
     uint8_t         portInfo;               //!< High nib port type (see ePortMonPortType) low nib index
@@ -79,6 +83,7 @@ typedef struct
     uint32_t        txBytesDropped;         //!< Tx number of bytes that were not sent
     uint32_t        rxChecksumErrors;       //!< Rx number of errors while reading (not bytes)
 } port_stats_t;
+POP_PACK
 
 
 typedef struct base_port_s {
@@ -210,7 +215,7 @@ static inline uint16_t portFlags(port_handle_t port) {
 /**
  * returns the most recent operational error number (typically errno) for this port, or 0 if successful.
  * @param port the port handle
- * @return the error number, or 0 if there is no error
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
  */
 static inline uint16_t portError(port_handle_t port) {
     return (port) ? BASE_PORT(port)->perror : 0;
@@ -234,9 +239,22 @@ static inline const char *portName(port_handle_t port) {
 static inline port_stats_t* portStats(port_handle_t port) { return portIsValid(port) ? BASE_PORT(port)->stats : (port_stats_t *)0; }
 
 /**
+ * Resets the associated port stats, if enabled for this port.
+ * @param port the port to reset
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
+ */
+static inline uint16_t portStatsReset(port_handle_t port) {
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!BASE_PORT(port)->stats) return PORT_ERROR__NOT_SUPPORTED;
+
+    memset(BASE_PORT(port)->stats, 0, sizeof(port_stats_t)) ;
+    return PORT_ERROR__NONE;
+}
+
+/**
  * Opens or establishes a connection to port. This function may not be supported on all port implementations.
  * @param port the port to open
- * @return
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
  */
 static inline int portOpen(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
@@ -246,7 +264,7 @@ static inline int portOpen(port_handle_t port) {
 /**
  * Closes or disconnects a connection to port. This function may not be supported on all port implementations.
  * @param port the port to close
- * @return
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
  */
 static inline int portClose(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
@@ -259,7 +277,7 @@ static inline int portClose(port_handle_t port) {
  * on the port. It is the callers responsibility to detect this, and retain unsent data until all
  * data can be transmitted, or to discard the excess information.
  * @param port the port to query
- * @return the number of bytes which be be safely written to the port without data drop
+ * @return the number of bytes which be be safely written to the port without data drop, or a PORT_ERROR__* number (<0)
  */
 static inline int portFree(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
@@ -269,7 +287,7 @@ static inline int portFree(port_handle_t port) {
 /**
  * returns the number of bytes available to be read from the underlying RX buffer, if any.
  * @param port the port to query
- * @return
+ * @return the number of bytes which are available to be read from the port, or a PORT_ERROR__* number (<0)
  */
 static inline int portAvailable(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
@@ -361,7 +379,7 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len)
 
     // If stats are enabled, update the stats
     if (BASE_PORT(port)->stats) {
-        if (bytesRead > 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
+        if (bytesRead >= 0) BASE_PORT(port)->stats->rxBytes += bytesRead;
         else                BASE_PORT(port)->stats->rxOverflows++;  // Note the error  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
     }
 
@@ -395,7 +413,7 @@ static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int
 
     // If stats are enabled, update the stats
     if (BASE_PORT(port)->stats) {
-        if (bytesRead > 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
+        if (bytesRead >= 0)  BASE_PORT(port)->stats->rxBytes += bytesRead;
         else                BASE_PORT(port)->stats->rxOverflows++;  // note the error  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
     }
 
@@ -416,8 +434,17 @@ static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
     if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, BASE_PORT(port)->portLoggerData);
     int bytesWritten = (BASE_PORT(port)->portWrite) ? BASE_PORT(port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
-    if (BASE_PORT(port)->stats) {
-        if (bytesWritten > 0) BASE_PORT(port)->stats->txBytes += bytesWritten;
+    if (BASE_PORT(port)->stats) 
+    {
+        if (bytesWritten >= 0) 
+        {
+            BASE_PORT(port)->stats->txBytes += bytesWritten;
+            if (bytesWritten < (int)len)
+            {
+                BASE_PORT(port)->stats->txDataDrops++;
+                BASE_PORT(port)->stats->txBytesDropped += (len - bytesWritten);
+            }
+        }
         else BASE_PORT(port)->stats->txDataDrops++, BASE_PORT(port)->stats->txBytesDropped += len;  // note the error, and the bytes dropped  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
     }
     return bytesWritten;
