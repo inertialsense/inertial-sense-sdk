@@ -2487,33 +2487,8 @@ rclcpp::Time InertialSenseROS::ros_time_from_week_and_tow(const uint32_t week, c
 
 rclcpp::Time InertialSenseROS::ros_time_from_start_time(const double time)
 {
-    rclcpp::Time rostime(0, 0);
-
-    //  If we have a GPS fix, then use it to set timestamp
-    if (abs(GPS_towOffset_) > 0.001)
-    {
-        double timeOfWeek = time + GPS_towOffset_;
-        uint64_t sec = (uint64_t)(UNIX_TO_GPS_OFFSET + floor(timeOfWeek) + GPS_week_ * 7 * 24 * 3600);
-        uint64_t nsec = (uint64_t)((timeOfWeek - floor(timeOfWeek)) * 1.0e9);
-        rostime = rclcpp::Time(sec, nsec);
-    }
-    else
-    {
-        // Otherwise, estimate the IMX boot time and offset the messages
-        if (!got_first_message_)
-        {
-            got_first_message_ = true;
-            INS_local_offset_ = nh_->now().seconds() - time;
-        }
-        else // low-pass filter offset to account for drift
-        {
-            double y_offset = nh_->now().seconds() - time;
-            INS_local_offset_ = 0.005 * y_offset + 0.995 * INS_local_offset_;
-        }
-        // Publish with ROS time
-        rostime = rclcpp::Time(INS_local_offset_ + time);
-    }
-    return rostime;
+    uint32_t week = time + GPS_towOffset_ + GPS_week_;
+    return ros_time_from_week_and_tow(week, time);
 }
 
 rclcpp::Time InertialSenseROS::ros_time_from_tow(const double tow)
