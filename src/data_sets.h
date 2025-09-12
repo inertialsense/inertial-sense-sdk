@@ -3310,6 +3310,12 @@ typedef struct PACKED
     /** (Do not use, internal development only) Right wheel revolution count */
     uint32_t wrap_count_r;
 
+    /** Wheel encoder velocity noise variance (rad^2/s^2) */
+    float var_wheel_omega;
+
+    /** Wheel encoder angle noise variance (rad^2) */
+    float var_wheel_theta;
+
 } wheel_encoder_t;
 
 enum eWheelCfgBits
