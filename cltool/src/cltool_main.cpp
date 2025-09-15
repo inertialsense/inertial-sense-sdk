@@ -535,7 +535,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
         g_roverConnection = new CorrectionService(g_commandLineOptions.roverConnection);
-        g_roverConnection->addDevices(reinterpret_cast<const vector<ISDevice *> &>(inertialSenseInterface.getDevices()));
+        g_roverConnection->addDevices(std::vector<ISDevice*> { std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices()) });
     }
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {

@@ -25,6 +25,7 @@
  */
 class CorrectionService {
 public:
+    virtual ~CorrectionService() = default;
     typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;
 
     /**
@@ -32,7 +33,7 @@ public:
      * will be forwarded to all associated ISDevices
      * @param srcPort The port on which incoming RCTM3 data to recieved from
      */
-    explicit CorrectionService(port_handle_t srcPort);
+    CorrectionService(port_handle_t srcPort);
 
     /**
      * A convenience constructor which creates/binds the necessary port as described by the portName, by
@@ -40,18 +41,9 @@ public:
      * useful when the port is not directly discoverable, such as TCP, where the portName is a URL to
      * a remote TCP server.
      * @param portName The name of the port to be allocated
-     * @param factories The factories to ask to create the given port name
+     * @param factories An optional list of factories to ask to create the given port name
      */
-    CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories);
-
-    /**
-     * A convenience constructor which creates/binds the necessary port as described by the portName, by
-     * attempting to allocate the named port from each of the factories provided to PortManager. This is
-     * particularly useful when the port is not directly discoverable, such as TCP, where the portName is
-     * a URL to a remote TCP server.
-     * @param portName The name of the port to be allocated
-     */
-    explicit CorrectionService(const std::string& portName);
+    CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories = nullFactories);
 
     /**
      * Adds a device to the recieve corrections from this service
@@ -100,16 +92,18 @@ public:
      * Checks the source port for data and forwards it to all devices
      * @return 0 if no packets processed, positive number representing number of packets processed, negative number representing errno
      */
-    int step();
+    int step() const;
 
 protected:
     port_handle_t source{};
     std::vector<ISDevice*> devices;
 
 private:
+    inline static const std::vector<PortFactory*>& nullFactories = {};
     std::vector<tRTCM3Msg1029ListenerCallback> rtcm3Msg1029Listeners;
     is_comm_instance_t packetParser{};
     uint8_t packetBuffer[PKT_BUF_SIZE]{};
+    uint32_t rtcm3PacketsProcessed = 0;
 
     /**
      * Transforms one format (like NTRIP) to RTCM3 to be processed by the device
@@ -120,7 +114,7 @@ private:
      * @param finalBufferSize The size of the final buffer
      * @return Number of bytes processed
      */
-    virtual int packetTransformer(const uint8_t *inputBuffer, uint32_t inputLength, uint8_t *finalBuffer, uint32_t finalBufferSize);
+    virtual uint32_t packetTransformer(const uint8_t *inputBuffer, uint32_t inputLength, uint8_t *finalBuffer, uint32_t finalBufferSize);
 
     /**
      * Final packet filter ensures only RTCM3 packets are sent to the device
@@ -141,6 +135,30 @@ private:
      * @param inputLength Number of bytes to send
      */
     void sendData(const uint8_t *inputBuffer, uint32_t inputLength);
+
+    /**
+     * Private initializer function
+     * @param port Port to use for Corrections
+     */
+    void init(port_handle_t srcPort);
+
+    /**
+     * Handles incoming RTCM3 packet
+     * @param msg Contents of RTCM3 packet
+     * @param msgSize Size of RTCM3 packet
+     * @param port port which recieved RTCM3 packet
+     * @return 0 on success, -1 on error, always succeeds
+     */
+    int onRtcm3Handler(const unsigned char* msg, int msgSize, port_handle_t port);
+
+    /**
+     * Handles incoming Unknown packet format
+     * @param msg Contents of Raw data packet
+     * @param msgSize Size of Raw data packet
+     * @param port port which recieved Raw data packet
+     * @return 0 on success, -1 on error, always succeeds
+     */
+    int onRawDataHandler(const unsigned char* msg, int msgSize, port_handle_t port);
 };
 
 
