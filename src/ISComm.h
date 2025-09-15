@@ -936,8 +936,6 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
  */
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 
-
-
 /**
  * @brief crc_ccitt - Calculate the CRC-CCITT checksum for a given data buffer. Used for Septentrio SBF packets. 0 seed 
  * 

@@ -3146,7 +3146,7 @@ enum eIoConfig
     IO_CONFIG_GPS_TYPE_NMEA						= (int)2,
     /** GPS type - InertialSense GPX */
     IO_CONFIG_GPS_TYPE_GPX						= (int)3,
-    /** GPS type - uINS GPX */
+    /** GPS type - Septentrio */
     IO_CONFIG_GPS_TYPE_SEPTENTRIO				= (int)4,
 
     /** GPS type - last type */
