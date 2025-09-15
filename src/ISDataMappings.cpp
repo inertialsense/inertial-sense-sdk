@@ -502,6 +502,8 @@ static void PopulateMapWheelEncoder(data_set_t data_set[DID_COUNT], uint32_t did
     mapper.AddMember("omega_r", &wheel_encoder_t::omega_r, DATA_TYPE_F32, SYM_DEG_PER_S, "Right wheel angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
     mapper.AddMember("wrap_count_l", &wheel_encoder_t::wrap_count_l, DATA_TYPE_UINT32, "", "");
     mapper.AddMember("wrap_count_r", &wheel_encoder_t::wrap_count_r, DATA_TYPE_UINT32, "", "");
+    mapper.AddMember("var_wheel_omega", &wheel_encoder_t::var_wheel_omega, DATA_TYPE_F32, "rad^2/s^2", "Wheel encoder velocity noise variance");
+    mapper.AddMember("var_wheel_theta", &wheel_encoder_t::var_wheel_theta, DATA_TYPE_F32, "rad^2",     "Wheel encoder angle noise variance");
 }
 
 static void PopulateMapGroundVehicle(data_set_t data_set[DID_COUNT], uint32_t did)
