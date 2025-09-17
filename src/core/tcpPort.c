@@ -384,6 +384,9 @@ void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, co
     tcpPort->base.portReadTimeout = tcpPortReadTimeout;
     tcpPort->base.portWrite = tcpPortWrite;
 
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_init(COMM_PORT(port), NULL);
+
     tcpPort->socket = -EBADF;
     tcpPort->name = strdup(name);
     tcpPort->addr.storage = *ip;

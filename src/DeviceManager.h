@@ -157,6 +157,14 @@ public:
     void addDeviceFactory(DeviceFactory* df) { factories.push_back(df); };
 
     /**
+     * Gets all registered DeviceFactories
+     * @return A vector of DeviceFactory Instances
+     */
+    std::vector<DeviceFactory*> getDeviceFactories() {
+        return factories;
+    }
+
+    /**
      * Convenience function that clears any existing registered DeviceFactories, and adds a new custom DeviceFactory to be used when new Devices are discovered.
      *   Calls clearDeviceFactories() followed by addDeviceFactory()
      * @param df a pointer to the DeviceFactory instance
