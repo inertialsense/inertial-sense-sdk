@@ -18,6 +18,7 @@
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"
+#include "ISClient.h"
 
 extern "C"
 {
@@ -175,10 +176,10 @@ public:
      * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
      * Can be overridden to provide custom configuration, etc on connection - just remember
      *  to call back into ISDevice::connect() in your new method.
-     * @param dontValidate if true (default), skips device validation after successfully connecting
+     * @param revalidate if true causes the device to validate after connecting (default = false)
      * @return true if the connection is made/port opened, otherwise false
      */
-    virtual bool connect(bool dontValidate = true) {
+    virtual bool connect(bool revalidate = false) {
         if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
             return false;
 
@@ -188,7 +189,7 @@ public:
         bool result = (portOpen(port) == PORT_ERROR__NONE);
         portStatsReset(port);
 
-        if (!dontValidate && result) {
+        if (!revalidate && result) {
             SLEEP_MS(15);
             result = validate();
         }
@@ -366,6 +367,7 @@ public:
     int StopBroadcasts(bool allPorts = false) { return SendRaw((allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
     bool hasPendingImxFlashWrites(uint32_t& ageSinceLastPendingWrite);
+    bool waitForImxFlashWrite(uint32_t timeoutMs);
 
     bool lockPort() { return portMutex.try_lock(); }
     void unlockPort() { return portMutex.unlock(); }
