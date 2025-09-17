@@ -18,7 +18,6 @@
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"
-#include "ISClient.h"
 
 extern "C"
 {
