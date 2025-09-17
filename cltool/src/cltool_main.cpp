@@ -91,10 +91,6 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
         {
             outstream << "Server: " << i->TcpServerIpAddressPort()   << "     Tx: ";
         }
-        else
-        {
-            //outstream << "Client: " << i->ClientConnectionInfo()     << "     Rx: ";
-        }
         outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->ClientServerByteCount() << " bytes    \n";
 
         if (server)

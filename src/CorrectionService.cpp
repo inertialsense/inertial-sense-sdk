@@ -45,16 +45,28 @@ CorrectionService::CorrectionService(const std::string& portName, const std::vec
     throw std::invalid_argument("Couldn't find port of given name to use as RCTM3 corrections source");
 }
 
+void CorrectionService::addPort(port_handle_t* port) {
+    this->ports.push_back(port);
+}
+
+void CorrectionService::removePort(port_handle_t* port) {
+    std::erase(this->ports, port);
+}
+
+bool CorrectionService::hasPort(port_handle_t* port) {
+    return std::ranges::find(this->ports, port) != this->ports.end();
+}
+
 void CorrectionService::addDevice(ISDevice* device) {
-    this->devices.push_back(device);
+    addPort(&device->port);
 }
 
 void CorrectionService::removeDevice(ISDevice* device) {
-    std::erase(this->devices, device);
+    removePort(&device->port);
 }
 
 bool CorrectionService::hasDevice(ISDevice* device) {
-    return std::ranges::find(this->devices, device) != this->devices.end();
+    return hasPort(&device->port);
 }
 
 uint32_t CorrectionService::addRTCM3Msg1029Listeners(const std::function<void(std::string)>& callback) {
@@ -77,7 +89,7 @@ int CorrectionService::step() const {
 
 /**
  * This is a stub packet transformer which just copies the data from the input buffer into the destination buffer
- * This currently only makes sense for RTCM3 packets as they are processed on device
+ * This implementation currently only makes sense for RTCM3 packets as they are processed on device
  * @param inputBuffer Data to be transformed
  * @param inputLength Length of input buffer
  * @param finalBuffer To be transmitted to the device
