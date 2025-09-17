@@ -45,28 +45,28 @@ CorrectionService::CorrectionService(const std::string& portName, const std::vec
     throw std::invalid_argument("Couldn't find port of given name to use as RCTM3 corrections source");
 }
 
-void CorrectionService::addPort(port_handle_t* port) {
+void CorrectionService::addPort(port_handle_t port) {
     this->ports.push_back(port);
 }
 
-void CorrectionService::removePort(port_handle_t* port) {
+void CorrectionService::removePort(port_handle_t port) {
     std::erase(this->ports, port);
 }
 
-bool CorrectionService::hasPort(port_handle_t* port) {
+bool CorrectionService::hasPort(port_handle_t port) {
     return std::ranges::find(this->ports, port) != this->ports.end();
 }
 
 void CorrectionService::addDevice(ISDevice* device) {
-    addPort(&device->port);
+    addPort(device->port);
 }
 
 void CorrectionService::removeDevice(ISDevice* device) {
-    removePort(&device->port);
+    removePort(device->port);
 }
 
 bool CorrectionService::hasDevice(ISDevice* device) {
-    return hasPort(&device->port);
+    return hasPort(device->port);
 }
 
 uint32_t CorrectionService::addRTCM3Msg1029Listeners(const std::function<void(std::string)>& callback) {
@@ -158,21 +158,21 @@ int CorrectionService::finalPacketFilter(const uint8_t *inputBuffer, const uint3
 }
 
 void CorrectionService::sendData(const uint8_t *inputBuffer, const uint32_t inputLength) {
-    for (auto device: devices) {
-        device->SendRaw(inputBuffer, inputLength);
+    for (const auto port: ports) {
+        portWrite(port, inputBuffer, inputLength);
     }
 }
 
 void CorrectionService::init(port_handle_t srcPort) {
     source = srcPort;
-    devices = std::vector<ISDevice*>();
+    ports = std::vector<port_handle_t>();
     rtcm3Msg1029Listeners = std::vector<tRTCM3Msg1029ListenerCallback>();
     //is_comm_init(&packetParser, packetBuffer, sizeof(packetBuffer), NULL);
 
     COMM_PORT(source)->comm.cb.context = this;
     COMM_PORT(source)->comm.cb.protocolMask = _PTYPE_RTCM3;
     is_comm_register_port_msg_handler(source, _PTYPE_RTCM3, [](void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) {
-        CorrectionService* cs = (CorrectionService*)ctx;
+        auto* cs = static_cast<CorrectionService*>(ctx);
         return (cs && cs->source == port) ? cs->onRtcm3Handler(msg, msgSize, port) : -1;
     });
     COMM_PORT(source)->comm.cb.context = this;

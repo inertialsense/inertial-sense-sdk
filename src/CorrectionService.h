@@ -49,13 +49,13 @@ public:
      * Adds a port to the recieve corrections from this service
      * @param port A reference to the port to send corrections to
      */
-    void addPort(port_handle_t* port);
+    void addPort(port_handle_t port);
 
     /**
      * Adds multiple ports to recieve corrections from this service
      * @param ports A vector of references to devices to send corrections to
      */
-    void addPorts(const std::vector<port_handle_t*>& ports) { for (auto& p : ports) { addPort(p); } }
+    void addPorts(const std::vector<port_handle_t>& ports) { for (auto& p : ports) { addPort(p); } }
 
     /**
      * Adds a device to the recieve corrections from this service
@@ -73,13 +73,13 @@ public:
      * Cease sending corrections from this service a port
      * @param port A reference to the port to cease sending corrections to
      */
-    void removePort(port_handle_t* port);
+    void removePort(port_handle_t port);
 
     /**
      * Cease sending corrections from this service to multiple ports
      * @param ports A vector of references to devices to cease corrections to
      */
-    void removePorts(const std::vector<port_handle_t*>& ports) { for (auto& p : ports) { removePort(p); } }
+    void removePorts(const std::vector<port_handle_t>& ports) { for (auto& p : ports) { removePort(p); } }
 
     /**
      * Cease sending corrections from this service a device
@@ -97,7 +97,7 @@ public:
      * Check if this CorrectionService is sending correction data to a given port
      * @param port A reference of a port to check for
      */
-    bool hasPort(port_handle_t* port);
+    bool hasPort(port_handle_t port);
 
     /**
      * Check if this CorrectionService is sending correction data to a given device
@@ -126,7 +126,7 @@ public:
 
 protected:
     port_handle_t source{};
-    std::vector<port_handle_t*> ports;
+    std::vector<port_handle_t> ports;
 
 private:
     inline static const std::vector<PortFactory*>& nullFactories = {};
