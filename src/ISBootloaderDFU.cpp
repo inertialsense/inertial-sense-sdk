@@ -94,7 +94,7 @@ int cISBootloaderDFU::get_num_devices()
 
         size_t device_count = libusb_get_device_list(NULL, &device_list);
 
-        for (size_t i = 0; i < (device_count - 1); ++i) {
+        for (size_t i = 0; i < device_count; ++i) {
             dev = device_list[i];
 
             ret_libusb = libusb_get_device_descriptor(dev, &desc);
