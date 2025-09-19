@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "serialPort.h"
 
-#ifdef IMX_5
+#if (defined(IMX_5) || defined(IMX_6))
 #include "globals.h"
 #endif
 
@@ -350,7 +350,7 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
         // depending on the nature of the error, we may want to close the port.
         // FIXME: we really should be more selective with which errors we actually close the port for.
         if (SERIAL_PORT(port)->errorCode > 0) {
-    #ifndef IMX_5
+#if !(defined(IMX_5) || defined(IMX_6))
             switch (SERIAL_PORT(port)->errorCode) {
                 case ENODEV:        // no such device, so no need to close it
                     break;
@@ -361,6 +361,7 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
             // removePort(port);
             // memset(SERIAL_PORT(port), 0, sizeof(serial_port_s));
             // TODO: we still haven't deleted all references to the port, and this will likely cause problems (ie, InertialSense class, etc).
+    #endif
     #endif
         }
     }
@@ -589,7 +590,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         break;
 
     case PKT_TYPE_GET_DATA:
-#ifdef IMX_5
+#if (defined(IMX_5) || defined(IMX_6))
         {
             p_data_get_t *gdata = ((p_data_get_t *) (pkt->data.ptr));
             // Forward to gpx
