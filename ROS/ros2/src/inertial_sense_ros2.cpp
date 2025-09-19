@@ -2487,8 +2487,7 @@ rclcpp::Time InertialSenseROS::ros_time_from_week_and_tow(const uint32_t week, c
 
 rclcpp::Time InertialSenseROS::ros_time_from_start_time(const double time)
 {
-    uint32_t week = time + GPS_towOffset_ + GPS_week_;
-    return ros_time_from_week_and_tow(week, time);
+    return ros_time_from_week_and_tow(GPS_week_, time + GPS_towOffset_);
 }
 
 rclcpp::Time InertialSenseROS::ros_time_from_tow(const double tow)
