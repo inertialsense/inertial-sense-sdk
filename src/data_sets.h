@@ -1851,8 +1851,8 @@ typedef struct PACKED
 #define RMC_BITS_PIMU                   0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-// #define RMC_BITS_UNUSED              0x0000000000000100
-// #define RMC_BITS_UNUSED              0x0000000000000200 
+// #define RMC_BITS_UNUSED                 0x0000000000000100
+// #define RMC_BITS_UNUSED                 0x0000000000000200 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1875,7 +1875,7 @@ typedef struct PACKED
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
 #define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
-// #define RMC_BITS_UNUSED              0x0000000200000000
+// #define RMC_BITS_UNUSED                 0x0000000200000000
 #define RMC_BITS_IMU_MAG                0x0000000400000000
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
@@ -1893,7 +1893,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_STATUS             0x0000400000000000
 #define RMC_BITS_GPX_DEV_INFO           0x0000800000000000
 #define RMC_BITS_GPX_RMC                0x0001000000000000
-#define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
+// #define RMC_BITS_UNUSED                 0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 #define RMC_BITS_GPX_RTK_DBG            0x0010000000000000
@@ -2286,7 +2286,10 @@ enum eMagCalState
     MAG_CAL_STATE_RECAL_RUNNING = (int)200,
 
     /** STATUS: Mag recalibration has completed */
-    MAG_CAL_STATE_RECAL_COMPLETE= (int)201,
+    MAG_CAL_STATE_RECAL_COMPLETE = (int)201,
+
+    /** STATUS: Mag recalibration mode not supported */
+    MAG_CAL_STATE_RECAL_MODE_NOT_SUPPORTED = (int)202,
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
@@ -2405,9 +2408,9 @@ enum eHdwBitStatusFlags
     HDW_BIT_FAULT_BAROMETER                 = (int)0x00000800,
     HDW_BIT_FAULT_GPS_NO_COM                = (int)0x00001000,    // No GPS serial communications
     HDW_BIT_FAULT_GPS_POOR_CNO              = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
-    HDW_BIT_FAULT_GPS_POOR_ACCURACY         = (int)0x00002000,    // Low number of satellites, or bad accuracy 
-    HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00004000,    // (Not implemented)
-    HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00008000,    // IMU fault rejection failure
+    HDW_BIT_FAULT_GPS_POOR_ACCURACY         = (int)0x00004000,    // Low number of satellites, or bad accuracy 
+    HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00008000,    // (Not implemented)
+    HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00010000,    // IMU fault rejection failure
     HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,    // Hardware type does not match firmware
 };
 
@@ -3357,6 +3360,12 @@ typedef struct PACKED
 
     /** (Do not use, internal development only) Right wheel revolution count */
     uint32_t wrap_count_r;
+
+    /** Wheel encoder velocity noise variance (rad^2/s^2) */
+    float var_wheel_omega;
+
+    /** Wheel encoder angle noise variance (rad^2) */
+    float var_wheel_theta;
 
 } wheel_encoder_t;
 
