@@ -35,7 +35,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISDevice.h"
-#include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
@@ -240,13 +239,6 @@ public:
     void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
     /**
-    * Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
-    * @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
-    * @return true if connection opened, false if failure
-    */
-    bool OpenConnectionToServer(const std::string& connectionString);
-
-    /**
     * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
     * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
     * @return true if success, false if error
@@ -310,12 +302,6 @@ public:
     * @return string IP address and port
     */
     std::string TcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
-
-    /**
-    * Get Client connection info string (i.e. "127.0.0.1:7777")
-    * @return string IP address and port
-    */
-    std::string ClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
 
     /**
     * Flush all data from receive port
@@ -667,7 +653,6 @@ private:
     bool m_forwardGpgga;
 
     cISTcpServer m_tcpServer;
-    cISStream* m_clientStream;                // Our client connection to a server
     uint64_t m_clientServerByteCount;
     int m_clientConnectionsCurrent = 0;
     int m_clientConnectionsTotal = 0;
@@ -679,10 +664,6 @@ private:
 
     mul_msg_stats_t m_serverMessageStats = {};
 
-    // these are used for RTCM3 corrections for RTK/NTRIP streams.
-    is_comm_instance_t m_gpComm;
-    uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
-
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 
     std::set<port_handle_t> portsToValidate;    //!< ports which were discovered but have not been validated as an ISDevice
@@ -690,7 +671,6 @@ private:
 
     // returns false if logger failed to open
     bool UpdateServer();
-    bool UpdateClient();
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
     bool HasReceivedDeviceInfoFromAllDevices();

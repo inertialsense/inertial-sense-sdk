@@ -18,7 +18,6 @@
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"
-#include "ISClient.h"
 #include "ChronoStat.h"
 
 extern "C"
@@ -504,7 +503,7 @@ public:
 
     is_hardware_t               hdwId = IS_HARDWARE_TYPE_UNKNOWN;    //!< hardware type and version (ie, IMX-5.0)
 
-    std::map<int, ChronoStat>  stats;                               //!< A collection of performance statistics for ISB messages (per DID)
+    std::map<int, ChronoStat>  stats;                                //!< A collection of performance statistics for ISB messages (per DID)
 
     dev_info_t                  devInfo = { };                       //!< Populated with IMX info if present, otherwise GPX info if present
     dev_info_t                  gpxDevInfo = { };                    //!< Only populated if a GPX device is present

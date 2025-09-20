@@ -10,7 +10,7 @@ PYBIND11_NUMPY_DTYPE(imus_t, pqr, acc);
 PYBIND11_NUMPY_DTYPE(imu3_t, time, status, I);
 PYBIND11_NUMPY_DTYPE(mag_xyz_t, xyz);
 PYBIND11_NUMPY_DTYPE(sensors_mpu_t, pqr, acc, mag);
-PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omega_l, omega_r, wrap_count_l, wrap_count_r);
+PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omega_l, omega_r, wrap_count_l, wrap_count_r, var_wheel_omega, var_wheel_theta);
 PYBIND11_NUMPY_DTYPE(wheel_transform_t, e_b2w, e_b2w_sigma, t_b2w, t_b2w_sigma);
 PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, transform, track_width, radius);
 PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
