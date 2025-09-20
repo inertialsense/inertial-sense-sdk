@@ -19,6 +19,7 @@
 #include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"
 #include "ISClient.h"
+#include "ChronoStat.h"
 
 extern "C"
 {
@@ -352,10 +353,10 @@ public:
     /**
      * Requests that this device broadcast the requested DID are the specified period
      * @param dataId the DID to be broadcast at periodic intervals
-     * @param periodMultiple the period multiple (NOT a frequency). If 0, this will request a one-shot, also effectively stopping any existing broadcasts
+     * @param periodMultiple the period multiple (NOT a frequency). If 0 (default), this will request a one-shot, also effectively stopping any existing broadcasts
      * @return true if the request was successfully sent, otherwise false (ie, port invalid, invalid device, etc)
      */
-    bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
+    bool BroadcastBinaryData(uint32_t dataId, int periodMultiple = 0);
 
     int SendNmea(const std::string& nmeaMsg);
     int QueryDeviceInfo() { return SendRaw(NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
@@ -503,8 +504,10 @@ public:
 
     is_hardware_t               hdwId = IS_HARDWARE_TYPE_UNKNOWN;    //!< hardware type and version (ie, IMX-5.0)
 
-    dev_info_t                  devInfo = { };                      //!< Populated with IMX info if present, otherwise GPX info if present
-    dev_info_t                  gpxDevInfo = { };                   //!< Only populated if a GPX device is present
+    std::map<int, ChronoStat>  stats;                               //!< A collection of performance statistics for ISB messages (per DID)
+
+    dev_info_t                  devInfo = { };                       //!< Populated with IMX info if present, otherwise GPX info if present
+    dev_info_t                  gpxDevInfo = { };                    //!< Only populated if a GPX device is present
     sys_params_t                sysParams = { };
     gpx_status_t                gpxStatus = { };
     nvm_flash_cfg_t             imxFlashCfg = { };
@@ -590,10 +593,12 @@ private:
     bool queryDeviceInfoISbl(uint32_t timeout = 3000);
 
     void SyncFlashConfig();
-    void DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
+    int DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
     bool UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
-    bool ValidFlashCfgCksum(uint32_t checksum) { return (checksum != 0xFFFFFFFF); }
+    inline bool ValidFlashCfgCksum(uint32_t checksum) { return (checksum != 0xFFFFFFFF); }
+
+    double sampleIsbMsgStats(const p_data_t& data);
 
 };
 

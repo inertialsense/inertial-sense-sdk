@@ -14,8 +14,8 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef EVALTOOL_DEVICEMANAGER_H
-#define EVALTOOL_DEVICEMANAGER_H
+#ifndef IS_SDK__DEVICE_MANAGER_H
+#define IS_SDK__DEVICE_MANAGER_H
 
 #include <list>
 
@@ -42,6 +42,8 @@ public:
         DEVICE_ADDED,
         DEVICE_REMOVED,
         DEVICE_PORT_CHANGED,
+        DEVICE_PORT_LOST,
+        DEVICE_PORT_GAINED,
     };
 
     static const uint16_t OPTIONS_USE_DEFAULTS                    = 0xFFFF;       //!< used to indicate that higher-order options, if set should be used
@@ -341,4 +343,4 @@ private:
 };
 
 
-#endif //EVALTOOL_DEVICEMANAGER_H
+#endif //IS_SDK__DEVICE_MANAGER_H

@@ -2025,6 +2025,8 @@ enum eNmeaMsgId
     // Special case messages for each supported base message those with ID less than NMEA_MSG_ID_COUNT. 
     // Each base message get a 256 range of ID's for their special cases. Example for NMEA_MSG_ID_GNGSV:
     // NMEA_MSG_ID_GNGSV_START = NMEA_MSG_ID_GNGSV * NMEA_MSG_ID_SPECIAL_CASE_START giving a message ID 0x0f00 (3,840)
+    // NOTE: Any ID greater than 256 is a special case, use the follow to extract the root case:
+    //   if (msgId >= NMEA_MSG_ID_SPECIAL_CASE_START) msgId >>= 8;
     NMEA_MSG_ID_SPECIAL_CASE_START = 256,
 
     // Filtered GNGSV NMEA Message IDs:

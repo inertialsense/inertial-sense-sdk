@@ -228,9 +228,7 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
             ISDevice* device = getDevice(port);
             if (device) {
                 device->assignPort(nullptr); // revoke the removed port from the device...
-                for (device_listener& l : listeners) {
-                    l(DEVICE_PORT_CHANGED, device);
-                }
+                for (device_listener& l : listeners) l(DEVICE_PORT_LOST, device);
             }
             break;
     }

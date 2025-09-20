@@ -1540,6 +1540,12 @@ void InertialSense::deviceManagerHandler(uint8_t event, ISDevice* device) {
         case DeviceManager::DEVICE_REMOVED:
             debug_message("[DBG] Device %s removed\n", device->getIdAsString().c_str());
             break;
+        case DeviceManager::DEVICE_PORT_CHANGED:
+            break;
+        case DeviceManager::DEVICE_PORT_LOST:
+            break;
+        case DeviceManager::DEVICE_PORT_GAINED:
+            break;
     }
 }
 

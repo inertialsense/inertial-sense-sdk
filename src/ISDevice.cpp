@@ -609,14 +609,14 @@ int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMas
     uint8_t data[EVENT_MAX_SIZE] = {0};
 
     did_event_t event = {
-            .time = 123,
-            .senderSN = 0,
-            .senderHdwId = 0,
-            .length = sizeof(did_event_filter_t),
+        .time = 123,
+        .senderSN = 0,
+        .senderHdwId = 0,
+        .length = sizeof(did_event_filter_t),
     };
 
     did_event_filter_t filter = {
-            .portMask = portMask,
+        .portMask = portMask,
     };
 
     filter.eventMask.priorityLevel = priorityLevel;
@@ -665,47 +665,42 @@ void ISDevice::SyncFlashConfig()
     }
 }
 
-void ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
+int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
 {
     if (uploadTimeMs)
     {	// Upload in progress
         if (timeMs - uploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
         {	// Wait for upload to process.  Pause sync.
             syncChecksum = 0xFFFFFFFF;      // Indicate out of sync
-            return;
+            return -1;
         }
     }
 
     // Require valid sysParams checksum
     if (ValidFlashCfgCksum(syncChecksum))
     {
-        if (ValidFlashCfgCksum(flashCfgChecksum) && syncChecksum == flashCfgChecksum)
+        if (ValidFlashCfgCksum(flashCfgChecksum) && (syncChecksum == flashCfgChecksum))
         {   // Checksum is valid and matches
             if (uploadTimeMs)
             {   // Upload complete.  Allow sync.
+                bool success = (uploadChecksum == syncChecksum);
+                debug_message("%s upload %s.\n", cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
                 uploadTimeMs = 0;
-
-                if (uploadChecksum == syncChecksum)
-                {
-                    printf("%s upload complete.\n", cISDataMappings::DataName(flashCfgDid));
-                }
-                else
-                {
-                    printf("%s upload rejected.\n", cISDataMappings::DataName(flashCfgDid));
-                }
+                return (success ? 1 : 0);
             }
         }
         else
         {	// Out of sync.  Request flash config.
-            DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
-            GetData(flashCfgDid, 0, 0, 0);
+            debug_message("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
+            BroadcastBinaryData(flashCfgDid);
         }
     }
     else
     {	// Out of sync.  Request sysParams or gpxStatus.
-        DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
-        GetData(syncDid, 0, 0, 0);
+        debug_message("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
+        BroadcastBinaryData(syncDid);
     }
+    return 0;
 }
 
 void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
@@ -802,9 +797,7 @@ bool ISDevice::SetImxFlashConfig(nvm_flash_cfg_t& flashCfg) {
         imxFlashCfgUploadChecksum
     );
 
-    if (!imxFlashCfgUploadTimeMs)
-        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
-    else
+    if (imxFlashCfgUploadTimeMs)
         imxFlashCfgUploadChecksum = flashCfg.checksum;
 
     imxFlashCfg = flashCfg;
@@ -823,9 +816,7 @@ bool ISDevice::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg) {
         gpxFlashCfgUploadChecksum
     );
 
-    if (!gpxFlashCfgUploadTimeMs)
-        printf("DID_GPX_FLASH_CONFIG in sync.  No upload.\n");
-    else
+    if (gpxFlashCfgUploadTimeMs)
         gpxFlashCfgUploadChecksum = flashCfg.checksum;
 
     gpxFlashCfg = flashCfg;
@@ -1133,10 +1124,7 @@ bool ISDevice::reset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (!portIsValid(port) || (current_timeMs() > nextResetTime)) {
-        for (int i = 0; i < 3; i++) {
-            SetSysCmd(SYS_CMD_SOFTWARE_RESET);
-            SLEEP_MS(10);
-        }
+        SetSysCmd(SYS_CMD_SOFTWARE_RESET);
         disconnect();
         portClose(port);
         nextResetTime = current_timeMs() + resetRequestThreshold;
@@ -1158,6 +1146,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
         // stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
     }
 
+    sampleIsbMsgStats(*data);
     // printf("DID: %d\n", data->hdr.id);
     switch (data->hdr.id) {
         case DID_DEV_INFO:
@@ -1396,4 +1385,47 @@ bool ISDevice::waitForImxFlashWrite(uint32_t timeoutMs)
             return true;    // no more pendingWrites, so return true that's we've seen it clear
     } while ((current_timeMs() - startTimeMs) < timeoutMs);
     return false;
+}
+
+double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
+
+    auto& stat = stats[data.hdr.id];
+    stat.accrual += (data.hdr.size + ISB_MIN_PACKET_SIZE + (data.hdr.offset ? 2 : 0));
+    switch (data.hdr.id)
+    {
+        case DID_GPX_STATUS:        stat.sample( ((gpx_status_t*)data.ptr)->upTime );       break;
+        case DID_SYS_PARAMS:        stat.sample( ((sys_params_t*)data.ptr)->upTime );       break;
+        case DID_INS_1:             stat.sample( ((ins_1_t*)data.ptr)->timeOfWeek );        break;
+        case DID_INS_2:             stat.sample( ((ins_2_t*)data.ptr)->timeOfWeek );        break;
+        case DID_INS_3:             stat.sample( ((ins_3_t*)data.ptr)->timeOfWeek );        break;
+        case DID_INS_4:             stat.sample( ((ins_4_t*)data.ptr)->timeOfWeek );        break;
+        case DID_INL2_STATES:       stat.sample( ((inl2_states_t*)data.ptr)->timeOfWeek );  break;
+        case DID_INL2_MAG_OBS_INFO: stat.sample( ((inl2_mag_obs_info_t*)data.ptr)->timeOfWeekMs * 0.001 );  break;
+        case DID_IMU:               stat.sample( ((imu_t*)data.ptr)->time );                break;
+        case DID_IMU_RAW:           stat.sample( ((imu_t*)data.ptr)->time );                break;
+        case DID_PIMU:              stat.sample( ((pimu_t*)data.ptr)->time );               break;
+        case DID_MAGNETOMETER:      stat.sample( ((magnetometer_t*)data.ptr)->time );       break;
+        case DID_BAROMETER:         stat.sample( ((barometer_t*)data.ptr)->time );          break;
+        case DID_SYS_SENSORS:       stat.sample( ((sys_sensors_t*)data.ptr)->time );        break;
+        case DID_GPS1_POS:
+        case DID_GPS2_POS:          stat.sample( ((gps_pos_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GPS1_VEL:
+        case DID_GPS2_VEL:          stat.sample( ((gps_vel_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GPS1_SAT:
+        case DID_GPS2_SAT:          stat.sample( ((gps_sat_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GPS1_SIG:
+        case DID_GPS2_SIG:          stat.sample( ((gps_sig_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GPS1_RTK_POS_REL:
+        case DID_GPS2_RTK_CMP_REL:
+            if (((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
+                stat.sample( ((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs * 0.001 );
+            break;
+        case DID_GPS1_RTK_POS_MISC:
+        case DID_GPS2_RTK_CMP_MISC:
+            if (((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
+                stat.sample( ((gps_rtk_misc_t*)data.ptr)->timeOfWeekMs * 0.001 );
+            break;
+        default:                    stat.sample();  break;
+    }
+    return stat.lastSampleTime();
 }
