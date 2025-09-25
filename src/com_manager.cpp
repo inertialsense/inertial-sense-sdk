@@ -350,7 +350,7 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
         // depending on the nature of the error, we may want to close the port.
         // FIXME: we really should be more selective with which errors we actually close the port for.
         if (SERIAL_PORT(port)->errorCode > 0) {
-    #if !IS_IMX)
+    #if !(defined IS_IMX)
             switch (SERIAL_PORT(port)->errorCode) {
                 case ENODEV:        // no such device, so no need to close it
                     break;

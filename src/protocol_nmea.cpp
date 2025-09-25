@@ -720,7 +720,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
 }
 
 // TODO: Remove after ZDA issue is resolved.
-#if defined(IS_IMX) || defined(SDK_UNIT_TEST))
+#if (defined(IS_IMX) || defined(SDK_UNIT_TEST))
 extern uint32_t g_cpu_msec;
 extern sys_params_t g_sysParams;
 extern debug_array_t g_debug;
