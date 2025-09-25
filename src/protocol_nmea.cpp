@@ -9,7 +9,7 @@
 #include "data_sets.h"
 #include "util/md5.h"
 
-#if defined(IMX_5)
+#ifdef IS_IMX
 #include "drivers/d_time.h"
 #include "globals.h"
 #endif
@@ -720,7 +720,7 @@ void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t
 }
 
 // TODO: Remove after ZDA issue is resolved.
-#if defined(IMX_5) || defined(SDK_UNIT_TEST)
+#if (defined(IS_IMX) || defined(SDK_UNIT_TEST))
 extern uint32_t g_cpu_msec;
 extern sys_params_t g_sysParams;
 extern debug_array_t g_debug;
@@ -742,11 +742,11 @@ void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset,
     gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &t);
 
 #if 0
-// #if defined(IMX_5) || defined(SDK_UNIT_TEST)
+// #if defined(IS_IMX) || defined(SDK_UNIT_TEST))
     ///////////////////////////////////////////////////////////////////////
     // TODO: (WHJ) ZDA debug.  Remove after ZDA time skip issue is resolved. (SN-6066)
 
-#if defined(IMX_5)
+#ifdef IS_IMX
     int32_t cpuMs = (int32_t)time_msec();
 #else
     int32_t cpuMs = (int32_t)g_cpu_msec;

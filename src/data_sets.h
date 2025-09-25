@@ -1811,6 +1811,8 @@ typedef struct PACKED
 
 #if defined(IMX_5)
     #define NUM_COM_PORTS           4
+#elif defined(IMX_6)
+    #define NUM_COM_PORTS           4
 #elif defined(GPX_1)
     #define NUM_COM_PORTS           6
     #define NUM_USR_PORTS           4
