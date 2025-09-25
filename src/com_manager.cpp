@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "serialPort.h"
 
-#if IS_IMX
+#ifdef IS_IMX
 #include "globals.h"
 #endif
 
@@ -350,7 +350,7 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
         // depending on the nature of the error, we may want to close the port.
         // FIXME: we really should be more selective with which errors we actually close the port for.
         if (SERIAL_PORT(port)->errorCode > 0) {
-    #if !(IS_IMX)
+    #if !IS_IMX)
             switch (SERIAL_PORT(port)->errorCode) {
                 case ENODEV:        // no such device, so no need to close it
                     break;
@@ -589,7 +589,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         break;
 
     case PKT_TYPE_GET_DATA:
-#if IS_IMX
+#ifdef IS_IMX
         {
             p_data_get_t *gdata = ((p_data_get_t *) (pkt->data.ptr));
             // Forward to gpx

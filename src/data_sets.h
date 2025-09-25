@@ -571,8 +571,6 @@ typedef struct PACKED
 #define DECODE_UNIQUE_ID_TO_SERIALNO(devId)    ((uint32_t)devId)
 #define DEV_INFO_MATCHES_HDW_ID(di, hdwId)     ( (ENCODE_DEV_INFO_TO_HDW_ID(di) & hdwId) == ENCODE_DEV_INFO_TO_HDW_ID(di) )
 
-#define IS_IMX (defined(IMX_5) || defined(IMX_6))
-
 enum eIsHardwareType
 {
     IS_HARDWARE_TYPE_MIXED          = -1,   // Used for ci-hdw testing
