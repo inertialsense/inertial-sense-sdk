@@ -1320,7 +1320,7 @@ typedef struct PACKED
      *    6  7  8  9 __ __
      *   10 11 12 13 14 __
      *   15 16 17 18 19 20  */
-    float					covPoseLD[21];
+    float                    covPoseLD[21];
 
     /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF twist errors:
      *  - Velocity (x,y,z) error (ECEF frame, (m/s)^2)
@@ -1332,7 +1332,7 @@ typedef struct PACKED
      *   6  7  8  9 __ __
      *  10 11 12 13 14 __
      *  15 16 17 18 19 20  */
-    float					covTwistLD[21];
+    float                    covTwistLD[21];
 } ros_covariance_pose_twist_t;
 
 // (DID_INL2_STATUS)

@@ -171,7 +171,7 @@ private:
     double m_replaySpeedX = 1.0;
 
     edit_data_t m_editData = {};
-    std::vector<uint32_t> m_outputOnceDid = {};			// Set to DID to display then exit cltool.  0 = disabled
+    std::vector<uint32_t> m_outputOnceDid = {};            // Set to DID to display then exit cltool.  0 = disabled
     bool m_interactiveMode = true;
     bool m_showRawHex = false;
 

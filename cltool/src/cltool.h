@@ -49,7 +49,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 enum eExitCodes
 {
-    EXIT_CODE_SUCCESS 	                            =  0,
+    EXIT_CODE_SUCCESS                               =  0,
     EXIT_CODE_INVALID_COMMAND_LINE                  = -1,
     EXIT_CODE_PARSE_COMMAND_LINE_FAILED             = -2,
     EXIT_CODE_NO_DEVICES_FOUND                      = -3,
@@ -95,12 +95,12 @@ typedef struct
 
 typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
-    std::string comPort; 					// -c com_port
-    std::string updateAppFirmwareFilename; 	// -uf file_name
-    std::string updateBootloaderFilename; 	// -ub file_name
+    std::string comPort;                     // -c com_port
+    std::string updateAppFirmwareFilename;     // -uf file_name
+    std::string updateBootloaderFilename;     // -ub file_name
     std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
-    bool forceBootloaderUpdate;				// -fb
-    bool bootloaderVerify; 					// -bv
+    bool forceBootloaderUpdate;                // -fb
+    bool bootloaderVerify;                     // -bv
     bool replayDataLog;
     bool softwareReset;
     bool magRecal;
@@ -135,7 +135,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     std::string imxFlashCfg;
     std::string gpxFlashCfg;
     uint32_t timeoutFlushLoggerSeconds;
-    std::vector<uint32_t> outputOnceDid;	
+    std::vector<uint32_t> outputOnceDid;    
     std::vector<uint32_t> setAckDid;
 
     YAML::Node getNode;
