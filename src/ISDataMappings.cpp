@@ -533,8 +533,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<nvm_flash_cfg_t> mapper(data_set, did);
     string str;
     mapper.AddMember("startupImuDtMs", &nvm_flash_cfg_t::startupImuDtMs, DATA_TYPE_UINT32, "ms", "IMU sample (system input data) period set on startup. Cannot be larger than startupInsDtMs. Zero disables sensor/IMU sampling.");
-    mapper.AddMember("startupNavDtMs", &nvm_flash_cfg_t::startupNavDtMs, DATA_TYPE_UINT32, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
-    mapper.AddMember("startupGPSDtMs", &nvm_flash_cfg_t::startupGPSDtMs, DATA_TYPE_UINT32, "ms", "Nav filter (system output data) update period set on startup. 1ms min (1KHz max).");
+    mapper.AddMember("startupNavDtMs", &nvm_flash_cfg_t::startupNavDtMs, DATA_TYPE_UINT32, "ms", "Nav filter (system output data) update period set on startup. 1ms min (1KHz max).");
+    mapper.AddMember("startupGPSDtMs", &nvm_flash_cfg_t::startupGPSDtMs, DATA_TYPE_UINT32, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
     mapper.AddMember("ser0BaudRate", &nvm_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
     mapper.AddMember("ser1BaudRate", &nvm_flash_cfg_t::ser1BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 1 baud rate");
     mapper.AddMember("ser2BaudRate", &nvm_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
