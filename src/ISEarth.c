@@ -686,12 +686,25 @@ float gravity_igf80(float lat_rad, float alt)
 /* Attitude quaternion for NED frame in ECEF */
 void quat_ecef2ned(float lat, float lon, float *qe2n)
 {
-    float eul[3];
+    //eul[0] = 0.0f;
+    //eul[1] = -lat - 0.5f * C_PI_F;
+    //eul[2] = lon;
+    //euler2quat(eul, qe2n);
 
-    eul[0] = 0.0f;
-    eul[1] = -lat - 0.5f * C_PI_F;
-    eul[2] = lon;
-    euler2quat(eul, qe2n);
+    // Faster:
+    f_t the = -(lat + 0.5f * C_PI_F) * 0.5f;
+    f_t psi = lon * 0.5f;
+
+    f_t sthe = _SIN(the);
+    f_t cthe = _COS(the);
+
+    f_t spsi = _SIN(psi);
+    f_t cpsi = _COS(psi);
+
+    qe2n[0] =  cthe * cpsi;
+    qe2n[1] = -sthe * spsi;
+    qe2n[2] =  sthe * cpsi;
+    qe2n[3] =  cthe * spsi;
 }
 
 
