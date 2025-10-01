@@ -25,25 +25,27 @@
 #include "PortManager.h"
 #include "DeviceFactory.h"
 
-typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
+typedef std::shared_ptr<ISDevice>(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
 
-typedef ISDevice*(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
+typedef std::shared_ptr<ISDevice>(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 
-typedef std::function<void(uint8_t, ISDevice*)> device_listener;
+typedef std::function<void(uint8_t, std::shared_ptr<ISDevice>)> device_listener;
 
 // typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 
 
-class DeviceManager : public std::list<ISDevice*>
+class DeviceManager : public std::list<std::shared_ptr<ISDevice>>
 {
 public:
     enum device_event_e : uint8_t {
-        DEVICE_ADDED,
-        DEVICE_REMOVED,
-        DEVICE_PORT_CHANGED,
-        DEVICE_PORT_LOST,
-        DEVICE_PORT_GAINED,
+        DEVICE_ADDED,                   //!< a previously unknown device was discovered and added to the manager
+        DEVICE_PORT_BOUND,              //!< a previously known device had a new port bound to it
+        DEVICE_CONNECTED,               //!< a previously known, but disconnected device was connected
+        DEVICE_INFO_CHANGED,            //!< a previously known device received updated information about itself
+        DEVICE_DISCONNECTED,            //!< a previously known device was disconnected
+        DEVICE_PORT_LOST,               //!< a previously known device's port was marked invalid or no longer exists
+        DEVICE_REMOVED,                 //!< a previously known device was removed from the manager
     };
 
     static const uint16_t OPTIONS_USE_DEFAULTS                    = 0xFFFF;       //!< used to indicate that higher-order options, if set should be used
@@ -140,7 +142,7 @@ public:
      * @param device a pointer to a device instance
      * @return true if the device is a known device, otherwise false
      */
-    bool contains(ISDevice* device) {
+    bool contains(std::shared_ptr<ISDevice> device) {
         for (auto kd : knownDevices) {
             if (kd.device == device)
                 return true;
@@ -187,13 +189,22 @@ public:
         listeners.push_back(listener);
     }
 
+    /**
+     * Notifies all listeners of a particular device event
+     * @param device the device to which the event is applicable
+     * @param event the specific event id that occurred.
+     */
+    void notifyListeners(std::shared_ptr<ISDevice> device, uint8_t event) {
+        for (device_listener& l : listeners) l(event, device);    // notify that this device's port has been updated
+    }
+
 
     /**
      * Registers a previously allocated device
      * @param device a pointer to an ISDevice instance to add to the list of managed devices
      * @return
      */
-    bool registerDevice(ISDevice* device);
+    bool registerDevice(std::shared_ptr<ISDevice> device);
 
     /**
      * Allocates and registers a new ISDevice, by making a copy of the original device instance.
@@ -201,7 +212,7 @@ public:
      * @param orig a reference to the original instance to make a copy of.
      * @return a pointer to the new ISDevice instance which is managed by the DeviceManager
      */
-    ISDevice* registerNewDevice(const ISDevice& orig);
+    std::shared_ptr<ISDevice> registerNewDevice(const ISDevice& orig);
 
     /**
      * Allocates and registers a new ISDevice from the associated port, and respective device info.
@@ -213,7 +224,7 @@ public:
      * @param devInfo (optional) the essential device information for this device, if known
      * @return a pointer to the new ISDevice instance which is managed by the DeviceManager
      */
-    ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
+    std::shared_ptr<ISDevice> registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
 
     /**
      * Releases the specified device, freeing any associated memory, and optionally closing any connected ports
@@ -221,17 +232,17 @@ public:
      * @param closePort
      * @return true if the device was found, and released otherwise false
      */
-    bool releaseDevice(ISDevice* device, bool closePort = true, bool deleteDevice = true);
+    bool releaseDevice(std::shared_ptr<ISDevice> device, bool closePort = true, bool deleteDevice = true);
 
     /**
      * Remove and release/free all known/discovered devices.
      */
     void clear(bool closePorts = true) {
-        std::vector<ISDevice*> tmp = getDevicesAsVector();
-        for (auto d : tmp) releaseDevice(d, closePorts, true);
+        auto tmpSet = getDevicesAsVector();
+        for (auto d : tmpSet) releaseDevice(d, closePorts, true);
 
         // just to make sure we didn't miss anything (though this could cause memory leaks)
-        std::list<ISDevice*>::clear();
+        std::list<std::shared_ptr<ISDevice>>::clear();
         knownDevices.clear();
     }
 
@@ -245,27 +256,27 @@ public:
      * Returns a reference to the backing list available, connected devices
      * @return
      */
-    std::list<ISDevice*>& getDevices() { return *this; };
+    std::list<std::shared_ptr<ISDevice>>& getDevices() { return *this; };
 
     /**
      * @returns a std::vector<ISDevice*> of known devices
      */
-    std::vector<ISDevice*> getDevicesAsVector();
+    std::vector<std::shared_ptr<ISDevice>> getDevicesAsVector();
 
     /**
      * @returns an ISDevice* instance identified by the specified UID, or NULL if not found
      */
-    ISDevice* getDevice(uint64_t uid);
+    std::shared_ptr<ISDevice> getDevice(uint64_t uid);
 
     /**
      * @returns an ISDevice* instance associated with the specified port, or NULL if not found
      */
-    ISDevice* getDevice(port_handle_t port);
+    std::shared_ptr<ISDevice> getDevice(port_handle_t port);
 
     /**
      * @returns an ISDevice* instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
      */
-    ISDevice* getDevice(const std::string& deviceId);
+    std::shared_ptr<ISDevice> getDevice(const std::string& deviceId);
 
     /**
      * Returns the first ISDevice instance matching the specified criteria
@@ -273,7 +284,7 @@ public:
      * @param hdwId an optional hdwId to further filter on
      * @return an ISDevice* instance or NULL of not found
      */
-    ISDevice* getDevice(uint32_t serialNum, is_hardware_t hdwId = IS_HARDWARE_ANY);
+    std::shared_ptr<ISDevice> getDevice(uint32_t serialNum, is_hardware_t hdwId = IS_HARDWARE_ANY);
 
     /**
      * Returns a subset of connected devices filtered by the passed devInfo and filterFlags.
@@ -287,7 +298,7 @@ public:
      * @param filterFlags
      * @return a vector of ISDevice* which match the filter criteria (devInfo/filterFlags)
      */
-    std::vector<ISDevice*> selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags);
+    std::vector<std::shared_ptr<ISDevice>> selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags);
 
     /**
      * Returns a subset of connected devices filtered by the passed hardware id.
@@ -298,7 +309,7 @@ public:
      * @param hdwId
      * @return a vector of ISDevice* which match the filter criteria (hdwId)
      */
-    std::vector<ISDevice*> selectByHdwId(const uint16_t hdwId = 0xFFFF);
+    std::vector<std::shared_ptr<ISDevice>> selectByHdwId(const uint16_t hdwId = 0xFFFF);
 
 
     /**
@@ -309,7 +320,7 @@ public:
      * @returns a vector of pairs of devices (first) which can be upgraded using the firmware
      *  file (second).
      */
-    std::vector<std::pair<ISDevice*, std::string>> getUpgradableDevices(const std::string& firmwarePath);
+    std::vector<std::pair<std::shared_ptr<ISDevice>, std::string>> getUpgradableDevices(const std::string& firmwarePath);
 
 protected:
     void portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port);
@@ -334,11 +345,9 @@ private:
     struct device_entry_t {
         DeviceFactory* factory;
         uint64_t hdwId;
-        ISDevice* device;
+        std::shared_ptr<ISDevice> device;
 
-        device_entry_t(DeviceFactory* f, uint64_t i, ISDevice* d) {
-            factory = f, hdwId = i, device = d;
-        };
+        device_entry_t(DeviceFactory* f, uint64_t i, std::shared_ptr<ISDevice> d) : factory(f), hdwId(i), device(d) {};
     };
 
     PortManager& portManager = PortManager::getInstance();

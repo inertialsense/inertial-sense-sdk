@@ -41,7 +41,7 @@ extern "C"
 class ISFirmwareUpdater;
 class cISLogger;
 
-class ISDevice {
+class ISDevice : public std::enable_shared_from_this<ISDevice> {
 public:
 
     enum DevInfoFormatFlags : uint16_t {
@@ -89,7 +89,7 @@ public:
         assignPort(_port);
     }
 
-    explicit ISDevice(const ISDevice& src) : devLogger(src.devLogger) {
+    ISDevice(const ISDevice& src) : std::enable_shared_from_this<ISDevice>(src), devLogger(src.devLogger) {
         // std::cout << "Creating ISDevice copy from " << ISDevice::getIdAsString(src.devInfo)  << " " << this << std::endl;
 
         hdwId = src.hdwId;
@@ -183,10 +183,10 @@ public:
      */
     virtual bool connect(bool revalidate = false) {
         if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
-            return false;
+            return false;   // port is invalid or incorrect type, so we can't connect it
 
         if (portIsOpened(port))
-            return true;
+            return true;    // port is already opened, so nothing to do (but we didn't fail)
 
         bool result = (portOpen(port) == PORT_ERROR__NONE);
         portStatsReset(port);
@@ -323,13 +323,13 @@ public:
                                     ((devInfo.hardwareType == IS_HARDWARE_TYPE_GPX) && (gpxStatus.hdwStatus & GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED)); }
 
     /**
-     * Immediately issues s SysCmd to instruct the device to reset immediately. Note that there is no
-     * acknowledgement or other indication that the device received the reset command, before the device
-     * is reset. In order to confirm that the device was successfully reset, you could compare the upTime
-     * of the device before and after the reset is issued.
+     * Immediately issues s SysCmd to instruct the device to perform a software reset as soon as reasonably possible.
+     * Note that there is no acknowledgement or other indication that the device received the reset command before the
+     * device is reset. In order to confirm that the device was successfully reset, you should compare the upTime of
+     * the device before and after the reset is issued.
      * @return true if the request was successfully sent, false if the action was not able to be performed.
      */
-    bool reset();
+    bool softwareReset();
 
     /**
      * @returns true if reset() was called recently, and we are waiting for the device to return.
@@ -361,8 +361,8 @@ public:
     int QueryDeviceInfo() { return SendRaw(NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
     int SavePersistent() { return SendRaw(NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
 
-    [[deprecated("Use ISDevice::reset() instead")]]
-    int SoftwareReset() { return (int)reset(); }
+    [[deprecated("Use ISDevice::softwareReset() instead")]]
+    int SoftwareReset() { return (int) softwareReset(); }
 
     int SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
     int SetSysCmd(const uint32_t command);

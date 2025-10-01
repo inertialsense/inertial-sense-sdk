@@ -128,7 +128,7 @@ void cISLogger::Cleanup()
     LOCK_MUTEX();
     // cleanup any loggers bound to ports, etc.
     for (auto& [serialno, devicelog] : m_devices) {
-        ISDevice* device = devicelog->Device();
+        auto device = devicelog->Device();
         if (device) {
             device->devLogger.reset();
             if (device->port)
@@ -300,7 +300,7 @@ string cISLogger::CreateCurrentTimestamp()
     return string(buf);
 }
 
-std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice* device) {
+std::shared_ptr<cDeviceLog> cISLogger::registerDevice(std::shared_ptr<ISDevice> device) {
     if (!device)
         return nullptr;
 
@@ -310,20 +310,20 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice* device) {
         {
             default:
             case LOGTYPE_DAT:
-                device->devLogger = make_shared<cDeviceLogSerial>(device);
+                device->devLogger = std::make_shared<cDeviceLogSerial>(device);
                 break;
             case LOGTYPE_RAW:
-                device->devLogger = make_shared<cDeviceLogRaw>(device);
+                device->devLogger = std::make_shared<cDeviceLogRaw>(device);
                 break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
             case LOGTYPE_CSV:
-                device->devLogger = make_shared<cDeviceLogCSV>(device);
+                device->devLogger = std::make_shared<cDeviceLogCSV>(device);
                 break;
             case LOGTYPE_JSON:
-                device->devLogger = make_shared<cDeviceLogJSON>(device);
+                device->devLogger = std::make_shared<cDeviceLogJSON>(device);
                 break;
             case LOGTYPE_KML:
-                device->devLogger = make_shared<cDeviceLogKML>(device);
+                device->devLogger = std::make_shared<cDeviceLogKML>(device);
                 break;
 #endif
         }
@@ -340,12 +340,12 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
     switch (m_logType)
     {
         default:
-        case LOGTYPE_DAT:   deviceLog = make_shared<cDeviceLogSerial>(hdwId, serialNo);  break;
-        case LOGTYPE_RAW:   deviceLog = make_shared<cDeviceLogRaw>(hdwId, serialNo);     break;
+        case LOGTYPE_DAT:   deviceLog = std::make_shared<cDeviceLogSerial>(hdwId, serialNo);  break;
+        case LOGTYPE_RAW:   deviceLog = std::make_shared<cDeviceLogRaw>(hdwId, serialNo);     break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-        case LOGTYPE_CSV:   deviceLog = make_shared<cDeviceLogCSV>(hdwId, serialNo);     break;
-        case LOGTYPE_JSON:  deviceLog = make_shared<cDeviceLogJSON>(hdwId, serialNo);    break;
-        case LOGTYPE_KML:   deviceLog = make_shared<cDeviceLogKML>(hdwId, serialNo);     break;
+        case LOGTYPE_CSV:   deviceLog = std::make_shared<cDeviceLogCSV>(hdwId, serialNo);     break;
+        case LOGTYPE_JSON:  deviceLog = std::make_shared<cDeviceLogJSON>(hdwId, serialNo);    break;
+        case LOGTYPE_KML:   deviceLog = std::make_shared<cDeviceLogKML>(hdwId, serialNo);     break;
 #endif
     }
     deviceLog->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
@@ -354,7 +354,7 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
     return deviceLog;
 }
 
-bool cISLogger::InitDevicesForWriting(std::vector<ISDevice*>& devices)
+bool cISLogger::InitDevicesForWriting(std::vector<std::shared_ptr<ISDevice>>& devices)
 {
     // Remove all devices
     Cleanup();

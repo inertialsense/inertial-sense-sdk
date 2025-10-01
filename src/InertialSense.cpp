@@ -327,7 +327,7 @@ void InertialSense::LoggerThread(void* info)
             {
                 if (inertialSense->m_logger.Type() != cISLogger::LOGTYPE_RAW) {
                     for (auto& pkt : pkts) {
-                        ISDevice* device = inertialSense->getDevice(port);
+                        auto device = inertialSense->getDevice(port);
                         if (!inertialSense->m_logger.LogData(device->devLogger, &pkt.hdr, pkt.buf)) {
                             // Failed to write to log
                             SLEEP_MS(20); // FIXME:  This maybe problematic, as it may unnecessarily delay the thread, leading run-away memory usage.
@@ -640,11 +640,11 @@ void InertialSense::Close()
     }
 
     // Note the distinction here; we are closing ports, not devices...  Maybe we should do this differently though?
-    for (ISDevice* d : deviceManager) {
-        if (d->isConnected()) {
-            portFlush(d->port);
+    for (auto device : deviceManager) {
+        if (device->isConnected()) {
+            portFlush(device->port);
         }
-        d->disconnect();
+        device->disconnect();
     }
 
 }
@@ -760,72 +760,72 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
 
 bool InertialSense::ImxFlashConfig(nvm_flash_cfg_t& flashCfg, port_handle_t port)
 {
-    return WithDevice(port, [&](ISDevice* dev) { return dev->ImxFlashConfig(flashCfg); });
+    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->ImxFlashConfig(flashCfg); });
 }
 
 bool InertialSense::GpxFlashConfig(gpx_flash_cfg_t& flashCfg, port_handle_t port)
 {
-    return WithDevice(port, [&](ISDevice* dev) { return dev->GpxFlashConfig(flashCfg); });
+    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->GpxFlashConfig(flashCfg); });
 }
 
 bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t& flashCfg, port_handle_t port)
 {
-    return WithDevice(port, [&](ISDevice* dev) { return dev->SetImxFlashConfig(flashCfg); });
+    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->SetImxFlashConfig(flashCfg); });
 }
 
 bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg, port_handle_t port)
 {
-    return WithDevice(port, [&](ISDevice* dev) { return dev->SetGpxFlashConfig(flashCfg); });
+    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->SetGpxFlashConfig(flashCfg); });
 }
 
 bool InertialSense::ImxFlashConfigSynced(port_handle_t port)
 {
-    return WithDevice(port, [](ISDevice* dev) { return dev->ImxFlashConfigSynced(); });
+    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->ImxFlashConfigSynced(); });
 }
 
 bool InertialSense::GpxFlashConfigSynced(port_handle_t port)
 {
-    return WithDevice(port, [](ISDevice* dev) { return dev->GpxFlashConfigSynced(); });
+    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->GpxFlashConfigSynced(); });
 }
 
 bool InertialSense::ImxFlashConfigUploadFailure(port_handle_t port)
 {
-    return WithDevice(port, [](ISDevice* dev) { return dev->ImxFlashConfigUploadFailure(); });
+    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->ImxFlashConfigUploadFailure(); });
 }
 
 bool InertialSense::GpxFlashConfigUploadFailure(port_handle_t port)
 {
-    return WithDevice(port, [](ISDevice* dev) { return dev->GpxFlashConfigUploadFailure(); });
+    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->GpxFlashConfigUploadFailure(); });
 }
 
 bool InertialSense::WaitForImxFlashCfgSynced(port_handle_t port)
 {
-    return WithDevice(port, [](ISDevice* dev) { return dev->WaitForImxFlashCfgSynced(); });
+    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->WaitForImxFlashCfgSynced(); });
 }
 
 bool InertialSense::WaitForGpxFlashCfgSynced(port_handle_t port)
 {
-    return WithDevice(port, [](ISDevice* dev) { return dev->WaitForGpxFlashCfgSynced(); });
+    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->WaitForGpxFlashCfgSynced(); });
 }
 
 bool InertialSense::SaveImxFlashConfigToFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](ISDevice* dev) { return dev->SaveImxFlashConfigToFile(path); });
+    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->SaveImxFlashConfigToFile(path); });
 }
 
 bool InertialSense::SaveGpxFlashConfigToFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](ISDevice* dev) { return dev->SaveGpxFlashConfigToFile(path); });
+    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->SaveGpxFlashConfigToFile(path); });
 }
 
 bool InertialSense::LoadImxFlashConfigFromFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](ISDevice* dev) { return dev->LoadImxFlashConfigFromFile(path); });
+    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->LoadImxFlashConfigFromFile(path); });
 }
 
 bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](ISDevice* dev) { return dev->LoadGpxFlashConfigFromFile(path); });
+    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->LoadGpxFlashConfigFromFile(path); });
 }
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
@@ -844,7 +844,7 @@ void InertialSense::ProcessRxNmea(port_handle_t port, const uint8_t* msg, int ms
     switch (getNmeaMsgId(msg, msgSize)) {
         case NMEA_MSG_ID_INFO: {
             // Device Info
-            ISDevice* device = getDevice(port);
+            auto device = getDevice(port);
             if (!device) {
                 dev_info_t devInfo = {};
                 if (!nmea_parse_info(devInfo, (const char *) msg, msgSize)) {
@@ -1176,7 +1176,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
 
         // Now we need to look for other devices (old?) devices which are effectively dead, and clean them up
-        std::vector<ISDevice*> deadDevices;
+        std::vector<std::shared_ptr<ISDevice>> deadDevices;
         for (auto dev : deviceManager) {
             if (!dev->port || !dev->isConnected()) {
                 deadDevices.push_back(dev);
@@ -1195,7 +1195,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
     }
 
-    ISDevice* device = deviceManager.front();
+    auto device = deviceManager.front();
 
     // request extended device info for remaining connected devices...
     for (auto device : deviceManager) {
@@ -1266,7 +1266,7 @@ system_command_t InertialSense::GetSysCmd(port_handle_t port)
  * @param port
  * @return ISDevice* which is connected to port, otherwise NULL
  */
-ISDevice* InertialSense::DeviceByPort(port_handle_t port)
+std::shared_ptr<ISDevice> InertialSense::DeviceByPort(port_handle_t port)
 {
     for (auto device : deviceManager) {
         if (device->port == port)
@@ -1280,7 +1280,7 @@ ISDevice* InertialSense::DeviceByPort(port_handle_t port)
  * @param port
  * @return ISDevice* which is connected to port, otherwise NULL
  */
-ISDevice* InertialSense::DeviceByPortName(const std::string& port_name) {
+std::shared_ptr<ISDevice> InertialSense::DeviceByPortName(const std::string& port_name) {
     for (auto device : deviceManager) {
         if (device->port) {
             const char* devPortName = portName(device->port);
@@ -1335,8 +1335,8 @@ std::vector<std::string> InertialSense::checkForNewPorts(std::vector<std::string
  * @param filterFlags
  * @return a vector of ISDevice which match the filter criteria
  */
-std::vector<ISDevice*> InertialSense::selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags) {
-    std::vector<ISDevice*> selected;
+std::vector<std::shared_ptr<ISDevice>> InertialSense::selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags) {
+    std::vector<std::shared_ptr<ISDevice>> selected;
 
     for (auto device : m_comManagerState.devices) {
         uint32_t matchy = util::compareDevInfo(devInfo, device->devInfo) & filterFlags;
@@ -1355,7 +1355,7 @@ std::vector<ISDevice*> InertialSense::selectByDevInfo(const dev_info_t& devInfo,
  * @param hdwId
  * @return a vector of ISDevice* which match the filter criteria (hdwId)
  */
-std::vector<ISDevice*> InertialSense::selectByHdwId(const uint16_t hdwId) {
+std::vector<std::shared_ptr<ISDevice>> InertialSense::selectByHdwId(const uint16_t hdwId) {
     dev_info_t devInfo = { };
     uint32_t filterFlags = 0;
 
@@ -1424,7 +1424,7 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
  * @param event the type of event for the associated device, typically either DEVICE_ADDED or DEVICE_REMOVED
  * @param device an ISDevice pointer to the associated device.
  */
-void InertialSense::deviceManagerHandler(uint8_t event, ISDevice* device) {
+void InertialSense::deviceManagerHandler(uint8_t event, std::shared_ptr<ISDevice> device) {
     switch ((DeviceManager::device_event_e)event) {
         case DeviceManager::DEVICE_ADDED: {
             debug_message("[DBG] Device %s added on port %s\n", device->getIdAsString().c_str(), portIsValid(device->port) ? portName(device->port) : "(None)");
@@ -1437,14 +1437,18 @@ void InertialSense::deviceManagerHandler(uint8_t event, ISDevice* device) {
             }
         }
             break;
-        case DeviceManager::DEVICE_REMOVED:
-            debug_message("[DBG] Device %s removed\n", device->getIdAsString().c_str());
+        case DeviceManager::DEVICE_PORT_BOUND:
             break;
-        case DeviceManager::DEVICE_PORT_CHANGED:
+        case DeviceManager::DEVICE_CONNECTED:
+            break;
+        case DeviceManager::DEVICE_INFO_CHANGED:
+            break;
+        case DeviceManager::DEVICE_DISCONNECTED:
             break;
         case DeviceManager::DEVICE_PORT_LOST:
             break;
-        case DeviceManager::DEVICE_PORT_GAINED:
+        case DeviceManager::DEVICE_REMOVED:
+            debug_message("[DBG] Device %s removed\n", device->getIdAsString().c_str());
             break;
     }
 }
@@ -1466,7 +1470,7 @@ void InertialSense::SavePersistent()
 
 void InertialSense::SoftwareReset()
 {
-    for (auto device : DeviceManager::getInstance()) { device->reset(); }
+    for (auto device : DeviceManager::getInstance()) { device->softwareReset(); }
 }
 
 void InertialSense::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)
@@ -1509,7 +1513,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
     if (port == nullptr) {   // Send to all
         for (auto device : deviceManager) { device->SetSysCmd(command); }
     } else {                 // Send to specific port
-        ISDevice* device = getDevice(port);
+        auto device = getDevice(port);
         if (device) device->SetSysCmd(command);
     }
 }
@@ -1521,7 +1525,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
 */
 system_command_t InertialSense::GetSysCmd(port_handle_t port)
 {
-    ISDevice* device = getDevice(port);
+    auto device = getDevice(port);
     if (device)
         return device->sysCmd;
 
@@ -1571,23 +1575,7 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
     if (!port) {
         SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
     } else {
-        ISDevice *device = DeviceManager::getInstance().getDevice(port);
+        auto device = deviceManager.getDevice(port);
         if (device) device->SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
     }
 }
-
-/*
-bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port) {
-    ISDevice* device = port ? getDevice(port) : deviceManager.front();
-    return (device ? device->FlashConfig(flashCfg) : false);
-}
-
-bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port) {
-    ISDevice* device = port ? getDevice(port) : deviceManager.front();
-    return (device ? device->SetImxFlashConfig(flashCfg) : false);}
-
-bool InertialSense::WaitForImxFlashCfgSynced(port_handle_t port) {
-    ISDevice* device = port ? getDevice(port) : deviceManager.front();
-    return (device ? device->WaitForImxFlashCfgSynced() : false);
-}
-*/

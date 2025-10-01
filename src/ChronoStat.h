@@ -89,10 +89,10 @@ public:
     /**
      * @returns the time elapsed (milliseconds) since the last sample (derived from the local system clock).
      * NOTE that this uses the local time when the sample was made, and is independent of the time provided
-     * to the call to sample() (if any).
+     * to the call to sample() (if any). If there is no previous sample, returns UINT32_MAX.
      */
     inline uint32_t lastSampleAgeMs() {
-        if (cnt < 2) return 0;
+        if (cnt < 1) return UINT32_MAX;
         auto now = std::chrono::high_resolution_clock::now();
         auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - localTimeTs); // Get the duration since the epoch
         return static_cast<uint32_t>(durationMs.count());

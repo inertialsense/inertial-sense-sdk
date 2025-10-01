@@ -31,7 +31,7 @@ cDeviceLogSerial::cDeviceLogSerial() : cDeviceLog() {
     m_chunk.Clear();
 }
 
-cDeviceLogSerial::cDeviceLogSerial(const ISDevice *dev) : cDeviceLog(dev) {
+cDeviceLogSerial::cDeviceLogSerial(std::shared_ptr<ISDevice> dev) : cDeviceLog(dev) {
     m_chunk.Clear();
     m_chunk.SetDevInfo(dev->devInfo);
     m_chunk.m_hdr.devSerialNum = SerialNumber();    // set this seperately, in case the devInfo above doesn't contain it

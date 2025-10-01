@@ -26,7 +26,7 @@ class cDeviceLogSerial : public cDeviceLog
 {
 public:
     cDeviceLogSerial();
-    cDeviceLogSerial(const ISDevice *dev);
+    cDeviceLogSerial(std::shared_ptr<ISDevice> dev);
     cDeviceLogSerial(uint16_t hdwId, uint32_t serialNo);
     cDeviceLogSerial(port_handle_t port);
 

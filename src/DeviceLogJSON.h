@@ -26,7 +26,7 @@ class cDeviceLogJSON : public cDeviceLog
 {
 public:
     cDeviceLogJSON() : cDeviceLog() {};
-    cDeviceLogJSON(const ISDevice* dev) : cDeviceLog(dev) {};
+    cDeviceLogJSON(const std::shared_ptr<ISDevice> dev) : cDeviceLog(dev) {};
     cDeviceLogJSON(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {};
 
     bool CloseAllFiles() OVERRIDE;

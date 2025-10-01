@@ -34,7 +34,7 @@ public:
      * @param port an associated port (optional) that this device should be bound to.
      * @return a ISDevice pointer to the newly allocated ISDevice or null of not allocated
      */
-    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return new ISDevice(devInfo, port); };
+    virtual std::shared_ptr<ISDevice> allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return std::make_shared<ISDevice>(devInfo, port); };
 
     /**
      * A function responsible for freeing the allocated memory of the ISDevice instance.
@@ -44,14 +44,14 @@ public:
      * @param device the pointer/handle of the Device to release
      * @return true if the device specified was valid, and it was successfully released, otherwise false.
      */
-    virtual bool releaseDevice(ISDevice* device) {
+    virtual bool releaseDevice(std::shared_ptr<ISDevice> device) {
         // cleanup some memory, so if this accidentally gets used after being free, it won't be catastrophic.
         device->port = nullptr;
         device->fwUpdater = nullptr;
         device->hdwId = IS_HARDWARE_NONE;
         device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
-
-        delete device;
+        device.reset();
+        // delete device;
         return true;
     };
 
@@ -98,9 +98,9 @@ private:
     ImxDeviceFactory() = default;
     // ~ImxDeviceFactory() override = default;
 
-    ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
+    std::shared_ptr<ISDevice> allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
-            return new ISDevice(devInfo, port);
+            return std::make_shared<ISDevice>(devInfo, port);
 
         return nullptr;
     }
@@ -117,9 +117,9 @@ private:
     GpxDeviceFactory() = default;
     // ~GpxDeviceFactory() override = default;
 
-    ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
+    std::shared_ptr<ISDevice> allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_GPX_1_0)
-            return new ISDevice(devInfo, port);
+            return std::make_shared<ISDevice>(devInfo, port);
 
         return nullptr;
     }

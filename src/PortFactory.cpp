@@ -83,8 +83,10 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
 }
 
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
+#ifdef DEBUG_LOGGING
     const char* portStr = portName(port);
     const char* safeErrMsg = errMsg ? errMsg : "";
+#endif
 
     static int lastErrorCode = 0;       // the previous error code
     static int repeatCount = 0;         // number of time the same code has repeated

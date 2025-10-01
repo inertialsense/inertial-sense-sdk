@@ -177,7 +177,7 @@ private:
 
     static const int HEX_BUFFER_SIZE = 1024;
 
-    ISDevice* device;                       //!< an ISDevice instance to which are are communicating/updating
+    std::shared_ptr<ISDevice> device;       //!< an ISDevice instance to which are are communicating/updating
     dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
 
     uint32_t m_sn = 0;                      //!< Inertial Sense serial number, i.e. SN60000
