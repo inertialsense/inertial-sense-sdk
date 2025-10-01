@@ -60,8 +60,11 @@ namespace testing
 
 #define TEST_PRINTF(...)        do { printf("[%10c] ", ' '); printf(__VA_ARGS__); fflush(stdout); } while (0);
 
-#define TEST_PRINTF_TS(...)     do { struct timeval tv; gettimeofday(&tv, NULL); printf("[%10.1f] ", (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0); printf(__VA_ARGS__); fflush(stdout); } while (0);
-
+#define TEST_PRINTF_TS(...)     do { struct tm* tm_info; char buffer[10]; timeval tv;           \
+                                     gettimeofday(&tv, NULL); tm_info = localtime(&tv.tv_sec);  \
+                                     strftime(buffer, 10, "%H:%M:%S", tm_info);                 \
+                                     printf("[%s.%01ld]", buffer, tv.tv_usec / 1000);           \
+                                     printf(__VA_ARGS__); fflush(stdout); } while (0);
 #endif
 
 // C++ stream interface
