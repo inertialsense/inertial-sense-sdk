@@ -20,6 +20,8 @@
 #include "drivers/d_serial.h"
 #if defined(IMX_5)
 #include "drivers/d_watchdog.h"
+#elif defined(IMX_6)
+#include "randomBandaids.h"
 #endif
 #define TIME_USEC()             time_usec()
 #define TIME_DELAY_USEC(us)     time_delay_usec(us)
@@ -68,7 +70,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
 #endif
         test_serial_delay_for_tx(n+5);
 
-#if PLATFORM_IS_EMBEDDED && defined(IMX_5)
+#if PLATFORM_IS_EMBEDDED && defined(IS_IMX)
         // Prevent watchdog reset
         watchdog_preemptive();  watchdog_maintenance();
 #endif
@@ -104,7 +106,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
     // Update comm buffer tail pointer
     comm.rxBuf.tail += n;
 
-#if PLATFORM_IS_EMBEDDED && !defined(IMX_5) && !defined(GPX_1)
+#if PLATFORM_IS_EMBEDDED && !defined(IS_IMX) && !defined(GPX_1)
     if (led){ LED_TOGGLE(led); }
 #endif
 
@@ -180,7 +182,7 @@ static int testPortWrite(port_handle_t port, const unsigned char* buf, unsigned 
     if (ringBufWrite(&destPort->portRingBuf, (unsigned char*)buf, len))
     {   
         // Buffer overflow
-#if !defined(IMX_5) && !defined(GPX_1)
+#if !defined(IS_IMX) && !defined(GPX_1)
             throw new std::out_of_range(utils::string_format("testPortWrite ring buffer overflow on %s: %d !!!\n", portName(destPort), ringBufUsed(&destPort->portRingBuf) + len));
 #endif
         return PORT_ERROR__WRITE_FAILURE;

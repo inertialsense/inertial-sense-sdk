@@ -94,7 +94,7 @@ public:
         fwUpdate::pfnProgressCb                 uploadProgress,
         fwUpdate::pfnProgressCb                 verifyProgress,
         fwUpdate::pfnStatusCb                   infoProgress,
-        void						            (*waitAction)() = NULL,
+        void                                    (*waitAction)() = NULL,
         std::vector<confirm_bootload_t>*        updatesPending = NULL
     );
 
@@ -106,7 +106,7 @@ public:
         fwUpdate::pfnProgressCb                 uploadProgress,
         fwUpdate::pfnProgressCb                 verifyProgress,
         fwUpdate::pfnStatusCb                   infoProgress,
-        void						            (*waitAction)()
+        void                                    (*waitAction)()
     );
 
     static void cancel_update();
