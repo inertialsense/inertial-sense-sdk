@@ -692,19 +692,19 @@ void quat_ecef2ned(float lat, float lon, float *qe2n)
     //euler2quat(eul, qe2n);
 
     // Faster:
-    f_t the = -(lat + 0.5f * C_PI_F) * 0.5f;
-    f_t psi = lon * 0.5f;
+    f_t hthe = -(lat + 0.5f * C_PI_F) * 0.5f;
+    f_t hpsi = lon * 0.5f;
 
-    f_t sthe = _SIN(the);
-    f_t cthe = _COS(the);
+    f_t shthe = _SIN(hthe);
+    f_t chthe = _COS(hthe);
 
-    f_t spsi = _SIN(psi);
-    f_t cpsi = _COS(psi);
+    f_t shpsi = _SIN(hpsi);
+    f_t chpsi = _COS(hpsi);
 
-    qe2n[0] =  cthe * cpsi;
-    qe2n[1] = -sthe * spsi;
-    qe2n[2] =  sthe * cpsi;
-    qe2n[3] =  cthe * spsi;
+    qe2n[0] =  chthe * chpsi;
+    qe2n[1] = -shthe * shpsi;
+    qe2n[2] =  shthe * chpsi;
+    qe2n[3] =  chthe * shpsi;
 }
 
 
