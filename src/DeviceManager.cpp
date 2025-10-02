@@ -13,7 +13,7 @@
  * @param device
  * @return
  */
-bool DeviceManager::registerDevice(std::shared_ptr<ISDevice> device) {
+bool DeviceManager::registerDevice(device_handle_t device) {
     if (!device)
         return NULL;
 
@@ -38,7 +38,7 @@ bool DeviceManager::registerDevice(std::shared_ptr<ISDevice> device) {
  * @param devInfo the dev_info_t that describes the device
  * @return a pointer to an ISDevice instance
  */
-std::shared_ptr<ISDevice> DeviceManager::registerNewDevice(const ISDevice& device) {
+device_handle_t DeviceManager::registerNewDevice(const ISDevice& device) {
     // first, ensure there isn't a previously allocated device which matches this hdwId/SerialNo
     for (auto d : *this) {
         if ((d->hdwId == ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo)) && (d->devInfo.serialNumber == device.devInfo.serialNumber)) {
@@ -52,7 +52,7 @@ std::shared_ptr<ISDevice> DeviceManager::registerNewDevice(const ISDevice& devic
     // go through all the registered factories, to find which factory should instance this devices
     for (DeviceFactory* f : factories) {
         // If we're here, we didn't find the device above
-        std::shared_ptr<ISDevice> newDevice = f->allocateDevice(device.devInfo);
+        device_handle_t newDevice = f->allocateDevice(device.devInfo);
         if (newDevice) {
             if (portIsValid(device.port)) {
                 newDevice->assignPort(device.port);
@@ -76,10 +76,10 @@ std::shared_ptr<ISDevice> DeviceManager::registerNewDevice(const ISDevice& devic
  * @param devInfo the dev_info_t that describes the device
  * @return a pointer to an ISDevice instance
  */
-std::shared_ptr<ISDevice> DeviceManager::registerNewDevice(port_handle_t port, dev_info_t devInfo) {
+device_handle_t DeviceManager::registerNewDevice(port_handle_t port, dev_info_t devInfo) {
     // go through all the registered factories, to find which factory should instance this devices
     for (DeviceFactory* f : factories) {
-        std::shared_ptr<ISDevice> newDevice = f->allocateDevice(devInfo);
+        device_handle_t newDevice = f->allocateDevice(devInfo);
         if (newDevice) {
             push_back(newDevice);
             newDevice->assignPort(port);
@@ -98,7 +98,7 @@ std::shared_ptr<ISDevice> DeviceManager::registerNewDevice(port_handle_t port, d
  * @param closePort if true (default) the port will be closed (if open) prior to the device being released, otherwise the port is left in its current state.
  * @param deleteDevice if true (default) the memory associated with the device will be deallocated, otherwise the device is left in an operational state.
  */
-bool DeviceManager::releaseDevice(std::shared_ptr<ISDevice> device, bool closePort, bool deleteDevice)
+bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool deleteDevice)
 {
     auto deviceIter = std::find(begin(), end(), device);
     if (deviceIter == end())
@@ -164,7 +164,7 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
         if ((kd.factory == deviceEntry.factory) && (kd.hdwId == deviceEntry.hdwId)) {
             // We've re-discovered an old device, but we don't know the status of its port... we should try and figure that out, before we just blindly return...
             debug_message("[DBG] Rediscovered previously known device [%s] on serial port '%s'.\n", ISDevice::getIdAsString(devInfo).c_str(), portName(port));
-            std::shared_ptr<ISDevice> device = getDevice(port);
+            device_handle_t device = getDevice(port);
             if (!device) {
                 // If we weren't able to locate the Device by its port (perhaps because its not valid anymore, check by its device info instead)
                 device = getDevice(devInfo.serialNumber, ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
@@ -238,7 +238,7 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
             break;
         case PortManager::PORT_REMOVED:
             debug_message("[DBG] DeviceManager-->PortManager::PORT_REMOVED '%s'.\n", pName.c_str());
-            std::shared_ptr<ISDevice> device = getDevice(port);
+            device_handle_t device = getDevice(port);
             if (device) {
                 device->assignPort(nullptr); // revoke the removed port from the device...
                 for (device_listener& l : listeners) l(DEVICE_PORT_LOST, device);
@@ -251,8 +251,8 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
 /**
  * @returns a vector of available devices
  */
-std::vector<std::shared_ptr<ISDevice>> DeviceManager::getDevicesAsVector() {
-    std::vector<std::shared_ptr<ISDevice>> vecOut;
+std::vector<device_handle_t> DeviceManager::getDevicesAsVector() {
+    std::vector<device_handle_t> vecOut;
     for (auto device : *this) {
         vecOut.push_back(device);
     }
@@ -267,7 +267,7 @@ std::vector<std::shared_ptr<ISDevice>> DeviceManager::getDevicesAsVector() {
 /**
  * @returns an ISDevice* instance identified by the specified UID, or NULL if not found
  */
-std::shared_ptr<ISDevice> DeviceManager::getDevice(uint64_t uid) {
+device_handle_t DeviceManager::getDevice(uint64_t uid) {
     for (auto device : *this) {
         if (device && (ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo) == uid))
             return device;
@@ -278,7 +278,7 @@ std::shared_ptr<ISDevice> DeviceManager::getDevice(uint64_t uid) {
 /**
  * @returns an ISDevice* instance associated with the specified port, or NULL if not found
  */
-std::shared_ptr<ISDevice> DeviceManager::getDevice(port_handle_t port) {
+device_handle_t DeviceManager::getDevice(port_handle_t port) {
     for (auto device : *this) {
         if (device->port == port)
             return device;
@@ -289,7 +289,7 @@ std::shared_ptr<ISDevice> DeviceManager::getDevice(port_handle_t port) {
 /**
  * @returns an ISDevice* instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
  */
-std::shared_ptr<ISDevice> DeviceManager::getDevice(const std::string& deviceId) {
+device_handle_t DeviceManager::getDevice(const std::string& deviceId) {
     for (auto device : *this) {
         if (device->getIdAsString() == deviceId)
             return device;
@@ -303,7 +303,7 @@ std::shared_ptr<ISDevice> DeviceManager::getDevice(const std::string& deviceId) 
  * @param hdwId an optional hdwId to further filter on
  * @return an ISDevice* instance or NULL if not found
  */
-std::shared_ptr<ISDevice> DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
+device_handle_t DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
     for (const auto& device : *this) {
         if (device && device->matchesHdwId(hdwId, serialNum))
             return device;
@@ -332,8 +332,8 @@ std::shared_ptr<ISDevice> DeviceManager::getDevice(uint32_t serialNum, is_hardwa
  * @param filterFlags
  * @return a vector of ISDevice which match the filter criteria
  */
-std::vector<std::shared_ptr<ISDevice>> DeviceManager::selectByDevInfo(const dev_info_t &devInfo, uint32_t filterFlags) {
-    std::vector<std::shared_ptr<ISDevice>> selected;
+std::vector<device_handle_t> DeviceManager::selectByDevInfo(const dev_info_t &devInfo, uint32_t filterFlags) {
+    std::vector<device_handle_t> selected;
 
     for (auto device : *this) {
         uint32_t matchy = utils::compareDevInfo(devInfo, device->devInfo) & filterFlags;
@@ -354,7 +354,7 @@ std::vector<std::shared_ptr<ISDevice>> DeviceManager::selectByDevInfo(const dev_
  * @param hdwId
  * @return a vector of ISDevice* which match the filter criteria (hdwId)
  */
-std::vector<std::shared_ptr<ISDevice>> DeviceManager::selectByHdwId(const uint16_t hdwId) {
+std::vector<device_handle_t> DeviceManager::selectByHdwId(const uint16_t hdwId) {
     dev_info_t devInfo = { };
     uint32_t filterFlags = 0;
 
@@ -383,8 +383,8 @@ std::vector<std::shared_ptr<ISDevice>> DeviceManager::selectByHdwId(const uint16
  * @returns a map of devices (key) which can be upgraded with the firmware image version (value) to
  *  which it can be upgraded to.
  */
-std::vector<std::pair<std::shared_ptr<ISDevice>, std::string>> DeviceManager::getUpgradableDevices(const std::string& firmwarePath) {
-    std::vector<std::pair<std::shared_ptr<ISDevice>, std::string>> results;
+std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradableDevices(const std::string& firmwarePath) {
+    std::vector<std::pair<device_handle_t, std::string>> results;
 
     // first, let's check the images path and find the latest firmware image
     std::vector<std::string> fwImageFiles;

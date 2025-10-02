@@ -120,7 +120,7 @@ public:
     void clear() {
         cnt = 0;
         timeLast = NAN;
-        localTimeTs = std::chrono::high_resolution_clock::time_point::min();     // this should initialize to the clocks epoch
+        localTimeTs = (std::chrono::high_resolution_clock::time_point::min)();     // this should initialize to the clocks epoch, and ALSO make Windows min/max macros happy.
 
         dt = 0;
         dtMin = INVALID_DDT_MIN_STAT;

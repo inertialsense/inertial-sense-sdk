@@ -58,7 +58,7 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
         timeoutMs = deviceTimeout;
 
     // at this point, the port should be opened...
-    std::shared_ptr<ISDevice> dev = DeviceManager::getInstance().getDevice(port);
+    device_handle_t dev = DeviceManager::getInstance().getDevice(port);
     if (!dev) {
         // no previous device exists, so identify the device and then register it with the manager
         int validationResult = 0;

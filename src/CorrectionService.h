@@ -61,13 +61,13 @@ public:
      * Adds a device to the recieve corrections from this service
      * @param device A reference to the device to send corrections to
      */
-    void addDevice(std::shared_ptr<ISDevice> device);
+    void addDevice(device_handle_t device);
 
     /**
      * Adds multiple devices to recieve corrections from this service
      * @param devices A vector of references to devices to send corrections to
      */
-    void addDevices(const std::vector<std::shared_ptr<ISDevice>>& devices) { for (auto& d : devices) { addDevice(d); } }
+    void addDevices(const std::vector<device_handle_t>& devices) { for (auto& d : devices) { addDevice(d); } }
 
     /**
      * Cease sending corrections from this service a port
@@ -85,13 +85,13 @@ public:
      * Cease sending corrections from this service a device
      * @param device A reference to the device to cease sending corrections to
      */
-    void removeDevice(std::shared_ptr<ISDevice> device);
+    void removeDevice(device_handle_t device);
 
     /**
      * Cease sending corrections from this service to multiple devices
      * @param devices A vector of references to devices to cease corrections to
      */
-    void removeDevices(const std::vector<std::shared_ptr<ISDevice>>& devices) { for (auto& d : devices) { removeDevice(d); } }
+    void removeDevices(const std::vector<device_handle_t>& devices) { for (auto& d : devices) { removeDevice(d); } }
 
     /**
      * Check if this CorrectionService is sending correction data to a given port
@@ -103,7 +103,7 @@ public:
      * Check if this CorrectionService is sending correction data to a given device
      * @param device A reference of a device to check for
      */
-    bool hasDevice(std::shared_ptr<ISDevice> device);
+    bool hasDevice(device_handle_t device);
 
     /**
      * Adds a callback to be called when a Msg 1029 is received from RTCM3

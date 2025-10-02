@@ -35,7 +35,7 @@ cDeviceLog::cDeviceLog() {
     m_logStats.Clear();
 }
 
-cDeviceLog::cDeviceLog(std::shared_ptr<ISDevice> dev) : device(dev)  {
+cDeviceLog::cDeviceLog(device_handle_t dev) : device(dev)  {
     if (dev == nullptr)
         throw std::invalid_argument("cDeviceLog() must be passed a valid ISDevice instance.");
     m_devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
@@ -281,7 +281,7 @@ void cDeviceLog::UpdateStatsFromFile(protocol_type_t ptype, int id, double times
     m_logStats.LogData(ptype, id, timestamp);
 }
 
-std::shared_ptr<ISDevice> cDeviceLog::Device() {
+device_handle_t cDeviceLog::Device() {
     return device;
 }
 

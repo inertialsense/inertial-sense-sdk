@@ -34,7 +34,7 @@ public:
      * @param port an associated port (optional) that this device should be bound to.
      * @return a ISDevice pointer to the newly allocated ISDevice or null of not allocated
      */
-    virtual std::shared_ptr<ISDevice> allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return std::make_shared<ISDevice>(devInfo, port); };
+    virtual device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return std::make_shared<ISDevice>(devInfo, port); };
 
     /**
      * A function responsible for freeing the allocated memory of the ISDevice instance.
@@ -44,7 +44,7 @@ public:
      * @param device the pointer/handle of the Device to release
      * @return true if the device specified was valid, and it was successfully released, otherwise false.
      */
-    virtual bool releaseDevice(std::shared_ptr<ISDevice> device) {
+    virtual bool releaseDevice(device_handle_t device) {
         // cleanup some memory, so if this accidentally gets used after being free, it won't be catastrophic.
         device->port = nullptr;
         device->fwUpdater = nullptr;
@@ -98,7 +98,7 @@ private:
     ImxDeviceFactory() = default;
     // ~ImxDeviceFactory() override = default;
 
-    std::shared_ptr<ISDevice> allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
+    device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
             return std::make_shared<ISDevice>(devInfo, port);
 
@@ -117,7 +117,7 @@ private:
     GpxDeviceFactory() = default;
     // ~GpxDeviceFactory() override = default;
 
-    std::shared_ptr<ISDevice> allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
+    device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_GPX_1_0)
             return std::make_shared<ISDevice>(devInfo, port);
 

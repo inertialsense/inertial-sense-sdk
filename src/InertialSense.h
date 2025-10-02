@@ -53,8 +53,8 @@ extern "C"
 
 class InertialSense;
 
-typedef std::shared_ptr<ISDevice>(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
-typedef std::shared_ptr<ISDevice>(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
+typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
+typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)> pfnHandleAckData;
@@ -156,11 +156,11 @@ public:
 
     int DeviceCount() { return deviceManager.DeviceCount(); }
 
-    std::list<std::shared_ptr<ISDevice>>& getDevices() { return deviceManager; };
+    std::list<device_handle_t>& getDevices() { return deviceManager; };
 
-    std::shared_ptr<ISDevice> getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
+    device_handle_t getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
 
-    std::shared_ptr<ISDevice> getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
+    device_handle_t getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -233,7 +233,7 @@ public:
      * @param dataSize Number of bytes of raw data.
      * @param data Pointer to raw data.
      */
-    void LogRawData(std::shared_ptr<ISDevice> device, int dataSize, const uint8_t* data);
+    void LogRawData(device_handle_t device, int dataSize, const uint8_t* data);
 
     /**
     * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
@@ -251,16 +251,16 @@ public:
     /**
      * Locates the device associated with the specified port
      * @param port
-     * @return std::shared_ptr<ISDevice> which is connected to port, otherwise NULL
+     * @return device_handle_t which is connected to port, otherwise NULL
      */
-    std::shared_ptr<ISDevice> DeviceByPort(port_handle_t port = 0);
+    device_handle_t DeviceByPort(port_handle_t port = 0);
 
     /**
      * Locates the device associated with the specified port name
      * @param port
-     * @return std::shared_ptr<ISDevice> which is connected to port, otherwise NULL
+     * @return device_handle_t which is connected to port, otherwise NULL
      */
-    std::shared_ptr<ISDevice> DeviceByPortName(const std::string& port_name);
+    device_handle_t DeviceByPortName(const std::string& port_name);
 
     /**
      * @return a list of discovered ports which are not currently associated with a open device
@@ -602,17 +602,17 @@ public:
     template<typename Func>
     bool WithDevice(port_handle_t port, Func&& func)
     {
-        std::shared_ptr<ISDevice> device = (port == NULL) ? deviceManager.front() : DeviceByPort(port);
+        device_handle_t device = (port == NULL) ? deviceManager.front() : DeviceByPort(port);
         return (device ? func(device) : false);
     }
 
 
-    // bool registerDevice(std::shared_ptr<ISDevice> device);
-    // std::shared_ptr<ISDevice> registerNewDevice(const ISDevice& orig);
-    // std::shared_ptr<ISDevice> registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
+    // bool registerDevice(device_handle_t device);
+    // device_handle_t registerNewDevice(const ISDevice& orig);
+    // device_handle_t registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
 
     // bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
-    // bool releaseDevice(std::shared_ptr<ISDevice> device, bool closePort = true);
+    // bool releaseDevice(device_handle_t device, bool closePort = true);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
@@ -676,7 +676,7 @@ private:
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
     void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port);
-    void deviceManagerHandler(uint8_t event, std::shared_ptr<ISDevice> device);
+    void deviceManagerHandler(uint8_t event, device_handle_t device);
 };
 
 #endif

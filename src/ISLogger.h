@@ -103,7 +103,7 @@ public:
     bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float driveUsageLimitPercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
     // Establish link between devices and this logger
-    std::shared_ptr<cDeviceLog> registerDevice(std::shared_ptr<ISDevice> device);
+    std::shared_ptr<cDeviceLog> registerDevice(device_handle_t device);
     std::shared_ptr<cDeviceLog> registerDevice(uint16_t hdwId, uint32_t serialNo);
     std::shared_ptr<cDeviceLog> registerDevice(dev_info_t& devInfo) { return registerDevice(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber); }
 
@@ -264,7 +264,7 @@ private:
     cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-    bool InitDevicesForWriting(std::vector<std::shared_ptr<ISDevice>>& devices);
+    bool InitDevicesForWriting(std::vector<device_handle_t>& devices);
     void PrintProgress();
 
     static time_t GetTime()

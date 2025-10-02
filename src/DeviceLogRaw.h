@@ -28,7 +28,7 @@ class cDeviceLogRaw : public cDeviceLog
 {
 public:
     cDeviceLogRaw();
-    cDeviceLogRaw(std::shared_ptr<ISDevice> dev);
+    cDeviceLogRaw(device_handle_t dev);
     cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo);
 
     void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;

@@ -42,7 +42,7 @@ class cDeviceLogKML : public cDeviceLog
 {
 public:
     cDeviceLogKML() : cDeviceLog() {};
-    cDeviceLogKML(std::shared_ptr<ISDevice> dev) : cDeviceLog(dev) {};
+    cDeviceLogKML(device_handle_t dev) : cDeviceLog(dev) {};
     cDeviceLogKML(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {};
 
     void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;

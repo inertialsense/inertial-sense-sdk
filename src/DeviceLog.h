@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <memory>
 #include <vector>
 
+#include "ISDevice.h"
 #include "ISLogFileBase.h"
 #include "ISLogStats.h"
 
@@ -27,7 +28,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define IS_LOG_FILE_PREFIX "LOG_SN"
 #define IS_LOG_TIMESTAMP_LENGTH 15
 
-class ISDevice;
+#if !defined(ISDevice)
+    class ISDevice;
+    typedef std::shared_ptr<ISDevice> device_handle_t;
+#endif
+
 
 class cDeviceLog {
 public:
@@ -40,7 +45,7 @@ public:
 
     cDeviceLog();
 
-    cDeviceLog(std::shared_ptr<ISDevice> dev);
+    cDeviceLog(device_handle_t dev);
 
     cDeviceLog(uint16_t hdwId, uint32_t serial);
 
@@ -68,7 +73,7 @@ public:
 
     virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 
-    const std::shared_ptr<ISDevice> getDevice() { return device; }
+    device_handle_t getDevice() { return device; }
 
     virtual std::string LogFileExtention() = 0;
 
@@ -76,7 +81,7 @@ public:
 
     bool SetupReadInfo(const std::string &directory, const std::string &deviceName, const std::string &timeStamp);
 
-    std::shared_ptr<ISDevice> Device();
+    device_handle_t Device();
 
     dev_info_t DeviceInfo();
 
@@ -122,7 +127,7 @@ protected:
     void OnReadPacket(packet_t* pkt, protocol_type_t ptype);
     void OnReadData(p_data_buf_t *data);
 
-    const std::shared_ptr<ISDevice> device = nullptr;           //!< ISDevice reference to source of data
+    device_handle_t device;                                     //!< ISDevice reference to source of data
 
     uint16_t m_devHdwId = 0;                                    //!< used when reading a file and no ISDevice is available
     uint32_t m_devSerialNo = -1;                                //!< used when reading a file, and no ISDevice is available

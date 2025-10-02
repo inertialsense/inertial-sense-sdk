@@ -455,7 +455,7 @@ size_t InertialSense::DeviceCount()
  * Returns a vector of available, connected devices
  * @return
  */
-std::list<std::shared_ptr<ISDevice>>& InertialSense::getDevices() {
+std::list<device_handle_t>& InertialSense::getDevices() {
     // return m_comManagerState.devices;
     return *this;
 }
@@ -464,8 +464,8 @@ std::list<std::shared_ptr<ISDevice>>& InertialSense::getDevices() {
  * Returns a vector of available, connected devices
  * @return
  */
-std::vector<std::shared_ptr<ISDevice>> InertialSense::getDevicesAsVector() {
-    std::vector<std::shared_ptr<ISDevice>> vecOut;
+std::vector<device_handle_t> InertialSense::getDevicesAsVector() {
+    std::vector<device_handle_t> vecOut;
     for (auto device : m_comManagerState.devices) {
         vecOut.push_back(device);
     }
@@ -477,7 +477,7 @@ std::vector<std::shared_ptr<ISDevice>> InertialSense::getDevicesAsVector() {
  * @param port
  * @return
  */
-std::shared_ptr<ISDevice> InertialSense::getDevice(port_handle_t port) {
+device_handle_t InertialSense::getDevice(port_handle_t port) {
     for (auto device : m_comManagerState.devices) {
         if (device->port == port)
             return device;
@@ -491,7 +491,7 @@ std::shared_ptr<ISDevice> InertialSense::getDevice(port_handle_t port) {
  * @param port
  * @return
  */
-std::shared_ptr<ISDevice> InertialSense::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
+device_handle_t InertialSense::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
     for (auto device : m_comManagerState.devices) {
         if ((device->hdwId == hdwId) && (device->devInfo.serialNumber == serialNum))
             return device;
@@ -705,7 +705,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
     }
     else
     {   // Specific port
-        std::shared_ptr<ISDevice> device = DeviceByPort(port);
+        device_handle_t device = DeviceByPort(port);
         if (device) device->SetSysCmd(command);
     }
 }
@@ -760,72 +760,72 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
 
 bool InertialSense::ImxFlashConfig(nvm_flash_cfg_t& flashCfg, port_handle_t port)
 {
-    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->ImxFlashConfig(flashCfg); });
+    return WithDevice(port, [&](device_handle_t dev) { return dev->ImxFlashConfig(flashCfg); });
 }
 
 bool InertialSense::GpxFlashConfig(gpx_flash_cfg_t& flashCfg, port_handle_t port)
 {
-    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->GpxFlashConfig(flashCfg); });
+    return WithDevice(port, [&](device_handle_t dev) { return dev->GpxFlashConfig(flashCfg); });
 }
 
 bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t& flashCfg, port_handle_t port)
 {
-    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->SetImxFlashConfig(flashCfg); });
+    return WithDevice(port, [&](device_handle_t dev) { return dev->SetImxFlashConfig(flashCfg); });
 }
 
 bool InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg, port_handle_t port)
 {
-    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->SetGpxFlashConfig(flashCfg); });
+    return WithDevice(port, [&](device_handle_t dev) { return dev->SetGpxFlashConfig(flashCfg); });
 }
 
 bool InertialSense::ImxFlashConfigSynced(port_handle_t port)
 {
-    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->ImxFlashConfigSynced(); });
+    return WithDevice(port, [](device_handle_t dev) { return dev->ImxFlashConfigSynced(); });
 }
 
 bool InertialSense::GpxFlashConfigSynced(port_handle_t port)
 {
-    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->GpxFlashConfigSynced(); });
+    return WithDevice(port, [](device_handle_t dev) { return dev->GpxFlashConfigSynced(); });
 }
 
 bool InertialSense::ImxFlashConfigUploadFailure(port_handle_t port)
 {
-    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->ImxFlashConfigUploadFailure(); });
+    return WithDevice(port, [](device_handle_t dev) { return dev->ImxFlashConfigUploadFailure(); });
 }
 
 bool InertialSense::GpxFlashConfigUploadFailure(port_handle_t port)
 {
-    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->GpxFlashConfigUploadFailure(); });
+    return WithDevice(port, [](device_handle_t dev) { return dev->GpxFlashConfigUploadFailure(); });
 }
 
 bool InertialSense::WaitForImxFlashCfgSynced(port_handle_t port)
 {
-    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->WaitForImxFlashCfgSynced(); });
+    return WithDevice(port, [](device_handle_t dev) { return dev->WaitForImxFlashCfgSynced(); });
 }
 
 bool InertialSense::WaitForGpxFlashCfgSynced(port_handle_t port)
 {
-    return WithDevice(port, [](std::shared_ptr<ISDevice> dev) { return dev->WaitForGpxFlashCfgSynced(); });
+    return WithDevice(port, [](device_handle_t dev) { return dev->WaitForGpxFlashCfgSynced(); });
 }
 
 bool InertialSense::SaveImxFlashConfigToFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->SaveImxFlashConfigToFile(path); });
+    return WithDevice(port, [&](device_handle_t dev) { return dev->SaveImxFlashConfigToFile(path); });
 }
 
 bool InertialSense::SaveGpxFlashConfigToFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->SaveGpxFlashConfigToFile(path); });
+    return WithDevice(port, [&](device_handle_t dev) { return dev->SaveGpxFlashConfigToFile(path); });
 }
 
 bool InertialSense::LoadImxFlashConfigFromFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->LoadImxFlashConfigFromFile(path); });
+    return WithDevice(port, [&](device_handle_t dev) { return dev->LoadImxFlashConfigFromFile(path); });
 }
 
 bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](std::shared_ptr<ISDevice> dev) { return dev->LoadGpxFlashConfigFromFile(path); });
+    return WithDevice(port, [&](device_handle_t dev) { return dev->LoadGpxFlashConfigFromFile(path); });
 }
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
@@ -1176,7 +1176,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
 
         // Now we need to look for other devices (old?) devices which are effectively dead, and clean them up
-        std::vector<std::shared_ptr<ISDevice>> deadDevices;
+        std::vector<device_handle_t> deadDevices;
         for (auto dev : deviceManager) {
             if (!dev->port || !dev->isConnected()) {
                 deadDevices.push_back(dev);
@@ -1238,7 +1238,7 @@ void InertialSense::CloseSerialPorts(bool drainBeforeClose)
 */
 const dev_info_t InertialSense::DeviceInfo(port_handle_t port)
 {
-    std::shared_ptr<ISDevice> device = DeviceByPort(port);
+    device_handle_t device = DeviceByPort(port);
     if (device)
         return device->devInfo;
 
@@ -1252,7 +1252,7 @@ const dev_info_t InertialSense::DeviceInfo(port_handle_t port)
 */
 system_command_t InertialSense::GetSysCmd(port_handle_t port)
 {
-    std::shared_ptr<ISDevice> device = DeviceByPort(port);
+    device_handle_t device = DeviceByPort(port);
     if (device)
         return device->sysCmd;
 
@@ -1264,9 +1264,9 @@ system_command_t InertialSense::GetSysCmd(port_handle_t port)
 /**
  * Returns the device associated with the specified port
  * @param port
- * @return std::shared_ptr<ISDevice> which is connected to port, otherwise NULL
+ * @return device_handle_t which is connected to port, otherwise NULL
  */
-std::shared_ptr<ISDevice> InertialSense::DeviceByPort(port_handle_t port)
+device_handle_t InertialSense::DeviceByPort(port_handle_t port)
 {
     for (auto device : deviceManager) {
         if (device->port == port)
@@ -1278,9 +1278,9 @@ std::shared_ptr<ISDevice> InertialSense::DeviceByPort(port_handle_t port)
 /**
  * Resturns the device associated with the specified port name
  * @param port
- * @return std::shared_ptr<ISDevice> which is connected to port, otherwise NULL
+ * @return device_handle_t which is connected to port, otherwise NULL
  */
-std::shared_ptr<ISDevice> InertialSense::DeviceByPortName(const std::string& port_name) {
+device_handle_t InertialSense::DeviceByPortName(const std::string& port_name) {
     for (auto device : deviceManager) {
         if (device->port) {
             const char* devPortName = portName(device->port);
@@ -1333,10 +1333,10 @@ std::vector<std::string> InertialSense::checkForNewPorts(std::vector<std::string
  * the serial number.
  * @param devInfo
  * @param filterFlags
- * @return a vector of ISDevice which match the filter criteria
+ * @return a vector of device_handle_t which match the filter criteria
  */
-std::vector<std::shared_ptr<ISDevice>> InertialSense::selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags) {
-    std::vector<std::shared_ptr<ISDevice>> selected;
+std::vector<device_handle_t> InertialSense::selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags) {
+    std::vector<device_handle_t> selected;
 
     for (auto device : m_comManagerState.devices) {
         uint32_t matchy = util::compareDevInfo(devInfo, device->devInfo) & filterFlags;
@@ -1353,9 +1353,9 @@ std::vector<std::shared_ptr<ISDevice>> InertialSense::selectByDevInfo(const dev_
  * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
  * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
  * @param hdwId
- * @return a vector of std::shared_ptr<ISDevice> which match the filter criteria (hdwId)
+ * @return a vector of device_handle_t which match the filter criteria (hdwId)
  */
-std::vector<std::shared_ptr<ISDevice>> InertialSense::selectByHdwId(const uint16_t hdwId) {
+std::vector<device_handle_t> InertialSense::selectByHdwId(const uint16_t hdwId) {
     dev_info_t devInfo = { };
     uint32_t filterFlags = 0;
 
@@ -1424,7 +1424,7 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
  * @param event the type of event for the associated device, typically either DEVICE_ADDED or DEVICE_REMOVED
  * @param device an ISDevice pointer to the associated device.
  */
-void InertialSense::deviceManagerHandler(uint8_t event, std::shared_ptr<ISDevice> device) {
+void InertialSense::deviceManagerHandler(uint8_t event, device_handle_t device) {
     switch ((DeviceManager::device_event_e)event) {
         case DeviceManager::DEVICE_ADDED: {
             debug_message("[DBG] Device %s added on port %s\n", device->getIdAsString().c_str(), portIsValid(device->port) ? portName(device->port) : "(None)");

@@ -41,6 +41,11 @@ extern "C"
 class ISFirmwareUpdater;
 class cISLogger;
 
+#if !defined(cISLogger)
+    class cDeviceLog;
+    typedef std::shared_ptr<cDeviceLog> logger_handle_t;
+#endif
+
 class ISDevice : public std::enable_shared_from_this<ISDevice> {
 public:
 
@@ -145,6 +150,12 @@ public:
         closeStatus = src.closeStatus;
         return *this;
     }
+
+    template<typename T>
+    std::shared_ptr<T> as() { return std::dynamic_pointer_cast<T>(shared_from_this()); }
+
+    template<typename T>
+    const T& asConstRef() { return *(std::dynamic_pointer_cast<T>(shared_from_this())); }
 
     /**
      * Generates a uint64_t which encodes the hardware type, hardware version, and hardware serial number, representing a unique device
@@ -522,7 +533,7 @@ public:
     system_command_t            sysCmd = { };
     manufacturing_info_t        manfInfo = {};
 
-    std::shared_ptr<cDeviceLog> devLogger = { };
+    logger_handle_t devLogger = { };
     fwUpdate::update_status_e closeStatus = { };
 
 
@@ -601,6 +612,6 @@ private:
 
 };
 
-
+typedef std::shared_ptr<ISDevice> device_handle_t;
 
 #endif //INERTIALSENSESDK_ISDEVICE_H

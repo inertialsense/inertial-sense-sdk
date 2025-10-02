@@ -300,7 +300,7 @@ string cISLogger::CreateCurrentTimestamp()
     return string(buf);
 }
 
-std::shared_ptr<cDeviceLog> cISLogger::registerDevice(std::shared_ptr<ISDevice> device) {
+std::shared_ptr<cDeviceLog> cISLogger::registerDevice(device_handle_t device) {
     if (!device)
         return nullptr;
 
@@ -354,7 +354,7 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
     return deviceLog;
 }
 
-bool cISLogger::InitDevicesForWriting(std::vector<std::shared_ptr<ISDevice>>& devices)
+bool cISLogger::InitDevicesForWriting(std::vector<device_handle_t>& devices)
 {
     // Remove all devices
     Cleanup();

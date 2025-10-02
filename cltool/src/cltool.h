@@ -209,7 +209,7 @@ private:
      * @param devInfo
      * @return
      */
-    virtual std::shared_ptr<ISDevice> allocateDevice(const dev_info_t &devInfo, port_handle_t port) override { return std::make_shared<CltoolDevice>(devInfo, port); };
+    virtual device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override { return std::make_shared<CltoolDevice>(devInfo, port); };
 };
 
 #endif // __CLTOOL_H__
