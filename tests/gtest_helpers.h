@@ -2,6 +2,8 @@
 #ifndef GTEST_HELPERS_H
 #define GTEST_HELPERS_H
 
+#include <sys/time.h>
+
 #if defined(GTestColor)
 namespace testing
 {
