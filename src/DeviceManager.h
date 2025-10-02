@@ -259,22 +259,22 @@ public:
     std::list<device_handle_t>& getDevices() { return *this; };
 
     /**
-     * @returns a std::vector<ISDevice*> of known devices
+     * @returns a std::vector<device_handle_t> of known devices
      */
     std::vector<device_handle_t> getDevicesAsVector();
 
     /**
-     * @returns an ISDevice* instance identified by the specified UID, or NULL if not found
+     * @returns an device_handle_t instance identified by the specified UID, or NULL if not found
      */
     device_handle_t getDevice(uint64_t uid);
 
     /**
-     * @returns an ISDevice* instance associated with the specified port, or NULL if not found
+     * @returns an device_handle_t instance associated with the specified port, or NULL if not found
      */
     device_handle_t getDevice(port_handle_t port);
 
     /**
-     * @returns an ISDevice* instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
+     * @returns an device_handle_t instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
      */
     device_handle_t getDevice(const std::string& deviceId);
 
@@ -282,7 +282,7 @@ public:
      * Returns the first ISDevice instance matching the specified criteria
      * @param serialNum the serial number of the device to return
      * @param hdwId an optional hdwId to further filter on
-     * @return an ISDevice* instance or NULL of not found
+     * @return an device_handle_t instance or NULL of not found
      */
     device_handle_t getDevice(uint32_t serialNum, is_hardware_t hdwId = IS_HARDWARE_ANY);
 
@@ -296,7 +296,7 @@ public:
      * the serial number.
      * @param devInfo
      * @param filterFlags
-     * @return a vector of ISDevice* which match the filter criteria (devInfo/filterFlags)
+     * @return a vector of device_handle_t which match the filter criteria (devInfo/filterFlags)
      */
     std::vector<device_handle_t> selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags);
 
@@ -307,13 +307,13 @@ public:
      * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
      * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
      * @param hdwId
-     * @return a vector of ISDevice* which match the filter criteria (hdwId)
+     * @return a vector of device_handle_t which match the filter criteria (hdwId)
      */
     std::vector<device_handle_t> selectByHdwId(const uint16_t hdwId = 0xFFFF);
 
 
     /**
-     * Provided a directory of firmware files, this call returns a tuple of ISDevice* and
+     * Provided a directory of firmware files, this call returns a tuple of device_handle_t and
      * a path to a firmware file which can be used to update that device to the latest version.
      * @param firmwarePath a string indicating a base directory which contains firmware files to
      *  evaluate to determine if any are suitable for each device.

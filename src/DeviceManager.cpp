@@ -114,7 +114,7 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
         portClose(device->port);
     }
 
-    erase(deviceIter); // erase only remove the ISDevice* from the list, but doesn't release/free the instance itself
+    erase(deviceIter); // erase only remove the device_handle_t from the list, but doesn't release/free the instance itself
     device->port = NULL;
 
     // also remove from knownDevices
@@ -265,7 +265,7 @@ std::vector<device_handle_t> DeviceManager::getDevicesAsVector() {
 //     in how they operate, and fail, etc.
 
 /**
- * @returns an ISDevice* instance identified by the specified UID, or NULL if not found
+ * @returns an device_handle_t instance identified by the specified UID, or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(uint64_t uid) {
     for (auto device : *this) {
@@ -276,7 +276,7 @@ device_handle_t DeviceManager::getDevice(uint64_t uid) {
 }
 
 /**
- * @returns an ISDevice* instance associated with the specified port, or NULL if not found
+ * @returns an device_handle_t instance associated with the specified port, or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(port_handle_t port) {
     for (auto device : *this) {
@@ -287,7 +287,7 @@ device_handle_t DeviceManager::getDevice(port_handle_t port) {
 }
 
 /**
- * @returns an ISDevice* instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
+ * @returns an device_handle_t instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(const std::string& deviceId) {
     for (auto device : *this) {
@@ -301,7 +301,7 @@ device_handle_t DeviceManager::getDevice(const std::string& deviceId) {
  * Returns the first ISDevice instance matching the specified criteria.
  * @param serialNum the serial number of the device to return
  * @param hdwId an optional hdwId to further filter on
- * @return an ISDevice* instance or NULL if not found
+ * @return an device_handle_t instance or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
     for (const auto& device : *this) {
@@ -352,7 +352,7 @@ std::vector<device_handle_t> DeviceManager::selectByDevInfo(const dev_info_t &de
  * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
  * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
  * @param hdwId
- * @return a vector of ISDevice* which match the filter criteria (hdwId)
+ * @return a vector of device_handle_t which match the filter criteria (hdwId)
  */
 std::vector<device_handle_t> DeviceManager::selectByHdwId(const uint16_t hdwId) {
     dev_info_t devInfo = { };
