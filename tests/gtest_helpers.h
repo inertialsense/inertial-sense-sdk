@@ -2,7 +2,7 @@
 #ifndef GTEST_HELPERS_H
 #define GTEST_HELPERS_H
 
-#include <sys/time.h>
+#include <chrono>
 
 #if defined(GTestColor)
 namespace testing
@@ -62,10 +62,12 @@ namespace testing
 
 #define TEST_PRINTF(...)        do { printf("[%10c] ", ' '); printf(__VA_ARGS__); fflush(stdout); } while (0);
 
-#define TEST_PRINTF_TS(...)     do { struct tm* tm_info; char buffer[10]; timeval tv;           \
-                                     gettimeofday(&tv, NULL); tm_info = localtime(&tv.tv_sec);  \
-                                     strftime(buffer, 10, "%H:%M:%S", tm_info);                 \
-                                     printf("[%s.%01ld]", buffer, tv.tv_usec / 1000);           \
+#define TEST_PRINTF_TS(...)     do { auto now = std::chrono::system_clock::now();                                                   \
+                                     auto ms = duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;             \
+                                     std::time_t now_c = std::chrono::system_clock::to_time_t(now);                                 \
+                                     std::tm* local_tm = std::localtime(&now_c);                                                    \
+                                     std::stringstream fs; fs << std::put_time(local_tm, "%H:%M:%S");                               \
+                                     printf("[%s.%01ld]", fs.str().c_str(), ms.count());                                                    \
                                      printf(__VA_ARGS__); fflush(stdout); } while (0);
 #endif
 
