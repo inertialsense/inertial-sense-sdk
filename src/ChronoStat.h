@@ -6,12 +6,12 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef IS_SDK__PERIOD_STATS_H
-#define IS_SDK__PERIOD_STATS_H
+#ifndef IS_SDK__CHRONO_STAT_H
+#define IS_SDK__CHRONO_STAT_H
 
 #include <string>
 #include <chrono>
-#include <math.h>
+#include <cmath>
 
 #include "util/util.h"
 #include "core/msg_logger.h"
@@ -120,7 +120,7 @@ public:
     void clear() {
         cnt = 0;
         timeLast = NAN;
-        localTimeTs = std::chrono::time_point<std::chrono::high_resolution_clock>::min();     // this should initialize to the clocks epoch
+        localTimeTs = std::chrono::high_resolution_clock::time_point::min();     // this should initialize to the clocks epoch
 
         dt = 0;
         dtMin = INVALID_DDT_MIN_STAT;
@@ -222,4 +222,4 @@ public:
 };
 
 
-#endif //IS_SDK__PERIOD_STATS_H
+#endif //IS_SDK__CHRONO_STAT_H
