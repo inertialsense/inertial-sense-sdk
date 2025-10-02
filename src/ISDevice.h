@@ -155,7 +155,7 @@ public:
     std::shared_ptr<T> as() { return std::dynamic_pointer_cast<T>(shared_from_this()); }
 
     template<typename T>
-    const T& asConstRef() { return *(std::dynamic_pointer_cast<T>(shared_from_this())); }
+    T& asRef() { return *(std::dynamic_pointer_cast<T>(shared_from_this())); }
 
     /**
      * Generates a uint64_t which encodes the hardware type, hardware version, and hardware serial number, representing a unique device
