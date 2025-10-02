@@ -153,7 +153,7 @@ public:
     }
     // void SetSerialPort(serial_port_t* port) { m_port = port; }
     // void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
-    void setDevice(ISDevice* activeDevice) { m_device = activeDevice; }
+    void setDevice(std::shared_ptr<ISDevice> activeDevice) { m_device = activeDevice; }
 
 private:
     std::string VectorToString();
@@ -163,7 +163,7 @@ private:
     std::vector<std::string> m_didMsgs;
     eDisplayMode m_displayMode = DMODE_QUIET;
     uint32_t m_startMs = 0;
-    ISDevice* m_device = NULL;
+    std::shared_ptr<ISDevice> m_device = NULL;
     // serial_port_t* m_port = NULL;
     // is_comm_instance_t* m_comm = NULL;
 

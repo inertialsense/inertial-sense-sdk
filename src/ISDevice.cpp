@@ -86,7 +86,7 @@ bool ISDevice::step() {
 }
 
 is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()) {
-    fwUpdater = new ISFirmwareUpdater(this);
+    fwUpdater = new ISFirmwareUpdater(shared_from_this());
     fwUpdater->setInfoProgressCb(infoProgress);
     fwUpdater->setTarget(targetDevice);
     fwUpdater->setCommands(cmds);

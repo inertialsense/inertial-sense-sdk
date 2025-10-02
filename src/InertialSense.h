@@ -71,9 +71,6 @@ public:
 
     struct com_manager_cpp_state_t
     {
-        // per device vars
-        // std::list<ISDevice*> devices;
-
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
         pfnHandleAckData binaryAckCallback;    // acknowledgment command and set data callback
@@ -254,14 +251,14 @@ public:
     /**
      * Locates the device associated with the specified port
      * @param port
-     * @return ISDevice* which is connected to port, otherwise NULL
+     * @return std::shared_ptr<ISDevice> which is connected to port, otherwise NULL
      */
     std::shared_ptr<ISDevice> DeviceByPort(port_handle_t port = 0);
 
     /**
      * Locates the device associated with the specified port name
      * @param port
-     * @return ISDevice* which is connected to port, otherwise NULL
+     * @return std::shared_ptr<ISDevice> which is connected to port, otherwise NULL
      */
     std::shared_ptr<ISDevice> DeviceByPortName(const std::string& port_name);
 
@@ -586,7 +583,6 @@ public:
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
-    // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
     /**
      * Registers a custom handler to instantiate discovered devices. Default behavior is to
@@ -611,12 +607,12 @@ public:
     }
 
 
-    // bool registerDevice(ISDevice* device);
-    // ISDevice* registerNewDevice(const ISDevice& orig);
-    // ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
+    // bool registerDevice(std::shared_ptr<ISDevice> device);
+    // std::shared_ptr<ISDevice> registerNewDevice(const ISDevice& orig);
+    // std::shared_ptr<ISDevice> registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
 
     // bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
-    // bool releaseDevice(ISDevice* device, bool closePort = true);
+    // bool releaseDevice(std::shared_ptr<ISDevice> device, bool closePort = true);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;

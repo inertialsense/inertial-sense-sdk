@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 #include <string>
 #include <any>
+#include <memory>
 
 // change these includes to be the correct path for your system
 #include "InertialSense.h" // best to include this file first
@@ -208,7 +209,7 @@ private:
      * @param devInfo
      * @return
      */
-    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port) override { return (ISDevice*) new CltoolDevice(devInfo, port); };
+    virtual std::shared_ptr<ISDevice> allocateDevice(const dev_info_t &devInfo, port_handle_t port) override { return std::make_shared<CltoolDevice>(devInfo, port); };
 };
 
 #endif // __CLTOOL_H__

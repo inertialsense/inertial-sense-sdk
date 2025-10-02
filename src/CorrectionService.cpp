@@ -57,15 +57,15 @@ bool CorrectionService::hasPort(port_handle_t port) {
     return std::ranges::find(this->ports, port) != this->ports.end();
 }
 
-void CorrectionService::addDevice(ISDevice* device) {
+void CorrectionService::addDevice(std::shared_ptr<ISDevice> device) {
     addPort(device->port);
 }
 
-void CorrectionService::removeDevice(ISDevice* device) {
+void CorrectionService::removeDevice(std::shared_ptr<ISDevice> device) {
     removePort(device->port);
 }
 
-bool CorrectionService::hasDevice(ISDevice* device) {
+bool CorrectionService::hasDevice(std::shared_ptr<ISDevice> device) {
     return hasPort(device->port);
 }
 

@@ -43,7 +43,7 @@ public:
      * @param hdwId the hardware id (from manufacturing info) used to identify which specific hdwType + hdwVer we should be targeting (used in validation)
      * @param serialNo the device-specific unique Id (or serial number) that is used to uniquely identify a particular device (used in validation)
      */
-    ISBFirmwareUpdater(fwUpdate::target_t target, const ISDevice* device, std::deque<uint8_t>& toHost) : FirmwareUpdateDevice(target), device((ISDevice*)device), toHost(toHost) {
+    ISBFirmwareUpdater(fwUpdate::target_t target, const std::shared_ptr<ISDevice> device, std::deque<uint8_t>& toHost) : FirmwareUpdateDevice(target), device(device), toHost(toHost) {
         // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
         // as soon as this is instantiated, we should attempt to target and boot the device into ISB mode.
         // rebootToISB(5, 0, false);

@@ -455,7 +455,7 @@ size_t InertialSense::DeviceCount()
  * Returns a vector of available, connected devices
  * @return
  */
-std::list<ISDevice*>& InertialSense::getDevices() {
+std::list<std::shared_ptr<ISDevice>>& InertialSense::getDevices() {
     // return m_comManagerState.devices;
     return *this;
 }
@@ -464,8 +464,8 @@ std::list<ISDevice*>& InertialSense::getDevices() {
  * Returns a vector of available, connected devices
  * @return
  */
-std::vector<ISDevice*> InertialSense::getDevicesAsVector() {
-    std::vector<ISDevice*> vecOut;
+std::vector<std::shared_ptr<ISDevice>> InertialSense::getDevicesAsVector() {
+    std::vector<std::shared_ptr<ISDevice>> vecOut;
     for (auto device : m_comManagerState.devices) {
         vecOut.push_back(device);
     }
@@ -477,7 +477,7 @@ std::vector<ISDevice*> InertialSense::getDevicesAsVector() {
  * @param port
  * @return
  */
-ISDevice* InertialSense::getDevice(port_handle_t port) {
+std::shared_ptr<ISDevice> InertialSense::getDevice(port_handle_t port) {
     for (auto device : m_comManagerState.devices) {
         if (device->port == port)
             return device;
@@ -491,7 +491,7 @@ ISDevice* InertialSense::getDevice(port_handle_t port) {
  * @param port
  * @return
  */
-ISDevice* InertialSense::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
+std::shared_ptr<ISDevice> InertialSense::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
     for (auto device : m_comManagerState.devices) {
         if ((device->hdwId == hdwId) && (device->devInfo.serialNumber == serialNum))
             return device;
@@ -705,7 +705,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
     }
     else
     {   // Specific port
-        ISDevice* device = DeviceByPort(port);
+        std::shared_ptr<ISDevice> device = DeviceByPort(port);
         if (device) device->SetSysCmd(command);
     }
 }
@@ -876,7 +876,7 @@ bool InertialSense::BroadcastBinaryData(port_handle_t port, uint32_t dataId, int
     if (periodMultiple < 0) {
         comManagerDisableData(port, dataId);
     } else {
-        ISDevice *device = DeviceByPort(port);
+        auto device = DeviceByPort(port);
         if (device && device->devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
             comManagerGetData(port, dataId, 0, 0, periodMultiple);
         }
@@ -1238,7 +1238,7 @@ void InertialSense::CloseSerialPorts(bool drainBeforeClose)
 */
 const dev_info_t InertialSense::DeviceInfo(port_handle_t port)
 {
-    ISDevice* device = DeviceByPort(port);
+    std::shared_ptr<ISDevice> device = DeviceByPort(port);
     if (device)
         return device->devInfo;
 
@@ -1252,7 +1252,7 @@ const dev_info_t InertialSense::DeviceInfo(port_handle_t port)
 */
 system_command_t InertialSense::GetSysCmd(port_handle_t port)
 {
-    ISDevice* device = DeviceByPort(port);
+    std::shared_ptr<ISDevice> device = DeviceByPort(port);
     if (device)
         return device->sysCmd;
 
@@ -1264,7 +1264,7 @@ system_command_t InertialSense::GetSysCmd(port_handle_t port)
 /**
  * Returns the device associated with the specified port
  * @param port
- * @return ISDevice* which is connected to port, otherwise NULL
+ * @return std::shared_ptr<ISDevice> which is connected to port, otherwise NULL
  */
 std::shared_ptr<ISDevice> InertialSense::DeviceByPort(port_handle_t port)
 {
@@ -1278,7 +1278,7 @@ std::shared_ptr<ISDevice> InertialSense::DeviceByPort(port_handle_t port)
 /**
  * Resturns the device associated with the specified port name
  * @param port
- * @return ISDevice* which is connected to port, otherwise NULL
+ * @return std::shared_ptr<ISDevice> which is connected to port, otherwise NULL
  */
 std::shared_ptr<ISDevice> InertialSense::DeviceByPortName(const std::string& port_name) {
     for (auto device : deviceManager) {
@@ -1353,7 +1353,7 @@ std::vector<std::shared_ptr<ISDevice>> InertialSense::selectByDevInfo(const dev_
  * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
  * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
  * @param hdwId
- * @return a vector of ISDevice* which match the filter criteria (hdwId)
+ * @return a vector of std::shared_ptr<ISDevice> which match the filter criteria (hdwId)
  */
 std::vector<std::shared_ptr<ISDevice>> InertialSense::selectByHdwId(const uint16_t hdwId) {
     dev_info_t devInfo = { };
