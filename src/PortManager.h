@@ -12,8 +12,8 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef EVALTOOL_PORTMANAGER_H
-#define EVALTOOL_PORTMANAGER_H
+#ifndef IS_SDK__PORT_MANAGER_H
+#define IS_SDK__PORT_MANAGER_H
 
 #include <unordered_set>
 #include <map>
@@ -154,4 +154,4 @@ private:
 };
 
 
-#endif //EVALTOOL_PORTMANAGER_H
+#endif //IS_SDK__PORT_MANAGER_H

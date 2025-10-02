@@ -320,7 +320,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
 
     // Do not process ANSWER messages
     if (entry != MDNS_ENTRYTYPE_ANSWER) {
-        debug_message("[WRN] Unable to process non ANSWER responses: Not Supported")
+        debug_message("[WRN] Unable to process non ANSWER responses: Not Supported");
         return -ENOTSUP;
     }
 
@@ -372,7 +372,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             mdns_record_srv_cpp_t srvRecord = mdns_record_srv_cpp_t(srv.priority, srv.weight, srv.port, std::string(MDNS_STRING_ARGS(srv.name)));
             newRecord.data.srv = srvRecord;
         } else {
-            debug_message("[WRN] Unable to process unknown MDNS record type: Not Supported")
+            debug_message("[WRN] Unable to process unknown MDNS record type: Not Supported");
             return -ENOTSUP;
         }
         // Save the type of record to struct so that we know how to parse the union

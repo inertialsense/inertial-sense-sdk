@@ -18,6 +18,7 @@
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"
+#include "ChronoStat.h"
 
 extern "C"
 {
@@ -40,7 +41,12 @@ extern "C"
 class ISFirmwareUpdater;
 class cISLogger;
 
-class ISDevice {
+#if !defined(cISLogger)
+    class cDeviceLog;
+    typedef std::shared_ptr<cDeviceLog> logger_handle_t;
+#endif
+
+class ISDevice : public std::enable_shared_from_this<ISDevice> {
 public:
 
     enum DevInfoFormatFlags : uint16_t {
@@ -57,6 +63,8 @@ public:
         OMIT_BUILD_DATE          = 0x0400,      //!< suppresses the output of the build date
         OMIT_BUILD_TIME          = 0x0800,      //!< suppresses the output of the build time
         OMIT_BUILD_MILLIS        = 0x1000,      //!< suppresses the output of the build milliseconds when not zero
+
+        ESSENTIAL_FIRMWARE_INFO  = (ISDevice::OMIT_COMMIT_HASH | ISDevice::OMIT_BUILD_KEY | ISDevice::OMIT_BUILD_MILLIS | ISDevice::OMIT_BUILD_DATE | ISDevice::OMIT_BUILD_TIME),
     };
 
     const static ISDevice invalidRef;
@@ -86,7 +94,7 @@ public:
         assignPort(_port);
     }
 
-    explicit ISDevice(const ISDevice& src) : devLogger(src.devLogger) {
+    ISDevice(const ISDevice& src) : std::enable_shared_from_this<ISDevice>(src), devLogger(src.devLogger) {
         // std::cout << "Creating ISDevice copy from " << ISDevice::getIdAsString(src.devInfo)  << " " << this << std::endl;
 
         hdwId = src.hdwId;
@@ -143,6 +151,12 @@ public:
         return *this;
     }
 
+    template<typename T>
+    std::shared_ptr<T> as() { return std::dynamic_pointer_cast<T>(shared_from_this()); }
+
+    template<typename T>
+    T& asRef() { return *(std::dynamic_pointer_cast<T>(shared_from_this())); }
+
     /**
      * Generates a uint64_t which encodes the hardware type, hardware version, and hardware serial number, representing a unique device
      * @param devInfo
@@ -180,10 +194,10 @@ public:
      */
     virtual bool connect(bool revalidate = false) {
         if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
-            return false;
+            return false;   // port is invalid or incorrect type, so we can't connect it
 
         if (portIsOpened(port))
-            return true;
+            return true;    // port is already opened, so nothing to do (but we didn't fail)
 
         bool result = (portOpen(port) == PORT_ERROR__NONE);
         portStatsReset(port);
@@ -320,13 +334,13 @@ public:
                                     ((devInfo.hardwareType == IS_HARDWARE_TYPE_GPX) && (gpxStatus.hdwStatus & GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED)); }
 
     /**
-     * Immediately issues s SysCmd to instruct the device to reset immediately. Note that there is no
-     * acknowledgement or other indication that the device received the reset command, before the device
-     * is reset. In order to confirm that the device was successfully reset, you could compare the upTime
-     * of the device before and after the reset is issued.
+     * Immediately issues s SysCmd to instruct the device to perform a software reset as soon as reasonably possible.
+     * Note that there is no acknowledgement or other indication that the device received the reset command before the
+     * device is reset. In order to confirm that the device was successfully reset, you should compare the upTime of
+     * the device before and after the reset is issued.
      * @return true if the request was successfully sent, false if the action was not able to be performed.
      */
-    bool reset();
+    bool softwareReset();
 
     /**
      * @returns true if reset() was called recently, and we are waiting for the device to return.
@@ -349,17 +363,17 @@ public:
     /**
      * Requests that this device broadcast the requested DID are the specified period
      * @param dataId the DID to be broadcast at periodic intervals
-     * @param periodMultiple the period multiple (NOT a frequency). If 0, this will request a one-shot, also effectively stopping any existing broadcasts
+     * @param periodMultiple the period multiple (NOT a frequency). If 0 (default), this will request a one-shot, also effectively stopping any existing broadcasts
      * @return true if the request was successfully sent, otherwise false (ie, port invalid, invalid device, etc)
      */
-    bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
+    bool BroadcastBinaryData(uint32_t dataId, int periodMultiple = 0);
 
     int SendNmea(const std::string& nmeaMsg);
     int QueryDeviceInfo() { return SendRaw(NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
     int SavePersistent() { return SendRaw(NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
 
-    [[deprecated("Use ISDevice::reset() instead")]]
-    int SoftwareReset() { return (int)reset(); }
+    [[deprecated("Use ISDevice::softwareReset() instead")]]
+    int SoftwareReset() { return (int) softwareReset(); }
 
     int SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
     int SetSysCmd(const uint32_t command);
@@ -500,8 +514,10 @@ public:
 
     is_hardware_t               hdwId = IS_HARDWARE_TYPE_UNKNOWN;    //!< hardware type and version (ie, IMX-5.0)
 
-    dev_info_t                  devInfo = { };                      //!< Populated with IMX info if present, otherwise GPX info if present
-    dev_info_t                  gpxDevInfo = { };                   //!< Only populated if a GPX device is present
+    std::map<int, ChronoStat>  stats;                                //!< A collection of performance statistics for ISB messages (per DID)
+
+    dev_info_t                  devInfo = { };                       //!< Populated with IMX info if present, otherwise GPX info if present
+    dev_info_t                  gpxDevInfo = { };                    //!< Only populated if a GPX device is present
     sys_params_t                sysParams = { };
     gpx_status_t                gpxStatus = { };
     nvm_flash_cfg_t             imxFlashCfg = { };
@@ -517,7 +533,7 @@ public:
     system_command_t            sysCmd = { };
     manufacturing_info_t        manfInfo = {};
 
-    std::shared_ptr<cDeviceLog> devLogger = { };
+    logger_handle_t devLogger = { };
     fwUpdate::update_status_e closeStatus = { };
 
 
@@ -587,13 +603,15 @@ private:
     bool queryDeviceInfoISbl(uint32_t timeout = 3000);
 
     void SyncFlashConfig();
-    void DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
+    int DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
     bool UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
     void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
-    bool ValidFlashCfgCksum(uint32_t checksum) { return (checksum != 0xFFFFFFFF); }
+    inline bool ValidFlashCfgCksum(uint32_t checksum) { return (checksum != 0xFFFFFFFF); }
+
+    double sampleIsbMsgStats(const p_data_t& data);
 
 };
 
-
+typedef std::shared_ptr<ISDevice> device_handle_t;
 
 #endif //INERTIALSENSESDK_ISDEVICE_H

@@ -8,7 +8,7 @@
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBFirmwareUpdater.h"
 
-ISFirmwareUpdater::ISFirmwareUpdater(ISDevice* device) : FirmwareUpdateHost(), device(device) {
+ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device) : FirmwareUpdateHost(), device(device) {
     if (device) {
         port = device->port;
         devInfo = &device->devInfo;

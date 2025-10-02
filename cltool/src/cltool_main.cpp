@@ -410,7 +410,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 
     // we can only display a single device at a time; so use the first available device.  - FIXME: This should be selectable while running
-    ISDevice* activeDevice = inertialSenseInterface.getDevices().front();
+    device_handle_t activeDevice = inertialSenseInterface.getDevices().front();
     g_inertialSenseDisplay.setDevice(activeDevice);
 
     if (!g_commandLineOptions.disableDeviceValidation)
@@ -531,7 +531,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
         g_roverConnection = new CorrectionService(g_commandLineOptions.roverConnection);
-        g_roverConnection->addDevices(std::vector<ISDevice*> { std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices()) });
+        g_roverConnection->addDevices(std::vector<device_handle_t> { std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices()) });
     }
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {

@@ -86,7 +86,7 @@ bool ISDevice::step() {
 }
 
 is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()) {
-    fwUpdater = new ISFirmwareUpdater(this);
+    fwUpdater = new ISFirmwareUpdater(shared_from_this());
     fwUpdater->setInfoProgressCb(infoProgress);
     fwUpdater->setTarget(targetDevice);
     fwUpdater->setCommands(cmds);
@@ -261,8 +261,8 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
         }
     } while (current_timeMs() < timeoutExpires);
 
-    hdwId = IS_HARDWARE_TYPE_UNKNOWN;
-    devInfo = {};
+    // hdwId = IS_HARDWARE_TYPE_UNKNOWN;
+    // devInfo = {};
     return false;
 }
 
@@ -272,6 +272,8 @@ bool ISDevice::validate(uint32_t timeout) {
         return false;
 
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
+    is_hardware_t oldHdwId = hdwId;
+    dev_info_t oldDevInfo = devInfo;
     hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
 
     queryTypes nextQueryType = QUERYTYPE_NMEA;
@@ -279,15 +281,20 @@ bool ISDevice::validate(uint32_t timeout) {
     do {
         if ((current_timeMs() - startTime) > timeout) {
             // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
+            hdwId = oldHdwId, devInfo = oldDevInfo;
             return (queryDeviceInfoISbl(250) && hasDeviceInfo());
         }
 
         // FIXME - Don't tolerate SERIAL_PORT specific conditions in ISDevice
-        if (SERIAL_PORT(port)->errorCode == ENOENT)
+        if (SERIAL_PORT(port)->errorCode == ENOENT) {
+            hdwId = oldHdwId, devInfo = oldDevInfo;
             return false;
+        }
 
-        if (!portIsOpened(port))
+        if (!portIsOpened(port)) {
+            hdwId = oldHdwId, devInfo = oldDevInfo;
             return false;
+        }
 
         switch (nextQueryType) {
             case QUERYTYPE_NMEA:
@@ -526,15 +533,15 @@ std::string ISDevice::getDescription(int flags) const {
     std::string desc = getName(flags);
     if (!(flags & OMIT_FIRMWARE_VERSION)) {
         desc += " " + getFirmwareInfo(flags);
-        if (!(flags & OMIT_PORT_NAME))
-            desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
     }
+    if (!(flags & OMIT_PORT_NAME) && portIsValid(port))
+        desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
     return desc;
 }
 
 void ISDevice::registerWithLogger(cISLogger *logger) {
     if (logger) {
-        logger->registerDevice(this);
+        logger->registerDevice(shared_from_this());
     }
 }
 
@@ -609,14 +616,14 @@ int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMas
     uint8_t data[EVENT_MAX_SIZE] = {0};
 
     did_event_t event = {
-            .time = 123,
-            .senderSN = 0,
-            .senderHdwId = 0,
-            .length = sizeof(did_event_filter_t),
+        .time = 123,
+        .senderSN = 0,
+        .senderHdwId = 0,
+        .length = sizeof(did_event_filter_t),
     };
 
     did_event_filter_t filter = {
-            .portMask = portMask,
+        .portMask = portMask,
     };
 
     filter.eventMask.priorityLevel = priorityLevel;
@@ -665,47 +672,42 @@ void ISDevice::SyncFlashConfig()
     }
 }
 
-void ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
+int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
 {
     if (uploadTimeMs)
     {	// Upload in progress
         if (timeMs - uploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
         {	// Wait for upload to process.  Pause sync.
             syncChecksum = 0xFFFFFFFF;      // Indicate out of sync
-            return;
+            return -1;
         }
     }
 
     // Require valid sysParams checksum
     if (ValidFlashCfgCksum(syncChecksum))
     {
-        if (ValidFlashCfgCksum(flashCfgChecksum) && syncChecksum == flashCfgChecksum)
+        if (ValidFlashCfgCksum(flashCfgChecksum) && (syncChecksum == flashCfgChecksum))
         {   // Checksum is valid and matches
             if (uploadTimeMs)
             {   // Upload complete.  Allow sync.
+                bool success = (uploadChecksum == syncChecksum);
+                debug_message("%s upload %s.\n", cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
                 uploadTimeMs = 0;
-
-                if (uploadChecksum == syncChecksum)
-                {
-                    printf("%s upload complete.\n", cISDataMappings::DataName(flashCfgDid));
-                }
-                else
-                {
-                    printf("%s upload rejected.\n", cISDataMappings::DataName(flashCfgDid));
-                }
+                return (success ? 1 : 0);
             }
         }
         else
         {	// Out of sync.  Request flash config.
-            DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
-            GetData(flashCfgDid, 0, 0, 0);
+            debug_message("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
+            BroadcastBinaryData(flashCfgDid);
         }
     }
     else
     {	// Out of sync.  Request sysParams or gpxStatus.
-        DEBUG_PRINT("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
-        GetData(syncDid, 0, 0, 0);
+        debug_message("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
+        BroadcastBinaryData(syncDid);
     }
+    return 0;
 }
 
 void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
@@ -802,9 +804,7 @@ bool ISDevice::SetImxFlashConfig(nvm_flash_cfg_t& flashCfg) {
         imxFlashCfgUploadChecksum
     );
 
-    if (!imxFlashCfgUploadTimeMs)
-        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
-    else
+    if (imxFlashCfgUploadTimeMs)
         imxFlashCfgUploadChecksum = flashCfg.checksum;
 
     imxFlashCfg = flashCfg;
@@ -823,9 +823,7 @@ bool ISDevice::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg) {
         gpxFlashCfgUploadChecksum
     );
 
-    if (!gpxFlashCfgUploadTimeMs)
-        printf("DID_GPX_FLASH_CONFIG in sync.  No upload.\n");
-    else
+    if (gpxFlashCfgUploadTimeMs)
         gpxFlashCfgUploadChecksum = flashCfg.checksum;
 
     gpxFlashCfg = flashCfg;
@@ -925,20 +923,13 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for IMX flash config
-            printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
-
-#if PRINT_DEBUG
-            DEBUG_PRINT("device.imxFlashCfg.checksum:          %u\n", imxFlashCfg.checksum);
-            DEBUG_PRINT("device.sysParams.flashCfgChecksum:    %u\n", sysParams.flashCfgChecksum);
-            DEBUG_PRINT("device.imxFlashCfgUploadTimeMs:       %u\n", imxFlashCfgUploadTimeMs);
-            DEBUG_PRINT("device.imxFlashCfgUploadChecksum:     %u\n", imxFlashCfgUploadChecksum);
-#endif
+            debug_message("Timeout waiting for DID_FLASH_CONFIG failure!\n");
             return false;
         }
         else
         {   // Query DID_SYS_PARAMS
             GetData(DID_SYS_PARAMS);
-            DEBUG_PRINT("Waiting for IMX flash sync...\n");
+            debug_message("Waiting for IMX flash sync...\n");
         }
     }
 
@@ -964,20 +955,13 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for GPX flash config
-            printf("Timeout waiting for DID_GPX_FLASH_CONFIG failure!\n");
-
-#if PRINT_DEBUG
-            DEBUG_PRINT("device.gpxFlashCfg.checksum:          %u\n", gpxFlashCfg.checksum);
-            DEBUG_PRINT("device.gpxStatus.flashCfgChecksum:    %u\n", gpxStatus.flashCfgChecksum);
-            DEBUG_PRINT("device.gpxFlashCfgUploadTimeMs:       %u\n", gpxFlashCfgUploadTimeMs);
-            DEBUG_PRINT("device.gpxFlashCfgUploadChecksum:     %u\n", gpxFlashCfgUploadChecksum);
-#endif
+            debug_message("Timeout waiting for DID_GPX_FLASH_CONFIG failure!\n");
             return false;
         }
         else
         {   // Query DID_GPX_STATUS
             GetData(DID_GPX_STATUS);
-            DEBUG_PRINT("Waiting for GPX flash sync...\n");
+            debug_message("Waiting for GPX flash sync...\n");
         }
     }
 
@@ -1129,14 +1113,11 @@ bool ISDevice::LoadGpxFlashConfigFromFile(std::string path)
 }
 
 
-bool ISDevice::reset() {
+bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (!portIsValid(port) || (current_timeMs() > nextResetTime)) {
-        for (int i = 0; i < 3; i++) {
-            SetSysCmd(SYS_CMD_SOFTWARE_RESET);
-            SLEEP_MS(10);
-        }
+        SetSysCmd(SYS_CMD_SOFTWARE_RESET);
         disconnect();
         portClose(port);
         nextResetTime = current_timeMs() + resetRequestThreshold;
@@ -1158,6 +1139,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
         // stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
     }
 
+    sampleIsbMsgStats(*data);
     // printf("DID: %d\n", data->hdr.id);
     switch (data->hdr.id) {
         case DID_DEV_INFO:
@@ -1171,14 +1153,14 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             break;
         case DID_SYS_PARAMS:
             copyDataPToStructP(&sysParams, data, sizeof(sys_params_t));
-            DEBUG_PRINT("Received DID_SYS_PARAMS\n");
+            debug_message("Received DID_SYS_PARAMS\n");
             break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data)) {
                 sysParams.flashCfgChecksum = imxFlashCfg.checksum;
             }
-            DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
+            debug_message("Received DID_FLASH_CONFIG\n");
             break;
         case DID_GPX_FLASH_CFG:
             copyDataPToStructP(&gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
@@ -1186,7 +1168,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             {	// Checksum received
                 gpxStatus.flashCfgChecksum = gpxFlashCfg.checksum;
             }
-            DEBUG_PRINT("Received DID_GPX_FLASH_CFG\n");
+            debug_message("Received DID_GPX_FLASH_CFG\n");
             break;
         case DID_FIRMWARE_UPDATE:
             // we don't respond to messages if we don't already have an active Updater
@@ -1396,4 +1378,47 @@ bool ISDevice::waitForImxFlashWrite(uint32_t timeoutMs)
             return true;    // no more pendingWrites, so return true that's we've seen it clear
     } while ((current_timeMs() - startTimeMs) < timeoutMs);
     return false;
+}
+
+double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
+
+    auto& stat = stats[data.hdr.id];
+    stat.accrual += (data.hdr.size + ISB_MIN_PACKET_SIZE + (data.hdr.offset ? 2 : 0));
+    switch (data.hdr.id)
+    {
+        case DID_GPX_STATUS:        stat.sample( ((gpx_status_t*)data.ptr)->upTime );       break;
+        case DID_SYS_PARAMS:        stat.sample( ((sys_params_t*)data.ptr)->upTime );       break;
+        case DID_INS_1:             stat.sample( ((ins_1_t*)data.ptr)->timeOfWeek );        break;
+        case DID_INS_2:             stat.sample( ((ins_2_t*)data.ptr)->timeOfWeek );        break;
+        case DID_INS_3:             stat.sample( ((ins_3_t*)data.ptr)->timeOfWeek );        break;
+        case DID_INS_4:             stat.sample( ((ins_4_t*)data.ptr)->timeOfWeek );        break;
+        case DID_INL2_STATES:       stat.sample( ((inl2_states_t*)data.ptr)->timeOfWeek );  break;
+        case DID_INL2_MAG_OBS_INFO: stat.sample( ((inl2_mag_obs_info_t*)data.ptr)->timeOfWeekMs * 0.001 );  break;
+        case DID_IMU:               stat.sample( ((imu_t*)data.ptr)->time );                break;
+        case DID_IMU_RAW:           stat.sample( ((imu_t*)data.ptr)->time );                break;
+        case DID_PIMU:              stat.sample( ((pimu_t*)data.ptr)->time );               break;
+        case DID_MAGNETOMETER:      stat.sample( ((magnetometer_t*)data.ptr)->time );       break;
+        case DID_BAROMETER:         stat.sample( ((barometer_t*)data.ptr)->time );          break;
+        case DID_SYS_SENSORS:       stat.sample( ((sys_sensors_t*)data.ptr)->time );        break;
+        case DID_GPS1_POS:
+        case DID_GPS2_POS:          stat.sample( ((gps_pos_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GPS1_VEL:
+        case DID_GPS2_VEL:          stat.sample( ((gps_vel_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GPS1_SAT:
+        case DID_GPS2_SAT:          stat.sample( ((gps_sat_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GPS1_SIG:
+        case DID_GPS2_SIG:          stat.sample( ((gps_sig_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GPS1_RTK_POS_REL:
+        case DID_GPS2_RTK_CMP_REL:
+            if (((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
+                stat.sample( ((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs * 0.001 );
+            break;
+        case DID_GPS1_RTK_POS_MISC:
+        case DID_GPS2_RTK_CMP_MISC:
+            if (((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
+                stat.sample( ((gps_rtk_misc_t*)data.ptr)->timeOfWeekMs * 0.001 );
+            break;
+        default:                    stat.sample();  break;
+    }
+    return stat.lastSampleTime();
 }

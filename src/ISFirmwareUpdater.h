@@ -35,6 +35,12 @@ extern "C"
     #include "serialPortPlatform.h"
 }
 
+#if !defined(ISDevice)
+    class ISDevice;
+    typedef std::shared_ptr<ISDevice> device_handle_t;
+#endif
+
+
 class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
 private:
     std::istream *srcFile = nullptr;    //!< the file that we are currently sending to a remote device, or nullptr if none
@@ -103,7 +109,7 @@ public:
     };
 
     port_handle_t port = 0;                         //!< a handle to the comm port which we use to talk to the device - if possible, we should be using the device->port
-    const ISDevice* device = nullptr;               //!< a handle to the device which is being updated; maybe null in some cases
+    device_handle_t device;                         //!< a handle to the device which is being updated; maybe null in some cases
     const dev_info_t *devInfo = nullptr;            //!< the root device info connected on this port
     dev_info_t *target_devInfo = nullptr;           //!< the target's device info, if any
 
@@ -114,7 +120,7 @@ public:
      */
     ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo) { }
 
-    explicit ISFirmwareUpdater(ISDevice* device);
+    explicit ISFirmwareUpdater(device_handle_t device);
 
     void setInfoProgressCb(fwUpdate::pfnStatusCb cb) { pfnStatus_cb = cb; }
 
