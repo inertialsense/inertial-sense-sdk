@@ -1123,7 +1123,10 @@ bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (!portIsValid(port) || (current_timeMs() > nextResetTime)) {
-        SetSysCmd(SYS_CMD_SOFTWARE_RESET);
+        for (int i = 0; i < 3; i++) {
+            SetSysCmd(SYS_CMD_SOFTWARE_RESET);
+            SLEEP_MS(20)
+        }
         disconnect();
         portClose(port);
         nextResetTime = current_timeMs() + resetRequestThreshold;
