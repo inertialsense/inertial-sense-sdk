@@ -68,8 +68,14 @@ bool ISDevice::Update() {
 bool ISDevice::step() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected())
+    if (!isConnected()) {
+        if (fwUpdater) {
+            // not connected, but updating - then we are probably waiting for a device to reboot - which is normal...
+            fwUpdate();
+            return true;
+        }
         return false;
+    }
 
     if (portType(port) & PORT_TYPE__COMM)
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions

@@ -106,6 +106,7 @@ public:
         PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          //!< the file for the referenced image doesn't exist
         PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,     //!< the image file's actual size doesn't match the manifest's reported size
         PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      //!< the image file's actual md5sum doesn't match the manifest's reported md5sum
+        PKG_ERR_NO_MANIFEST = -12,                  //!< the package does not contain a manifest, or the manifest was invalid.
     };
 
     port_handle_t port = 0;                         //!< a handle to the comm port which we use to talk to the device - if possible, we should be using the device->port

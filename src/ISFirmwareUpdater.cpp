@@ -565,9 +565,11 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
                     case PKG_ERR_IMAGE_FILE_MD5_MISMATCH:
                         err_msg = "Manifest's reported image MD5 digest does not match the actual data file MD5 digest.";
                         break;
+                    case PKG_ERR_NO_MANIFEST:
+                        err_msg = "Manifest is missing or corrupt.";
+                        break;
                 }
                 handleCommandError(activeCommand, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", args[0].c_str(), err_result, err_msg);
-
             }
         } else if (activeCommand[0] == ':') {
             // new step section/target - we should reset certain states here if needed
@@ -878,26 +880,25 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std:
     void *p;
     pkg_error_e result = PKG_SUCCESS;
 
-    if (!zip_archive) {
+    if (!zip_archive)
         zip_archive = (mz_zip_archive *)malloc(sizeof(mz_zip_archive));
-    }
 
     // initialize the archive struct and open the file
     mz_zip_zero_struct(zip_archive);
     status = mz_zip_reader_init_file(zip_archive, pkg_file.c_str(), 0);
-    if (!status) {
+    if (!status)
         return PKG_ERR_PACKAGE_FILE_ERROR;
-    }
 
     p = mz_zip_reader_extract_file_to_heap(zip_archive, "manifest.yaml", &file_size, 0);
-    if (p && (file_size > 0)) {
-        std::string casted_memory(static_cast<char*>(p), file_size);
-        std::istringstream stream(casted_memory);
-        YAML::Node manifest = YAML::Load(stream);
-        if (manifest)
-            result = processPackageManifest(manifest, zip_archive);
-        mz_free(p);
-    }
+    if (!p || (file_size == 0))
+        return PKG_ERR_NO_MANIFEST;
+
+    std::string casted_memory(static_cast<char*>(p), file_size);
+    std::istringstream stream(casted_memory);
+    YAML::Node manifest = YAML::Load(stream);
+    if (manifest)
+        result = processPackageManifest(manifest, zip_archive);
+    mz_free(p);
 
     // TODO: I can't make up my mind... to keep the zip-reader available for possible future file extractions, or close it and reopen it each time.  We're only talking about a dozen files at max, and most time 2-5 files on average.
     // mz_zip_reader_end(zip_archive);
