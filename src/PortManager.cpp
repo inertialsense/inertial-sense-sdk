@@ -29,8 +29,8 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
             erase(port);    // remove the port from our primary set of ports
             lostPorts.push_back(&entry);
             // notify listeners before we actually invalidate the port
-            for (port_listener& listener : listeners) {
-                listener(PORT_REMOVED, portType(port), entry.name, port);
+            for (auto& listener : listeners) {
+                (*listener)(PORT_REMOVED, portType(port), entry.name, port);
             }
             entry.factory->releasePort(port);
             port = nullptr;
@@ -77,8 +77,8 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
                 // the port was previously identified, but the port handle is invalid.
                 // we probably should release to port and reallocate a new one
                 // finally, call our handler
-                for (port_listener& l : listeners) {
-                    l(PORT_REMOVED, entry.type, entry.name, port);
+                for (auto& listener : listeners) {
+                    (*listener)(PORT_REMOVED, entry.type, entry.name, port);
                 }
                 entry.factory->releasePort(port);
                 port = nullptr;
@@ -94,8 +94,8 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
         insert(port);
 
         // finally, call our handler
-        for (port_listener &l: listeners) {
-            l(PORT_ADDED, portType, portName, port);
+        for (auto& listener : listeners) {
+            (*listener)(PORT_ADDED, portType, portName, port);
         }
 
         portsChanged = true;

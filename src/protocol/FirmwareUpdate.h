@@ -116,21 +116,34 @@ namespace fwUpdate {
 
     enum target_t : uint32_t {
         TARGET_HOST = 0x00,
+
         TARGET_IMX5 = 0x10,
         TARGET_DFU_IMX5 = (TARGET_DFU_FLAG | TARGET_IMX5),
         TARGET_ISB_IMX5 = (TARGET_ISB_FLAG | TARGET_IMX5), // note that the IMX5 ONLY support ISB mode (it doesn't directly support ISv2)
+
         TARGET_GPX1 = 0x20,
         TARGET_DFU_GPX1 = (TARGET_DFU_FLAG | TARGET_GPX1),
         TARGET_SMP_GPX1 = (TARGET_SMP_FLAG | TARGET_GPX1),
-        TARGET_VPX = 0x30, // RESERVED FOR VPX
+
+        TARGET_IMX6 = 0x30,
+        TARGET_DFU_IMX6 = (TARGET_DFU_FLAG | TARGET_IMX6),
+        TARGET_SMP_IMX6 = (TARGET_SMP_FLAG | TARGET_IMX6),
+
         TARGET_UBLOX_F9P = 0x110,
         TARGET_UBLOX_F9P__1 = 0x111,
         TARGET_UBLOX_F9P__2 = 0x112,
         TARGET_UBLOX_F9P__ALL = 0x11F,
+
         TARGET_SONY_CXD5610 = 0x120,
         TARGET_SONY_CXD5610__1 = 0x121,
         TARGET_SONY_CXD5610__2 = 0x122,
         TARGET_SONY_CXD5610__ALL = 0x12F,
+
+        TARGET_SEPTENTRIO_G5 = 0x130,
+        TARGET_SEPTENTRIO_G5__1 = 0x131,
+        TARGET_SEPTENTRIO_G5__2 = 0x132,
+        TARGET_SEPTENTRIO_G5__ALL = 0x13F,
+
         TARGET_MAXNUM,
         TARGET_UNKNOWN = 0xFFFFFFFF,
     };
@@ -414,14 +427,14 @@ namespace fwUpdate {
         md5Context_t md5Context = { };                          //!< context used internally for building MD5 hashes
 
         FirmwareUpdateBase();
-        virtual ~FirmwareUpdateBase() {};
+        virtual ~FirmwareUpdateBase() = default;
 
         /**
          * packages and sends the specified payload, including any auxillary data.
          * Note that the payload must already specify the amount of aux data the be included.
          * @param payload
          * @param aux_data the auxillary data to include, or nullptr if none.
-         * @return
+         * @return true if the specified payload was successfully sent, otherwise false
          */
         bool fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data= nullptr);
 
@@ -430,7 +443,7 @@ namespace fwUpdate {
          * @param target a reference to the target for which this data is intended
          * @param buffer
          * @param buff_len
-         * @return
+         * @return true if the buffer was sent to the target device, otherwise false
          */
         virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
@@ -475,8 +488,8 @@ namespace fwUpdate {
          * Creates a FirmwareUpdateDevice instance
          * @param target_id informs this instance which messages it should respond to.
          */
-        FirmwareUpdateDevice(target_t target_id);
-        virtual ~FirmwareUpdateDevice() { };
+        explicit FirmwareUpdateDevice(target_t target_id);
+        ~FirmwareUpdateDevice() override = default;
 
         /**
          * Called by the communications system anytime a DID_FIRMWARE_UPDATE is received.

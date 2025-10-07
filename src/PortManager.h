@@ -15,24 +15,26 @@
 #ifndef IS_SDK__PORT_MANAGER_H
 #define IS_SDK__PORT_MANAGER_H
 
-#include <unordered_set>
-#include <map>
 #include <functional>
+#include <map>
+#include <memory>
+#include <set>
 #include <string>
+#include <unordered_set>
 
 #include "core/base_port.h"
-
 #include "PortFactory.h"
 
-
-class PortManager : public std::unordered_set<port_handle_t> {
+class PortManager : public std::set<port_handle_t> {
 public:
-    typedef std::function<void(uint8_t, uint16_t, std::string, port_handle_t)> port_listener;
 
     enum port_event_e : uint8_t {
         PORT_ADDED,
         PORT_REMOVED,
     };
+
+    typedef std::function<void(port_event_e, uint16_t, std::string, port_handle_t)> port_listener;
+    typedef std::shared_ptr<port_listener> port_listener_handle_t;
 
     static PortManager& getInstance() {
         static PortManager instance;
@@ -58,20 +60,15 @@ public:
         return factories;
     }
 
-    void addPortListener(const port_listener& listener) {
-        listeners.push_back(listener);
+    port_listener_handle_t addPortListener(const port_listener& listener) {
+        port_listener_handle_t listenerPtr = std::make_shared<port_listener>(listener);
+        listeners.insert(listenerPtr);
+        return listenerPtr;
     }
 
-    void removePortListener(port_listener listener) {
-        // FIXME: this needs to be implemented correctly
-/*
-        for (auto it = listeners.begin(); it != listeners.end(); it++) {
-            if (*it == listener) {
-                listeners.erase(listener);
-                break;
-            }
-        }
-*/
+    bool removePortListener(const port_listener_handle_t& listener) {
+        bool didIt = (listeners.erase(listener) != 0);
+        return didIt;
     }
 
     /**
@@ -110,8 +107,8 @@ public:
         return false;
     }
 
-    void clear() {
-        std::unordered_set<port_handle_t>::clear();
+    void clear(){
+        std::set<port_handle_t>::clear();
         knownPorts.clear();
     }
 
@@ -137,7 +134,6 @@ private:
         PortFactory* factory;
         uint16_t type;
         std::string name;
-        // port_handle_t port;
 
         port_entry_t(PortFactory* f, uint16_t t, const std::string& n) { // , port_handle_t* p) {
             factory = f, type = t, name = n; // , port = p;
@@ -146,10 +142,10 @@ private:
         bool operator== (port_entry_t const& op) const { return name == op.name; }
     };
 
-    std::vector<PortFactory*> factories;                         //!< list of port factories responsible for detecting, allocating and freeing ports of different types.
-    std::vector<port_listener> listeners;                        //!< list of listeners who should be notified when ports are discovered, lost, opened, closed, etc
-    std::map<port_entry_t, port_handle_t> knownPorts;            //!< a map previously discovered ports keyed on factory + name (some string identifier)
-    bool portsChanged = false;                                   //!< a flag indicating (true) that list of managed ports has changed, either ports added or removed during the last call to discoverPorts()
+    std::vector<PortFactory*> factories;                             //!< list of port factories responsible for detecting, allocating and freeing ports of different types.
+    std::unordered_set<port_listener_handle_t > listeners;           //!< list of listeners who should be notified when ports are discovered, lost, opened, closed, etc
+    std::map<port_entry_t, port_handle_t> knownPorts;                //!< a map previously discovered ports keyed on factory + name (some string identifier)
+    bool portsChanged = false;                                       //!< a flag indicating (true) that list of managed ports has changed, either ports added or removed during the last call to discoverPorts()
 
 };
 

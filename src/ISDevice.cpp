@@ -68,27 +68,21 @@ bool ISDevice::Update() {
 bool ISDevice::step() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected()) {
-        if (fwUpdater) {
-            // not connected, but updating - then we are probably waiting for a device to reboot - which is normal...
-            fwUpdate();
-            return true;
-        }
-        return false;
-    }
-
-    if (portType(port) & PORT_TYPE__COMM)
+    if (isConnected() && (portType(port) & PORT_TYPE__COMM)) {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-
-    if (!hasDeviceInfo()) {
-        validateAsync();
-    } else if (fwUpdater) {
-        fwUpdate();
-    } else {
-        SyncFlashConfig();
+        if (!hasDeviceInfo()) {
+            validateAsync();
+        } else {
+            SyncFlashConfig();
+        }
     }
 
-    return true;
+    if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
+        fwUpdate();
+        return true;    // always return true if we're updating, regardless if we're connected
+    }
+
+    return isConnected();
 }
 
 is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()) {

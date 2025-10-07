@@ -106,9 +106,6 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, int total_chu
 
 // this is called internally by processMessage() to do the things to do, it should also be called periodically to send status updated, etc.
 bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
-    static int nextStep = 0;
-    static PortManager& portManager = PortManager::getInstance();
-    static DeviceManager& deviceManager = DeviceManager::getInstance();
 
     if (session_status == fwUpdate::NOT_STARTED)
         return false;
@@ -124,9 +121,17 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // is reporting as running in HDW_STATE_BOOTLOADER, then we can advance to ready. The InertialSense
         // class should handle most of this for us, we just need to tell it to look for new ISDevices.
 
-        bool portsChanged = portManager.discoverPorts();
-        if (portsChanged || (portManager.getPortCount() > 0))
-            deviceManager.discoverDevices(IS_HARDWARE_ANY, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);  // We'll match back to our Hardware ID above - but we want to discover all devices
+        if (!portListenerHandle) {
+            portListenerHandle = portManager.addPortListener(
+                [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
+                    portsChanged = true;
+                    if (event == PortManager::PORT_ADDED) {
+                        deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+                    }
+                }
+            );
+        }
+
 
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
         if (device && device->isConnected() && device->hasDeviceInfo()) {
@@ -144,16 +149,16 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
 
                 session_status = fwUpdate::READY;
             }
-        }
 
-        if (session_status != fwUpdate::READY)
-        { // device or no device -- we can still do this check.
-            if ((current_timeMs() - last_reboot) > (device->hdwId == IS_HARDWARE_IMX_5_0 ? 10000 : 20000)) {
-                rebootToISB();  // try rebooting the device again.
-            }
-            if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
-                nextProgressReport = current_timeMs() + progress_interval;
-                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Waiting for device [%s] to reboot into ISbl mode.", ISDevice::getIdAsString(target_devInfo).c_str()); // note we use target_devInfo since we don't have a good device yet
+            if (session_status != fwUpdate::READY)
+            { // device or no device -- we can still do this check.
+                if ((current_timeMs() - last_reboot) > (device->hdwId == IS_HARDWARE_IMX_5_0 ? 10000 : 20000)) {
+                    rebootToISB();  // try rebooting the device again.
+                }
+                if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
+                    nextProgressReport = current_timeMs() + progress_interval;
+                    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Waiting for device [%s] to reboot into ISbl mode.", ISDevice::getIdAsString(target_devInfo).c_str()); // note we use target_devInfo since we don't have a good device yet
+                }
             }
         }
     }
@@ -208,10 +213,6 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     if (result)ISFirmware
         sendProgress(3, (const char *)prog_msg);
 #endif // DEBUG_INFO
-
-    if (++nextStep > 1000 ) {
-        nextStep = 0;
-    }
 
     if ((session_status < fwUpdate::NOT_STARTED) || (session_status != last_session_status)) {
         last_session_status = session_status;

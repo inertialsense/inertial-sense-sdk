@@ -184,8 +184,8 @@ namespace fwUpdate {
      * packages and sends the specified payload, including any auxillary data.
      * Note that the payload must already specify the amount of aux data the be included.
      * @param payload
-     * @param aux_data the auxillary data to include, or nullptr if none.
-     * @return
+     * @param aux_data the auxilary data to include, or nullptr if none.
+     * @return true if the specified payload was successfully sent, otherwise false
      */
     bool FirmwareUpdateBase::fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data) {
         int payload_len = fwUpdate_packPayload(build_buffer, FWUPDATE__MAX_PAYLOAD_SIZE, payload, aux_data);
@@ -282,7 +282,7 @@ namespace fwUpdate {
             case TARGET_HOST: return "HOST";
             case TARGET_IMX5: return "IMX-5";
             case TARGET_GPX1: return "GPX-1";
-            case TARGET_VPX: return "VPX-1";
+            case TARGET_IMX6: return "IMX-6";
             case TARGET_UBLOX_F9P: return "uBlox F9P";
             case TARGET_SONY_CXD5610:
                 switch (target & 0x0F) {
@@ -628,8 +628,8 @@ namespace fwUpdate {
         response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareType = devInfo.hardwareType;
         response.data.version_resp.hdwRunState = devInfo.hdwRunState;
-        memcpy(&response.data.version_resp.hardwareVer[0], &devInfo.hardwareVer[0], 4);
-        memcpy(&response.data.version_resp.firmwareVer[0], &devInfo.firmwareVer[0], 4);
+        memcpy(response.data.version_resp.hardwareVer, devInfo.hardwareVer, 4);
+        memcpy(response.data.version_resp.firmwareVer, devInfo.firmwareVer, 4);
         response.data.version_resp.buildYear = devInfo.buildYear;
         response.data.version_resp.buildMonth = devInfo.buildMonth;
         response.data.version_resp.buildDay = devInfo.buildDay;
@@ -723,11 +723,13 @@ namespace fwUpdate {
 
     /**
      * Called by the host application to initiate a request by the SDK to update a target device.
-     * @param target_id
-     * @param image_id
-     * @param image
-     * @param chunk_size
-     * @return
+     * @param target_id the target device to update
+     * @param image_slot the "slot" on the target device which this image should be written to (device specific, if supported, otherwise 0)
+     * @param chunk_size the size of each chunk used to transmit the image (smaller sizes take longer, larger sizes consume more memory and risk buffer overflows)
+     * @param image_size the total number of bytes of the firmware image
+     * @param image_md5 the md5 checksum of the firmware image
+     * @param progress_rate the rate (in millis) which the device should send out progress updates
+     * @return true is the request was successfully sent, otherwise false
      */
     bool FirmwareUpdateHost::fwUpdate_requestUpdate(target_t target_id, int image_slot, int image_flags, uint16_t chunk_size, uint32_t image_size, md5hash_t image_md5, int32_t progress_rate) {
 
