@@ -520,7 +520,7 @@ void ISFirmwareUpdater::runCommand(cmd_state& cmd) {
         // all labels must start with a colon (:)
         if (failLabel[0] != ':') {
             handleCommandError(activeCommand, -1, "Invalid label [%s]. Labels must start with a colon (:).", failLabel.c_str());
-            cmd.status = cmd_status_e::ERROR;
+            cmd.status = cmd_status_e::ERROR_GENERAL;
             failLabel.clear();
         } else {
             cmd.status = cmd_status_e::SUCCESS;
@@ -635,7 +635,7 @@ void ISFirmwareUpdater::cmd_SetTarget(cmd_state& cmd) {
         else if (targetName == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
         else {
             handleCommandError(activeCommand, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)", targetName.c_str());
-            cmd.status = cmd_status_e::ERROR;
+            cmd.status = cmd_status_e::ERROR_GENERAL;
             return;
         }
     }
@@ -666,7 +666,7 @@ void ISFirmwareUpdater::cmd_WaitFor(cmd_state& cmd) {
         timeoutLabel = cmd.getArg("on-timeout", failLabel);
         if (timeoutLabel[0] != ':') {
             handleCommandError(activeCommand, -1, "Invalid label [%s]. Labels must start with a colon (:).", timeoutLabel.c_str());
-            cmd.status = ERROR;
+            cmd.status = ERROR_GENERAL;
         }
 
         if (cmd["force"] == "true")
@@ -683,7 +683,7 @@ void ISFirmwareUpdater::cmd_WaitFor(cmd_state& cmd) {
         timeoutLabel.clear();      //!< a label to jump to, when a "waitfor" times out (which is not always an error)
     } else if (pingTimeoutExpires && (pingTimeoutExpires < current_timeMs())) {
         // TIMEOUT occurred
-        cmd.status = ERROR;
+        cmd.status = ERROR_GENERAL;
         cmd.resultMsg = "Timeout limit reached waiting for response from the target device.";
         pingTimeoutExpires= pingNextRetry = 0;
         if (!timeoutLabel.empty()) {
