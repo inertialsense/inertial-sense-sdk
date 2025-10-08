@@ -188,11 +188,11 @@ bool ISDevice::handshakeISbl() {
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++) {
         if (portWrite(port, &handshakerChar, 1) != 1) {
-            return false;
+            return false;   // failed to write, so there is an error
         }
 
         if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
-            return true;           // Success
+            return true;    // received a responding handshake char, so success
         }
     }
 

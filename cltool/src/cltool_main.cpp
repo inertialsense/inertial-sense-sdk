@@ -785,7 +785,7 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
     } else if (fwPtr) {
         if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority
             ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS))) {
-            printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, portName(fwPtr->port), fwPtr->devInfo->serialNumber, fwPtr->fwUpdate_getSessionTargetName());
+            printf("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->fwUpdate_getSessionTargetName());
             if (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
                 int tot = fwPtr->fwUpdate_getProgressTotal();
                 int num = fwPtr->fwUpdate_getProgressNum();
@@ -987,6 +987,10 @@ static int cltool_dataStreaming()
             // [C++ COMM INSTRUCTION] STEP 4: Read data
             while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
+                // FIXME: this is a little jank -- we should periodically check for ports, but in the cltool, but we only want to check for the same ports that we originally connected on??
+                if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST)
+                    PortManager::getInstance().discoverPorts();
+
                 if (!inertialSenseInterface.Update())
                 {   // device disconnected, exit
                     exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
