@@ -8,6 +8,7 @@
 #include <fstream>
 #include <algorithm>
 #include <deque>
+#include <map>
 
 #include "util/md5.h"
 #include <protocol/FirmwareUpdate.h>
@@ -15,10 +16,8 @@
 #include "ISDevice.h"
 #include "ISFileManager.h"
 #include "ISUtilities.h"
-#include "util/md5.h"
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBootloaderBase.h"
-#include "ISUtilities.h"
 
 #include "miniz.h"
 
@@ -43,6 +42,80 @@ extern "C"
 
 class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
 private:
+
+    enum cmd_status_e : int8_t {
+        ERROR_GENERAL = -1, //!< command failed to execute successfully
+        QUEUED = 0,         //!< command is queued, and waiting to be executed
+        IN_PROCESS = 1,     //!< command has start execution, but has not completed
+        SUCCESS = 2,        //!< command had successfully completed
+    };
+
+    struct cmd_state {
+        std::string cmd;                                    //!< the name of the command
+        std::map<std::string, std::string> args;            //!< a set of parameters (key-value pairs) to be used by the command
+        cmd_status_e status;                                //!< a code indicating the state of the command: PENDING, IN_PROCESS, SUCCESS, ERROR, etc.
+        std::string resultMsg;                              //!< an optional message to be reported/displayed reflecting the completion state of the command
+        std::chrono::system_clock::time_point timeQueued;   //!< wall-clock time when this command was queued
+        std::chrono::system_clock::time_point timeStarted;  //!< wall-clock time when this command started execution
+        std::chrono::system_clock::time_point timeFinished; //!< wall-clock time when this command finished execution (error or success)
+
+        cmd_state(const std::string& _cmd) : cmd(_cmd) {
+            status = QUEUED;
+            timeQueued = std::chrono::system_clock::now();
+        }
+
+        cmd_state(const std::string& _cmd, const std::string& _args, std::deque<std::string> _keyNames = {}) : cmd_state(_cmd) {
+            static std::map<std::string, std::vector<std::string>> defaultKeys = {
+                    {"target", {"target","timeout", "interval", "on-timeout"}},
+                    {"waitfor", {"timeout", "interval", "force", "on-timeout"}},
+                    {"upload", {"filename", "slot", "force", "interval"}},
+                    {"reset", {"type"}},
+            };
+
+            auto tmpArgs = utils::split_string(_args, ",");
+            for ( std::string& arg : tmpArgs ) {
+                auto kvpair = utils::split_string(arg, "=");
+                if (_keyNames.empty()) {
+                    if (kvpair.size() == 2) {
+                        args[kvpair[0]] = kvpair[1];
+                    } else if (defaultKeys.find(_cmd) != defaultKeys.end()) {
+                        auto key = defaultKeys[_cmd][args.size()];
+                        args[key] = kvpair[0];
+                    } else
+                        args[std::to_string(args.size())] = kvpair[0];
+                } else {
+                    if (kvpair.size() == 1) {
+                        auto kn = _keyNames[0];
+                        _keyNames.pop_front();
+                        args[kn] = kvpair[0];
+                    } else if (kvpair.size() == 2) {
+                        args[kvpair[0]] = kvpair[1];
+                    }
+                }
+            }
+        }
+
+        inline std::string operator[](const std::string& k) {
+            return args[k];
+        }
+
+        inline std::string operator[](int i) {
+            for (auto& [k, v] : args) {
+                if (i-- <= 0)
+                    return v;
+            }
+            return "";
+        }
+
+        inline bool hasArg(const std::string& k) {
+            return (args.find(k) != args.end());
+        }
+
+        inline std::string getArg(const std::string& k, const std::string& def = "") {
+            return (hasArg(k) ? args[k] : def);
+        }
+    };
+
     std::istream *srcFile = nullptr;    //!< the file that we are currently sending to a remote device, or nullptr if none
     uint32_t nextStartAttempt = 0;      //!< the number of millis (uptime?) that we will next attempt to start an upgrade
     int8_t startAttempts = 0;           //!< the number of attempts that have been made to request that an update be started
@@ -59,12 +132,10 @@ private:
     uint32_t nextChunkSend = 0;         //!< don't send the next chunk until this time has expired.
     uint32_t updateStartTime = 0;       //!< the system time when the firmware was started (for performance reporting)
 
-    // float percentComplete = 0.f;     //!< the current percent complete as reported by the device
-
     fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
     std::deque<uint8_t> toHost;         //!< a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
 
-    std::vector<std::string> commands;
+    std::vector<cmd_state> commands;
     std::string activeStep;             //!< the name of the currently executing step name, from the manifest when available
     std::string activeCommand;          //!< the name (without parameters) of the currently executing command
     std::string failLabel;              //!< a label to jump to, when an error occurs
@@ -73,21 +144,33 @@ private:
     bool forceUpdate = false;
     uint32_t pingInterval = 1000;       //!< delay between attempts to communicate with a target device
     uint32_t pingNextRetry = 0;         //!< time for next ping
-    uint32_t pingTimeout = 0;           //!< time when the ping operation will timeout if no response before then
+    uint32_t pingTimeoutMs = 0;         //!< time when the ping operation will timeout if no response before then
+    uint32_t pingTimeoutExpires = 0;    //!< time when the ping request will expire unless a response is received
+    std::string timeoutLabel;           //!< a label to jump to, when a "waitfor" times out (which is not always an error)
     uint32_t pauseUntil = 0;            //!< delays next command execution until this time (but still allows the fwUpdate to step/receive responses).
     std::string filename;
     fwUpdate::target_t target;
 
     mz_zip_archive *zip_archive = nullptr; //!< is NOT null IF we are updating from a firmware package (zip archive).
-    //dfu::ISDFUFirmwareUpdater *dfuUpdater = nullptr;
     fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
     dev_info_t remoteDevInfo = {};
+    fwUpdate::target_t remoteDevInfoTargetId = fwUpdate::TARGET_UNKNOWN;   //!< this is the target id of the responding device's version Info
 
     eLogLevel logLevel = IS_LOG_LEVEL_INFO;     //!< default log level to show
 
     std::vector<std::tuple<std::string, std::string, std::string>> stepErrors;
 
-    void runCommand(const std::string& cmd);
+    void initialize();
+    void runCommand(cmd_state& cmd);
+    void cmd_ExtractPackage(cmd_state& cmd);
+    void cmd_SetTarget(cmd_state& cmd);
+    void cmd_WaitFor(cmd_state& cmd);
+    void cmd_UploadImage(cmd_state& cmd);
+    void cmd_resetDevice(cmd_state& cmd);
+    void cmd_finish(cmd_state& cmd);
+    // int cmd_setMethod(cmd_state& cmd);
+    // int cmd_Reset(cmd_state& cmd);
+
 
     void fwUpdate_handleLocalDevice();
 
@@ -106,6 +189,7 @@ public:
         PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          //!< the file for the referenced image doesn't exist
         PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,     //!< the image file's actual size doesn't match the manifest's reported size
         PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      //!< the image file's actual md5sum doesn't match the manifest's reported md5sum
+        PKG_ERR_NO_MANIFEST = -12,                  //!< the package does not contain a manifest, or the manifest was invalid.
     };
 
     port_handle_t port = 0;                         //!< a handle to the comm port which we use to talk to the device - if possible, we should be using the device->port
@@ -144,16 +228,6 @@ public:
 
     std::vector<std::tuple<std::string, std::string, std::string>> getStepErrors() { return stepErrors; }
 
-    int getPendingCommands() { return commands.size(); }
-    int getPendingUploads() {
-        int count = 0;
-        for (auto cmd: commands) {
-            if (cmd.find_first_of("upload") == 0)
-                count++;
-        }
-        return count;
-    }
-
     std::string getActiveCommand() { return activeCommand; };
 
     void clearAllCommands() { commands.clear(); }
@@ -165,7 +239,7 @@ public:
      * @param errCode
      * @param errMsg
      */
-    void handleCommandError(const std::string &cmd, int errCode, const char *errMmsg, ...);
+    void handleCommandError(const std::string& cmd, int errCode, const char *errMmsg, ...);
 
     /**
      * Initializes a DFU-based firmware update targeting the specified USB device.
@@ -251,18 +325,6 @@ public:
      * @return
      */
     pkg_error_e cleanupFirmwarePackage();
-
-    int cmd_processPackage(std::vector<std::string> &args);
-
-    int cmd_setTarget(std::vector<std::string> &args);
-
-    int cmd_setMethod(std::vector<std::string>& args);
-
-    int cmd_WaitFor(std::vector<std::string> &args);
-
-    int cmd_Upload(std::vector<std::string> &args);
-
-    int cmd_Reset(std::vector<std::string> &args);
 
 };
 #endif //SDK_ISFIRMWAREUPDATER_H

@@ -152,7 +152,7 @@ public:
      * @return a vector of available ports
      * NOTE that this may return ports which do not have a corresponding ISDevice
      */
-    std::unordered_set<port_handle_t> getPorts() { return portManager; }
+    std::set<port_handle_t> getPorts() { return portManager; }
 
     int DeviceCount() { return deviceManager.DeviceCount(); }
 

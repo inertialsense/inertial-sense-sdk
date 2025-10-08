@@ -28,29 +28,28 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
 
     session_target = target = _target;
     session_image_slot = 0;
+    if (deviceUpdater) {
+        // remove any previously allocated deviceUpdaters, and clear the reference : TODO: this should be a smart-pointer
+        delete deviceUpdater;
+        deviceUpdater = nullptr;
+    }
 
     if (session_target != fwUpdate::TARGET_UNKNOWN) {
         // request version info from the target
         target_devInfo = nullptr;
 
         if (_target == fwUpdate::TARGET_DFU_FLAG) {
-            if (deviceUpdater) delete deviceUpdater; // remove any previously allocated deviceUpdaters
             deviceUpdater = new ISDFUFirmwareUpdater(_target);
         }
 
-        if (_target == fwUpdate::TARGET_IMX5) {
-            // IMX5 is ALWAYS updated using ISB
-            _target = fwUpdate::TARGET_ISB_IMX5;
-        }
-
         if (_target & fwUpdate::TARGET_ISB_FLAG) {
-            if (deviceUpdater) delete deviceUpdater; // remove any previously allocated deviceUpdaters
-            deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost);
             // we are about to do an IMX-5 update through the IS bootloader
+            deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost);
         }
 
-        fwUpdate_requestVersionInfo(target);
-        pauseUntil = current_timeMs() + 2000; // wait for 2 seconds for a response from the target (should be more than enough)
+        target_devInfo = NULL;
+        // fwUpdate_requestVersionInfo(target);
+        // pauseUntil = current_timeMs() + 2000; // wait for 2 seconds for a response from the target (should be more than enough)
     }
 }
 
@@ -60,7 +59,14 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
  * @return true
  */
 bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
-    commands = cmds;
+    commands.clear();
+    for (std::string& c : cmds) {
+        auto pos = c.find_first_of("=");
+        std::string cmdName = c.substr(0, pos);
+        std::string cmdArgs = c.substr(pos+1);
+
+        commands.emplace_back(cmdName, cmdArgs);
+    }
     return true;
 }
 
@@ -128,28 +134,6 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
 
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
-/*
- * We already do this work when we specify the target.  I don't think it needs doing again...
- * If it does, then we probably just need to call setTarget(), rather than duplciating the code.
-
-    if (_target == fwUpdate::TARGET_DFU_FLAG) {
-        if (deviceUpdater) delete deviceUpdater; // remove any previously allocated deviceUpdaters
-        deviceUpdater = new ISDFUFirmwareUpdater(_target);
-    }
-
-    if (_target == fwUpdate::TARGET_IMX5) {
-        // IMX5 is ALWAYS updated using ISB
-        _target = fwUpdate::TARGET_ISB_IMX5;
-    }
-
-    if (_target & fwUpdate::TARGET_ISB_FLAG) {
-        if (deviceUpdater) delete deviceUpdater; // remove any previously allocated deviceUpdaters
-        deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost, pfnUploadProgress_cb, pfnStatus_cb);
-        // we are about to do an IMX-5 update through the IS bootloader
-    }
-*/
-
-
     // let's get the file's MD5 hash
     int hashError = (flags & fwUpdate::IMG_FLAG_useAlternateMD5)
             ? altMD5_file_details(srcFile, fileSize, session_md5)
@@ -159,7 +143,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
 
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
-    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
+    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_COMMS);
     if (pfnStatus_cb != nullptr)
         pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Initiating update with image '%s' to target slot %d (%d bytes, md5: %s)", filename.c_str(), slot, fileSize, md5_to_string(session_md5).c_str());
     return result;
@@ -171,6 +155,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
         return false;
     }
 
+    remoteDevInfoTargetId = msg.data.version_resp.resTarget;
     remoteDevInfo.serialNumber = msg.data.version_resp.serialNumber;
     remoteDevInfo.hardwareType = msg.data.version_resp.hardwareType;
     remoteDevInfo.hdwRunState = msg.data.version_resp.hdwRunState;
@@ -184,8 +169,8 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     remoteDevInfo.buildSecond = msg.data.version_resp.buildSecond;
     remoteDevInfo.buildMillisecond = msg.data.version_resp.buildMillis;
     remoteDevInfo.buildType = msg.data.version_resp.buildType;
-    target_devInfo = &remoteDevInfo;
 
+    target_devInfo = &remoteDevInfo;
     if (pfnStatus_cb != nullptr) {
         pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo).c_str());
     }
@@ -301,8 +286,7 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
     return true;
 }
 
-bool ISFirmwareUpdater::fwUpdate_isDone()
-{
+bool ISFirmwareUpdater::fwUpdate_isDone() {
     bool cmdsPending = hasPendingCommands();
     bool in_progress = ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
     bool is_done = !(cmdsPending || requestPending || in_progress);
@@ -331,10 +315,12 @@ void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
     delete [] toHostBuf;
 }
 
-bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed)
-{
+bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
     uint32_t lastMsgAge = 0;
     static fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
+
+    if (device && (device->port != port))
+        port = device->port;
 
     if (deviceUpdater) {
         deviceUpdater->fwUpdate_step(msg_type, processed);
@@ -502,231 +488,349 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     }
 
     // else, we have a failLabel defined.. let's skip all messages until its found
-    while (!commands.empty() && (commands[0] != failLabel)) {
+    while (!commands.empty() && (commands[0].cmd != failLabel)) {
         commands.erase(commands.begin());
     }
 }
 
-void ISFirmwareUpdater::runCommand(const std::string& cmd) {
-    if (pfnStatus_cb != nullptr) {
-        static std::string priorCmd;
-        if (priorCmd != cmd)
-            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command \"%s\"", cmd.c_str());
-        priorCmd = cmd;
+void ISFirmwareUpdater::runCommand(cmd_state& cmd) {
+    if (cmd.status == QUEUED) {
+        cmd.timeStarted = std::chrono::system_clock::now();
+        if (pfnStatus_cb != nullptr)
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command \"%s\"", cmd.cmd.c_str());
     }
 
-    std::vector<std::string> args;
-    splitString(cmd, '=', args);
-    if (!args.empty()) {
-        activeCommand = args[0];
-        if (args.size() > 1) {
-            std::string remainder = args[1];
-            splitString(args[1], ',', args);
-        }
-
-        if ((activeCommand == "package") && (args.size() == 1)) {
-            bool isManifest = (args[0].length() >= 5) && (0 == args[0].compare (args[0].length() - 5, 5, ".yaml"));
-            pkg_error_e err_result = isManifest ? processPackageManifest(args[0]) : openFirmwarePackage(args[0]);
-            if (err_result != PKG_SUCCESS) {
-                const char *err_msg = nullptr;
-                switch (err_result) {
-                    case PKG_SUCCESS:
-                        break;
-                    case PKG_ERR_PACKAGE_FILE_ERROR:
-                        err_msg = "Unable to open package.";
-                        break;
-                    case PKG_ERR_INVALID_IMAGES:
-                        err_msg = "Manifest has no images defined, or is malformed.";
-                        break;
-                    case PKG_ERR_INVALID_STEPS:
-                        err_msg = "Manifest has no steps defined, or is malformed.";
-                        break;
-                    case PKG_ERR_INVALID_TARGET:
-                        err_msg = "Manifest references an invalid target, or no target defined for image.";
-                        break;
-                    case PKG_ERR_UNSUPPORTED_TARGET:
-                        err_msg = "Image references an invalid or unsupported target device.";
-                        break;
-                    case PKG_ERR_NO_ACTIONS:
-                        err_msg = "Manifest has no valid actions.";
-                        break;
-                    case PKG_ERR_IMAGE_INVALID_REFERENCE:
-                        err_msg = "Manifest references an invalid or non-existent image entry.";
-                        break;
-                    case PKG_ERR_IMAGE_UNKNOWN_PATH:
-                        err_msg = "Manifest image path is missing or invalid.";
-                        break;
-                    case PKG_ERR_IMAGE_FILE_NOT_FOUND:
-                        err_msg = "Manifest image reference is valid, but the backing datafile is missing.";
-                        break;
-                    case PKG_ERR_IMAGE_FILE_SIZE_MISMATCH:
-                        err_msg = "Manifest's reported image size does not match the actual data file size.";
-                        break;
-                    case PKG_ERR_IMAGE_FILE_MD5_MISMATCH:
-                        err_msg = "Manifest's reported image MD5 digest does not match the actual data file MD5 digest.";
-                        break;
-                }
-                handleCommandError(activeCommand, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", args[0].c_str(), err_result, err_msg);
-
-            }
-        } else if (activeCommand[0] == ':') {
-            // new step section/target - we should reset certain states here if needed
-            activeStep = std::string(activeCommand.c_str() + 1);
-            if (activeCommand == ":IMX5") setTarget(fwUpdate::TARGET_IMX5);
-            else if (activeCommand == ":GPX1") setTarget(fwUpdate::TARGET_GPX1);
-            else if (activeCommand == ":GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
-            else if (activeCommand == ":GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
-            else session_target = target = fwUpdate::TARGET_HOST;
-            session_image_slot = slotNum = 0;
+    activeCommand = cmd.cmd;
+    if (activeCommand[0] == ':') {
+        // new step section/target - we should reset certain states here if needed
+        activeStep = std::string(activeCommand.c_str() + 1);
+        session_target = target = fwUpdate::TARGET_HOST;
+        session_image_slot = slotNum = 0;
+        failLabel.clear();
+        cmd.status = cmd_status_e::SUCCESS;
+    }
+    else if (activeCommand == "package") cmd_ExtractPackage(cmd);
+    else if (activeCommand == "target")  cmd_SetTarget(cmd);
+    else if (activeCommand == "waitfor")  cmd_WaitFor(cmd);
+    else if (activeCommand == "upload")  cmd_UploadImage(cmd);
+    else if (activeCommand == "reset")  cmd_resetDevice(cmd);
+    else if (activeCommand == "finish") cmd_finish(cmd);
+    else if ((activeCommand == "on-error")) {
+        failLabel = cmd[0].c_str();
+        // all labels must start with a colon (:)
+        if (failLabel[0] != ':') {
+            handleCommandError(activeCommand, -1, "Invalid label [%s]. Labels must start with a colon (:).", failLabel.c_str());
+            cmd.status = cmd_status_e::ERROR_GENERAL;
             failLabel.clear();
-        } else if ((activeCommand == "target") && (args.size() == 1)) {
-            if (args[0] == "IMX5") setTarget(fwUpdate::TARGET_IMX5);
-            else if (args[0] == "GPX1") setTarget(fwUpdate::TARGET_GPX1);
-            else if (args[0] == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
-            else if (args[0] == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
-            else {
-                handleCommandError(activeCommand, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)", args[0].c_str());
-            }
-        } else if ((activeCommand == "on-error") && (args.size() == 1)) {
-            failLabel = args[0].c_str();
-            // all labels must start with a colon (:)
-            if (failLabel[0] != ':') {
-                failLabel.clear();
-                handleCommandError(activeCommand, -1, "Invalid label. Labels must start with a colon (:).");
-            }
-        } else if ((activeCommand == "echo") && (args.size() == 1)) {
-            // simply outputs the argument string to the progress handler
-            // this is primarily for manifest authors to output information to the user
-            std::string msg;
-            joinStrings(args, ',', msg);
-            if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, msg.c_str());
-        } else if ((activeCommand == "slot") && (args.size() == 1)) {
-            slotNum = strtol(args[0].c_str(), nullptr, 10);
-        } else if ((activeCommand == "timeout") && (args.size() == 1)) {
-            fwUpdate_setTimeoutDuration(strtol(args[0].c_str(), nullptr, 10));
-        } else if (activeCommand == "force") {
-            forceUpdate = (args[0] == "true" ? true : false);
-        } else if ((activeCommand == "chunk") && (args.size() == 1)) {
-            chunkSize = strtol(args[0].c_str(), nullptr, 10);
-        } else if ((activeCommand == "rate") && (args.size() == 1)) {
-            progressRate = strtol(args[0].c_str(), nullptr, 10);
-        } else if ((activeCommand == "delay") && (args.size() == 1)) {
-            if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_INFO, "Pausing for %0.2f seconds...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
-            pauseUntil = current_timeMs() + strtol(args[0].c_str(), nullptr, 10);
-        } else if ((activeCommand == "waitfor") && (args.size() >= 1) && (args.size() <= 3)) {
-            if ((args.size() == 3) && (args[2] == "true")) {
-                // we need to remove the "force" from this command, and then replace the existing command back on the queue.
-                commands.erase(commands.begin()); // pop this command off the front
-                commands.insert(commands.begin(), "" + activeCommand + "=" + args[0] + "," + args[1]); // and then re-insert it at the front again, but without the force argument
-
-                // force a new query, even if we previously had devInfo for this target, and use default values
-                pingTimeout = 0;
-                pingInterval = 1000;
-                target_devInfo = NULL;
-            }
-            if (!target_devInfo) {
-                if (!pingTimeout) { // if pingTimeout == 0, then we haven't started yet, so parse args and setup schedule
-                    pingTimeout = current_timeMs() + strtol(args[0].c_str(), nullptr, 10);
-                    if (args.size() >= 2) {
-                        pingInterval = strtol(args[1].c_str(), nullptr, 10);
-                    }
-                    if (pfnStatus_cb != nullptr)
-                        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_INFO, "Requesting version info from target device (upto %0.2f seconds)...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
-                    return; // returning now will force this command to be re-executed (until the timeout expires).
-                }
-                if (pingTimeout < current_timeMs()) {
-                    pingTimeout = pingNextRetry = 0;
-                    handleCommandError(activeCommand, -1, "Timeout waiting for response from target device.");
-                } else if (pingNextRetry < current_timeMs()) {
-                    pingNextRetry = current_timeMs() + pingInterval;
-                    target_devInfo = nullptr;
-                    fwUpdate_requestVersionInfo(target);
-
-                    if (pfnStatus_cb != nullptr)
-                        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Re-requesting version info from target device...");
-                }
-                return; // keep trying...
-            }
-        } else if ((activeCommand == "upload") && (args.size() == 1)) {
-            filename = args[0];
-            fwUpdate_resetEngine();
-
-            // TODO move this to it's own function before we expand this any father
-
-            uint8_t flags = 0;
-            // check for non encrypted file CXD update slot 4 or slot 2 if .fpk
-            if (((target & fwUpdate::TARGET_SONY_CXD5610) == fwUpdate::TARGET_SONY_CXD5610) && (slotNum == 4 || (slotNum == 2 && filename.substr(filename.find_last_of(".") + 1) == "fpk")))
-                flags |= fwUpdate::IMG_FLAG_imageNotEncrypted;
-
-            if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
-                target = fwUpdate::TARGET_ISB_IMX5;
-
-            // any target which doesn't report version info will also expect the old MD5 digest
-            if (!target_devInfo) {
-                // TODO: We should be able to remove most of this after 2.1.0 has been released
-                if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
-                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
-                    // just copy in the current "main" device's dev info, since they are the same device as the target
-                    remoteDevInfo = *devInfo;
-                    target_devInfo = &remoteDevInfo;
-                } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) {
-                    // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
-                    const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
-                    if (gpxVInfo) {
-                        int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
-                        if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
-                            (sscanf(gpxVInfo, "G%d.%d.%d-%d", &v1, &v2, &v3, &bn) == 4))
-                        {
-                            remoteDevInfo.hardwareType = IS_HARDWARE_TYPE_GPX;
-                            remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
-                            remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
-                            target_devInfo = &remoteDevInfo;
-                            if ((v1 == 2) && (v2 == 0) && (v3 == 0))
-                                flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
-                        }
-                    }
-                } else
-                    flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
-            }
-
-            fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, flags, forceUpdate, chunkSize, progressRate);
-
-            if (status < fwUpdate::NOT_STARTED) {
-                // there was an error -- probably should flush the command queue
-                handleCommandError(activeCommand, -1, "Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
-            } else {
-                requestPending = true;
-                nextStartAttempt = current_timeMs() + attemptInterval;
-                // session_status = fwUpdate::NOT_STARTED;
-            }
-        } else if (activeCommand == "reset") {
-            bool hard = (args.size() == 1 && args[0] == "hard");
-            if (args.size() == 2 && args[1] == "tobl") {
-                fwUpdate_requestReset(target, fwUpdate::RESET_INTO_BOOTLOADER);
-            } else {
-                fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
-            }
-            if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Requesting target reset (%s)", hard ? "hard" : "soft");
-        } else if (activeCommand == "finish") {
-            commands.clear();
-            bool reportErrors = (args.size() == 1 && args[0] == "true");
-            if (reportErrors && (pfnStatus_cb != nullptr))
-                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Firmware Update completed %s", reportErrors ? "with errors. Please review update log for specifics." : "successfully.");
         } else {
-            // unknown command - ignore it
-            if (pfnStatus_cb != nullptr)
-                pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_ERROR, "Unknown command: '%s'", activeCommand.c_str());
+            cmd.status = cmd_status_e::SUCCESS;
         }
+    } else if ((activeCommand == "echo") && (cmd.args.size() == 1)) {
+        // simply outputs the argument string to the progress handler
+        // this is primarily for manifest authors to output information to the user
+        std::string msg;
+        for (auto [k,v] : cmd.args) msg += v;
+        if (pfnStatus_cb != nullptr)
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, msg.c_str());
+        cmd.status = cmd_status_e::SUCCESS;
+    } else if ((activeCommand == "slot") && (cmd.args.size() == 1)) {
+        slotNum = strtol(cmd[0].c_str(), nullptr, 10);
+        cmd.status = cmd_status_e::SUCCESS;
+    } else if ((activeCommand == "timeout") && (cmd.args.size() == 1)) {
+        fwUpdate_setTimeoutDuration(strtol(cmd[0].c_str(), nullptr, 10));
+        cmd.status = cmd_status_e::SUCCESS;
+    } else if (activeCommand == "force") {
+        forceUpdate = (cmd[0] == "true" ? true : false);
+        cmd.status = cmd_status_e::SUCCESS;
+    } else if ((activeCommand == "chunk") && (cmd.args.size() == 1)) {
+        chunkSize = strtol(cmd[0].c_str(), nullptr, 10);
+        cmd.status = cmd_status_e::SUCCESS;
+    } else if ((activeCommand == "rate") && (cmd.args.size() == 1)) {
+        progressRate = strtol(cmd[0].c_str(), nullptr, 10);
+        cmd.status = cmd_status_e::SUCCESS;
+    } else if ((activeCommand == "delay") && (cmd.args.size() == 1)) {
+        if (pfnStatus_cb != nullptr)
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_INFO, "Pausing for %0.2f seconds...", strtol(cmd[0].c_str(), nullptr, 10) / 1000.0);
+        pauseUntil = current_timeMs() + strtol(cmd[0].c_str(), nullptr, 10);
+        cmd.status = cmd_status_e::SUCCESS;
+    } else {
+        // unknown command - ignore it
+        if (pfnStatus_cb != nullptr)
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_ERROR, "Unknown command: '%s'", activeCommand.c_str());
+        cmd.status = cmd_status_e::SUCCESS;
     }
 
     // If we are here, we've successfully executed our command, and it can be removed from the command queue.
-    if (!commands.empty())
-        commands.erase(commands.begin()); // pop the command off the front
-    else
+    if (commands.empty())
         activeCommand.clear();
+    else if (cmd.status != cmd_status_e::IN_PROCESS)
+        commands.erase(commands.begin()); // pop the completed command off the execution stack
+}
+
+void ISFirmwareUpdater::cmd_ExtractPackage(cmd_state& cmd) {
+    bool isManifest = (cmd[0].length() >= 5) && (0 == cmd[0].compare (cmd[0].length() - 5, 5, ".yaml"));
+    pkg_error_e err_result = isManifest ? processPackageManifest(cmd[0]) : openFirmwarePackage(cmd[0]);
+    if (err_result != PKG_SUCCESS) {
+        const char *err_msg = nullptr;
+        switch (err_result) {
+            case PKG_ERR_PACKAGE_FILE_ERROR:
+                err_msg = "Unable to open package.";
+                break;
+            case PKG_ERR_INVALID_IMAGES:
+                err_msg = "Manifest has no images defined, or is malformed.";
+                break;
+            case PKG_ERR_INVALID_STEPS:
+                err_msg = "Manifest has no steps defined, or is malformed.";
+                break;
+            case PKG_ERR_INVALID_TARGET:
+                err_msg = "Manifest references an invalid target, or no target defined for image.";
+                break;
+            case PKG_ERR_UNSUPPORTED_TARGET:
+                err_msg = "Image references an invalid or unsupported target device.";
+                break;
+            case PKG_ERR_NO_ACTIONS:
+                err_msg = "Manifest has no valid actions.";
+                break;
+            case PKG_ERR_IMAGE_INVALID_REFERENCE:
+                err_msg = "Manifest references an invalid or non-existent image entry.";
+                break;
+            case PKG_ERR_IMAGE_UNKNOWN_PATH:
+                err_msg = "Manifest image path is missing or invalid.";
+                break;
+            case PKG_ERR_IMAGE_FILE_NOT_FOUND:
+                err_msg = "Manifest image reference is valid, but the backing datafile is missing.";
+                break;
+            case PKG_ERR_IMAGE_FILE_SIZE_MISMATCH:
+                err_msg = "Manifest's reported image size does not match the actual data file size.";
+                break;
+            case PKG_ERR_IMAGE_FILE_MD5_MISMATCH:
+                err_msg = "Manifest's reported image MD5 digest does not match the actual data file MD5 digest.";
+                break;
+            case PKG_ERR_NO_MANIFEST:
+                err_msg = "Manifest is missing or corrupt.";
+                break;
+            case PKG_SUCCESS:
+                break;
+        }
+        handleCommandError(activeCommand, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", cmd[0].c_str(), err_result, err_msg);
+    }
+}
+
+/**
+ * @brief processes the manifest command "target" responsible for setting the target device to apply all subsequent command towards.
+ * @param args a set of positional arguments
+ * This command has the following arguments:
+ *     target ID [required] :: One of IMX5, IMX6, GPX1, GNSS1, GNSS2
+ *     timeout [optional] :: the number of milliseconds to wait for a response from the requested target (defaults to 0ms, or no wait)
+ *     interval [optional] :: the number of milliseconds between re-request attempts, while waiting for a response (0ms (default) mean do not send any additional re-requests)
+ *     on_timeout [optional] :: a label to jump to in the event that the timeout occurs waiting for the device
+ */
+void ISFirmwareUpdater::cmd_SetTarget(cmd_state& cmd) {
+    std::string targetName = cmd["target"];
+    if (cmd.status == QUEUED) {
+        if (targetName == "IMX5") setTarget(fwUpdate::TARGET_IMX5);
+        else if (targetName == "IMX6") setTarget(fwUpdate::TARGET_IMX6);
+        else if (targetName == "GPX1") setTarget(fwUpdate::TARGET_GPX1);
+        else if (targetName == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
+        else if (targetName == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
+        else {
+            handleCommandError(activeCommand, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)", targetName.c_str());
+            cmd.status = cmd_status_e::ERROR_GENERAL;
+            return;
+        }
+    }
+    if (cmd.args.size() == 1) {
+        cmd.status = cmd_status_e::SUCCESS; // if we're only setting the target, there is nothing left to do.
+    } else {
+        cmd_WaitFor(cmd);       // this will set the cmd.status for us.
+    }
+}
+
+
+/**
+ * @brief processes the manifest command "waitfor" which suspends execution of all other commands until the current target responds
+ * to a VersionInfo request or times-out waiting.
+ * @param args a set of positional arguments
+ * This command accepts the following arguments:
+ *     timeout [required] :: the number of milliseconds to wait for a response from the requested target (defaults to 0ms, or no wait)
+ *     interval [optional] :: the number of milliseconds between re-request attempts, while waiting for a response (0ms (default) mean do not send any additional re-requests)
+ *     on_timeout [optional] :: a label to jump to in the event that the timeout occurs waiting for the device
+ *     force [optional] :: clear any existing devInfo and force a new request of VersionInfo
+ */
+void ISFirmwareUpdater::cmd_WaitFor(cmd_state& cmd) {
+    if (cmd.status == QUEUED) {
+        // force a new query, even if we previously had devInfo for this target, and use default values
+        pingInterval = strtol(cmd.getArg("interval", "1000").c_str(), nullptr, 10);
+        pingTimeoutMs = strtol(cmd.getArg("timeout", "5000").c_str(), nullptr, 10);
+        pingTimeoutExpires = current_timeMs() + pingTimeoutMs;
+        timeoutLabel = cmd.getArg("on-timeout", failLabel);
+        if (timeoutLabel[0] != ':') {
+            handleCommandError(activeCommand, -1, "Invalid label [%s]. Labels must start with a colon (:).", timeoutLabel.c_str());
+            cmd.status = ERROR_GENERAL;
+        }
+
+        if (cmd["force"] == "true")
+            target_devInfo = NULL;
+    }
+
+    cmd.status = IN_PROCESS;
+    if (target_devInfo && ((remoteDevInfoTargetId & fwUpdate::TARGET_TYPE_MASK) == (target & fwUpdate::TARGET_TYPE_MASK))) {
+        // SUCCESS
+        cmd.status = SUCCESS;
+        pingInterval = 1000;       //!< delay between attempts to communicate with a target device
+        pingNextRetry = 0;         //!< time for next ping
+        pingTimeoutMs = 0;           //!< time when the ping operation will timeout if no response before then
+        timeoutLabel.clear();      //!< a label to jump to, when a "waitfor" times out (which is not always an error)
+    } else if (pingTimeoutExpires && (pingTimeoutExpires < current_timeMs())) {
+        // TIMEOUT occurred
+        cmd.status = ERROR_GENERAL;
+        cmd.resultMsg = "Timeout limit reached waiting for response from the target device.";
+        pingTimeoutExpires= pingNextRetry = 0;
+        if (!timeoutLabel.empty()) {
+            // we have a timeoutLabel defined... let's skip all commands until its found
+            while (!commands.empty() && (commands[0].cmd != timeoutLabel)) {
+                commands.erase(commands.begin());
+            }
+        } else {
+            handleCommandError(activeCommand, -1, cmd.resultMsg.c_str());
+        }
+    } else if (pingInterval && (pingNextRetry < current_timeMs())) {
+        // Still waiting and ready to send another ping
+        pingNextRetry = current_timeMs() + pingInterval;
+        target_devInfo = nullptr;
+        fwUpdate_requestVersionInfo(target);
+
+        if (pfnStatus_cb != nullptr)
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_INFO, "Requesting version info from target device (upto %0.2f seconds)...", (pingTimeoutExpires - current_timeMs()) / 1000.0);
+    }
+}
+
+/**
+ * @brief processes the manifest command "upload" which handles sending a firmware image to a device.
+ * @param cmd the state for this command, which includes arguments, status, and result codes, etc.
+ * This command accepts the following arguments:
+ *     filename [required] :: the path/filename of the image to upload to the device
+ *     interval [optional] :: the period interval (in milliseconds) which the remote device should send progress/status reports (default = "250")
+ *     chunkSize [optional] :: the size of each chunk to send (default = "512")
+ *     force [optional] :: if "true" will cause the upload to occur, bypassing version checking (default = "false");
+ */
+void ISFirmwareUpdater::cmd_UploadImage(cmd_state& cmd) {
+    filename = cmd["filename"];
+    if (cmd.hasArg("slot")) slotNum = std::strtol(cmd.getArg("slot", "0").c_str(), nullptr, 10);
+    if (cmd.hasArg("interval")) progressRate = std::strtol(cmd.getArg("interval", "250").c_str(), nullptr, 10);
+    if (cmd.hasArg("chunkSize")) progressRate = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
+    if (cmd.hasArg("force")) forceUpdate = (cmd.getArg("force", "false") == "true");
+
+    fwUpdate_resetEngine();
+
+    uint8_t flags = 0;
+    // check for non encrypted file CXD update slot 4 or slot 2 if .fpk
+    if (((target & fwUpdate::TARGET_SONY_CXD5610) == fwUpdate::TARGET_SONY_CXD5610) && (slotNum == 4 || (slotNum == 2 && filename.substr(filename.find_last_of(".") + 1) == "fpk")))
+        flags |= fwUpdate::IMG_FLAG_imageNotEncrypted;
+
+    if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
+        target = fwUpdate::TARGET_ISB_IMX5;
+
+    // any target which doesn't report version info will also expect the old MD5 digest
+    if (!target_devInfo) {
+        // TODO: We should be able to remove most of this after 2.1.0 has been released
+        if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
+            ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
+            // just copy in the current "main" device's dev info, since they are the same device as the target
+            remoteDevInfo = *devInfo;
+            target_devInfo = &remoteDevInfo;
+        } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) {
+            // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
+            const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
+            if (gpxVInfo) {
+                int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
+                if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
+                    (sscanf(gpxVInfo, "G%d.%d.%d-%d", &v1, &v2, &v3, &bn) == 4))
+                {
+                    remoteDevInfo.hardwareType = IS_HARDWARE_TYPE_GPX;
+                    remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
+                    remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
+                    target_devInfo = &remoteDevInfo;
+                    if ((v1 == 2) && (v2 == 0) && (v3 == 0))
+                        flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+                }
+            }
+        } else
+            flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+    }
+
+    fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, flags, forceUpdate, chunkSize, progressRate);
+
+    if (status < fwUpdate::NOT_STARTED) {
+        // there was an error -- probably should flush the command queue
+        handleCommandError(activeCommand, -1, "Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
+    } else {
+        requestPending = true;
+        nextStartAttempt = current_timeMs() + attemptInterval;
+        // session_status = fwUpdate::NOT_STARTED;
+    }
+}
+
+void ISFirmwareUpdater::cmd_resetDevice(ISFirmwareUpdater::cmd_state &cmd) {
+    bool hard = (cmd.getArg("type", "soft") == "hard");
+    if (cmd.hasArg("type") && (cmd["type"] == "tobl")) {
+        fwUpdate_requestReset(target, fwUpdate::RESET_INTO_BOOTLOADER);
+    } else {
+        fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
+    }
+    if (pfnStatus_cb != nullptr)
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Requesting target reset (%s)", hard ? "hard" : "soft");
+    cmd.status = cmd_status_e::SUCCESS;
+}
+
+void ISFirmwareUpdater::cmd_finish(ISFirmwareUpdater::cmd_state &cmd) {
+    commands.clear();
+    bool reportErrors = (cmd.args.size() == 1 && cmd[0] == "true");
+    if (reportErrors && (pfnStatus_cb != nullptr))
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater *>(this), IS_LOG_LEVEL_INFO, "Firmware Update completed %s", reportErrors ? "with errors. Please review update log for specifics." : "successfully.");
+    cmd.status = cmd_status_e::SUCCESS;
+}
+
+void ISFirmwareUpdater::initialize() {
+    nextStartAttempt = 0;      //!< the number of millis (uptime?) that we will next attempt to start an upgrade
+    startAttempts = 0;         //!< the number of attempts that have been made to request that an update be started
+
+    maxAttempts = 5;           //!< the maximum number of attempts that will be made before we give up.
+    attemptInterval = 350;     //!< the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+
+    last_resent_chunk = 0;     //!< the chunk id of the last/previous received req_resend  (are we getting multiple requests for the same chunk?)
+    resent_chunkid_count = 0;  //!< the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
+    resent_chunkid_time = 0;   //!< time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
+
+    chunkDelay = 25;           //!< provides a throttling mechanism
+    nextChunkDelay = 250;      //!< provides a throttling mechanism
+    nextChunkSend = 0;         //!< don't send the next chunk until this time has expired.
+    updateStartTime = 0;       //!< the system time when the firmware was started (for performance reporting)
+
+    // pfnStatus_cb = nullptr;
+    toHost.clear();            //!< a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
+    commands.clear();
+
+    activeStep.clear();             //!< the name of the currently executing step name, from the manifest when available
+    activeCommand.clear();          //!< the name (without parameters) of the currently executing command
+    failLabel.clear();              //!< a label to jump to, when an error occurs
+    requestPending = false;        //!< true is an update has been requested, but we're still waiting on a response.
+    slotNum = 0, chunkSize = 512, progressRate = 250;
+    forceUpdate = false;
+    pingInterval = 1000;       //!< delay between attempts to communicate with a target device
+    pingNextRetry = 0;         //!< time for next ping
+    pingTimeoutMs = 0;           //!< time when the ping operation will timeout if no response before then
+    timeoutLabel.clear();           //!< a label to jump to, when a "waitfor" times out (which is not always an error)
+    pauseUntil = 0;            //!< delays next command execution until this time (but still allows the fwUpdate to step/receive responses).
+    filename.clear();
+    target = fwUpdate::TARGET_HOST;
+
+    //mz_zip_archive *zip_archive = nullptr; //!< is NOT null IF we are updating from a firmware package (zip archive).
+    //fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
+    remoteDevInfo = {};
+    logLevel = IS_LOG_LEVEL_INFO;     //!< default log level to show
+
+    stepErrors.clear();
 }
 
 /**
@@ -737,6 +841,7 @@ void ISFirmwareUpdater::runCommand(const std::string& cmd) {
  * @return 0 on success, otherwise PKG_ERR_*.
  */
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive = nullptr) {
+    initialize();
     YAML::Node images = manifest["images"];
     if (!images.IsMap())
         return PKG_ERR_INVALID_IMAGES; // images must be a map (of maps)
@@ -760,23 +865,14 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
                 return PKG_ERR_NO_ACTIONS; // actions must be a sequence (of maps)
 
             std::string step_name = key.as<std::string>();
-            commands.push_back(":" + step_name);
+            commands.emplace_back(":" + step_name);
 
             for (auto actions_iv : actions) {
                 for (auto cmd : actions_iv) {
                     auto cmd_name = cmd.first.as<std::string>();
                     auto cmd_arg = cmd.second.as<std::string>();
 
-                    if (cmd_name == "target") {
-                        std::string target_name = cmd_arg;
-                        if ((target_name != "IMX5") &&
-                            (target_name != "GPX1") &&
-                            (target_name != "GNSS1") &&
-                            (target_name != "GNSS2"))
-                            return PKG_ERR_UNSUPPORTED_TARGET; // target name is invalid/unsupported
-                        commands.push_back("target=" + target_name);
-                    } else if (cmd_name == "image") {
-                        int image_slot = 0;
+                    if (cmd_name == "image") {
                         uint32_t image_size = 0;
                         md5hash_t image_hash = {};
                         // uint8_t image_version[4] = {};
@@ -828,14 +924,15 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
                             }
                         }
 
+                        std::string args = "filename="+filename;
                         if (image["slot"].IsDefined() && image["slot"].IsScalar())
-                            image_slot = image["slot"].as<int>();
+                            args += ",slot="+image["slot"].as<std::string>();
 
-                        commands.push_back("slot=" + std::to_string(image_slot));
-                        commands.push_back("upload=" + filename);
+                        //commands.emplace_back("slot",);
+                        commands.emplace_back("upload", args);
                     } else {
                         // anything that isn't "image" is treated like a normal command
-                        commands.push_back(cmd_name + "=" + cmd_arg);
+                        commands.emplace_back(cmd_name, cmd_arg);
                     }
                 }
             }
@@ -878,26 +975,25 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std:
     void *p;
     pkg_error_e result = PKG_SUCCESS;
 
-    if (!zip_archive) {
+    if (!zip_archive)
         zip_archive = (mz_zip_archive *)malloc(sizeof(mz_zip_archive));
-    }
 
     // initialize the archive struct and open the file
     mz_zip_zero_struct(zip_archive);
     status = mz_zip_reader_init_file(zip_archive, pkg_file.c_str(), 0);
-    if (!status) {
+    if (!status)
         return PKG_ERR_PACKAGE_FILE_ERROR;
-    }
 
     p = mz_zip_reader_extract_file_to_heap(zip_archive, "manifest.yaml", &file_size, 0);
-    if (p && (file_size > 0)) {
-        std::string casted_memory(static_cast<char*>(p), file_size);
-        std::istringstream stream(casted_memory);
-        YAML::Node manifest = YAML::Load(stream);
-        if (manifest)
-            result = processPackageManifest(manifest, zip_archive);
-        mz_free(p);
-    }
+    if (!p || (file_size == 0))
+        return PKG_ERR_NO_MANIFEST;
+
+    std::string casted_memory(static_cast<char*>(p), file_size);
+    std::istringstream stream(casted_memory);
+    YAML::Node manifest = YAML::Load(stream);
+    if (manifest)
+        result = processPackageManifest(manifest, zip_archive);
+    mz_free(p);
 
     // TODO: I can't make up my mind... to keep the zip-reader available for possible future file extractions, or close it and reopen it each time.  We're only talking about a dozen files at max, and most time 2-5 files on average.
     // mz_zip_reader_end(zip_archive);

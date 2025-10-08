@@ -551,15 +551,15 @@ typedef struct PACKED
  *      4 = GPX1
  */
 
-#define HDW_TYPE__MASK                         0xFC00
+#define HDW_TYPE__MASK                         0xFC00       // 6 bits, bits 10-15
 #define HDW_TYPE__SHIFT                        10
 #define DECODE_HDW_TYPE(x)                     (((x) & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
 // Use eIsHardwareType for hardware type
-#define HDW_MAJOR__MASK                        0x03C0
+#define HDW_MAJOR__MASK                        0x03C0       // 4 bits, bits 6-9 (max value of 16)
 #define HDW_MAJOR__SHIFT                       6
 #define DECODE_HDW_MAJOR(x)                    (((x) & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
 
-#define HDW_MINOR__MASK                        0x003F
+#define HDW_MINOR__MASK                        0x003F       // 6 bits, bits 0-5 (max value of 63)
 #define HDW_MINOR__SHIFT                       0
 #define DECODE_HDW_MINOR(x)                    (((x) & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
 
@@ -571,6 +571,7 @@ typedef struct PACKED
 #define DECODE_UNIQUE_ID_TO_SERIALNO(devId)    ((uint32_t)devId)
 #define DEV_INFO_MATCHES_HDW_ID(di, hdwId)     ( (ENCODE_DEV_INFO_TO_HDW_ID(di) & hdwId) == ENCODE_DEV_INFO_TO_HDW_ID(di) )
 
+#define IS_HDW_TYPE_PERIPHERAL                 0x20        // non-peripherals are 0-31, peripherals are 32-63
 enum eIsHardwareType
 {
     IS_HARDWARE_TYPE_MIXED          = -1,   // Used for ci-hdw testing
@@ -579,6 +580,11 @@ enum eIsHardwareType
     IS_HARDWARE_TYPE_EVB            = 2,
     IS_HARDWARE_TYPE_IMX            = 3,
     IS_HARDWARE_TYPE_GPX            = 4,
+    IS_HDW_GNSS_UBLOX               = IS_HDW_TYPE_PERIPHERAL + 1,    // Ublox F9P
+    IS_HDW_GNSS_SONY                = IS_HDW_TYPE_PERIPHERAL + 2,    // Sony CXD5610
+    IS_HDW_GNSS_SEPTENTRIO          = IS_HDW_TYPE_PERIPHERAL + 3,    // Septentrio
+    IS_HDW_GNSS_STM_TESSIO          = IS_HDW_TYPE_PERIPHERAL + 4,    // STM Tessio
+
     IS_HARDWARE_TYPE_COUNT          = 5     // Keep last
 };
 
@@ -591,6 +597,13 @@ static const is_hardware_t IS_HARDWARE_IMX      = ENCODE_HDW_ID(IS_HARDWARE_TYPE
 static const is_hardware_t IS_HARDWARE_IMX_5_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
 static const is_hardware_t IS_HARDWARE_GPX      = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, -1, -1);
 static const is_hardware_t IS_HARDWARE_GPX_1_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, 1, 0);
+
+static const is_hardware_t IS_HDW_UBLOX_F9P      = ENCODE_HDW_ID(IS_HDW_GNSS_UBLOX, 'F' - 'A', 9);
+static const is_hardware_t IS_HDW_SONY_CXD5610   = ENCODE_HDW_ID(IS_HDW_GNSS_SONY, 5, 6);
+static const is_hardware_t IS_HDW_TESSIO_6       = ENCODE_HDW_ID(IS_HDW_GNSS_STM_TESSIO, 6, 0);
+static const is_hardware_t IS_HDW_SEPTENTRIO_G5  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'G' - 'A', 5);
+static const is_hardware_t IS_HDW_SEPTENTRIO_P3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'P' - 'A', 3);
+static const is_hardware_t IS_HDW_SEPTENTRIO_M3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'M' - 'A', 3);
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
 
