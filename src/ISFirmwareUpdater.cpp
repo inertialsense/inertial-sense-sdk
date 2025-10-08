@@ -774,7 +774,6 @@ void ISFirmwareUpdater::cmd_UploadImage(cmd_state& cmd) {
             cmd.status = IN_PROCESS;
         }
     } else {
-        fwUpdate::update_status_e status = fwUpdate_getSessionStatus();
         if (session_status == fwUpdate::FINISHED)
             cmd.status = SUCCESS;
         else if (session_status < fwUpdate::NOT_STARTED)
