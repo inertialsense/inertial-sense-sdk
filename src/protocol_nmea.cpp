@@ -914,9 +914,9 @@ int nmea_gga(char a[], const int aSize, gps_pos_t &pos)
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                                                      // 4,5
     nmea_sprint(a, aSize, n, ",%01u", (unsigned int)(fixQuality & 0xF));                            // 6 - GPS quality -- limit to available options (TODO: Overkill and probably unnecessary)
     nmea_sprint(a, aSize, n, ",%02u", (unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));    // 7 - Satellites used
-    nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);                                                    // 8 - HDop
-    nmea_sprint(a, aSize, n, ",%.2f,M", pos.hMSL);                                                  // 9,10 - MSL altitude
-    nmea_sprint(a, aSize, n, ",%.2f,M", pos.lla[2] - pos.hMSL);                                     // 11,12 - Geoid separation
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.pDop);                                                  // 8 - HDop
+    nmea_sprint_f(a, aSize, n, ",%.2f,M", pos.hMSL);                                                // 9,10 - MSL altitude
+    nmea_sprint_f(a, aSize, n, ",%.2f,M", float(pos.lla[2]) - pos.hMSL);                            // 11,12 - Geoid separation
     nmea_sprint(a, aSize, n, ",,");                                                                 // 13,14 - Age of differential, DGPS station ID number
     return nmea_sprint_footer(a, aSize, n);
 }
@@ -1004,12 +1004,12 @@ int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
     }
         
     nmea_sprint(a, aSize, n,
-        ",%.1f"     // 15
-        ",%.1f"     // 16
-        ",%.1f",    // 17
-        pos.pDop,   // 15
-        pos.hAcc,   // 16
-        pos.vAcc);  // 17    
+        ",%.1f"             // 15
+        ",%.1f"             // 16
+        ",%.1f",            // 17
+        (double)pos.pDop,   // 15
+        (double)pos.hAcc,   // 16
+        (double)pos.vAcc);  // 17    
 
     return nmea_sprint_footer(a, aSize, n);
 }
@@ -1057,19 +1057,19 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
     nmea_sprint(a, aSize, n,
     ",%05.1f"                                   // 7
     ",%05.1f",                                  // 8
-    s_dataSpeed.speed2dKnots,                   // 7 - speed in knots
-    courseMadeTrue*C_RAD2DEG_F);                // 8 - course made true
+    double(s_dataSpeed.speed2dKnots),                   // 7 - speed in knots
+    double(courseMadeTrue*C_RAD2DEG_F));                // 8 - course made true
     
     nmea_GPSDateOfLastFix(a, aSize, n, pos);    // 9 - date of last fix UTC
     
     // Magnetic variation degrees (Easterly var. subtracts from true course), i.e. 020.3,E - left pad to 3 zero
     float magDec = magDeclination * C_RAD2DEG_F;
-    bool positive = (magDec >= 0.0);
+    bool positive = (magDec >= 0.0f);
     
     nmea_sprint(a, aSize, n,
     ",%05.1f"                                   // 10
     ",%s",                                      // 11
-    fabsf(magDec),                              // 10 - Magnetic variation
+    double(fabsf(magDec)),                      // 10 - Magnetic variation
     (positive ? "E" : "W"));                    // 11
     
     return nmea_sprint_footer(a, aSize, n);
@@ -1123,7 +1123,7 @@ int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
     int n = nmea_talker(a, aSize);
     nmea_sprint(a, aSize, n, "VTG");
     float courseMadeTrue = atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
-    nmea_sprint(a, aSize, n, ",%.2f", C_RAD2DEG_F * courseMadeTrue);            // 1
+    nmea_sprint_f(a, aSize, n, ",%.2f", C_RAD2DEG_F * courseMadeTrue);          // 1
     nmea_sprint(a, aSize, n, ",T");                                             // 2
     if (magVarCorrectionRad == 0.0f)                                            // 3
     {
@@ -1131,12 +1131,12 @@ int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
     }
     else
     {
-        nmea_sprint(a, aSize, n, ",%.2f", courseMadeTrue + magVarCorrectionRad*C_RAD2DEG_F);
+        nmea_sprint_f(a, aSize, n, ",%.2f", courseMadeTrue + magVarCorrectionRad*C_RAD2DEG_F);
     }
     nmea_sprint(a, aSize, n, ",M");                                             // 4
-    nmea_sprint(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);                // 5
+    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);              // 5
     nmea_sprint(a, aSize, n, ",N");                                             // 6
-    nmea_sprint(a, aSize, n, ",%.2f", s_dataSpeed.speed2dMps*C_MPS2KMPH_F);     // 7
+    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dMps*C_MPS2KMPH_F);   // 7
     nmea_sprint(a, aSize, n, ",K");                                             // 8
     switch(pos.status & GPS_STATUS_FIX_MASK)                                    // 9
     {
@@ -2630,9 +2630,9 @@ int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
     ptr = ASCII_find_next_field(ptr);
 
     // 11,12 - Geoid separation = alt(HAE) - alt(MSL)
-    double geoidSep;
-    ptr = ASCII_to_f64(&(geoidSep), ptr);
-    gpsPos.lla[2] = gpsPos.hMSL + geoidSep;
+    float geoidSep;
+    ptr = ASCII_to_f32(&(geoidSep), ptr);
+    gpsPos.lla[2] = double(gpsPos.hMSL + geoidSep);
 
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
