@@ -576,7 +576,10 @@ bool ISBFirmwareUpdater::rebootToISB()
             else portFlush(device->port);
         }
         last_reboot = current_timeMs();
-        //device->disconnect();   // I think the intent here, is that we rebooted the device, and possibly got a new port - so disconnect the old one.
+        device->disconnect();  // If we haven't already disconnected, let's disconnect and we'll attempt to open again
+        // portManager.releasePort(device->port);  //
+        // SLEEP_MS(50);
+        portManager.discoverPorts(); // if we are a USB connection, and do a force a quick discoverPorts() to discover if our USB port was lost.
     } else {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN, "(ISB) Unable to reset device to ISbl because the current device state is unknown (%d).", device->devInfo.hdwRunState);
         return false;
