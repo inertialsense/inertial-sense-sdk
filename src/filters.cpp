@@ -46,7 +46,7 @@ void init_iir_filter(iif_filter_t *f)
     // Gama = adc_to_iir = alpha + beta
     gama                = 1<<f->opt.bit_shift;
     TsFc                = f->opt.Fc/f->opt.Fs;
-    alpha               = (int)(TsFc/(1.0 + TsFc) * (float)gama);
+    alpha               = (int)(TsFc/(1.0f + TsFc) * (float)gama);
     f->opt.beta         = gama - alpha;
     // alpha_x allows us to combine the adc_to_iir and alpha multiplies into one step
     f->opt.alpha_x      = alpha<<f->opt.bit_shift;

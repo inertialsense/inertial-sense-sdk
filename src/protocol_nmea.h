@@ -36,6 +36,10 @@ void nmea_set_protocol_version(int protocol_version);
 void nmea_set_gnss_id(int gnssId);
 uint32_t nmea_compute_checksum(uint8_t* str, int size);
 void nmea_sprint(char buf[], int bufSize, int &offset, const char *fmt, ...);
+inline void nmea_sprint_f(char* buf, int bufSize, int& offset, const char* fmt, float v)
+{ 
+    nmea_sprint(buf, bufSize, offset, fmt, (double)v);
+}
 int nmea_sprint_footer(char* a, int aSize, int &n);
 char *ASCII_find_next_field(char *str);
 char *ASCII_to_u8(uint8_t *val, char *ptr);

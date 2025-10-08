@@ -538,14 +538,14 @@ int nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[])
     int n = ssnprintf(a, aSize, "%s", name);
     nmea_sprint(a, aSize, n, ",%.3lf", imu.time);       // 1
     
-    nmea_sprint(a, aSize, n, ",%.4f", imu.I.pqr[0]);    // 2
-    nmea_sprint(a, aSize, n, ",%.4f", imu.I.pqr[1]);    // 3
-    nmea_sprint(a, aSize, n, ",%.4f", imu.I.pqr[2]);    // 4
+    nmea_sprint_f(a, aSize, n, ",%.4f", imu.I.pqr[0]);    // 2
+    nmea_sprint_f(a, aSize, n, ",%.4f", imu.I.pqr[1]);    // 3
+    nmea_sprint_f(a, aSize, n, ",%.4f", imu.I.pqr[2]);    // 4
 
-    nmea_sprint(a, aSize, n, ",%.3f", imu.I.acc[0]);    // 5
-    nmea_sprint(a, aSize, n, ",%.3f", imu.I.acc[1]);    // 6
-    nmea_sprint(a, aSize, n, ",%.3f", imu.I.acc[2]);    // 7
-    
+    nmea_sprint_f(a, aSize, n, ",%.3f", imu.I.acc[0]);    // 5
+    nmea_sprint_f(a, aSize, n, ",%.3f", imu.I.acc[1]);    // 6
+    nmea_sprint_f(a, aSize, n, ",%.3f", imu.I.acc[2]);    // 7
+
     return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -553,17 +553,17 @@ int nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
 {
     int n = ssnprintf(a, aSize, "$PPIMU");
     nmea_sprint(a, aSize, n, ",%.3lf", pimu.time);      // 1
-    
-    nmea_sprint(a, aSize, n, ",%.4f", pimu.theta[0]);   // 2
-    nmea_sprint(a, aSize, n, ",%.4f", pimu.theta[1]);   // 3
-    nmea_sprint(a, aSize, n, ",%.4f", pimu.theta[2]);   // 4
 
-    nmea_sprint(a, aSize, n, ",%.4f", pimu.vel[0]);     // 5
-    nmea_sprint(a, aSize, n, ",%.4f", pimu.vel[1]);     // 6
-    nmea_sprint(a, aSize, n, ",%.4f", pimu.vel[2]);     // 7
+    nmea_sprint_f(a, aSize, n, ",%.4f", pimu.theta[0]);   // 2
+    nmea_sprint_f(a, aSize, n, ",%.4f", pimu.theta[1]);   // 3
+    nmea_sprint_f(a, aSize, n, ",%.4f", pimu.theta[2]);   // 4
 
-    nmea_sprint(a, aSize, n, ",%.3f", pimu.dt);         // 8
-    
+    nmea_sprint_f(a, aSize, n, ",%.4f", pimu.vel[0]);     // 5
+    nmea_sprint_f(a, aSize, n, ",%.4f", pimu.vel[1]);     // 6
+    nmea_sprint_f(a, aSize, n, ",%.4f", pimu.vel[2]);     // 7
+
+    nmea_sprint_f(a, aSize, n, ",%.3f", pimu.dt);         // 8
+
     return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -576,22 +576,22 @@ int nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
     nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins1.insStatus);  // 3
     nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins1.hdwStatus);  // 4
 
-    nmea_sprint(a, aSize, n, ",%.4f", ins1.theta[0]);               // 5
-    nmea_sprint(a, aSize, n, ",%.4f", ins1.theta[1]);               // 6
-    nmea_sprint(a, aSize, n, ",%.4f", ins1.theta[2]);               // 7
+    nmea_sprint_f(a, aSize, n, ",%.4f", ins1.theta[0]);             // 5
+    nmea_sprint_f(a, aSize, n, ",%.4f", ins1.theta[1]);             // 6
+    nmea_sprint_f(a, aSize, n, ",%.4f", ins1.theta[2]);             // 7
 
-    nmea_sprint(a, aSize, n, ",%.3f", ins1.uvw[0]);                 // 8
-    nmea_sprint(a, aSize, n, ",%.3f", ins1.uvw[1]);                 // 9
-    nmea_sprint(a, aSize, n, ",%.3f", ins1.uvw[2]);                 // 10
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins1.uvw[0]);               // 8
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins1.uvw[1]);               // 9
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins1.uvw[2]);               // 10
 
     nmea_sprint(a, aSize, n, ",%.8lf", ins1.lla[0]);                // 11
     nmea_sprint(a, aSize, n, ",%.8lf", ins1.lla[1]);                // 12
     nmea_sprint(a, aSize, n, ",%.3lf", ins1.lla[2]);                // 13
 
-    nmea_sprint(a, aSize, n, ",%.3f", ins1.ned[0]);                 // 14
-    nmea_sprint(a, aSize, n, ",%.3f", ins1.ned[1]);                 // 15
-    nmea_sprint(a, aSize, n, ",%.3f", ins1.ned[2]);                 // 16
-    
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins1.ned[0]);               // 14
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins1.ned[1]);               // 15
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins1.ned[2]);               // 16
+
     return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -603,15 +603,15 @@ int nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
     nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.week);           // 2
     nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.insStatus);      // 3
     nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.hdwStatus);      // 4
-    
-    nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[0]);                    // 5
-    nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[1]);                    // 6
-    nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[2]);                    // 7
-    nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[3]);                    // 8
 
-    nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[0]);                     // 9
-    nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[1]);                     // 10
-    nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[2]);                     // 11
+    nmea_sprint_f(a, aSize, n, ",%.4f", ins2.qn2b[0]);                  // 5
+    nmea_sprint_f(a, aSize, n, ",%.4f", ins2.qn2b[1]);                  // 6
+    nmea_sprint_f(a, aSize, n, ",%.4f", ins2.qn2b[2]);                  // 7
+    nmea_sprint_f(a, aSize, n, ",%.4f", ins2.qn2b[3]);                  // 8
+
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins2.uvw[0]);                   // 9
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins2.uvw[1]);                   // 10
+    nmea_sprint_f(a, aSize, n, ",%.3f", ins2.uvw[2]);                   // 11
 
     nmea_sprint(a, aSize, n, ",%.8lf", ins2.lla[0]);                    // 12
     nmea_sprint(a, aSize, n, ",%.8lf", ins2.lla[1]);                    // 13
@@ -642,17 +642,17 @@ int nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
     nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[1]);                     // 5
     nmea_sprint(a, aSize, n, ",%.2lf", pos.lla[2]);                     // 6
     
-    nmea_sprint(a, aSize, n, ",%.2f", pos.hMSL);                        // 7
-    nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);                        // 8
-    nmea_sprint(a, aSize, n, ",%.2f", pos.hAcc);                        // 9
-    nmea_sprint(a, aSize, n, ",%.2f", pos.vAcc);                        // 10
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.hMSL);                      // 7
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.pDop);                      // 8
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.hAcc);                      // 9
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.vAcc);                      // 10
 
-    nmea_sprint(a, aSize, n, ",%.2f", vel.vel[0]);                      // 11
-    nmea_sprint(a, aSize, n, ",%.2f", vel.vel[1]);                      // 12
-    nmea_sprint(a, aSize, n, ",%.2f", vel.vel[2]);                      // 13
-    nmea_sprint(a, aSize, n, ",%.2f", vel.sAcc);                        // 14
+    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[0]);                    // 11
+    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[1]);                    // 12
+    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[2]);                    // 13
+    nmea_sprint_f(a, aSize, n, ",%.2f", vel.sAcc);                      // 14
 
-    nmea_sprint(a, aSize, n, ",%.1f", pos.cnoMean);                     // 15
+    nmea_sprint_f(a, aSize, n, ",%.1f", pos.cnoMean);                   // 15
     nmea_sprint(a, aSize, n, ",%.4lf", pos.towOffset);                  // 16
     nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.leapS);           // 17
     
@@ -1179,19 +1179,19 @@ int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float h
         hh - Checksum
     */
     
-    int n = ssnprintf(a, aSize, "$PASHR");                              // 1 - Name
-    nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);                 // 2 - UTC Time
+    int n = ssnprintf(a, aSize, "$PASHR");                                  // 1 - Name
+    nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);                     // 2 - UTC Time
 
-    nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));          // 3 - Heading value in decimal degrees.
-    nmea_sprint(a, aSize, n, ",T");                                     // 4 - T (heading respect to True North)
-    nmea_sprint(a, aSize, n, ",%+.2f", RAD2DEG(ins1.theta[0]));         // 5 - Roll in degrees
-    nmea_sprint(a, aSize, n, ",%+.2f", RAD2DEG(ins1.theta[1]));         // 6 - Pitch in degrees
-    nmea_sprint(a, aSize, n, ",%+.2f", heave);                          // 7 - Heave
-    
-    nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[0]));     // 8 - roll accuracy
-    nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[1]));     // 9 - pitch accuracy
-    nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[2]));     // 10 - heading accuracy
-    
+    nmea_sprint_f(a, aSize, n, ",%.2f", C_RAD2DEG_F * ins1.theta[2]);       // 3 - Heading value in decimal degrees.
+    nmea_sprint(a, aSize, n, ",T");                                         // 4 - T (heading respect to True North)
+    nmea_sprint_f(a, aSize, n, ",%+.2f", C_RAD2DEG_F * ins1.theta[0]);      // 5 - Roll in degrees
+    nmea_sprint_f(a, aSize, n, ",%+.2f", C_RAD2DEG_F * ins1.theta[1]);      // 6 - Pitch in degrees
+    nmea_sprint_f(a, aSize, n, ",%+.2f", heave);                            // 7 - Heave
+
+    nmea_sprint_f(a, aSize, n, ",%.3f", C_RAD2DEG_F * sigma.StdAttNed[0]);  // 8 - roll accuracy
+    nmea_sprint_f(a, aSize, n, ",%.3f", C_RAD2DEG_F * sigma.StdAttNed[1]);  // 9 - pitch accuracy
+    nmea_sprint_f(a, aSize, n, ",%.3f", C_RAD2DEG_F * sigma.StdAttNed[2]);  // 10 - heading accuracy
+
     int fix = 0;
     if (INS_STATUS_NAV_FIX_STATUS(ins1.insStatus) >= GPS_NAV_FIX_POSITIONING_RTK_FLOAT)
     {
@@ -1231,28 +1231,28 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
     */
     update_nmea_speed(pos, vel);
 
-    int n = ssnprintf(a, aSize, "$INTEL,KIM");                                        // 0,1
+    int n = ssnprintf(a, aSize, "$INTEL,KIM");                      // 0,1
 
     nmea_sprint(a, aSize, n, ",%d.%d.%d.%d", 
         info.firmwareVer[0], 
         info.firmwareVer[1], 
         info.firmwareVer[2], 
-        info.firmwareVer[3]);                                   // 2
-    nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs/1000);     // 3
-    nmea_sprint(a, aSize, n, ",%d", pos.week);                  // 4
-    nmea_sprint(a, aSize, n, ",%d", pos.leapS);                 // 5
+        info.firmwareVer[3]);                                       // 2
+    nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs/1000);         // 3
+    nmea_sprint(a, aSize, n, ",%d", pos.week);                      // 4
+    nmea_sprint(a, aSize, n, ",%d", pos.leapS);                     // 5
 
-    nmea_sprint(a, aSize, n, ",%.3f", 0);                       // 6
-    nmea_sprint(a, aSize, n, ",%.3f", 0);                       // 7
-    nmea_sprint(a, aSize, n, ",0");                             // 8
+    nmea_sprint(a, aSize, n, ",0.000");                             // 6
+    nmea_sprint(a, aSize, n, ",0.000");                             // 7
+    nmea_sprint(a, aSize, n, ",0");                                 // 8
 
-    nmea_sprint(a, aSize, n, ",%.3f", vel.vel[0]);              // 9
-    nmea_sprint(a, aSize, n, ",%.3f", vel.vel[1]);              // 10
-    nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);              // 11
+    nmea_sprint_f(a, aSize, n, ",%.3f", vel.vel[0]);                // 9
+    nmea_sprint_f(a, aSize, n, ",%.3f", vel.vel[1]);                // 10
+    nmea_sprint_f(a, aSize, n, ",%.3f", vel.vel[2]);                // 11
 
-    nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[0]);   // 12
-    nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[1]);   // 13
-    nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[2]);   // 14
+    nmea_sprint_f(a, aSize, n, ",%.3f", s_dataSpeed.velNed[0]);     // 12
+    nmea_sprint_f(a, aSize, n, ",%.3f", s_dataSpeed.velNed[1]);     // 13
+    nmea_sprint_f(a, aSize, n, ",%.3f", s_dataSpeed.velNed[2]);     // 14
 
     return nmea_sprint_footer(a, aSize, n);
 }
@@ -1359,14 +1359,14 @@ int nmea_powtlv(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
 
     nmea_sprint(a, aSize, n, ",%.3f", pos.lla[2]);              // 11
-    nmea_sprint(a, aSize, n, ",%.3f", pos.hMSL);                // 12
+    nmea_sprint_f(a, aSize, n, ",%.3f", pos.hMSL);              // 12
 
-    nmea_sprint(a, aSize, n, ",%.3f", horVel);                  // 13
+    nmea_sprint_f(a, aSize, n, ",%.3f", horVel);                // 13
 
-    nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);              // 14
+    nmea_sprint_f(a, aSize, n, ",%.3f", vel.vel[2]);            // 14
 
     groundTrackHeading = C_RAD2DEG_F * atan2f(vel.vel[1], vel.vel[0]);
-    nmea_sprint(a, aSize, n, ",%.3f", groundTrackHeading);      // 15
+    nmea_sprint_f(a, aSize, n, ",%.3f", groundTrackHeading);    // 15
 
     return nmea_sprint_footer(a, aSize, n);                     // 16
 }
@@ -2534,8 +2534,8 @@ int nmea_parse_gns(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
     gpsPos.lla[2] = lla[2] + sep;
 
     //Change LLA to radians
-    lla[0] = DEG2RAD(lla[0]);
-    lla[1] = DEG2RAD(lla[1]);
+    lla[0] = C_DEG2RAD * lla[0];
+    lla[1] = C_DEG2RAD * lla[1];
     lla[2] = gpsPos.lla[2];    // Use ellipsoid alt
         
     //Convert LLA to ECEF.  Ensure LLA uses ellipsoid alt 
@@ -2636,8 +2636,8 @@ int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
 
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(gpsPos.lla[0]);
-    lla[1] = DEG2RAD(gpsPos.lla[1]);
+    lla[0] = C_DEG2RAD * gpsPos.lla[0];
+    lla[1] = C_DEG2RAD * gpsPos.lla[1];
     lla[2] = gpsPos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, gpsPos.ecef);
 
@@ -3054,9 +3054,9 @@ int nmea_parse_rmc(const char a[], int aSize, gps_vel_t &gpsVel, utc_time_t &utc
     }
 
     //spd & cog
-    float spdm_s = (float)atof(ptr) * C_KNOTS_METERS_F;
+    float spdm_s = strtof(ptr, NULL) * C_KNOTS_METERS_F;
     ptr = ASCII_find_next_field(ptr);
-    float cogRad = DEG2RAD((float)atof(ptr));
+    float cogRad = C_DEG2RAD_F * strtof(ptr, NULL);
 
     //Speed data in NED
     gpsVel.vel[0] = spdm_s * cosf(cogRad);
