@@ -521,15 +521,11 @@ bool InertialSense::Update()
                 device->step();
     }
 
-    // if any serial ports have closed, shutdown
+    // if all serial ports have closed, shutdown
     bool anyOpen = false;
     for (auto device : deviceManager)
     {
-        if (!portIsOpened(device->port))
-        {
-            // Make sure its closed..
-            portClose(device->port);
-        } else
+        if (device->fwUpdateInProgress() || device->isConnected())
             anyOpen = true;
     }
 
@@ -909,9 +905,29 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 
 is_operation_result InertialSense::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb fwUpdateStatus, void (*waitAction)())
 {
+    // At some point during an upgrade, we'll likely reset the device and will need to watch for the device to come back. But the cltool normally doesn't discovery
+    // new devices (only new ports). So, let's use the PortManagers::port_listener mechanism to detect when new ports are discover, only during the Firmware Update
+    // operation.  When new ports are found, we'll attempt to discover a device on only those specific ports. We MUST keep the handle to the listener, so we can
+    // release it when we're done, otherwise this could get called even after the function is out of scope, which would be BAD. Don't forget to release it at the bottom!
+
+    // NOTE: its possible that the device may enumerate its port in the OS before the device is ready to respond to queries (though not likely). As a result, it's
+    // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
+    // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
+    auto plHandle = portManager.addPortListener(
+            [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
+                printf("Detected port change (%s) during Firmware Udpate: %s\n", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
+                if (event == PortManager::PORT_ADDED) {
+                    deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+                }
+            }
+    );
+
     for (auto device : deviceManager) {
         device->updateFirmware(targetDevice, cmds, fwUpdateStatus, waitAction);
     }
+
+    // portManager.removePortListener(plHandle);
+
 
 #if !PLATFORM_IS_WINDOWS
     fputs("\e[?25h", stdout);    // Turn cursor back on
@@ -1150,20 +1166,13 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // we'll make a copy of all the port handles (into a set); as we validate each, we'll remove it from this new set until they are all gone
         for (auto port : portManager) portsToValidate.insert(port);
 
-        // since we can re-validating some devices, there may be previous devInfo that would allow the validation to pass incorrectly, so clear it
-        for (auto device : deviceManager) device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;  // FIXME: (REMOVE) This doesn't actually do anything because we haven't discovered any devices yet
+        // attempt to discover devices on all known ports
+        deviceManager.discoverDevices(IS_HARDWARE_ANY, m_comManagerState.discoveryTimeout, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);  // In this case, We ABSOLUTELY want to open any closes ports (because they are all closed currently)
 
-        // check for Inertial-Sense devices by making a series of protocol requests (which it should respond to at least one of)
-        unsigned int startTime = current_timeMs();
-        do {
-            // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
-            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout)
-                break;
+        // remove all ports from portToValidate if a device has bound to that port
+        for ( auto d : deviceManager ) portsToValidate.erase(d->port);
 
-            deviceManager.discoverDevices(IS_HARDWARE_ANY, 5000, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);  // In this case, We ABSOLUTELY want to open any closes ports (because they are all closed currently)
-        } while (!portsToValidate.empty());
         debug_message("[DBG] Completed device validation for %lu devices, on %lu ports.\n", deviceManager.size(), portManager.size());
-
         if (!portsToValidate.empty()) {
             std::string names;
             for (auto port : portsToValidate) {
@@ -1174,28 +1183,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             fprintf(stderr, "Timeout waiting to validate %lu ports: %s.\n", portsToValidate.size(), names.c_str());
             fflush(stderr);
         }
-
-        // Now we need to look for other devices (old?) devices which are effectively dead, and clean them up
-        std::vector<device_handle_t> deadDevices;
-        for (auto dev : deviceManager) {
-            if (!dev->port || !dev->isConnected()) {
-                deadDevices.push_back(dev);
-            }
-        }
-
-        // We don't remove the device above while still iterating over the list of devices.
-        if (!deadDevices.empty()) {
-            for (auto deadDevice : deadDevices) {
-                if (deadDevice) {
-                    fprintf(stderr, "Found device %s on invalid/closed port %s.\n", deadDevice->getIdAsString().c_str(), deadDevice->getPortName().c_str());
-                    deviceManager.releaseDevice(deadDevice);
-                }
-            }
-            deadDevices.clear();
-        }
     }
-
-    auto device = deviceManager.front();
 
     // request extended device info for remaining connected devices...
     for (auto device : deviceManager) {
@@ -1205,9 +1193,9 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             device->GetData(DID_FLASH_CONFIG);
             device->GetData(DID_GPX_FLASH_CFG);
         }
+        device->WaitForImxFlashCfgSynced();
     }
 
-    device->WaitForImxFlashCfgSynced();
 
     return (m_enableDeviceValidation ? !deviceManager.empty() : !portManager.empty());
 }

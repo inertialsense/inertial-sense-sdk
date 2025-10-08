@@ -334,16 +334,18 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
         lastStatus = session_status;
     }
 
+    if (!commands.empty()) {
+        if (pauseUntil && pauseUntil > current_timeMs())
+            return fwUpdate::MSG_UNKNOWN; // means to delay execution of next command for some period of time..
+        pauseUntil = 0;
+        runCommand(commands[0]);
+    }
+
     switch(session_status) {
         case fwUpdate::NOT_STARTED:
-            if (!requestPending) {
-                if (!commands.empty()) {
-                    if (pauseUntil && pauseUntil > current_timeMs())
-                        return fwUpdate::MSG_UNKNOWN; // means to delay execution of next command for some period of time..
-                    pauseUntil = 0;
-                    runCommand(commands[0]);
-                }
-            } else {
+            if (commands.empty()) {
+
+            } else if (requestPending) {
                 lastMsgAge = fwUpdate_getLastMessageAge();
                 if (lastMsgAge > 1500) {
                     // if we have already made the initial request, but haven't yet received a response after 1500ms...
@@ -510,10 +512,10 @@ void ISFirmwareUpdater::runCommand(cmd_state& cmd) {
         cmd.status = cmd_status_e::SUCCESS;
     }
     else if (activeCommand == "package") cmd_ExtractPackage(cmd);
-    else if (activeCommand == "target")  cmd_SetTarget(cmd);
-    else if (activeCommand == "waitfor")  cmd_WaitFor(cmd);
-    else if (activeCommand == "upload")  cmd_UploadImage(cmd);
-    else if (activeCommand == "reset")  cmd_resetDevice(cmd);
+    else if (activeCommand == "target") cmd_SetTarget(cmd);
+    else if (activeCommand == "waitfor") cmd_WaitFor(cmd);
+    else if (activeCommand == "upload") cmd_UploadImage(cmd);
+    else if (activeCommand == "reset") cmd_resetDevice(cmd);
     else if (activeCommand == "finish") cmd_finish(cmd);
     else if ((activeCommand == "on-error")) {
         failLabel = cmd[0].c_str();
@@ -715,59 +717,69 @@ void ISFirmwareUpdater::cmd_WaitFor(cmd_state& cmd) {
  *     force [optional] :: if "true" will cause the upload to occur, bypassing version checking (default = "false");
  */
 void ISFirmwareUpdater::cmd_UploadImage(cmd_state& cmd) {
-    filename = cmd["filename"];
-    if (cmd.hasArg("slot")) slotNum = std::strtol(cmd.getArg("slot", "0").c_str(), nullptr, 10);
-    if (cmd.hasArg("interval")) progressRate = std::strtol(cmd.getArg("interval", "250").c_str(), nullptr, 10);
-    if (cmd.hasArg("chunkSize")) progressRate = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
-    if (cmd.hasArg("force")) forceUpdate = (cmd.getArg("force", "false") == "true");
 
-    fwUpdate_resetEngine();
+    if (cmd.status == QUEUED) {
+        filename = cmd["filename"];
+        if (cmd.hasArg("slot")) slotNum = std::strtol(cmd.getArg("slot", "0").c_str(), nullptr, 10);
+        if (cmd.hasArg("interval")) progressRate = std::strtol(cmd.getArg("interval", "250").c_str(), nullptr, 10);
+        if (cmd.hasArg("chunkSize")) progressRate = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
+        if (cmd.hasArg("force")) forceUpdate = (cmd.getArg("force", "false") == "true");
 
-    uint8_t flags = 0;
-    // check for non encrypted file CXD update slot 4 or slot 2 if .fpk
-    if (((target & fwUpdate::TARGET_SONY_CXD5610) == fwUpdate::TARGET_SONY_CXD5610) && (slotNum == 4 || (slotNum == 2 && filename.substr(filename.find_last_of(".") + 1) == "fpk")))
-        flags |= fwUpdate::IMG_FLAG_imageNotEncrypted;
+        fwUpdate_resetEngine();
 
-    if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
-        target = fwUpdate::TARGET_ISB_IMX5;
+        uint8_t flags = 0;
+        // check for non encrypted file CXD update slot 4 or slot 2 if .fpk
+        if (((target & fwUpdate::TARGET_SONY_CXD5610) == fwUpdate::TARGET_SONY_CXD5610) && (slotNum == 4 || (slotNum == 2 && filename.substr(filename.find_last_of(".") + 1) == "fpk")))
+            flags |= fwUpdate::IMG_FLAG_imageNotEncrypted;
 
-    // any target which doesn't report version info will also expect the old MD5 digest
-    if (!target_devInfo) {
-        // TODO: We should be able to remove most of this after 2.1.0 has been released
-        if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
-            ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
-            // just copy in the current "main" device's dev info, since they are the same device as the target
-            remoteDevInfo = *devInfo;
-            target_devInfo = &remoteDevInfo;
-        } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) {
-            // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
-            const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
-            if (gpxVInfo) {
-                int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
-                if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
-                    (sscanf(gpxVInfo, "G%d.%d.%d-%d", &v1, &v2, &v3, &bn) == 4))
-                {
-                    remoteDevInfo.hardwareType = IS_HARDWARE_TYPE_GPX;
-                    remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
-                    remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
-                    target_devInfo = &remoteDevInfo;
-                    if ((v1 == 2) && (v2 == 0) && (v3 == 0))
-                        flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+        if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
+            target = fwUpdate::TARGET_ISB_IMX5;
+
+        // any target which doesn't report version info will also expect the old MD5 digest
+        if (!target_devInfo) {
+            // TODO: We should be able to remove most of this after 2.1.0 has been released
+            if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
+                ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
+                // just copy in the current "main" device's dev info, since they are the same device as the target
+                remoteDevInfo = *devInfo;
+                target_devInfo = &remoteDevInfo;
+            } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) {
+                // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
+                const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
+                if (gpxVInfo) {
+                    int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
+                    if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
+                        (sscanf(gpxVInfo, "G%d.%d.%d-%d", &v1, &v2, &v3, &bn) == 4)) {
+                        remoteDevInfo.hardwareType = IS_HARDWARE_TYPE_GPX;
+                        remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
+                        remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
+                        target_devInfo = &remoteDevInfo;
+                        if ((v1 == 2) && (v2 == 0) && (v3 == 0))
+                            flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+                    }
                 }
-            }
-        } else
-            flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
-    }
+            } else
+                flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+        }
 
-    fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, flags, forceUpdate, chunkSize, progressRate);
-
-    if (status < fwUpdate::NOT_STARTED) {
-        // there was an error -- probably should flush the command queue
-        handleCommandError(activeCommand, -1, "Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
+        fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, flags, forceUpdate, chunkSize, progressRate);
+        if (status < fwUpdate::NOT_STARTED) {
+            // there was an error -- probably should flush the command queue
+            handleCommandError(activeCommand, -1, "Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
+            cmd.status = ERROR_GENERAL;
+        } else {
+            requestPending = true;
+            nextStartAttempt = current_timeMs() + attemptInterval;
+            // session_status = fwUpdate::NOT_STARTED;
+            cmd.status = IN_PROCESS;
+        }
     } else {
-        requestPending = true;
-        nextStartAttempt = current_timeMs() + attemptInterval;
-        // session_status = fwUpdate::NOT_STARTED;
+        if (session_status == fwUpdate::FINISHED)
+            cmd.status = SUCCESS;
+        else if (session_status < fwUpdate::NOT_STARTED)
+            cmd.status = ERROR_GENERAL;
+        else
+            cmd.status = IN_PROCESS;
     }
 }
 
