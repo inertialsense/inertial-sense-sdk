@@ -43,7 +43,7 @@ extern "C"
 
 
 class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
-private:
+public:
 
     enum cmd_status_e : int8_t {
         ERROR = -1,         //!< command failed to execute successfully
@@ -51,6 +51,9 @@ private:
         IN_PROCESS = 1,     //!< command has start execution, but has not completed
         SUCCESS = 2,        //!< command had successfully completed
     };
+
+
+private:
 
     struct cmd_state {
         std::string cmd;                                    //!< the name of the command
