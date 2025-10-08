@@ -27,6 +27,7 @@ class CorrectionService {
 public:
     virtual ~CorrectionService() = default;
     typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;
+    typedef std::function<void(uint16_t, const void*, uint32_t)> tRTCM3PacketListenerCallback;
 
     /**
      * The base constructor, binds the specified port as the source for corrections data that
@@ -106,6 +107,11 @@ public:
     bool hasDevice(device_handle_t device);
 
     /**
+     * Gets the stats for the source port for this CorrectionService
+     */
+    [[nodiscard]] port_stats_t* getSourceStats() const {return BASE_PORT(source)->stats;}
+
+    /**
      * Adds a callback to be called when a Msg 1029 is received from RTCM3
      * @param callback Callback to call when receiving a Msg 1029 over RTCM3
      * @return id That can be used to remove this callback later
@@ -117,6 +123,19 @@ public:
      * @param id The id returned from addRTCM3Msg1029Listeners
      */
     void removeRTCM3Msg1029Listeners(uint32_t id);
+
+    /**
+     * Adds a callback to be called when any RTCM3 packet is received
+     * @param callback Callback to call when receiving an RTCM3 Packet
+     * @return id That can be used to remove this callback later
+     */
+    uint32_t addRTCM3PacketListeners(const std::function<void(uint16_t, const void*, uint32_t)>& callback);
+
+    /**
+     * Remove a callback from being called on an RTCM3 Packet
+     * @param id The id returned from addRTCM3PacketListeners
+     */
+    void removeRTCM3PacketListeners(uint32_t id);
 
     /**
      * Checks the source port for data and forwards it to all devices
@@ -131,6 +150,7 @@ protected:
 private:
     inline static const std::vector<PortFactory*>& nullFactories = {};
     std::vector<tRTCM3Msg1029ListenerCallback> rtcm3Msg1029Listeners;
+    std::vector<tRTCM3PacketListenerCallback> rtcm3PacketListeners;
     is_comm_instance_t packetParser{};
     uint8_t packetBuffer[PKT_BUF_SIZE]{};
     uint32_t rtcm3PacketsProcessed = 0;
