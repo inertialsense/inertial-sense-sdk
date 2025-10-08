@@ -44,7 +44,7 @@ class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
 private:
 
     enum cmd_status_e : int8_t {
-        ERROR_GENERAL = -1,         //!< command failed to execute successfully
+        ERROR_GENERAL = -1, //!< command failed to execute successfully
         QUEUED = 0,         //!< command is queued, and waiting to be executed
         IN_PROCESS = 1,     //!< command has start execution, but has not completed
         SUCCESS = 2,        //!< command had successfully completed
