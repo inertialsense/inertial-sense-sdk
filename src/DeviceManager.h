@@ -190,6 +190,16 @@ public:
     }
 
     /**
+     * Removes a previously registered device listener.
+     * @param handler a function pointer to be called when a new device is discovered
+     * @return the previously registered handler, if any
+     */
+    bool removeDeviceListener(const device_listener& listener) {
+        // TODO: locate the listener, and remove it if found and return true, otherwise return false
+        return false;
+    }
+
+    /**
      * Notifies all listeners of a particular device event
      * @param device the device to which the event is applicable
      * @param event the specific event id that occurred.

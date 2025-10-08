@@ -68,21 +68,21 @@ bool ISDevice::Update() {
 bool ISDevice::step() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected())
-        return false;
-
-    if (portType(port) & PORT_TYPE__COMM)
+    if (isConnected() && (portType(port) & PORT_TYPE__COMM)) {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-
-    if (!hasDeviceInfo()) {
-        validateAsync();
-    } else if (fwUpdater) {
-        fwUpdate();
-    } else {
-        SyncFlashConfig();
+        if (!hasDeviceInfo()) {
+            validateAsync();
+        } else {
+            SyncFlashConfig();
+        }
     }
 
-    return true;
+    if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
+        fwUpdate();
+        return true;    // always return true if we're updating, regardless if we're connected
+    }
+
+    return isConnected();
 }
 
 is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()) {
@@ -188,11 +188,11 @@ bool ISDevice::handshakeISbl() {
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++) {
         if (portWrite(port, &handshakerChar, 1) != 1) {
-            return false;
+            return false;   // failed to write, so there is an error
         }
 
         if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
-            return true;           // Success
+            return true;    // received a responding handshake char, so success
         }
     }
 
