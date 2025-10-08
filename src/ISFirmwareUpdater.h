@@ -16,10 +16,8 @@
 #include "ISDevice.h"
 #include "ISFileManager.h"
 #include "ISUtilities.h"
-#include "util/md5.h"
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBootloaderBase.h"
-#include "ISUtilities.h"
 
 #include "miniz.h"
 
