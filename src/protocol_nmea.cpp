@@ -296,7 +296,7 @@ char *ASCII_to_i32(int32_t *val, char *ptr)
 
 char *ASCII_to_f32(float *vec, char *ptr)
 {
-    vec[0] = (float)atof(ptr);      ptr = ASCII_find_next_field(ptr);
+    vec[0] = strtof(ptr, nullptr);  ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
@@ -320,18 +320,18 @@ char *ASCII_to_ver4u8(uint8_t vec[], char *ptr)
 
 char *ASCII_to_vec3f(float vec[], char *ptr)
 {
-    vec[0] = (float)atof(ptr);  ptr = ASCII_find_next_field(ptr);
-    vec[1] = (float)atof(ptr);  ptr = ASCII_find_next_field(ptr);
-    vec[2] = (float)atof(ptr);  ptr = ASCII_find_next_field(ptr);
+    vec[0] = strtof(ptr, nullptr);  ptr = ASCII_find_next_field(ptr);
+    vec[1] = strtof(ptr, nullptr);  ptr = ASCII_find_next_field(ptr);
+    vec[2] = strtof(ptr, nullptr);  ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
 char *ASCII_to_vec4f(float vec[], char *ptr)
 {
-    vec[0] = (float)atof(ptr);  ptr = ASCII_find_next_field(ptr);
-    vec[1] = (float)atof(ptr);  ptr = ASCII_find_next_field(ptr);
-    vec[2] = (float)atof(ptr);  ptr = ASCII_find_next_field(ptr);
-    vec[3] = (float)atof(ptr);  ptr = ASCII_find_next_field(ptr);
+    vec[0] = strtof(ptr, nullptr);  ptr = ASCII_find_next_field(ptr);
+    vec[1] = strtof(ptr, nullptr);  ptr = ASCII_find_next_field(ptr);
+    vec[2] = strtof(ptr, nullptr);  ptr = ASCII_find_next_field(ptr);
+    vec[3] = strtof(ptr, nullptr);  ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
@@ -1242,8 +1242,8 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
     nmea_sprint(a, aSize, n, ",%d", pos.week);                      // 4
     nmea_sprint(a, aSize, n, ",%d", pos.leapS);                     // 5
 
-    nmea_sprint(a, aSize, n, ",0.000");                             // 6
-    nmea_sprint(a, aSize, n, ",0.000");                             // 7
+    nmea_sprint(a, aSize, n, ",%.3f", 0.0);                         // 6
+    nmea_sprint(a, aSize, n, ",%.3f", 0.0);                         // 7
     nmea_sprint(a, aSize, n, ",0");                                 // 8
 
     nmea_sprint_f(a, aSize, n, ",%.3f", vel.vel[0]);                // 9
