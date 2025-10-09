@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.10.0)
+set(CMAKE_POLICY_VERSION_MINIMUM, 3.5) # Override CMAKE minimum version support
+cmake_minimum_required(VERSION 3.21.0)
 add_definitions(-DROS1)
 project(inertial_sense_ros)
 
@@ -75,7 +76,7 @@ add_library(inertial_sense_ros
 )
 
 # Build using C11 and CXX20
-set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )

@@ -140,7 +140,7 @@ TEST(md5, hash_from_file_1_to_400k_file_size)
     // GTEST_SKIP();
     const char *filename = "md5_test.txt";
 
-    for (int len=1; len<400000; )
+    for (int len=1; len<400000;)
     {
         // Create test file
         ofstream myfile(filename);

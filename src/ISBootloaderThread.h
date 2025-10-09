@@ -28,8 +28,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <mutex>
 
+#include "serialPort.h"
 #include "ISUtilities.h"
 #include "ISBootloaderBase.h"
 
@@ -39,21 +41,60 @@ public:
     cISBootloaderThread() {};
     ~cISBootloaderThread() {};
 
-    typedef struct 
+    class thread_serial_t{
+    public:
+        void* thread;
+        serial_port_t serialPort;
+        ISBootloader::cISBootloaderBase* ctx;
+        is_operation_result opResult;
+        bool done;
+        bool reuse_port;
+        bool force_isb;
+
+        thread_serial_t(const std::string& port_name, bool force_isb_update = false) {
+            // FIXME: This is pretty jank... and ridiculous.  I can do better!
+            port_handle_t port = (port_handle_t)&(serialPort);
+            serialPortInit(port, m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM);
+            serialPortPlatformInit(port);
+            serialPortSetPort(port, port_name.c_str());
+
+            ctx = NULL;
+            done = false;
+            force_isb = force_isb_update;
+        }
+        virtual ~thread_serial_t() {
+            serialPortClose((port_handle_t)&serialPort);
+            thread = NULL;
+            done = true;
+        }
+    };
+
+    class thread_libusb_t {
+    public:
+        void* thread;
+        libusb_device_handle* handle;
+        char uid[100];
+        ISBootloader::cISBootloaderBase* ctx;
+        is_operation_result opResult;
+        bool done;
+    };
+
+    typedef struct
     {
         uint32_t sn;
         uint8_t major;
         char minor;
+        port_handle_t port;
     } confirm_bootload_t;
 
     static bool set_mode_and_check_devices(
         std::vector<std::string>&               comPorts,
         int                                     baudRate,
         const ISBootloader::firmwares_t&        firmware,
-        ISBootloader::pfnBootloadProgress       uploadProgress, 
-        ISBootloader::pfnBootloadProgress       verifyProgress,
-        ISBootloader::pfnBootloadStatus         infoProgress,
-        void						            (*waitAction)() = NULL,
+        fwUpdate::pfnProgressCb                 uploadProgress,
+        fwUpdate::pfnProgressCb                 verifyProgress,
+        fwUpdate::pfnStatusCb                   infoProgress,
+        void                                    (*waitAction)() = NULL,
         std::vector<confirm_bootload_t>*        updatesPending = NULL
     );
 
@@ -62,35 +103,14 @@ public:
         bool                                    force_isb_update,
         int                                     baudRate,
         const ISBootloader::firmwares_t&        firmware,
-        ISBootloader::pfnBootloadProgress       uploadProgress, 
-        ISBootloader::pfnBootloadProgress       verifyProgress,
-        ISBootloader::pfnBootloadStatus         infoProgress,
-        void						            (*waitAction)()
+        fwUpdate::pfnProgressCb                 uploadProgress,
+        fwUpdate::pfnProgressCb                 verifyProgress,
+        fwUpdate::pfnStatusCb                   infoProgress,
+        void                                    (*waitAction)()
     );
 
     static void cancel_update();
-
-    typedef struct 
-    {
-        void* thread;
-        char serial_name[100];
-        ISBootloader::cISBootloaderBase* ctx;
-        bool done;
-        bool reuse_port;
-        bool force_isb;
-        is_operation_result result;      // defaults to IS_OP_OK
-    } thread_serial_t;
-
-    typedef struct 
-    {
-        void* thread;
-        libusb_device_handle* handle;
-        char uid[100];
-        ISBootloader::cISBootloaderBase* ctx;
-        bool done;
-        is_operation_result result;      // defaults to IS_OP_OK
-    } thread_libusb_t;
-
+    
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
     static std::mutex m_ctx_mutex;
 
@@ -113,9 +133,9 @@ private:
 
     static std::mutex m_update_mutex;
     
-    static ISBootloader::pfnBootloadProgress m_uploadProgress; 
-    static ISBootloader::pfnBootloadProgress m_verifyProgress;
-    static ISBootloader::pfnBootloadStatus m_infoProgress;
+    static fwUpdate::pfnProgressCb m_uploadProgress;
+    static fwUpdate::pfnProgressCb m_verifyProgress;
+    static fwUpdate::pfnStatusCb m_infoProgress;
     static void (*m_waitAction)();
 
     static uint32_t m_timeStart;
@@ -125,7 +145,7 @@ private:
 
     static bool m_continue_update;
 
-    static std::vector<thread_serial_t*> m_serial_threads;    // List of all serial threads that have run or are running
+    static std::map<std::string, thread_serial_t*> m_serial_threads;    // map of ports to corresponding threads
     static std::vector<thread_libusb_t*> m_libusb_threads;    // List of all libusb threads that have run or are running
     static std::mutex m_serial_thread_mutex;
     static std::mutex m_libusb_thread_mutex;

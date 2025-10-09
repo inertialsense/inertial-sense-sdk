@@ -31,7 +31,7 @@
 
 #include "ParamHelper.h"
 
-#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_DEBUG("InertialSenseROS: %s response received", cISDataMappings::DataName(DID)); }
+#define STREAMING_CHECK(streaming, DID)      if (!streaming){ streaming = true; ROS_DEBUG("InertialSenseROS: %s response received", cISDataMappings::DataName(DID)); }
 
 /**
  * Assigns an identity to the passed ROS:nav_msgs::Odometry pose/twist covariance matrix
@@ -156,7 +156,7 @@ void InertialSenseROS::initializeROS()
     if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub = nh_.advertise<sensor_msgs::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
     if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(rs_.gps2_info.topic, 1); }
 
-    if (RTK_rover_ && RTK_rover_->positioning_enable )
+    if (RTK_rover_ && RTK_rover_->positioning_enable)
     {
         rs_.rtk_pos.pubInfo = nh_.advertise<inertial_sense_ros::RTKInfo>("RTK_pos/info", 10);
         rs_.rtk_pos.pubRel = nh_.advertise<inertial_sense_ros::RTKRel>("RTK_pos/rel", 10);
@@ -207,12 +207,12 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     if (useParamSvr)
     {
-        ROS_INFO("InertialSenseROS: Loading configuration from ROS Parameter Server." );
+        ROS_INFO("InertialSenseROS: Loading configuration from ROS Parameter Server.");
         ParamHelper::paramServerToYamlNode(node, "/");
     }
     else
     {
-        ROS_INFO("InertialSenseROS: Loading configuration from YAML tree." );
+        ROS_INFO("InertialSenseROS: Loading configuration from YAML tree.");
     }
 
     // Default values appear in the 3rd parameter
@@ -231,7 +231,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param);
     }
 
-    if(ports_.size() < 1)
+    if (ports_.size() < 1)
     {
         //No ports specified. Use default
         ports_.push_back("/dev/ttyACM0");
@@ -351,7 +351,7 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 }
 
 #define CONFIG_STREAM(stream, did, type, cb_fun) \
-    if((stream.enabled) && !(stream.streaming)){ \
+    if ((stream.enabled) && !(stream.streaming)){ \
         ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::DataName(did), did); \
         SET_CALLBACK(did, type, cb_fun, stream.period); \
         if (!firstrun) \
@@ -359,13 +359,13 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
     }
 
 #define CONFIG_STREAM_GPS(stream, did_pos, cb_fun_pos, did_vel, cb_fun_vel) \
-    if((stream.enabled) && !(stream.streaming_pos)){ \
+    if ((stream.enabled) && !(stream.streaming_pos)){ \
         ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::DataName(did_pos), did_pos); \
         SET_CALLBACK(did_pos, gps_pos_t, cb_fun_pos, stream.period); \
         if (!firstrun) \
             return; \
     } \
-    if((stream.enabled) && !(stream.streaming_vel)){ \
+    if ((stream.enabled) && !(stream.streaming_vel)){ \
         ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::DataName(did_vel), did_vel); \
         SET_CALLBACK(did_vel, gps_vel_t, cb_fun_vel, stream.period); \
         if (!firstrun) \
@@ -580,7 +580,7 @@ bool InertialSenseROS::firmware_compatiblity_check()
     char diff_protocol[4] = { 0, 0, 0, 0 };
     for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.DeviceInfo().protocolVer[i];
 
-    char local_firmware[3] = { REPO_VERSION_MAJOR, REPO_VERSION_MINOR, REPO_VERSION_REVIS };
+    char local_firmware[3] = { IS_SDK_VERSION_MAJOR, IS_SDK_VERSION_MINOR, IS_SDK_VERSION_REVIS };
     char diff_firmware[3] = { 0, 0 ,0 };
     for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.DeviceInfo().firmwareVer[i];
 
@@ -604,9 +604,9 @@ bool InertialSenseROS::firmware_compatiblity_check()
             PROTOCOL_VERSION_CHAR1,
             PROTOCOL_VERSION_CHAR2,
             PROTOCOL_VERSION_CHAR3,
-            REPO_VERSION_MAJOR,
-            REPO_VERSION_MINOR, 
-            REPO_VERSION_REVIS,
+            IS_SDK_VERSION_MAJOR,
+            IS_SDK_VERSION_MINOR, 
+            IS_SDK_VERSION_REVIS,
             IS_.DeviceInfo().protocolVer[0],
             IS_.DeviceInfo().protocolVer[1],
             IS_.DeviceInfo().protocolVer[2],
@@ -614,7 +614,7 @@ bool InertialSenseROS::firmware_compatiblity_check()
             IS_.DeviceInfo().firmwareVer[0],
             IS_.DeviceInfo().firmwareVer[1],
             IS_.DeviceInfo().firmwareVer[2]      
-    );
+);
     return final_fault == ros::console::levels::Debug; // true if they match, false if they don't.
 }
 
@@ -687,7 +687,7 @@ void InertialSenseROS::configure_flash_parameters()
         // flashCfg.magDeclination  != magDeclination_ ||
         flashCfg.dynamicModel       != dynamicModel_ ||
         flashCfg.platformConfig     != platformConfig_
-        )
+      )
     {
         for (int i=0; i<3; i++)
         {
@@ -842,7 +842,7 @@ void InertialSenseROS::configure_rtk()
                 ROS_INFO("InertialSenseROS: Configuring RTK Rover");
                 rs_.rtk_pos.enabled = true;
                 connect_rtk_client(*(RtkRoverCorrectionProvider_Ntrip *) RTK_rover_->correction_input);
-                flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
+                flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING;
                 SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
 
@@ -852,7 +852,7 @@ void InertialSenseROS::configure_rtk()
                 ROS_INFO("InertialSenseROS: Configuring RTK Rover with radio enabled");
                 rs_.rtk_pos.enabled = true;
                 if (RTK_base_) RTK_base_->enable = false;
-                flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
+                flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING;
                 SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
             }
@@ -861,7 +861,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             rs_.rtk_cmp.enabled = true;
-            flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P;
+            flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
@@ -889,7 +889,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             RTK_rover_->enable = false; // FIXME:  Is this right?  Rover is disabled when in Compassing?
-            flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
+            flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
@@ -898,7 +898,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring RTK Rover with radio enabled");
             if (RTK_base_) RTK_base_->enable = false;
-            flashCfg.RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            flashCfg.RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
@@ -906,7 +906,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring as RTK Rover");
             if (RTK_base_) RTK_base_->enable = false;
-            flashCfg.RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            flashCfg.RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED);
             connect_rtk_client((RtkRoverCorrectionProvider_Ntrip&)*RTK_rover_->correction_input);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
@@ -2268,24 +2268,32 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &
     uint32_t single_axis_command = 2;
     IS_.SendData(DID_MAG_CAL, reinterpret_cast<uint8_t *>(&single_axis_command), sizeof(uint32_t), offsetof(mag_cal_t, state));
 
+
+    // FIXME: Not sure what is happening here, but its incorrect post-port_handle_t refactor
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.SerialPort();
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+
+    std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
 
-    while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
+    for (const port_handle_t& port : ports) 
     {
-        // Search comm buffer for valid packets
-        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
+        while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
         {
-            ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
-            if (msg->insStatus & 0x00400000)
+            // Search comm buffer for valid packets
+            if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
             {
-                res.success = true;
-                res.message = "Successfully initiated mag recalibration.";
-                return true;
+                ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
+                if (msg->insStatus & 0x00400000)
+                {
+                    res.success = true;
+                    res.message = "Successfully initiated mag recalibration.";
+                    return true;
+                }
             }
         }
     }
@@ -2301,22 +2309,28 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Req
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.SerialPort();
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+
+    std::vector<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
 
-    while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
+    for (const port_handle_t& port : ports) 
     {
-        // Search comm buffer for valid packets
-        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
+        while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
         {
-            ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
-            if (msg->insStatus & 0x00400000)
+            // Search comm buffer for valid packets
+            if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
             {
-                res.success = true;
-                res.message = "Successfully initiated mag recalibration.";
-                return true;
+                ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
+                if (msg->insStatus & 0x00400000)
+                {
+                    res.success = true;
+                    res.message = "Successfully initiated mag recalibration.";
+                    return true;
+                }
             }
         }
     }

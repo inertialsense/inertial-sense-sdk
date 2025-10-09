@@ -30,14 +30,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace ISBootloader;
 using namespace std;
 
-#define MAX_FILE_SIZE_DISK_PERCENT_50	.5
-#define MAX_FILE_SIZE_100k				100000
+#define MAX_FILE_SIZE_DISK_PERCENT_50   .5
+#define MAX_FILE_SIZE_100k              100000
 
 bool g_showProgress = true;
 
 bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 {
-    inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
+    inertialSenseInterface.StopBroadcasts();    // Stop streaming any prior messages
 
     // ask for device info every 2 seconds
     inertialSenseInterface.BroadcastBinaryData(DID_DEV_INFO, 2000);
@@ -46,77 +46,119 @@ bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 }
 
 // print out upload progress
-static is_operation_result uploadProgress(void* obj, float pct)
+static is_operation_result uploadProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if (obj == NULL) return IS_OP_OK;
-
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     int percent = (int)(pct * 100.0f);
     printf("\rUpload Progress: %d%%\r", percent);
-    ctx->m_update_progress = percent;
+
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+            isblPtr->m_update_progress = percent;
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
 
     return IS_OP_OK;
 }
 
 // print out verify progress
-static is_operation_result verifyProgress(void* obj, float pct)
+static is_operation_result verifyProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if (obj == NULL) return IS_OP_OK;
-
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     int percent = (int)(pct * 100.0f);
     printf("\rVerify Progress: %d%%\r", percent);
-    ctx->m_verify_progress = percent;
+
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+            isblPtr->m_verify_progress = percent;
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
 
     return IS_OP_OK;
 }
 
-static void statusText(void* obj, eLogLevel level, const char* info, ...)
+static void statusText(const std::any& obj, int level, const char* info, ...)
 {
-    if (obj == NULL) return;
-
-    cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
-
-    if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
-    {
-        printf("%s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
-    }
-    else if(ctx->m_sn != 0)
-    {
-        printf("(SN%d):\r", ctx->m_sn);
-    }
-    else if (ctx->m_port_name.size() != 0)
-    {
-        printf("%s:\r", ctx->m_port_name.c_str());
-    }
-    else
-    {
-        printf("SN?:\r");
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    ISFirmwareUpdater* fwPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+        } catch (const std::bad_any_cast &e) {
+            try {
+                fwPtr = std::any_cast<ISFirmwareUpdater *>(obj);
+            } catch (const std::bad_any_cast &e) {
+                // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+            }
+        }
     }
 
-    printf("\t\t\t%s\r\n", info);
+    if ((isblPtr == NULL) && (fwPtr == NULL))
+    {
+        cout << info << endl;
+        return;
+    }
+
+    if (isblPtr) {
+        if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
+            printf("    | %s (SN%d):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+        } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
+            printf("    | (SN%d):", isblPtr->m_sn);
+        } else if (isblPtr->m_port_name.size() != 0) {
+            printf("    | %s:", isblPtr->m_port_name.c_str());
+        } else {
+            printf("    | SN?:");
+        }
+    }
+
+    if (info && info[0])
+        printf(" %s\r\n", info);
 }
 
 // [C++ COMM INSTRUCTION] Handle received data 
-static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
+static void example_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
 {
 
     (void)i;
-    (void)pHandle;
+    (void)port;
 
     // Print data to terminal
     printf("HDR_ID: %d\r\n", data->hdr.id);
 
 }
 
-static void fwUpdateProgress(void* obj, const std::string stepName, int step, int steps, float pct) {
+static is_operation_result fwUpdateProgress(const std::any& obj, float pct, const std::string& stepName, int step, int steps) {
+
+    if (!obj.has_value()) return IS_OP_OK;
+
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    ISFirmwareUpdater* fwPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+        } catch (const std::bad_any_cast &e) {
+            try {
+                fwPtr = std::any_cast<ISFirmwareUpdater *>(obj);
+            } catch (const std::bad_any_cast &e) {
+                // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+            }
+        }
+    }
+
     if (g_showProgress) {
-        printf("    [%s] Step %d of %d: %5.1f %%\r", stepName.c_str(), step, steps, pct * 100.0f);
+        printf("    [%s] Step %d of %d: %5.1f %%\n", stepName.c_str(), step, steps, pct * 100.0f);
         fflush(stdout);
     }
+    return IS_OP_OK;
 }
 
-static void fwUpdateStatus(void* obj, int level, const char* info, ...) {
+static void fwUpdateStatus(const std::any& obj, eLogLevel level, const char* info, ...) {
     static char buffer[256];
 
     va_list ap;
@@ -135,7 +177,7 @@ static void fwUpdateStatus(void* obj, int level, const char* info, ...) {
  * @return
  */
 static int doDFUFirmwareUpdate(int argc, char* argv[]) {
-    std::vector<dfu::DFUDevice*> devices;
+    std::vector<DFUDevice*> devices;
     libusb_init(NULL);
 
     std::string imx_firmware;
@@ -145,15 +187,15 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
     std::string gpx_bootloader;
 
     const char *dfu_errors[] = {
-        "SUCCESS",
-        "DEVICE_NOT_FOUND",
-        "DEVICE_BUSY",
-        "DEVICE_TIMEOUT",
-        "LIBUSB_ERROR",
-        "INVALID_STATUS",
-        "INVALID_ARGUMENT",
-        "FILE_NOT_FOUND",
-        "INVALID_IMAGE",
+            "SUCCESS",
+            "DEVICE_NOT_FOUND",
+            "DEVICE_BUSY",
+            "DEVICE_TIMEOUT",
+            "LIBUSB_ERROR",
+            "INVALID_STATUS",
+            "INVALID_ARGUMENT",
+            "FILE_NOT_FOUND",
+            "INVALID_IMAGE",
     };
 
     // parse arguments
@@ -171,28 +213,28 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
         }
     }
 
-    int count = dfu::ISDFUFirmwareUpdater::getAvailableDevices(devices);
+    int count = ISDFUFirmwareUpdater::getAvailableDevices(devices);
     fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "Found %d DFU devices suitable for update.", count);
 
     for (auto device : devices) {
         device->setStatusCb(fwUpdateStatus);
         device->setProgressCb(fwUpdateProgress);
-        if (md5_matches(device->getFingerprint(), dfu::DFU_FINGERPRINT_STM32L4)) {
-            int fw_result = dfu::DFU_ERROR_NONE;
-            int bl_result = dfu::DFU_ERROR_NONE;
-            int dev_result = dfu::DFU_ERROR_NONE;
+        if (md5_matches(device->getFingerprint(), DFU_FINGERPRINT_STM32L4)) {
+            int fw_result = DFU_ERROR_NONE;
+            int bl_result = DFU_ERROR_NONE;
+            int dev_result = DFU_ERROR_NONE;
             bool finalization_needed = false; // true if we actually did something that needs finalizing
 
             if (!imx_firmware.empty()) {
-                fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 24576);
-                if (fw_result != dfu::DFU_ERROR_NONE)
+                fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 0x6000);
+                if (fw_result != DFU_ERROR_NONE)
                     fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
                 finalization_needed = true;
             }
             if (!imx_bootloader.empty()) {
                 bl_result = device->updateFirmware(imx_bootloader);
-                if (bl_result != dfu::DFU_ERROR_NONE)
-                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), dfu_errors[-bl_result]);
+                if (bl_result != DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), device->getErrorName(-bl_result));
                 finalization_needed = true;
             }
 
@@ -202,23 +244,23 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
                 fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
             }
         }
-        if (md5_matches(device->getFingerprint(), dfu::DFU_FINGERPRINT_STM32U5)) {
+        if (md5_matches(device->getFingerprint(), DFU_FINGERPRINT_STM32U5)) {
             // NOTE THAT GPX BOOTLOADER/FIRMWARE .hex files are ALWAYS configured to write to the correct memory location
-            int fw_result = dfu::DFU_ERROR_NONE;
-            int bl_result = dfu::DFU_ERROR_NONE;
-            int dev_result = dfu::DFU_ERROR_NONE;
+            int fw_result = DFU_ERROR_NONE;
+            int bl_result = DFU_ERROR_NONE;
+            int dev_result = DFU_ERROR_NONE;
             bool finalization_needed = false; // true if we actually did something that needs finalizing
 
             if (!gpx_firmware.empty()) {
                 fw_result = device->updateFirmware(gpx_firmware, 0x08084000); // mcu-boot SLOT 2
-                if (fw_result != dfu::DFU_ERROR_NONE)
-                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
+                if (fw_result != DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), device->getErrorName(-fw_result));
                 finalization_needed = true;
             }
             if (!gpx_bootloader.empty()) {
                 bl_result = device->updateFirmware(gpx_bootloader);
-                if (bl_result != dfu::DFU_ERROR_NONE)
-                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), dfu_errors[-bl_result]);
+                if (bl_result != DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), device->getErrorName(-bl_result));
                 finalization_needed = true;
             }
             if (finalization_needed) {
@@ -254,13 +296,13 @@ int main(int argc, char* argv[])
 
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface(NULL);
+    InertialSense inertialSenseInterface;
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(COMNum.c_str(), baudRate, true))
     {
         cout << "Failed to open serial port at " << COMNum.c_str() << endl;
-        return -1;	// Failed to open serial port
+        return -1;    // Failed to open serial port
     }
     else
         cout << "COM port open!\r\n";
@@ -293,48 +335,35 @@ int main(int argc, char* argv[])
                 commands.push_back("upload=" + fileName); // upload image to device
                 commands.push_back("reset"); // reset device
 
-                if (inertialSenseInterface.updateFirmware(
-                        COMNum, // COM port
-                        baudRate, // baud rate
-                        fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
-                        commands, // vector of strings, commands to run when performing the update
-                        uploadProgress,
-                        verifyProgress,
-                        statusText,
-                        NULL) != IS_OP_OK)
-                {
-                    inertialSenseInterface.Close();
-                    inertialSenseInterface.CloseServerConnection();
-                    return -1;
-                }
-                else
-                    cout << "Logger set!\r\n";
+                for (auto device : inertialSenseInterface.getDevices()) {
+                    if (device->updateFirmware(
+                            fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
+                            commands, // vector of strings, commands to run when performing the update
+                            fwUpdateStatus, // status/progress callback
+                            NULL) != IS_OP_OK)
+                    {
+                        inertialSenseInterface.Close();
+                        inertialSenseInterface.CloseServerConnection();
+                        return -1;
+                    }
+                    else
+                        cout << "Logger set!\r\n";
 
-
-                // get device index assignment for our com number
-                deviceIndex = inertialSenseInterface.getUpdateDeviceIndex(COMNum.c_str());
-
-                // check if we got a valid index
-                if (deviceIndex >= 0)
-                {
-                    // Main loop. Could be in separate thread if desired.
                     do
                     {
                         // [C++ COMM INSTRUCTION] STEP 4: Read data
                         if (!inertialSenseInterface.Update())
-                        {	// device disconnected, exit
+                        {   // device disconnected, exit
                             cout << "Device disconnected!\r\n";
                             break;
                         }
 
-                        status = inertialSenseInterface.getUpdateStatus(deviceIndex);
+                        status = device->getUpdateStatus();
 
                     } while (status >= fwUpdate::NOT_STARTED && status < fwUpdate::FINISHED);
 
                     cout << "Finished!\r\n";
                 }
-                else
-                    cout << "Bad device index!\r\n";
             }
             else
                 cout << "No file provided!!";

@@ -353,7 +353,7 @@ bool LogReader::load()
         forwardData(i);
     }
 
-	logger_.CloseAllFiles();
+    logger_.CloseAllFiles();
 
     return true;
 }

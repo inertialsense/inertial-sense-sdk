@@ -54,7 +54,7 @@ PYBIND11_NUMPY_DTYPE(inl2_states_t, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc
 PYBIND11_NUMPY_DTYPE(inl2_status_t, ahrs, zero_accel, zero_angrate, accel_motion, rot_motion, zero_vel, ahrs_gps_cnt, hdg_err, hdg_coarse, hdg_aligned, hdg_aligning, ekf_init_done, mag_cal_good, mag_cal_done, stat_magfield);
 PYBIND11_NUMPY_DTYPE(magnetometer_t, time, mag);
 PYBIND11_NUMPY_DTYPE(barometer_t, time, bar, mslBar, barTemp, humidity);
-PYBIND11_NUMPY_DTYPE(imu_t, time, status, I);	
+PYBIND11_NUMPY_DTYPE(imu_t, time, status, I);
 PYBIND11_NUMPY_DTYPE(inl2_mag_obs_info_t, timeOfWeekMs, Ncal_samples, ready, calibrated, auto_recal, outlier, magHdg, insHdg, magInsHdgDelta, nis, nis_threshold, Wcal, activeCalSet, magHdgOffset, Tcal, bias_cal);
 // PYBIND11_NUMPY_DTYPE(gps_raw_t, receiverIndex, dataType, obsCount, reserved, data);
 // PYBIND11_NUMPY_DTYPE(gps_rtk_opt_t, mode, soltype, nf, navsys, elmin, snrmin, modear, glomodear, gpsmodear, sbsmodear, bdsmodear, arfilter, maxout, maxrej, minlock, minfixsats, minholdsats, mindropsats, rcvstds, minfix, armaxiter, dynamics, niter, intpref, rovpos, refpos, eratio, err, std, prn, sclkstab, thresar, elmaskar, elmaskhold, thresslip, varholdamb, gainholdamb, maxtdiff, fix_reset_base_msgs, maxinnocode, maxinnophase, maxnis, maxgdop, baseline, max_baseline_error, reset_baseline_error, max_ubx_error, ru, rb, maxaveep, outsingle, prcopt_t);
@@ -64,8 +64,9 @@ PYBIND11_NUMPY_DTYPE(inl2_ned_sigma_t, timeOfWeekMs, StdPosNed, StdVelNed, StdAt
 PYBIND11_NUMPY_DTYPE(strobe_in_time_t, week, timeOfWeekMs, pin, count);
 PYBIND11_NUMPY_DTYPE(diag_msg_t, timeOfWeekMs, messageLength, message);
 PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTimeSec, hAccuracy, lla);
-// PYBIND11_NUMPY_DTYPE(port_monitor_t, portNumber, txTimeMs, txBytesPerSec, rxTimeMs, rxBytesPerSec, status);
-// PYBIND11_NUMPY_DTYPE(port_monitor_t, port);
+PYBIND11_NUMPY_DTYPE(port_monitor_set_t, portInfo, status, txBytesPerSec, rxBytesPerSec, txBytes, rxBytes, txDataDrops, rxOverflows, txBytesDropped, rxChecksumErrors);
+PYBIND11_NUMPY_DTYPE(port_monitor_t, port, activePorts);
+
 // PYBIND11_NUMPY_DTYPE(evb2_t, week, timeOfWeekMs, firmwareVer, comBridgeCfg, loggerMode, loggerElapsedTimeMs, wifiSSID, wifiPSK, wifiIpAddr, serverIpAddr, serverPort);
 // PYBIND11_NUMPY_DTYPE(evb_status_t, week, timeOfWeekMs, firmwareVer, evbStatus, loggerMode, loggerElapsedTimeMs, wifiIpAddr, sysCommand);
 // PYBIND11_NUMPY_DTYPE(evb_flash_cfg_t, size, checksum, key, cbPreset, reserved1, cbf, cbOptions, bits, radioPID, radioNID, radioPowerLevel, wifi, server, encoderTickToWheelRad, CANbaud_kbps, can_receive_address, uinsComPort, uinsAuxPort, rtkd_unused24, portOptions, h3sp330BaudRate, h4xRadioBaudRate, h8gpioBaudRate);
@@ -85,13 +86,13 @@ PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rtkd_unused8_1, code_outlier, phase_outl
                         rtkd_unused8_3, rtkd_unused8_4, bad_baseline_holdamb, rtkd_unused8_5, 
                         outc_ovfl, rtkd_unused8_6, rtkd_unused8_7, large_v2b, 
                         base_position_update, rover_position_error, reset_bias, rtkd_unused8_8, 
-                        rtkd_unused32_1, 
+                        pos_variance,
                         diff_age_error, rtkd_unused8_9, rover_packet_age_ms, base_packet_age_ms, 
-                        rtkd_unused32_2, 
+                        rtkd_unused32_1,
                         cycle_slips, 
                         rtk_to_rcvr_pos_error, 
                         rtkd_unused8_10, rtkd_unused8_11, error_count, error_code, 
-                        rtkd_unused32_3, 
+                        rtkd_unused32_2,
                         rtkd_unused8_12, rtkd_unused8_13, warning_count, warning_code, 
                         double_debug, 
                         debug, obs_base_unfiltered, obs_rover_unfiltered, 

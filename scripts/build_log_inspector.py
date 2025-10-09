@@ -9,7 +9,7 @@ from build_manager import BuildTestManager
 
 
 sdk_dir = Path(__file__).resolve().parent.parent
-log_inspector_dir = sdk_dir / "python"/ "logInspector/"
+python_dir = sdk_dir / "python"
 is_windows = os.name == 'nt' or platform.system() == 'Windows'
 if is_windows:
     python_exec = "python"
@@ -35,7 +35,7 @@ def run_setup_command(command):
         return e.returncode
 
 def run_clean():
-    os.chdir(log_inspector_dir)
+    os.chdir(python_dir)
 
     print("=== Running make clean... ===")
     result = run_setup_command("clean")
@@ -75,7 +75,7 @@ def run_build(args=[]):
         elif arg in ("-d", "--debug"):
             build_type = "Debug"
 
-    pip_install_command = f"pip3 install {log_inspector_dir}"
+    pip_install_command = f"pip3 install {python_dir}"
     version_info = sys.version_info
     if version_info.major > 3 or (version_info.major == 3 and version_info.minor >= 11):
         pip_install_command += " --break-system-packages"
@@ -96,7 +96,7 @@ def run_build(args=[]):
             print("pip install failed!")
             return build_process.returncode
 
-        os.chdir(log_inspector_dir)
+        os.chdir(python_dir)
         return run_setup_command("build_ext --inplace")
         # return run_setup_command("bdist_wheel")
 

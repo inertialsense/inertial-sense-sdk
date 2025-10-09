@@ -6,31 +6,402 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef INERTIALSENSE_SDK__UTIL_H
-#define INERTIALSENSE_SDK__UTIL_H
+#ifndef IS_SDK__UTIL_H
+#define IS_SDK__UTIL_H
 
 #include <string>
 #include <memory>
 #include <stdexcept>
+#include <iostream>
+#include <vector>
+#include <streambuf>
+#include <istream>
+#include <ostream>
+#include <cstring>
+#include <algorithm>
+#include <chrono>
+
+#include <sstream>
+#include <functional>
+
+#include <cstdarg>
+#include <cstdio>
 
 #include "ISComm.h"
 
 namespace utils {
-    std::string getCurrentTimestamp();
-    std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
+    /**
+     * @brief Trims left-side/leading characters (whitespace by default) from the passed string; this modifies the string, in place.
+     * Locates the first characters which are not within the set of ws, and removes all characters from the start upto that first
+     * non-matching character.
+     *
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return a reference to the input string.
+     */
+    std::string& ltrim(std::string& s, const char* t = " \t\n\r\f\v");
 
+    /**
+     * @brief Trims right-side/trailing characters (whitespace by default) from the passed string; this modifies the string, in place.
+     * Locates the last characters of the string which are not within the set of ws, and removes all characters from that position
+     * until the end of the string non-matching character.
+     *
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return a reference to the input string.
+     */
+    std::string& rtrim(std::string& s, const char* t = " \t\n\r\f\v");
+
+    /**
+     * @brief Trims left-size/leading and right-side/trailing characters (whitespace by default) from the passed string; this modifies
+     * the string, in place. Call both rtrim() and ltrim() in a single call.
+     *
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return a reference to the input string.
+     */
+    std::string& trim(std::string& s, const char* t = " \t\n\r\f\v");
+
+
+    /**
+     * ltrim() equivalent which makes a new copy, and does not modify the original
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return the modified/trimmed copy of the original input string.
+     */
+    std::string ltrim_copy(std::string s, const char* t = " \t\n\r\f\v");
+
+    /**
+     * rtrim() equivalent which makes a new copy, and does not modify the original
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return the modified/trimmed copy of the original input string.
+     */
+    std::string rtrim_copy(std::string s, const char* t = " \t\n\r\f\v");
+
+    /**
+     * trim() equivalent which makes a new copy, and does not modify the original
+     * @param s the string to be trimmed
+     * @param t a set of characters, which will be removed if they exists
+     * @return the modified/trimmed copy of the original input string.
+     */
+    std::string trim_copy(std::string s, const char* t = " \t\n\r\f\v");
+
+    /**
+     * Performs sprintf-type formatting, using a std:string for the format string, and outputting a std::string
+     * @tparam Args
+     * @param format
+     * @param args
+     * @return
+     */
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wformat-security"
     template<typename ... Args>
     std::string string_format(const std::string& format, Args ... args) {
-        int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
-        if( size_s <= 0 ) {
-            throw std::runtime_error( "Error during formatting." );
+        if constexpr (sizeof...(args) == 0) {
+            return format;  // If no arguments, return the format string as is
         }
-        auto size = static_cast<size_t>( size_s );
-        std::unique_ptr<char[]> buf( new char[ size ] );
-        std::snprintf( buf.get(), size, format.c_str(), args ... );
-        return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+
+        int size_s = std::snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+        if (size_s <= 0) {
+            throw std::runtime_error("Error during formatting.");
+        }
+        auto size = static_cast<size_t>(size_s);
+        std::unique_ptr<char[]> buf(new char[ size ]);
+        memset(buf.get(), 0, size);
+        std::snprintf(buf.get(), size, format.c_str(), args ...);
+        return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+    }
+//#pragma GCC diagnostic pop
+
+    /**
+     * Combine all elements of a container denoted by the start and ending iterators, to join into a
+     *   single string, using the specified delimiter
+     * @tparam T the type of container/iterator
+     * @param v a copy of the iterator denoting the first element to join
+     * @param end reference to the iterator denoting the last element to join
+     * @param delimiter a delimiter string to be placed between each element in the output string
+     * @return a string of all joined elements
+     */
+    template <typename T>
+    std::string join_to_string(T begin, const T& end, const std::string& delimiter) {
+        std::ostringstream s;
+        for (T cur = begin; cur != end; cur++) {
+            if (cur != begin) s << delimiter.c_str();
+            s << *cur;
+        }
+        return s.str();
+    }
+
+    /**
+     * Combine all elements of a container into a single string, using the specified delimiter
+     * @tparam T the type of container
+     * @param v reference to the container of elements to join
+     * @param delimiter a delimiter string to be placed between each element in the output string
+     * @return a string of all joined elements
+     */
+    template <typename T>
+    std::string join_to_string(const T& v, const std::string& delimiter) {
+        std::ostringstream s;
+        for (const auto& i : v) {
+            if (&i != &*v.begin()) {
+                s << delimiter;
+            }
+            s << i;
+        }
+        return s.str();
+    }
+
+    /**
+     * Parses a string of delimited values (ie, x.x.x.x) and populate the values into a passed
+     * std::array of type T and size N. If the string contains fewer than N numbers elements,
+     * the remaining elements are not assigned (you should initialize vOut before calling this
+     * function). At most N elements will be parsed. The lamba is used to convert the parsed
+     * substring into the value of type T.
+     *
+     * This is primarily used to parse versions and ip address, and the template provides
+     *  default values that support this usage (T = uint8_t, N = 4). If you wish to use it for
+     *  other types, remember to set the template parameters.
+     *
+     * @param s the string to split
+     * @param vOut a std::array<T,n> each element containing a parsed value.
+     * @param d the delimiters to use when splitting (if multiple, will be separated on ANY)
+     *  (defaults to '.')
+     * @param lambda a lambda used to convert the parsed substring to a value of type T (defaults
+     *  to stoi(), returning a decimal
+     * @return returns the number of elements parsed.
+     */
+    template <typename T=uint8_t, int N=4>
+    int split_from_string(const std::string& s, T vOut[N], const char* d = ".", std::function<T(const std::string&)> lambda = [](const std::string& ss) -> T { return stoi(ss); } ) {
+        long unsigned int start = 0, n = 0, end = 0, len = s.length();
+        while ( (start < len) && (n < len) && (end = s.find_first_of(d, start)) != std::string::npos) {
+            vOut[n++] = lambda(s.substr(start, end - start));
+            start = end + 1;
+        }
+        if (start < len)
+            vOut[n++] = lambda(s.substr(start));
+        return n;
+    }
+
+
+    /**
+     * Splits the passed string into a vector of strings, delimited by delimiter.
+     * @param str the string to be split
+     * @param delimiter the substring to use as a delimiter
+     * @return a vector of strings
+     */
+    std::vector<std::string> split_string(const std::string& str, const std::string& delimiter);
+
+
+    /**
+     * Returns the index of an entry (type E) within a container (type T)
+     * @tparam E the data type of the collection; defaults to std::string
+     * @tparam T the collection type; defaults to std::vector
+     * @param c a reference to the collection containing the element to index
+     * @param e a reference to the element to locate in the collection
+     * @returns the index number of the element e within collection c, or -1 if not found.
+     */
+    template <typename E=std::string, typename T=std::vector<E>>
+    int indexOf(const T& c, const E& e) {
+        ptrdiff_t pos = find(c.begin(), c.end(), e) - c.begin();
+        if(pos >= c.size()) return -1;
+        return (int)pos;
+    }
+
+    std::string raw_hexdump(const char* raw_data, int bytesLen, int bytesPerLine);
+    std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
+
+    enum dev_info_fmt_e : uint16_t {
+        DV_BIT_SERIALNO         = 0x0001,        //!< serial number
+        DV_BIT_FIRMWARE_VER     = 0x0002,        //!< firmware version w/ optional release type
+        DV_BIT_HARDWARE_INFO    = 0x0004,        //!< hdw type & version
+        DV_BIT_BUILD_KEY        = 0x0008,        //!< build key and build number
+        DV_BIT_BUILD_DATE       = 0x0010,        //!< build date
+        DV_BIT_BUILD_TIME       = 0x0020,        //!< build time
+        DV_BIT_BUILD_COMMIT     = 0x0040,        //!< repo hash & build status (dirty)
+        DV_BIT_ADDITIONAL_INFO  = 0x0100,        //!< additional info
+        DV_BIT_PROTOCOL_VER     = 0x0200,        //!< protocol version
+        DV_BIT_COMPACT_DATE     = 0x1000,        //!< compact date formatting
+        DV_BIT_COMPACT_TIME     = 0x2000,        //!< compact time formatting
+        DV_BIT_EXACT_MATCH      = 0x4000,        //!< when matching/comparing, match exactly (version & time)
+    };
+
+    std::string getHardwareAsString(const dev_info_t& devInfo);
+    std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
+    std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1, const std::string& sep = " ");
+    // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
+
+    std::string getCurrentTimestamp();
+    std::string devInfoToString(const dev_info_t& devInfo, uint16_t flags = -1);
+    uint16_t devInfoFromString(const std::string& str, dev_info_t& devInfo);
+    uint64_t intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis = false);
+    std::string firmwareFileFromDevInfo(dev_info_t devInfo);
+
+    bool devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2);
+    bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags = DV_BIT_FIRMWARE_VER | DV_BIT_BUILD_COMMIT | DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME);
+    bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
+    int64_t compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
+
+    // int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
+    // bool devInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo);
+
+    /**
+     * Generates a detailed comparison, field-by-field, of two pointers of a particular DID.
+     * @param did the Data ID of the data buffers to compare (A & B)
+     * @param A a pointer to the first data buffer to compare
+     * @param B a pointer to the second data buffer to compare
+     * @param printDiff if true, print a detailed list of which fields were different, comparing their values.
+     *   if false, no output it printed
+     * @return true if the two data buffers match, otherwise false
+     */
+    bool compareDataIDs(uint32_t did, const uint8_t* A, const uint8_t* B, bool printDiff);
+
+    /**
+     * returns a string describing the portInfo parameter from a port_monitor_set_t.
+     * @param portInfo the port_monitor_set_t.portInfo
+     * @return a string of format "TYPE.ID"
+     */
+    std::string getPortMonitorDescription(uint8_t portInfo);
+
+    /**
+     * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
+     * @param info1
+     * @param info2
+     * @return a uint32_t with each bit indicating a match of a specific field in the struct
+     */
+    uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
+
+    bool validDomainName(const std::string& domainName);
+};
+
+class ByteBuffer : public std::streambuf {
+public:
+    ByteBuffer(std::size_t size) : size_(size) {
+        buffer_.resize(size_, 0); // Initialize buffer with zeros
+        setg(buffer_.data(), buffer_.data(), buffer_.data() + buffer_.size());
+        setp(buffer_.data(), buffer_.data() + buffer_.size());
+    }
+
+    void insert(std::size_t pos, const uint8_t* data, std::size_t len) {
+        if (pos + len > buffer_.size()) {
+            throw std::out_of_range("Insert position out of range");
+        }
+        std::memcpy(buffer_.data() + pos, data, len);
+        initialized_ranges_.emplace_back(pos, pos + len);
+        merge_initialized_ranges();
+    }
+
+    std::size_t tellg() const {
+        return gptr() - eback();
+    }
+
+    std::size_t tellp() const {
+        return pptr() - pbase();
+    }
+
+    std::size_t data_size() const {
+        return current_write_pos_;
+    }
+
+    void seekg(std::size_t pos) {
+        setg(eback(), eback() + pos, egptr());
+    }
+
+    bool is_initialized(std::size_t pos, std::size_t len) const {
+        auto end_pos = pos + len;
+        for (const auto& range : initialized_ranges_) {
+            if (pos >= range.first && end_pos <= range.second) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    std::vector<char> buffer_;
+    std::size_t size_;
+    std::size_t current_write_pos_ = 0;
+    std::vector<std::pair<std::size_t, std::size_t>> initialized_ranges_;
+
+    void merge_initialized_ranges() {
+        if (initialized_ranges_.empty()) return;
+        std::sort(initialized_ranges_.begin(), initialized_ranges_.end());
+        std::vector<std::pair<std::size_t, std::size_t>> merged;
+        merged.push_back(initialized_ranges_[0]);
+
+        for (const auto& range : initialized_ranges_) {
+            if (merged.back().second >= range.first) {
+                merged.back().second = (merged.back().second > range.second ? merged.back().second : range.second);
+            } else {
+                merged.push_back(range);
+            }
+        }
+        initialized_ranges_ = std::move(merged);
     }
 };
 
+class ByteBufferStream : public std::iostream {
+public:
+    ByteBufferStream(ByteBuffer& buffer)
+            : std::iostream(&buffer), buffer_(buffer) {}
 
-#endif //INERTIALSENSE_SDK__UTIL_H
+    std::size_t tellg() const {
+        return buffer_.tellg();
+    }
+
+    std::size_t tellp() const {
+        return buffer_.tellp();
+    }
+
+    std::size_t data_size() const {
+        return buffer_.data_size();
+    }
+
+    void seekg(std::size_t pos) {
+        buffer_.seekg(pos);
+    }
+
+    bool is_initialized(std::size_t pos, std::size_t len) const {
+        return buffer_.is_initialized(pos, len);
+    }
+
+private:
+    ByteBuffer& buffer_;
+};
+
+
+class FnProfiler {
+public:
+    // Constructor records the start time and function name
+    FnProfiler(const std::string& functionName, uint32_t threshold = 100) : m_functionName(functionName), m_threshold(threshold), m_startTime(std::chrono::high_resolution_clock::now()) { }
+
+    // Destructor calculates and prints the duration
+    ~FnProfiler() {
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - m_startTime);
+        if (duration.count() < m_threshold)
+            return;
+
+        std::cout << utils::string_format("'%s' executed in %lluus", m_functionName.c_str(), duration.count()) << std::endl;
+        auto lastMark = m_startTime;
+        for (auto [m, msg] : markers) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(m - m_startTime);
+            auto span = std::chrono::duration_cast<std::chrono::microseconds>(m - lastMark);
+            float pct = ((double)span.count() / (double)duration.count()) * 100.0f;
+            std::cout << utils::string_format("    %7uus (%7uus, %4.1f%%) ::  %s", elapsed, span, pct, msg.c_str()) << std::endl;
+            lastMark = m;
+        }
+    }
+
+    void mark(const std::string& msg) {
+        markers.emplace_back(std::make_pair(std::chrono::high_resolution_clock::now(), msg));
+    }
+
+private:
+    std::string m_functionName;
+    uint32_t m_threshold;
+    std::chrono::high_resolution_clock::time_point m_startTime;
+    std::vector<std::pair<std::chrono::high_resolution_clock::time_point, std::string>> markers;
+};
+
+#endif //IS_SDK__UTIL_H

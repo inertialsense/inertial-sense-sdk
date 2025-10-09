@@ -17,5 +17,5 @@ python %SDK_DIR%\scripts\build_log_inspector.py %*
 IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%
 
 :: Run Log Inspector
-python %SDK_DIR%\python\logInspector\logInspector.py
+python %SDK_DIR%\python\inertialsense\logInspector\logInspector.py
 

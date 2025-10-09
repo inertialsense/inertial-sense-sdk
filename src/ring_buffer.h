@@ -17,12 +17,12 @@ extern "C" {
 
 typedef struct
 {
-	unsigned char *startPtr;        // Pointer to buffer start (lowest address)
-	unsigned char *endPtr;          // Pointer to one past buffer end (buffer start + sizeof(buf)).
-	unsigned char *rdPtr;           // Buffer read pointer
-	unsigned char *wrPtr;           // Buffer write pointer
-	int bufSize;                    // Byte size of buffer
-    int wordByteSize;                   // Byte size of a single element in the buffer
+    unsigned char *startPtr;    // Pointer to buffer start (lowest address)
+    unsigned char *endPtr;      // Pointer to one past buffer end (buffer start + sizeof(buf)).
+    unsigned char *rdPtr;       // Buffer read pointer
+    unsigned char *wrPtr;       // Buffer write pointer
+    int bufSize;                // Byte size of buffer
+    int wordByteSize;           // Byte size of a single element in the buffer
 } ring_buf_t;
 
 

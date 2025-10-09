@@ -28,12 +28,12 @@ extern "C" {
 /*
  * Initialize Quaternion q = [w, x, y, z]
  */
-void quat_init( ixQuat q );
+void quat_init(ixQuat q);
 
 /* Quaternion Conjugate: q* = [ w, -x, -y, -z ] of quaterion q = [ w, x, y, z ] 
  * Rotation in opposite direction.
  */
-void quatConj( ixQuat result, const ixQuat q );
+void quatConj(ixQuat result, const ixQuat q);
 
 /* 
 * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!  
@@ -41,7 +41,7 @@ void quatConj( ixQuat result, const ixQuat q );
 * result = q1 * q2. 
 * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
 */
-void mul_Quat_Quat( ixQuat result, const ixQuat q1, const ixQuat q2 );
+void mul_Quat_Quat(ixQuat result, const ixQuat q1, const ixQuat q2);
 
 /*
 * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!
@@ -49,7 +49,7 @@ void mul_Quat_Quat( ixQuat result, const ixQuat q1, const ixQuat q2 );
 * result = quatConj(q1) * q2.
 * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
 */
-void mul_ConjQuat_Quat( ixQuat result, const ixQuat qc, const ixQuat q2 );
+void mul_ConjQuat_Quat(ixQuat result, const ixQuat qc, const ixQuat q2);
 
 /*
 * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!
@@ -64,24 +64,24 @@ void mul_Quat_ConjQuat(ixQuat result, const ixQuat q1, const ixQuat qc);
  * result = q1 / q2. 
  * Reference: http://www.mathworks.com/help/aeroblks/quaterniondivision.html
  */
-void div_Quat_Quat( ixQuat result, const ixQuat q1, const ixQuat q2 );
+void div_Quat_Quat(ixQuat result, const ixQuat q1, const ixQuat q2);
 
 /* 
  * Quaternion rotation from vector v1 to vector v2.
  */
-void quat_Vec3_Vec3( ixQuat result, const ixVector3 v1, const ixVector3 v2 );
+void quat_Vec3_Vec3(ixQuat result, const ixVector3 v1, const ixVector3 v2);
 
 /* Computationally simple means to apply quaternion rotation to a vector.
  * Requires quaternion be normalized first.  
  * If quaternion describes current attitude, then rotation is body frame -> reference frame.
  */
-void quatRot( ixVector3 result, const ixQuat q, const ixVector3 v );
+void quatRot(ixVector3 result, const ixQuat q, const ixVector3 v);
 
 /* Computationally simple means to apply quaternion conjugate (opposite) rotation to a vector
  * Requires quaternion be normalized first
  * If quaternion describes current attitude, then rotation is reference frame -> body frame.
  */
-void quatConjRot( ixVector3 result, const ixQuat q, const ixVector3 v );
+void quatConjRot(ixVector3 result, const ixQuat q, const ixVector3 v);
 
 /*
  * This will convert from quaternions to euler angles
@@ -97,7 +97,7 @@ void quat2psi(const ixQuat q, f_t *psi);
  * This will convert from euler angles to quaternion vector
  * euler(phi,theta,psi) (rad) -> q(W,X,Y,Z)
  */
-void euler2quat(const ixEuler euler, ixQuat q );
+void euler2quat(const ixEuler euler, ixQuat q);
 
 
 
@@ -120,7 +120,7 @@ void psiDCM(const f_t psi, ixMatrix2 m);
 *
 * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 */
-f_t DCMpsi(const f_t *m );
+f_t DCMpsi(const f_t *m);
 
 /*
  * This will construct a direction cosine matrix from
@@ -131,10 +131,10 @@ f_t DCMpsi(const f_t *m );
  *
  * Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
  */
-//const Matrix<3,3> eulerDCM( const Vector<3> & euler )
-void eulerDCM(const ixEuler euler, ixMatrix3 m );
+//const Matrix<3,3> eulerDCM(const Vector<3> & euler)
+void eulerDCM(const ixEuler euler, ixMatrix3 m);
 // Only use phi and theta (exclude psi) in rotation
-void phiThetaDCM(const ixEuler euler, ixMatrix3 m );
+void phiThetaDCM(const ixEuler euler, ixMatrix3 m);
 
 /*
  * This will construct the transpose matrix of
@@ -146,7 +146,7 @@ void phiThetaDCM(const ixEuler euler, ixMatrix3 m );
  *
  * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
  */
-void eulerDCM_Trans(const ixEuler euler, ixMatrix3 m );
+void eulerDCM_Trans(const ixEuler euler, ixMatrix3 m);
 
 /*
  * This will extract euler angles from a direction cosine matrix in the
