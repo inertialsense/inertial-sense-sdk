@@ -80,6 +80,18 @@ extern "C" {
     typedef int is_socket_t;
     #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
+
+    #ifdef __ARM_ARCH
+        //#define STR_HELPER(x) #x
+        //#define STR(x) STR_HELPER(x)
+        //#pragma message "Compiling for ARMv" STR(__ARM_ARCH)
+        #define CPU_IS_ARM 1                    // NOTE that is is different than "PLATFORM_IS_ARM" since this still applied is LINUX operating systems running on ARM, like Raspberry Pi, etc
+        #if defined(__ARM_ARCH)                 // GCC compiler for ARM/version
+            #define CPU_ARM_VERSION (__ARM_ARCH)
+        #elif defined(__TARGET_ARCH_ARM)        // ARM compiler for ARM/version
+            #define CPU_ARM_VERSION (__TARGET_ARCH_ARM)
+        #endif
+    #endif
 #elif defined(__INERTIAL_SENSE_EVB_2__)
     #define PLATFORM_IS_EMBEDDED 1
     #define PLATFORM_IS_ARM 1
