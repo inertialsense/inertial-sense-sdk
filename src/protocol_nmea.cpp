@@ -2630,9 +2630,9 @@ int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
     ptr = ASCII_find_next_field(ptr);
 
     // 11,12 - Geoid separation = alt(HAE) - alt(MSL)
-    float geoidSep;
-    ptr = ASCII_to_f32(&(geoidSep), ptr);
-    gpsPos.lla[2] = double(gpsPos.hMSL + geoidSep);
+    double geoidSep;
+    ptr = ASCII_to_f64(&(geoidSep), ptr);
+    gpsPos.lla[2] = double(gpsPos.hMSL) + geoidSep;
 
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
