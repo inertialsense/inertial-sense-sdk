@@ -1910,7 +1910,12 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
         break;
     case DATA_TYPE_F32:
         precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
-        valuef32 = (*(float*)dataBuffer) * conversion;
+#if (defined(CPU_IS_ARM) && (CPU_ARM_VERSION <= 7))
+            memcpy(&valuef32, dataBuffer, sizeof(float));
+            valuef32 *= conversion;
+#else
+            valuef32 = (*(float*)dataBuffer) * conversion;
+#endif
         if (precision)
         {
             precision -= 1;
@@ -1924,7 +1929,12 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
         break;
     case DATA_TYPE_F64:                             
         precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
-        valuef64 = (*(double*)dataBuffer) * conversion;
+#if (defined(CPU_IS_ARM) && (CPU_ARM_VERSION <= 7))
+            memcpy(&valuef64, dataBuffer, sizeof(double));
+            valuef64 *= conversion;
+#else
+            valuef64 = (*(double*)dataBuffer) * conversion;
+#endif
         if (precision)
         {   // Fixed precision
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, valuef64);
