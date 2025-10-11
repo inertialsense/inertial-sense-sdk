@@ -740,6 +740,10 @@ std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSent
     return sb;
 }
 
+void print_test_info(std::string description) 
+{
+    std::cout << "TEST DESCRIPTION: " << description << std::endl;
+}
 
 static int dummyIsbProtocolHandler(void* ctx, p_data_t* data, port_handle_t port) { return 0; }
 static int dummyGenericProtocolHandler(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) { return 0; }

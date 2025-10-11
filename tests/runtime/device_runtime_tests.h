@@ -97,6 +97,8 @@ public:
     }
     void Verbose(bool enable=true){ m_verbose = enable; };
 
+    void EnablePrintToDisplay(bool enable=true){ m_printToDisplay = enable; };
+
     struct error_count
     {
         int parse = 0;
@@ -128,6 +130,7 @@ private:
     bool m_verbose = false;
     dev_info_t m_devInfo = {};
     std::string m_portName;
+    bool m_printToDisplay = true;
 
     RuntimeTest     m_testGgaDuplicate{"GGA Duplicate"};
     RuntimeTest     m_testZdaDuplicate{"ZDA Duplicate"};
