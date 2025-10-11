@@ -740,7 +740,7 @@ std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSent
     return sb;
 }
 
-void print_test_info(std::string description) 
+void print_test_info(const std::string& description) 
 {
     std::cout << "TEST DESCRIPTION: " << description << std::endl;
 }
