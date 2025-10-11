@@ -67,7 +67,7 @@ std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSent
  * 
  * @param description A string containing the test description.
  */
-void print_test_info(std::string description);
+void print_test_info(const std::string& description);
 
 
 #endif //IS_SDK_UNIT_TESTS_TEST_DATA_UTILS_H
