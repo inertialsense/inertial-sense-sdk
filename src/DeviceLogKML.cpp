@@ -284,8 +284,13 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 
                 elem = new TiXmlElement("coordinates");
 #if 1
+<<<<<<< Updated upstream
                 double lat = _CLAMP(item.lla[0] * C_DEG2RAD, -C_PIDIV2, C_PIDIV2) * C_RAD2DEG;
                 double lon = _CLAMP(item.lla[1] * C_DEG2RAD, -C_PI, C_PI) * C_RAD2DEG;
+=======
+                double lat = _CLAMP(item.lla[0], -90.0,   90.0);
+                double lon = _CLAMP(item.lla[1], -180.0, 180.0);
+>>>>>>> Stashed changes
                 double alt = _CLAMP(item.lla[2], -1000, 100000);
                 snprintf(buf, BUF_SIZE, "%.8lf,%.8lf,%.3lf", lon, lat, alt);
                 elem->LinkEndChild(new TiXmlText(buf));
@@ -373,8 +378,13 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
                 }
 
                 sKmlLogData& item = (log.data[i]);
+<<<<<<< Updated upstream
                 double lat = _CLAMP(item.lla[0] * C_DEG2RAD, -C_PIDIV2, C_PIDIV2) * C_RAD2DEG;
                 double lon = _CLAMP(item.lla[1] * C_DEG2RAD, -C_PI, C_PI) * C_RAD2DEG;
+=======
+                double lat = _CLAMP(item.lla[0], -90.0,   90.0);
+                double lon = _CLAMP(item.lla[1], -180.0, 180.0);
+>>>>>>> Stashed changes
                 double alt = _CLAMP(item.lla[2], -1000, 100000);
 
                 if (i >= log.data.size() - 2)
