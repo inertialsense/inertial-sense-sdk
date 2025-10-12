@@ -387,22 +387,6 @@ extern "C" {
 #endif
 #endif
 
-#ifndef M_PI
-#define M_PI (3.14159265358979323846f)
-#endif
-
-#ifndef RAD2DEG
-#define RAD2DEG(rad)    ((rad)*(180.0f/M_PI))
-#endif
-#ifndef DEG2RAD
-#define DEG2RAD(deg)    ((deg)*(M_PI/180.0f))
-#endif
-#ifndef DEG2RADMULT
-#define DEG2RADMULT  (M_PI/180.0f)
-#endif
-#ifndef RAD2DEGMULT
-#define RAD2DEGMULT  (180.0f/M_PI)
-#endif
 #define ATanH(x)        (0.5 * log((1 + (x)) / (1 - (x))))
 
 #if defined(__cplusplus)
