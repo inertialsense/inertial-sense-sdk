@@ -4,6 +4,7 @@
 #include "ISLogger.h"
 #include "test_data_utils.h"
 #include "device_runtime_tests.h"
+#include "gtest_helpers.h"
 
 using namespace std;
 
@@ -63,6 +64,7 @@ void run_realtime_test(DeviceRuntimeTests &RuntimeTest, uint8_t *stream, int str
 
 TEST(runtime_tests, data_with_no_errors)
 {
+    print_test_info("Test a data stream with no errors.  This should generate no errors.");
     DeviceRuntimeTests RuntimeTest;
     RuntimeTest.Enable();
     uint8_t stream[BUFFER_SIZE] = {0};
@@ -73,8 +75,10 @@ TEST(runtime_tests, data_with_no_errors)
 
 TEST(runtime_tests, timestamp_duplicates)
 {
+    print_test_info("Test a data stream with duplicate timestamps.  This should generate errors for duplicate timestamps.");
     DeviceRuntimeTests RuntimeTest;
     RuntimeTest.Enable();
+    RuntimeTest.EnablePrintToDisplay(false);
     uint8_t stream[BUFFER_SIZE] = {0};
     int streamSize = GenerateDataStream(stream, sizeof(stream), GEN_LOG_OPTIONS_TIMESTAMP_DUPLICATE);
     run_realtime_test(RuntimeTest, stream, streamSize);    
@@ -84,8 +88,10 @@ TEST(runtime_tests, timestamp_duplicates)
 
 TEST(runtime_tests, timestamp_reverse)
 {
+    print_test_info("Test a data stream with reversed timestamps.  This should generate errors for reversed timestamps.");
     DeviceRuntimeTests RuntimeTest;
     RuntimeTest.Enable();
+    RuntimeTest.EnablePrintToDisplay(false);
     uint8_t stream[BUFFER_SIZE] = {0};
     int streamSize = GenerateDataStream(stream, sizeof(stream), GEN_LOG_OPTIONS_TIMESTAMP_REVERSE);
     run_realtime_test(RuntimeTest, stream, streamSize);    
@@ -95,8 +101,10 @@ TEST(runtime_tests, timestamp_reverse)
 
 TEST(runtime_tests, truncate_message_end)
 {
+    print_test_info("Test a data stream with missing message end.  This should generate parse errors.");
     DeviceRuntimeTests RuntimeTest;
     RuntimeTest.Enable();
+    RuntimeTest.EnablePrintToDisplay(false);
     uint8_t stream[BUFFER_SIZE] = {0};
     int streamSize = GenerateDataStream(stream, sizeof(stream), GEN_LOG_OPTIONS_MISSING_MESSAGE_END);
     run_realtime_test(RuntimeTest, stream, streamSize);

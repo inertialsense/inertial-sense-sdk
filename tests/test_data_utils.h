@@ -62,5 +62,12 @@ uint32_t GenerateRawLogData(std::list<std::vector<uint8_t>*>& msgs, float logSiz
  */
 std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines);
 
+/**
+ * @brief Convenience function to print the test description in a standard format to standard output.
+ * 
+ * @param description A string containing the test description.
+ */
+void print_test_info(const std::string& description);
+
 
 #endif //IS_SDK_UNIT_TESTS_TEST_DATA_UTILS_H
