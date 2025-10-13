@@ -48,7 +48,16 @@ list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
 # find_package(udev)
-find_library(UDEV_LIB udev)
+set(CMAKE_FIND_DEBUG_MODE TRUE)
+find_library(UDEV_LIB udev REQUIRED)
+find_package(UDev REQUIRED)
+if (udev_FOUND)
+	message(STATUS "libudev found: Include Dir = ${UDEV_INCLUDE_DIR}, Libraries = ${UDEV_LIBS}")
+	include_directories(${UDEV_INCLUDE_DIR})
+	target_link_libraries(YourTargetName ${UDEV_LIBS})
+else()
+	message(FATAL_ERROR "UDev not found. Please install libudev-dev or equivalent.")
+endif()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 
@@ -96,6 +105,7 @@ else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
+		${UDEV_LIB_INCLUDE}
     )
 
 	add_custom_command(
