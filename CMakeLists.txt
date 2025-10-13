@@ -21,8 +21,6 @@ if (UDEV_FOUND)
 	message(STATUS "libudev found:\n    Include Directories: ${UDEV_INCLUDE_DIRS}\n    Library Directories: ${UDEV_LIBRARY_DIRS}\n    Libraries: ${UDEV_LIBRARIES}")
 endif()
 
-
-
 file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
