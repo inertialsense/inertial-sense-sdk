@@ -3,7 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 project(InertialSenseSDK)
 
 # set(CMAKE_FIND_DEBUG_MODE TRUE)
-find_package(UDev)	# try using find_package as a last resort (this seems to not exist on some platforms).
+find_package(UDev QUIET)	# try using find_package as a last resort (this seems to not exist on some platforms).
 if (NOT UDEV_FOUND)
 	message(STATUS "`find_package` could not locate UDev. Trying again using 'pkg_check'.")
 	find_package(PkgConfig REQUIRED)
@@ -17,8 +17,9 @@ if (NOT UDEV_FOUND)
 		endif()
 	endif()
 endif()
+
 if (UDEV_FOUND)
-	message(STATUS "libudev found:\n    Include Directories: ${UDEV_INCLUDE_DIRS}\n    Library Directories: ${UDEV_LIBRARY_DIRS}\n    Libraries: ${UDEV_LIBRARIES}")
+	message(STATUS "libudev found:\n     Libraries: ${UDEV_LIBRARIES}\n     Includes Path: ${UDEV_INCLUDE_DIRS}\n     Libraries Path: ${UDEV_LIBRARY_DIRS}")
 else()
 	message(FATAL_ERROR "UDev not found. Please install libudev-dev or equivalent.")
 endif()
