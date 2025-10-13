@@ -139,7 +139,7 @@ private:
     std::string activeStep;             //!< the name of the currently executing step name, from the manifest when available
     std::string activeCommand;          //!< the name (without parameters) of the currently executing command
     std::string failLabel;              //!< a label to jump to, when an error occurs
-    bool requestPending = false;        //!< true is an update has been requested, but we're still waiting on a response.
+    bool requestPending = false;        //!< true if a fwUpdate request has been made, and we're still waiting for a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
     bool forceUpdate = false;
     uint32_t pingInterval = 1000;       //!< delay between attempts to communicate with a target device

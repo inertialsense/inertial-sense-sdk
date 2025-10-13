@@ -283,12 +283,14 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
 
 bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
     session_status = msg.data.resp_done.status;
+    session_id = 0;
+    SLEEP_MS(200);  // FIXME: there is a very weird instance in which completing an update and *immediately* starting the next, can attempt to reuse the session id - This tries to fix that.
     return true;
 }
 
 bool ISFirmwareUpdater::fwUpdate_isDone() {
     bool cmdsPending = hasPendingCommands();
-    bool in_progress = ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
+    bool in_progress = ((session_id == 0) && (fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
     bool is_done = !(cmdsPending || requestPending || in_progress);
     return is_done;
 }
@@ -390,6 +392,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                 pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Firmware uploaded in %0.1f seconds", (current_timeMs() - updateStartTime) / 1000.f);
             if (hasPendingCommands()) {
                 requestPending = false;
+                //session_id = 0;
                 session_status = fwUpdate::NOT_STARTED;
                 nextStartAttempt = current_timeMs() + attemptInterval;
             }

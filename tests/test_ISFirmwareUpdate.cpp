@@ -672,6 +672,7 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl)
         int buf_len = eb.readData(buffer, sizeof(buffer));
         EXPECT_EQ(buf_len, 14);
         int msg_len = fuSDK.fwUpdate_mapBufferToPayload(buffer, &msg, &aux_data);
+
         if (msg_len > 0) {
             if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_RESP) {
                 // FIXME: Currently, we expect an error -- we need to implement the device-side checks for initialization
