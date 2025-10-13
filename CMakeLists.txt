@@ -105,7 +105,7 @@ if (WIN32)
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND cmd /C "scripts\\lib\\update_version_files.bat" "${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND cmd /C scripts\\lib\\update_version_files.bat ${CMAKE_CURRENT_SOURCE_DIR}/src/version/
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
@@ -126,7 +126,7 @@ else ()
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND bash -c "scripts/lib/update_version_files.sh" "${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND bash -c scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
