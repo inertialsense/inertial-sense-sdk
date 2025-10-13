@@ -8,14 +8,18 @@ pkg_check_modules(UDEV REQUIRED libudev)
 if (NOT UDEV_FOUND)
 	find_package(UDev)	# try using find_package as a last resort (this seems to not exist on some platforms).
 	if (NOT UDEV_FOUND)
-		message(FATAL_ERROR "UDev not found. Please install libudev-dev or equivalent.")
+		find_library(UDEV_LIB udev REQUIRED)
+		if (NOT UDEV_LIB)
+			message(FATAL_ERROR "UDev not found. Please install libudev-dev or equivalent.")
+		else()
+			SET(UDEV_LIBRARIES udev)
+			SET(UDEV_FOUND 1)
+		endif()
 	endif()
 endif()
 if (UDEV_FOUND)
 	message(STATUS "libudev found:\n    Include Directories: ${UDEV_INCLUDE_DIRS}\n    Library Directories: ${UDEV_LIBRARY_DIRS}\n    Libraries: ${UDEV_LIBRARIES}")
 endif()
-
-# find_library(UDEV_LIB udev REQUIRED)
 
 
 
