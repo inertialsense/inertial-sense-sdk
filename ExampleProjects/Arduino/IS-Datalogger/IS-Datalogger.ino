@@ -1,455 +1,396 @@
-#define SERIAL_TX_BUFFER_SIZE 64
-#define SERIAL_RX_BUFFER_SIZE 1024
+// ===================== Teensy 4.1 — GPS Serial1 -> SD Logger (robusto) =====================
+// - Placa: Teensy 4.1
+// - GPS por Serial1 (RX1=pin 0, TX1=pin 1). Compartir GND.
+// - Guarda TODO lo recibido por Serial1 a la SD interna (BUILTIN_SDCARD, FAT32).
+// - Cambios clave:
+//    * DEBUG imprime por USB sin bloquear (timeout 2s)
+//    * NO usa while(!Serial1) (podía colgar)
+//    * Arranca logging al encender (configurable en _logger.cfg)
+//    * Buffer + flush por tamaño/tiempo (no solo availableForWrite)
+//    * Tipos size_t en escrituras y comprobaciones
+//
+// Activa/desactiva debug (USB):
+#define DEBUG_LOGGING
 
-// Enable this if you want to use the USB port for debug/status info... However, the logger will not start until the port is available and connected.
-// IE, DO NOT ENABLE THIS if you intent to log in a completely stand-alone way.  For most cases, you shouldn't need this enabled.
-// #define DEBUG_LOGGING
 #ifdef DEBUG_LOGGING
-    #define LOG_DBG(...)    { Serial.printf(__VA_ARGS__); Serial.println(); }
+  #define LOGF(...) do { char _b[256]; snprintf(_b, sizeof(_b), __VA_ARGS__); Serial.println(_b); } while (0)
 #else
-    #define LOG_DBG(...)
+  #define LOGF(...) do {} while (0)
 #endif
 
+// ===================== Buffers serie =====================
+#define SERIAL_TX_BUFFER_SIZE 64
+#define SERIAL_RX_BUFFER_SIZE 1024
 
 #include <SPI.h>
 #include <SD.h>
 #include <ArduinoJson.h>
 
-#include "ISComm.h"
+// Ruta típica en tu repo
+#include "src/ISsdk/ISComm.h"
 
-const int PUSH_BUTTON = A0;
-const int LED_RED = LED_BUILTIN;
-const int LED_GREEN = 8;
-const int SD_CARD_DETECT = 7;
-const int SD_CHIP_SELECT = 4;
-const int MAX_BUFF_LEN = (SERIAL_RX_BUFFER_SIZE * 10);
-const int MAX_LOG_SIZE = 4096000;
+// ===================== Pines / HW =====================
+const int PIN_BTN    = A0;
+const int LED_RED    = LED_BUILTIN;  // 13
+const int LED_GREEN  = 8;            // LED opcional (actividad SD)
+
+// ===================== Parámetros =====================
+const uint32_t BAUD_USB     = 921600;   // USB serial para imprimir
+const uint32_t BAUD_SERIAL1 = 921600;   // GPS (ajústalo si hace falta)
+
+const size_t   MAX_BUFF_LEN  = (SERIAL_RX_BUFFER_SIZE * 10); // 10 KB
+const size_t   WRITE_CHUNK   = 4096;       // umbral para escribir a SD
+const uint32_t FLUSH_MS      = 100;        // vaciado periódico si no se alcanzó umbral
+const uint32_t REPORT_MS     = 5000;       // reporte por USB
+const uint32_t RMC_MS        = 60000;      // reenvío de RMC
 
 const char* log_config = "_logger.cfg";
-const char* log_meta = "_last.mta";
+const char* log_meta   = "_last.mta";
 
-int log_num = 0;                // current log number
-int file_num = 0;               // current file number (in this log)
-uint32_t file_size = 0;         // current size of current file
-uint32_t last_report_size = 0;  // number of bytes logged since last report
-uint32_t next_report = 0;       // next time to report on the status (over USB)
-uint32_t next_led = 0;          // next time to blink the LED
-uint32_t next_rmc_send = 0;     // next time the rmc config will be sent
+// ===================== Estado =====================
+int      log_num = 0;
+int      file_num = 0;
+uint32_t file_size = 0;
 
-int button_state;               // last known state of the button
-uint32_t last_hold = 0;         // time when the button was last pressed
-uint32_t last_release = 0;      // time when the button was last released
-uint32_t hold_duration = 0;     // duration the button was held
+uint32_t next_flush   = 0;
+uint32_t next_report  = 0;
+uint32_t next_rmc     = 0;
+uint32_t next_blink   = 0;
 
-File logFile;                   // the current log file, if any (you can test this, ie: if (logFile) { ... } to know if we should be logging)
+uint32_t rx_bytes_period  = 0;  // recibidos por Serial1 (para informes)
+uint32_t sd_bytes_period  = 0;  // realmente escritos a SD (para informes)
+
+int      btn_state;
+uint32_t press_start = 0;
+
+File logFile;
 
 struct buffer_s {
-  char data[MAX_BUFF_LEN];      // actual data waiting to be written to SD
-  size_t len;                   // length of data waiting to be written
-  bool pending;                 // if this buffer is waiting to write
-} buffer[2] ;
-int cur_buff = 0;               // which of our current buffers we are writing to (currently, we don't use this)
+  char   data[MAX_BUFF_LEN];
+  size_t len;
+} buffer;
 
 struct config_s {
-  rmc_t rmc;                    // configured RMC bits/options which are sent to the device when logging is requested
-  uint32_t max_file_size;       // the maximum size of each log file before a new one is created
-  bool log_on_startup;          // flag indicating if we should log on startup.
+  rmc_t    rmc;
+  uint32_t max_file_size;
+  bool     log_on_startup;
 } config;
 
-// this is a temporary buffer used when copying data out from the UART into the working buffer (buffer_s.data)
-// this could be a local variable, but we don't want to keep putting it on the stack everytime loop() is called
-char ser_buf[SERIAL_RX_BUFFER_SIZE];
+// buffers de trabajo
+static char ser_buf[SERIAL_RX_BUFFER_SIZE];
 
-
-/**
- * Utility function to format a uint64_t as a hexadecimal string (apparently Arduino doesn't support printf("%llX"))
- */
-const char *uint64_to_hexstr(uint64_t v) {
+// ===================== Utilidades =====================
+static const char *uint64_to_hexstr(uint64_t v) {
   static char tmp[17];
   sprintf(&tmp[0], "%08X", (uint32_t)((v >> 32) & 0xFFFFFFFF));
   sprintf(&tmp[8], "%08X", (uint32_t)(v & 0xFFFFFFFF));
   return (const char *)tmp;
 }
 
-/**
- * Utility function to parse a hexidecimal string into (or upto?) a uint64_t. Because, apparently
- * the JSON standard doesn't support hexadecimal numbers.  Lame, I know.
- */ 
-uint64_t getJsonHexParam(JsonDocument& doc, const String& key, uint64_t def = 0) {
-  if (doc.containsKey(key)) {
-    if (doc[key].is<String>()) {
-      String val = doc[key].as<String>();
-      return strtoull(val.c_str(), 0, val.startsWith("0x") ? 16 : 10);
-    } else {
-      return doc[key];
-    }
+// ArduinoJson v6, sin containsKey()
+static uint64_t getJsonHexParam(JsonDocument& doc, const char* key, uint64_t def = 0) {
+  JsonVariant v = doc[key];
+  if (v.isNull()) return def;
+  if (v.is<const char*>()) {
+    const char* s = v.as<const char*>();
+    return strtoull(s, nullptr, (s[0]=='0' && (s[1]=='x' || s[1]=='X')) ? 16 : 10);
   }
-
+  if (v.is<unsigned long long>()) return v.as<unsigned long long>();
+  if (v.is<unsigned long>())      return (uint64_t)v.as<unsigned long>();
+  if (v.is<uint64_t>())           return v.as<uint64_t>();
+  if (v.is<uint32_t>())           return (uint64_t)v.as<uint32_t>();
   return def;
 }
 
-/**
- * Reads and parses the _logger.cfg JSON file from the SD card, or loads default values
- * if the SD card isn't available, the file doesn't exist, or doesn't contain those parameters.
- */
-void readConfig() {
-  config.rmc.bits = RMC_PRESET_IMX_PPD;
-  config.rmc.options = 0x0;
-  config.max_file_size = 4096000;
-  config.log_on_startup = false;
+// ===================== Config =====================
+static void readConfig() {
+  // Defaults robustos
+  config.rmc.bits        = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;//RMC_PRESET_IMX_PPD; ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  config.rmc.options     = 0x0;
+  config.max_file_size   = 4096000;     // ~4 MB
+  config.log_on_startup  = true;        // <-- Arranca grabando por defecto
 
-  if (!SD.exists(log_config))
-    return;
-
-  JsonDocument jsonConfig;
+  if (!SD.exists(log_config)) return;
   File cfgFile = SD.open(log_config, FILE_READ);
-  if (cfgFile) {
-    deserializeJson(jsonConfig, cfgFile.readString());
-    config.rmc.bits = getJsonHexParam(jsonConfig, "rmc_bits", 0xc000009001353ce2);
-    LOG_DBG(" Configured 'rmc_bits' : 0x%s", uint64_to_hexstr(config.rmc.bits));
+  if (!cfgFile) return;
 
-    config.rmc.options = getJsonHexParam(jsonConfig, "rmc_options", 0x0);
-    LOG_DBG(" Configured 'rmc_options' : 0x%08X", config.rmc.options);
-
-    if (jsonConfig.containsKey("max_file_size")) {
-      config.max_file_size = jsonConfig["max_file_size"].as<uint32_t>();
-      LOG_DBG(" Configured 'max_file_size' : %lu", config.max_file_size);
-    }
-
-    if (jsonConfig.containsKey("log_on_startup")) {
-      config.log_on_startup = jsonConfig["log_on_startup"].as<bool>();
-      LOG_DBG(" Configured 'log_on_startup' : %s", config.log_on_startup ? "true" : "false");
-    }
+  DynamicJsonDocument jsonConfig(512);
+  DeserializationError err = deserializeJson(jsonConfig, cfgFile);
+  cfgFile.close();
+  if (err) {
+    LOGF("Error JSON cfg: %s", err.c_str());
+    return;
   }
+
+  config.rmc.bits    = getJsonHexParam(jsonConfig, "rmc_bits",    config.rmc.bits);
+  LOGF("CFG rmc_bits=0x%s", uint64_to_hexstr(config.rmc.bits));
+
+  config.rmc.options = (uint32_t)getJsonHexParam(jsonConfig, "rmc_options", config.rmc.options);
+  LOGF("CFG rmc_options=0x%08lX", (unsigned long)config.rmc.options);
+
+  if (jsonConfig["max_file_size"].is<uint32_t>())
+    config.max_file_size = jsonConfig["max_file_size"].as<uint32_t>();
+
+  if (jsonConfig["log_on_startup"].is<bool>())
+    config.log_on_startup = jsonConfig["log_on_startup"].as<bool>();
 }
 
-/**
- * Send the DID_RMC with the specified bits/options, to the connected device.
- * This is used to start/stop streaming of requested DIDs to be logged.
- * Sending 0x0 and 0x0 (param defaults) will turn off streaming.
- */
-void stream_configure_PPD(uint64_t bits = 0, uint32_t options = 0) {
+// ===================== RMC al dispositivo =====================
+static void stream_configure_PPD(uint64_t bits = 0, uint32_t options = 0) {
   is_comm_instance_t commTx = {};
-  uint8_t	buf[64] = { 0 };
-
-  rmc_t rmc;
-  rmc.bits = bits;
-  rmc.options = options;
-
+  uint8_t buf[64] = { 0 };
+  rmc_t rmc; rmc.bits = bits; rmc.options = options;
   int len = is_comm_data_to_buf(buf, sizeof(buf), &commTx, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
   Serial1.write(buf, len);
 }
 
-/**
- * Returns the number of the last log generated (as read from the _last.mta metadata file).
- * Use writeLogNumber() to update the metadata file, if you change the log number.
- */
-int getLastLogNumber() { 
-  File logMeta = SD.open(log_meta, FILE_READ);
-  if (logMeta)
-    log_num = logMeta.parseInt(SKIP_WHITESPACE);
-  else
+// ===================== Metadata SD =====================
+static int getLastLogNumber() {
+  File f = SD.open(log_meta, FILE_READ);
+  if (f) {
+    log_num = f.parseInt(SKIP_WHITESPACE);
+    f.close();
+  } else {
     log_num = 0;
-  logMeta.close();
+  }
   return log_num;
 }
 
-/**
- * Writes/saves the specified log number to the _last.mta metadata file.
- * Use this to record what the current log is, so can persist and increment the log number
- * after a reset, etc.
- */
-int writeLogNumber(int log_num) { 
-  File logMeta = SD.open(log_meta, O_WRITE | O_CREAT);
-  logMeta.print(log_num);
-  logMeta.close();
-  return log_num;
+static int writeLogNumber(int n) {
+  File f = SD.open(log_meta, FILE_WRITE);
+  if (!f) return n;
+  f.seek(0);
+  f.print(n);
+  f.truncate(f.position());
+  f.close();
+  return n;
 }
 
-/**
- * Creates a new log directory, and log file (deleting/overwritting if necessary). This will automatically
- * increment the file number, but not the log number. It will create the parent log_#### directory is necessary.
- * This always returns a File object, which if valid, means the system is ready to start accepting and saving
- * data. Use `if (file) { ... }` to test if the file is valid/open and ready for logging.
- */
-File openLog() {
+static File openLog() {
   char dirName[16];
   char logName[64];
-  
-  sprintf(dirName, "log_%04d", log_num);
-  sprintf(logName, "%s/%08d.raw", dirName, file_num++);
 
-  if (!SD.exists(dirName))
-    SD.mkdir(dirName);
+  snprintf(dirName, sizeof(dirName), "log_%04d", log_num);
+  if (!SD.exists(dirName)) {
+    if (!SD.mkdir(dirName)) LOGF("ERROR mkdir %s", dirName);
+  }
 
-  if (SD.exists(logName))
-    SD.remove(logName); // we don't ever append to an existing file... we always delete and start over
-
-  LOG_DBG("Starting new log: %s", logName);
+  snprintf(logName, sizeof(logName), "%s/%08d.raw", dirName, file_num++);
+  if (SD.exists(logName)) SD.remove(logName);
 
   file_size = 0;
-  return SD.open(logName, O_WRITE | O_CREAT);
+  File f = SD.open(logName, FILE_WRITE);
+  if (!f) {
+    LOGF("ERROR abriendo %s", logName);
+  } else {
+    LOGF("Grabando en %s", logName);
+  }
+  return f;
 }
 
-/*
- * Writes data to the current file on the SD card, but only in chunks (sectors) when a sector is ready
- * to be written. If its not ready to write, this copies the data into one of our buffers until it can
- * be written. This intends to prevent unnecessary blocking on the SD card, and attempts to perform
- * writes in an optimized way.  Returns the number of bytes actually written
- */
-int writeData(File& file, char *data, size_t len) {
-
-  // first, we need to make sure this chunk of data won't overflow our internal buffer
-  if ((buffer[cur_buff].len + len) > MAX_BUFF_LEN) {
-    LOG_DBG("TOO MUCH DATA (%d, %d). Possible Buffer Overflow/Data Loss.", buffer[cur_buff].len, len);
-
-    // if so, then we'll force a write (even if its not optimized)
-    digitalWrite(LED_GREEN, LOW);
-    int written = file.write(buffer[cur_buff].data, buffer[cur_buff].len);
-    file_size += written;
-    last_report_size += written;
-    digitalWrite(LED_GREEN, HIGH);
-
-    // Check to see if we have data remaining in the buffer (did we actually write everything successfully?)
-    if (written == buffer[cur_buff].len) {
-      buffer[cur_buff].len = 0;
-    } else {
-      // And, if not, then move the remaining data to the front of the buffer.
-      LOG_DBG("%d bytes unsent.", buffer[cur_buff].len - written);
-      memmove(buffer[cur_buff].data, &buffer[cur_buff].data[written], written);
-      buffer[cur_buff].len -= written;
-    }
-  }
-
-  // Append our new data to our internal write buffer
-  memcpy((void *)&(buffer[cur_buff].data[buffer[cur_buff].len]), (void *)data, len);
-  buffer[cur_buff].len += len;
-
-  // check if the SD card is available to write data without blocking
-  // and if the buffered data is enough for the full chunk size
-  unsigned int chunkSize = file.availableForWrite();
-  if (chunkSize && (buffer[cur_buff].len >= chunkSize)) {
-
-    // write to file and blink LED
-    digitalWrite(LED_GREEN, LOW);
-    int written = file.write(buffer[cur_buff].data, buffer[cur_buff].len);
-    file_size += written;
-    last_report_size += written;
-    digitalWrite(LED_GREEN, HIGH);
-
-    // Check to see if we have data remaining in the buffer (did we actually write everything successfully?)
-    if (written == buffer[cur_buff].len) {
-      buffer[cur_buff].len = 0;
-    } else {
-      // And, if not, then move the remaining data to the front of the buffer.
-      LOG_DBG("%d bytes unsent.", buffer[cur_buff].len - written);
-      memmove(buffer[cur_buff].data, &buffer[cur_buff].data[written], written);
-      buffer[cur_buff].len -= written;
-    }
-    return written;
-  }
-
-  return 0;
-}
-
-/*
- * writes data to SD, but only in chunks (sectors) when a sector is ready to be written.
- * if its not, this copies the data into one of our buffers until it can be written
- */
-int fakeWriteData(File& file, char *data, size_t len) {
-  // check if the SD card is available to write data without blocking
-  // and if the buffered data is enough for the full chunk size
-
-  // memcpy((void *)&(buffer[cur_buff].data[buffer[cur_buff].len]), (void *)data, len);
-  buffer[cur_buff].len += len;
-
-  digitalWrite(LED_GREEN, HIGH);
-  file_size += len;
-  last_report_size += len;
+// ===================== Escritura bufferizada =====================
+static void writeFromBuffer(File& file) {
+  if (buffer.len == 0) return;
   digitalWrite(LED_GREEN, LOW);
+  size_t written = file.write((const uint8_t*)buffer.data, buffer.len);
+  file_size       += (uint32_t)written;
+  sd_bytes_period += (uint32_t)written;
+  digitalWrite(LED_GREEN, HIGH);
 
-  buffer[cur_buff].len = 0;
-  return len;
+  if (written == buffer.len) {
+    buffer.len = 0;
+  } else if (written > 0) {
+    size_t remain = buffer.len - written;
+    memmove(buffer.data, buffer.data + written, remain);
+    buffer.len = remain;
+  }
 }
 
-/**
- * Stop logging; closes the current log file, and deconfigures the target IMX/GPX to stop broadcasting
- */
-void stopLogging() {
-  logFile.close();
+static void appendToBuffer(const char* data, size_t len) {
+  size_t free_space = MAX_BUFF_LEN - buffer.len;
+  if (len > free_space) {
+    // Si no cabe, primero vacía lo que hay (si hay archivo)
+    if (logFile) writeFromBuffer(logFile);
+    // recalcula
+    free_space = MAX_BUFF_LEN - buffer.len;
+    if (len > free_space) {
+      // si aún no cabe todo, copia parcial (última defensa)
+      len = free_space;
+    }
+  }
+  if (len) {
+    memcpy(buffer.data + buffer.len, data, len);
+    buffer.len += len;
+  }
+}
+
+// ===================== Control logging =====================
+static bool isLogging() { return (bool)logFile; }
+
+static void stopLogging() {
+  if (logFile) {
+    writeFromBuffer(logFile);
+    logFile.flush();
+    logFile.close();
+  }
   stream_configure_PPD(0, 0);
-  LOG_DBG("Logger stopped.");
+  LOGF("Logger detenido.");
 }
 
-/**
- * Start logging; Initializes SD card (and verifies a card is installed), reads config and metadata to detemine log number,
- * and RMC bit/options, increments the log number, starts streaming the RMC data, and then open the current log file on
- * the SD card.
- */
-bool startLogging() {
-  // we can't log if the SD card driver/status isn't happy
-  LOG_DBG("Initializing SD card...");
-  if (!SD.begin(SD_CHIP_SELECT)) {
-    LOG_DBG("Card failed, or not present. Unable to start logging.");
+static bool startLogging() {
+  LOGF("Inicializando SD...");
+  if (!SD.begin(BUILTIN_SDCARD)) {
+    LOGF("ERROR SD.begin(BUILTIN_SDCARD)");
     return false;
   }
-  LOG_DBG("Card initialized.");
+  LOGF("SD OK.");
 
-  // read the config, and increment the last log number
   readConfig();
   log_num = getLastLogNumber();
   writeLogNumber(++log_num);
 
-  // first configure the data stream
+  // Configura stream del dispositivo (si procede)
   stream_configure_PPD(config.rmc.bits, config.rmc.options);
 
-  // init the things, and off we go.
-  file_num = file_size = 0;
-  next_led = next_rmc_send = 0;
-  next_report = millis() + 5000;
-  logFile = openLog();
+  file_num = 0;
+  file_size = 0;
+  buffer.len = 0;
 
-  LOG_DBG("Logger started.");
+  logFile = openLog();
+  if (!logFile) return false;
+
+  const uint32_t now = millis();
+  next_flush  = now + FLUSH_MS;
+  next_report = now + REPORT_MS;
+  next_rmc    = now + 100;     // envía config pronto
+  next_blink  = now + 250;
+
+  LOGF("Logger iniciado.");
   return true;
 }
 
-/**
- * Toggle Logging; stops the logger if its already logging, otherwise starts it.
- */
-void toggleLogging() {
-  if (logFile) {
-    stopLogging();
-  } else {
-    startLogging();
-  }
+static void toggleLogging() {
+  if (isLogging()) stopLogging();
+  else             startLogging();
 }
 
-/**
- * Simple check if the SD card's detect line is detecting an inserted card
- */
-bool isSDCardDetected() {
-  return (digitalRead(SD_CARD_DETECT) ? true : false);
-}
+// Teensy 4.1: no hay pin detect; si SD.begin fue bien, asumimos presente
+static bool isSDCardDetected() { return true; }
 
-
-/**
- * Arduino setup(); configures GPIO and Peripherals (Serial). If SD card is inserted, it will initialize it,
- * and read the config. If configured, it will start logging is able.
- */
+// ===================== Arduino =====================
 void setup() {
-  pinMode(LED_RED, OUTPUT);                 // configure the red LED (UART status/power)
-  pinMode(LED_GREEN, OUTPUT);               // configure the green LED (SD status)
-  pinMode(SD_CARD_DETECT, INPUT_PULLUP);    // configure the SD card detect line
-  pinMode(PUSH_BUTTON, INPUT_PULLUP);       // configure the push button
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(PIN_BTN, INPUT_PULLUP);
 
-  #ifdef DEBUG_LOGGING
-    // Open serial communications and wait for port to open:
-    Serial.begin(921600);
-    while (!Serial); // wait for serial port to connect. Needed for native USB port only
-    LOG_DBG("Initializing...");
-  #endif
+  // USB Serial para mensajes: no bloquear más de 2s
+  Serial.begin(BAUD_USB);
+  uint32_t t0 = millis();
+  while (!Serial && (millis() - t0) < 2000) { /* espera corta */ }
 
-  Serial1.begin(921600);
-  while (!Serial1); // wait for serial port to connect. Needed for native USB port only
+  LOGF("\n=== Teensy 4.1 — GPS Serial1 -> SD Logger ===");
+  LOGF("USB=%lu bps, Serial1=%lu bps", (unsigned long)BAUD_USB, (unsigned long)BAUD_SERIAL1);
 
-  if (isSDCardDetected()) {
-    LOG_DBG("SD card detected. Reading config.");
-    if (SD.begin(SD_CHIP_SELECT))
-      readConfig();
+  // Serial1 al GPS
+  Serial1.begin(BAUD_SERIAL1);
+  // ¡No usar while(!Serial1)!
+
+  // Leer config si SD accesible (no inicia aún)
+  if (SD.begin(BUILTIN_SDCARD)) {
+    readConfig();
+  } else {
+    LOGF("Aviso: SD no montó en setup (se reintenta al startLogging).");
   }
 
-  if (config.log_on_startup)
+  if (config.log_on_startup) {
     startLogging();
+  }
 
-  last_hold = millis();
-  button_state = digitalRead(PUSH_BUTTON);
-  next_report = millis() + 5000;
+  btn_state   = digitalRead(PIN_BTN);
+  next_report = millis() + REPORT_MS;
 }
 
-
-/**
- * Classic Ardiuino loop(). Do the most important stuff here (it's all important).
- */
 void loop() {
-  uint32_t now = millis();
+  const uint32_t now = millis();
+
+  // LED verde muestra "SD presente" (estático en Teensy 4.1)
   digitalWrite(LED_GREEN, isSDCardDetected());
 
-  // check the status of our push-button
-  // we only register debounced press events of longer that 1200ms (intentionally long press)
-  int cur_button = digitalRead(PUSH_BUTTON);
-  if (cur_button == LOW) {
-    if (cur_button != button_state) {
-      last_hold = now;
+  // ---- Botón (pulsación larga >1200ms con debounce simple) ----
+  int cur = digitalRead(PIN_BTN);
+  static uint32_t last_change = 0;
+  if (cur != btn_state && (now - last_change) > 30) {
+    last_change = now;
+    if (cur == LOW) {
+      press_start = now;
+    } else {
+      uint32_t held = now - press_start;
+      LOGF("Botón: suelto (%lums).", (unsigned long)held);
+      if (held > 1200) toggleLogging();
     }
-  } else {
-    if (cur_button != button_state) {
-      last_release = now;
-      LOG_DBG("Button Released (%dms hold).", now - last_hold);
-      if (now - last_hold > 1200) {
-        toggleLogging();
-      }
-    }
+    btn_state = cur;
   }
-  button_state = cur_button;
 
-  // check for available data...
-  int bytesToRead = Serial1.available();
-  while (bytesToRead) {
-    // note that we will loop here as long as data is available.  Reading/buffering all available data is our top priority
+  // ---- Lectura Serial1 -> buffer ----
+  int avail = Serial1.available();
+  while (avail > 0) {
+    if (isLogging()) digitalWrite(LED_RED, LOW);
 
-    // blink off out RED led, to indicate received data, but only if logging
-    // NOTE that a lack of RX data is indicated by SOLID RED (it blink off when received)
-    if (logFile)
-      digitalWrite(LED_RED, LOW);
+    int toRead = (avail > (int)sizeof(ser_buf)) ? (int)sizeof(ser_buf) : avail;
+    int n = Serial1.readBytes(ser_buf, toRead);
+    if (n <= 0) break;
 
-    // actually read the data
-    int bytesRead = Serial1.readBytes(ser_buf, bytesToRead);
-    file_size += bytesRead;
-    last_report_size += bytesRead;
+    rx_bytes_period += (uint32_t)n;
 
-    // if we aren't logging, we throw away the data...
-    // if we ARE logging, then we'll start buffering/writing to the SD card
-    if (logFile) { 
-      // but turn back ON our RED led
+    if (isLogging()) {
       digitalWrite(LED_RED, HIGH);
-      
-      // buffer data (and we'll blink our GREEN led)
-      writeData(logFile, ser_buf, bytesRead);
-
-      // if we exceeded our file size, then close this file and start the next one.
-      if (file_size > config.max_file_size) {
+      appendToBuffer(ser_buf, (size_t)n);
+      // si se alcanzó umbral, escribe ya
+      if (buffer.len >= WRITE_CHUNK) {
+        writeFromBuffer(logFile);
+      }
+      // rotación por tamaño
+      if (file_size >= config.max_file_size) {
+        writeFromBuffer(logFile);
+        logFile.flush();
         logFile.close();
         logFile = openLog();
       }
-      next_led = now; // we just blinked the LED; don't do it again... 
     }
-    // check if there is any new data, since our last check
-    bytesToRead = Serial1.available();
+
+    avail = Serial1.available();
   }
 
-  // This blinks (briefly on) the RED led every second, when we are NOT logging
-  if (!logFile && (now > next_led)) {
-    if (digitalRead(LED_RED) == LOW) {
-      digitalWrite(LED_RED, HIGH);
-      next_led = now + 50;
-    } else {
-      digitalWrite(LED_RED, LOW);
-      next_led = now + 950;
-    }
+  // ---- Flush por tiempo ----
+  if (isLogging() && (int32_t)(now - next_flush) >= 0) {
+    writeFromBuffer(logFile);
+    logFile.flush();
+    next_flush = now + FLUSH_MS;
   }
 
-  // This provides a status report on the USB's Serial (when enabled) of our status/data rate.
-  if (now > next_report) {
-    LOG_DBG("%s %lu bytes (%0.1f KB/s)...", (logFile ? "Logged" : "Received"), last_report_size, last_report_size / 5000.0f);
-    last_report_size = 0;
-    next_report = now + 5000;
+  // ---- Blink rojo cuando NO se está logueando ----
+  if (!isLogging() && (int32_t)(now - next_blink) >= 0) {
+    digitalWrite(LED_RED, !digitalRead(LED_RED));
+    next_blink = now + 250;
   }
 
-  // This triggers a new RMC request to the connected device every 60 seconds (when logging).
-  // This generally ensures that we continue to receive the data that we need in the event that
-  // something else might deconfigure the RMC bits.
-  if (logFile && (now > next_rmc_send)) {
-    stream_configure_PPD(config.rmc.bits, config.rmc.options);    
-    next_rmc_send = now + 60000;    
+  // ---- Informe periódico ----
+  if ((int32_t)(now - next_report) >= 0) {
+    const float secs = REPORT_MS / 1000.0f;
+    const float kbps_rx = (rx_bytes_period / secs) / 1024.0f;
+    const float kbps_sd = (sd_bytes_period / secs) / 1024.0f;
+    LOGF("%s RX=%lu B (%.2f KB/s)  SD=%lu B (%.2f KB/s)",
+         isLogging() ? "LOG" : "RX",
+         (unsigned long)rx_bytes_period, kbps_rx,
+         (unsigned long)sd_bytes_period, kbps_sd);
+    rx_bytes_period = 0;
+    sd_bytes_period = 0;
+    next_report = now + REPORT_MS;
+  }
+
+  // ---- Reenvío RMC periódico ----
+  if (isLogging() && (int32_t)(now - next_rmc) >= 0) {
+    stream_configure_PPD(config.rmc.bits, config.rmc.options);
+    next_rmc = now + RMC_MS;
   }
 }
