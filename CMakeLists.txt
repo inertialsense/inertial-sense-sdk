@@ -6,7 +6,7 @@ project(InertialSenseSDK)
 find_package(UDev QUIET)	# try using find_package as a last resort (this seems to not exist on some platforms).
 if (NOT UDEV_FOUND)
 	message(STATUS "`find_package` could not locate the libudev package. Trying again using 'pkg_check'.")
-	find_package(PkgConfig REQUIRED)
+	find_package(PkgConfig QUIET)
 	pkg_check_modules(UDEV libudev)
 	if (NOT UDEV_FOUND)
 		message(STATUS "'pkg_check' could not locate the libudev package. Trying again using 'find_library'.")
