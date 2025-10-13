@@ -189,11 +189,9 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateBase::fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data) {
         int payload_len = fwUpdate_packPayload(build_buffer, FWUPDATE__MAX_PAYLOAD_SIZE, payload, aux_data);
-        #ifdef DEBUG_LOGGING
-        char *msg = fwUpdate_payloadToString(&payload);
-        if (msg)
-            log_debug(LOG_FWUPDATE, "Sending to %s", msg);
-        #endif
+        char *msgStr = fwUpdate_payloadToString(&payload);
+        if (msgStr)
+            log_debug(LOG_FWUPDATE, "Sending to %s", msgStr);
 
         return fwUpdate_writeToWire((fwUpdate::target_t) payload.hdr.target_device, build_buffer, payload_len);
     }
@@ -332,11 +330,9 @@ namespace fwUpdate {
         if (target_masked != session_target)
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
 
-        #ifdef DEBUG_LOGGING
-        char *msg = fwUpdate_payloadToString(&payload);
-        if (msg)
-            log_debug(LOG_FWUPDATE, "Received by %s", msg);
-        #endif
+        char *msgStr = fwUpdate_payloadToString(&payload);
+        if (msgStr)
+            log_debug(LOG_FWUPDATE, "Received by %s", msgStr);
 
         fwUpdate_resetTimeout();
         switch (payload.hdr.msg_type) {
@@ -696,11 +692,9 @@ namespace fwUpdate {
      * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
      */
     bool FirmwareUpdateHost::fwUpdate_processMessage(const payload_t& payload) {
-        #ifdef DEBUG_LOGGING
-        char *msg = fwUpdate_payloadToString(&payload);
-        if (msg)
-            log_debug(LOG_FWUPDATE, "Received by %s", msg);
-        #endif
+        char *msgStr = fwUpdate_payloadToString(&payload);
+        if (msgStr)
+            log_debug(LOG_FWUPDATE, "Received by %s", msgStr);
 
         if (payload.hdr.target_device != TARGET_HOST)
             return false;
@@ -859,12 +853,10 @@ namespace fwUpdate {
         if (chunk_len == msg->data.chunk.data_len) {
             chunks_sent++; // we track the total number of chunks that we've tried to send, regardless of whether we sent it successfully or not
 
-            #ifdef DEBUG_LOGGING
             // we don't call sendPayload from here (we just send our build_buffer direct to the writer.
             char *msgStr = fwUpdate_payloadToString(msg);
             if (msgStr)
                 log_debug(LOG_FWUPDATE, "Sending to %s", msgStr);
-            #endif
 
             if (fwUpdate_writeToWire((fwUpdate::target_t) msg->hdr.target_device, build_buffer, msg_len))
                 next_chunk_id = msg->data.chunk.chunk_id + 1; // increment to the next chuck, if we're successful
