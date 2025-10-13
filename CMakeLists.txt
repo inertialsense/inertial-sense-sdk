@@ -3,27 +3,29 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 project(InertialSenseSDK)
 
 # set(CMAKE_FIND_DEBUG_MODE TRUE)
-find_package(UDev QUIET)	# try using find_package as a last resort (this seems to not exist on some platforms).
-if (NOT UDEV_FOUND)
-	message(STATUS "`find_package` could not locate the libudev package. Trying again using 'pkg_check'.")
-	find_package(PkgConfig QUIET)
-	pkg_check_modules(UDEV libudev)
+if(NOT WIN32)
+	find_package(UDev QUIET)	# try using find_package as a last resort (this seems to not exist on some platforms).
 	if (NOT UDEV_FOUND)
-		message(STATUS "'pkg_check' could not locate the libudev package. Trying again using 'find_library'.")
-		find_library(UDEV_LIB udev)
-		if (NOT UDEV_LIB)
-			message(STATUS "'find_library' could not locate the libudev library. Trying again using 'find_library'.")
-		else()
-			SET(UDEV_LIBRARIES udev)
-			SET(UDEV_FOUND 1)
+		message(STATUS "`find_package` could not locate the libudev package. Trying again using 'pkg_check'.")
+		find_package(PkgConfig QUIET)
+		pkg_check_modules(UDEV libudev)
+		if (NOT UDEV_FOUND)
+			message(STATUS "'pkg_check' could not locate the libudev package. Trying again using 'find_library'.")
+			find_library(UDEV_LIB udev)
+			if (NOT UDEV_LIB)
+				message(STATUS "'find_library' could not locate the libudev library. Trying again using 'find_library'.")
+			else()
+				SET(UDEV_LIBRARIES udev)
+				SET(UDEV_FOUND 1)
+			endif()
 		endif()
 	endif()
-endif()
 
-if (UDEV_FOUND)
-	message(STATUS "libudev found:\n     Libraries: ${UDEV_LIBRARIES}\n     Includes Path: ${UDEV_INCLUDE_DIRS}\n     Libraries Path: ${UDEV_LIBRARY_DIRS}")
-else()
-	message(FATAL_ERROR "UDev not found. Have you ran the \"install_sdk_dependencies\" script for your platform?")
+	if (UDEV_FOUND)
+		message(STATUS "libudev found:\n     Libraries: ${UDEV_LIBRARIES}\n     Includes Path: ${UDEV_INCLUDE_DIRS}\n     Libraries Path: ${UDEV_LIBRARY_DIRS}")
+	else()
+		message(FATAL_ERROR "UDev not found. Have you ran the \"install_sdk_dependencies\" script for your platform?")
+	endif()
 endif()
 
 file(GLOB SOURCES_SDK
@@ -103,7 +105,7 @@ if (WIN32)
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND cmd /C "scripts\\lib\\update_version_files.bat ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND cmd /C "scripts\\lib\\update_version_files.bat" "${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
@@ -124,7 +126,7 @@ else ()
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND bash -c "scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND bash -c "scripts/lib/update_version_files.sh" "${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
