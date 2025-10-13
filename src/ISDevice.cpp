@@ -367,24 +367,24 @@ int ISDevice::validateAsync(uint32_t timeout) {
         }
 
         // We failed to get a response before the timeout occurred, so reset the timer (stop trying) and return false
-        debug_message("ISDevice::validateAsync() timed out after %dms.\n", current_timeMs() - validationStartMs);
+        log_debug(LOG_ISDEVICE, "validateAsync() timed out after %dms.", current_timeMs() - validationStartMs);
         return -1;
     }
 
     switch (previousQueryType) {
         case ISDevice::queryTypes::QUERYTYPE_NMEA :
-            // debug_message("[DBG] Querying serial port '%s' using NMEA protocol.\n", SERIAL_PORT(port)->portName);
+            // log_debug(LOG_ISDEVICE, "Querying serial port '%s' using NMEA protocol.", SERIAL_PORT(port)->portName);
             SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
             SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISB :
-            // debug_message("[DBG] Querying serial port '%s' using ISB protocol.\n", SERIAL_PORT(port)->portName);
+            // log_debug(LOG_ISDEVICE, "Querying serial port '%s' using ISB protocol.", SERIAL_PORT(port)->portName);
             GetData(DID_DEV_INFO);
             SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
         case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
-            // debug_message("[DBG] Querying serial port '%s' mcuBoot/SMP protocol.\n", SERIAL_PORT(port)->portName);
+            // log_debug(LOG_ISDEVICE, "Querying serial port '%s' mcuBoot/SMP protocol.", SERIAL_PORT(port)->portName);
             break;
     }
 
@@ -575,7 +575,7 @@ int ISDevice::SetSysCmd(const uint32_t command) {
     sysCmd.command = command;
     sysCmd.invCommand = ~command;
     // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
-    debug_message("Issuing SYS_CMD %d to %s (%s)\n", command, getIdAsString().c_str(), getPortName().c_str());
+    log_debug(LOG_ISDEVICE, "Issuing SYS_CMD %d to %s (%s)\n", command, getIdAsString().c_str(), getPortName().c_str());
     return comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 }
 
@@ -691,20 +691,20 @@ int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint
             if (uploadTimeMs)
             {   // Upload complete.  Allow sync.
                 bool success = (uploadChecksum == syncChecksum);
-                debug_message("%s upload %s.\n", cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
+                log_debug(LOG_ISDEVICE, "%s upload %s.\n", cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
                 uploadTimeMs = 0;
                 return (success ? 1 : 0);
             }
         }
         else
         {	// Out of sync.  Request flash config.
-            debug_message("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
+            log_debug(LOG_ISDEVICE, "Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
             BroadcastBinaryData(flashCfgDid);
         }
     }
     else
     {	// Out of sync.  Request sysParams or gpxStatus.
-        debug_message("Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
+        log_debug(LOG_ISDEVICE, "Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
         BroadcastBinaryData(syncDid);
     }
     return 0;
@@ -858,7 +858,7 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
     for (const cISDataMappings::MemoryUsage& usage : usageVec)
     {
         int offset = static_cast<int>(usage.ptr - newData);
-        debug_message("Sending %s: size %d, offset %d\n", cISDataMappings::DataName(flashCfgDid), usage.size, offset);
+        log_debug(LOG_ISDEVICE, "Sending %s: size %lu, offset %d\n", cISDataMappings::DataName(flashCfgDid), usage.size, offset);
         failure |= (SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset) != 0);   // SendData() returns 0 on success
 
         if (!failure)
@@ -923,13 +923,13 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for IMX flash config
-            debug_message("Timeout waiting for DID_FLASH_CONFIG failure!\n");
+            log_debug(LOG_ISDEVICE, "Timeout waiting for DID_FLASH_CONFIG failure!\n");
             return false;
         }
         else
         {   // Query DID_SYS_PARAMS
             GetData(DID_SYS_PARAMS);
-            debug_message("Waiting for IMX flash sync...\n");
+            log_debug(LOG_ISDEVICE, "Waiting for IMX flash sync...\n");
         }
     }
 
@@ -955,13 +955,13 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for GPX flash config
-            debug_message("Timeout waiting for DID_GPX_FLASH_CONFIG failure!\n");
+            log_debug(LOG_ISDEVICE, "Timeout waiting for DID_GPX_FLASH_CONFIG failure!\n");
             return false;
         }
         else
         {   // Query DID_GPX_STATUS
             GetData(DID_GPX_STATUS);
-            debug_message("Waiting for GPX flash sync...\n");
+            log_debug(LOG_ISDEVICE, "Waiting for GPX flash sync...\n");
         }
     }
 
@@ -1156,14 +1156,14 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             break;
         case DID_SYS_PARAMS:
             copyDataPToStructP(&sysParams, data, sizeof(sys_params_t));
-            debug_message("Received DID_SYS_PARAMS\n");
+            log_debug(LOG_ISDEVICE, "Received DID_SYS_PARAMS");
             break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data)) {
                 sysParams.flashCfgChecksum = imxFlashCfg.checksum;
             }
-            debug_message("Received DID_FLASH_CONFIG\n");
+            log_debug(LOG_ISDEVICE, "Received DID_FLASH_CONFIG");
             break;
         case DID_GPX_FLASH_CFG:
             copyDataPToStructP(&gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
@@ -1171,7 +1171,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             {	// Checksum received
                 gpxStatus.flashCfgChecksum = gpxFlashCfg.checksum;
             }
-            debug_message("Received DID_GPX_FLASH_CFG\n");
+            log_debug(LOG_ISDEVICE, "Received DID_GPX_FLASH_CFG");
             break;
         case DID_FIRMWARE_UPDATE:
             // we don't respond to messages if we don't already have an active Updater
@@ -1301,7 +1301,7 @@ bool ISDevice::assignPort(port_handle_t newPort) {
 #endif
     }
 //    if ((hdwId != IS_HARDWARE_ANY) || devInfo.serialNumber)
-//        debug_message("[DBG] Device %s bound to port %s.\n", getIdAsString().c_str(), getPortName().c_str());
+//        log_debug(LOG_ISDEVICE, "Device %s bound to port %s.", getIdAsString().c_str(), getPortName().c_str());
     return true;
 }
 

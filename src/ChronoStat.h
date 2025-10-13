@@ -157,7 +157,7 @@ public:
             time = seconds_double.count();                                          // Get the count of seconds as a double
         }
 
-        debug_message("%-20s ts:%6.3f :: ", label.c_str(), time);
+        log_debug(LOG_CHRONO_STATS, "%-20s ts:%6.3f :: ", label.c_str(), time);
 
         cnt++;
         if (std::isnan(timeLast))
@@ -174,11 +174,11 @@ public:
             dtCnt++;
             duration += dt;
 
-            debug_message("dt %.4f  ", dt);
-            debug_message("avg %.4f  ", dtAvg);
+            log_debug(LOG_CHRONO_STATS, "dt %.4f  ", dt);
+            log_debug(LOG_CHRONO_STATS, "avg %.4f  ", dtAvg);
 
-            if (dt < dtMin) { dtMin = dt;  dtMinTime = time; debug_message("dtMin %.3f  ", dtMin); }
-            if (dt > dtMax) { dtMax = dt;  dtMaxTime = time; debug_message("dtMax %.3f  ", dtMax); }
+            if (dt < dtMin) { dtMin = dt;  dtMinTime = time; log_debug(LOG_CHRONO_STATS, "dtMin %.3f  ", dtMin); }
+            if (dt > dtMax) { dtMax = dt;  dtMaxTime = time; log_debug(LOG_CHRONO_STATS, "dtMax %.3f  ", dtMax); }
 
             if (std::isnan(dtLast)) {   // First sample
                 ddtMin = INVALID_DDT_MIN_STAT;
@@ -190,8 +190,8 @@ public:
                 ddtAvg = beta * ddtAvg + alpha * ddt;
                 ddtCnt++;
 
-                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; debug_message("dtMin %.3f  ", dtMin); }
-                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; debug_message("dtMax %.3f  ", dtMax); }
+                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; log_debug(LOG_CHRONO_STATS, "dtMin %.3f  ", dtMin); }
+                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; log_debug(LOG_CHRONO_STATS, "dtMax %.3f  ", dtMax); }
             }
 
             rate = (1.0 / dt);
@@ -199,7 +199,7 @@ public:
             dtLast = dt;
         }
         timeLast = time;
-        debug_message("\n");
+        log_debug(LOG_CHRONO_STATS, "\n");
     };
 
 

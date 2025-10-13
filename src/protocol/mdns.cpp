@@ -30,7 +30,7 @@ void mdns::tick() {
     if(!lock.try_lock()) return; // If the mutex is locked return
 
     if (createMdnsSockets() <= 0) {
-        debug_message("[WRN] Failed to open any sockets to listen for MDNS responses on");
+        log_warn(LOG_FACILITY_MDNS, "Failed to open any sockets to listen for MDNS responses on");
         return;
     }
 
@@ -47,13 +47,13 @@ void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
     size_t capacity = 2048;
     void* buffer = malloc(capacity);
     if (buffer == nullptr) {
-        printf("[ERR] Failed to allocate memory for MDNS query are you out of memory?\n");
+        log_error(LOG_FACILITY_MDNS, "Failed to allocate memory for MDNS query are you out of memory?");
         return;
     }
 
     for (int isock = 0; isock < socketsOpened; ++isock) {
         if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, 0)) {
-            debug_message("[WRN] Failed to send DNS-DS discovery: %s\n", strerror(errno));
+            log_warn(LOG_FACILITY_MDNS, "Failed to send DNS-DS discovery: %s", strerror(errno));
         }
     }
 
@@ -244,7 +244,7 @@ int mdns::createMdnsSockets() {
     struct ifaddrs* ifa = 0;
 
     if (getifaddrs(&ifaddr) < 0)
-        printf("Unable to get interface addresses\n");
+        log_warn(LOG_FACILITY_MDNS, "Unable to get interface addresses.");
 
     for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
         if (!ifa->ifa_addr)
@@ -320,7 +320,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
 
     // Do not process ANSWER messages
     if (entry != MDNS_ENTRYTYPE_ANSWER) {
-        debug_message("[WRN] Unable to process non ANSWER responses: Not Supported");
+        log_warn(LOG_FACILITY_MDNS, "Unable to process non ANSWER responses: Not Supported.");
         return -ENOTSUP;
     }
 
@@ -372,7 +372,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             mdns_record_srv_cpp_t srvRecord = mdns_record_srv_cpp_t(srv.priority, srv.weight, srv.port, std::string(MDNS_STRING_ARGS(srv.name)));
             newRecord.data.srv = srvRecord;
         } else {
-            debug_message("[WRN] Unable to process unknown MDNS record type: Not Supported");
+            log_warn(LOG_FACILITY_MDNS, "Unable to process unknown MDNS record type: Not Supported.");
             return -ENOTSUP;
         }
         // Save the type of record to struct so that we know how to parse the union
