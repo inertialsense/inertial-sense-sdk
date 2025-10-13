@@ -89,23 +89,19 @@ extern "C" {
     // --- Internal static inline functions ---
     static inline void static_log_msg(int facility_code, int log_level, const char *level_name, const char *facility_name, const char *format, ...) {
         static char logMsg[512];
-        memset(logMsg, 0, 512);
-        int endPos, msgLen = sizeof(logMsg) - 1;
-
-        if (facility_code)
-            endPos = snprintf(logMsg, msgLen, "%s %s : ", facility_name, level_name);
-        else
-            endPos = snprintf(logMsg, msgLen, "%s : ", level_name);
 
         va_list args;
         va_start(args, format);
-        vsnprintf(&logMsg[endPos], (size_t)logMsg - endPos, format, args);
+        memset(logMsg, 0, 512);
+        vsnprintf(logMsg, sizeof(logMsg) - 1, format, args);
         va_end(args);
 
 #ifdef __ZEPHYR__
-        LOG_DBG(log_msg);
+            LOG_DBG(log_msg);
 #else
-        printf("%s\n", logMsg);
+        if (facility_code)
+            printf("%s ", facility_name);
+        printf("%s : %s\n", level_name, logMsg);
         fflush(stdout);
 #endif
     }
