@@ -496,8 +496,8 @@ TEST(protocol_nmea, GGA)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
@@ -545,8 +545,8 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
         pos.leapS = LEAP_SEC;
         // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
         ixVector3d lla;
-        lla[0] = DEG2RAD(pos.lla[0]);
-        lla[1] = DEG2RAD(pos.lla[1]);
+        lla[0] = C_DEG2RAD * pos.lla[0];
+        lla[1] = C_DEG2RAD * pos.lla[1];
         lla[2] = pos.lla[2];        // Use ellipsoid altitude
         lla2ecef(lla, pos.ecef);
 
@@ -593,8 +593,8 @@ TEST(protocol_nmea, GGA2)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
@@ -636,8 +636,8 @@ TEST(protocol_nmea, GGA3)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
@@ -679,8 +679,8 @@ TEST(protocol_nmea, GGA4)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
@@ -943,8 +943,8 @@ TEST(protocol_nmea, RMC)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
