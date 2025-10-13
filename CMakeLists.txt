@@ -2,6 +2,23 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(InertialSenseSDK)
 
+# set(CMAKE_FIND_DEBUG_MODE TRUE)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(UDEV REQUIRED libudev)
+if (NOT UDEV_FOUND)
+	find_package(UDev)	# try using find_package as a last resort (this seems to not exist on some platforms).
+	if (NOT UDEV_FOUND)
+		message(FATAL_ERROR "UDev not found. Please install libudev-dev or equivalent.")
+	endif()
+endif()
+if (UDEV_FOUND)
+	message(STATUS "libudev found:\n    Include Directories: ${UDEV_INCLUDE_DIRS}\n    Library Directories: ${UDEV_LIBRARY_DIRS}\n    Libraries: ${UDEV_LIBRARIES}")
+endif()
+
+# find_library(UDEV_LIB udev REQUIRED)
+
+
+
 file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
@@ -48,17 +65,6 @@ list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
 # find_package(udev)
-set(CMAKE_FIND_DEBUG_MODE TRUE)
-find_library(UDEV_LIB udev REQUIRED)
-find_package(UDev REQUIRED)
-if (udev_FOUND)
-	message(STATUS "libudev found: Include Dir = ${UDEV_INCLUDE_DIR}, Libraries = ${UDEV_LIBS}")
-	include_directories(${UDEV_INCLUDE_DIR})
-	target_link_libraries(YourTargetName ${UDEV_LIBS})
-else()
-	message(FATAL_ERROR "UDev not found. Please install libudev-dev or equivalent.")
-endif()
-
 add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 
 # Include paths
@@ -105,7 +111,8 @@ else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
-		${UDEV_LIB_INCLUDE}
+			${UDEV_INCLUDE_DIRS}
+			${UDEV_LIB_INCLUDE}
     )
 
 	add_custom_command(
@@ -130,6 +137,6 @@ else ()
     # Set Linux compiler linker flag
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
-    # Link in Linux specific packages
-    target_link_libraries(${PROJECT_NAME} udev m)
+	# Link in Linux specific packages
+    target_link_libraries(${PROJECT_NAME} ${UDEV_LIBRARIES} m)
 endif ()
