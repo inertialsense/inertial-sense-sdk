@@ -13,12 +13,12 @@
 
 #include "ISConstants.h"
 #include "ISUtilities.h"
+#include "core/msg_logger.h"
 
 #ifdef __cplusplus
 #include <string>
 #include <any>
 
-#include "core/msg_logger.h"
 #include "util/md5.h"
 
 extern "C" {
