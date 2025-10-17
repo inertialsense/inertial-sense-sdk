@@ -1130,7 +1130,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
 
     // Note that the following callbacks/handlers will be updated to be ISDevice specific, once the port is deemed to be an ISDevice
     log_info(IS_LOG_FACILITY_NONE, "Initializing comManager...");
-    comManagerInit((std::unordered_set<port_handle_t>*)&portManager, 10, staticProcessRxData, 0, 0, 0, 0);
+    comManagerInit((std::set<port_handle_t>*)&portManager, 10, staticProcessRxData, 0, 0, 0, 0);
     comManagerRegisterProtocolHandler(_PTYPE_NMEA, staticProcessRxNmea);
     comManagerRegisterProtocolHandler(_PTYPE_UBLOX, m_handlerUblox);
     comManagerRegisterProtocolHandler(_PTYPE_RTCM3, m_handlerRtcm3);

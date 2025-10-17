@@ -132,12 +132,12 @@ public:
 
     struct update_msgs {
         std::string target;                                 //!< the target (if any) which was active, if any
-        ISFwUpdaterCmd cmd;                                      //!< the command that generated this message
+        ISFwUpdaterCmd cmd;                                 //!< the command that generated this message
         int severity;                                       //!< the severity level of the message - use one of IS_LOG_LEVEL_*
         std::string msg;                                    //!< the fully-formatted message
     };
 
-    port_handle_t port = 0;                                 //!< a handle to the comm port which we use to talk to the device - if possible, we should be using the device->port
+    port_handle_t port = nullptr;                           //!< a handle to the comm port which we use to talk to the device - if possible, we should be using the device->port
     device_handle_t device;                                 //!< a handle to the device which is being updated; maybe null in some cases
     const dev_info_t *devInfo = nullptr;                    //!< the root device info connected on this port
     dev_info_t *target_devInfo = nullptr;                   //!< the target's device info, if any
@@ -153,7 +153,14 @@ public:
 
     void setInfoProgressCb(fwUpdate::pfnStatusCb cb) { pfnStatus_cb = cb; }
 
-    ~ISFirmwareUpdater() override = default;
+    ~ISFirmwareUpdater() override {
+        cleanupFirmwarePackage();
+        if (deviceUpdater) {
+            delete deviceUpdater;
+            deviceUpdater = nullptr;
+        }
+        devInfo = nullptr;
+    };
 
     void setTarget(fwUpdate::target_t _target);
 

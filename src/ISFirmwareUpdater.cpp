@@ -487,7 +487,8 @@ void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, con
 
     if (failLabel.empty()) {
         // if no label has been specified, clear all commands and reset
-        commands.clear();
+        // commands.clear();
+        activeCmd = &nullCmd;
         target = fwUpdate::TARGET_HOST;
         return;
     }

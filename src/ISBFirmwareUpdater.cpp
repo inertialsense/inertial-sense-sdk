@@ -121,21 +121,6 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // is reporting as running in HDW_STATE_BOOTLOADER, then we can advance to ready. The InertialSense
         // class should handle most of this for us, we just need to tell it to look for new ISDevices.
 
-        if (!portListenerHandle) {
-            portListenerHandle = portManager.addPortListener(
-                [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
-                    portsChanged = true;
-                    if (event == PortManager::PORT_ADDED) {
-                        if (deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION)) {
-                            auto newDev = deviceManager.getDevice(port);
-                            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Rediscovered device %s on port %s.", newDev->getIdAsString().c_str(), portName.c_str());
-                        }
-                    }
-                }
-            );
-        }
-
-
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
         if (device && device->isConnected() && device->hasDeviceInfo()) {
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {

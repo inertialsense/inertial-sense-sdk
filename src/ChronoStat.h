@@ -212,7 +212,7 @@ public:
         if (!hasData())
             return "  !! Insufficient number of samples to determine statistics.";
 
-        std::string out = utils::string_format("  dt: avg %5.1f ms, min %5.1f ms, max %5.1f ms, over %.1f s %4d smpls", dtAvg * 1.0e3, dtMin * 1.0e3, dtMax * 1.0e3, duration * 1.0e3, cnt);
+        std::string out = utils::string_format("  dt: avg %5.1f ms, min %5.1f ms, max %5.1f ms (period: %.3fs %4d smpls)", dtAvg * 1.0e3, dtMin * 1.0e3, dtMax * 1.0e3, duration, cnt);
         if (multiline) {
             out += utils::string_format("\n ddt: avg %5.1f ms, min %5.1f ms, max %5.1f ms", ddtAvg * 1.0e3, ddtMin * 1.0e3, ddtMax * 1.0e3);
         }
