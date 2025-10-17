@@ -47,7 +47,7 @@ public:
     virtual bool releaseDevice(device_handle_t device) {
         // cleanup some memory, so if this accidentally gets used after being free, it won't be catastrophic.
         device->port = nullptr;
-        device->fwUpdater = nullptr;
+        // device->fwUpdater = nullptr;
         device->hdwId = IS_HARDWARE_NONE;
         device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
         device.reset();

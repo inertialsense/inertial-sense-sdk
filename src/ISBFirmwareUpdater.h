@@ -305,8 +305,8 @@ private:
 
     std::deque<uint8_t>& toHost;
 
-    eraseState_t eraseFlash_step(uint32_t timeout = 60000);
-    writeState_t writeFlash_step(uint32_t timeout = 60000);
+    eraseState_t eraseFlash_step(uint32_t timeout = 20000);
+    writeState_t writeFlash_step(uint32_t timeout = 20000);
 };
 
 #endif //IS_ISB_FIRMWAREUPDATER_H

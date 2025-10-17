@@ -42,7 +42,7 @@ device_handle_t DeviceManager::registerNewDevice(const ISDevice& device) {
     // first, ensure there isn't a previously allocated device which matches this hdwId/SerialNo
     for (auto d : *this) {
         if ((d->hdwId == ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo)) && (d->devInfo.serialNumber == device.devInfo.serialNumber)) {
-            // debug_message(LOG_FACILITY_NONE, "Found existing ISDevice reference '%s'; Updating port %s.", d->getIdAsString().c_str(), d->getPortName().c_str());
+            // debug_message(IS_LOG_FACILITY_NONE, "Found existing ISDevice reference '%s'; Updating port %s.", d->getIdAsString().c_str(), d->getPortName().c_str());
             // d->port = nullptr; FIXME: do we want to update the port?  I don't know...
             d->devInfo = device.devInfo;
             return d;
@@ -59,7 +59,7 @@ device_handle_t DeviceManager::registerNewDevice(const ISDevice& device) {
                 // device.assignPort(nullptr);
             }
             push_back(newDevice);
-            // debug_message(LOG_FACILITY_NONE, "Allocating new ISDevice '%s' on port %s.", newDevice->getIdAsString().c_str(), newDevice->getPortName().c_str());
+            // debug_message(IS_LOG_FACILITY_NONE, "Allocating new ISDevice '%s' on port %s.", newDevice->getIdAsString().c_str(), newDevice->getPortName().c_str());
             return empty() ? NULL : back();
         }
     }
@@ -104,7 +104,7 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
     if (deviceIter == end())
         return false;
 
-    log_debug(LOG_DEVICE_MANAGER, "Releasing device '%s' on port '%s'", device->getIdAsString().c_str(), device->getPortName().c_str());
+    log_debug(IS_LOG_DEVICE_MANAGER, "Releasing device '%s' on port '%s'", device->getIdAsString().c_str(), device->getPortName().c_str());
 
     if (device->devLogger) {
         device->devLogger->CloseAllFiles();
@@ -163,7 +163,7 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     for (auto& kd : knownDevices) {
         if ((kd.factory == deviceEntry.factory) && (kd.hdwId == deviceEntry.hdwId)) {
             // We've re-discovered an old device, but we don't know the status of its port... we should try and figure that out, before we just blindly return...
-            log_debug(LOG_DEVICE_MANAGER, "Rediscovered previously known device [%s] on serial port '%s'.", ISDevice::getIdAsString(devInfo).c_str(), portName(port));
+            log_debug(IS_LOG_DEVICE_MANAGER, "Rediscovered previously known device [%s] on serial port '%s'.", ISDevice::getIdAsString(devInfo).c_str(), portName(port));
             device_handle_t device = getDevice(port);
             if (!device) {
                 // If we weren't able to locate the Device by its port (perhaps because its not valid anymore, check by its device info instead)
@@ -175,7 +175,7 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                     // FIXME: if we're here, it means we had a deviceEntry that matched the discovered device, but its associated device is invalid.
                     //  we don't want to reallocate the device, since there is already one there, but just need to reassign the devInfo, etc.
                     //  Don't forget to remove the old device entry from the primary device set!!
-                    log_debug(LOG_DEVICE_MANAGER, "Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.", portName(port));
+                    log_debug(IS_LOG_DEVICE_MANAGER, "Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.", portName(port));
                     notifyListeners(deviceEntry.device, DEVICE_PORT_LOST);
                     remove(deviceEntry.device);
                     //delete deviceEntry.device;
@@ -211,7 +211,7 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
         return false;   // allocated returned null, so no device created
     }
 
-    // log_debug(LOG_DEVICE_MANAGER, "Allocated new device: %s.", device->getDescription().c_str());
+    // log_debug(IS_LOG_DEVICE_MANAGER, "Allocated new device: %s.", device->getDescription().c_str());
     knownDevices.push_back(deviceEntry);
     push_back(deviceEntry.device);
 
@@ -234,10 +234,10 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
             // TODO: If "automatic device validation" is true, we should use this event to automatically open the port and validate the device.
-            log_debug(LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_ADDED '%s'", pName.c_str());
+            log_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_ADDED '%s'", pName.c_str());
             break;
         case PortManager::PORT_REMOVED:
-            log_debug(LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_REMOVED '%s'.", pName.c_str());
+            log_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_REMOVED '%s'.", pName.c_str());
             device_handle_t device = getDevice(port);
             if (device) {
                 device->assignPort(nullptr); // revoke the removed port from the device...

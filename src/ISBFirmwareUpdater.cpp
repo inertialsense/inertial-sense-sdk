@@ -45,10 +45,10 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, const char* m
     // We really should update the protocol to address its shortcoming, and handle multiple states, but that would be A LOT of work
     // instead, rather than reporting actual chunks, we'll report an arbitrary number of chunks that is derived from the total steps
 
-    msg.data.progress.totl_chunks = 3000;
+    msg.data.progress.totl_chunks = 1000;
     uint16_t numChunks = _MAX(0, _MIN(session_total_chunks, last_chunk_id+1));
     transferProgress = (float)numChunks / (float)session_total_chunks;
-    msg.data.progress.num_chunks = (transferProgress + eraseProgress + writeProgress) * 1000;
+    msg.data.progress.num_chunks = (uint16_t)(((transferProgress * 0.1) + (eraseProgress * 0.2) + (writeProgress * 0.7)) * 1000);
 
     msg.data.progress.msg_level = level;
     msg.data.progress.msg_len = msg_len;
@@ -126,7 +126,10 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
                     portsChanged = true;
                     if (event == PortManager::PORT_ADDED) {
-                        deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+                        if (deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION)) {
+                            auto newDev = deviceManager.getDevice(port);
+                            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Rediscovered device %s on port %s.", newDev->getIdAsString().c_str(), portName.c_str());
+                        }
                     }
                 }
             );
@@ -263,7 +266,8 @@ bool ISBFirmwareUpdater::fwUpdate_queryVersionInfo(fwUpdate::target_t target_id,
             }
         }
     }
-    if ((device->port != nullptr) && (device->hdwId != 0)) {
+    if ((device->port != nullptr) && (device->hdwId != 0) &&
+            (device->matchesHdwId(IS_HARDWARE_IMX_5_0))) {  // only the IMX-5 support ISB...
         dev_info = device->DeviceInfo();
         return true;
     }

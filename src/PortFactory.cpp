@@ -48,7 +48,7 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
     serialPort->baudRate = portOptions.defaultBaudRate;
     serialPort->blocking = portOptions.defaultBlocking;
 
-    log_debug(LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
+    log_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
     return port;
 }
 
@@ -56,7 +56,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
 
-    log_debug(LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
+    log_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 
@@ -97,10 +97,10 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
         lastErrorMs = current_timeMs();
 
         // Split the printf into two calls (helps avoid inlining inference)
-        log_debug(LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
+        log_debug(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
     } else {
         // Split the printf into two calls (helps avoid inlining inference)
-        log_debug(LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
+        log_debug(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
 
         if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount >= 10)){
             // any error which repeats for more than 30 seconds, and more than 10 times, close & invalidate
