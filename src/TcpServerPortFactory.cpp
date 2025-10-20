@@ -189,7 +189,7 @@ bool TcpServerPortFactory::startListening() {
 #endif
 
     // build the server's Internet address
-    bzero((char *) &serveraddr, sizeof(serveraddr));
+    memset((char *) &serveraddr, 0, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;                                            // this is an Internet address
     serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);                             // let the system figure out our IP address
     serveraddr.sin_port = htons((unsigned short)factoryOptions.listenerPort);   // this is the port we will listen on
