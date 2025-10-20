@@ -358,6 +358,51 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 }
 
 /**
+ * Initializes a tcp port with the specified name and socket
+ * @param port The port handle to initialize
+ * @param id The id of the new port handle (a unique id)
+ * @param type The type modifier (OR'd with PORT_TYPE__TCP | PORT_FLAG__VALID)
+ * @param name The name to be associated with the new port
+ * @param socket a socket handle describing an existing and valid tcp socket
+ * @param blocking if true, configure the port for blocking operations, or false for non-blocking
+ *
+ * Note that initializing a TCP Port with a valid socket implied that the underlying socket is already
+ * connected. As a result, the PORT_FLAG__OPENED will also be set, and there is no need to call portOpen()
+ */
+void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* name, const int socket, bool blocking) {
+    tcp_port_t* tcpPort = TCP_PORT(port);
+    tcpPort->base.pnum = id;
+    tcpPort->base.ptype = PORT_TYPE__TCP | PORT_FLAG__VALID | PORT_FLAG__OPENED | type;
+
+    tcpPort->base.stats = (port_stats_t*)&(tcpPort->stats);
+
+    tcpPort->base.portName = tcpPortGetName;
+    tcpPort->base.portValidate = tcpPortValidate;
+    tcpPort->base.portOpen = tcpPortOpen;
+    tcpPort->base.portClose = tcpPortClose;
+    tcpPort->base.portFree = tcpPortFree;
+    tcpPort->base.portAvailable = tcpPortAvailable;
+    tcpPort->base.portFlush = tcpPortFlush;
+    tcpPort->base.portDrain = tcpPortDrain;
+    tcpPort->base.portRead = tcpPortRead;
+    tcpPort->base.portReadTimeout = tcpPortReadTimeout;
+    tcpPort->base.portWrite = tcpPortWrite;
+
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_init(COMM_PORT(port), NULL);
+
+    tcpPort->socket = socket;
+    tcpPort->name = strdup(name);
+
+    socklen_t peer_addr_len = sizeof(tcpPort->addr.storage);
+    getpeername(socket, (struct sockaddr *)&tcpPort->addr.storage, &peer_addr_len);
+
+    // tcpPort->addr.storage = *ip;
+    tcpPort->blocking = blocking;
+    tcpPort->blocking_internal = true;
+}
+
+/**
  * Initializes a new tcp port with the following parameters
  * @param port The port handle to initialize
  * @param id The id of the new port handle
