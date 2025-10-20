@@ -101,7 +101,7 @@ bool TcpServerPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    log_debug(LOG_PORT_FACTORY, "Releasing TCP/network port '%s'\n", portName(port));
+    log_debug(IS_LOG_PORT_FACTORY, "Releasing TCP/network port '%s'\n", portName(port));
 
     for (auto it = knownSockets.begin(); it != knownSockets.end(); it++) {
         if (it->port == port) {
@@ -156,7 +156,6 @@ bool TcpServerPortFactory::validatePort(const std::string& pName, uint16_t pType
 
 bool TcpServerPortFactory::startListening() {
     struct sockaddr_in serveraddr; /* server's addr */
-    int optval; /* flag value for setsockopt */
 
     // socket: create the parent socket
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -165,10 +164,14 @@ bool TcpServerPortFactory::startListening() {
 
     // setsockopt: Handy debugging trick that lets us rerun the server immediately after we kill it;
     // otherwise we have to wait about 20 secs.  Eliminates "ERROR on binding: Address already in use" error.
-    optval = 1;
+    int optval = 1;  /* flag value for setsockopt */
     setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(int));
 
-    // Get the current flags for the socket file descriptor
+#ifdef PLATFORM_IS_WINDOWS
+    DWORD nonBlocking = 1;
+    ioctlsocket(listen_fd, FIONBIO, &nonBlocking);
+#else
+    // Get the current flags for the socket file descript
     int flags;
     if ((flags = fcntl(listen_fd, F_GETFL, 0)) == -1) {
         return -1; // Error getting flags
@@ -178,6 +181,7 @@ bool TcpServerPortFactory::startListening() {
     if (fcntl(listen_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
         return -1; // Error setting non-blocking flag
     }
+#endif
 
     // build the server's Internet address
     bzero((char *) &serveraddr, sizeof(serveraddr));
@@ -226,16 +230,16 @@ bool TcpServerPortFactory::processPendingConnections(std::function<void(socket_e
                     auto out = knownSockets.emplace(clientfd, tcpPortName);
                     cb(*out.first);
                     result = out.second;
-                    log_info(LOG_PORT_FACTORY, "tcpServerPortFactory accepted incoming TCP port %s", tcpPortName.c_str());
+                    log_info(IS_LOG_PORT_FACTORY, "tcpServerPortFactory accepted incoming TCP port %s", tcpPortName.c_str());
                 } else {
-                    log_warn(LOG_PORT_FACTORY, "tcpServerPortFactory received an invalid socket when accepting ")
+                    log_warn(IS_LOG_PORT_FACTORY, "tcpServerPortFactory received an invalid socket when accepting ")
                 }
             }
             else {
-                log_warn(LOG_PORT_FACTORY, "tcpServerPortFactory unable to extract remote IP address from socket.");
+                log_warn(IS_LOG_PORT_FACTORY, "tcpServerPortFactory unable to extract remote IP address from socket.");
             }
         } else if ((clientfd != EAGAIN) && (clientfd != EWOULDBLOCK)) {
-            log_error(LOG_PORT_FACTORY, "tcpServerPortFactory::accept() reported an error while accepting incoming connections.")
+            log_error(IS_LOG_PORT_FACTORY, "tcpServerPortFactory::accept() reported an error while accepting incoming connections.")
             return result;
         }
     } while ((clientfd != EAGAIN) && (clientfd != EWOULDBLOCK));
