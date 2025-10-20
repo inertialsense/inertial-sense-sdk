@@ -162,15 +162,20 @@ bool TcpServerPortFactory::startListening() {
     if (listen_fd < 0)
         return false;   // ERROR opening socket;
 
+#ifdef PLATFORM_IS_WINDOWS
     // setsockopt: Handy debugging trick that lets us rerun the server immediately after we kill it;
     // otherwise we have to wait about 20 secs.  Eliminates "ERROR on binding: Address already in use" error.
     int optval = 1;  /* flag value for setsockopt */
-    setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval , sizeof(int));
+    setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&optval , sizeof(int));
 
-#ifdef PLATFORM_IS_WINDOWS
     DWORD nonBlocking = 1;
     ioctlsocket(listen_fd, FIONBIO, &nonBlocking);
 #else
+    // setsockopt: Handy debugging trick that lets us rerun the server immediately after we kill it;
+    // otherwise we have to wait about 20 secs.  Eliminates "ERROR on binding: Address already in use" error.
+    int optval = 1;  /* flag value for setsockopt */
+    setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (void*)&optval , sizeof(int));
+
     // Get the current flags for the socket file descript
     int flags;
     if ((flags = fcntl(listen_fd, F_GETFL, 0)) == -1) {
