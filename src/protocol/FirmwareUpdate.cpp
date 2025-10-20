@@ -5,8 +5,7 @@
 #include "FirmwareUpdate.h"
 
 #ifdef __ZEPHYR__
-#include <zephyr/random/rand32.h>
-LOG_MODULE_REGISTER(FirmwareUpdater, LOG_LEVEL_DBG);
+#include <zephyr/random/random.h>
 #endif
 
 namespace fwUpdate {
@@ -191,7 +190,7 @@ namespace fwUpdate {
         int payload_len = fwUpdate_packPayload(build_buffer, FWUPDATE__MAX_PAYLOAD_SIZE, payload, aux_data);
         char *msgStr = fwUpdate_payloadToString(&payload);
         if (msgStr)
-            log_debug(LOG_FWUPDATE, "Sending to %s", msgStr);
+            log_debug(IS_LOG_FWUPDATE, "Sending to %s", msgStr);
 
         return fwUpdate_writeToWire((fwUpdate::target_t) payload.hdr.target_device, build_buffer, payload_len);
     }
@@ -332,7 +331,7 @@ namespace fwUpdate {
 
         char *msgStr = fwUpdate_payloadToString(&payload);
         if (msgStr)
-            log_debug(LOG_FWUPDATE, "Received by %s", msgStr);
+            log_debug(IS_LOG_FWUPDATE, "Received by %s", msgStr);
 
         fwUpdate_resetTimeout();
         switch (payload.hdr.msg_type) {
@@ -618,14 +617,15 @@ namespace fwUpdate {
         if (payload.hdr.msg_type != MSG_REQ_VERSION_INFO)
             return false;
 
+
         dev_info_t devInfo = { };
         if (!fwUpdate_queryVersionInfo(payload.hdr.target_device, devInfo))
-            memset(&devInfo, 0xFF, sizeof(dev_info_t));
+            return false;
 
         payload_t response;
         response.hdr.target_device = TARGET_HOST;
         response.hdr.msg_type = MSG_VERSION_INFO_RESP;
-        response.data.version_resp.resTarget = payload.hdr.target_device;
+        response.data.version_resp.resTarget = session_target;
         response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareType = devInfo.hardwareType;
         response.data.version_resp.hdwRunState = devInfo.hdwRunState;
@@ -694,7 +694,7 @@ namespace fwUpdate {
     bool FirmwareUpdateHost::fwUpdate_processMessage(const payload_t& payload) {
         char *msgStr = fwUpdate_payloadToString(&payload);
         if (msgStr)
-            log_debug(LOG_FWUPDATE, "Received by %s", msgStr);
+            log_debug(IS_LOG_FWUPDATE, "Received by %s", msgStr);
 
         if (payload.hdr.target_device != TARGET_HOST)
             return false;
@@ -856,7 +856,7 @@ namespace fwUpdate {
             // we don't call sendPayload from here (we just send our build_buffer direct to the writer.
             char *msgStr = fwUpdate_payloadToString(msg);
             if (msgStr)
-                log_debug(LOG_FWUPDATE, "Sending to %s", msgStr);
+                log_debug(IS_LOG_FWUPDATE, "Sending to %s", msgStr);
 
             if (fwUpdate_writeToWire((fwUpdate::target_t) msg->hdr.target_device, build_buffer, msg_len))
                 next_chunk_id = msg->data.chunk.chunk_id + 1; // increment to the next chuck, if we're successful

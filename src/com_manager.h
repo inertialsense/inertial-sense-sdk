@@ -14,12 +14,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define COM_MANAGER_H
 
 #include <array>
+#include <cstdint>
 #include <list>
-#include <unordered_set>
-#include <vector>
 #include <map>
+#include <set>
+#include <vector>
 
-#include <stdint.h>
 #include "ISComm.h"
 #include "linked_list.h"
 
@@ -124,7 +124,7 @@ typedef int(*pfnComManagerParseErrorHandler)(void* ctx, port_handle_t port);
 * @endcode
 */
 int comManagerInit(
-        std::unordered_set<port_handle_t>* portSet,
+        std::set<port_handle_t>* portSet,
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
@@ -175,7 +175,7 @@ bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* callbacks);
 /**
  * @return a vector of all registered ports
  */
-std::unordered_set<port_handle_t>& comManagerGetPorts();
+std::set<port_handle_t>& comManagerGetPorts();
 
 
 /**
@@ -418,7 +418,7 @@ public:
     * @endcode
     */
     int init(
-            std::unordered_set<port_handle_t>* portSet,
+            std::set<port_handle_t>* portSet,
             int stepPeriodMilliseconds,
             pfnComManagerPostRead pstRxFnc,
             pfnComManagerPostAck pstAckFnc,
@@ -451,7 +451,7 @@ public:
     /**
      * @return a vector of all registered ports
      */
-    std::unordered_set<port_handle_t>& getPorts();
+    std::set<port_handle_t>& getPorts();
 
 
     /**
@@ -718,7 +718,7 @@ private:
     is_comm_callbacks_t defaultCbs; // local copy of any callbacks passed at init
 
     // Array of ports - that will be managed, but not owned, by the ISComManager instance
-    std::unordered_set<port_handle_t>* ports = NULLPTR;  // this is not a vector of ports, its a pointer to an EXTERNAL set of ports.  This MUST be initialized!!!
+    std::set<port_handle_t>* ports = NULLPTR;  // this is not a vector of ports, its a pointer to an EXTERNAL set of ports.  This MUST be initialized!!!
 
     // reads n bytes into buffer from the source (usually a serial port)
     // pfnIsCommPortRead portRead;

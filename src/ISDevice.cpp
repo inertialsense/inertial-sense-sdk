@@ -86,11 +86,24 @@ bool ISDevice::step() {
 }
 
 is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()) {
-    fwUpdater = new ISFirmwareUpdater(shared_from_this());
+    std::unique_lock<std::mutex> lock(fwUpdateMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+        return IS_OP_ERROR;
+
+    fwHasError = false;
+    fwErrors.clear();
+    fwLastMessage.clear();
+    fwLastTarget = fwUpdate::TARGET_HOST;
+    fwLastStatus = fwUpdate::NOT_STARTED;
+    fwLastSlot = 0;
+
+    if (!fwUpdater) {
+        fwUpdater = new ISFirmwareUpdater(shared_from_this());
+    }
+
     fwUpdater->setInfoProgressCb(infoProgress);
     fwUpdater->setTarget(targetDevice);
     fwUpdater->setCommands(cmds);
-
     return IS_OP_OK;
 }
 
@@ -103,14 +116,17 @@ bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_
 /**
  * @return as percentage (0-1.0) the completion progress for the current fwUpdate, or 0.0 if not update is in progress.
  */
-float ISDevice::fwUpdatePercentCompleted() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()) ? fwUpdater->fwUpdate_getProgressPercent() : 0.0f; }
+float ISDevice::fwUpdatePercentCompleted() {
+    return (fwUpdater && !fwUpdater->fwUpdate_isDone()) ? fwUpdater->getProgress() : 0.0f;
+}
 
 /**
  * Instructs the device to continue performing its actions.  This should be called regularly to ensure that the update process
  * does not stall.
+ * @param msg a pointer to an optional p_data_t containing a DID_FIRMWARE message to be processed; if nullptr (default) then no message is parsed.
  * @return true if the update is still in progress (calls inProgress()), or false if the update is finished and no further updates are needed.
  */
-bool ISDevice::fwUpdate() {
+bool ISDevice::fwUpdate(p_data_t* msg) {
     std::unique_lock<std::mutex> lock(fwUpdateMutex, std::try_to_lock);
     if (!lock.owns_lock())
         return true;
@@ -118,38 +134,40 @@ bool ISDevice::fwUpdate() {
     if (fwUpdater) {
         // check if our mutex is already locked, if so, we're recursing into this function, and we shouldn't...
 
-        fwUpdater->fwUpdate_step();
+        if (msg) fwUpdater->processMessage(msg);
+        fwUpdater->step();
 
-        auto curCmd = fwUpdater->getActiveCommand();
-        if (curCmd == "upload") {
-            if (fwUpdater->fwUpdate_getSessionTarget() != fwLastTarget) {
+        auto activeCmd = fwUpdater->getActiveCommand();
+        if (activeCmd.cmd == "upload") {
+            if (fwUpdater->getActiveTarget() != fwLastTarget) {
                 fwHasError = false;
                 fwLastStatus = fwUpdate::NOT_STARTED;
                 fwLastMessage.clear();
-                fwLastTarget = fwUpdater->fwUpdate_getSessionTarget();
+                fwLastTarget = fwUpdater->getActiveTarget();
             }
-            fwLastSlot = fwUpdater->fwUpdate_getSessionImageSlot();
+            fwLastSlot = fwUpdater->getActiveSlot();
+            auto curStatus = fwUpdater->getUploadStatus();
 
-            if ((fwUpdater->fwUpdate_getSessionStatus() == fwUpdate::NOT_STARTED) && fwUpdater->isWaitingResponse()) {
+            if ((fwUpdater->getUploadStatus() == fwUpdate::NOT_STARTED) && (activeCmd.status == ISFwUpdaterCmd::CMD_QUEUED)) {
                 // We're just starting (no error yet, but no response either)
                 fwLastStatus = fwUpdate::INITIALIZING;
-                fwLastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
-            } else if ((fwUpdater->fwUpdate_getSessionStatus() != fwUpdate::NOT_STARTED) && (fwLastStatus != fwUpdater->fwUpdate_getSessionStatus())) {
+                fwLastMessage = fwUpdater->getUploadStatusName();
+            } else if ((curStatus != fwUpdate::NOT_STARTED) && (curStatus != fwLastStatus)) {
                 // We're got a valid status update (error or otherwise)
-                fwLastStatus = fwUpdater->fwUpdate_getSessionStatus();
-                fwLastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
+                fwLastStatus = curStatus;
+                fwLastMessage = fwUpdater->getUploadStatusName();
 
                 // check for error
-                if (!fwHasError && fwUpdater && ((fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors())) {
+                if (!fwHasError && fwUpdater && ((curStatus < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors())) {
                     fwHasError = true;
                 }
             }
 
-        } else if (curCmd == "waitfor") {
+        } else if (activeCmd.cmd == "waitfor") {
             fwLastMessage = "Waiting for response from device.";
-        } else if (curCmd == "reset") {
+        } else if (activeCmd.cmd == "reset") {
             fwLastMessage = "Resetting device.";
-        } else if (curCmd == "delay") {
+        } else if (activeCmd.cmd == "delay") {
             fwLastMessage = "Waiting...";
         }
 
@@ -158,9 +176,9 @@ bool ISDevice::fwUpdate() {
                 fwHasError = fwUpdater->hasErrors();
                 fwLastMessage = "Error: ";
                 fwLastMessage += "One or more step errors occurred.";
-            } else if (!fwHasError) {
+            } else if (fwHasError) {
                 fwLastMessage = "Error: ";
-                fwLastMessage += ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
+                fwLastMessage += fwUpdater->getUploadStatusName();
             } else {
                 fwLastMessage = "Completed successfully.";
             }
@@ -172,9 +190,13 @@ bool ISDevice::fwUpdate() {
             // collect errors before we close out the updater
             fwErrors = fwUpdater->getStepErrors();
             fwHasError |= !fwErrors.empty();
+            fwLastMessage = "";
+            fwLastProgress = 1.0f;
 
             delete fwUpdater;
             fwUpdater = nullptr;
+        } else {
+            fwLastProgress = fwUpdatePercentCompleted();
         }
     }
 
@@ -367,24 +389,24 @@ int ISDevice::validateAsync(uint32_t timeout) {
         }
 
         // We failed to get a response before the timeout occurred, so reset the timer (stop trying) and return false
-        log_debug(LOG_ISDEVICE, "validateAsync() timed out after %dms.", current_timeMs() - validationStartMs);
+        log_debug(IS_LOG_ISDEVICE, "validateAsync() timed out after %dms.", current_timeMs() - validationStartMs);
         return -1;
     }
 
     switch (previousQueryType) {
         case ISDevice::queryTypes::QUERYTYPE_NMEA :
-            // log_debug(LOG_ISDEVICE, "Querying serial port '%s' using NMEA protocol.", SERIAL_PORT(port)->portName);
+            // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using NMEA protocol.", SERIAL_PORT(port)->portName);
             SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
             SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISB :
-            // log_debug(LOG_ISDEVICE, "Querying serial port '%s' using ISB protocol.", SERIAL_PORT(port)->portName);
+            // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using ISB protocol.", SERIAL_PORT(port)->portName);
             GetData(DID_DEV_INFO);
             SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
         case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
-            // log_debug(LOG_ISDEVICE, "Querying serial port '%s' mcuBoot/SMP protocol.", SERIAL_PORT(port)->portName);
+            // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' mcuBoot/SMP protocol.", SERIAL_PORT(port)->portName);
             break;
     }
 
@@ -575,7 +597,7 @@ int ISDevice::SetSysCmd(const uint32_t command) {
     sysCmd.command = command;
     sysCmd.invCommand = ~command;
     // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
-    log_debug(LOG_ISDEVICE, "Issuing SYS_CMD %d to %s (%s)\n", command, getIdAsString().c_str(), getPortName().c_str());
+    log_debug(IS_LOG_ISDEVICE, "Issuing SYS_CMD %d to %s (%s)\n", command, getIdAsString().c_str(), getPortName().c_str());
     return comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 }
 
@@ -691,20 +713,20 @@ int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint
             if (uploadTimeMs)
             {   // Upload complete.  Allow sync.
                 bool success = (uploadChecksum == syncChecksum);
-                log_debug(LOG_ISDEVICE, "%s upload %s.\n", cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
+                log_debug(IS_LOG_ISDEVICE, "%s upload %s.\n", cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
                 uploadTimeMs = 0;
                 return (success ? 1 : 0);
             }
         }
         else
         {	// Out of sync.  Request flash config.
-            log_debug(LOG_ISDEVICE, "Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
+            log_debug(IS_LOG_ISDEVICE, "Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
             BroadcastBinaryData(flashCfgDid);
         }
     }
     else
     {	// Out of sync.  Request sysParams or gpxStatus.
-        log_debug(LOG_ISDEVICE, "Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
+        log_debug(IS_LOG_ISDEVICE, "Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
         BroadcastBinaryData(syncDid);
     }
     return 0;
@@ -858,7 +880,7 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
     for (const cISDataMappings::MemoryUsage& usage : usageVec)
     {
         int offset = static_cast<int>(usage.ptr - newData);
-        log_debug(LOG_ISDEVICE, "Sending %s: size %lu, offset %d\n", cISDataMappings::DataName(flashCfgDid), usage.size, offset);
+        log_debug(IS_LOG_ISDEVICE, "Sending %s: size %lu, offset %d\n", cISDataMappings::DataName(flashCfgDid), usage.size, offset);
         failure |= (SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset) != 0);   // SendData() returns 0 on success
 
         if (!failure)
@@ -923,13 +945,13 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for IMX flash config
-            log_debug(LOG_ISDEVICE, "Timeout waiting for DID_FLASH_CONFIG failure!\n");
+            log_debug(IS_LOG_ISDEVICE, "Timeout waiting for DID_FLASH_CONFIG failure!\n");
             return false;
         }
         else
         {   // Query DID_SYS_PARAMS
             GetData(DID_SYS_PARAMS);
-            log_debug(LOG_ISDEVICE, "Waiting for IMX flash sync...\n");
+            log_debug(IS_LOG_ISDEVICE, "Waiting for IMX flash sync...\n");
         }
     }
 
@@ -955,13 +977,13 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for GPX flash config
-            log_debug(LOG_ISDEVICE, "Timeout waiting for DID_GPX_FLASH_CONFIG failure!\n");
+            log_debug(IS_LOG_ISDEVICE, "Timeout waiting for DID_GPX_FLASH_CONFIG failure!\n");
             return false;
         }
         else
         {   // Query DID_GPX_STATUS
             GetData(DID_GPX_STATUS);
-            log_debug(LOG_ISDEVICE, "Waiting for GPX flash sync...\n");
+            log_debug(IS_LOG_ISDEVICE, "Waiting for GPX flash sync...\n");
         }
     }
 
@@ -1156,14 +1178,14 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             break;
         case DID_SYS_PARAMS:
             copyDataPToStructP(&sysParams, data, sizeof(sys_params_t));
-            log_debug(LOG_ISDEVICE, "Received DID_SYS_PARAMS");
+            log_debug(IS_LOG_ISDEVICE, "Received DID_SYS_PARAMS");
             break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data)) {
                 sysParams.flashCfgChecksum = imxFlashCfg.checksum;
             }
-            log_debug(LOG_ISDEVICE, "Received DID_FLASH_CONFIG");
+            log_debug(IS_LOG_ISDEVICE, "Received DID_FLASH_CONFIG");
             break;
         case DID_GPX_FLASH_CFG:
             copyDataPToStructP(&gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
@@ -1171,14 +1193,10 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             {	// Checksum received
                 gpxStatus.flashCfgChecksum = gpxFlashCfg.checksum;
             }
-            log_debug(LOG_ISDEVICE, "Received DID_GPX_FLASH_CFG");
+            log_debug(IS_LOG_ISDEVICE, "Received DID_GPX_FLASH_CFG");
             break;
         case DID_FIRMWARE_UPDATE:
-            // we don't respond to messages if we don't already have an active Updater
-            if (fwUpdater) {
-                fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
-                fwUpdate();
-            }
+            fwUpdater->processMessage(data);
             break;
 
         // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
@@ -1301,7 +1319,7 @@ bool ISDevice::assignPort(port_handle_t newPort) {
 #endif
     }
 //    if ((hdwId != IS_HARDWARE_ANY) || devInfo.serialNumber)
-//        log_debug(LOG_ISDEVICE, "Device %s bound to port %s.", getIdAsString().c_str(), getPortName().c_str());
+//        log_debug(IS_LOG_ISDEVICE, "Device %s bound to port %s.", getIdAsString().c_str(), getPortName().c_str());
     return true;
 }
 

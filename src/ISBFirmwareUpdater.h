@@ -48,8 +48,28 @@ public:
         // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
         // as soon as this is instantiated, we should attempt to target and boot the device into ISB mode.
         // rebootToISB(5, 0, false);
+        if (!portListenerHandle) {
+            portListenerHandle = portManager.addPortListener(
+                    [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
+                        portsChanged = true;
+                        if (event == PortManager::PORT_ADDED) {
+                            if (deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION)) {
+                                auto newDev = deviceManager.getDevice(port);
+                                if (newDev)
+                                    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Rediscovered device %s on port %s.", newDev->getIdAsString().c_str(), portName.c_str());
+                            }
+                        }
+                    }
+            );
+        }
+
     }
-    ~ISBFirmwareUpdater() override = default;
+    ~ISBFirmwareUpdater() override {
+        if (portListenerHandle) {
+            portManager.removePortListener(portListenerHandle);
+            portListenerHandle = nullptr;
+        }
+    };
 
     /**
      * We override this in this class, because we have to do some better handling for erase/write, rather than chunks.
@@ -305,8 +325,8 @@ private:
 
     std::deque<uint8_t>& toHost;
 
-    eraseState_t eraseFlash_step(uint32_t timeout = 60000);
-    writeState_t writeFlash_step(uint32_t timeout = 60000);
+    eraseState_t eraseFlash_step(uint32_t timeout = 20000);
+    writeState_t writeFlash_step(uint32_t timeout = 20000);
 };
 
 #endif //IS_ISB_FIRMWAREUPDATER_H

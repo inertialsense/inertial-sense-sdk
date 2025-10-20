@@ -44,7 +44,7 @@ ISComManager s_cm;
 CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
 int ISComManager::init(
-        std::unordered_set<port_handle_t>* portSet,
+        std::set<port_handle_t>* portSet,
         int stepPeriodMillis,
         pfnComManagerPostRead pstRxFncCb,
         pfnComManagerPostAck pstAckFncCb,
@@ -67,7 +67,7 @@ int ISComManager::init(
     defaultCbs.all = comManagerProcessBinaryRxPacket;
     defaultCbs.isbData = pstRxFncCb;
 
-    if (!portSet) portSet = new std::unordered_set<port_handle_t>();
+    if (!portSet) portSet = new std::set<port_handle_t>();
     ports = portSet;
 
     return 0;
@@ -75,7 +75,7 @@ int ISComManager::init(
 
 
 int comManagerInit(
-        std::unordered_set<port_handle_t>* portSet,
+        std::set<port_handle_t>* portSet,
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
@@ -135,11 +135,11 @@ bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* cbs) {
     return s_cm.registerPort(port, cbs);
 }
 
-std::unordered_set<port_handle_t>& ISComManager::getPorts() {
+std::set<port_handle_t>& ISComManager::getPorts() {
     return *ports;
 }
 
-std::unordered_set<port_handle_t>& comManagerGetPorts() {
+std::set<port_handle_t>& comManagerGetPorts() {
     return s_cm.getPorts();
 }
 

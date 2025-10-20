@@ -953,7 +953,7 @@ bool InertialSense::isFirmwareUpdateFinished() {
 bool InertialSense::isFirmwareUpdateSuccessful() {
     for (auto device : deviceManager) {
         ISFirmwareUpdater *fwUpdater = device->fwUpdater;
-        if (fwUpdater && fwUpdater->fwUpdate_isDone() && ((fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors()))
+        if (fwUpdater && fwUpdater->fwUpdate_isDone() && ((fwUpdater->getUploadStatus() < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors()))
             return false;
     }
     return true;
@@ -1129,8 +1129,8 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     size_t maxCount = UINT32_MAX;
 
     // Note that the following callbacks/handlers will be updated to be ISDevice specific, once the port is deemed to be an ISDevice
-    log_info(LOG_FACILITY_NONE, "Initializing comManager...");
-    comManagerInit((std::unordered_set<port_handle_t>*)&portManager, 10, staticProcessRxData, 0, 0, 0, 0);
+    log_info(IS_LOG_FACILITY_NONE, "Initializing comManager...");
+    comManagerInit((std::set<port_handle_t>*)&portManager, 10, staticProcessRxData, 0, 0, 0, 0);
     comManagerRegisterProtocolHandler(_PTYPE_NMEA, staticProcessRxNmea);
     comManagerRegisterProtocolHandler(_PTYPE_UBLOX, m_handlerUblox);
     comManagerRegisterProtocolHandler(_PTYPE_RTCM3, m_handlerRtcm3);
@@ -1141,7 +1141,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     if (portPattern[0] == '*')
     {
         // m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.    (WHJ) I commented this out.  We don't want to force device verification with the loopback tests.
-        log_info(LOG_FACILITY_NONE, "Querying OS for available serial ports.");
+        log_info(IS_LOG_FACILITY_NONE, "Querying OS for available serial ports.");
         portManager.discoverPorts();
         // cISSerialPort::GetComPorts(portNames);
         if (portPattern[1] != '\0')
@@ -1161,7 +1161,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     }
 
     if (m_enableDeviceValidation) {
-        log_info(LOG_FACILITY_NONE, "Starting device validation on %lu registered ports.\n", portManager.size());
+        log_info(IS_LOG_FACILITY_NONE, "Starting device validation on %lu registered ports.\n", portManager.size());
 
         // we'll make a copy of all the port handles (into a set); as we validate each, we'll remove it from this new set until they are all gone
         for (auto port : portManager) portsToValidate.insert(port);
@@ -1172,7 +1172,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // remove all ports from portToValidate if a device has bound to that port
         for ( auto d : deviceManager ) portsToValidate.erase(d->port);
 
-        log_info(LOG_FACILITY_NONE, "Completed device validation for %lu devices, on %lu ports.\n", deviceManager.size(), portManager.size());
+        log_info(IS_LOG_FACILITY_NONE, "Completed device validation for %lu devices, on %lu ports.\n", deviceManager.size(), portManager.size());
         if (!portsToValidate.empty()) {
             std::string names;
             for (auto port : portsToValidate) {
@@ -1180,7 +1180,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                 names += std::string(portName(port));
             }
             // auto names = utils::join_to_string<std::set<std::string>>(portsToValidate, ", ");
-            log_error(LOG_FACILITY_NONE, "Timeout waiting to validate %lu ports: %s.\n", portsToValidate.size(), names.c_str());
+            log_error(IS_LOG_FACILITY_NONE, "Timeout waiting to validate %lu ports: %s.\n", portsToValidate.size(), names.c_str());
         }
     }
 
@@ -1380,9 +1380,9 @@ std::vector<device_handle_t> InertialSense::selectByHdwId(const uint16_t hdwId) 
 void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port) {
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
-            log_debug(LOG_PORT_MANAGER, "PortManager::PORT_ADDED '%s'", pName.c_str());
+            log_debug(IS_LOG_PORT_MANAGER, "PortManager::PORT_ADDED '%s'", pName.c_str());
             if (!portIsOpened(port)) {
-                // debug_message(LOG_FACILITY_NONE, "Opening serial port '%s'", curPortName.c_str());
+                // debug_message(IS_LOG_FACILITY_NONE, "Opening serial port '%s'", curPortName.c_str());
 
                 // FIXME: the portManagerHandler shouldn't ever open/close the port - it can, but it shouldn't.
                 //  This is because the portManager should not ever "do anything" with the port, other than
@@ -1392,7 +1392,7 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
                 //  its the PortFactory's job to validate the port, not the listener... usually.
 /*
                 if (portOpen(port) == PORT_ERROR__OPEN_FAILURE) {
-                    log_debug(LOG_FACILITY_NONE, "Error opening serial port '%s'.  Ignoring.  Error was: %s", pName.c_str(), SERIAL_PORT(port)->error);
+                    log_debug(IS_LOG_FACILITY_NONE, "Error opening serial port '%s'.  Ignoring.  Error was: %s", pName.c_str(), SERIAL_PORT(port)->error);
                     serialPortClose(port);           // failed to open
                     m_ignoredPorts.push_back(pName);     // record this port name as bad, so we don't try and reopen it again
                 }
@@ -1400,7 +1400,7 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
             }
             break;
         case PortManager::PORT_REMOVED:
-            log_debug(LOG_FACILITY_NONE, "PortManager::PORT_REMOVED '%s'.", pName.c_str());
+            log_debug(IS_LOG_FACILITY_NONE, "PortManager::PORT_REMOVED '%s'.", pName.c_str());
             break;
     }
 }
@@ -1414,12 +1414,12 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
 void InertialSense::deviceManagerHandler(uint8_t event, device_handle_t device) {
     switch ((DeviceManager::device_event_e)event) {
         case DeviceManager::DEVICE_ADDED: {
-            log_info(LOG_FACILITY_NONE, "Device %s added on port %s", device->getIdAsString().c_str(), portIsValid(device->port) ? portName(device->port) : "(None)");
+            log_info(IS_LOG_FACILITY_NONE, "Device %s added on port %s", device->getIdAsString().c_str(), portIsValid(device->port) ? portName(device->port) : "(None)");
 
             // since we've validated, we can remove this from the "portsToValidate" set
             auto removeMe = portsToValidate.find(device->port);
             if (removeMe != portsToValidate.end()) {
-                log_info(LOG_FACILITY_NONE, "Removed %s from portsToValidate", portIsValid(device->port) ? portName(device->port) : "(None)");
+                log_info(IS_LOG_FACILITY_NONE, "Removed %s from portsToValidate", portIsValid(device->port) ? portName(device->port) : "(None)");
                 portsToValidate.erase(removeMe);
             }
         }
@@ -1435,7 +1435,7 @@ void InertialSense::deviceManagerHandler(uint8_t event, device_handle_t device) 
         case DeviceManager::DEVICE_PORT_LOST:
             break;
         case DeviceManager::DEVICE_REMOVED:
-            log_info(LOG_FACILITY_NONE, "Device %s removed", device->getIdAsString().c_str());
+            log_info(IS_LOG_FACILITY_NONE, "Device %s removed", device->getIdAsString().c_str());
             break;
     }
 }
