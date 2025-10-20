@@ -165,7 +165,7 @@ bool TcpServerPortFactory::startListening() {
     // setsockopt: Handy debugging trick that lets us rerun the server immediately after we kill it;
     // otherwise we have to wait about 20 secs.  Eliminates "ERROR on binding: Address already in use" error.
     int optval = 1;  /* flag value for setsockopt */
-    setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(int));
+    setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval , sizeof(int));
 
 #ifdef PLATFORM_IS_WINDOWS
     DWORD nonBlocking = 1;
