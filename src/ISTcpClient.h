@@ -22,19 +22,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define IS_SOCKET_DEFAULT_TIMEOUT_MS 5000
 
 
-class cISTcpClient : public cISStream
+class [[deprecated("Use tcpPort/TcpPortFactory instead. cISTcpClient will be removed with SDK 3.0.")]] cISTcpClient : public cISStream
 {
 public:
     /**
     * Constructor
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     cISTcpClient();
 
     /**
     * Destructor
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     virtual ~cISTcpClient();
 
     /**
@@ -44,14 +42,12 @@ public:
     * @param timeoutMilliseconds the max milliseconds to wait for a successful connection before aborting
     * @return 0 if success, otherwise an error code
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     int Open(const std::string& host, int port, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
 
     /**
     * Close the client
     * @return 0 if success, otherwise an error code
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     int Close() OVERRIDE;
 
     /**
@@ -60,7 +56,6 @@ public:
     * @param dataLength the number of bytes available in data
     * @return the number of bytes read or less than 0 if error
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     int Read(void* data, int dataLength) OVERRIDE;
 
     /**
@@ -69,7 +64,6 @@ public:
     * @param dataLength the number of bytes to write
     * @return the number of bytes written or less than 0 if error
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     int Write(const void* data, int dataLength) OVERRIDE;
 
     /**
@@ -79,39 +73,33 @@ public:
     * @param userName optional user name (basic authentication)
     * @param password optional password (basic authentication)
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     void HttpGet(const std::string& subUrl, const std::string& userAgent, const std::string& userName, const std::string& password);
 
     /**
     * Get whether the connection is open
     * @return true if connection open, false if not
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     bool IsOpen() { return m_socket != 0; }
 
     /**
     * Get whether the client socket is blocking - blocking reads do not return until the data is read or a timeout occurs. Default is false.
     * @return whether the client is a blocking socket
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     bool GetBlocking() { return m_blocking; }
 
     /**
     * Sets whether the client socket is blocking. Default is false.
     * @return 0 if success otherwise an error code
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     int SetBlocking(bool blocking);
 
     /**
     * Gets information about the current connection (i.e. TCP ip address and port number or serial port name)
     * @return connection info
     */
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     std::string ConnectionInfo() OVERRIDE;
 
 private:
-    [[deprecated("Use tcpPort and tcpPortFactory instead.")]]
     cISTcpClient(const cISTcpClient& copy); // Disable copy constructor
 
     is_socket_t m_socket;

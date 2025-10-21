@@ -30,7 +30,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-[[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
 cISTcpServer::cISTcpServer(iISTcpServerDelegate* delegate)
 {
     ISSocketFrameworkInitialize();
@@ -39,14 +38,12 @@ cISTcpServer::cISTcpServer(iISTcpServerDelegate* delegate)
     m_port = 0;
 }
 
-[[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
 cISTcpServer::~cISTcpServer()
 {
     Close();
     ISSocketFrameworkShutdown();
 }
 
-[[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
 int cISTcpServer::Open(const string& ipAddress, int port)
 {
     m_ipAddress = ipAddress;
@@ -114,7 +111,6 @@ int cISTcpServer::Open(const string& ipAddress, int port)
     return status;
 }
 
-[[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
 int cISTcpServer::Close()
 {
     int status = ISSocketClose(m_socket);
@@ -126,7 +122,6 @@ int cISTcpServer::Close()
     return status;
 }
 
-[[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
 void cISTcpServer::Update()
 {
     uint8_t readBuff[8192];
@@ -177,7 +172,6 @@ void cISTcpServer::Update()
     }
 }
 
-[[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
 int cISTcpServer::Write(const void* data, int dataLength)
 {
     for (size_t i = 0; i < m_clients.size(); i++)

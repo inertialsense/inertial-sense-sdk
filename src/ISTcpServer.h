@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 class cISTcpServer;
 
-class iISTcpServerDelegate
+class [[deprecated("Use tcpPort/TcpPortFactory instead. cISTcpClient will be removed with SDK 3.0.")]] iISTcpServerDelegate
 {
 protected:
     /**
@@ -31,7 +31,6 @@ protected:
     * @param data the data received
     * @param dataLength the number of bytes received
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     virtual void OnClientDataReceived(cISTcpServer* server, is_socket_t socket, uint8_t* data, int dataLength)
     {
         (void)server;
@@ -44,7 +43,6 @@ protected:
     * Executes when a client is connecting
     * @param server the server the client socket is connecting to
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     virtual void OnClientConnecting(cISTcpServer* server)
     {
         (void)server;
@@ -55,7 +53,6 @@ protected:
     * @param server the server the client connected to
     * @param socket the connected socket
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     virtual void OnClientConnected(cISTcpServer* server, is_socket_t socket)
     {
         (void)server;
@@ -66,7 +63,6 @@ protected:
     * Executes when a client fails to connect
     * @param server the server the client failed to connect to
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     virtual void OnClientConnectFailed(cISTcpServer* server)
     {
         (void)server;
@@ -77,7 +73,6 @@ protected:
     * @param server the server the client disconnected from
     * @param socket the socket that disconnected
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     virtual void OnClientDisconnected(cISTcpServer* server, is_socket_t socket)
     {
         (void)server;
@@ -87,19 +82,17 @@ protected:
     friend class cISTcpServer;
 };
 
-class cISTcpServer : public cISStream
+class [[deprecated("Use tcpPort/TcpPortFactory instead. cISTcpClient will be removed with SDK 3.0.")]] cISTcpServer : public cISStream
 {
 public:
     /**
     * Constructor
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     cISTcpServer(iISTcpServerDelegate* delegate = NULL);
 
     /**
     * Destructor
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     virtual ~cISTcpServer();
 
     /**
@@ -108,20 +101,17 @@ public:
     * @param port the port to bind to
     * @return 0 if success, otherwise an error code
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     int Open(const std::string& ipAddress, int port);
 
     /**
     * Close the server
     * @return 0 if success, otherwise an error code
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     int Close();
 
     /**
     * Update the server, receive connections, etc. Any clients that are disconnected will be closed and removed.
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     void Update();
 
     /**
@@ -130,32 +120,27 @@ public:
     * @param dataLength the number of bytes in data
     * @return the number of bytes written
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     int Write(const void* data, int dataLength);
 
     /**
     * Get whether the server is open
     * @return true if server open, false if not
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     bool IsOpen() { return m_socket != 0; }
 
     /**
     * Get ip address string
     * @return string of ip address
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     std::string IpAddress() { return m_ipAddress; }
 
     /**
     * Get port number
     * @return int port number
     */
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     int32_t Port() { return m_port; }
 
 private:
-    [[deprecated("Use tcpPort and tcpServerPortFactory instead.")]]
     cISTcpServer(const cISTcpServer& copy); // Disable copy constructor
 
     is_socket_t m_socket;
