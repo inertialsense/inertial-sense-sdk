@@ -38,6 +38,7 @@ static mutex s_socketFrameworkMutex;
 
 #endif
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 void ISSocketFrameworkInitialize()
 {
 
@@ -55,6 +56,7 @@ void ISSocketFrameworkInitialize()
 
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 void ISSocketFrameworkShutdown()
 {
 
@@ -74,6 +76,7 @@ void ISSocketFrameworkShutdown()
 
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketCanWrite(is_socket_t socket, int timeoutMilliseconds)
 {
     struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
@@ -84,6 +87,7 @@ int ISSocketCanWrite(is_socket_t socket, int timeoutMilliseconds)
     return (numberOfSocketsThatCanWrite > 0);
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketCanRead(is_socket_t socket, int timeoutMilliseconds)
 {
     struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
@@ -94,6 +98,7 @@ int ISSocketCanRead(is_socket_t socket, int timeoutMilliseconds)
     return (numberOfSocketsThatCanRead > 0);
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketWrite(is_socket_t socket, const uint8_t* data, int dataLength)
 {
     int totalWriteCount = 0;
@@ -121,6 +126,7 @@ int ISSocketWrite(is_socket_t socket, const uint8_t* data, int dataLength)
     return totalWriteCount;
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketRead(is_socket_t socket, uint8_t* data, int dataLength)
 {
     int count = recv(socket, (char*)data, dataLength, 0);
@@ -148,6 +154,7 @@ int ISSocketRead(is_socket_t socket, uint8_t* data, int dataLength)
     return count;
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketSetBlocking(is_socket_t socket, bool blocking)
 {
 
@@ -170,6 +177,7 @@ int ISSocketSetBlocking(is_socket_t socket, bool blocking)
 
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketSetReadTimeout(is_socket_t socket, int timeoutMilliseconds)
 {
 
@@ -189,6 +197,7 @@ int ISSocketSetReadTimeout(is_socket_t socket, int timeoutMilliseconds)
 
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketClose(is_socket_t& socket)
 {
     int status = 0;
@@ -220,6 +229,7 @@ int ISSocketClose(is_socket_t& socket)
     return status;
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 cISTcpClient::cISTcpClient()
 {
     m_socket = 0;
@@ -228,12 +238,14 @@ cISTcpClient::cISTcpClient()
     ISSocketFrameworkInitialize();
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 cISTcpClient::~cISTcpClient()
 {
     Close();
     ISSocketFrameworkShutdown();
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
 {
     Close();
@@ -303,11 +315,13 @@ int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
     return 0;
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int cISTcpClient::Close()
 {
     return ISSocketClose(m_socket);
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int cISTcpClient::Read(void* data, int dataLength)
 {
     int count = ISSocketRead(m_socket, (uint8_t*)data, dataLength);
@@ -318,6 +332,7 @@ int cISTcpClient::Read(void* data, int dataLength)
     return count;
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int cISTcpClient::Write(const void* data, int dataLength)
 {
     int count = ISSocketWrite(m_socket, (const uint8_t*)data, dataLength);
@@ -328,6 +343,7 @@ int cISTcpClient::Write(const void* data, int dataLength)
     return count;
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 void cISTcpClient::HttpGet(const string& subUrl, const string& userAgent, const string& userName, const string& password)
 {
     string msg = "GET /" + subUrl + " HTTP/1.1\r\n";
@@ -341,12 +357,14 @@ void cISTcpClient::HttpGet(const string& subUrl, const string& userAgent, const 
     Write((uint8_t*)msg.data(), (int)msg.size());
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int cISTcpClient::SetBlocking(bool blocking)
 {
     m_blocking = blocking;
     return ISSocketSetBlocking(m_socket, blocking);
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 std::string cISTcpClient::ConnectionInfo()
 {
     return m_host + ":" + to_string(m_port);
