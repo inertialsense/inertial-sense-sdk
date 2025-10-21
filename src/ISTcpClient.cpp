@@ -38,6 +38,7 @@ static mutex s_socketFrameworkMutex;
 
 #endif
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 void ISSocketFrameworkInitialize()
 {
 
@@ -55,6 +56,7 @@ void ISSocketFrameworkInitialize()
 
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 void ISSocketFrameworkShutdown()
 {
 
@@ -74,6 +76,7 @@ void ISSocketFrameworkShutdown()
 
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketCanWrite(is_socket_t socket, int timeoutMilliseconds)
 {
     struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
@@ -84,6 +87,7 @@ int ISSocketCanWrite(is_socket_t socket, int timeoutMilliseconds)
     return (numberOfSocketsThatCanWrite > 0);
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketCanRead(is_socket_t socket, int timeoutMilliseconds)
 {
     struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
@@ -94,6 +98,7 @@ int ISSocketCanRead(is_socket_t socket, int timeoutMilliseconds)
     return (numberOfSocketsThatCanRead > 0);
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketWrite(is_socket_t socket, const uint8_t* data, int dataLength)
 {
     int totalWriteCount = 0;
@@ -121,6 +126,7 @@ int ISSocketWrite(is_socket_t socket, const uint8_t* data, int dataLength)
     return totalWriteCount;
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketRead(is_socket_t socket, uint8_t* data, int dataLength)
 {
     int count = recv(socket, (char*)data, dataLength, 0);
@@ -148,6 +154,7 @@ int ISSocketRead(is_socket_t socket, uint8_t* data, int dataLength)
     return count;
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketSetBlocking(is_socket_t socket, bool blocking)
 {
 
@@ -170,6 +177,7 @@ int ISSocketSetBlocking(is_socket_t socket, bool blocking)
 
 }
 
+[[deprecated("Use tcpPort and tcpPortFactory instead.")]]
 int ISSocketSetReadTimeout(is_socket_t socket, int timeoutMilliseconds)
 {
 
