@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 class cISTcpServer;
 
-class iISTcpServerDelegate
+class [[deprecated("Use tcpPort/TcpPortFactory instead. cISTcpClient will be removed with SDK 3.0.")]] iISTcpServerDelegate
 {
 protected:
     /**
@@ -82,7 +82,7 @@ protected:
     friend class cISTcpServer;
 };
 
-class cISTcpServer : public cISStream
+class [[deprecated("Use tcpPort/TcpPortFactory instead. cISTcpClient will be removed with SDK 3.0.")]] cISTcpServer : public cISStream
 {
 public:
     /**

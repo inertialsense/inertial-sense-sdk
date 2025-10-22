@@ -52,10 +52,31 @@ public:
      */
     bool discoverPorts(const std::string& pattern = "(.+)", uint16_t pType = PORT_TYPE__UNKNOWN);
 
-    void addPortFactory(PortFactory* pl) {
-        factories.push_back(pl);
+    /**
+     * Removes/clears all previously registered port factories from the PortManager.  No ports (of any type) will be discovered
+     * if there are no factories registered.
+     */
+    void clearPortFactories() { factories.clear(); }
+
+    /**
+     * Sets the list of available port factories to those defined in the passed vector. Only ports managed/located by the listed
+     * factories will be discovered, and any previously registered factories will be removed.
+     * @param _factories a vector of pointers to factory instances.
+     */
+    void setPortFactories(std::vector<PortFactory*>& _factories) { factories = _factories; }
+
+    /**
+     * Registers a factory instance to the PortManager.
+     * @param factory the port factory instance to register
+     */
+    void addPortFactory(PortFactory* factory) {
+        factories.push_back(factory);
     }
 
+    /**
+     * Returns a vector containing all registered port factories.
+     * @return
+     */
     std::vector<PortFactory*> getPortFactories() {
         return factories;
     }
