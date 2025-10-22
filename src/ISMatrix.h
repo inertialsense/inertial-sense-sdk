@@ -96,7 +96,7 @@ typedef struct
  * to see if it is actually a zero without using any floating point
  * code.
  */
-#if !defined(PLATFORM_IS_WINDOWS)
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
@@ -105,7 +105,7 @@ static __inline char is_zero(const f_t * f)
     const uint32_t *x = (const uint32_t*) f;
     return (*x == 0) ? 1 : 0;
 }
-#if !defined(PLATFORM_IS_WINDOWS)
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 

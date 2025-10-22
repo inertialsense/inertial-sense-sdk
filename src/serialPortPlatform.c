@@ -30,21 +30,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <termios.h>
 #include <unistd.h>
 #include <poll.h>
-#include <linux/serial.h>
 
 // cygwin defines FIONREAD in socket.h instead of ioctl.h
 #ifndef FIONREAD
 #include <sys/socket.h>
 #endif
 
-#if PLATFORM_IS_APPLE
+#if PLATFORM_IS_LINUX
+#include <linux/serial.h>
+#endif
 
+#if PLATFORM_IS_APPLE
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/serial/IOSerialKeys.h>
 #include <IOKit/serial/ioss.h>
 #include <IOKit/IOBSD.h>
-
 #endif
 
 #ifndef B460800
@@ -266,7 +267,11 @@ static int configure_serial_port(int fd, int baudRate)
             if (new_tty.c_lflag != tty.c_lflag) { error_message("config_serial_port():: setting c_lflag mismatch: expected: %x, actual: %x\n", tty.c_lflag, new_tty.c_lflag); }
             for (int i = 0; i < 32; i++)
                 if (new_tty.c_cc[i] != tty.c_cc[i]) { error_message("config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d\n", i, tty.c_cc[i], new_tty.c_cc[i]); }
+
+            #if PLATFORM_IS_LINUX
             if (new_tty.c_line != tty.c_line) { error_message("config_serial_port():: setting c_line mismatch: expected: %d, actual: %d\n", tty.c_line, new_tty.c_line); }
+            #endif
+
             return -1;
         }
     }
@@ -389,7 +394,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
 #else
 
-    int fd = open(portName, O_RDWR | O_NOCTTY);     // enable read/write and disable flow control
+    int fd = open(portName, O_RDWR | O_NOCTTY | O_NONBLOCK);     // enable read/write and disable flow control
     if (fd < 0)
     {
         error_message("[%s]serialPortOpenPlatform():: Error opening port: %s (%d)\n", portName, strerror(errno), errno);
