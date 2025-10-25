@@ -65,7 +65,7 @@ def parse_args(argv: list[str] | None = None):
 
     # Parse, but also keep unknown args to forward into child build scripts
     args, unknown = parser.parse_known_args(argv)
-    args.forward_args = unknown
+    args.forward_args = sys.argv[1:]
     return args
 
 
