@@ -4,6 +4,7 @@ import shutil
 import sys
 import subprocess
 import time
+import json
 from pathlib import Path
 sdk_scripts_dir = Path(__file__).resolve().parent
 imx_scripts_dir = sdk_scripts_dir.parent.parent
@@ -224,8 +225,62 @@ class BuildTestManager:
     @staticmethod
     def is_directory_empty(directory):
         if os.path.exists(directory) and os.path.isdir(directory):
-            return len(os.listdir(directory)) == 0    
-    
+            return len(os.listdir(directory)) == 0
+
+    @staticmethod
+    def find_vcvarsall():
+        """
+        Finds vcvarsall.bat using vswhere.exe to query Visual Studio installations.
+
+        Returns:
+            The path to vcvarsall.bat, or None if not found.
+        """
+        try:
+            # Find vswhere.exe, which is installed alongside Visual Studio
+            # Try both the Program Files and Program Files (x86) paths
+            vswhere_path = None
+            for path in [
+                os.path.join(os.environ.get("ProgramFiles(x86)", ""), "Microsoft Visual Studio", "Installer", "vswhere.exe"),
+                os.path.join(os.environ.get("ProgramFiles", ""), "Microsoft Visual Studio", "Installer", "vswhere.exe")
+            ]:
+                if os.path.exists(path):
+                    vswhere_path = path
+                    break
+
+            if not vswhere_path:
+                print("vswhere.exe not found. Please install Visual Studio with the 'Desktop development with C++' workload.")
+                return None
+
+            # Call vswhere to get a list of installed VS versions with the C++ workload
+            command = [
+                vswhere_path,
+                "-latest",
+                "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+                "-property", "installationPath",
+                "-format", "json"
+            ]
+
+            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            installations = json.loads(result.stdout)
+
+            if not installations:
+                print("No Visual Studio installations found with C++ tools.")
+                return None
+
+            # Get the path from the most recent installation
+            vs_install_path = installations[0]["installationPath"]
+
+            # Build the path to vcvarsall.bat
+            vcvarsall_path = os.path.join(vs_install_path, "VC", "Auxiliary", "Build", "vcvarsall.bat")
+            if os.path.exists(vcvarsall_path):
+                return vcvarsall_path
+
+        except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Error finding vcvarsall.bat: {e}")
+
+        return None
+
+
     @staticmethod
     def static_build_cmake(project_name, project_dir, build_type="Release", clean=False, is_windows=False):
         result = 0
@@ -268,12 +323,7 @@ class BuildTestManager:
                 if is_windows:
                     arch = "x64"
                     vcpkg_toolchain = r"C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
-                    candidate_vcvars_paths = [
-                        r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
-                        r"C:\Program Files\Microsoft Visual Studio\2022\VC\Auxiliary\Build\vcvarsall.bat",
-                    ]
-                    # Find the first valid vcvarsall.bat path
-                    vcvars_path = next((p for p in candidate_vcvars_paths if os.path.exists(p)), None)
+                    vcvars_path = BuildTestManager.find_vcvarsall()
                     if not vcvars_path:
                         print("vcvarsall.bat path not found!!!")
                         return -1

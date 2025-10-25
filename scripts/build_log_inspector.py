@@ -75,7 +75,7 @@ def run_build(args=[]):
         elif arg in ("-d", "--debug"):
             build_type = "Debug"
 
-    pip_install_command = f"pip3 install {python_dir}"
+    pip_install_command = f'pip3 install "{python_dir}"'
     version_info = sys.version_info
     if version_info.major > 3 or (version_info.major == 3 and version_info.minor >= 11):
         pip_install_command += " --break-system-packages"

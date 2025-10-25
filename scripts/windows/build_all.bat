@@ -1,5 +1,5 @@
 @echo off 
-for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
+for %%i in ("%~dp0..\..") do SET SDK_DIR="%%~fi"
 call %SDK_DIR%\scripts\lib\activate_python_venv.bat
 
 python %SDK_DIR%\scripts\build_all.py %*
