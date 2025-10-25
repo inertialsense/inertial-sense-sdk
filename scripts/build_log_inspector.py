@@ -16,7 +16,7 @@ IS_WINDOWS = (os.name == "nt") or (platform.system() == "Windows")
 PY = sys.executable  # venv python when activated
 
 def in_venv() -> bool:
-    return hasattr(sys, "real_prefix") or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix)
+    return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
 
 _DLL_DIR_HANDLES: list = []
 _DLLS_ADDED = False
