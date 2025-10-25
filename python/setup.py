@@ -8,9 +8,14 @@ from setuptools import find_namespace_packages, setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 from pybind11.setup_helpers import Pybind11Extension
 from pathlib import Path
-version_ns = {}
-exec(Path("inertialsense/_version.py").read_text(), version_ns)
+import re
 
+# Extract version string from inertialsense/_version.py safely
+version_file = Path("inertialsense/_version.py").read_text()
+version_match = re.search(r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', version_file)
+if not version_match:
+    raise RuntimeError("Unable to find version string in inertialsense/_version.py")
+version_ns = {"__version__": version_match.group(1)}
 # os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
 
 with open("README.md", "r") as fh:
