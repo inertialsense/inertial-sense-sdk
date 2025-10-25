@@ -1,17 +1,24 @@
 @echo off
+setlocal
 
 echo Build Log Inspector
 echo.
 
-:: Set SDK_DIR as directory path
-for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
-call %SDK_DIR%\scripts\lib\activate_python_venv.bat
+:: Set SDK_DIR to the repo root (two levels up from this script)
+for %%i in ("%~dp0..\..") do set "SDK_DIR=%%~fi"
 
-:: Build SDK cpp needed by LogInspector
-call %SDK_DIR%\scripts\windows\build_is_sdk.bat %*
+:: Activate the venv (ok if this is a no-op)
+call "%SDK_DIR%\scripts\lib\activate_python_venv.bat"
 
-:: Build Log Inspector locally
+:: Build SDK C++ (needed by LogInspector)
+call "%SDK_DIR%\scripts\windows\build_is_sdk.bat" %*
+if errorlevel 1 goto :fail
+
+:: Build/run Log Inspector locally
 python %SDK_DIR%\scripts\build_log_inspector.py %*
+set "ec=%ERRORLEVEL%"
+endlocal & exit /b %ec%
 
-:: Check the exit code and exit with the same code if an error occurred
-IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%
+:fail
+set "ec=%ERRORLEVEL%"
+endlocal & exit /b %ec%
