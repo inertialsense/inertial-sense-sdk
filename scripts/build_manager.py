@@ -237,10 +237,11 @@ class BuildTestManager:
         result = 0
         try:
             with open(os.devnull, 'r') as devnull:
-                subprocess.run(
+                build_process = subprocess.run(
                     command, check=True, stdin=devnull,
                     cwd=os.path.dirname(script_path) if os.path.dirname(script_path) else None
                 )
+                result = build_process.returncode
         except subprocess.CalledProcessError as e:
             print(f"Error building {project_name}!")
             result = e.returncode
