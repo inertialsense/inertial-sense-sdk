@@ -154,9 +154,6 @@ def run_build(args: list[str] = []) -> int:
 
     print("CMD:", " ".join(pip_install_cmd))
     build_process = subprocess.run(pip_install_cmd, cwd=SDK_DIR, check=True)
-    if build_process.returncode:
-        print("pip install failed!")
-        return build_process.returncode
 
     # Build extension in-place
     return run_setup_command("build_ext --inplace", cwd=PYTHON_DIR)
