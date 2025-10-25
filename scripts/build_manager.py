@@ -70,7 +70,10 @@ def parse_args(argv: list[str] | None = None):
 
 
 class BuildTestManager:
-    def __init__(self, args):
+    def __init__(self, args=None):
+        if args is None:
+            args = parse_args(sys.argv[1:])
+        self.args = args
         self.is_windows = os.name == 'nt' or platform.system() == 'Windows'
         self.generate_release = bool(args.generate_release)
         self.release_name = args.release_name
@@ -87,8 +90,8 @@ class BuildTestManager:
         self.test_failure = []
 
         # Build/test switches
-        self.run_build = bool(args.build)
         self.run_clean = bool(args.clean)
+        self.run_build = bool(args.build)
         self.run_test = bool(args.test)
 
         # Build type resolution: --config wins, else -d implies Debug, default Release

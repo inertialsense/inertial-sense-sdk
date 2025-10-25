@@ -94,6 +94,8 @@ def run_setup_command(command, cwd: os.PathLike | None = None) -> int:
 
 def run_clean(python_dir: os.PathLike = PYTHON_DIR) -> int:
     """Clean build artifacts under python_dir."""
+    if not python_dir:                 # catches None or []
+        python_dir = PYTHON_DIR
     print("=== Running make clean... ===")
     rc = run_setup_command(["clean"], cwd=python_dir)
     if rc:
@@ -127,15 +129,21 @@ def run_clean(python_dir: os.PathLike = PYTHON_DIR) -> int:
 # ---------- Build ----------
 def run_build(args: list[str] = []) -> int:
     build_type = "Release"
+    clean = False
 
     for arg in args:
-        if arg in ("-d", "--debug"):
+        if arg in ("-c", "--clean"):
+            clean = True
+        elif arg in ("-d", "--debug"):
             build_type = "Debug"
 
     # Use current interpreter for pip
     pip_install_cmd = [PY, "-m", "pip", "install", str(PYTHON_DIR)]
     if not in_venv() and sys.version_info >= (3, 11):
         pip_install_cmd.append("--break-system-packages")
+
+    if clean:
+        return run_clean(PYTHON_DIR)
 
     print("Building IS-SDK")
     result = BuildTestManager.static_build_cmake("IS_SDK_lib", SDK_DIR, is_windows=IS_WINDOWS)

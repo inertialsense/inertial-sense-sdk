@@ -13,7 +13,8 @@ bm = build_manager.BuildTestManager()
 
 bm.build_cmake("IS_SDK_lib", sdk_dir)
 bm.build_cmake("cltool", sdk_dir / "cltool")
-bm.build_callback("LogInspector", build_log_inspector.run_build)
+callback = build_log_inspector.run_clean if bm.run_clean else build_log_inspector.run_build
+bm.build_callback("LogInspector", callback)
 bm.build_cmake("SDK_Unit_Tests", sdk_dir / "tests")
 bm.build_cmake("SDK_Examples", sdk_dir / "ExampleProjects")
 
