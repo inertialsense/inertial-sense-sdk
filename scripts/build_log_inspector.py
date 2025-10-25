@@ -94,7 +94,7 @@ def run_setup_command(command, cwd: os.PathLike | None = None) -> int:
 
 def run_clean(python_dir: os.PathLike = PYTHON_DIR) -> int:
     """Clean build artifacts under python_dir."""
-    if not python_dir:                 # catches None or []
+    if not python_dir:  # default to PYTHON_DIR if python_dir is None or falsy
         python_dir = PYTHON_DIR
     print("=== Running make clean... ===")
     rc = run_setup_command(["clean"], cwd=python_dir)
