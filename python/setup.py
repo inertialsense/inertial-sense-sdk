@@ -4,7 +4,7 @@ import sys
 import glob
 import setuptools
 import setuptools.errors
-from setuptools import setup, Extension, find_packages, find_namespace_packages,
+from setuptools import setup, Extension, find_packages, find_namespace_packages
 from setuptools.command.build import build as _build
 from setuptools.command.build_ext import build_ext as _build_ext
 
