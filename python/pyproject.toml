@@ -1,14 +1,12 @@
 [build-system]
-requires = [
-    'setuptools>=42',
-    'pybind11>=2.12',
-    'wheel',
-]
+requires = ["setuptools>=61", "wheel", "pybind11>=2.12"]
+build-backend = "setuptools.build_meta"
+
 # build-backend = "setuptools.build_meta"  ## "scikit_build_core.build"
 
 [project]
 name = "inertialsense"
-version = "2.7.0"
+dynamic = ["version"]
 description = 'Python interface to doing Inertial Sense things, like reading logs and doing mathy things.'
 requires-python = '>=3.11'
 authors = [ { name = 'Inertial Sense Development Team', email = 'devteam@inertialsense.com' }]
@@ -31,3 +29,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [ "pytest>=7.0", "twine>=4.0.2"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["inertialsense", "inertialsense.*"]
+namespaces = true
+
+[tool.setuptools.dynamic]
+version = {attr = "inertialsense._version.__version__"}

@@ -2,17 +2,23 @@ import platform
 import os.path
 import sys
 import glob
-
+import setuptools
 import setuptools.errors
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension, find_packages, find_namespace_packages,
 from setuptools.command.build import build as _build
 from setuptools.command.build_ext import build_ext as _build_ext
 
 import pybind11
 from pybind11.setup_helpers import Pybind11Extension
+from pathlib import Path
+import re
 
-
-__version__ = '2.7.0'
+# Extract version string from inertialsense/_version.py safely
+version_file = Path("inertialsense/_version.py").read_text()
+version_match = re.search(r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', version_file)
+if not version_match:
+    raise RuntimeError("Unable to find version string in inertialsense/_version.py")
+version_ns = {"__version__": version_match.group(1)}
 # os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
 
 with open("README.md", "r") as fh:
@@ -39,33 +45,24 @@ libraries = []
 library_dirs = []
 
 if sys.platform == 'win32':
-    extra_objects = [r'..\build\InertialSenseSDK.lib']
+    extra_objects = [r'..\build-release\InertialSenseSDK.lib']
 else: # POSIX
     extra_objects = ['{}/build/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
 
 sdk_path = os.path.abspath(os.path.curdir + '/..')
 
-source_files = ['inertialsense/logs/src/log_reader.cpp' ]  # sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
+source_files = ['inertialsense/logs/src/*.cpp' ]
 include_dirs = [
-    'inertialsense/logs/include',   # local headers
-    pybind11.get_include(),  # Path to pybind11 headers
+    'inertialsense/logs/include',
     os.path.join(sdk_path, "src"),
     os.path.join(sdk_path, "src", "libusb", "libusb"),
+    pybind11.get_include(), # Path to pybind11 headers
 ]
 
-print(sdk_path)
-print(include_dirs)
-
 ext_modules = [
-    # Extension('inertialsense.logs',
-    #     language='c++',
-    #     sources = source_files,
-    #     include_dirs = include_dirs,
-    #     extra_objects=extra_objects
-    #),
     Pybind11Extension(
-        "inertialsense.log_reader",
-        source_files,
+        "inertialsense.logs.log_reader",
+        sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
         include_dirs = include_dirs,
         extra_objects = extra_objects
     ),
@@ -128,15 +125,14 @@ class BuildExt(_build_ext):
 
 setup(
     name='inertialsense',
-    version=__version__,
+    version=version_ns['__version__'],
     description='Python interface to doing Inertial Sense things, like reading logs and doing mathy things.',
     url='https://github.com/InertialSense/inertial-sense-sdk',
 
     long_description=long_description,
     long_description_content_type='text/markdown',
     package_dir={'': '.'},
-#    packages=find_packages(include=['inertialsense', 'inertialsense.logs']),
-    packages=find_packages(where='../inertialsense'),
+    packages=find_namespace_packages(include=["inertialsense", "inertialsense.*"]),
 
     ext_modules=ext_modules,
 
