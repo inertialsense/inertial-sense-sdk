@@ -305,6 +305,7 @@ class BuildTestManager:
 
             if not installations:
                 print("No Visual Studio installations found with C++ tools.")
+                print(f"  DEBUG:: {command}")
                 return None
 
             # Get the path from the most recent installation
