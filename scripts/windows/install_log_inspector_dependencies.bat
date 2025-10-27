@@ -1,7 +1,8 @@
 @echo off 
 
+echo .
 echo Installing Log Inspector dependencies...
-echo.
+echo .
 
 :: Set SDK_DIR as directory path
 for %%i in ("%~dp0..\..") do SET SDK_DIR="%%~fi"
