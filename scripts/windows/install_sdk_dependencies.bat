@@ -1,5 +1,6 @@
 @echo off
 
+echo.
 echo Installing SDK dependencies...
 echo.
 
