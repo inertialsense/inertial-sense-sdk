@@ -304,12 +304,21 @@ class BuildTestManager:
             installations = json.loads(result.stdout)
 
             if not installations:
-                print("No Visual Studio installations found with C++ tools.")
-                print(f"  DEBUG:: {command}")
-                return None
+                print("No Visual Studio installations found using vswhere.exe. Trying fallback methods.")
+                # print(f"  DEBUG:: {command}")
 
-            # Get the path from the most recent installation
-            vs_install_path = installations[0]["installationPath"]
+                candidate_vcvars_paths = [
+                    r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
+                    r"C:\Program Files\Microsoft Visual Studio\2022\VC\Auxiliary\Build\vcvarsall.bat",
+                ]
+                vcvarsall_path = next((p for p in candidate_vcvars_paths if os.path.exists(p)), None)
+                if not vcvarsall_path:
+                    print("No Visual Studio installations found using fallback methods.")
+
+                return vcvarsall_path
+            else:
+                # Get the path from the most recent installation
+                vs_install_path = installations[0]["installationPath"]
 
             # Build the path to vcvarsall.bat
             vcvarsall_path = os.path.join(vs_install_path, "VC", "Auxiliary", "Build", "vcvarsall.bat")
