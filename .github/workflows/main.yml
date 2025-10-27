@@ -93,6 +93,9 @@ jobs:
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
+      - name: Install dependencies
+        run: ./install_sdk_dependencies.sh
+
       - name: Clean all
         run: ./clean_all.bat
 
