@@ -1,7 +1,16 @@
 [build-system]
-requires = [
-    'setuptools>=42',
-    'pybind11>=2.12',
-    'wheel',
-]
+requires = ["setuptools>=61", "wheel", "pybind11>=2.12"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "inertialsense"
+dynamic = ["version"]
+requires-python = ">=3.8"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["inertialsense", "inertialsense.*"]
+namespaces = true
+
+[tool.setuptools.dynamic]
+version = {attr = "inertialsense._version.__version__"}

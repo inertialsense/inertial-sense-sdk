@@ -62,7 +62,7 @@ jobs:
         run: ./build_unit_tests.sh
 
       - name: Run Unit Tests
-        run: ./build_unit_tests.sh --nobuild --test
+        run: ./build_unit_tests.sh --no-build --test
 
       - name: Build cltool
         run: ./build_cltool.sh

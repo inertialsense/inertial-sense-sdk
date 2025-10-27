@@ -3,15 +3,19 @@ import os.path
 import sys
 import glob
 import setuptools
-from setuptools import setup, Extension, find_packages
-from setuptools.command.build_ext import build_ext
-
-import pybind11
-from pybind11.setup_helpers import Pybind11Extension
-
 import distutils.command.build
+from setuptools import find_namespace_packages, setup, Extension, find_packages
+from setuptools.command.build_ext import build_ext
+from pybind11.setup_helpers import Pybind11Extension
+from pathlib import Path
+import re
 
-__version__ = '2.2.1'
+# Extract version string from inertialsense/_version.py safely
+version_file = Path("inertialsense/_version.py").read_text()
+version_match = re.search(r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', version_file)
+if not version_match:
+    raise RuntimeError("Unable to find version string in inertialsense/_version.py")
+version_ns = {"__version__": version_match.group(1)}
 # os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
 
 with open("README.md", "r") as fh:
@@ -124,10 +128,10 @@ class BuildExt(build_ext):
 
 setup(
     name='inertialsense',
-    version=__version__,
+    version=version_ns['__version__'],
     description='Python interface to doing Inertial Sense things, like reading logs and doing mathy things.',
     url='https://github.com/InertialSense/inertial-sense-sdk',
-    python_requires='>=3.6',
+    python_requires='>=3.8',
 
     author='Inertial Sense Development Team',
     author_email='devteam@inertialsense.com',
@@ -136,7 +140,7 @@ setup(
     long_description_content_type='text/markdown',
     classifiers=[],
     package_dir={'': '.'},
-    packages=find_packages(where='../inertialsense'),
+    packages=find_namespace_packages(include=["inertialsense", "inertialsense.*"]),
 
     install_requires=[
         'allantools',
