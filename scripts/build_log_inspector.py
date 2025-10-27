@@ -167,7 +167,7 @@ def _argv(temp: list[str]):
     finally:
         sys.argv = saved
 
-def launch_log_inspector(open_dir: str | None = None) -> None:
+def launch_log_inspector(open_dir: str | None = None, internal: bool | None = None) -> None:
     _add_sdk_dll_dirs()
     # Proactively load native extension so its dependencies resolve with the added DLL dirs
     try:
@@ -176,7 +176,7 @@ def launch_log_inspector(open_dir: str | None = None) -> None:
         pass
     args = ["logInspector"] + ([open_dir] if open_dir else [])
     with _argv(args):
-        runpy.run_module("inertialsense.logInspector.logInspector", run_name="__main__")
+        runpy.run_module(("inertialsense.logInspector.logInspectorInternal" if "--run-internal" in sys.argv else "inertialsense.logInspector.logInspector"), run_name="__main__")
 
 # ---------- CLI ----------
 def main() -> int:
@@ -185,6 +185,7 @@ def main() -> int:
     parser.add_argument("-c", "--clean", action="store_true", help="Clean Python build artifacts and exit")
     parser.add_argument("-d", "--debug", action="store_true", help="Build Debug (currently informational)")
     parser.add_argument("-r", "--run", action="store_true", help="Launch Log Inspector after a successful build")
+    parser.add_argument("-ri", "--run-internal", action="store_true", help="Launch Log Inspector in internal mode after a successful build")
     parser.add_argument("-n", "--no-build", action="store_true", help="Skip build step and just run Log Inspector")
     parser.add_argument("--open", help="Log directory to auto-open in Log Inspector")
     args = parser.parse_args()
@@ -203,8 +204,8 @@ def main() -> int:
             return rc
 
     # Run only if requested
-    if args.run:
-        launch_log_inspector(open_dir=args.open)
+    if args.run or args.run_internal:
+        launch_log_inspector(open_dir=args.open, internal=args.run_internal)
 
     return 0
 
