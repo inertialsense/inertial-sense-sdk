@@ -94,7 +94,7 @@ jobs:
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
       - name: Install dependencies
-        run: ./install_sdk_dependencies.sh
+        run: ./install_sdk_dependencies.bat
 
       - name: Clean all
         run: ./clean_all.bat
