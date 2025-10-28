@@ -519,7 +519,7 @@ namespace fwUpdate {
          * @param buff_len
          * @return true if the data was successfully sent to the underlying communication system, otherwise false
          */
-        virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
+        virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) override = 0;
 
         /**
          * Performs a system reset of various severity per reset_flags, (ie, RESET_SOFT by informing the OS/MCU to restart the system,
