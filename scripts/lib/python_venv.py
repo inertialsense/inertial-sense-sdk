@@ -1,7 +1,6 @@
 # python_venv.py
-import os
-import sys
-import venv
+import os, sys, venv
+from typing import Optional
 
 def is_virtual_environment(path: str) -> bool:
     if os.name == 'nt':  # Windows
@@ -46,7 +45,7 @@ def find_virtualenv() -> str:
     create_here = os.path.realpath(os.path.join(script_dir, ".venv"))
     return create_virtual_environment(create_here)
 
-def _site_packages_path(venv_path: str) -> str | None:
+def _site_packages_path(venv_path: str) -> Optional[str]:
     """Return the site-packages path inside venv_path, or None if not found."""
     if os.name == 'nt':  # Windows
         sp = os.path.join(venv_path, 'Lib', 'site-packages')
