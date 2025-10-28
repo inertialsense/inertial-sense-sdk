@@ -62,7 +62,7 @@ jobs:
         run: ./build_unit_tests.sh
 
       - name: Run Unit Tests
-        run: ./build_unit_tests.sh --nobuild --test
+        run: ./build_unit_tests.sh --no-build --test
 
       - name: Build cltool
         run: ./build_cltool.sh
@@ -92,6 +92,9 @@ jobs:
           # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
+
+      - name: Install dependencies
+        run: ./install_sdk_dependencies.bat
 
       - name: Clean all
         run: ./clean_all.bat
