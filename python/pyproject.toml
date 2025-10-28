@@ -2,10 +2,33 @@
 requires = ["setuptools>=61", "wheel", "pybind11>=2.12"]
 build-backend = "setuptools.build_meta"
 
+# build-backend = "setuptools.build_meta"  ## "scikit_build_core.build"
+
 [project]
 name = "inertialsense"
 dynamic = ["version"]
-requires-python = ">=3.8"
+description = 'Python interface to doing Inertial Sense things, like reading logs and doing mathy things.'
+requires-python = '>=3.8'
+authors = [ { name = 'Inertial Sense Development Team', email = 'devteam@inertialsense.com' }]
+#license = "MIT"
+#license-files = { globs = ["LICENSE*"] } # Declares your license file
+
+dependencies = [
+    'allantools',
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'pybind11>=2.12',
+    'pyqt5',
+    'pyserial',
+    'scipy',
+    'simplekml',
+    'tqdm',
+    'pyyaml'
+]
+
+[project.optional-dependencies]
+dev = [ "pytest>=7.0", "twine>=4.0.2"]
 
 [tool.setuptools.packages.find]
 where = ["."]

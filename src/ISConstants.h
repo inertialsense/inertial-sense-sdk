@@ -42,8 +42,8 @@ extern "C" {
     #endif
 
     // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
-    #define _WINSOCKAPI_
     #include <winsock2.h>
+    #define _WINSOCKAPI_        // THIS shouldn't be necessary - winsock2.h should define it.
     #include <WS2tcpip.h>
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>

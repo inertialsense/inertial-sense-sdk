@@ -18,7 +18,9 @@
 
 	:: Locate MSBuild.exe
 	call :locate_executable_multi "MSBuild.exe" ^
+		"C:\Program Files\Microsoft Visual Studio\2022\Professional\Msbuild\Current\Bin\MSBuild.exe" ^
 		"C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" ^
+		"C:\Program Files\Microsoft Visual Studio\2022\BuildTools\Current\Bin\MSBuild.exe" ^
 		"C:\Program Files\Microsoft Visual Studio\2022\Msbuild\Current\Bin\MSBuild.exe"
 
 	if not defined FOUND_EXECUTABLE (
@@ -30,14 +32,32 @@
 	echo Found MSBuild.exe at "%MSBUILD_EXECUTABLE%"
 
 	:: Locate latest nmake.exe
+	set "VC_ROOT_BUILDTOOLS=C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 	set "VC_ROOT_COMMUNITY=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC"
+	set "VC_ROOT_PROFESSIONAL=C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC"
 	set "VC_ROOT_ENTERPRISE=C:\Program Files\Microsoft Visual Studio\2022\VC\Tools\MSVC"
 	set "FOUND_EXECUTABLE="
+
+	if exist "%VC_ROOT_BUILDTOOLS%" (
+		for /f "delims=" %%D in ('dir "%VC_ROOT_BUILDTOOLS%" /b /ad-h /o-n') do (
+			call :locate_executable_multi "nmake.exe" ^
+				"%VC_ROOT_BUILDTOOLS%\%%D\bin\Hostx64\x64\nmake.exe"
+			if defined FOUND_EXECUTABLE goto :found_nmake
+		)
+	)
 
 	if exist "%VC_ROOT_COMMUNITY%" (
 		for /f "delims=" %%D in ('dir "%VC_ROOT_COMMUNITY%" /b /ad-h /o-n') do (
 			call :locate_executable_multi "nmake.exe" ^
 				"%VC_ROOT_COMMUNITY%\%%D\bin\Hostx64\x64\nmake.exe"
+			if defined FOUND_EXECUTABLE goto :found_nmake
+		)
+	)
+
+	if exist "%VC_ROOT_PROFESSIONAL%" (
+		for /f "delims=" %%D in ('dir "%VC_ROOT_PROFESSIONAL%" /b /ad-h /o-n') do (
+			call :locate_executable_multi "nmake.exe" ^
+				"%VC_ROOT_PROFESSIONAL%\%%D\bin\Hostx64\x64\nmake.exe"
 			if defined FOUND_EXECUTABLE goto :found_nmake
 		)
 	)
