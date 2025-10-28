@@ -149,7 +149,7 @@ extern "C" {
     #define FREE(m) free(m)
 #endif 
 
-#if __ZEPHYR__
+#if defined(__ZEPHYR__)
     // #define SNPRINTF snprintfcb
     #define SNPRINTF snprintf
     #define VSNPRINTF vsnprintf
@@ -195,7 +195,7 @@ extern "C" {
     #endif
 #endif // defined(_MSC_VER)
 
-#if __ZEPHYR__
+#if defined(__ZEPHYR__)
     #include <zephyr/irq.h>
     #define BEGIN_CRITICAL_SECTION  irq_lock();
     #define END_CRITICAL_SECTION    irq_unlock(0);
@@ -211,7 +211,7 @@ extern "C" {
     #define _RMDIR(dir) f_unlink(dir)
     #define _GETCWD(buf, len) f_getcwd(buf, len)
 #elif !PLATFORM_IS_EMBEDDED
-    #if PLATFORM_IS_WINDOWS
+    #if defined(PLATFORM_IS_WINDOWS)
         #include <direct.h>
         #include <sys/utime.h>
         #define _MKDIR(dir) _mkdir(dir)

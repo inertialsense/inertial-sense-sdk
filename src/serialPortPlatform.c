@@ -879,9 +879,10 @@ static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 
     int bytesAvailable = 0;
     struct pollfd p = { .fd = handle->fd, .events = POLLIN };
+    int rc;
 
-    again:
-    int rc = poll(&p, 1, 0);
+again:
+    rc = poll(&p, 1, 0);
     if (rc > 0) {
         /* Treat POLLIN or urgent/hangup with data as readable */
         if (p.revents & (POLLIN | POLLPRI)) {

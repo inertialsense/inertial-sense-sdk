@@ -367,15 +367,15 @@ private:
      * @param msg
      * @return
      */
-    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t &msg) override;
 
-    bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg) override;
 
-    bool fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg) override;
 
-    bool fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg) override;
 
-    bool fwUpdate_handleDone(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleDone(const fwUpdate::payload_t &msg) override;
 
     /**
      * Overridden implementation that is responsible for writing the fwUpdate packets to the wire/port.
