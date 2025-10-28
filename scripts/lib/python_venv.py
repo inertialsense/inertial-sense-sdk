@@ -57,8 +57,9 @@ def _site_packages_path(venv_path: str) -> Optional[str]:
     py_dirs = [d for d in os.listdir(lib_dir) if d.startswith('python')]
     if not py_dirs:
         return None
-    py_dirs.sort()
-    sp = os.path.join(lib_dir, py_dirs[-1], 'site-packages')
+    # Select the highest version directory using version-aware comparison
+    latest_py_dir = max(py_dirs, key=lambda d: tuple(map(int, d.replace('python', '').split('.'))))
+    sp = os.path.join(lib_dir, latest_py_dir, 'site-packages')
     return sp if os.path.isdir(sp) else None
 
 def activate_virtual_environment() -> bool:
