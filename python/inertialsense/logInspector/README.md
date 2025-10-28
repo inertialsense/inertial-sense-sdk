@@ -9,7 +9,7 @@ logInspector is an open source python utility for viewing and scrubbing Inertial
 ### Navigate to SDK directory
 
 ``` bash
-pip3 install logInspector/ # (this will return an error message, but will install all the dependencies you need)
+python -m pip install logInspector/ # (this will return an error message, but will install all the dependencies you need)
 cd logInspector
 python3 setup.py build_ext --inplace
 ```
