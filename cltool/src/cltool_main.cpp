@@ -1095,7 +1095,7 @@ static int inertialSenseMain()
 {
     g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
-    g_inertialSenseDisplay.Clear();     // clear display
+    // g_inertialSenseDisplay.Clear();     // clear display
 
     // if replay data log specified on command line, do that now and return
     if (g_commandLineOptions.replayDataLog)
@@ -1114,7 +1114,10 @@ static int inertialSenseMain()
     else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
     {
         // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-6)
+
+        // Set up signal handler for SIGINT too prevent ctrl+c from interrupting the update and still allowing cleanup
         signal(SIGINT, sigint_cb);
+        
         return cltool_updateFirmware();
     }
     else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)

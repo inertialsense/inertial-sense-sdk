@@ -117,15 +117,17 @@ int main(int argc, char* argv[])
     cISSerialPort::GetComPorts(all_ports);
 
     // Update the firmware on any port that was open
-    std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list = 
-        cISBootloaderThread::set_mode_and_check_devices(
-                all_ports,
-                atoi(argv[1]),
-                files,
-               	bootloaderUploadProgress,
-				bootloaderVerifyProgress,
-				bootloaderStatusText,
-				NULL);
+    std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
+	if (!cISBootloaderThread::set_mode_and_check_devices(
+			all_ports,
+			atoi(argv[1]),
+			files,
+			bootloaderUploadProgress,
+			bootloaderVerifyProgress,
+			bootloaderStatusText,
+			NULL,
+			&confirm_device_list))
+		return -1;   // Error or no devices found
 
     cISSerialPort::GetComPorts(all_ports);
 

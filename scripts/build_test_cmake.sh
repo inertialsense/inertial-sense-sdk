@@ -54,14 +54,22 @@ function build_cmake() {
 
 
 function test_cmake() {
+  local args=()           # positional (non-dash) args: testname, cmakelists_dir, [execname]
+  local gtest_opts=()     # dash-prefixed args to pass to gtest
 
-  local args=()
-
-  # Collect arguments that don't start with a dash in `args`
-  while [[ $# -gt 0 ]]; do  
+  # Parse args
+  while [[ $# -gt 0 ]]; do
     case "$1" in
+      --) # everything after -- goes to gtest
+        shift
+        while [[ $# -gt 0 ]]; do
+          gtest_opts+=("$1")
+          shift
+        done
+        ;;
       -*)
-        shift   # remove all arguments that start with a dash
+        gtest_opts+=("$1")
+        shift
         ;;
       *)
         args+=("$1")
@@ -69,25 +77,22 @@ function test_cmake() {
         ;;
     esac
   done
-  testname="${args[0]}"
-  cmakelists_dir="${args[1]}"  
-  if [ -z "${args[2]}" ]; then
-    execname="run_tests"
-  else
-    execname="${args[2]}"
-  fi
 
-  pushd ${cmakelists_dir} > /dev/null
-  pushd build > /dev/null
+  local testname="${args[0]}"
+  local cmakelists_dir="${args[1]}"
+  local execname="${args[2]:-run_tests}"
+
+  pushd "${cmakelists_dir}" >/dev/null
+  pushd build >/dev/null
 
   tests_header "${testname}"
-  ./${execname} --gtest_color=yes
-  test_result=$?
-  tests_footer $test_result
+  "./${execname}" --gtest_color=yes "${gtest_opts[@]}"
+  local test_result=$?
+  tests_footer "$test_result"
 
-  popd > /dev/null
-  popd > /dev/null
-  return $test_result
+  popd >/dev/null
+  popd >/dev/null
+  return "$test_result"
 }
 
 
