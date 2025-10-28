@@ -39,7 +39,7 @@ def find_virtualenv() -> str:
     for root in search_roots:
         candidate = os.path.realpath(os.path.join(root, ".venv"))
         if is_virtual_environment(candidate):
-            print(f"Found virtual environment: {candidate}")
+            # print(f"Found virtual environment: {candidate}")
             return candidate
 
     # Fallback: create under SDK/.venv
@@ -64,7 +64,7 @@ def _site_packages_path(venv_path: str) -> str | None:
 
 def activate_virtual_environment() -> bool:
     """
-    “Activate” the venv for this Python process by prepending its site-packages to sys.path.
+    "Activate" the venv for this Python process by prepending its site-packages to sys.path.
     Returns True on success, False otherwise.
     """
     venv_path = find_virtualenv()
@@ -74,7 +74,7 @@ def activate_virtual_environment() -> bool:
         return False
     if sp not in sys.path:
         sys.path.insert(0, sp)
-    print(f"Activated virtual environment: {venv_path}")
+        print(f"Activated virtual environment: {venv_path}")
     return True
 
 if __name__ == "__main__":
