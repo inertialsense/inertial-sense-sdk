@@ -74,7 +74,7 @@ def activate_virtual_environment() -> bool:
         print(f"Warning: site-packages not found under venv: {venv_path}")
         return False
     if sp not in sys.path:
-        sys.path.insert(0, sp)
+        sys.path.insert(1, sp)
         print(f"Activated virtual environment: {venv_path}")
     return True
 
