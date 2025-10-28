@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 name = "inertialsense"
 dynamic = ["version"]
 description = 'Python interface to doing Inertial Sense things, like reading logs and doing mathy things.'
-requires-python = '>=3.11'
+requires-python = '>=3.8'
 authors = [ { name = 'Inertial Sense Development Team', email = 'devteam@inertialsense.com' }]
 #license = "MIT"
 #license-files = { globs = ["LICENSE*"] } # Declares your license file
