@@ -1,5 +1,7 @@
 # python_venv.py
-import os, sys, venv
+import os
+import sys
+import venv
 from typing import Optional
 
 def is_virtual_environment(path: str) -> bool:
