@@ -89,7 +89,7 @@ typedef uint32_t eDataIDs;
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
 #define DID_INL2_MISC                   (eDataIDs)51 /** (inl2_misc_t) */
-#define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor output */
+#define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor output.  On the IMX-5, multiply mag by C_IMX5_MAG_TO_MICROTESLA (0.398432f) to convert units to microtesla.  */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
 #define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
@@ -122,8 +122,8 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
 #define DID_GPS2_SIG                    (eDataIDs)84 /** (gps_sig_t) GPS 2 GNSS signal information. */
-#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
-#define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
+#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously.  On the IMX-5, multiply mag by C_IMX5_MAG_TO_MICROTESLA (0.398432f) to convert units to microtesla. */
+#define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously.  On the IMX-5, multiply mag by C_IMX5_MAG_TO_MICROTESLA (0.398432f) to convert units to microtesla. */
 #define DID_GROUND_VEHICLE              (eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
 #define DID_POSITION_MEASUREMENT        (eDataIDs)88 /** (pos_measurement_t) External position estimate */
 #define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
@@ -885,7 +885,7 @@ typedef struct PACKED
 } imu3_t;
 
 
-/** (DID_MAGNETOMETER) Magnetometer sensor data */
+/** (DID_MAGNETOMETER) Magnetometer sensor data.  Multiply mag by C_IMX5_MAG_TO_MICROTESLA (0.398432f) to convert units to microtesla (i.e. mul_Vec3_X(magnetometer_t.mag, magnetometer_t.mag, C_IMX5_MAG_TO_MICROTESLA) ). */
 typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */

@@ -826,7 +826,7 @@ extern "C" {
 #define C_EARTH_RADIUS_POLAR            6356752.0       // (m) Polar radius
 #define C_EARTH_RADIUS_MEAN             6371000.0       // (m) Mean radius (used by the IUGG, WGS-84, etc.)
 
-// IMX Operational Limits
+// IMX Operational Limits5
 #define INS_MAX_VELOCITY                500.0f          // (m/s) INS operation limit - velocity.  Limited by GPS.
 #define INS_MAX_LATITUDE                C_PIDIV2        // (rad) INS operation limit - latitude
 #define INS_MAX_LATITUDE_DEG            90.0            // (deg) INS operation limit - latitude
@@ -837,8 +837,10 @@ extern "C" {
 
 #define C_GPS_LEAP_SECONDS              18
 
+#define C_IMX5_MAG_TO_MICROTESLA        39.820674f      // (uT/raw) Multiply DID_MAGNETOMETER.mag by this to convert units to microtesla for IMX-5
+
 typedef float       f_t;
-typedef int            i_t;
+typedef int         i_t;
 typedef double      ixVector2d[2];        // V = | 0 1 |
 typedef f_t         ixVector2[2];         // V = | 0 1 |
 typedef double      ixVector3d[3];        // V = | 0 1 2 |
