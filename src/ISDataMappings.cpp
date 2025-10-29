@@ -651,6 +651,7 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("reserved1", &gpx_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
     mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("reserved2", &gpx_flash_cfg_t::reserved2, DATA_TYPE_UINT32);
+    mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
 
     // Keep at end
     mapper.AddMember("size", &gpx_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
