@@ -448,7 +448,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
     period[nmeaId] = periodMultiple;
 
     // Always set bit.  If period multiple is zero, this bit will get cleared after sending message once.
-        bits |= (nmeaBits);
+    bits |= (nmeaBits);
 }
 
 //////////////////////////////////////////////////////////////////////////
