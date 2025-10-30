@@ -409,7 +409,7 @@ is_operation_result cISBootloaderISB::erase_flash()
         count += serialPortReadTimeout(m_port, bufPtr, 3, 100);
         bufPtr = buf + count;
 
-        float factor = pow(i / 600, 3);
+        float factor = powf(static_cast<float>(i) / 600.f, 3);
         if (m_update_callback(std::make_any<cISBootloaderBase*>(this), factor, "Erasing Flash", 0, 0) != IS_OP_OK)
         {
             return IS_OP_CANCELLED;
@@ -420,7 +420,7 @@ is_operation_result cISBootloaderISB::erase_flash()
             if (bufScan) {
                 if (memcmp(bufScan, ".\r\n", 3) == 0)
                     return IS_OP_OK;
-                int mvCnt = bufScan - buf;
+                long mvCnt = static_cast<long>(bufScan - buf);
                 if (mvCnt > 0) {
                     memmove(buf, bufScan, sizeof(buf) - mvCnt);
                     count -= mvCnt;

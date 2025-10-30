@@ -593,8 +593,8 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
     int n = 0;
     if (nmeaMsg[0] != '$') buf[n++] = '$'; // Append header if missing
     memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
-    n += nmeaMsg.size();
-    nmea_sprint_footer((char*)buf, sizeof(buf), n);
+    n += static_cast<int>(nmeaMsg.size());
+    nmea_sprint_footer(reinterpret_cast<char *>(buf), sizeof(buf), n);
     return SendRaw(buf, n);
 }
 
