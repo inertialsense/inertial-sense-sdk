@@ -5,8 +5,7 @@
 #include "FirmwareUpdate.h"
 
 #ifdef __ZEPHYR__
-#include <zephyr/random/rand32.h>
-LOG_MODULE_REGISTER(FirmwareUpdater, LOG_LEVEL_DBG);
+#include <zephyr/random/random.h>
 #endif
 
 namespace fwUpdate {
@@ -189,9 +188,9 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateBase::fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data) {
         int payload_len = fwUpdate_packPayload(build_buffer, FWUPDATE__MAX_PAYLOAD_SIZE, payload, aux_data);
-        #ifdef DEBUG_LOGGING
-        LOG_DBG("Sending to %s", fwUpdate_payloadToString(&payload));
-        #endif
+        char *msgStr = fwUpdate_payloadToString(&payload);
+        if (msgStr)
+            log_debug(IS_LOG_FWUPDATE, "Sending to %s", msgStr);
 
         return fwUpdate_writeToWire((fwUpdate::target_t) payload.hdr.target_device, build_buffer, payload_len);
     }
@@ -218,9 +217,10 @@ namespace fwUpdate {
                                     payload->data.update_resp.session_id, fwUpdate_getStatusName(payload->data.update_resp.status), payload->data.update_resp.totl_chunks);
                 break;
             case MSG_UPDATE_CHUNK:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, len=%d]",
-                                    payload->data.chunk.session_id, payload->data.chunk.chunk_id, payload->data.chunk.data_len);
-                break;
+                return nullptr;
+//                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, len=%d]",
+//                                    payload->data.chunk.session_id, payload->data.chunk.chunk_id, payload->data.chunk.data_len);
+//                break;
             case MSG_REQ_RESEND_CHUNK:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, reason='%s']",
                                     payload->data.req_resend.session_id, payload->data.req_resend.chunk_id, reason_names[payload->data.req_resend.reason]);
@@ -329,9 +329,9 @@ namespace fwUpdate {
         if (target_masked != session_target)
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
 
-        #ifdef DEBUG_LOGGING
-        LOG_DBG("Received by %s", fwUpdate_payloadToString(&payload));
-        #endif
+        char *msgStr = fwUpdate_payloadToString(&payload);
+        if (msgStr)
+            log_debug(IS_LOG_FWUPDATE, "Received by %s", msgStr);
 
         fwUpdate_resetTimeout();
         switch (payload.hdr.msg_type) {
@@ -490,8 +490,8 @@ namespace fwUpdate {
         if (payload.hdr.msg_type != MSG_REQ_UPDATE)
             return false;
 
-        // make sure our session_id is good (TODO: Maybe we should retain a history of recent session ids to make sure we aren't reusing an old one?)
-        if (payload.data.req_update.session_id == 0)
+        // make sure our session_id is good
+        if ((payload.data.req_update.session_id == 0) || !fwUpdate_validateSessionId(payload.data.req_update.session_id))
             session_status = ERR_INVALID_SESSION;
 
         fwUpdate_resetEngine();
@@ -617,14 +617,15 @@ namespace fwUpdate {
         if (payload.hdr.msg_type != MSG_REQ_VERSION_INFO)
             return false;
 
+
         dev_info_t devInfo = { };
         if (!fwUpdate_queryVersionInfo(payload.hdr.target_device, devInfo))
-            memset(&devInfo, 0xFF, sizeof(dev_info_t));
+            return false;
 
         payload_t response;
         response.hdr.target_device = TARGET_HOST;
         response.hdr.msg_type = MSG_VERSION_INFO_RESP;
-        response.data.version_resp.resTarget = payload.hdr.target_device;
+        response.data.version_resp.resTarget = session_target;
         response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareType = devInfo.hardwareType;
         response.data.version_resp.hdwRunState = devInfo.hdwRunState;
@@ -660,6 +661,22 @@ namespace fwUpdate {
         return fwUpdate_sendPayload(response);
     }
 
+    /**
+     * Validates that the provided session Id has not be used in the last 10 updates
+     * @param sessionId the session Id to validate
+     * @returns true if valid otherwise false.
+     */
+    bool FirmwareUpdateDevice::fwUpdate_validateSessionId(uint16_t sId) {
+        for (uint16_t sid : sessionHistory)
+            if (sid == sId)
+                return false;
+
+        session_id = sId;
+        for (int i = 1; i < MAX_SESSION_HISTORY; i++) sessionHistory[i] = sessionHistory[i-1];
+        sessionHistory[0] = sId;
+        return true;
+    }
+
     /*==================================================================================*
      * HOST-API goes here                                                                *
      *==================================================================================*/
@@ -675,9 +692,9 @@ namespace fwUpdate {
      * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
      */
     bool FirmwareUpdateHost::fwUpdate_processMessage(const payload_t& payload) {
-        #ifdef DEBUG_LOGGING
-            LOG_DBG("Received by %s", fwUpdate_payloadToString(&payload));
-        #endif
+        char *msgStr = fwUpdate_payloadToString(&payload);
+        if (msgStr)
+            log_debug(IS_LOG_FWUPDATE, "Received by %s", msgStr);
 
         if (payload.hdr.target_device != TARGET_HOST)
             return false;
@@ -715,6 +732,7 @@ namespace fwUpdate {
         void *aux_data = nullptr;
 
         int msg_len = fwUpdate_mapBufferToPayload(buffer, &msg, &aux_data);
+        // printf("fwUpdate_processMessage: target: %s, type: %s, len: %d\n", fwUpdate_getTargetName(msg->hdr.target_device), msg_type_names[msg->hdr.msg_type], msg_len);
         if (msg_len <= 0)
             return false;
 
@@ -737,12 +755,9 @@ namespace fwUpdate {
         fwUpdate_resetEngine();
         fwUpdate_resetTimeout();
         fwUpdate::payload_t request;
-#ifdef __ZEPHYR__
-        session_id = (uint16_t)sys_rand32_get();
-#else
-        session_id = (uint16_t)rand();
-#endif
+
         session_status = fwUpdate::NOT_STARTED;
+        session_id = fwUpdate_generateNewSessionID();
 
         request.hdr.target_device = session_target = target_id;
         request.hdr.msg_type = fwUpdate::MSG_REQ_UPDATE;
@@ -757,10 +772,15 @@ namespace fwUpdate {
         return fwUpdate_sendPayload(request);
     }
 
-    bool FirmwareUpdateHost::fwUpdate_requestUpdate() {
+    bool FirmwareUpdateHost::fwUpdate_requestUpdate(bool force_session) {
 
         if ((session_status >= READY) || (session_id == 0))
             return false;
+
+        session_status = fwUpdate::NOT_STARTED;
+        if (force_session) {
+            session_id = fwUpdate_generateNewSessionID();
+        }
 
         fwUpdate::payload_t request;
         request.hdr.target_device = session_target;
@@ -833,10 +853,10 @@ namespace fwUpdate {
         if (chunk_len == msg->data.chunk.data_len) {
             chunks_sent++; // we track the total number of chunks that we've tried to send, regardless of whether we sent it successfully or not
 
-            #ifdef DEBUG_LOGGING
             // we don't call sendPayload from here (we just send our build_buffer direct to the writer.
-            LOG_DBG("Sending to %s", fwUpdate_payloadToString(msg));
-            #endif
+            char *msgStr = fwUpdate_payloadToString(msg);
+            if (msgStr)
+                log_debug(IS_LOG_FWUPDATE, "Sending to %s", msgStr);
 
             if (fwUpdate_writeToWire((fwUpdate::target_t) msg->hdr.target_device, build_buffer, msg_len))
                 next_chunk_id = msg->data.chunk.chunk_id + 1; // increment to the next chuck, if we're successful
@@ -868,6 +888,14 @@ namespace fwUpdate {
         next_chunk_id = 0;
         md5_init(md5Context);
         return true;
+    }
+
+    uint16_t FirmwareUpdateHost::fwUpdate_generateNewSessionID() {
+#ifdef __ZEPHYR__
+        return (uint16_t)sys_rand32_get();
+#else
+        return (uint16_t) rand();
+#endif
     }
 
     /**

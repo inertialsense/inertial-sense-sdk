@@ -34,7 +34,7 @@ public:
      * will be forwarded to all associated ISDevices
      * @param srcPort The port on which incoming RCTM3 data to recieved from
      */
-    CorrectionService(port_handle_t srcPort);
+    explicit CorrectionService(port_handle_t srcPort);
 
     /**
      * A convenience constructor which creates/binds the necessary port as described by the portName, by
@@ -44,7 +44,7 @@ public:
      * @param portName The name of the port to be allocated
      * @param factories An optional list of factories to ask to create the given port name
      */
-    CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories = nullFactories);
+    explicit CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories = nullFactories);
 
     /**
      * Adds a port to the recieve corrections from this service

@@ -5,30 +5,21 @@
 #ifndef IS_FIRMWAREUPDATE_H
 #define IS_FIRMWAREUPDATE_H
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
+#include <string>
+#include <deque>
 
 #include "ISConstants.h"
 #include "ISUtilities.h"
+#include "core/msg_logger.h"
 
 #ifdef __cplusplus
 #include <string>
 #include <any>
 
 #include "util/md5.h"
-
-// #define DEBUG_LOGGING
-#ifdef __ZEPHYR__
-    #include <zephyr/logging/log.h>
-#else
-    #ifdef DEBUG_LOGGING
-        #define LOG_DBG(...)    printf(__VA_ARGS__); printf("\n");
-    #else
-        #define LOG_DBG(...)
-    #endif
-#endif
 
 extern "C" {
 #endif
@@ -528,7 +519,7 @@ namespace fwUpdate {
          * @param buff_len
          * @return true if the data was successfully sent to the underlying communication system, otherwise false
          */
-        virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
+        virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) override = 0;
 
         /**
          * Performs a system reset of various severity per reset_flags, (ie, RESET_SOFT by informing the OS/MCU to restart the system,
@@ -667,9 +658,18 @@ namespace fwUpdate {
          */
         bool fwUpdate_sendRetry(resend_reason_e reason);
 
-        uint32_t progress_interval = 500;               // we'll send progress updates at 2hz.
-        uint32_t nextProgressReport = 0;                // the next system
-        int32_t last_chunk_id = -1;                     // the last received chunk id from a CHUNK message. -1 = no chunk yet received; the next received chunk must be 0.
+        /**
+         * Validates that the provided session Id has not be used in the last 10 updates
+         * @param sessionId the session Id to validate
+         * @returns true if valid otherwise false.
+         */
+        bool fwUpdate_validateSessionId(uint16_t sessionId);
+
+        static constexpr uint8_t MAX_SESSION_HISTORY = 10;  // the maximum number of session Ids to retain for historical purposes.
+        uint16_t sessionHistory[MAX_SESSION_HISTORY] = {0}; // a history of the previously observed session ids.
+        uint32_t progress_interval = 500;                   // we'll send progress updates at 2hz.
+        uint32_t nextProgressReport = 0;                    // the next system
+        int32_t last_chunk_id = -1;                         // the last received chunk id from a CHUNK message. -1 = no chunk yet received; the next received chunk must be 0.
     };
 
     class FirmwareUpdateHost : public FirmwareUpdateBase {
@@ -701,10 +701,11 @@ namespace fwUpdate {
         bool fwUpdate_requestUpdate(target_t target_id, int image_slot, int image_flags, uint16_t chunk_size, uint32_t image_size, md5hash_t image_md5, int32_t progress_rate = 500);
 
         /**
-         * Called by the hsot application to resend a previous "fwUpdate_requestUpdate" with a full parameter set.
+         * Called by the host application to resend a previous "fwUpdate_requestUpdate" with a full parameter set.
+         * @param new_session if true, reinitializes the session id to a new random value and retains all other arguments (default = false).
          * @return
          */
-        bool fwUpdate_requestUpdate();
+        bool fwUpdate_requestUpdate(bool new_session = false);
 
         /**
          * Requests that the remote device perform a reset. Note that this request does not need a session, or any other pre-negotiated state.
@@ -901,6 +902,15 @@ namespace fwUpdate {
          * @return true if the system was able to properly initialize, false if there was an error of something (you have a REAL problem in this case).
          */
         bool fwUpdate_resetEngine();
+
+        /**
+         * Simple convenience function to generate a session id - this should attempt to be unique. The target device will
+         * perform additional validation and may reject s session id for unknown reasons, so this may get called multiple
+         * times before a session is successfully initiated. Not that this does not assign the generated ID to the session,
+         * it merely generates a potential ID suitable for the session ID.
+         * @return a new session id
+         */
+        uint16_t fwUpdate_generateNewSessionID();
 
         uint16_t next_chunk_id = 0;                     //!< the next chuck id to send, at the next send.
         uint16_t chunks_sent = 0;                       //!< the total number of chunks that have been sent, including resends

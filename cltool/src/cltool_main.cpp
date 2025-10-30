@@ -784,12 +784,11 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
         cout << buffer << endl;
     } else if (fwPtr) {
         if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority
-            ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS))) {
-            printf("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->fwUpdate_getSessionTargetName());
-            if (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
-                int tot = fwPtr->fwUpdate_getProgressTotal();
-                int num = fwPtr->fwUpdate_getProgressNum();
-                float percent = fwPtr->fwUpdate_getProgressPercent() * 100.f;
+            ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS))) {
+            printf("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->getActiveTargetName());
+            if (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS) {
+                int tot, num;
+                float percent = fwPtr->getProgress(&num, &tot) * 100.f;
                 printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
             } else if (g_commandLineOptions.verboseLevel > ::IS_LOG_LEVEL_MORE_INFO) {
                 // printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());

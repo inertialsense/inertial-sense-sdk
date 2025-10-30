@@ -157,7 +157,7 @@ public:
             time = seconds_double.count();                                          // Get the count of seconds as a double
         }
 
-        debug_message("%-20s ts:%6.3f :: ", label.c_str(), time);
+        log_debug(IS_LOG_CHRONO_STATS, "%-20s ts:%6.3f :: ", label.c_str(), time);
 
         cnt++;
         if (std::isnan(timeLast))
@@ -174,11 +174,11 @@ public:
             dtCnt++;
             duration += dt;
 
-            debug_message("dt %.4f  ", dt);
-            debug_message("avg %.4f  ", dtAvg);
+            log_debug(IS_LOG_CHRONO_STATS, "dt %.4f  ", dt);
+            log_debug(IS_LOG_CHRONO_STATS, "avg %.4f  ", dtAvg);
 
-            if (dt < dtMin) { dtMin = dt;  dtMinTime = time; debug_message("dtMin %.3f  ", dtMin); }
-            if (dt > dtMax) { dtMax = dt;  dtMaxTime = time; debug_message("dtMax %.3f  ", dtMax); }
+            if (dt < dtMin) { dtMin = dt;  dtMinTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMin %.3f  ", dtMin); }
+            if (dt > dtMax) { dtMax = dt;  dtMaxTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMax %.3f  ", dtMax); }
 
             if (std::isnan(dtLast)) {   // First sample
                 ddtMin = INVALID_DDT_MIN_STAT;
@@ -190,8 +190,8 @@ public:
                 ddtAvg = beta * ddtAvg + alpha * ddt;
                 ddtCnt++;
 
-                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; debug_message("dtMin %.3f  ", dtMin); }
-                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; debug_message("dtMax %.3f  ", dtMax); }
+                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMin %.3f  ", dtMin); }
+                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMax %.3f  ", dtMax); }
             }
 
             rate = (1.0 / dt);
@@ -199,7 +199,7 @@ public:
             dtLast = dt;
         }
         timeLast = time;
-        debug_message("\n");
+        log_debug(IS_LOG_CHRONO_STATS, "\n");
     };
 
 
@@ -212,7 +212,7 @@ public:
         if (!hasData())
             return "  !! Insufficient number of samples to determine statistics.";
 
-        std::string out = utils::string_format("  dt: avg %5.1f ms, min %5.1f ms, max %5.1f ms, over %.1f s %4d smpls", dtAvg * 1.0e3, dtMin * 1.0e3, dtMax * 1.0e3, duration * 1.0e3, cnt);
+        std::string out = utils::string_format("  dt: avg %5.1f ms, min %5.1f ms, max %5.1f ms (period: %.3fs %4d smpls)", dtAvg * 1.0e3, dtMin * 1.0e3, dtMax * 1.0e3, duration, cnt);
         if (multiline) {
             out += utils::string_format("\n ddt: avg %5.1f ms, min %5.1f ms, max %5.1f ms", ddtAvg * 1.0e3, ddtMin * 1.0e3, ddtMax * 1.0e3);
         }
