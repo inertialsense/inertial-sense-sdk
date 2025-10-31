@@ -3479,7 +3479,7 @@ typedef struct PACKED
 typedef enum
 {
     DYNAMIC_MODEL_PORTABLE          = 0,
-    DYNAMIC_MODEL_FIXED             = 1,
+    DYNAMIC_MODEL_FIXED_POSITION              = 1,
     DYNAMIC_MODEL_STATIONARY        = 2,
     DYNAMIC_MODEL_PEDESTRIAN        = 3,
     DYNAMIC_MODEL_GROUND_VEHICLE    = 4,
