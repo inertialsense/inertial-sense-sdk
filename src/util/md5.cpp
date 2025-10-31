@@ -71,14 +71,14 @@ void md5_init(md5Context_t& context) {
 }
 
 // MD5 block update operation
-void md5_update(md5Context_t& context, const unsigned char *input, unsigned int inputLen) {
-    unsigned int i, index, partLen;
+void md5_update(md5Context_t& context, const unsigned char *input, size_t inputLen) {
+    size_t i, index, partLen;
 
     if (!inputLen)
         return; // don't do ANY processing if there is no data passed.
 
     // Compute number of bytes mod 64
-    index = (unsigned int)((context.count[0] >> 3) & 0x3F);
+    index = (size_t)((context.count[0] >> 3) & 0x3F);
 
     // Update number of bits
     if ((context.count[0] += ((uint32_t)inputLen << 3)) < ((uint32_t)inputLen << 3)) {

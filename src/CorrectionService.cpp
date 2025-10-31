@@ -70,21 +70,21 @@ bool CorrectionService::hasDevice(device_handle_t device) {
 }
 
 uint32_t CorrectionService::addRTCM3Msg1029Listeners(const std::function<void(std::string)>& callback) {
-    this->rtcm3Msg1029Listeners.push_back(callback);
-    return this->rtcm3Msg1029Listeners.size()-1;
+    rtcm3Msg1029Listeners.push_back(callback);
+    return (uint32_t)rtcm3Msg1029Listeners.size()-1;
 }
 
 void CorrectionService::removeRTCM3Msg1029Listeners(const uint32_t id) {
-    this->rtcm3Msg1029Listeners.erase(this->rtcm3Msg1029Listeners.begin() + id);
+    rtcm3Msg1029Listeners.erase(rtcm3Msg1029Listeners.begin() + id);
 }
 
 uint32_t CorrectionService::addRTCM3PacketListeners(const std::function<void(uint16_t, const void*, uint32_t)>& callback) {
-    this->rtcm3PacketListeners.push_back(callback);
-    return this->rtcm3PacketListeners.size()-1;
+    rtcm3PacketListeners.push_back(callback);
+    return (uint32_t)rtcm3PacketListeners.size()-1;
 }
 
 void CorrectionService::removeRTCM3PacketListeners(const uint32_t id) {
-    this->rtcm3PacketListeners.erase(this->rtcm3PacketListeners.begin() + id);
+    rtcm3PacketListeners.erase(rtcm3PacketListeners.begin() + id);
 }
 
 int CorrectionService::step() const {

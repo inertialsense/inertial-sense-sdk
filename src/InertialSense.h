@@ -154,7 +154,7 @@ public:
      */
     std::set<port_handle_t> getPorts() { return portManager; }
 
-    int DeviceCount() { return deviceManager.DeviceCount(); }
+    int DeviceCount() { return (int)deviceManager.DeviceCount(); }
 
     std::list<device_handle_t>& getDevices() { return deviceManager; };
 

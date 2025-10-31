@@ -699,11 +699,17 @@ namespace fwUpdate {
         if (payload.hdr.target_device != TARGET_HOST)
             return false;
 
-        if (payload.hdr.msg_type == MSG_VERSION_INFO_RESP)  // this is "sessionless", so respond even if we don't have a session
-            return fwUpdate_handleVersionResponse(payload);
+        // these are all "session-less" messages - so if its NOT ANY OF THESE, then validate the session
+        if ( (payload.hdr.msg_type != MSG_REQ_VERSION_INFO) &&
+             (payload.hdr.msg_type != MSG_REQ_RESET) &&
+             (payload.hdr.msg_type != MSG_VERSION_INFO_RESP) &&
+             (payload.hdr.msg_type != MSG_RESET_RESP) ) {
 
-        if ((payload.data.update_resp.session_id != 0) && (payload.data.update_resp.session_id != session_id))
-            return false; // this suggests that this message belongs to another session - we should ignore it.
+            // session_id is ALWAYS the first field in all of the message types which support it... so we don't need
+            // individual tests for each - just this one will do.
+            if ((payload.data.update_resp.session_id != 0) && (payload.data.update_resp.session_id != session_id))
+                return false; // this suggests that this message belongs to another session - we should ignore it.
+        }
 
         bool result = false;
         fwUpdate_resetTimeout();
@@ -711,6 +717,8 @@ namespace fwUpdate {
             case MSG_UPDATE_RESP:
                 return fwUpdate_handleUpdateResponse(payload);
             case MSG_UPDATE_PROGRESS:
+                if ((payload.data.progress.session_id != 0) && (payload.data.progress.session_id != session_id))
+                    return false; // this suggests that this message belongs to another session - we should ignore it.
                 return fwUpdate_handleUpdateProgress(payload);
             case MSG_REQ_RESEND_CHUNK:
                 resend_count += next_chunk_id - payload.data.req_resend.chunk_id;
@@ -719,8 +727,9 @@ namespace fwUpdate {
             case MSG_UPDATE_DONE:
                 session_status = payload.data.resp_done.status;
                 return fwUpdate_handleDone(payload);
-            case MSG_RESET_RESP:
             case MSG_VERSION_INFO_RESP:
+                return fwUpdate_handleVersionResponse(payload);
+            case MSG_RESET_RESP:
             default:
                 break;
         }

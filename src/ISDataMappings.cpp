@@ -1763,7 +1763,7 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
 
     case DATA_TYPE_F32:
         protectUnalignedAssign<float>(&valuef32, (float)strtod(stringBuffer, NULL));
-        (*(float*)dataBuffer) = valuef32 / conversion;
+        (*(float*)dataBuffer) = static_cast<float>(valuef32 / conversion);
         break;
 
     case DATA_TYPE_F64:
@@ -1914,7 +1914,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
             memcpy(&valuef32, dataBuffer, sizeof(float));
             valuef32 *= conversion;
         #else
-            valuef32 = (*(float*)dataBuffer) * conversion;
+            valuef32 = static_cast<float>((*(float *) dataBuffer) * conversion);
         #endif
         if (precision)
         {
