@@ -173,7 +173,7 @@ namespace utils {
      */
     template <typename T=uint8_t, int N=4>
     int split_from_string(const std::string& s, T vOut[N], const char* d = ".", std::function<T(const std::string&)> lambda = [](const std::string& ss) -> T { return stoi(ss); } ) {
-        long unsigned int start = 0, n = 0, end = 0, len = s.length();
+        size_t start = 0, n = 0, end = 0, len = s.length();
         while ( (start < len) && (n < len) && (end = s.find_first_of(d, start)) != std::string::npos) {
             vOut[n++] = lambda(s.substr(start, end - start));
             start = end + 1;
@@ -387,7 +387,7 @@ public:
         for (auto [m, msg] : markers) {
             auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(m - m_startTime);
             auto span = std::chrono::duration_cast<std::chrono::microseconds>(m - lastMark);
-            float pct = ((double)span.count() / (double)duration.count()) * 100.0f;
+            float pct = ((float)span.count() / (float)duration.count()) * 100.0f;
             std::cout << utils::string_format("    %7uus (%7uus, %4.1f%%) ::  %s", elapsed, span, pct, msg.c_str()) << std::endl;
             lastMark = m;
         }
