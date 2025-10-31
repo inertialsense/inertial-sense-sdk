@@ -654,6 +654,7 @@ void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
             return;
         }
+        cmd.resultMsg = "Targeting device " + targetName + " for update.";
     }
     if (cmd.args.size() == 1) {
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS; // if we're only setting the target, there is nothing left to do.
@@ -689,15 +690,18 @@ void ISFirmwareUpdater::cmd_WaitFor(ISFwUpdaterCmd& cmd) {
 
         if (cmd["force"] == "true")
             target_devInfo = NULL;
+
+        cmd.resultMsg = "Requesting status of target device...";
     }
 
     cmd.status = ISFwUpdaterCmd::CMD_IN_PROCESS;
     if (target_devInfo && ((remoteDevInfoTargetId & fwUpdate::TARGET_TYPE_MASK) == (target & fwUpdate::TARGET_TYPE_MASK))) {
         // SUCCESS
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+        cmd.resultMsg = "Received response from target.";
         pingInterval = 1000;       //!< delay between attempts to communicate with a target device
         pingNextRetry = 0;         //!< time for next ping
-        pingTimeoutMs = 0;           //!< time when the ping operation will timeout if no response before then
+        pingTimeoutMs = 0;         //!< time when the ping operation will timeout if no response before then
         timeoutLabel.clear();      //!< a label to jump to, when a "waitfor" times out (which is not always an error)
     } else if (pingTimeoutExpires && (current_timeMs() > pingTimeoutExpires)) {
         // TIMEOUT occurred
@@ -719,7 +723,9 @@ void ISFirmwareUpdater::cmd_WaitFor(ISFwUpdaterCmd& cmd) {
         if (pfnStatus_cb != nullptr)
             pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_INFO, "Requesting version info from '%s' (upto %0.2f seconds)...", fwUpdate_getTargetName(target), (pingTimeoutExpires - current_timeMs()) / 1000.0);
         fwUpdate_requestVersionInfo(target);
-
+        cmd.resultMsg = "Requesting status of target device...";
+    } else {
+        cmd.resultMsg = "Waiting for response from target device...";
     }
 }
 
@@ -733,14 +739,16 @@ void ISFirmwareUpdater::cmd_Delay(ISFwUpdaterCmd& cmd) {
             return;
         }
 
+        cmd.resultMsg = utils::string_format("Pausing for %0.2f seconds...", strtol(cmd[0].c_str(), nullptr, 10) / 1000.0);
         if (pfnStatus_cb != nullptr)
-            pfnStatus_cb(std::make_any<ISFirmwareUpdater *>(this), IS_LOG_LEVEL_MORE_INFO, "Pausing for %0.2f seconds...", strtol(cmd[0].c_str(), nullptr, 10) / 1000.0);
+            pfnStatus_cb(std::make_any<ISFirmwareUpdater *>(this), IS_LOG_LEVEL_MORE_INFO, cmd.resultMsg.c_str());
         pauseUntil = current_timeMs() + strtol(cmd[0].c_str(), nullptr, 10);
     }
 
     cmd.status = ISFwUpdaterCmd::CMD_IN_PROCESS;
     if (!pauseUntil || pauseUntil < current_timeMs()) {
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+        cmd.resultMsg = utils::string_format("Paused for %0.2f seconds.", strtol(cmd[0].c_str(), nullptr, 10) / 1000.0);
         pauseUntil = 0;
     }
 }
@@ -804,12 +812,14 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         fwUpdate::update_status_e status = initializeUpload(target, filename, slotNum, flags, forceUpdate, chunkSize, progressRate);
         if (status < fwUpdate::NOT_STARTED) {
             // there was an error -- probably should flush the command queue
-            handleCommandError(cmd, -1, "Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
+            cmd.resultMsg = utils::string_format("Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
+            handleCommandError(cmd, -1, cmd.resultMsg.c_str());
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
         } else {
             nextStartAttempt = current_timeMs() + attemptInterval;
             // session_status = fwUpdate::NOT_STARTED;
             cmd.status = ISFwUpdaterCmd::CMD_IN_PROCESS;
+            cmd.resultMsg = "Initiating image upload.";
         }
     } else {
         if (fwUpdate_getSessionStatus() == fwUpdate::NOT_STARTED) {
@@ -837,12 +847,16 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
             }
         }
 
-        if (session_status == fwUpdate::FINISHED)
+        if (session_status == fwUpdate::FINISHED) {
             cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
-        else if (session_status < fwUpdate::NOT_STARTED)
+            cmd.resultMsg = "Upload successful.";
+        } else if (session_status < fwUpdate::NOT_STARTED) {
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
-        else
+            cmd.resultMsg = utils::string_format("Error: %s", fwUpdate_getNiceStatusName(fwUpdate_getSessionStatus()));
+        } else {
             cmd.status = ISFwUpdaterCmd::CMD_IN_PROCESS;
+            cmd.resultMsg = "Uploading firmware image.";
+        }
     }
 }
 
@@ -855,8 +869,11 @@ void ISFirmwareUpdater::cmd_resetDevice(ISFwUpdaterCmd& cmd) {
     } else {
         fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
     }
+
     if (pfnStatus_cb != nullptr)
         pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Requesting target reset (%s)", hard ? "hard" : "soft");
+
+    cmd.resultMsg = utils::string_format("Performing %s Reset.", (hard ? "Hardware" : "Software" ));
     cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
 }
 
@@ -867,9 +884,11 @@ void ISFirmwareUpdater::cmd_finish(ISFwUpdaterCmd& cmd) {
         if (cmd.status == ISFwUpdaterCmd::CMD_QUEUED)
             cmd.status = ISFwUpdaterCmd::CMD_NOT_EXECUTED;
     bool reportErrors = (cmd.args.size() == 1 && cmd[0] == "true");
-    if (reportErrors && (pfnStatus_cb != nullptr))
-        pfnStatus_cb(std::make_any<ISFirmwareUpdater *>(this), IS_LOG_LEVEL_INFO, "Firmware Update completed %s", reportErrors ? "with errors. Please review update log for specifics." : "successfully.");
+    cmd.resultMsg = utils::string_format("Firmware Update completed %s", reportErrors ? "with errors. Please review update log for specifics." : "successfully.");
     cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+
+    if (reportErrors && (pfnStatus_cb != nullptr))
+        pfnStatus_cb(std::make_any<ISFirmwareUpdater *>(this), IS_LOG_LEVEL_INFO, cmd.resultMsg.c_str());
 }
 
 void ISFirmwareUpdater::initialize() {
