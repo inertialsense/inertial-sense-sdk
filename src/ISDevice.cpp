@@ -138,6 +138,9 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
         fwUpdater->step();
 
         auto activeCmd = fwUpdater->getActiveCommand();
+        if (&activeCmd != &nullCmd)
+            fwLastMessage = activeCmd.resultMsg;
+
         if (activeCmd.cmd == "upload") {
             if (fwUpdater->getActiveTarget() != fwLastTarget) {
                 fwHasError = false;
@@ -162,13 +165,6 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
                     fwHasError = true;
                 }
             }
-
-        } else if (activeCmd.cmd == "waitfor") {
-            fwLastMessage = "Waiting for response from device.";
-        } else if (activeCmd.cmd == "reset") {
-            fwLastMessage = "Resetting device.";
-        } else if (activeCmd.cmd == "delay") {
-            fwLastMessage = "Waiting...";
         }
 
         if (!fwUpdater->hasPendingCommands()) {
@@ -205,17 +201,21 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
 
 bool ISDevice::handshakeISbl() {
     static const uint8_t handshakerChar = 'U';
+    uint8_t readCh = 0;
 
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
-    for (int i = 0; i < BOOTLOADER_RETRIES; i++) {
+    for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
+        // OLD WAY : if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
+        while (portRead(port, &readCh, 1) == 1) {
+            if (readCh == handshakerChar)
+                return true;    // received a responding handshake char, so success
+        }
+
         if (portWrite(port, &handshakerChar, 1) != 1) {
             return false;   // failed to write, so there is an error
         }
-
-        if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
-            return true;    // received a responding handshake char, so success
-        }
+        SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
     }
 
     return false;
@@ -228,6 +228,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
         hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
     }
 
+    // clear any partial commands and flush the rx buffer
     for (int i = 0; i < 5; i++) {
         portWrite(port, (uint8_t*)"\n", 1);
         SLEEP_MS(2);
@@ -326,12 +327,14 @@ bool ISDevice::validate(uint32_t timeout) {
                 GetData(DID_DEV_INFO);
                 break;
             case QUERYTYPE_ISbootloader:
+                queryDeviceInfoISbl(250);
+                break;
             case QUERYTYPE_mcuBoot:
                 break;
 
         }
 
-        SLEEP_MS(20);
+        SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
         step();
 
         nextQueryType = static_cast<queryTypes>((int)nextQueryType + 1 % (int)QUERYTYPE_MAX);
@@ -397,20 +400,20 @@ int ISDevice::validateAsync(uint32_t timeout) {
         case ISDevice::queryTypes::QUERYTYPE_NMEA :
             // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using NMEA protocol.", SERIAL_PORT(port)->portName);
             SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
-            SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISB :
             // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using ISB protocol.", SERIAL_PORT(port)->portName);
             GetData(DID_DEV_INFO);
-            SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
+            queryDeviceInfoISbl(250);
+            break;
         case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
             // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' mcuBoot/SMP protocol.", SERIAL_PORT(port)->portName);
             break;
     }
 
-
+    SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
     previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
     return 0;
 }
@@ -615,8 +618,8 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
     int n = 0;
     if (nmeaMsg[0] != '$') buf[n++] = '$'; // Append header if missing
     memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
-    n += nmeaMsg.size();
-    nmea_sprint_footer((char*)buf, sizeof(buf), n);
+    n += static_cast<int>(nmeaMsg.size());
+    nmea_sprint_footer(reinterpret_cast<char *>(buf), sizeof(buf), n);
     return SendRaw(buf, n);
 }
 
@@ -1196,7 +1199,8 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             log_debug(IS_LOG_ISDEVICE, "Received DID_GPX_FLASH_CFG");
             break;
         case DID_FIRMWARE_UPDATE:
-            fwUpdater->processMessage(data);
+            if (fwUpdater)
+                fwUpdater->processMessage(data);
             break;
 
         // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
