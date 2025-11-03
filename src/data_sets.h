@@ -454,7 +454,7 @@ enum eGpsStatus
     GPS_STATUS_FIX_3D                               = (int)0x00000300,
     GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK               = (int)0x00000400,
     GPS_STATUS_FIX_TIME_ONLY                        = (int)0x00000500,
-    GPS_STATUS_FIX_UNUSED1                          = (int)0x00000600,
+    GPS_STATUS_FIX_REF_LLA                          = (int)0x00000600,
     GPS_STATUS_FIX_UNUSED2                          = (int)0x00000700,
     GPS_STATUS_FIX_DGPS                             = (int)0x00000800,
     GPS_STATUS_FIX_SBAS                             = (int)0x00000900,
