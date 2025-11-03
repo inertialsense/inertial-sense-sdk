@@ -1638,25 +1638,6 @@ enum eSystemCommand
     SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
     SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967287)
     SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967287)
-
-    // TODO: DEBUG REMOVE ONCE TX->RX bug (TM)
-    SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
-    SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
-
-    SYS_CMD_TEST_SER0_TX_INPUT                          = 72,           // (uint32 inv: 4294967223)
-    
-    // PULL UP/DOWN RESISTOR COMMANDS
-    SYS_CMD_TEST_SER0_TX_PP_NONE                        = 80,           // (uint32 inv: 4294967215)
-    SYS_CMD_TEST_SER0_TX_PP_U                           = 81,           // (uint32 inv: 4294967214)
-    SYS_CMD_TEST_SER0_TX_PP_D                           = 82,           // (uint32 inv: 4294967213)
-
-    // The following two commands are EXPERIMENTAL for debuging TX->RX bug (TM) 
-    // THEY ARE UNTESTED AND MAY CAUSE UNEXPECTED BEHAVIOR.
-    // TODO: Action date (after 8/8/25): 
-    //  A: Remove if does not fix tx->rx bug. 
-    //  B: If it does help consider expanding to all pins to prevent from happening.
-    SYS_CMD_OUTPUT_IDLE                                 = 95,           // (uint32 inv: 4294967200)
-    SYS_CMD_EXIT_OUTPUT_IDLE                            = 96,           // (uint32 inv: 4294967199)
     
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
