@@ -33,7 +33,7 @@ void md5_init(md5Context_t& context);
  * @param data the bytes to consume into the hash
  * @return a static buffer of 16 unsigned bytes which represent the 128 total bits of the MD5 hash
  */
-void md5_update(md5Context_t& context, const unsigned char *input, unsigned int inputLen);
+void md5_update(md5Context_t& context, const unsigned char *input, size_t inputLen);
 
 /**
  * updates the passed reference to an array, the current running md5 sum.

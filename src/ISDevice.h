@@ -28,8 +28,8 @@ extern "C"
     #include "core/base_port.h"
 }
 
-#define BOOTLOADER_RETRIES          10
-#define BOOTLOADER_RESPONSE_DELAY   100
+#define BOOTLOADER_HANDSHAKE_COUNT  10
+#define BOOTLOADER_HANDSHAKE_DELAY  10
 
 #define PRINT_DEBUG 0
 #if PRINT_DEBUG

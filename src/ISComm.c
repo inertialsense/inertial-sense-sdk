@@ -445,7 +445,7 @@ static protocol_type_t processIsbPkt(void* v)
     // Header
     pkt->hdr.preamble      = isbPkt->hdr.preamble;
     pkt->hdr.flags         = isbPkt->hdr.flags;
-    pkt->hdr.id = pkt->id  = isbPkt->hdr.id;
+    pkt->id = pkt->hdr.id  = isbPkt->hdr.id;
     pkt->hdr.payloadSize   = payloadSize;
 
     // Payload
@@ -1362,7 +1362,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     MEMCPY_INC(ptr, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
 
     // Write entire packet to port (all at once).  
-    int n = portWrite(port, buf, ptr - buf);
+    int n = portWrite(port, buf, (unsigned int)(ptr - buf));
 #endif
 
     // Increment Tx count
