@@ -5,10 +5,10 @@ echo Build Log Inspector
 echo.
 
 :: Set SDK_DIR to the repo root (two levels up from this script)
-for %%i in ("%~dp0..\..") do set "SDK_DIR=%%~fi"
+for %%i in ("%~dp0..\..") do set SDK_DIR="%%~fi"
 
-:: Call with -r and forward all original args
-call "%SDK_DIR%\scripts\windows\build_log_inspector.bat" -r %*
+:: Build Log Inspector locally
+python %SDK_DIR%\scripts\build_log_inspector.py -r %*
 
 :: Propagate the exit code
 set "ec=%ERRORLEVEL%"

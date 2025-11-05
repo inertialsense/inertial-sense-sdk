@@ -18,15 +18,8 @@
 #include "protocol/FirmwareUpdate.h"
 #include "util/util.h"
 
-
-// Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-#define SUPPORT_BOOTLOADER_V5A
-
-/** uINS bootloader baud rate */
-#define IS_BAUD_RATE_BOOTLOADER 921600
-
-// #define BOOTLOADER_RETRIES          100
-// #define BOOTLOADER_RESPONSE_DELAY   10
+//#define BOOTLOADER_RETRIES                  12
+//#define BOOTLOADER_RESPONSE_DELAY           10
 #define BOOTLOADER_REFRESH_DELAY            500
 #define MAX_VERIFY_CHUNK_SIZE               1024
 #define BOOTLOADER_TIMEOUT_DEFAULT          1000

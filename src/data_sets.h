@@ -454,7 +454,7 @@ enum eGpsStatus
     GPS_STATUS_FIX_3D                               = (int)0x00000300,
     GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK               = (int)0x00000400,
     GPS_STATUS_FIX_TIME_ONLY                        = (int)0x00000500,
-    GPS_STATUS_FIX_UNUSED1                          = (int)0x00000600,
+    GPS_STATUS_FIX_REF_LLA                          = (int)0x00000600,
     GPS_STATUS_FIX_UNUSED2                          = (int)0x00000700,
     GPS_STATUS_FIX_DGPS                             = (int)0x00000800,
     GPS_STATUS_FIX_SBAS                             = (int)0x00000900,
@@ -1638,25 +1638,6 @@ enum eSystemCommand
     SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
     SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967287)
     SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967287)
-
-    // TODO: DEBUG REMOVE ONCE TX->RX bug (TM)
-    SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
-    SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
-
-    SYS_CMD_TEST_SER0_TX_INPUT                          = 72,           // (uint32 inv: 4294967223)
-    
-    // PULL UP/DOWN RESISTOR COMMANDS
-    SYS_CMD_TEST_SER0_TX_PP_NONE                        = 80,           // (uint32 inv: 4294967215)
-    SYS_CMD_TEST_SER0_TX_PP_U                           = 81,           // (uint32 inv: 4294967214)
-    SYS_CMD_TEST_SER0_TX_PP_D                           = 82,           // (uint32 inv: 4294967213)
-
-    // The following two commands are EXPERIMENTAL for debuging TX->RX bug (TM) 
-    // THEY ARE UNTESTED AND MAY CAUSE UNEXPECTED BEHAVIOR.
-    // TODO: Action date (after 8/8/25): 
-    //  A: Remove if does not fix tx->rx bug. 
-    //  B: If it does help consider expanding to all pins to prevent from happening.
-    SYS_CMD_OUTPUT_IDLE                                 = 95,           // (uint32 inv: 4294967200)
-    SYS_CMD_EXIT_OUTPUT_IDLE                            = 96,           // (uint32 inv: 4294967199)
     
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
@@ -2942,20 +2923,42 @@ enum eRTKConfigBits
 
     /** Enable RTK base and output RTCM3 data from GPS 2 on the current serial port */
     RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT        = (int)0x02000000,
+    
+    /** If this bit is set in conjuction with set current port this will clear current port */
+    RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CLEAR_CUR_PORT       = (int)0x04000000,
 
     /** Mask of RTK base and output RTCM3 data on the current serial ports */
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CUR_PORT_MASK        = (RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_CUR_PORT | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT),
 
+    RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK = (
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  ),
+
+    RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK = (
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB  ),
+
+    RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK = (
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  ),
+
+    RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK = (
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB  ),
+
+    RTK_CFG_BITS_BASE_UBLOX_MASK = ( RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK | RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK),
+    RTK_CFG_BITS_BASE_RTCM3_MASK = ( RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK | RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK),
+
     /** All base station bits */
-    RTK_CFG_BITS_BASE_MODE = (
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB),
+    RTK_CFG_BITS_BASE_MODE = ( RTK_CFG_BITS_BASE_UBLOX_MASK | RTK_CFG_BITS_BASE_RTCM3_MASK),
 
     /** Base station bits enabled on Ser0 */
     RTK_CFG_BITS_RTK_BASE_SER0 = (
@@ -3479,6 +3482,7 @@ typedef struct PACKED
 typedef enum
 {
     DYNAMIC_MODEL_PORTABLE          = 0,
+    DYNAMIC_MODEL_FIXED_POSITION    = 1,
     DYNAMIC_MODEL_STATIONARY        = 2,
     DYNAMIC_MODEL_PEDESTRIAN        = 3,
     DYNAMIC_MODEL_GROUND_VEHICLE    = 4,
@@ -4684,7 +4688,7 @@ typedef struct
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t                gnssSatSigConst;
 
-    /** Dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** Dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 1=FIXED POSITION, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t                 dynamicModel;
 
     /** Debug */
@@ -4716,6 +4720,9 @@ typedef struct
 
     /** Reserved */
     uint32_t                reserved2;
+    
+    /** Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
+    double                  refLla[3];
 
 } gpx_flash_cfg_t;
 

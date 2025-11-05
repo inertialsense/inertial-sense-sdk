@@ -3,9 +3,17 @@ import os.path
 import sys
 import glob
 import setuptools
-import distutils.command.build
-from setuptools import find_namespace_packages, setup, Extension, find_packages
-from setuptools.command.build_ext import build_ext
+import setuptools.errors
+
+from setuptools import setup, Extension, find_packages, find_namespace_packages
+try:
+    from setuptools.command.build import build as _build
+    from setuptools.command.build_ext import build_ext as _build_ext
+except:
+    from distutils.command.build import build as _build
+    from distutils.command.build_ext import build_ext as _build_ext
+
+import pybind11
 from pybind11.setup_helpers import Pybind11Extension
 from pathlib import Path
 import re
@@ -50,24 +58,18 @@ sdk_path = os.path.abspath(os.path.curdir + '/..')
 
 source_files = ['inertialsense/logs/src/*.cpp' ]
 include_dirs = [
-    # Path to pybind11 headers
     'inertialsense/logs/include',
-    sdk_path + '/src',
-    sdk_path + '/src/libusb/libusb',
+    os.path.join(sdk_path, "src"),
+    os.path.join(sdk_path, "src", "libusb", "libusb"),
+    pybind11.get_include(), # Path to pybind11 headers
 ]
 
 ext_modules = [
-    # Extension('logs',
-    #     language='c++',
-    #     sources = source_files,
-    #     include_dirs = include_dirs,
-    #     extra_objects=extra_objects
-    #),
     Pybind11Extension(
         "inertialsense.logs.log_reader",
         sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
         include_dirs = include_dirs,
-        extra_objects=extra_objects
+        extra_objects = extra_objects
     ),
 ]
 
@@ -79,7 +81,7 @@ def has_flag(compiler, flagname):
         f.write('int main (int argc, char **argv) { return 0; }')
         try:
             compiler.compile([f.name], extra_postargs=[flagname])
-        except setuptools.distutils.errors.CompileError:
+        except setuptools.errors.CompileError:
             return False
     return True
 
@@ -95,13 +97,13 @@ def cpp_flag(compiler):
 
 
 # Override build command
-class BuildCommand(distutils.command.build.build):
+class BuildCommand(_build):
     def initialize_options(self):
-        distutils.command.build.build.initialize_options(self)
+        _build.initialize_options(self)
         self.build_base = '/tmp/log_inspector-build'
 
 
-class BuildExt(build_ext):
+class BuildExt(_build_ext):
     """A custom build extension for adding compiler-specific options."""
     c_opts = {
         'msvc': ['/EHsc'],
@@ -124,41 +126,20 @@ class BuildExt(build_ext):
             # opts += ['/wd4251', '/wd4275']  # silence yaml-cpp DLL warnings
         for ext in self.extensions:
             ext.extra_compile_args = opts
-        build_ext.build_extensions(self)
+        _build_ext.build_extensions(self)
 
 setup(
     name='inertialsense',
     version=version_ns['__version__'],
     description='Python interface to doing Inertial Sense things, like reading logs and doing mathy things.',
     url='https://github.com/InertialSense/inertial-sense-sdk',
-    python_requires='>=3.8',
 
-    author='Inertial Sense Development Team',
-    author_email='devteam@inertialsense.com',
-    license='MIT',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    classifiers=[],
     package_dir={'': '.'},
     packages=find_namespace_packages(include=["inertialsense", "inertialsense.*"]),
 
-    install_requires=[
-        'allantools',
-        'matplotlib',
-        'numpy',
-        'pandas',
-        'pybind11>=2.12',
-        'pyqt5',
-        'pyserial',
-        'scipy',
-        'simplekml',
-        'tqdm',
-        'pyyaml'],
-
     ext_modules=ext_modules,
-    extras_require={
-        "dev": [ "pytest>=7.0", "twine>=4.0.2"],
-    },
 
     setup_requires=['pybind11>=2.12', 'setuptools', 'wheel'],
 

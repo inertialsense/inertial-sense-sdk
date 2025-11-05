@@ -126,7 +126,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
     if (dataHdr != NULL)
     {
         double timestamp = (ptype == _PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf) : current_timeSecD());
-        m_logStats.LogData(ptype, dataHdr->id, timestamp);
+        m_logStats.LogData(ptype, dataHdr->id, dataHdr->size, timestamp);
 
         addIndexRecord();
         m_lastIndexOffset += dataHdr->size;
@@ -273,12 +273,12 @@ std::string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount
 void cDeviceLog::UpdateStatsFromFile(p_data_buf_t *data)
 {
     double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-    m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);
+    m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, data->hdr.size, timestamp);
 }
 
 void cDeviceLog::UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp)
 {
-    m_logStats.LogData(ptype, id, timestamp);
+    m_logStats.LogData(ptype, id, 0, timestamp);    // FIXME!! is bytes really 0? Maybe its the size of the ID struct?
 }
 
 device_handle_t cDeviceLog::Device() {
@@ -293,7 +293,7 @@ void cDeviceLog::OnReadPacket(packet_t* pkt, protocol_type_t ptype) {
     if (pkt != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&pkt->dataHdr, pkt->data.ptr);
-        m_logStats.LogData(ptype, pkt->dataHdr.id, timestamp);
+        m_logStats.LogData(ptype, pkt->dataHdr.id, pkt->dataHdr.size, timestamp);
     }
 }
 
@@ -302,7 +302,7 @@ void cDeviceLog::OnReadData(p_data_buf_t* data)
     if (data != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, data->hdr.size, timestamp);
     }
 }
 

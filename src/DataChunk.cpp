@@ -36,10 +36,10 @@ cDataChunk::cDataChunk()
     m_hdr.protocolVersion[1] = PROTOCOL_VERSION_CHAR1;
     m_hdr.grpNum = 0;                                       //!< Chunk group number
     m_hdr.devSerialNum = 0;                                 //!< Serial number
-    m_hdr.fwVersion[0] = IS_SDK_VERSION_MAJOR;                 //!< default to the SDK version in the event that the device doesn't provide its own version
-    m_hdr.fwVersion[1] = IS_SDK_VERSION_MINOR;                 //!< default to the SDK version in the event that the device doesn't provide its own version
-    m_hdr.fwVersion[2] = IS_SDK_VERSION_PATCH;                 //!< default to the SDK version in the event that the device doesn't provide its own version
-    m_hdr.fwVersion[3] = 0xff;                              //!< -1 indicated that this is the SDK version (it should be overwritten if the device submits devInfo)
+    m_hdr.fwVersion[0] = IS_SDK_VERSION_MAJOR;              //!< default to the SDK version in the event that the device doesn't provide its own version
+    m_hdr.fwVersion[1] = IS_SDK_VERSION_MINOR;              //!< default to the SDK version in the event that the device doesn't provide its own version
+    m_hdr.fwVersion[2] = IS_SDK_VERSION_PATCH;              //!< default to the SDK version in the event that the device doesn't provide its own version
+    m_hdr.fwVersion[3] = static_cast<char>(0xff);           //!< -1 indicated that this is the SDK version (it should be overwritten if the device submits devInfo)
     #endif
     m_buffTail = m_buffHead + DEFAULT_CHUNK_DATA_SIZE;
     m_dataHead = m_buffHead;

@@ -652,7 +652,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "Acc DLPF (Hz) 0xF000:[0=218, 1=218, 2=99, 3=45, 4=21, 5=10, 6=5], ";
     mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
 
-    mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
     mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last known position (Aids GPS startup)", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("lastLlaTimeOfWeekMs", &nvm_flash_cfg_t::lastLlaTimeOfWeekMs, DATA_TYPE_UINT32, "ms", "Last LLA update time since Sunday morning");
     mapper.AddMember("lastLlaWeek", &nvm_flash_cfg_t::lastLlaWeek, DATA_TYPE_UINT32, "week", "Last LLA update Weeks since Jan 6, 1980");
@@ -734,6 +734,7 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("reserved1", &gpx_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
     mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("reserved2", &gpx_flash_cfg_t::reserved2, DATA_TYPE_UINT32);
+    mapper.AddLlaDegM("refLla", offsetof(gpx_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
 
     // Keep at end
     mapper.AddMember("size", &gpx_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
@@ -1846,7 +1847,7 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
 
     case DATA_TYPE_F32:
         protectUnalignedAssign<float>(&valuef32, (float)strtod(stringBuffer, NULL));
-        (*(float*)dataBuffer) = valuef32 / conversion;
+        (*(float*)dataBuffer) = static_cast<float>(valuef32 / conversion);
         break;
 
     case DATA_TYPE_F64:
@@ -1997,7 +1998,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
             memcpy(&valuef32, dataBuffer, sizeof(float));
             valuef32 *= conversion;
         #else
-            valuef32 = (*(float*)dataBuffer) * conversion;
+            valuef32 = static_cast<float>((*(float *) dataBuffer) * conversion);
         #endif
         if (precision)
         {

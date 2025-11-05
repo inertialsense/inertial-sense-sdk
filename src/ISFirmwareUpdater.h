@@ -57,7 +57,7 @@ public:
     cmd_status_e status = CMD_QUEUED;                   //!< a code indicating the state of the command: PENDING, IN_PROCESS, SUCCESS, ERROR, etc.
     std::map<std::string, std::string> args;            //!< a set of parameters (key-value pairs) to be used by the command
 
-    std::string resultMsg;                              //!< an optional message to be reported/displayed reflecting the completion state of the command
+    std::string resultMsg;                              //!< an optional message to be reported/displayed reflecting the active/last-known state of the command (ie, can still be used when the cmd is in progress).
     std::vector<std::tuple<uint8_t, std::string>> msgs; //!< a list of messages that occurred doing the execution of this cmd
     std::chrono::system_clock::time_point timeQueued;   //!< wall-clock time when this command was queued
     std::chrono::system_clock::time_point timeStarted;  //!< wall-clock time when this command started execution
@@ -282,6 +282,7 @@ private:
     std::string activeStep;                                 //!< the name of the currently executing step name, from the manifest when available
     std::string failLabel;                                  //!< a label to jump to, when an error occurs
     ISFwUpdaterCmd* activeCmd = &nullCmd;                   //!< a reference to the currently executing command.
+    std::string statusMsg;                                  //!< a string the reflects the current state of the updater - this should be "Human Readable" (it generally gets reported directly to the user in the UI, etc).
 
     eLogLevel logLevel = IS_LOG_LEVEL_INFO;                 //!< default log level to show
     std::vector<update_msgs> stepErrors;                    //!< a list of error messages messages that occurred during the update
@@ -375,15 +376,15 @@ private:
      * @param msg
      * @return
      */
-    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t &msg) override;
 
-    bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg) override;
 
-    bool fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg) override;
 
-    bool fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg) override;
 
-    bool fwUpdate_handleDone(const fwUpdate::payload_t &msg);
+    bool fwUpdate_handleDone(const fwUpdate::payload_t &msg) override;
 
     /**
      * Overridden implementation that is responsible for writing the fwUpdate packets to the wire/port.

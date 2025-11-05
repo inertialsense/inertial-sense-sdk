@@ -329,35 +329,23 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
     if (hasHandshake)
         return IS_OP_OK;
 
+    uint8_t readCh = 0;
+
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
-    // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
-    for (int i = 0; i < BOOTLOADER_RETRIES; i++)
-    {
-        if (serialPortWrite(port, &handshakerChar, 1) != 1)
-        {
-            return IS_OP_ERROR;
+    // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
+    for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
+        while (portRead(port, &readCh, 1) == 1) {
+            if (readCh == handshakerChar) {
+                hasHandshake = true;
+                return IS_OP_OK;    // received a responding handshake char, so success
+            }
         }
 
-        if (serialPortWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {	// Success
-            hasHandshake = true;
-            return IS_OP_OK;
+        if (portWrite(port, &handshakerChar, 1) != 1) {
+            return IS_OP_ERROR;   // failed to write, so there is an error
         }
+        SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
     }
-
-#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and associated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
-
-    // Attempt handshake using extended string for bootloader v5a
-    for (int i = 0; i < BOOTLOADER_RETRIES; i++)
-    {
-        if (serialPortWriteAndWaitForTimeout(port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {   // Success
-            // FIXME: logStatus(IS_LOG_LEVEL_DEBUG_MORE, "(ISB) Handshake v5a");
-            return IS_OP_OK;
-        }
-    }
-#endif
 
     return IS_OP_ERROR;
 }
@@ -409,7 +397,7 @@ is_operation_result cISBootloaderISB::erase_flash()
         count += serialPortReadTimeout(m_port, bufPtr, 3, 100);
         bufPtr = buf + count;
 
-        float factor = pow(i / 600, 3);
+        float factor = powf(static_cast<float>(i) / 600.f, 3);
         if (m_update_callback(std::make_any<cISBootloaderBase*>(this), factor, "Erasing Flash", 0, 0) != IS_OP_OK)
         {
             return IS_OP_CANCELLED;
@@ -420,7 +408,7 @@ is_operation_result cISBootloaderISB::erase_flash()
             if (bufScan) {
                 if (memcmp(bufScan, ".\r\n", 3) == 0)
                     return IS_OP_OK;
-                int mvCnt = bufScan - buf;
+                long mvCnt = static_cast<long>(bufScan - buf);
                 if (mvCnt > 0) {
                     memmove(buf, bufScan, sizeof(buf) - mvCnt);
                     count -= mvCnt;
