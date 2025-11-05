@@ -32,15 +32,15 @@ std::vector<uint32_t> cISBootloaderISB::rst_serial_list;
 std::mutex cISBootloaderISB::serial_list_mutex;
 std::mutex cISBootloaderISB::rst_serial_list_mutex;
 
-// Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-// #define SUPPORT_BOOTLOADER_V5A
-
 /** uINS bootloader baud rate */
-#define IS_BAUD_RATE_BOOTLOADER 921600
+//#define IS_BAUD_RATE_BOOTLOADER      921600  -+
+// #define BOOTLOADER_RETRIES          100      |-  Remove these by 2/1/2026
+// #define BOOTLOADER_RESPONSE_DELAY   10       |
+// #define BOOTLOADER_REFRESH_DELAY    500     -+
 
-#define BOOTLOADER_RETRIES          100
-#define BOOTLOADER_RESPONSE_DELAY   10
-#define BOOTLOADER_REFRESH_DELAY    500
+#define BOOTLOADER_HANDSHAKE_COUNT  10
+#define BOOTLOADER_HANDSHAKE_DELAY  10
+
 #define MAX_VERIFY_CHUNK_SIZE       1024
 #define BOOTLOADER_TIMEOUT_DEFAULT  3000
 #define MAX_SEND_COUNT              510
@@ -329,7 +329,7 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
     if (hasHandshake)
         return IS_OP_OK;
 
-    // Bootloader sync requires at least 6 'U' characters to be sent every 10ms. 
+    // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {

@@ -18,6 +18,7 @@
 #include "ISUtilities.h"
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBootloaderBase.h"
+#include "PortManager.h"
 
 #include "miniz.h"
 
@@ -155,10 +156,16 @@ public:
 
     ~ISFirmwareUpdater() override {
         cleanupFirmwarePackage();
+
+        if (portListenerHdl) {
+            PortManager::getInstance().removePortListener(portListenerHdl);
+        }
+
         if (deviceUpdater) {
             delete deviceUpdater;
             deviceUpdater = nullptr;
         }
+
         devInfo = nullptr;
     };
 
@@ -255,7 +262,8 @@ private:
     };
 
     std::recursive_mutex mutex;                             //!< make things thread-safe??
-    fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
+    fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;           //!< callback for status updates
+    PortManager::port_listener_handle_t portListenerHdl;    //!< handle to a port listener so we can watch for devices that reboot
 
     /** These are member variables that are indicate the state of this updater (not a specific upload, etc) **/
 

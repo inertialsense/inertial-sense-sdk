@@ -12,6 +12,22 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device) : FirmwareUpdateHos
     if (device) {
         port = device->port;
         devInfo = &device->devInfo;
+
+        // At some point during the upgrade, we'll likely reset the device and we need to watch for the device to come back. But the EvalTool normally doesn't discovery
+        // new devices (only new ports). So, let's use the PortManagers::port_listener mechanism to detect when new ports are discover, only during the Firmware Update
+        // operation.  When new ports are found, we'll attempt to discover a device on only those specific ports. We MUST keep the handle to the listener, so we can
+        // release it when we're done, otherwise this could get called even after the function is out of scope, which would be BAD. Don't forget to release it at the bottom!
+
+        // NOTE: its possible that the device may enumerate its port in the OS before the device is ready to respond to queries (though not likely). As a result, it's
+        // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
+        // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
+        portListenerHdl = PortManager::getInstance().addPortListener(
+                [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
+                    if (event == PortManager::PORT_ADDED) {
+                        DeviceManager::getInstance().discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+                    }
+                }
+        );
     }
 }
 

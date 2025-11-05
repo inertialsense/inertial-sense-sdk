@@ -13,10 +13,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __ISDATAMAPPINGS_H_
 #define __ISDATAMAPPINGS_H_
 
+#include <any>
+#include <cinttypes>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
-#include <inttypes.h>
+#include <functional>
 #include <yaml-cpp/yaml.h>
 #include "com_manager.h"
 
@@ -82,19 +84,26 @@ typedef enum
 /*
 * Metadata about a specific field
 */
-typedef struct
+struct data_info_t;
+using RenderFunction = std::function<std::string(const data_info_t&, std::any, int flags)>;
+
+struct data_info_t
 {
-    uint32_t    offset;
-    uint32_t    size;
-    eDataType   type;
-    uint32_t    arraySize;        // Number of elements in array.  Zero for single/non-array elements.
-    uint32_t    elementSize;    // Element size in bytes
-    eDataFlags  flags;
-    std::string name;
-    std::vector<std::string> units;            // Units (after conversion)
-    std::vector<std::string> description;
-    double conversion;            // Unit conversion when converting to string
-} data_info_t;
+    uint32_t    offset;                         //!< Offset in to the data struct where this specific field resides
+    uint32_t    size;                           //!< Size of this field, in bytes (the total size, if this is an array)
+    eDataType   type;                           //!< Type indicator for this field (Int, Array, Float, etc)
+    uint32_t    arraySize;                      //!< Number of elements in array.  Zero for single/non-array elements.
+    uint32_t    elementSize;                    //!< The size of each element in an array, in bytes
+    eDataFlags  flags;                          //!< Flags about this data type, such as rendering options, etc
+    std::string name;                           //!< The name of the field
+    std::vector<std::string> units;             //!< The Units that this field should be displayed in (after conversion)
+    std::vector<std::string> description;       //!< A description for this field; what it means, how to interpret its values, etc.
+    double conversion;                          //!< A scalar that the raw value is divided by prior to converting to a string
+    RenderFunction renderBasic =                //!< A function to render / convert a value to a simple string - VariableToString() calls this function - this should not include newlines, etc.
+            [](const data_info_t& info, std::any val, int flags) -> std::string { return ""; };
+    RenderFunction renderExtended =             //!< A function to render a value to string using advanced logic and formatting - this may include newlines, html formatting, etc. can be used for tooltips, and useful for bitmasks, etc and other advanced formatting
+            [](const data_info_t& info, std::any val, int flags) -> std::string { return ""; };
+};
 
 CONST_EXPRESSION uint32_t s_eDataTypeSize[DATA_TYPE_COUNT] =
 {
@@ -194,6 +203,10 @@ typedef struct
     const data_info_t*          timestampFields;
 } data_set_t;
 
+std::string renderVariableToString(const data_info_t& info, std::any value, int flags);
+
+std::string renderRTKCfgBits(const data_info_t& info, std::any value, int flags);
+
 template <typename Dtype>
 class DataMapper
 {
@@ -211,7 +224,7 @@ public:
     }
 
     template <typename MemberType>
-    void AddMember(const std::string& name, 
+    data_info_t& AddMember(const std::string& name,
         MemberType member,
         eDataType type,
         const std::string& units = "", 
@@ -270,10 +283,13 @@ public:
             assert((s_eDataTypeSize[type] != 0) && "Data type size invalid");
             assert((s_eDataTypeSize[type] == dinfo->size) && "Data type size mismatch");
         }
+
+        dinfo->renderBasic = renderVariableToString;
+        return *dinfo;
     }
 
     template <typename MemberType>
-    void AddArray(const std::string& name, 
+    data_info_t& AddArray(const std::string& name,
         MemberType member,
         eDataType type,
         uint32_t arraySize,
@@ -333,9 +349,12 @@ public:
             assert((s_eDataTypeSize[type] != 0) && "Data type size invalid");
             assert((s_eDataTypeSize[type]*arraySize == size) && "Data type size mismatch");
         }
+
+        dinfo->renderBasic = renderVariableToString;
+        return *dinfo;
     }
 
-    void AddMember2(const std::string& name, 
+    data_info_t& AddMember2(const std::string& name,
         uint32_t offset,
         eDataType type,
         const std::string& units = "", 
@@ -380,9 +399,12 @@ public:
             assert((s_eDataTypeSize[type] != 0 || (type == DATA_TYPE_STRING)) && "Data type size invalid");
             assert((s_eDataTypeSize[type] == dinfo->size) && "Data type size mismatch");
         }
+
+        dinfo->renderBasic = renderVariableToString;
+        return *dinfo;
     }
 
-    void AddArray2(const std::string& name,
+    data_info_t& AddArray2(const std::string& name,
         uint32_t offset,
         eDataType type,
         uint32_t arraySize,
@@ -441,9 +463,11 @@ public:
             assert((s_eDataTypeSize[type] != 0) && "Data type size invalid");
             assert((s_eDataTypeSize[type]*arraySize == size) && "Data type size mismatch");
         }
+        dinfo->renderBasic = renderVariableToString;
+        return *dinfo;
     }
 
-    void AddLlaDegM(const std::string& name, 
+    data_info_t& AddLlaDegM(const std::string& name,
         uint32_t offset,
         const std::string& description = "",
         const std::string& descriptionAltitude = "",
@@ -451,21 +475,10 @@ public:
     {
         eDataType type = DATA_TYPE_F64;
         flags &= ~DATA_FLAGS_FIXED_DECIMAL_MASK;
-        AddArray2(name, offset, type, 3, {"°", "°", "m"}, {description + " latitude", description + " longitude", description + " " + descriptionAltitude}, flags | DATA_FLAGS_FIXED_DECIMAL_8);
-    }
-    
-    void AddVec3Xyz(const std::string& name, 
-        uint32_t offset,
-        eDataType type,
-        const std::string& units = "",
-        const std::string& description = "",
-        int flags = 0,
-        double conversion = 1.0)
-    {
-        AddArray2(name, offset, type, 3, {units}, {"X "+description, "Y "+description, "Z "+description}, flags, conversion);
+        return AddArray2(name, offset, type, 3, {"°", "°", "m"}, {description + " latitude", description + " longitude", description + " " + descriptionAltitude}, flags | DATA_FLAGS_FIXED_DECIMAL_8);
     }
 
-    void AddVec3Rpy(const std::string& name, 
+    data_info_t& AddVec3Xyz(const std::string& name,
         uint32_t offset,
         eDataType type,
         const std::string& units = "",
@@ -473,7 +486,18 @@ public:
         int flags = 0,
         double conversion = 1.0)
     {
-        AddArray2(name, offset, type, 3, {units}, {"Roll "+description, "Pitch "+description, "Yaw "+description}, flags, conversion);
+        return AddArray2(name, offset, type, 3, {units}, {"X "+description, "Y "+description, "Z "+description}, flags, conversion);
+    }
+
+    data_info_t& AddVec3Rpy(const std::string& name,
+        uint32_t offset,
+        eDataType type,
+        const std::string& units = "",
+        const std::string& description = "",
+        int flags = 0,
+        double conversion = 1.0)
+    {
+        return AddArray2(name, offset, type, 3, {units}, {"Roll "+description, "Pitch "+description, "Yaw "+description}, flags, conversion);
     }
 
 private:
@@ -577,6 +601,28 @@ public:
     * @return the default period multiple
     */
     static uint32_t DefaultPeriodMultiple(uint32_t did);
+
+    static std::any dataToStdAny(const uint8_t* dataBuff, const data_info_t& info, unsigned int arrayIndex = 0) {
+        std::any value;
+
+        if ((!info.arraySize && !arrayIndex) || (info.arraySize && (arrayIndex < info.arraySize))) {
+            switch (info.type) {
+                case DATA_TYPE_INT8:       value = std::make_any<int8_t>(*(int8_t*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));       break;
+                case DATA_TYPE_UINT8:      value = std::make_any<uint8_t>(*(uint8_t*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));     break;
+                case DATA_TYPE_INT16:      value = std::make_any<int16_t>(*(int16_t*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));     break;
+                case DATA_TYPE_UINT16:     value = std::make_any<uint16_t>(*(uint16_t*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));   break;
+                case DATA_TYPE_INT32:      value = std::make_any<int32_t>(*(int32_t*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));     break;
+                case DATA_TYPE_UINT32:     value = std::make_any<uint32_t>(*(uint32_t*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));   break;
+                case DATA_TYPE_INT64:      value = std::make_any<int64_t>(*(int64_t*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));     break;
+                case DATA_TYPE_UINT64:     value = std::make_any<uint64_t>(*(uint64_t*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));   break;
+                case DATA_TYPE_F32:        value = std::make_any<float>(*(float*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));         break;
+                case DATA_TYPE_F64:        value = std::make_any<double>(*(double*)(dataBuff + info.offset + (info.elementSize * arrayIndex)));       break;
+                default:
+                    break;
+            }
+        }
+        return value;
+    }
 
     /**
     * Convert a string to a data field inside a data set.

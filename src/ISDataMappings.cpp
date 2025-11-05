@@ -14,19 +14,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <vector>
 #include <set>
 #include <algorithm>
-#include <stdlib.h>
-#include <stddef.h>
-#include <inttypes.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstddef>
+#include <cinttypes>
+#include <cstdio>
+#include <cassert>
+#include <cstring>
 #include <iostream>
+#include <sstream>
 
 #include "ISDataMappings.h"
 #include "DataJSON.h"
 #include "ISUtilities.h"
 #include "ISConstants.h"
 #include "data_sets.h"
+#include "util/util.h"
 
 using namespace std;
 
@@ -56,6 +58,87 @@ const unsigned char g_asciiToLowerMap[256] =
     189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,
     224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
 };
+
+
+/**
+ * @brief a basic renderer to convert data types to basic/simple strings
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderVariableToString(const data_info_t& info, std::any value, int flags) {
+    int precision = (info.flags & DATA_FLAGS_FIXED_DECIMAL_MASK);
+
+    try {
+        switch (info.type) {
+            case DATA_TYPE_INT8:    return utils::string_format( (info.flags & DATA_FLAGS_DISPLAY_HEX ? "0x%02X" : "%d"), std::any_cast<int8_t>(value));
+            case DATA_TYPE_UINT8:   return utils::string_format( (info.flags & DATA_FLAGS_DISPLAY_HEX ? "0x%02X" : "%u"), std::any_cast<uint8_t>(value));
+            case DATA_TYPE_INT16:   return utils::string_format( (info.flags & DATA_FLAGS_DISPLAY_HEX ? "0x%04X" : "%d"), std::any_cast<int16_t>(value));
+            case DATA_TYPE_UINT16:  return utils::string_format( (info.flags & DATA_FLAGS_DISPLAY_HEX ? "0x%04X" : "%u"), std::any_cast<uint16_t>(value));
+            case DATA_TYPE_INT32:   return utils::string_format( (info.flags & DATA_FLAGS_DISPLAY_HEX ? "0x%08X" : "%d"), std::any_cast<int32_t>(value));
+            case DATA_TYPE_UINT32:  return utils::string_format( (info.flags & DATA_FLAGS_DISPLAY_HEX ? "0x%08X" : "%u"), std::any_cast<uint32_t>(value));
+            case DATA_TYPE_INT64:   return utils::string_format( (info.flags & DATA_FLAGS_DISPLAY_HEX ? "0x%016llX" : "%lld"), std::any_cast<int64_t>(value));
+            case DATA_TYPE_UINT64:  return utils::string_format( (info.flags & DATA_FLAGS_DISPLAY_HEX ? "0x%016llX" : "%llu"), std::any_cast<uint64_t>(value));
+            case DATA_TYPE_F32: {
+                if (precision) return utils::string_format("%.*f", precision - 1, std::any_cast<float>(value) * info.conversion);
+                else return utils::string_format("%.8g", std::any_cast<float>(value) * info.conversion);
+            }
+            case DATA_TYPE_F64: {
+                if (precision) return utils::string_format("%.*f", precision - 1, std::any_cast<double>(value) * info.conversion);
+                else return utils::string_format("%.8g", std::any_cast<double>(value) * info.conversion);
+            };
+
+            case DATA_TYPE_STRING:        // TODO: Not sure what to do here....
+            case DATA_TYPE_BINARY:        // TODO: Not sure what to do here, either...
+            default:
+                return "";
+        }
+    } catch (std::bad_any_cast& e) {
+    }
+    return "";
+}
+
+
+/**
+ * @brief a custom data renderer for RTKCfgBits
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderRTKCfgBits(const data_info_t& info, std::any value, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "RTKCfgBits"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t rtkCfgBits = std::any_cast<uint32_t>(value);
+        // extract the ROVER config
+        if ((rtkCfgBits & RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK)) {
+            buff << "RTK Positioning (0x00000002)" << std::endl;
+        }
+        if ((rtkCfgBits & RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK)) {
+            buff << "RTK Compassing (0x00000004)" << std::endl;
+        }
+        if ((rtkCfgBits & RTK_CFG_BITS_BASE_MODE)) {
+            buff << "RTK Base (enabled) (0x000FFFF0)<br>";
+            if (rtkCfgBits & RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK) {
+                buff << "GNSS1 : UBLOX (0x000000F0)<br>";
+            }
+            if ((rtkCfgBits & RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK)) {
+                buff << "GNSS1 : UBLOX (0x00000F00)<br>";
+            }
+            if (rtkCfgBits & RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK) {
+                buff << "GNSS2 : UBLOX (0x0000F000)<br>";
+            }
+            if ((rtkCfgBits & RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK)) {
+                buff << "GNSS2 : UBLOX (0x000F0000)<br>";
+            }
+        }
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
 
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -555,11 +638,11 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GPS], ";
     str += "0x10000=enZeroVel, 0x100000=enNavStrobeOutput";
     mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
-    str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
-    str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
-    str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
-    mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
+    str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
+    str += "a=[POS=0x2,COMP=0x4], ";                        // POS  (a == 0x2)  0x000102
+    str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
+    str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";              // Ser0 (x == 0x1)  0x000100
+    mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRTKCfgBits;
     mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
