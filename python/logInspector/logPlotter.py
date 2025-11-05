@@ -1543,6 +1543,54 @@ class logPlot:
                 if r: ax.text(p1, -cnt * 1.5, 'Fatal event')
                 cnt += 1
                 cnt += 1
+
+                gnssStatus = self.getData(d, DID_GPX_STATUS, 'gnssStatus')
+
+                print("hello")
+                gnssStatus1 = gnssStatus[:,0]
+                gnssStatus2 = gnssStatus[:,1]
+
+                # CXD-1 Status
+                ax.plot(time, -cnt * 1.5 + (gnssStatus1[0]))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 lastRstCause')
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((gnssStatus1 & 0x0000FF00) >> 8))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 fwUpdateState')
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((gnssStatus1 & 0x00FF0000) >> 16))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 initState')
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((gnssStatus1 & 0xFF000000) >> 24))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 runState')
+                cnt += 1
+
+                # CXD-2 Status
+                ax.plot(time, -cnt * 1.5 + ((gnssStatus2 & 0x000000FF) >> 0))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS 2 lastRstCause')
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((gnssStatus2 & 0x0000FF00) >> 8))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS 2 fwUpdateState')
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((gnssStatus2 & 0x00FF0000) >> 16))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS 2 initState')
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((gnssStatus2 & 0xFF000000) >> 24))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS 2 runState')
+                cnt += 1
                 
             ax.grid(True)
 
