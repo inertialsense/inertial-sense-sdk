@@ -555,10 +555,11 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GPS], ";
     str += "0x10000=enZeroVel, 0x100000=enNavStrobeOutput";
     mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
-    str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
-    str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
-    str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
+    str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
+    str += "a=[POS=0x2,COMP=0x4], ";                        // POS  (a == 0x2)  0x000102
+    str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
+    str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";              // Ser0 (x == 0x1)  0x000100
+    mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX);
