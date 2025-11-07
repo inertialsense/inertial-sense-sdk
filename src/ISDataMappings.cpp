@@ -202,21 +202,33 @@ std::string renderInsStatus(const data_info_t& info, std::any value, int arrayId
         BIT_MSG(insStatus, INS_STATUS_GPS_AIDING_VEL                         ,"0x00004000 - Velocity aided by GPS velocity");
         BIT_MSG(insStatus, INS_STATUS_KINEMATIC_CAL_GOOD                     ,"0x00008000 - Vehicle kinematic calibration is good");
 
+        uint32_t insSol = INS_STATUS_SOLUTION(insStatus);
+        switch (insSol) {
+            case INS_STATUS_SOLUTION_OFF:                     buff << "0x000(0)0000 - System is off" << std::endl; break;
+            case INS_STATUS_SOLUTION_ALIGNING:                buff << "0x000(1)0000 - System is in alignment mode" << std::endl; break;
+            case INS_STATUS_SOLUTION_NAV:                     buff << "0x000(3)0000 - System is in navigation mode" << std::endl; break;
+            case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:       buff << "0x000(4)0000 - System is in navigation mode but the attitude uncertainty has exceeded the threshold." << std::endl; break;
+            case INS_STATUS_SOLUTION_AHRS:                    buff << "0x000(5)0000 - System is in AHRS mode and solution is good." << std::endl; break;
+            case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:      buff << "0x000(6)0000 - System is in AHRS mode but the attitude uncertainty has exceeded the threshold." << std::endl; break;
+            case INS_STATUS_SOLUTION_VRS:                     buff << "0x000(7)0000 - System is in VRS mode (no earth relative heading) and roll and pitch are good." << std::endl; break;
+            case INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE:       buff << "0x000(8)0000 - System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold." << std::endl; break;
+        }
+
         BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_UNSET          ,"0x00100000 - GPS compassing antenna offsets are not set in flashCfg.");
         BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_BAD            ,"0x00200000 - GPS antenna baseline specified in flashCfg and measured by GPS do not match.");
         BIT_MSG(insStatus, INS_STATUS_MAG_RECALIBRATING                      ,"0x00400000 - Magnetometer is being recalibrated.");
         BIT_MSG(insStatus, INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL  ,"0x00800000 - Magnetometer is experiencing interference or calibration is bad.");
-        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_VALID                   ,"0x04000000 - RTK compassing heading is accurate and aiding INS heading.  (RTK fix and hold status)");
-        BIT_MSG(insStatus, INS_STATUS_RTK_RAW_GPS_DATA_ERROR                 ,"0x08000000 - RTK error: Observations invalid or not received  (i.e. RTK differential corrections)");
+        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_VALID                   ,"0x04000000 - RTK compassing heading is accurate and aiding INS heading.");
+        BIT_MSG(insStatus, INS_STATUS_RTK_RAW_GPS_DATA_ERROR                 ,"0x08000000 - RTK error: Observations invalid or not received.");
 
-        // INS_STATUS_RTK_ERROR_MASK                   = (INS_STATUS_RTK_RAW_GPS_DATA_ERROR|INS_STATUS_RTK_ERR_BASE_MASK),
-
-        // BIT_MSG(insStatus, INS_STATUS_RTK_ERR_BASE_MASK                      ,"RTK error: NO base position received");
-        uint32_t rtkErr = (insStatus & INS_STATUS_RTK_ERR_BASE_MASK);
-        switch (rtkErr) {
-            case INS_STATUS_RTK_ERR_BASE_DATA_MISSING:                buff << "0x10000000 - RTK error: Either base observations or antenna position have not been received." << std::endl; break;
-            case INS_STATUS_RTK_ERR_BASE_POSITION_MOVING:             buff << "0x20000000 - RTK error: base position moved when it should be stationary." << std::endl; break;
-            case INS_STATUS_RTK_ERR_BASE_POSITION_INVALID:            buff << "0x30000000 - RTK error: base position invalid or not surveyed." << std::endl; break;
+        if (insStatus & INS_STATUS_RTK_ERROR_MASK) {
+            uint32_t rtkErr = (insStatus & INS_STATUS_RTK_ERR_BASE_MASK);
+            switch (rtkErr) {
+                case 0:                                               buff << "0x(0)0000000 - RTK error: NO base position received." << std::endl; break;
+                case INS_STATUS_RTK_ERR_BASE_DATA_MISSING:            buff << "0x(1)0000000 - RTK error: Either base observations or antenna position have not been received." << std::endl; break;
+                case INS_STATUS_RTK_ERR_BASE_POSITION_MOVING:         buff << "0x(2)0000000 - RTK error: base position moved when it should be stationary." << std::endl; break;
+                case INS_STATUS_RTK_ERR_BASE_POSITION_INVALID:        buff << "0x(3)0000000 - RTK error: base position invalid or not surveyed." << std::endl; break;
+            }
         }
 
         BIT_MSG(insStatus, INS_STATUS_RTOS_TASK_PERIOD_OVERRUN               ,"0x40000000 - RTOS task ran longer than allotted period.");
