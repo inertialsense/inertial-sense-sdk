@@ -347,6 +347,7 @@ bool ISDevice::validate(uint32_t timeout) {
         GetData(DID_DEV_INFO);
         GetData(DID_SYS_PARAMS);
         GetData(DID_FLASH_CONFIG);
+        GetData(DID_GPX_FLASH_CFG);
     }
 
     previousQueryType = QUERYTYPE_NMEA;
