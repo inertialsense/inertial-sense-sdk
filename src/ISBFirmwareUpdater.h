@@ -136,7 +136,7 @@ private:
         IS_PROCESSOR_UNKNOWN = -1,
         IS_PROCESSOR_SAMx70 = 0,        // uINS-3/4, EVB-2
         IS_PROCESSOR_STM32L4,           // IMX-5
-        IS_PROCESSOR_STM32U5,           // GPX-1, IMX-5.1
+        IS_PROCESSOR_STM32U5,           // GPX-1, IMX-6.0
 
         IS_PROCESSOR_NUM,               // Must be last
     } eProcessorType;
@@ -175,26 +175,20 @@ private:
 
     device_handle_t device;       //!< an ISDevice instance to which are are communicating/updating
     dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
-
-    uint32_t m_sn = 0;                      //!< Inertial Sense serial number, i.e. SN60000
-    uint16_t hardwareId = 0;                //!< Inertial Sense Hardware Type (IMX, GPX, etc)
-    uint8_t m_isb_major = 0;                //!< ISB Major revision on device
-    char m_isb_minor = 0;                   //!< ISB Minor revision on device
-    bool isb_mightUpdate = false;           //!< true if device will be updated if bootloader continues
-
     uint32_t last_reboot = 0;               //!< time when the last reboot to the device was issued
 
     struct {
+        bool isValid = false;               //!< true if the data in this struct is valid
         bool is_evb = false;                //!< Available on version 6+, otherwise false
         int processor = 0;                  //!< Differentiates between uINS-3 and IMX-5
         bool rom_available = 0;             //!< ROM bootloader is available on this port
 
         uint32_t app_offset = 0;            //!< Helps in loading bin files
         uint32_t verify_size = 0;           //!< Chunk size, limited on Windows
-    } m_isb_props = {};
+    } m_isb_props = {};                     //!< Essential properties for the ISbootloader to properly install an APP firmware image
+
 
     static std::vector<uint32_t> serial_list;
-
     static std::vector<uint32_t> rst_serial_list;
 
     fwUpdate::target_t getTargetType();
@@ -209,7 +203,7 @@ private:
     is_operation_result sync();
     uint32_t get_device_info();
     eImageSignature check_is_compatible();
-    is_operation_result fetch_device_info_and_signature(eImageSignature* out_signature);
+    is_operation_result fetch_device_info_and_signature(eImageSignature* out_signature = nullptr);
     int checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum);
     is_operation_result select_page(int page);
     is_operation_result begin_program_for_current_page(int startOffset, int endOffset);
@@ -295,6 +289,7 @@ private:
     fwUpdate::update_status_e last_session_status = fwUpdate::NOT_STARTED;
 
     std::deque<uint8_t>& toHost;
+    uint32_t nextPortCheck = 0;
 
     eraseState_t eraseFlash_step(uint32_t timeout = 20000);
     writeState_t writeFlash_step(uint32_t timeout = 20000);

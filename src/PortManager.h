@@ -18,6 +18,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <unordered_set>
@@ -70,6 +71,7 @@ public:
      * @param factory the port factory instance to register
      */
     void addPortFactory(PortFactory* factory) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         factories.push_back(factory);
     }
 
@@ -82,12 +84,14 @@ public:
     }
 
     port_listener_handle_t addPortListener(const port_listener& listener) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         port_listener_handle_t listenerPtr = std::make_shared<port_listener>(listener);
         listeners.insert(listenerPtr);
         return listenerPtr;
     }
 
     bool removePortListener(const port_listener_handle_t& listener) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         bool didIt = (listeners.erase(listener) != 0);
         return didIt;
     }
@@ -119,6 +123,7 @@ public:
      * Release the requested port, deallocating any associated memory
      */
     bool releasePort(port_handle_t port) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         for (auto& [portEntry, knownPort] : knownPorts ) {
             if ((port == knownPort) && portEntry.factory) {
                 portEntry.factory->releasePort(port);
@@ -136,6 +141,7 @@ public:
 protected:
     PortManager() = default;
     ~PortManager() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         factories.clear(); // Note that all factories should be pointers to static instances, so we shouldn't ever delete them
     };
 
@@ -167,6 +173,30 @@ private:
     std::unordered_set<port_listener_handle_t > listeners;           //!< list of listeners who should be notified when ports are discovered, lost, opened, closed, etc
     std::map<port_entry_t, port_handle_t> knownPorts;                //!< a map previously discovered ports keyed on factory + name (some string identifier)
     bool portsChanged = false;                                       //!< a flag indicating (true) that list of managed ports has changed, either ports added or removed during the last call to discoverPorts()
+
+    mutable std::recursive_mutex mutex;                                        // Mutex must be mutable if the range needs to support const containers
+
+    class LockedRangeProxy {
+    private:
+        PortManager& container;
+        std::scoped_lock<std::recursive_mutex> lock_guard;                     // The lock_guard/scoped_lock ensures RAII
+
+    public:
+        LockedRangeProxy(PortManager& container_ref) : container(container_ref), lock_guard(container_ref.mutex) { }
+
+        // The destructor will be called automatically when the for loop ends,
+        // releasing the lock_guard and thus the mutex.
+        ~LockedRangeProxy() = default;
+
+        // Provide begin and end iterators to the underlying data
+        auto begin() { return container.begin(); }
+        auto end() { return container.end(); }
+        auto begin() const { return container.begin(); }
+        auto end() const { return container.end(); }
+    };
+
+public:
+    LockedRangeProxy locked_range() { return LockedRangeProxy(*this); }
 
 };
 

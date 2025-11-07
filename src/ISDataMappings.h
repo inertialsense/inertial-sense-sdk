@@ -85,7 +85,17 @@ typedef enum
 * Metadata about a specific field
 */
 struct data_info_t;
-using RenderFunction = std::function<std::string(const data_info_t&, std::any, int flags)>;
+
+/**
+ * This is the template for a Render function, which is a callable used by this class to so custom rendering of data values suitable for individual UI's, etc.
+ * @param info is a reference to the specific DID+field which it to be rendered - note that data_info_t DOES NOT contain the data/value to be rendered
+ * @param value the value to be rendered - the type is extracted from the info described in data_info_t
+ * @param arrayIdx the array (if > 0) into an array of of fields
+ * @param flags are user-defined flags which can be used to alter how the data is rendered - to be interpreted by the renderer though some UIs (cltool, evaltool) may have known flags (HTML, etc).
+ * @param userData is an opaque data pointer which maybe useful in some rendering contexts - typically called with the ISDevice* instance (if there is one) which holds this value
+ *    Note individual renderers are expected to know how to handle userData - it is purely opaque.
+ */
+using RenderFunction = std::function<std::string(const data_info_t& info, std::any value, int arrayIdx, int flags)>;
 
 struct data_info_t
 {
@@ -100,9 +110,9 @@ struct data_info_t
     std::vector<std::string> description;       //!< A description for this field; what it means, how to interpret its values, etc.
     double conversion;                          //!< A scalar that the raw value is divided by prior to converting to a string
     RenderFunction renderBasic =                //!< A function to render / convert a value to a simple string - VariableToString() calls this function - this should not include newlines, etc.
-            [](const data_info_t& info, std::any val, int flags) -> std::string { return ""; };
+            [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { return ""; };
     RenderFunction renderExtended =             //!< A function to render a value to string using advanced logic and formatting - this may include newlines, html formatting, etc. can be used for tooltips, and useful for bitmasks, etc and other advanced formatting
-            [](const data_info_t& info, std::any val, int flags) -> std::string { return ""; };
+            [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { return ""; };
 };
 
 CONST_EXPRESSION uint32_t s_eDataTypeSize[DATA_TYPE_COUNT] =
@@ -203,9 +213,9 @@ typedef struct
     const data_info_t*          timestampFields;
 } data_set_t;
 
-std::string renderVariableToString(const data_info_t& info, std::any value, int flags);
-
-std::string renderRTKCfgBits(const data_info_t& info, std::any value, int flags);
+std::string renderVariableToString(const data_info_t& info, std::any value, int arrayIdx, int flags);
+std::string renderVariableAndStatsToString(const data_info_t& info, std::any value, int arrayIdx, int flags);
+std::string renderRTKCfgBits(const data_info_t& info, std::any value, int arrayIdx, int flags);
 
 template <typename Dtype>
 class DataMapper
@@ -285,6 +295,7 @@ public:
         }
 
         dinfo->renderBasic = renderVariableToString;
+        dinfo->renderExtended = renderVariableAndStatsToString;
         return *dinfo;
     }
 
@@ -351,6 +362,7 @@ public:
         }
 
         dinfo->renderBasic = renderVariableToString;
+        dinfo->renderExtended = renderVariableAndStatsToString;
         return *dinfo;
     }
 
@@ -401,6 +413,7 @@ public:
         }
 
         dinfo->renderBasic = renderVariableToString;
+        dinfo->renderExtended = renderVariableAndStatsToString;
         return *dinfo;
     }
 
@@ -464,6 +477,7 @@ public:
             assert((s_eDataTypeSize[type]*arraySize == size) && "Data type size mismatch");
         }
         dinfo->renderBasic = renderVariableToString;
+        dinfo->renderExtended = renderVariableAndStatsToString;
         return *dinfo;
     }
 

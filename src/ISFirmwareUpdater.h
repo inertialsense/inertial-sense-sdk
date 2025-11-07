@@ -179,10 +179,10 @@ public:
 
     // bool isWaitingResponse() { return requestPending; }
 
-    bool hasPendingCommands() { std::lock_guard lock(mutex); for (auto& c :commands) { if ((c.status == ISFwUpdaterCmd::CMD_QUEUED) || (c.status == ISFwUpdaterCmd::CMD_IN_PROCESS)) return true; } return false; }
+    bool hasPendingCommands() { for (auto& c :commands) { if ((c.status == ISFwUpdaterCmd::CMD_QUEUED) || (c.status == ISFwUpdaterCmd::CMD_IN_PROCESS)) return true; } return false; }
 
     // bool hasErrors() { return !stepErrors.empty(); }
-    bool hasErrors() { std::lock_guard lock(mutex); for (auto& c :commands) { if (c.status == ISFwUpdaterCmd::CMD_ERROR) return true; } return false; }
+    bool hasErrors() { for (auto& c :commands) { if (c.status == ISFwUpdaterCmd::CMD_ERROR) return true; } return false; }
 
     void setLogLevel(eLogLevel level) { logLevel = level; }
 
@@ -316,6 +316,7 @@ private:
     int slotNum = 0, chunkSize = 512, progressRate = 250;
     bool forceUpdate = false;
 
+    uint32_t nextPortCheck = 0;                             //!< time when the next port-check should be made, if this device has no bound port.
     uint32_t pingInterval = 1000;                           //!< delay between attempts to communicate with a target device
     uint32_t pingNextRetry = 0;                             //!< time for next ping
     uint32_t pingTimeoutMs = 0;                             //!< time when the ping operation will timeout if no response before then

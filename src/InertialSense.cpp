@@ -1164,7 +1164,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         log_info(IS_LOG_FACILITY_NONE, "Starting device validation on %lu registered ports.\n", portManager.size());
 
         // we'll make a copy of all the port handles (into a set); as we validate each, we'll remove it from this new set until they are all gone
-        for (auto port : portManager) portsToValidate.insert(port);
+        for (auto port : portManager.locked_range()) portsToValidate.insert(port);
 
         // attempt to discover devices on all known ports
         deviceManager.discoverDevices(IS_HARDWARE_ANY, m_comManagerState.discoveryTimeout, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);  // In this case, We ABSOLUTELY want to open any closes ports (because they are all closed currently)
@@ -1206,7 +1206,7 @@ void InertialSense::CloseSerialPorts(bool drainBeforeClose)
     // TODO: we probably need to make sure all other references to the port are clear and then destroy the underlying port instance
 
     // Note the distinction here; we are closing ports, not devices...  Maybe we should do this differently though?
-    for (auto port : portManager) {
+    for (auto port : portManager.locked_range()) {
         if (port) {
             if (drainBeforeClose) {
                 serialPortDrain(port, 0);
