@@ -689,7 +689,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             break;
         }
     }
-    debugDumpBuffer("<< ", buffer, totalRead);
+    // debugDumpBuffer("{{ ", buffer, totalRead);
     return totalRead;
 }
 
@@ -725,7 +725,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         serialPort->error = NULL;
     }
 
-    debugDumpBuffer("{{ ", buffer, result);
+    debugDumpBuffer("<< ", buffer, result);
     return result;
 }
 

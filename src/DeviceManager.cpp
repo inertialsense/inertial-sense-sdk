@@ -14,6 +14,7 @@
  * @return
  */
 bool DeviceManager::registerDevice(device_handle_t device) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     if (!device)
         return NULL;
 
@@ -39,6 +40,7 @@ bool DeviceManager::registerDevice(device_handle_t device) {
  * @return a pointer to an ISDevice instance
  */
 device_handle_t DeviceManager::registerNewDevice(const ISDevice& device) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     // first, ensure there isn't a previously allocated device which matches this hdwId/SerialNo
     for (auto d : *this) {
         if ((d->hdwId == ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo)) && (d->devInfo.serialNumber == device.devInfo.serialNumber)) {
@@ -77,6 +79,7 @@ device_handle_t DeviceManager::registerNewDevice(const ISDevice& device) {
  * @return a pointer to an ISDevice instance
  */
 device_handle_t DeviceManager::registerNewDevice(port_handle_t port, dev_info_t devInfo) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     // go through all the registered factories, to find which factory should instance this devices
     for (DeviceFactory* f : factories) {
         device_handle_t newDevice = f->allocateDevice(devInfo);
@@ -100,6 +103,7 @@ device_handle_t DeviceManager::registerNewDevice(port_handle_t port, dev_info_t 
  */
 bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool deleteDevice)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     auto deviceIter = std::find(begin(), end(), device);
     if (deviceIter == end())
         return false;
@@ -149,6 +153,7 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
  * @param port - the port the device was discovered on, if any
  */
 bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devInfo, port_handle_t port, int options) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
     uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(devInfo);
     if (!devId) {
@@ -231,6 +236,7 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
 
 void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
             // TODO: If "automatic device validation" is true, we should use this event to automatically open the port and validate the device.
@@ -252,6 +258,7 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
  * @returns a vector of available devices
  */
 std::vector<device_handle_t> DeviceManager::getDevicesAsVector() {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     std::vector<device_handle_t> vecOut;
     for (auto device : *this) {
         vecOut.push_back(device);
@@ -268,6 +275,7 @@ std::vector<device_handle_t> DeviceManager::getDevicesAsVector() {
  * @returns an device_handle_t instance identified by the specified UID, or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(uint64_t uid) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto device : *this) {
         if (device && (ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo) == uid))
             return device;
@@ -279,6 +287,7 @@ device_handle_t DeviceManager::getDevice(uint64_t uid) {
  * @returns an device_handle_t instance associated with the specified port, or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto device : *this) {
         if (device->port == port)
             return device;
@@ -290,6 +299,7 @@ device_handle_t DeviceManager::getDevice(port_handle_t port) {
  * @returns an device_handle_t instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(const std::string& deviceId) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto device : *this) {
         if (device->getIdAsString() == deviceId)
             return device;
@@ -304,6 +314,7 @@ device_handle_t DeviceManager::getDevice(const std::string& deviceId) {
  * @return an device_handle_t instance or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (const auto& device : *this) {
         if (device && device->matchesHdwId(hdwId, serialNum))
             return device;
@@ -333,6 +344,7 @@ device_handle_t DeviceManager::getDevice(uint32_t serialNum, is_hardware_t hdwId
  * @return a vector of ISDevice which match the filter criteria
  */
 std::vector<device_handle_t> DeviceManager::selectByDevInfo(const dev_info_t &devInfo, uint32_t filterFlags) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     std::vector<device_handle_t> selected;
 
     for (auto device : *this) {
@@ -355,6 +367,7 @@ std::vector<device_handle_t> DeviceManager::selectByDevInfo(const dev_info_t &de
  * @return a vector of device_handle_t which match the filter criteria (hdwId)
  */
 std::vector<device_handle_t> DeviceManager::selectByHdwId(const uint16_t hdwId) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     dev_info_t devInfo = { };
     uint32_t filterFlags = 0;
 
@@ -384,6 +397,7 @@ std::vector<device_handle_t> DeviceManager::selectByHdwId(const uint16_t hdwId) 
  *  which it can be upgraded to.
  */
 std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradableDevices(const std::string& firmwarePath) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     std::vector<std::pair<device_handle_t, std::string>> results;
 
     // first, let's check the images path and find the latest firmware image
