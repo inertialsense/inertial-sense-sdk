@@ -345,6 +345,7 @@ bool ISBFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t
 
 is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSignature* out_signature)
 {
+    m_isb_props.isValid = false;
     if (!portIsValid(device->port))
         return IS_OP_ERROR;
 
