@@ -2,6 +2,7 @@ import math, allantools, sys, yaml, os
 
 import numpy as np
 import matplotlib.pyplot as plt
+from exceptiongroup import catch
 from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from datetime import date, datetime
@@ -1560,18 +1561,19 @@ class logPlot:
         ax[3, 1].set_ylabel('ChecksumErrors (RX)')
 
         for d in self.active_devs:
-            activePorts = self.getData(d, DID_PORT_MONITOR, 'activePorts')[0]
-            port_sets = self.getData(d, DID_PORT_MONITOR, 'port')
-            for i in range(activePorts):
-                data = port_sets[:,i]
-                ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
-                ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
-                ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
-                ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
-                ax[2,0].plot(np.diff(data['txDataDrops']), label=f'{self.log.serials[d]}:{i}')
-                ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
-                ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
-                ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
+            activePorts = self.getData(d, DID_PORT_MONITOR, 'activePorts')
+            if activePorts.size > 0:
+                port_sets = self.getData(d, DID_PORT_MONITOR, 'port')
+                for i in range(activePorts[0]):  # note that "activePorts" will probably never change - so just take the first element
+                    data = port_sets[:,i]
+                    ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                    ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                    ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
+                    ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
+                    ax[2,0].plot(np.diff(data['txDataDrops']), label=f'{self.log.serials[d]}:{i}')
+                    ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
+                    ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
+                    ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
 
 
         self.legends_add(ax[0,0].legend(ncol=2))
@@ -1595,19 +1597,19 @@ class logPlot:
         ax[3, 1].set_ylabel('ChecksumErrors (RX)')
 
         for d in self.active_devs:
-            activePorts = self.getData(d, DID_GPX_PORT_MONITOR, 'activePorts')[0]
-            port_sets = self.getData(d, DID_GPX_PORT_MONITOR, 'port')
-            for i in range(activePorts):
-                data = port_sets[:,i]
-                ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
-                ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
-                ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
-                ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
-                ax[2,0].plot(np.diff(data['txDataDrops']), label=f'{self.log.serials[d]}:{i}')
-                ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
-                ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
-                ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
-
+            activePorts = self.getData(d, DID_GPX_PORT_MONITOR, 'activePorts')
+            if activePorts.size > 0:
+                port_sets = self.getData(d, DID_GPX_PORT_MONITOR, 'port')
+                for i in range(activePorts[0]):
+                    data = port_sets[:,i]
+                    ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                    ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                    ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
+                    ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
+                    ax[2,0].plot(np.diff(data['txDataDrops']), label=f'{self.log.serials[d]}:{i}')
+                    ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
+                    ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
+                    ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
 
         self.legends_add(ax[0,0].legend(ncol=2))
         for b in ax:
