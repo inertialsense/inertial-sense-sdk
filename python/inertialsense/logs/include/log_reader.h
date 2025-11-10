@@ -4,6 +4,7 @@
 
 #include "InertialSense.h"
 #include "ISLogger.h"
+#include "data_sets.h"
 #include "luna_data_sets.h"
 
 //#include "Eigen/Core"
@@ -108,6 +109,12 @@ struct DeviceLog
     std::vector<rtk_debug_t> rtkDebug;
     // std::vector<rtk_debug_2_t> rtkDebug2;
     std::vector<port_monitor_t> portMonitor;
+
+    std::vector<dev_info_t> gpxDevInfo;
+    std::vector<gpx_flash_cfg_t> gpxFlashCfg;
+    std::vector<gpx_status_t> gpxStatus;
+    std::vector<gpx_rtos_info_t> gpxRtosInfo;
+    std::vector<gpx_bit_t> gpxBit;
     std::vector<port_monitor_t> gpxPortMonitor;
     std::vector<debug_array_t> gpxDebugArray;
 };

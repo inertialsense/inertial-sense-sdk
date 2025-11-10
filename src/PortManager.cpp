@@ -17,6 +17,7 @@
  *  value of PORT_TYPE__UNKNOWN will match all port types
  */
 bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     portsChanged = false;   // always clear this flag every time we call discoverPorts - the process will set it back, if needed.
 
     // look for ports which are no longer valid and remove them
@@ -66,6 +67,7 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
  * @param portName
  */
 void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std::string& portName) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     port_entry_t portEntry(factory, portType, portName);
 
     // check if port is previously known
@@ -107,6 +109,7 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
  * @return
  */
 std::vector<port_handle_t> PortManager::getPorts() {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     std::vector<port_handle_t> ports;
     for (auto port : *this) {
         ports.push_back((port_handle_t)port);
@@ -121,6 +124,7 @@ std::vector<port_handle_t> PortManager::getPorts() {
  * @return the port handle if found, otherwise returns NULL
  */
 port_handle_t PortManager::getPort(const std::string& name, uint16_t portType) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto& [entry, port] : knownPorts) {
         if (((entry.type & portType) == entry.type) && (entry.name == name))
             return port;
@@ -130,6 +134,7 @@ port_handle_t PortManager::getPort(const std::string& name, uint16_t portType) {
 
 
 port_handle_t PortManager::getPort(uint16_t idx) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto iter = begin(); iter != end(); iter++, idx--  ) {
         if (idx == 0)
             return *iter;

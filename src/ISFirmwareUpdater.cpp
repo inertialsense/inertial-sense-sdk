@@ -12,6 +12,22 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device) : FirmwareUpdateHos
     if (device) {
         port = device->port;
         devInfo = &device->devInfo;
+
+        // At some point during the upgrade, we'll likely reset the device and we need to watch for the device to come back. But the EvalTool normally doesn't discovery
+        // new devices (only new ports). So, let's use the PortManagers::port_listener mechanism to detect when new ports are discover, only during the Firmware Update
+        // operation.  When new ports are found, we'll attempt to discover a device on only those specific ports. We MUST keep the handle to the listener, so we can
+        // release it when we're done, otherwise this could get called even after the function is out of scope, which would be BAD. Don't forget to release it at the bottom!
+
+        // NOTE: its possible that the device may enumerate its port in the OS before the device is ready to respond to queries (though not likely). As a result, it's
+        // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
+        // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
+        portListenerHdl = PortManager::getInstance().addPortListener(
+                [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
+                    if (event == PortManager::PORT_ADDED) {
+                        DeviceManager::getInstance().discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+                    }
+                }
+        );
     }
 }
 
@@ -22,7 +38,7 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device) : FirmwareUpdateHos
  * @param _target
  */
 void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (_target == fwUpdate::TARGET_IMX5)
         _target = fwUpdate::TARGET_ISB_IMX5;    // default IMX-5 targets to ISB_IMX5 (but not DFU_IMX5)
@@ -53,7 +69,7 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
  * @return true
  */
 bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     commands.clear();
     for (std::string& c : cmds) {
@@ -113,7 +129,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 
 fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t _target, const std::string &filename, int slot, int flags, bool forceUpdate, int chunkSize, int progressRate)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
@@ -170,7 +186,7 @@ bool ISFirmwareUpdater::isCancelable() {
 }
 
 bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t& msg) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
     memset(&remoteDevInfo, 0, sizeof(dev_info_t));
     if ((msg.data.version_resp.resTarget > fwUpdate::TARGET_HOST) && (msg.data.version_resp.resTarget <= fwUpdate::TARGET_MAXNUM) && (msg.data.version_resp.resTarget != target)) {
         return false;
@@ -200,7 +216,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
 }
 
 int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
     if (srcFile && (srcFile->rdstate() == 0)) {
         srcFile->seekg((std::streampos)offset);
         len = _MIN(len, session_image_size - (uint32_t)srcFile->tellg());
@@ -211,7 +227,7 @@ int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, voi
 }
 
 bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
     if (session_id != msg.data.update_resp.session_id)
         return false; // this message isn't for us...
 
@@ -254,7 +270,8 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t 
 }
 
 bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     // TODO: LOG msg.data.req_resend.reason
     uint32_t current_ms = current_timeMs();
     if (msg.data.req_resend.chunk_id == last_resent_chunk) {
@@ -288,7 +305,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
 }
 
 bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (session_status >= fwUpdate::NOT_STARTED)
         session_status = msg.data.progress.status; // don't overwrite an error status in the event of racing messages.
@@ -303,6 +320,8 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
 }
 
 bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     session_status = msg.data.resp_done.status;
     session_id = 0;
     SLEEP_MS(200);  // FIXME: there is a very weird instance in which completing an update and *immediately* starting the next, can attempt to reuse the session id - This tries to fix that.
@@ -310,7 +329,8 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
 }
 
 bool ISFirmwareUpdater::fwUpdate_isDone() {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     bool cmdsPending = hasPendingCommands();
     bool in_progress = ((session_id == 0) && (fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
     bool is_done = !(cmdsPending || in_progress);
@@ -318,7 +338,8 @@ bool ISFirmwareUpdater::fwUpdate_isDone() {
 }
 
 void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
     const int toHost_size = toHost.size();
 
@@ -345,6 +366,21 @@ bool ISFirmwareUpdater::step() {
 
     if (device && (device->port != port))
         port = device->port;
+
+    if (!port && (nextPortCheck < current_timeMs())) {
+        nextPortCheck = current_timeMs() + 1000;    // check every second.
+        DeviceManager& deviceManager = DeviceManager::getInstance();
+        std::stringstream ss;
+
+        // we are specifically only interested on doing a device discovery on ports which do not have an associated device
+        for ( auto p : PortManager::getInstance().locked_range()) {
+            if (deviceManager.getDevice(p) == nullptr) {
+                if (deviceManager.discoverDevice(p))
+                    if (device->port)
+                        break;
+            }
+        }
+    }
 
     if (deviceUpdater) {
         deviceUpdater->fwUpdate_step();
@@ -380,20 +416,14 @@ bool ISFirmwareUpdater::step() {
 }
 
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     switch(session_status) {
-        case fwUpdate::NOT_STARTED:
-            // nothing to do..
-            break;
-        case fwUpdate::INITIALIZING:
-            break;
         case fwUpdate::READY:
         case fwUpdate::IN_PROGRESS:
             if (nextChunkSend < current_timeMs()) // don't send chunks too fast
                 fwUpdate_sendNextChunk();
             break;
-        case fwUpdate::FINALIZING:
-            break; // do nothing, just wait
         case fwUpdate::FINISHED:
             if (pfnStatus_cb != nullptr)
                 pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_INFO, "Firmware uploaded in %0.1f seconds", (current_timeMs() - updateStartTime) / 1000.f);
@@ -419,6 +449,9 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                 handleCommandError(*activeCmd, -1, "No Response from device.");
             }
             break;
+        case fwUpdate::NOT_STARTED:
+        case fwUpdate::INITIALIZING:
+        case fwUpdate::FINALIZING:
         default:
             if (session_status < fwUpdate::NOT_STARTED) {
                 handleCommandError(*activeCmd, -session_status, "Unexpected response from device : %s", fwUpdate_getSessionStatusName());
@@ -434,7 +467,8 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
 }
 
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     if (deviceUpdater != nullptr) {
         bool result = deviceUpdater->fwUpdate_processMessage(buffer, buff_len);
         if (!toHost.empty()) // check for any responses
@@ -467,7 +501,7 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
  * @param errMsg a corresponding human-readable error message to the numerical error code
  */
 void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, const char *errMsg, ...) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (!commands.empty()) {
         fwUpdate_resetEngine();
@@ -502,7 +536,7 @@ void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, con
  * @return the command to run on the next call (this maybe different from the passed cmd)
  */
 ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (&nullCmd == &cmd)
         return nullCmd;
@@ -579,7 +613,7 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
 }
 
 void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd& cmd) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     // !! REMEBMER cmd[0] is getting the first argument (std::string) from cmd !!!
     bool isManifest = (cmd[0].length() >= 5) && (0 == cmd[0].compare (cmd[0].length() - 5, 5, ".yaml"));
@@ -640,7 +674,7 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd& cmd) {
  *     on_timeout [optional] :: a label to jump to in the event that the timeout occurs waiting for the device
  */
 void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     std::string targetName = cmd["target"];
     if (cmd.status == ISFwUpdaterCmd::CMD_QUEUED) {
@@ -675,7 +709,7 @@ void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
  *     force [optional] :: clear any existing devInfo and force a new request of VersionInfo
  */
 void ISFirmwareUpdater::cmd_WaitFor(ISFwUpdaterCmd& cmd) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (cmd.status == ISFwUpdaterCmd::CMD_QUEUED) {
         // force a new query, even if we previously had devInfo for this target, and use default values
@@ -730,7 +764,7 @@ void ISFirmwareUpdater::cmd_WaitFor(ISFwUpdaterCmd& cmd) {
 }
 
 void ISFirmwareUpdater::cmd_Delay(ISFwUpdaterCmd& cmd) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (cmd.status == ISFwUpdaterCmd::CMD_QUEUED) {
         if (cmd.args.size() != 1) {
@@ -763,7 +797,7 @@ void ISFirmwareUpdater::cmd_Delay(ISFwUpdaterCmd& cmd) {
  *     force [optional] :: if "true" will cause the upload to occur, bypassing version checking (default = "false");
  */
 void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (cmd.status == ISFwUpdaterCmd::CMD_QUEUED) {
         filename = cmd["filename"];
@@ -861,7 +895,7 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
 }
 
 void ISFirmwareUpdater::cmd_resetDevice(ISFwUpdaterCmd& cmd) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     bool hard = (cmd.getArg("type", "soft") == "hard");
     if (cmd.hasArg("type") && (cmd["type"] == "tobl")) {
@@ -878,7 +912,8 @@ void ISFirmwareUpdater::cmd_resetDevice(ISFwUpdaterCmd& cmd) {
 }
 
 void ISFirmwareUpdater::cmd_finish(ISFwUpdaterCmd& cmd) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     // mark all queued commands to "NOT_EXECUTED" so that our checks for QUEUED are happy.
     for (auto& cmd : commands)
         if (cmd.status == ISFwUpdaterCmd::CMD_QUEUED)
@@ -892,7 +927,8 @@ void ISFirmwareUpdater::cmd_finish(ISFwUpdaterCmd& cmd) {
 }
 
 void ISFirmwareUpdater::initialize() {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     nextStartAttempt = 0;                                   //!< the number of millis (uptime?) that we will next attempt to start an upgrade
     startAttempts = 0;                                      //!< the number of attempts that have been made to request that an update be started
 
@@ -939,7 +975,7 @@ void ISFirmwareUpdater::initialize() {
  * @return the next available command which is still in the CMD_QUEUED state, or returns nullCmd if none
  */
 ISFwUpdaterCmd& ISFirmwareUpdater::getNextQueuedCmd(ISFwUpdaterCmd* curCmd) {
-    std::lock_guard lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     auto cmd_it = (!curCmd || curCmd == &nullCmd ? commands.begin() : std::find(commands.begin(), commands.end(), *curCmd));
     for (; cmd_it != commands.end(); cmd_it++ ) {
@@ -954,7 +990,8 @@ ISFwUpdaterCmd& ISFirmwareUpdater::getNextQueuedCmd(ISFwUpdaterCmd* curCmd) {
  * @return the first available command which has the specified step label
  */
 ISFwUpdaterCmd& ISFirmwareUpdater::jumpToStep(const std::string& stepLabel) {
-    std::lock_guard lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     for (auto& cmd : commands) {
         if (cmd.step == stepLabel) return cmd;
     }
@@ -969,7 +1006,8 @@ ISFwUpdaterCmd& ISFirmwareUpdater::jumpToStep(const std::string& stepLabel) {
  * @return 0 on success, otherwise PKG_ERR_*.
  */
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive = nullptr) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     initialize();
     YAML::Node images = manifest["images"];
     if (!images.IsMap())
@@ -1070,7 +1108,8 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
 }
 
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     try {
         YAML::Node manifest = YAML::LoadFile(manifest_file);
 
@@ -1098,7 +1137,8 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(const s
 }
 
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     mz_bool status;
     size_t file_size;
     void *p;
@@ -1130,7 +1170,8 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std:
 }
 
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::cleanupFirmwarePackage() {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+
     if (srcFile) {
         delete srcFile;
         srcFile = nullptr;

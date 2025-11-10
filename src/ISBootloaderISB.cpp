@@ -33,10 +33,10 @@ std::mutex cISBootloaderISB::serial_list_mutex;
 std::mutex cISBootloaderISB::rst_serial_list_mutex;
 
 /** uINS bootloader baud rate */
-//#define IS_BAUD_RATE_BOOTLOADER      921600  \
-// #define BOOTLOADER_RETRIES          100     |-  Remove these by 2/1/2026
-// #define BOOTLOADER_RESPONSE_DELAY   10      |
-// #define BOOTLOADER_REFRESH_DELAY    500     /
+//#define IS_BAUD_RATE_BOOTLOADER      921600  -+
+// #define BOOTLOADER_RETRIES          100      |-  Remove these by 2/1/2026
+// #define BOOTLOADER_RESPONSE_DELAY   10       |
+// #define BOOTLOADER_REFRESH_DELAY    500     -+
 
 #define BOOTLOADER_HANDSHAKE_COUNT  10
 #define BOOTLOADER_HANDSHAKE_DELAY  10
