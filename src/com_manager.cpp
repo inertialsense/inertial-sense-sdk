@@ -114,11 +114,6 @@ bool ISComManager::registerPort(port_handle_t port, is_comm_callbacks_t* cbs) {
 
         is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), portCbs.all);
         is_comm_register_port_callbacks(port, &portCbs);
-
-#if ENABLE_PACKET_CONTINUATION
-        // Packet data continuation
-        memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
-#endif
     }
 
     if (ports)
@@ -510,50 +505,6 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             data.hdr.size = _MIN(data.hdr.size, (uint8_t)size);
         }
 
-#if ENABLE_PACKET_CONTINUATION
-
-        // Consolidate datasets that were broken-up across multiple packets
-        p_data_t* con = &cmInstance->ports[portId(port)].con;
-        if (additionalDataAvailable || (con->hdr.size != 0 && con->hdr.id == dataHdr->id))
-        {
-            // New dataset
-            if (con->hdr.id == 0 || con->hdr.size == 0 || con->hdr.id != dataHdr->id || con->hdr.size > dataHdr->offset)
-            {
-                // Reset data consolidation
-                con->hdr.id = dataHdr->id;
-                con->hdr.offset = dataHdr->offset;
-                con->hdr.size = 0;
-            }
-
-            // Ensure data will fit in buffer
-            if ((con->hdr.size + dataHdr->size) < sizeof(con->buf))
-            {
-                // Add data to buffer
-                memcpy(con->buf + con->hdr.size, data->buf, dataHdr->size);
-                con->hdr.size += dataHdr->size;
-            }
-            else
-            {
-                // buffer overflow
-            }
-
-            // Wait for end of data
-            if (additionalDataAvailable)
-            {
-                return 0;
-            }
-
-            // Use consolidated data
-            data = con;
-        }
-        
-#else
-    
-//         unsigned char additionalDataAvailable // function parameter removed 
-//         (void)additionalDataAvailable;
-
-#endif
-
         if (regData)
         {
             // Write to data structure if it was registered
@@ -572,13 +523,6 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         // Call general/global callback
         if (pstRxFnc)
             pstRxFnc(this, &data, port);
-
-#if ENABLE_PACKET_CONTINUATION
-
-        // Clear dataset consolidation
-        con->hdr.id = con->hdr.size = con->hdr.offset = 0;
-
-#endif
 
         // Reply w/ ACK for PKT_TYPE_SET_DATA
         if (isbPktType == PKT_TYPE_SET_DATA)
