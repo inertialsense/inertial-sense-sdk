@@ -503,26 +503,36 @@ class LogInspectorWindow(QMainWindow):
         self.saveAllPushButton = QPushButton("Save All Plots")
         self.saveAllPushButton.setToolTip("Save all plots to file")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
+        self.showGps2 = QCheckBox("GPS2", self)
+        self.showGps2.stateChanged.connect(self.changeShowGps2Checkbox)
 
         self.VLayoutOptions1 = QVBoxLayout()
+        self.VLayoutOptions1.setSpacing(0)
         self.VLayoutOptions1.addWidget(self.checkboxResidual)
         self.VLayoutOptions1.addWidget(self.checkboxTime)
         self.VLayoutOptions1.addWidget(self.xAxisSample)
         self.VLayoutOptions1.addWidget(self.checkboxUtc)
-        self.VLayoutOptions1.setSpacing(0)
         self.VLayoutOptions2 = QVBoxLayout()
-        self.VLayoutOptions2.addWidget(self.saveAllPushButton)
         self.VLayoutOptions2.setSpacing(0)
+        self.VLayoutOptions2.addWidget(self.saveAllPushButton)
+        self.VLayoutOptions3 = QVBoxLayout()
+        self.VLayoutOptions3.setSpacing(0)
+        self.VLayoutOptions3.addWidget(self.showGps2)
 
         group_box = QGroupBox("")
         self.LayoutVTests = QVBoxLayout()
         self.LayoutVTests.setSpacing(0)
         group_box.setLayout(self.LayoutVTests)
 
+        self.VLayoutOptions2x = QVBoxLayout()
+        self.VLayoutOptions2x.setSpacing(0)
+        self.VLayoutOptions2x.addLayout(self.VLayoutOptions2)
+        self.VLayoutOptions2x.addLayout(self.VLayoutOptions3)
+        self.VLayoutOptions2x.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         self.LayoutBelowPlotSelection = QHBoxLayout()
         self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions1)
-        self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2)
+        self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2x)
         self.LayoutBelowPlotSelection.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
         self.LayoutBelowPlotSelection.addWidget(group_box)
 
@@ -653,6 +663,12 @@ class LogInspectorWindow(QMainWindow):
         for mplot in self.mplots:
             if mplot.plotter:
                 mplot.plotter.enableXAxisSample(state)
+                self.updatePlot()
+
+    def changeShowGps2Checkbox(self, state):
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableGps2(state)
                 self.updatePlot()
 
     def changeUtcCheckbox(self, state):
