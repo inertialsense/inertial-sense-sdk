@@ -1325,14 +1325,7 @@ bool ISDevice::assignPort(port_handle_t newPort) {
 
         is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), portCbs.all);
         is_comm_register_port_callbacks(port, &portCbs);
-
-#if ENABLE_PACKET_CONTINUATION
-        // Packet data continuation
-        memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
-#endif
     }
-//    if ((hdwId != IS_HARDWARE_ANY) || devInfo.serialNumber)
-//        log_debug(IS_LOG_ISDEVICE, "Device %s bound to port %s.", getIdAsString().c_str(), getPortName().c_str());
     return true;
 }
 
