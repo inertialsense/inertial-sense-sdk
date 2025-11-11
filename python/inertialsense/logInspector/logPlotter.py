@@ -2,7 +2,6 @@ import math, allantools, sys, yaml, os
 
 import numpy as np
 import matplotlib.pyplot as plt
-from exceptiongroup import catch
 from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from datetime import date, datetime
