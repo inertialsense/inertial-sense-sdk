@@ -128,11 +128,13 @@ float ISDevice::fwUpdatePercentCompleted() {
  */
 bool ISDevice::fwUpdate(p_data_t* msg) {
     std::unique_lock<std::mutex> lock(fwUpdateMutex, std::try_to_lock);
+    // check if our mutex is already locked, if so, we're recursing into this function, and we shouldn't...
     if (!lock.owns_lock())
         return true;
 
     if (fwUpdater) {
-        // check if our mutex is already locked, if so, we're recursing into this function, and we shouldn't...
+        if (portIsValid(port) && !isConnected())
+            connect(true);  // especially if we're updated - this port should never really be closed (right??)
 
         if (msg) fwUpdater->processMessage(msg);
         fwUpdater->step();
@@ -309,7 +311,7 @@ bool ISDevice::validate(uint32_t timeout) {
         }
 
         // FIXME - Don't tolerate SERIAL_PORT specific conditions in ISDevice
-        if (SERIAL_PORT(port)->errorCode == ENOENT) {
+        if (port && (SERIAL_PORT(port)->errorCode == ENOENT)) {
             hdwId = oldHdwId, devInfo = oldDevInfo;
             return false;
         }
@@ -595,6 +597,12 @@ bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
     return true;
 }
 
+/**
+ * Issues the specified SYS_CMD to the device. Note that this does not confirm or validate whether the requested command
+ * was received and processed, only that the command was successfully sent.
+ * @param command the command to issue
+ * @return 0 on success, -1 on failure
+ */
 int ISDevice::SetSysCmd(const uint32_t command) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
