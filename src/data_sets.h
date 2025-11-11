@@ -2750,8 +2750,8 @@ enum eSysConfigBits
     SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
     SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
     SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
-    SYS_CFG_BITS_BOR_THREHOLD_MASK                      = (int)0x00C00000,
-    SYS_CFG_BITS_BOR_THREHOLD_OFFSET                    = 22,
+    SYS_CFG_BITS_BOR_THRESHOLD_MASK                     = (int)0x00C00000,
+    SYS_CFG_BITS_BOR_THRESHOLD_OFFSET                   = 22,
 
     /** Use reference IMU in EKF instead of onboard IMU */
     SYS_CFG_USE_REFERENCE_IMU_IN_EKF                    = (int)0x01000000,
