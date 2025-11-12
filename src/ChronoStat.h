@@ -205,7 +205,7 @@ public:
 
     /**
      * @brief a utility function to generate a summary of the stat values
-     * @param multiline if true, will generate a multi-line string with the second line contianing ddt stats.
+     * @param multiline if true, will generate a multi-line string with the second line containing ddt stats.
      * @return a string summarizing the values managed by this stat.
      */
     std::string toString(bool multiline = false) {
