@@ -4646,8 +4646,8 @@ enum eGpxSysConfigBits
     GPX_SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
     GPX_SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
     GPX_SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
-    GPX_SYS_CFG_BITS_BOR_THREHOLD_MASK                      = (int)0x00C00000,
-    GPX_SYS_CFG_BITS_BOR_THREHOLD_OFFSET                    = 22,
+    GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK                     = (int)0x00C00000,
+    GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET                   = 22,
 };
 
 /**
