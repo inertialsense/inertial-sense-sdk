@@ -194,7 +194,7 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
 // Max number of devices across all hardware types: uINS-3, uINS-4, and IMX-5
-#define NUM_IMU_DEVICES     3        // g_numImuDevices defines the actual number of hardware specific devices
+#define NUM_IMU_DEVICES     5        // g_numImuDevices defines the actual number of hardware specific devices
 #define NUM_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
 
 /** INS status flags */
@@ -2750,8 +2750,8 @@ enum eSysConfigBits
     SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
     SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
     SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
-    SYS_CFG_BITS_BOR_THREHOLD_MASK                      = (int)0x00C00000,
-    SYS_CFG_BITS_BOR_THREHOLD_OFFSET                    = 22,
+    SYS_CFG_BITS_BOR_THRESHOLD_MASK                     = (int)0x00C00000,
+    SYS_CFG_BITS_BOR_THRESHOLD_OFFSET                   = 22,
 
     /** Use reference IMU in EKF instead of onboard IMU */
     SYS_CFG_USE_REFERENCE_IMU_IN_EKF                    = (int)0x01000000,
@@ -4646,8 +4646,8 @@ enum eGpxSysConfigBits
     GPX_SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
     GPX_SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
     GPX_SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
-    GPX_SYS_CFG_BITS_BOR_THREHOLD_MASK                      = (int)0x00C00000,
-    GPX_SYS_CFG_BITS_BOR_THREHOLD_OFFSET                    = 22,
+    GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK                     = (int)0x00C00000,
+    GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET                   = 22,
 };
 
 /**

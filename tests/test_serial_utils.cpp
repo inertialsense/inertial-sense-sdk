@@ -72,7 +72,8 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
 
 #if PLATFORM_IS_EMBEDDED && defined(IS_IMX)
         // Prevent watchdog reset
-        watchdog_preemptive();  watchdog_maintenance();
+        watchdog_maintenance_taskA();  
+        watchdog_maintenance_taskB();
 #endif
     }
 #endif
