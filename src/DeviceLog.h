@@ -130,7 +130,7 @@ protected:
     device_handle_t device;                                     //!< ISDevice reference to source of data
 
     uint16_t m_devHdwId = 0;                                    //!< used when reading a file and no ISDevice is available
-    uint32_t m_devSerialNo = -1;                                //!< used when reading a file, and no ISDevice is available
+    uint32_t m_devSerialNo = static_cast<uint32_t>(-1);        //!< used when reading a file, and no ISDevice is available
     std::string m_deviceId;                                     //!< a string representation of a unique device id (hdwid+sn)
 
     std::vector<std::string> m_fileNames;

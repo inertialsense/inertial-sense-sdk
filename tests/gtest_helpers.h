@@ -67,7 +67,7 @@ namespace testing
                                      std::time_t now_c = std::chrono::system_clock::to_time_t(now);                                 \
                                      std::tm* local_tm = std::localtime(&now_c);                                                    \
                                      std::stringstream fs; fs << std::put_time(local_tm, "%H:%M:%S");                               \
-                                     printf("[%s.%01ld]", fs.str().c_str(), ms.count());                                                    \
+                                     printf("[%s.%03lld]", fs.str().c_str(), static_cast<long long>(ms.count()));                  \
                                      printf(__VA_ARGS__); fflush(stdout); } while (0);
 #endif
 
