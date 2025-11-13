@@ -206,7 +206,11 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
 
     // Tell the kernel to send everything
     int flag = 1;
+#ifdef PLATFORM_IS_WINDOWS
     int retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(int));
+#else
+    int retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+#endif
     if (retval != 0) {
 #ifdef PLATFORM_IS_WINDOWS
         tcpPort->base.perror = WSAGetLastError();
@@ -233,7 +237,11 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
 
     // Tell the kernel to buffer messages again cause TCP_NODELAY kills network performance
     flag = 0;
+#ifdef PLATFORM_IS_WINDOWS
     retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(int));
+#else
+    retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+#endif
     if (retval != 0) {
 #ifdef PLATFORM_IS_WINDOWS
         tcpPort->base.perror = WSAGetLastError();
@@ -298,7 +306,11 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
     tv.tv_sec = timeout/1000;
     tv.tv_usec = (timeout % 1000) * 1000;
 #endif
+#ifdef PLATFORM_IS_WINDOWS
     if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) != 0) {
+#else
+    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+#endif
 #ifdef PLATFORM_IS_WINDOWS
         tcpPort->base.perror = WSAGetLastError();
         return -WSAGetLastError();
@@ -318,7 +330,11 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 #endif
+#ifdef PLATFORM_IS_WINDOWS
     if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) != 0) {
+#else
+    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+#endif
 #ifdef PLATFORM_IS_WINDOWS
         tcpPort->base.perror = WSAGetLastError();
         return -WSAGetLastError();
@@ -365,7 +381,11 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     tv.tv_usec = 0;
 #endif
 
+#ifdef PLATFORM_IS_WINDOWS
     if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) != 0) {
+#else
+    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+#endif
 #ifdef PLATFORM_IS_WINDOWS
         tcpPort->base.perror = WSAGetLastError();
         return -WSAGetLastError();
