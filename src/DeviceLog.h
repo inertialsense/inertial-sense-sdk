@@ -69,7 +69,7 @@ public:
 
     virtual p_data_buf_t *ReadData() = 0;
 
-    virtual packet_t* ReadPacket(protocol_type_t& ptype) { return NULL; };
+    virtual packet_t* ReadPacket(protocol_type_t& ptype) { (void)ptype; return NULL; };
 
     virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 

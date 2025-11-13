@@ -110,9 +110,9 @@ struct data_info_t
     std::vector<std::string> description;       //!< A description for this field; what it means, how to interpret its values, etc.
     double conversion;                          //!< A scalar that the raw value is divided by prior to converting to a string
     RenderFunction renderBasic =                //!< A function to render / convert a value to a simple string - VariableToString() calls this function - this should not include newlines, etc.
-            [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { return ""; };
+            [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { (void)info; (void)val; (void)arrayIdx; (void)flags; return ""; };
     RenderFunction renderExtended =             //!< A function to render a value to string using advanced logic and formatting - this may include newlines, html formatting, etc. can be used for tooltips, and useful for bitmasks, etc and other advanced formatting
-            [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { return ""; };
+            [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { (void)info; (void)val; (void)arrayIdx; (void)flags; return ""; };
 };
 
 CONST_EXPRESSION uint32_t s_eDataTypeSize[DATA_TYPE_COUNT] =
