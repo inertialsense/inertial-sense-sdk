@@ -1744,7 +1744,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
-    double                  time;                                       // Units only apply for calibrated data
+    double                  time;       // Units only apply for calibrated data
 
     sensors_mpu_t           mpu[NUM_IMU_DEVICES];
 } sensors_t;
@@ -1757,13 +1757,13 @@ typedef struct PACKED
 // (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
 typedef struct PACKED
 {
-    imu3_t                    imu3;
+    imu3_t                  imu3;
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    float                        temp[NUM_IMU_DEVICES];
+    float                   temp[NUM_IMU_DEVICES];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
-    mag_xyz_t                mag[NUM_MAG_DEVICES];
+    mag_xyz_t               mag[NUM_MAG_DEVICES];
 } sensors_w_temp_t;
 
 typedef struct PACKED
@@ -1782,6 +1782,7 @@ typedef struct PACKED
 typedef struct PACKED
 {                                                   // Sensor temperature compensation
     uint32_t                timeMs;                 // (ms) Time since boot up.
+    int                     imuCnt;
     sensor_comp_unit_t      pqr[NUM_IMU_DEVICES];
     sensor_comp_unit_t      acc[NUM_IMU_DEVICES];
     sensor_comp_unit_t      mag[NUM_MAG_DEVICES];
@@ -1794,6 +1795,8 @@ typedef struct PACKED
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS    4
+
+/** (DID_SENSORS_ADC) INTERNAL USE ONLY */
 typedef struct PACKED
 {                                                   // LSB units for all except temperature, which is Celsius.
     double                  time;
