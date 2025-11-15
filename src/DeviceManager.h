@@ -195,6 +195,7 @@ public:
      * @return the previously registered handler, if any
      */
     bool removeDeviceListener(const device_listener& listener) {
+        (void)listener; // Suppress unused parameter warning
         // TODO: locate the listener, and remove it if found and return true, otherwise return false
         return false;
     }

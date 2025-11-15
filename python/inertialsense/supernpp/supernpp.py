@@ -294,9 +294,9 @@ if __name__ == "__main__":
     # 2nd argument: Log directory list file
     if len(sys.argv) < 2:
         exit(1)
-    params_filename = sys.argv[1]
+    params_filename = os.path.abspath(sys.argv[1])
     if not os.path.isfile(params_filename):
-        print("First parameter must the params yaml!")
+        print("First parameter must be the params yaml!")
         exit(1)
 
     # 3rd argument: Serial #s
