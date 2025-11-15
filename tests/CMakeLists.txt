@@ -41,6 +41,9 @@ add_executable(${PROJECT_NAME}
     # test_data_utils.cpp
     # test_serial_utils.cpp
 
+    # test_PortFactory.cpp
+    # test_utils.cpp
+
     # test_ISLogger.cpp
     # test_protocol_nmea.cpp
     # test_time_conversion.cpp    
