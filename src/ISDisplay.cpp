@@ -2109,7 +2109,7 @@ string cInertialSenseDisplay::DataToStringPacket(const char *raw_data, const p_d
 }
 
 
-#define DISPLAY_SNPRINTF(f_, ...)    do{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}while(0)
+#define DISPLAY_SNPRINTF(f_, ...)    {ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
 #define DTS_VALUE_FORMAT    "%22s "
 
 string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
