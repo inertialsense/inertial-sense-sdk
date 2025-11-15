@@ -12,6 +12,9 @@
 
 #include <csignal>
 #include <set>
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 
 #include "core/msg_logger.h"
 #include "PortFactory.h"
@@ -56,8 +59,16 @@ private:
 #ifdef PLATFORM_IS_LINUX
         signal(SIGPIPE, SIG_IGN); // ignore broken pipes
 #endif
+#ifdef _WIN32
+        WSADATA wsa_data;
+        WSAStartup(MAKEWORD(2, 2), &wsa_data);
+#endif
     };
-    ~TcpServerPortFactory() = default;
+    ~TcpServerPortFactory() {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+    }
 
     struct socket_entry_t {
         int socket = 0;
