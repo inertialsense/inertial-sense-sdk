@@ -327,11 +327,11 @@ extern "C" {
 #endif
 
 #ifndef _LIMIT
-#define _LIMIT(x, lim) {if (!((x)>(-lim))){(x)=(-lim);}else{if (!((x)<(lim))){(x)=(lim);}}} // Works w/ NAN
+#define _LIMIT(x, lim) do{if (!((x)>(-lim))){(x)=(-lim);}else{if (!((x)<(lim))){(x)=(lim);}}}while(0) // Works w/ NAN
 #endif
 
 #ifndef _LIMIT2
-#define _LIMIT2(x, xmin, xmax) { if ((x) < (xmin)) { (x) = (xmin); } else { if ((x) > (xmax)) { (x) = (xmax); } } }
+#define _LIMIT2(x, xmin, xmax) do{ if ((x) < (xmin)) { (x) = (xmin); } else { if ((x) > (xmax)) { (x) = (xmax); } } }while(0)
 #endif
 
 #ifndef _ROUND_NEAREST
@@ -778,15 +778,15 @@ extern "C" {
 #define C_180p0_DEG2RAD_F   3.1415926535897900f
 
 // Angle Unwrap
-#define UNWRAP_DEG_F64(x)           { if ((x) < (-180.0)) { (x) += (360.0);    } if ((x) > (180.0))    { (x) -= (360.0);    } }    // unwrap to +- 180
-#define UNWRAP_DEG_F32(x)           { if ((x) < (-180.0f)) { (x) += (360.0f);    } if ((x) > (180.0f))    { (x) -= (360.0f);    } }    // unwrap to +- 180
-#define UNWRAP_90DEG_F64(x)         { if ((x) < (-90.0))  { (x) += (180.0);    } if ((x) > (90.0))     { (x) -= (180.0);    } }    // unwrap to +- 90
-#define UNWRAP_90DEG_F32(x)         { if ((x) < (-90.0f))  { (x) += (180.0f);    } if ((x) > (90.0f))     { (x) -= (180.0f);    } }    // unwrap to +- 90
-#define UNWRAP_F64(x)               { if ((x) < (-C_PI))   { (x) += (C_TWOPI);   } if ((x) > (C_PI))      { (x) -= (C_TWOPI);   } }    // unwrap to +- PI
-#define UNWRAP_F32(x)               { if ((x) < (-C_PI_F)) { (x) += (C_TWOPI_F); } if ((x) > (C_PI_F))    { (x) -= (C_TWOPI_F); } }    // unwrap to +- PI
-#define UNWRAP_ZERO_TWOPI_F64(x)    { if ((x) < (0.0))     { (x) += (C_TWOPI);   } if ((x) > (C_TWOPI))   { (x) -= (C_TWOPI);   } }    // unwrap to 0 to TWOPI
-#define UNWRAP_ZERO_TWOPI_F32(x)    { if ((x) < (0.f))     { (x) += (C_TWOPI_F); } if ((x) > (C_TWOPI_F)) { (x) -= (C_TWOPI_F); } }    // unwrap to 0 to TWOPI
-#define UNWRAP_PIDIV4_F32(x)        { while ((x) < (-C_PIDIV4_F)) { (x) += (C_PIDIV2_F); } while ((x) > (C_PIDIV4_F)) { (x) -= (C_PIDIV2_F); } }    // unwrap to +- PI/4 (45 degrees)
+#define UNWRAP_DEG_F64(x)           do{ if ((x) < (-180.0))  { (x) += (360.0);     } if ((x) > (180.0))     { (x) -= (360.0);     } }while(0)    // unwrap to +- 180
+#define UNWRAP_DEG_F32(x)           do{ if ((x) < (-180.0f)) { (x) += (360.0f);    } if ((x) > (180.0f))    { (x) -= (360.0f);    } }while(0)    // unwrap to +- 180
+#define UNWRAP_90DEG_F64(x)         do{ if ((x) < (-90.0))   { (x) += (180.0);     } if ((x) > (90.0))      { (x) -= (180.0);     } }while(0)    // unwrap to +- 90
+#define UNWRAP_90DEG_F32(x)         do{ if ((x) < (-90.0f))  { (x) += (180.0f);    } if ((x) > (90.0f))     { (x) -= (180.0f);    } }while(0)    // unwrap to +- 90
+#define UNWRAP_F64(x)               do{ if ((x) < (-C_PI))   { (x) += (C_TWOPI);   } if ((x) > (C_PI))      { (x) -= (C_TWOPI);   } }while(0)    // unwrap to +- PI
+#define UNWRAP_F32(x)               do{ if ((x) < (-C_PI_F)) { (x) += (C_TWOPI_F); } if ((x) > (C_PI_F))    { (x) -= (C_TWOPI_F); } }while(0)    // unwrap to +- PI
+#define UNWRAP_ZERO_TWOPI_F64(x)    do{ if ((x) < (0.0))     { (x) += (C_TWOPI);   } if ((x) > (C_TWOPI))   { (x) -= (C_TWOPI);   } }while(0)    // unwrap to 0 to TWOPI
+#define UNWRAP_ZERO_TWOPI_F32(x)    do{ if ((x) < (0.f))     { (x) += (C_TWOPI_F); } if ((x) > (C_TWOPI_F)) { (x) -= (C_TWOPI_F); } }while(0)    // unwrap to 0 to TWOPI
+#define UNWRAP_PIDIV4_F32(x)        do{ while ((x) < (-C_PIDIV4_F)) { (x) += (C_PIDIV2_F); } while ((x) > (C_PIDIV4_F)) { (x) -= (C_PIDIV2_F); } }while(0)    // unwrap to +- PI/4 (45 degrees)
 
 #define _SIN        sinf
 #define _COS        cosf

@@ -13,7 +13,7 @@
 #define ssize_t SSIZE_T
 // Use WSAGetLastError() directly instead of redefining errno
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, (const char*)(optval), optlen)
-#define HANDLE_SOCKET_ERROR(tcpPort) tcpPort->base.perror = WSAGetLastError(); return -WSAGetLastError()
+#define HANDLE_SOCKET_ERROR(tcpPort) do{ tcpPort->base.perror = WSAGetLastError(); return -WSAGetLastError(); }while(0)
 #else
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -21,7 +21,7 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
-#define HANDLE_SOCKET_ERROR(tcpPort) tcpPort->base.perror = errno; return -errno
+#define HANDLE_SOCKET_ERROR(tcpPort) do{ tcpPort->base.perror = errno; return -errno; }while(0)
 #endif
 
 /**

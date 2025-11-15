@@ -3179,7 +3179,7 @@ enum eIoConfig
     IO_CFG_GNSS1_PPS_SOURCE_G8                  = (int)5,
     IO_CFG_GNSS1_PPS_SOURCE_G9                  = (int)6,
 
- #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)    { (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }    
+ #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)    do{ (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }while(0)    
  #define IO_CFG_GNSS1_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG_GNSS1_PPS_SOURCE_OFFSET)&IO_CFG_GNSS1_PPS_SOURCE_MASK)
      
      /** GPS 1 source OFFSET (ioConfig[18-16]) */
