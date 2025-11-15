@@ -61,7 +61,11 @@ private:
 #endif
 #ifdef _WIN32
         WSADATA wsa_data;
-        WSAStartup(MAKEWORD(2, 2), &wsa_data);
+        int wsa_result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+        if (wsa_result != 0) {
+            msg_log("TcpServerPortFactory: WSAStartup failed with error code %d", wsa_result);
+            // Optionally, you could throw or set a flag here to prevent further use
+        }
 #endif
     };
     ~TcpServerPortFactory() {
