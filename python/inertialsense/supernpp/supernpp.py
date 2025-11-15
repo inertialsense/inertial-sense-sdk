@@ -223,9 +223,7 @@ class SuperNPP():
         else:                   # Windows
             exename = 'navpp.exe'
             npp_build_folder += '-release'
-        # Fix: Use the full path to the log directory instead of using -sd parameter
-        log_directory = os.path.join(folder, subdir)
-        cmds = [exename + ' -d "' + log_directory + '" -s ' + str(s) + " -l " + logType for s in serials]
+        cmds = [exename + ' -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
 
         mode_suffix = {1: ' -mode COLD', 2: ' -mode FACTORY'}.get(self.startMode, '')
         for i in range(len(cmds)):
