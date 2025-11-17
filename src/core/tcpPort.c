@@ -8,16 +8,20 @@
 
 #ifdef PLATFORM_IS_WINDOWS
 #include <winsock2.h>
-#define errno WSAGetLastError()
 #define close closesocket
 #define ioctl ioctlsocket
 #define ssize_t SSIZE_T
+// Use WSAGetLastError() directly instead of redefining errno
+#define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, (const char*)(optval), optlen)
+#define HANDLE_SOCKET_ERROR(tcpPort) do{ tcpPort->base.perror = WSAGetLastError(); return -WSAGetLastError(); } while(0)
 #else
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
+#define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->base.perror = errno; return -errno; } while(0)
 #endif
 
 /**
@@ -206,10 +210,9 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
 
     // Tell the kernel to send everything
     int flag = 1;
-    int retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+    int retval = SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
     if (retval != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     tcpPortSetBlocking(port, false);
@@ -217,16 +220,14 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
     // Makes sures the kernel actually tries to send something
     retval = send(tcpPort->socket, NULL, 0, 0);
     if (retval < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     // Tell the kernel to buffer messages again cause TCP_NODELAY kills network performance
     flag = 0;
-    retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+    retval = SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
     if (retval != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
     return 0;
 }
@@ -283,9 +284,8 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
     tv.tv_sec = timeout/1000;
     tv.tv_usec = (timeout % 1000) * 1000;
 #endif
-    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+    if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     // Receive data from the socket
@@ -298,15 +298,13 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 #endif
-    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+    if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     // Return
     if (retval < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
     return retval;
 }
@@ -335,9 +333,8 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     tv.tv_usec = 0;
 #endif
 
-    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+    if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     tcpPortSetBlocking(port, tcpPort->blocking);

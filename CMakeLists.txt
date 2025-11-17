@@ -57,6 +57,10 @@ if(WIN32)
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*windows*"
 	)
+	# Suppress specific warnings for libusb (third-party code)
+	if(MSVC)
+		set_source_files_properties(${SOURCES_LIB_USB} PROPERTIES COMPILE_FLAGS "/wd5287")
+	endif()
 else()
 	file(GLOB SOURCES_LIB_USB
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"

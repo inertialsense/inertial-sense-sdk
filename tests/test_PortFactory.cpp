@@ -24,6 +24,7 @@
 
 
 TEST(test_PortFactory, tcpServerPortFactory) {
+    
     port_handle_t clientPort = nullptr;
 
     auto& serverFactory = TcpServerPortFactory::getInstance();

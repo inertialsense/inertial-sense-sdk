@@ -94,6 +94,7 @@ extern "C" {
 
     // --- Internal static inline functions ---
     static inline void static_log_msg(int facility_code, int log_level, const char *level_name, const char *facility_name, const char *format, ...) {
+        (void)log_level; // Suppress unused parameter warning
     #if defined(__ZEPHYR__) // defined(PLATFORM_IS_EMBEDDED) ||
         static char logMsg[512];
         va_list args;

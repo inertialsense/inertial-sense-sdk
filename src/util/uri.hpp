@@ -236,7 +236,7 @@ public:
         std::string_view::size_type pos{}, hst{}, pth{std::string_view::npos};
         bool scq{};
         if (const auto sch{_source.find_first_of(':')}; sch != std::string_view::npos) {
-            _ranges[scheme] = {0, sch};
+            _ranges[scheme] = {0, static_cast<uri_len_t>(sch)};
             set<scheme>();
             pos = sch + 1;
         }
@@ -246,19 +246,19 @@ public:
             auth += 2;
             if ((pth = _source.find_first_of('/', auth)) == std::string_view::npos) // unterminated path
                 pth = _source.size();
-            _ranges[authority] = {auth, pth - auth};
+            _ranges[authority] = {static_cast<uri_len_t>(auth), static_cast<uri_len_t>(pth - auth)};
             set<authority>();
             if (const auto usr{_source.find_first_of('@', auth)}; usr != std::string_view::npos && usr < pth) {
                 if (const auto pw{_source.find_first_of(':', auth)}; pw != std::string_view::npos && pw < usr) // no nested ':' before '@'
                 {
-                    _ranges[user] = {auth, pw - auth};
+                    _ranges[user] = {static_cast<uri_len_t>(auth), static_cast<uri_len_t>(pw - auth)};
                     if (usr - pw - 1 > 0) {
-                        _ranges[password] = {pw + 1, usr - pw - 1};
+                        _ranges[password] = {static_cast<uri_len_t>(pw + 1), static_cast<uri_len_t>(usr - pw - 1)};
                         set<password>();
                     }
                 } else
-                    _ranges[user] = {auth, usr - auth};
-                _ranges[userinfo] = {auth, usr - auth};
+                    _ranges[user] = {static_cast<uri_len_t>(auth), static_cast<uri_len_t>(usr - auth)};
+                _ranges[userinfo] = {static_cast<uri_len_t>(auth), static_cast<uri_len_t>(usr - auth)};
                 set_all<userinfo, user>();
                 hst = pos = usr + 1;
             } else
@@ -270,7 +270,7 @@ public:
                     prt = autstr.find_last_of(':', autstr.npos + autstr.length() - 1) + pos;
                     ++prt;
                     if (_source.size() - prt > 0) {
-                        _ranges[port] = {prt, _source.size() - prt};
+                        _ranges[port] = {static_cast<uri_len_t>(prt), static_cast<uri_len_t>(_source.size() - prt)};
                         set<port>();
                     }
                 }
@@ -281,34 +281,34 @@ public:
                 if (pth - _ranges[port].first == 0) // remove empty port
                     clear<port>();
                 else
-                    _ranges[port].second = pth - _ranges[port].first;
-                _ranges[host] = {hst, _ranges[port].first - 1 - hst};
+                    _ranges[port].second = static_cast<uri_len_t>(pth - _ranges[port].first);
+                _ranges[host] = {static_cast<uri_len_t>(hst), static_cast<uri_len_t>(_ranges[port].first - 1 - hst)};
             } else
-                _ranges[host] = {hst, pth - hst};
+                _ranges[host] = {static_cast<uri_len_t>(hst), static_cast<uri_len_t>(pth - hst)};
             if (_ranges[host].second)
                 set<host>();
-            _ranges[path] = {pth, _source.size() - pth};
+            _ranges[path] = {static_cast<uri_len_t>(pth), static_cast<uri_len_t>(_source.size() - pth)};
             set<path>();
         }
         if (pth == std::string_view::npos && !scq) {
             set<path>();
             if ((pth = _source.find_first_of('/', pos)) != std::string_view::npos)
-                _ranges[path] = {pth, _source.size() - pth};
+                _ranges[path] = {static_cast<uri_len_t>(pth), static_cast<uri_len_t>(_source.size() - pth)};
             else if (has_scheme())
-                _ranges[path] = {pos, _source.size() - pos};
+                _ranges[path] = {static_cast<uri_len_t>(pos), static_cast<uri_len_t>(_source.size() - pos)};
             else
                 clear<path>();
         }
         if (const auto qur{_source.find_first_of('?', pos)}; qur != std::string_view::npos) {
             if (has_path())
-                _ranges[path].second = qur - _ranges[path].first;
-            _ranges[query] = {qur + 1, _source.size() - qur};
+                _ranges[path].second = static_cast<uri_len_t>(qur - _ranges[path].first);
+            _ranges[query] = {static_cast<uri_len_t>(qur + 1), static_cast<uri_len_t>(_source.size() - qur)};
             set<query>();
         }
         if (const auto fra{_source.find_first_of('#', pos)}; fra != std::string_view::npos) {
             if (has_query())
-                _ranges[query].second = fra - _ranges[query].first;
-            _ranges[fragment] = {fra + 1, _source.size() - fra};
+                _ranges[query].second = static_cast<uri_len_t>(fra - _ranges[query].first);
+            _ranges[fragment] = {static_cast<uri_len_t>(fra + 1), static_cast<uri_len_t>(_source.size() - fra)};
             set<fragment>();
         }
         return count();

@@ -105,6 +105,9 @@ jobs:
       - name: Build Unit Tests
         run: ./build_unit_tests.bat
 
+      - name: Run Unit Tests
+        run: ./build_unit_tests.bat --no-build --test
+        
       - name: Build CLTool
         run: ./build_cltool.bat
 
