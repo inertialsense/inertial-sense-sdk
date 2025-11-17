@@ -63,7 +63,7 @@ private:
         WSADATA wsa_data;
         int wsa_result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
         if (wsa_result != 0) {
-            msg_log("TcpServerPortFactory: WSAStartup failed with error code %d", wsa_result);
+            log_error(IS_LOG_PORT_FACTORY, "TcpServerPortFactory: WSAStartup failed with error code %d", wsa_result);
             // Optionally, you could throw or set a flag here to prevent further use
         }
 #endif
