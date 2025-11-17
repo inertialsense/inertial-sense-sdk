@@ -265,7 +265,7 @@ TEST(ISLogger, logReader_raw)
 
         if (origPType == _PTYPE_NONE || readPType == _PTYPE_NONE) {
             // this is probably garbage data.
-            printf("Skipping %lu bytes of garbage data...\n", msg->size());
+            printf("Skipping %zu bytes of garbage data...\n", msg->size());
             continue;
         }
 

@@ -12,6 +12,9 @@
 
 #include <csignal>
 #include <set>
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 
 #include "core/msg_logger.h"
 #include "PortFactory.h"
@@ -56,8 +59,20 @@ private:
 #ifdef PLATFORM_IS_LINUX
         signal(SIGPIPE, SIG_IGN); // ignore broken pipes
 #endif
+#ifdef _WIN32
+        WSADATA wsa_data;
+        int wsa_result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+        if (wsa_result != 0) {
+            log_error(IS_LOG_PORT_FACTORY, "TcpServerPortFactory: WSAStartup failed with error code %d", wsa_result);
+            // Optionally, you could throw or set a flag here to prevent further use
+        }
+#endif
     };
-    ~TcpServerPortFactory() = default;
+    ~TcpServerPortFactory() {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+    }
 
     struct socket_entry_t {
         int socket = 0;
