@@ -57,6 +57,10 @@ if(WIN32)
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*windows*"
 	)
+	# Suppress specific warnings for libusb (third-party code)
+	if(MSVC)
+		set_source_files_properties(${SOURCES_LIB_USB} PROPERTIES COMPILE_FLAGS "/wd5287")
+	endif()
 else()
 	file(GLOB SOURCES_LIB_USB
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
@@ -140,8 +144,8 @@ else ()
     )
 
     # Linux compiler flags
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
 
     # Set Linux compiler linker flag
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")

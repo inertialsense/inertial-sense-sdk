@@ -44,6 +44,15 @@ public:
 #ifdef PLATFORM_IS_LINUX
         signal(SIGPIPE, SIG_IGN); // ignore broken pipes
 #endif
+#ifdef _WIN32
+        WSADATA wsa_data;
+        int wsa_result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+        if (wsa_result != 0) {
+            log_error(IS_LOG_PORT_FACTORY, "TcpServerPortFactory: WSAStartup failed with error code %d", wsa_result);
+            // Optionally, you could throw or set a flag here to prevent further use
+        }
+#endif
+
         factoryOptions.listenerPort = listenPort;
         factoryOptions.maxConnections = maxConnections;
         factoryOptions.portDefaultBlocking = portDefaultBlocking;
@@ -62,7 +71,11 @@ public:
         factoryOptions.listeningAddr.sin_addr = addr;
 
     };
-    ~TcpServerPortFactory() = default;
+    ~TcpServerPortFactory() {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+    };
 
     // TcpServerPortFactory(TcpServerPortFactory const &) = delete;
     // TcpServerPortFactory& operator=(TcpServerPortFactory const&) = delete;
@@ -107,7 +120,7 @@ protected:
     }
 
 
-/**
+    /**
      * The primary service routine - this should be called periodically (and frequently) to service incoming connections.
      * If this is not called, no ports will ever be discovered/created
      */

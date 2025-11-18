@@ -35,7 +35,6 @@ DEG2RAD = 3.14159 / 180.0
 
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
-SHOW_GPS2 = 0
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
 
@@ -48,6 +47,7 @@ class logPlot:
         self.residual = False
         self.timestamp = False
         self.xAxisSample = False
+        self.showGps2 = False
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
         if self.enableLegends:
@@ -56,6 +56,8 @@ class logPlot:
             self.setLog(log)
         else:
             self.log = None
+        self.refLla = np.zeros(3)
+
             
     def setup_and_wire_legend(self):
         if self.enableLegends:
@@ -72,6 +74,23 @@ class logPlot:
         if len(self.log.data[0, DID_INS_2]):
             setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
 
+        rlla = np.zeros(3)
+
+        for did, field in (
+            (DID_FLASH_CONFIG, 'refLla'),
+            (DID_GPS1_POS,    'lla'),
+            (DID_GPS2_POS,    'lla'),
+        ):
+            arr = self.log.data[0, did]
+            if len(arr):
+                lla = arr[field][-1]
+                if not np.allclose(lla, 0, atol=1e-12):
+                    rlla = lla  # keep updating; last non-zero wins
+
+        if not np.allclose(rlla, 0, atol=1e-12):
+            self.refLla = rlla
+
+
     def setDownSample(self, dwns):
         self.d = dwns
 
@@ -84,9 +103,15 @@ class logPlot:
     def enableXAxisSample(self, enable):
         self.xAxisSample = enable
 
+    def enableGps2(self, enable):
+        self.showGps2 = enable
+
     def enableUtcTime(self, enable):
         self.utcTime = enable
         setShowUtcTime(enable)        
+
+    def setRefLla(self, lla):
+        self.refLla = lla
 
     def setActiveSerials(self, serials):
         self.active_devs = []
@@ -208,7 +233,7 @@ class logPlot:
             if refTime is None or refLla is None:
                 for d in self.active_devs:
                     lla = self.getData(d, DID_GPS1_POS, 'lla', True)
-                    if len(refLla) == 0:
+                    if len(lla) == 0:
                         # No position data: AHRS?
                         continue
                     refLla = lla[0]
@@ -225,6 +250,7 @@ class logPlot:
                 refLla = lla[0]
             ned = lla2ned(refLla, lla)
             tow = self.getData(d, DID_INS_2, 'timeOfWeek', True)
+
             time = getTimeFromGpsTow(tow, True)
             ax[0,0].plot(time, ned[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, ned[:,1])
@@ -232,16 +258,18 @@ class logPlot:
 
             if (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
-                if not self.isEmpty(timeGPS):
-                    nedGps1 = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
+                gps1Lla = self.getData(d, DID_GPS1_POS, 'lla', True)
+                if not self.isEmpty(timeGPS) and not self.isEmpty(gps1Lla):
+                    nedGps1 = lla2ned(refLla, gps1Lla)
                     ax[0,0].plot(timeGPS, nedGps1[:, 0], label=("%s GPS1" % (self.log.serials[d])))
                     ax[1,0].plot(timeGPS, nedGps1[:, 1])
                     ax[2,0].plot(timeGPS, nedGps1[:, 2])
 
-            if (np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
+            if (np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and self.showGps2)):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs', True))
-                if not self.isEmpty(timeGPS):
-                    nedGps2 = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla', True))
+                gps2Lla = self.getData(d, DID_GPS2_POS, 'lla', True)
+                if not self.isEmpty(timeGPS) and not self.isEmpty(gps2Lla):
+                    nedGps2 = lla2ned(refLla, gps2Lla)
                     ax[0,0].plot(timeGPS, nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
                     ax[1,0].plot(timeGPS, nedGps2[:, 1])
                     ax[2,0].plot(timeGPS, nedGps2[:, 2])
@@ -266,8 +294,6 @@ class logPlot:
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'posNED')
-        self.joinFigXAxes(ax,axs)
-        return ax
 
     def nedAnnotateTimestamp(self, ax, time, east, north, textOffset=(0.0, 0.0)):
         ax.annotate('%.1f' % time, xy=(east, north), xycoords='data', xytext=textOffset, textcoords='offset points')
@@ -306,7 +332,10 @@ class logPlot:
             if refLla is None:
                 refLla = lla[0]
             time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
-            ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla', True))
+            ins2Lla = self.getData(d, DID_INS_2, 'lla', True)
+            if self.isEmpty(ins2Lla):
+                continue
+            ned = lla2ned(refLla, ins2Lla)
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b', True))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
@@ -319,7 +348,7 @@ class logPlot:
                     nedGps1 = lla2ned(refLla, lla1)
                     ax.plot(nedGps1[:, 1], nedGps1[:, 0], label=("%s GPS1" % (self.log.serials[d])))
 
-                if SHOW_GPS2 or len(lla1) == 0:
+                if self.showGps2 or len(lla1) == 0:
                     lla2 = self.getData(d, DID_GPS2_POS, 'lla', True)
                     if len(lla2):
                         nedGps2 = lla2ned(refLla, lla2)
@@ -362,9 +391,11 @@ class logPlot:
                         self.nedAnnotateTimestamp(ax, time, east, north)
 
 
-            if SHOW_GPS2:
-                nedGps2 = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
-                ax.plot(nedGps2[:, 1], nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
+            if self.showGps2:
+                gps2Lla = self.getData(d, DID_GPS2_POS, 'lla')
+                if not self.isEmpty(gps2Lla):
+                    nedGps2 = lla2ned(refLla, gps2Lla)
+                    ax.plot(nedGps2[:, 1], nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
         self.legends_add(ax.legend(ncol=2))
@@ -435,7 +466,7 @@ class logPlot:
                 ax[2].plot(time1, lla1[:,2])
 
             time2 = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
-            if (len(time2) and (SHOW_GPS2 or len(time1) == 0)):
+            if (len(time2) and (self.showGps2 or len(time1) == 0)):
                 lla2 = self.getData(d, DID_GPS2_POS, 'lla')
                 ax[0].plot(time2, lla2[:,0], label=('%s GPS2' % self.log.serials[d]))
                 ax[1].plot(time2, lla2[:,1])
@@ -450,7 +481,10 @@ class logPlot:
 
     def getGpsPosNED(self, device, did, refLla):
         gpsTime = getTimeFromGpsTowMs(self.getData(device, did, 'timeOfWeekMs'))
-        gpsNed = lla2ned(refLla, self.getData(device, did, 'lla'))
+        gpsLla = self.getData(device, did, 'lla')
+        if self.isEmpty(gpsLla):
+            return [[], []]
+        gpsNed = lla2ned(refLla, gpsLla)
         return [gpsTime, gpsNed]
 
     def gpsPosNED(self, fig=None, axs=None):
@@ -479,7 +513,7 @@ class logPlot:
             ax[2].plot(gpsTime, gpsNed[:, 2])
             ax[3].plot(gpsTime, gpsNedNorm)
 
-            if (np.shape(self.active_devs)[0]==1) or SHOW_GPS2:
+            if (np.shape(self.active_devs)[0]==1) or self.showGps2:
                 [gps2Time, gps2Ned] = self.getGpsPosNED(d, DID_GPS2_POS, refLla)
                 gps2NedNorm = np.linalg.norm(gps2Ned, axis=1)
                 ax[0].plot(gps2Time, gps2Ned[:, 0], label=("%s GPS2" % (self.log.serials[d])))
@@ -583,7 +617,7 @@ class logPlot:
                 ax[1,0].plot(gps1Time, gps1VelNed[:, 1])
                 ax[2,0].plot(gps1Time, gps1VelNed[:, 2])
                 ax[3,0].plot(gps1Time, gps1VelNorm, label=("%s GPS1" % (self.log.serials[d])))
-            if len(gps2Time) and (SHOW_GPS2 or len(gps1Time) == 0):
+            if len(gps2Time) and (self.showGps2 or len(gps1Time) == 0):
                 gps2VelNorm = np.linalg.norm(gps2VelNed, axis=1)
                 ax[0,0].plot(gps2Time, gps2VelNed[:, 0])
                 ax[1,0].plot(gps2Time, gps2VelNed[:, 1])
@@ -615,7 +649,7 @@ class logPlot:
         
     def getGpsNedVel(self, d):
         velNed = None
-        velDid = DID_GPS2_VEL if self.getData(d, DID_GPS1_VEL, 'status').size == 0 else DID_GPS1_VEL
+        velDid = DID_GPS2_VEL if ((self.getData(d, DID_GPS1_VEL, 'status').size == 0) or self.showGps2) else DID_GPS1_VEL
         status = self.getData(d, velDid, 'status')
         if len(status) == 0:
             return []
@@ -624,7 +658,7 @@ class logPlot:
             velNed = self.getData(d, velDid, 'vel')    # NED velocity
         else:
             velEcef = self.getData(d, velDid, 'vel')   # ECEF velocity
-            qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
+            qe2n = quat_ecef2ned(self.refLla[0:2]*np.pi/180.0)
             if len(velEcef) > 0:
                 velNed = quatConjRot(qe2n, velEcef)
             # velNed = np.copy(velEcef)     # Override to ECEF velocity
@@ -683,7 +717,7 @@ class logPlot:
             ax[3,0].plot(time, insVelNorm, label=self.log.serials[d])
 
             if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
-                timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
+                timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_VEL if self.showGps2 else DID_GPS1_VEL, 'timeOfWeekMs'))
                 if len(timeGPS) == 0:
                     continue
                 gpsVelNed = self.getGpsNedVel(d)
@@ -691,7 +725,7 @@ class logPlot:
                 ax[0,0].plot(timeGPS, gpsVelNed[:, 0])
                 ax[1,0].plot(timeGPS, gpsVelNed[:, 1])
                 ax[2,0].plot(timeGPS, gpsVelNed[:, 2])
-                ax[3,0].plot(timeGPS, gpsVelNorm, label=('%s GPS' % self.log.serials[d]))
+                ax[3,0].plot(timeGPS, gpsVelNorm, label=f"{self.log.serials[d]} {'GPS2' if self.showGps2 else 'GPS1'}")
 
             if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 intVelNed = np.empty_like(refVelNed)

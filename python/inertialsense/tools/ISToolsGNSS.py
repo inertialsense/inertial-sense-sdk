@@ -1,8 +1,6 @@
 import datetime
 import numpy as np
 
-# Set Reference LLA (deg, deg, m) used for NED - Provo, UT
-refLla = np.r_[40.19815560, -111.6209952, 1373.021]
 gpsWeek = 0
 showUtcTime = 0
 
@@ -35,11 +33,6 @@ def gpsTowToUtc(gps_week, gps_tow, gps_utc_offset=18):
     utc_times = gps_times - np.array([datetime.timedelta(seconds=gps_utc_offset)] * len(gps_times))
     
     return utc_times
-
-# Set Reference latitude, longitude, height above ellipsoid (deg, deg, m) used for NED calculations
-def setRefLla(lla):
-    global refLla
-    refLla = lla
 
 def setShowUtcTime(show):
     global showUtcTime
