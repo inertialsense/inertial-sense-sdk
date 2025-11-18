@@ -199,14 +199,14 @@ bool TcpServerPortFactory::startListening() {
         return false; // ERROR on binding
 
     // listen: make this socket ready to accept connection requests
-    if (listen(listen_fd, 5) < 0) /* allow 5 requests to queue up */
+    if (listen(listen_fd, factoryOptions.maxConnections) < 0) /* allow 5 requests to queue up */
         return false; // ERROR on listen
 
     return true;
 }
 
 void TcpServerPortFactory::stopListening() {
-
+    close(listen_fd);
 }
 
 /**
