@@ -44,7 +44,7 @@ public:
 #ifdef PLATFORM_IS_LINUX
         signal(SIGPIPE, SIG_IGN); // ignore broken pipes
 #endif
-#ifdef _WIN32
+#ifdef PLATFORM_IS_WINDOWS
         WSADATA wsa_data;
         int wsa_result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
         if (wsa_result != 0) {
@@ -71,7 +71,7 @@ public:
         factoryOptions.listeningAddr.sin_addr = addr;
 
     };
-    ~TcpServerPortFactory() override {
+    ~TcpServerPortFactory() {
 #ifdef _WIN32
         WSACleanup();
 #endif
@@ -120,7 +120,7 @@ protected:
      * The primary service routine - this should be called periodically (and frequently) to service incoming connections.
      * If this is not called, no ports will ever be discovered/created
      */
-    bool processPendingConnections(std::function<void(socket_entry_t)> cb);
+    bool processPendingConnections(std::function<void(const socket_entry_t&)> cb);
 
 private:
     std::set<socket_entry_t> knownSockets;
