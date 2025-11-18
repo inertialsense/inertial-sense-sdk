@@ -27,8 +27,7 @@ TEST(test_PortFactory, tcpServerPortFactory) {
     
     port_handle_t clientPort = nullptr;
 
-    auto& serverFactory = TcpServerPortFactory::getInstance();
-    serverFactory.factoryOptions.listenerPort = 4321;
+    TcpServerPortFactory serverFactory(4321);
 
     TEST_COUT << "Creating a TcpServerPortFactory on 127.0.0.1, listening for connections on port 4312." << std::endl;
     auto& pm = PortManager::getInstance();
