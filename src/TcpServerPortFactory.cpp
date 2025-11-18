@@ -9,7 +9,7 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifdef _WIN32
+#ifdef PLATFORM_IS_WINDOWS
 // Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
 #define NOMINMAX
 #endif
@@ -19,8 +19,9 @@
 #include <uri.hpp>
 #include <util.h>
 
-#ifdef _WIN32
+#ifdef PLATFORM_IS_WINDOWS
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #else
 #include <unistd.h>
 #include <fcntl.h>
@@ -45,7 +46,7 @@ void TcpServerPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t
     if (!listen_fd)
         startListening();
 
-    processPendingConnections([&](socket_entry_t e) {
+    processPendingConnections([&](const socket_entry_t& e) {
         // The base TCP Port Factory doesn't provide a discovery service, but we must still "locate" any ports we determine are valid
         if (validatePort(e.portName, PORT_TYPE__TCP | PORT_TYPE__COMM)) {
             portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, e.portName);
@@ -148,6 +149,7 @@ bool TcpServerPortFactory::validatePort(const std::string& pName, uint16_t pType
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
     if (getaddrinfo(uriHost.c_str(), uriPort.c_str(), &hints, &dns_addr) == 0) {
+        freeaddrinfo(dns_addr);
         return true;
     }
 
@@ -169,7 +171,9 @@ bool TcpServerPortFactory::startListening() {
     setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&optval , sizeof(int));
 
     DWORD nonBlocking = 1;
-    ioctlsocket(listen_fd, FIONBIO, &nonBlocking);
+    if (ioctlsocket(listen_fd, FIONBIO, &nonBlocking) != 0) {
+        return false; // Error setting non-blocking flag
+    }
 #else
     // setsockopt: Handy debugging trick that lets us rerun the server immediately after we kill it;
     // otherwise we have to wait about 20 secs.  Eliminates "ERROR on binding: Address already in use" error.
@@ -179,12 +183,12 @@ bool TcpServerPortFactory::startListening() {
     // Get the current flags for the socket file descript
     int flags;
     if ((flags = fcntl(listen_fd, F_GETFL, 0)) == -1) {
-        return -1; // Error getting flags
+        return false; // Error getting flags
     }
 
     // Add the O_NONBLOCK flag to the current flags
     if (fcntl(listen_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-        return -1; // Error setting non-blocking flag
+        return false; // Error setting non-blocking flag
     }
 #endif
 
@@ -206,18 +210,34 @@ bool TcpServerPortFactory::startListening() {
 }
 
 void TcpServerPortFactory::stopListening() {
-    close(listen_fd);
+    if (listen_fd > 0) {
+#ifdef PLATFORM_IS_WINDOWS
+        closesocket(listen_fd);
+#else
+        close(listen_fd);
+#endif
+        listen_fd = 0;
+    }
+}
+
+void TcpServerPortFactory::shutdownAllClients() {
+    for (const auto& ks : knownSockets) {
+#ifdef PLATFORM_IS_WINDOWS
+        shutdown(ks.socket, SD_BOTH);
+#else
+        shutdown(ks.socket, SHUT_RDWR);
+#endif
+    }
 }
 
 /**
  * This is a private function, typically called by locatePorts() to process all pending connection requests.
  * @return
  */
-bool TcpServerPortFactory::processPendingConnections(std::function<void(socket_entry_t)> cb) {
+bool TcpServerPortFactory::processPendingConnections(std::function<void(const socket_entry_t&)> cb) {
     struct sockaddr_in clientaddr;      // client addr
-    struct hostent *hostp;              // client host info
-    char *hostaddrp;                    // dotted decimal host addr string
-    int clientfd = 0;                   // socket associated to the client
+    char hostaddrp[INET6_ADDRSTRLEN];
+    int clientfd;                   // socket associated to the client
     socklen_t clientlen = sizeof(clientaddr); // byte size of client's address
     bool result = false;                // true if one or more connections are successfully accepted
 
@@ -225,29 +245,31 @@ bool TcpServerPortFactory::processPendingConnections(std::function<void(socket_e
         // accept: wait for a connection request
         clientfd = accept(listen_fd, (struct sockaddr *) &clientaddr, &clientlen);
         if (clientfd >= 0) {
-            // gethostbyaddr: determine who has connected
-            hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr, sizeof(clientaddr.sin_addr.s_addr), AF_INET);
-            if (hostp) {
-                hostaddrp = inet_ntoa(clientaddr.sin_addr);
-                if (hostaddrp) {
-                    std::string tcpPortName = utils::string_format("tcp://%s:%d", hostaddrp, clientaddr.sin_port);
+            // getnameinfo: determine who has connected
+            if (getnameinfo((struct sockaddr *) &clientaddr, clientlen, hostaddrp, sizeof(hostaddrp), nullptr, 0, NI_NUMERICHOST) == 0) {
+                std::string tcpPortName = utils::string_format("tcp://%s:%d", hostaddrp, ntohs(clientaddr.sin_port));
 
-                    auto out = knownSockets.emplace(clientfd, tcpPortName);
-                    cb(*out.first);
-                    result = out.second;
-                    log_info(IS_LOG_PORT_FACTORY, "tcpServerPortFactory accepted incoming TCP port %s", tcpPortName.c_str());
-                } else {
-                    log_warn(IS_LOG_PORT_FACTORY, "tcpServerPortFactory received an invalid socket when accepting ")
-                }
-            }
-            else {
+                auto out = knownSockets.emplace(clientfd, tcpPortName);
+                cb(*out.first);
+                result = out.second;
+                log_info(IS_LOG_PORT_FACTORY, "tcpServerPortFactory accepted incoming TCP port %s", tcpPortName.c_str());
+            } else {
                 log_warn(IS_LOG_PORT_FACTORY, "tcpServerPortFactory unable to extract remote IP address from socket.");
             }
-        } else if ((clientfd != EAGAIN) && (clientfd != EWOULDBLOCK)) {
-            log_error(IS_LOG_PORT_FACTORY, "tcpServerPortFactory::accept() reported an error while accepting incoming connections.")
-            return result;
+        } else {
+#ifdef PLATFORM_IS_WINDOWS
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                log_error(IS_LOG_PORT_FACTORY, "tcpServerPortFactory::accept() reported an error while accepting incoming connections.");
+                return false;
+            }
+#else
+            if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+                log_error(IS_LOG_PORT_FACTORY, "tcpServerPortFactory::accept() reported an error while accepting incoming connections.");
+                return false;
+            }
+#endif
         }
-    } while ((clientfd != EAGAIN) && (clientfd != EWOULDBLOCK));
+    } while (clientfd >= 0);
 
     return result;
 }

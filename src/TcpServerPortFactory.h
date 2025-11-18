@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef IS_SDK__TCP_SERVER_PORT_FACTORY_H
-#define IS_SDK__TCP_SERVER_PORT_FACTORY_H
+#ifndef IS_SDK_TCP_SERVER_PORT_FACTORY_H
+#define IS_SDK_TCP_SERVER_PORT_FACTORY_H
 
 #include <csignal>
 #include <set>
@@ -40,7 +40,7 @@ public:
         //!< the maximum number of connections that can be kept open
     } factoryOptions = {};
 
-    TcpServerPortFactory(uint16_t listenPort = 4321, std::string listenAddr = "127.0.0.1", int maxConnections = 10, bool portDefaultBlocking = false, bool backgroundListener = false) {
+    explicit TcpServerPortFactory(uint16_t listenPort = 4321, const std::string& listenAddr = "127.0.0.1", int maxConnections = 10, bool portDefaultBlocking = false, bool backgroundListener = false) {
 #ifdef PLATFORM_IS_LINUX
         signal(SIGPIPE, SIG_IGN); // ignore broken pipes
 #endif
@@ -63,7 +63,7 @@ public:
         // we expect either a string "<address>" or "<address> (<name>)" - in either case, we just want the <address> part (upto the space)
         std::string ipAddr = listenAddr.substr(0, listenAddr.find_first_of(' '));
 
-        struct in_addr addr;
+        struct in_addr addr = {};
         if (inet_pton(AF_INET, ipAddr.c_str(), &addr) <= 0) {
             // Handle error: invalid address or address not supported
             factoryOptions.listeningAddr.sin_addr.s_addr = INADDR_NONE; // A common error indicator for in_addr_t
@@ -71,7 +71,7 @@ public:
         factoryOptions.listeningAddr.sin_addr = addr;
 
     };
-    ~TcpServerPortFactory() {
+    ~TcpServerPortFactory() override {
 #ifdef _WIN32
         WSACleanup();
 #endif
@@ -82,19 +82,21 @@ public:
 
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
 
-    bool validatePort(const std::string& pName, uint16_t pType = 0) override;
+    bool validatePort(const std::string& pName, uint16_t pType) override;
 
-    port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
+    port_handle_t bindPort(const std::string& pName, uint16_t pType) override;
 
     bool releasePort(port_handle_t port) override;
+
+    void shutdownAllClients();
 
 protected:
     struct socket_entry_t {
         int socket = 0;
-        std::string portName = "";
+        std::string portName;
         mutable port_handle_t port = nullptr;
 
-        socket_entry_t(int _s, std::string _n, port_handle_t _p = nullptr) : socket(_s), portName(_n), port(_p) {};
+        socket_entry_t(int _s, std::string _n, port_handle_t _p = nullptr) : socket(_s), portName(std::move(_n)), port(_p) {};
 
         // Overload operator< for strict weak ordering
         bool operator<(const socket_entry_t& other) const {
@@ -109,16 +111,10 @@ protected:
 
     std::vector<socket_entry_t> getClientSockets() {
         std::vector<socket_entry_t> out;
-        for (auto ks : knownSockets)
+        for (const auto& ks : knownSockets)
             out.emplace_back(ks);
         return out;
     }
-
-    void shutdownAllClients() {
-        for (auto ks : knownSockets)
-            shutdown(ks.socket, SHUT_RDWR);
-    }
-
 
     /**
      * The primary service routine - this should be called periodically (and frequently) to service incoming connections.
@@ -134,4 +130,4 @@ private:
 };
 
 
-#endif //IS_SDK__TCP_SERVER_PORT_FACTORY_H
+#endif //IS_SDK_TCP_SERVER_PORT_FACTORY_H
