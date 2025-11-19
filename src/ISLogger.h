@@ -206,7 +206,7 @@ public:
 
         for (auto d : DeviceLogs())
         {
-            d->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+            d->SetKmlConfig(m_gpsData, m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
         }
     }
 

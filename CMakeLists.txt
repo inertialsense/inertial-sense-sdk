@@ -28,6 +28,13 @@ if (WIN32)
         "src/libusb/libusb/*.c"
         "src/libusb/libusb/os/*windows*"
     )
+elseif(APPLE)
+    file(GLOB SOURCES_LIB_USB
+        "src/libusb/libusb/*.h"
+        "src/libusb/libusb/*.c"
+        "src/libusb/libusb/os/*darwin*"
+        "src/libusb/libusb/os/*posix*"
+    )
 else ()
     file(GLOB SOURCES_LIB_USB
         "src/libusb/libusb/*.h"
@@ -78,6 +85,16 @@ if (WIN32)
 
     # We need to ensure windows static libs are found
     target_link_libraries(${PROJECT_NAME} Ws2_32.lib)
+elseif(APPLE)
+    # macOS-specific config for libusb
+    target_include_directories(${PROJECT_NAME} PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/Xcode
+    )
+
+    target_link_libraries(${PROJECT_NAME}
+        "-framework IOKit"
+        "-framework CoreFoundation"
+    )
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC

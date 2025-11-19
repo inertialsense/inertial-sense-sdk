@@ -14,10 +14,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogger.h"
 #include "ISFileManager.h"
 
+#include <cstring>
+
 #if PLATFORM_IS_LINUX
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/serial.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <libgen.h>
+#elif PLATFORM_IS_APPLE
+#include <glob.h>
 #endif
 
 using namespace std;
@@ -137,6 +145,24 @@ static void probe_serial8250_comports(vector<string>& comList, vector<string> co
 
 #endif // #if PLATFORM_IS_LINUX
 
+#if PLATFORM_IS_APPLE
+static void addMatchingPorts(vector<string>& ports, const char* pattern)
+{
+    glob_t globResult;
+    memset(&globResult, 0, sizeof(globResult));
+
+    if (glob(pattern, 0, NULL, &globResult) == 0)
+    {
+        for (size_t i = 0; i < globResult.gl_pathc; ++i)
+        {
+            ports.push_back(globResult.gl_pathv[i]);
+        }
+    }
+
+    globfree(&globResult);
+}
+#endif
+
 /**
  * Populates a vector of string identifiers for all available Serial/TTY/UART devices on the host system.
  * This does not open, access, or configure the devices, nor does it make any guarantee about the availability
@@ -161,7 +187,7 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 		}
 	}
 
-#else	// Linux
+#elif PLATFORM_IS_LINUX
 
     struct dirent **namelist;
     vector<string> comList8250;
@@ -193,6 +219,15 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
     // Only non-serial8250 has been added to comList without any further testing
     // serial8250-devices must be probe to check for validity
     probe_serial8250_comports(ports, comList8250);
+
+#elif PLATFORM_IS_APPLE
+
+    addMatchingPorts(ports, "/dev/tty.*");
+    addMatchingPorts(ports, "/dev/cu.*");
+
+#else
+
+    // Unsupported/unknown platform, leave list empty for now.
 
 #endif
 

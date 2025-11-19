@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <sstream>
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 using namespace std;
 
 #define MAX_ITEM_HISTORY 2048
@@ -136,10 +139,10 @@ int cComDataBuffer::ReadData(int pHandle, uint32_t dataId, vector<uint8_t>& data
     struct stat buf;
     FILE* file = m_buffers[pHandle][dataId].file;
     fflush(file);
-#ifdef __linux__
-    fstat(fileno(file), &buf);
-#else
+#if defined(_WIN32)
     fstat(_fileno(file), &buf);
+#else
+    fstat(fileno(file), &buf);
 #endif
     size_t size = buf.st_size;
     size_t pos = ftell(file);
