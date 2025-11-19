@@ -16,6 +16,21 @@ class get_pybind_include(object):
         import pybind11
         return pybind11.get_include(self.user)
 
+if platform.system() == 'Windows':
+    libusb_include_dirs = ['../../src/libusb/libusb']
+    extra_link_args = []
+else:
+    # Allow using either system-installed libusb or the vendored headers.
+    libusb_include_dirs = [
+        '/usr/include/libusb-1.0',
+        '/opt/homebrew/include/libusb-1.0',
+        '../../src/libusb/libusb',
+    ]
+    if platform.system() == 'Darwin':
+        extra_link_args = ['-framework', 'IOKit', '-framework', 'CoreFoundation']
+    else:
+        extra_link_args = ['-ludev', '-lm']
+
 ext_modules = [
     Extension(
         'log_reader',
@@ -28,8 +43,8 @@ ext_modules = [
             '../../src',  # Include any necessary headers from the SDK
             get_pybind_include(),
             get_pybind_include(user=True),
-        ] + (['../../src/libusb/libusb'] if platform.system() == 'Windows' else ['/usr/include/libusb-1.0']),
-        extra_link_args=[] if platform.system() == 'Windows' else ['-lusb-1.0'],
+        ] + libusb_include_dirs,
+        extra_link_args=extra_link_args,
         # Link to the prebuilt static library
         extra_objects=['../../build-release/InertialSenseSDK.lib'] if platform.system() == 'Windows' else ['../../build/libInertialSenseSDK.a'],
         language='c++',

@@ -75,7 +75,8 @@ def run_build(args=[]):
         elif arg in ("-d", "--debug"):
             build_type = "Debug"
 
-    pip_install_command = f"pip3 install {log_inspector_dir}"
+    # Use in-tree build so the extension can see SDK/src headers (e.g. convert_ins.h)
+    pip_install_command = f"pip3 install --use-feature=in-tree-build {log_inspector_dir}"
     version_info = sys.version_info
     if version_info.major > 3 or (version_info.major == 3 and version_info.minor >= 11):
         pip_install_command += " --break-system-packages"
