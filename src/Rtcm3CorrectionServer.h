@@ -19,11 +19,11 @@ public:
         startListening();
     };
 
-    explicit Rtcm3CorrectionServer(const device_handle_t srcDevice, int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : Rtcm3CorrectionServer(port, listenAddr) {
+    explicit Rtcm3CorrectionServer(const device_handle_t srcDevice, int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : Rtcm3CorrectionServer(port, listenAddr, max_connections) {
         setSourceDevice(srcDevice);
     };
 
-    explicit Rtcm3CorrectionServer(const uint64_t srcDeviceId, int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : Rtcm3CorrectionServer(port, listenAddr) {
+    explicit Rtcm3CorrectionServer(const uint64_t srcDeviceId, int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : Rtcm3CorrectionServer(port, listenAddr, max_connections) {
         setSourceDevice(srcDeviceId);
     };
 
