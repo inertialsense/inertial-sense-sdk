@@ -1161,6 +1161,77 @@ bool InertialSense::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout, i
     return GpxFlashConfigSynced(pHandle);
 }
 
+bool InertialSense::UploadImxCalibration(sensor_cal_t &scal, int serialNum, int pHandle)
+{
+    ISDevice& device = m_comManagerState.devices[pHandle];
+
+    // // Temporarily clear updateIoConfig for checksum
+    // bool updateIo = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+    // flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+    // UpdateFlashConfigChecksum(flashCfg);
+    // if (updateIo) flashCfg.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    // bool success = UploadFlashConfigDiff(
+    //     pHandle,
+    //     reinterpret_cast<uint8_t*>(&flashCfg),
+    //     reinterpret_cast<uint8_t*>(&device.imxFlashCfg),
+    //     sizeof(nvm_flash_cfg_t),
+    //     DID_FLASH_CONFIG,
+    //     device.imxFlashCfgUploadTimeMs,
+    //     device.imxFlashCfgUploadChecksum
+    // );
+
+    // if (!device.imxFlashCfgUploadTimeMs)
+    //     printf("DID_FLASH_CONFIG in sync.  No upload.\n");
+    // else
+    //     device.imxFlashCfgUploadChecksum = flashCfg.checksum;
+
+    // device.imxFlashCfg = flashCfg;
+
+
+
+    // Upload Calibration Info
+    {	// General Info
+        comManagerSendData(pHandle, &(scal.info), DID_CAL_SC, sizeof(sensor_cal_info_t), offsetof(sensor_cal_t, info));
+    }
+
+    {	// Data Info
+        comManagerSendData(pHandle, &(scal.data.dinfo), DID_CAL_SC, sizeof(sensor_data_info_t), offsetof(sensor_cal_t, data.dinfo));
+    }
+
+    // Upload Temperature Cal
+    {	// Temp comp - Gyros
+        comManagerSendData(pHandle, scal.data.tcal.gyr, DID_CAL_TEMP_COMP, NUM_IMU_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, gyr));
+    }
+
+    {	// Temp comp - Accelerometers
+        comManagerSendData(pHandle, scal.data.tcal.acc, DID_CAL_TEMP_COMP, NUM_IMU_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, acc));
+    }
+
+    {	// Temp comp - Magnetometers
+        comManagerSendData(pHandle, scal.data.tcal.mag, DID_CAL_TEMP_COMP, NUM_MAG_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, mag));
+    }
+
+    // Upload Motion Cal
+    {	// Motion cal - Gyros
+        comManagerSendData(pHandle, scal.data.mcal.pqr, DID_CAL_MOTION, NUM_IMU_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, pqr));
+    }
+
+    {    // Motion cal - Accelerometers
+        comManagerSendData(pHandle, scal.data.mcal.acc, DID_CAL_MOTION, NUM_IMU_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, acc));
+    }
+
+    {    // Motion cal - Magnetometers
+        comManagerSendData(pHandle, scal.data.mcal.mag, DID_CAL_MOTION, NUM_MAG_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, mag));
+    }
+
+    printf("Done uploadSensorCal() - hdl: %d, serial#: %d, devSerialNum: %d\n", pHandle, serialNum, scal.info.devSerialNum);
+
+
+
+    return success;
+}
+
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
 {
     if (data->hdr.size==0 || data->ptr==NULL)
@@ -1841,6 +1912,21 @@ bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, int pHandle)
 {
     return LoadFlashConfigFromFile<gpx_flash_cfg_t>(path, DID_GPX_FLASH_CFG,
         [this](gpx_flash_cfg_t& cfg, int handle) { return SetGpxFlashConfig(cfg, handle); },
+        pHandle);
+}
+
+bool InertialSense::UploadImxCalibrationFromFile(std::string path, int pHandle)
+{
+    // Check if file exists
+    std::ifstream file(path);
+    if (!file.good())
+    {
+        printf("[ERROR] --- Calibration file does not exist: %s\n", path.c_str());
+        return false;
+    }
+
+    return LoadFlashConfigFromFile<nvm_flash_cfg_t>(path, DID_FLASH_CONFIG,
+        [this](nvm_flash_cfg_t& cfg, int handle) { return UploadImxCalibration(cfg, handle); },
         pHandle);
 }
 

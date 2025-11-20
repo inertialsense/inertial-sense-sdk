@@ -400,6 +400,16 @@ public:
     bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
     /**
+     * @brief Set the Imx Calibration data
+     * 
+     * @param flashCfg 
+     * @param pHandle 
+     * @return true 
+     * @return false 
+     */
+    bool SetImxCalibration(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+
+    /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
      * 
      * @param pHandle the port pHandle
@@ -625,6 +635,8 @@ public:
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
     ISDevice* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
+
+    bool UploadImxCalibrationFromFile(std::string path, int pHandle = 0);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
