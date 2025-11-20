@@ -25,7 +25,7 @@
  * @param devnum dev number
  * @return Major number from dev number
  */
-uint32_t major(uint64_t devnum) {
+static uint32_t isdk_major(uint64_t devnum) {
     uint32_t major;
     major = ((devnum & (uint64_t) 0x00000000000fff00u) >>  8);
     major |= ((devnum & (uint64_t) 0xfffff00000000000u) >> 32);
@@ -38,7 +38,7 @@ uint32_t major(uint64_t devnum) {
  * @param devnum dev number
  * @return Minor number from dev number
  */
-uint32_t minor(uint64_t devnum) {
+static uint32_t isdk_minor(uint64_t devnum) {
     uint32_t minor;
     minor = ((devnum & (uint64_t) 0x00000000000000ffu) >>  0);
     minor |= ((devnum & (uint64_t) 0x00000ffffff00000u) >> 12);
@@ -52,7 +52,7 @@ uint32_t minor(uint64_t devnum) {
  * @param minor Minor number
  * @return Device number from major and minor
  */
-uint64_t makedev(uint32_t major, uint32_t minor) {
+static uint64_t isdk_makedev(uint32_t major, uint32_t minor) {
     uint64_t devnum;
     devnum  = (((uint64_t) (major & 0x00000fffu)) <<  8);    \
     devnum |= (((uint64_t) (major & 0xfffff000u)) << 32);    \
@@ -233,7 +233,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
 
             if (major > 4095) throw std::invalid_argument("Major number is out of bounds");
             if (minor > 1048575) throw std::invalid_argument("Minor number is out of bounds");
-            devid = makedev(major, minor);
+            devid = isdk_makedev(major, minor);
         } else if (std::regex_match(uriPath, match, regexp2)) {
             for (std::pair<uint16_t, std::string> majorPair: majorAtlas) {
                 if (match[1].str().starts_with( majorPair.second)) {
@@ -249,7 +249,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
             if (major == 0) throw std::invalid_argument("Unknown device path to major");
             if (major > 4095) throw std::invalid_argument("Major number atlas is invalid (Major number out of bounds)");
             if (minor > 1048575) throw std::invalid_argument("Device number is out of bounds");
-            devid = makedev(major, minor);
+            devid = isdk_makedev(major, minor);
         } else {
             throw std::invalid_argument("Unknown format for URI path");
         }
@@ -337,7 +337,7 @@ std::string ISmDnsPortFactory::getPortURL(const std::pair<std::string, ISmDnsPor
 
     if (port.second.devid != 0) {
         returnValue = returnValue.append("/");
-        const uint16_t majorVal = major(port.second.devid);
+        const uint16_t majorVal = isdk_major(port.second.devid);
         if (majorAtlas.contains(majorVal)) {
             returnValue = returnValue.append("dev/");
             returnValue = returnValue.append(majorAtlas.at(majorVal));
@@ -345,7 +345,7 @@ std::string ISmDnsPortFactory::getPortURL(const std::pair<std::string, ISmDnsPor
             returnValue = returnValue.append(std::to_string(majorVal));
             returnValue = returnValue.append(":");
         }
-        returnValue = returnValue.append(std::to_string(minor(port.second.devid)));
+        returnValue = returnValue.append(std::to_string(isdk_minor(port.second.devid)));
     }
     return returnValue;
 }

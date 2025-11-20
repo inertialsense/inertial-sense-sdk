@@ -23,6 +23,7 @@
 
 #include "PortManager.h"
 #include "serialPort.h"
+#include "ISSerialPort.h"
 #include "serialPortPlatform.h"
 
 
@@ -67,8 +68,11 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 #if PLATFORM_IS_WINDOWS
     char targetPath[256];
     return (QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath)) != 0);
-#else   // Linux
+#elif PLATFORM_IS_LINUX
     return validate_port__linux(pType, pName);
+#else
+    struct stat st = {};
+    return (stat(pName.c_str(), &st) == 0) && S_ISCHR(st.st_mode);
 #endif
 }
 
@@ -192,7 +196,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
         }
     }
 
-#else   // Linux
+#elif PLATFORM_IS_LINUX
 
     struct dirent **namelist;
     std::vector<std::string> comList8250;
@@ -242,6 +246,10 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
     // serial8250-devices must be probe to check for validity
     probe_serial8250_comports__linux(portNames, comList8250);
 
+#elif PLATFORM_IS_APPLE
+    return cISSerialPort::GetComPorts(portNames);
+#else
+    return cISSerialPort::GetComPorts(portNames);
 #endif
 
     return portNames.size();

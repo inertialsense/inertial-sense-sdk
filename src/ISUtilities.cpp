@@ -31,7 +31,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #elif PLATFORM_IS_WINDOWS
     #include <windows.h>
     #include <process.h>
-#elif PLATFORM_IS_LINUX
+#elif PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
     // Nothing to do
 #else
     #error "Unsupported platform"

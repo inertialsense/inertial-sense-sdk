@@ -141,7 +141,7 @@ setup(
 
     ext_modules=ext_modules,
 
-    setup_requires=['pybind11>=2.12', 'setuptools', 'wheel'],
+    setup_requires=['pybind11>=2.12', 'setuptools'],
 
     # cmdclass={'build': BuildCommand, 'build_ext': BuildExt},
     cmdclass={'build_ext': BuildExt},

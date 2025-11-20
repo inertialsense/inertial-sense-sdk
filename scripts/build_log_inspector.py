@@ -66,8 +66,23 @@ def _probe_pyd_load() -> None:
     except Exception as e:
         print("[probe] unexpected error:", e)
 
+def _build_env() -> dict:
+    env = os.environ.copy()
+    tmp_root = (SDK_DIR / ".tmp")
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    tmp_path = str(tmp_root.resolve())
+    for var in ("TMPDIR", "TMP", "TEMP"):
+        env[var] = tmp_path
+    pycache_root = SDK_DIR / ".pycache"
+    pycache_root.mkdir(parents=True, exist_ok=True)
+    env["PYTHONPYCACHEPREFIX"] = str(pycache_root.resolve())
+    arch = platform.machine()
+    if arch:
+        env["ARCHFLAGS"] = f"-arch {arch}"
+    return env
+
 # ---------- Helpers ----------
-def run_setup_command(command, cwd: os.PathLike | None = None) -> int:
+def run_setup_command(command, cwd: os.PathLike | None = None, env: dict | None = None) -> int:
     """Run 'python setup.py <args>' using the current interpreter."""
     args = command.split() if isinstance(command, str) else list(command)
     cmd = [PY, "setup.py", *args]
@@ -79,6 +94,7 @@ def run_setup_command(command, cwd: os.PathLike | None = None) -> int:
             check=True,
             text=True,
             capture_output=True,
+            env=env,
         )
         if result.stdout:
             print(result.stdout)
@@ -98,7 +114,7 @@ def run_clean(python_dir: os.PathLike = PYTHON_DIR) -> int:
     if not python_dir:  # default to PYTHON_DIR if python_dir is None or falsy
         python_dir = PYTHON_DIR
     print("=== Running make clean... ===")
-    rc = run_setup_command(["clean"], cwd=python_dir)
+    rc = run_setup_command(["clean"], cwd=python_dir, env=_build_env())
     if rc:
         return rc
 
@@ -138,8 +154,10 @@ def run_build(args: list[str] = []) -> int:
         elif arg in ("-d", "--debug"):
             build_type = "Debug"
 
+    build_env = _build_env()
+
     # Use current interpreter for pip
-    pip_install_cmd = [PY, "-m", "pip", "install", str(PYTHON_DIR)]
+    pip_install_cmd = [PY, "-m", "pip", "install", "--no-build-isolation", "--use-feature=in-tree-build", str(PYTHON_DIR)]
     if not in_venv() and sys.version_info >= (3, 11):
         pip_install_cmd.append("--break-system-packages")
 
@@ -154,10 +172,16 @@ def run_build(args: list[str] = []) -> int:
     print(f"=== Running make... ({build_type}) ===")
 
     print("CMD:", " ".join(pip_install_cmd))
-    build_process = subprocess.run(pip_install_cmd, cwd=SDK_DIR, check=True)
+    try:
+        subprocess.run(pip_install_cmd, cwd=SDK_DIR, check=True, env=build_env)
+    except subprocess.CalledProcessError as e:
+        print("pip install failed (often due to missing build deps like wheel); falling back to 'setup.py install'")
+        fallback_rc = run_setup_command(["install"], cwd=PYTHON_DIR, env=build_env)
+        if fallback_rc:
+            return fallback_rc
 
     # Build extension in-place
-    return run_setup_command("build_ext --inplace", cwd=PYTHON_DIR)
+    return run_setup_command("build_ext --inplace", cwd=PYTHON_DIR, env=build_env)
 
 @contextmanager
 def _argv(temp: list[str]):

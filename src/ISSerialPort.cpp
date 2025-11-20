@@ -14,10 +14,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogger.h"
 #include "ISFileManager.h"
 
+#include <algorithm>
+
 #if PLATFORM_IS_LINUX
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/serial.h>
+#endif
+#if PLATFORM_IS_APPLE || PLATFORM_IS_LINUX
+#include <dirent.h>
 #endif
 
 using namespace std;
@@ -162,7 +167,7 @@ int cISSerialPort::GetComPorts(vector<string>& ports)
         }
     }
 
-#else   // Linux
+#elif PLATFORM_IS_LINUX
 
     struct dirent **namelist;
     vector<string> comList8250;
@@ -196,6 +201,30 @@ int cISSerialPort::GetComPorts(vector<string>& ports)
     // Only non-serial8250 has been added to comList without any further testing
     // serial8250-devices must be probe to check for validity
     probe_serial8250_comports(ports, comList8250);
+
+#elif PLATFORM_IS_APPLE
+
+    const char* devPath = "/dev";
+    DIR* dir = opendir(devPath);
+    if (dir != nullptr)
+    {
+        while (auto entry = readdir(dir))
+        {
+            if (entry == nullptr)
+            {
+                continue;
+            }
+
+            const char* name = entry->d_name;
+            if ((strncmp(name, "tty.", 4) == 0) || (strncmp(name, "cu.", 3) == 0))
+            {
+                ports.emplace_back(std::string(devPath) + "/" + name);
+            }
+        }
+        closedir(dir);
+    }
+
+    std::sort(ports.begin(), ports.end());
 
 #endif
 

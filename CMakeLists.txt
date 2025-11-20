@@ -3,7 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 project(InertialSenseSDK)
 
 # set(CMAKE_FIND_DEBUG_MODE TRUE)
-if(NOT WIN32)
+if(UNIX AND NOT APPLE)
 	find_package(UDev QUIET)	# try using find_package as a last resort (this seems to not exist on some platforms).
 	if (NOT UDEV_FOUND)
 		message(STATUS "`find_package` could not locate the libudev package. Trying again using 'pkg_check'.")
@@ -28,7 +28,7 @@ if(NOT WIN32)
 	endif()
 endif()
 
-file(GLOB SOURCES_SDK
+file(GLOB SOURCES_SDK CONFIGURE_DEPENDS
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.h"
@@ -52,7 +52,7 @@ file(GLOB SOURCES_SDK
 
 # Compile libusb from source
 if(WIN32)
-	file(GLOB SOURCES_LIB_USB
+	file(GLOB SOURCES_LIB_USB CONFIGURE_DEPENDS
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*windows*"
@@ -61,8 +61,16 @@ if(WIN32)
 	if(MSVC)
 		set_source_files_properties(${SOURCES_LIB_USB} PROPERTIES COMPILE_FLAGS "/wd5287")
 	endif()
+elseif(APPLE)
+	file(GLOB SOURCES_LIB_USB CONFIGURE_DEPENDS
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*darwin*"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/events_posix.*"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/threads_posix.*"
+	)
 else()
-	file(GLOB SOURCES_LIB_USB
+	file(GLOB SOURCES_LIB_USB CONFIGURE_DEPENDS
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*linux*"
@@ -120,6 +128,31 @@ if (WIN32)
 
     # We need to ensure windows static libs are found
     target_link_libraries(${PROJECT_NAME} Ws2_32.lib Iphlpapi.lib)
+elseif(APPLE)
+    target_include_directories(${PROJECT_NAME} PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/Xcode
+    )
+
+	add_custom_command(
+			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
+			COMMAND bash -c "scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			DEPENDS scripts/lib/version_tools.py
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+	add_custom_target(gen_files
+			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
+	)
+	add_dependencies(${PROJECT_NAME} gen_files)
+    set_source_files_properties(
+        src/libusb/libusb/core.c
+        PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable"
+    )
+
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+
+    target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework IOKit" "-framework Security")
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
