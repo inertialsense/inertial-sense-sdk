@@ -58,7 +58,11 @@ public:
     void setSourceDevice(uint64_t deviceId) {
         srcDeviceId = deviceId;
         sourceDevice = DeviceManager::getInstance().getDevice(srcDeviceId);
-        setSourcePort(sourceDevice->port);
+        if (sourceDevice) {
+            setSourcePort(sourceDevice->port);
+        } else {
+            setSourcePort(nullptr);
+        }
     }
 
     device_handle_t& getSourceDevice() { return sourceDevice; }
