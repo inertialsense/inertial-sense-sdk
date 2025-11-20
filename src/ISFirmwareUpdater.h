@@ -128,7 +128,7 @@ public:
 
 static ISFwUpdaterCmd nullCmd = ISFwUpdaterCmd();
 
-class ISFirmwareUpdater : private fwUpdate::FirmwareUpdateHost {
+class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
 public:
 
     struct update_msgs {
