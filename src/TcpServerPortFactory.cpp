@@ -254,6 +254,11 @@ bool TcpServerPortFactory::processPendingConnections(std::function<void(const so
                 result = out.second;
                 log_info(IS_LOG_PORT_FACTORY, "tcpServerPortFactory accepted incoming TCP port %s", tcpPortName.c_str());
             } else {
+#ifdef PLATFORM_IS_WINDOWS
+                closesocket(clientfd);
+#else
+                close(clientfd);
+#endif
                 log_warn(IS_LOG_PORT_FACTORY, "tcpServerPortFactory unable to extract remote IP address from socket.");
             }
         } else {
