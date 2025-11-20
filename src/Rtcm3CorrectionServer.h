@@ -33,7 +33,7 @@ public:
     };
 
     int step() {
-        processPendingConnections([&](socket_entry_t e) {
+        processPendingConnections([&](const socket_entry_t& e) {
             // The base TCP Port Factory doesn't provide a discovery service, but we must still "locate" any ports we determine are valid
             if (validatePort(e.portName, PORT_TYPE__TCP | PORT_TYPE__COMM)) {
                 port_handle_t port = TcpServerPortFactory::bindPort(e.portName, PORT_TYPE__TCP | PORT_TYPE__COMM);
