@@ -9,7 +9,7 @@
  * to one or more physical device (or even another CorrectionService).
  *
  * In this way, the CorrectionService is purely a service which parses RTCM3 from a single port
- * and forwards it to multiple other ports. Additionally, it handles
+ * and forwards it to multiple other ports.
  *
  * @author FiriusFoxx on 9/4/25.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
