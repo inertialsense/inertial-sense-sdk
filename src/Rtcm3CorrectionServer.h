@@ -1,6 +1,6 @@
 /**
  * @file Rtcm3CorrectionServer.h 
- * @brief ${BRIEF_DESC}
+ * @brief Provides a TCP server for streaming RTCM3 GNSS correction data.
  *
  * @author Kyle Mallory on 11/10/25.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
