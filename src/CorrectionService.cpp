@@ -187,7 +187,7 @@ void CorrectionService::setSourcePort(port_handle_t srcPort) {
         }
     }
 
-    if (!srcPort) {     // if null, then we're intentionally clearly the source port
+    if (!srcPort) {     // if null, then we're intentionally clearing the source port
         source = nullptr;
         return;
     }
