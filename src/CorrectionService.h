@@ -3,7 +3,7 @@
  * @brief Class used to distribute an incoming RTCM stream of corrections to "Rover" devices
  * The term service is a little ambiguous by choice. A CorrectionService can be used on both
  * the Rover-side, receiving RTCM3 corrections from a single RTCM3 service, and forwarding to
- * many rovers. Additionally, it can be used on the Base-side, by receiving RTCM3 outfrom from
+ * many rovers. Additionally, it can be used on the Base-side, by receiving RTCM3 output from
  * a single RTK base, and forwarding it to multiple ports (most commonly tcpPorts, but not
  * always), where another CorrectionService is receiving those corrections and forwarding them
  * to one or more physical device (or even another CorrectionService).
