@@ -29,7 +29,7 @@ TEST(test_PortFactory, tcpServerPortFactory) {
 
     TcpServerPortFactory serverFactory(4321);
 
-    TEST_COUT << "Creating a TcpServerPortFactory on 127.0.0.1, listening for connections on port 4312." << std::endl;
+    TEST_COUT << "Creating a TcpServerPortFactory on 127.0.0.1, listening for connections on port 4321." << std::endl;
     auto& pm = PortManager::getInstance();
     pm.clearPortFactories();
     pm.addPortFactory(&serverFactory);
