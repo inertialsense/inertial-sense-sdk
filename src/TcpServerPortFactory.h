@@ -26,7 +26,7 @@
 #include "core/tcpPort.h"
 
 /**
- * Unlike other PortFactories, TcpServerPortFactory is NOT a singleton - since there maybe multiple instances which listen an unique ports, etc.
+ * Unlike other PortFactories, TcpServerPortFactory is NOT a singleton - since there may be multiple instances which listen an unique ports, etc.
  * By this same logic, it may make sense there no PortFactory should be a singleton; but this is definitely the first case that warrants it
  */
 class TcpServerPortFactory : public PortFactory {
