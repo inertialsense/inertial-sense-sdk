@@ -37,7 +37,6 @@ public:
         bool backgroundListener = false;    //!< if true, we'll setup a thread to process incoming connections -- note that this doesn't service those connections, just the listener
         int maxConnections = 10;            //!< the maximum number of connections that can be kept open - additional connection requests will be rejected
         bool portDefaultBlocking = false;   //!< if true, created tcpPorts will be configured for blocking by default (usually, we don't want that).
-        //!< the maximum number of connections that can be kept open
     } factoryOptions = {};
 
     explicit TcpServerPortFactory(uint16_t listenPort = 4321, const std::string& listenAddr = "127.0.0.1", int maxConnections = 10, bool portDefaultBlocking = false, bool backgroundListener = false) {
