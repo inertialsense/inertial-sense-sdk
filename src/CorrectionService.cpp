@@ -19,13 +19,8 @@ CorrectionService::CorrectionService(port_handle_t srcPort) {
 }
 
 CorrectionService::CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories) {
-    std::vector<PortFactory*> localFactories;
-    if (factories.empty()) {
-        PortManager* portManager = &PortManager::getInstance();
-        localFactories = portManager->getPortFactories();
-    } else {
-        localFactories = factories;
-    }
+    PortManager* portManager = &PortManager::getInstance();
+    std::vector<PortFactory*> localFactories = factories.empty() ? portManager->getPortFactories() : factories;
     PortFactory* portFactory = nullptr;
     uint16_t type = PORT_TYPE__UNKNOWN;
     std::string name; // Final portName
