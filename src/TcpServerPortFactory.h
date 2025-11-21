@@ -71,7 +71,7 @@ public:
 
     };
     ~TcpServerPortFactory() {
-#ifdef _WIN32
+#ifdef PLATFORM_IS_WINDOWS
         WSACleanup();
 #endif
     };
