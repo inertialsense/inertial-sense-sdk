@@ -1,13 +1,22 @@
 /**
  * @file CorrectionService.h
  * @brief Class used to distribute an incoming RTCM stream of corrections to "Rover" devices
+ * The term service is a little ambiguous by choice. A CorrectionService can be used on both
+ * the Rover-side, receiving RTCM3 corrections from a single RTCM3 service, and forwarding to
+ * many rovers. Additionally, it can be used on the Base-side, by receiving RTCM3 output from
+ * a single RTK base, and forwarding it to multiple ports (most commonly tcpPorts, but not
+ * always), where another CorrectionService is receiving those corrections and forwarding them
+ * to one or more physical device (or even another CorrectionService).
+ *
+ * In this way, the CorrectionService is purely a service which parses RTCM3 from a single port
+ * and forwards it to multiple other ports.
  *
  * @author FiriusFoxx on 9/4/25.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
  */
 
-#ifndef IS_SDK__CORRECTION_SERVICE_H
-#define IS_SDK__CORRECTION_SERVICE_H
+#ifndef IS_SDK_CORRECTION_SERVICE_H
+#define IS_SDK_CORRECTION_SERVICE_H
 
 #include <vector>
 
@@ -29,6 +38,8 @@ public:
     typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;
     typedef std::function<void(uint16_t, const void*, uint32_t)> tRTCM3PacketListenerCallback;
 
+    CorrectionService() { init(nullptr); }
+
     /**
      * The base constructor, binds the specified port as the source for corrections data that
      * will be forwarded to all associated ISDevices
@@ -47,6 +58,17 @@ public:
     explicit CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories = nullFactories);
 
     /**
+     * Sets the port to read corrections from
+     * @param port
+     */
+    void setSourcePort(port_handle_t srcPort);
+
+    /**
+     * @returns the port which provides the source corrections to all other ports
+     */
+    port_handle_t getSourcePort() { return source; }
+
+    /**
      * Adds a port to the recieve corrections from this service
      * @param port A reference to the port to send corrections to
      */
@@ -54,9 +76,9 @@ public:
 
     /**
      * Adds multiple ports to recieve corrections from this service
-     * @param ports A vector of references to devices to send corrections to
+     * @param ports_ A vector of references to devices to send corrections to
      */
-    void addPorts(const std::vector<port_handle_t>& ports) { for (auto& p : ports) { addPort(p); } }
+    void addPorts(const std::vector<port_handle_t>& ports_) { for (auto& p : ports_) { addPort(p); } }
 
     /**
      * Adds a device to the recieve corrections from this service
@@ -78,9 +100,9 @@ public:
 
     /**
      * Cease sending corrections from this service to multiple ports
-     * @param ports A vector of references to devices to cease corrections to
+     * @param ports_ A vector of references to devices to cease corrections to
      */
-    void removePorts(const std::vector<port_handle_t>& ports) { for (auto& p : ports) { removePort(p); } }
+    void removePorts(const std::vector<port_handle_t>& ports_) { for (auto& p : ports_) { removePort(p); } }
 
     /**
      * Cease sending corrections from this service a device
@@ -141,19 +163,21 @@ public:
      * Checks the source port for data and forwards it to all devices
      * @return 0 if no packets processed, positive number representing number of packets processed, negative number representing errno
      */
-    int step() const;
+    [[nodiscard]] int step() const;
 
 protected:
-    port_handle_t source{};
+    port_handle_t source {};
     std::vector<port_handle_t> ports;
 
 private:
     inline static const std::vector<PortFactory*>& nullFactories = {};
     std::vector<tRTCM3Msg1029ListenerCallback> rtcm3Msg1029Listeners;
     std::vector<tRTCM3PacketListenerCallback> rtcm3PacketListeners;
-    is_comm_instance_t packetParser{};
-    uint8_t packetBuffer[PKT_BUF_SIZE]{};
+    is_comm_instance_t packetParser = {};
     uint32_t rtcm3PacketsProcessed = 0;
+
+    pfnIsCommGenMsgHandler previousRtcm3Handler = nullptr;
+    pfnIsCommGenMsgHandler previousErrorHandler = nullptr;
 
     /**
      * Transforms one format (like NTRIP) to RTCM3 to be processed by the device
@@ -212,4 +236,4 @@ private:
 };
 
 
-#endif //IS_SDK__CORRECTION_SERVICE_H
+#endif //IS_SDK_CORRECTION_SERVICE_H
