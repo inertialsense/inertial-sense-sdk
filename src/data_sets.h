@@ -5793,7 +5793,7 @@ typedef struct PACKED
     /** High 32 bits of extened Serial Number */
     uint32_t    high;
 
-} ex_ser_num_t
+} ex_ser_num_t;
 
 /** Union of datasets */
 typedef union PACKED
