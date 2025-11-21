@@ -5779,22 +5779,6 @@ typedef struct PACKED
 #include "luna_data_sets.h"
 #endif
 
-/**
- * @brief extened device Serial Number structure 
- */
-typedef struct PACKED
-{
-    /** Low 32 bits of extened Serial Number */
-    uint32_t    low;
-
-    /** Middle 32 bits of extened Serial Number */
-    uint32_t    mid;
-
-    /** High 32 bits of extened Serial Number */
-    uint32_t    high;
-
-} ex_ser_num_t;
-
 /** Union of datasets */
 typedef union PACKED
 {
