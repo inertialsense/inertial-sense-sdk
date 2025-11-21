@@ -1011,11 +1011,11 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gpsTimeSyncPeriodMs", &gpx_flash_cfg_t::gpsTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.");
     mapper.AddMember("gpsTimeUserDelay", &gpx_flash_cfg_t::gpsTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("gpsMinimumElevation", &gpx_flash_cfg_t::gpsMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
-    str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
-    str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
-    str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
-    str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
-    mapper.AddMember("RTKCfgBits", &gpx_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
+    str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
+    str += "a=[POS=0x2,COMP=0x4], ";                        // POS  (a == 0x2)  0x000102
+    str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
+    str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";              // Ser0 (x == 0x1)  0x000100
+    mapper.AddMember("RTKCfgBits", &gpx_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRTKCfgBits;
     mapper.AddMember("gnssCn0Minimum", &gpx_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
     mapper.AddMember("gnssCn0DynMinOffset", &gpx_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddArray("reserved1", &gpx_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
