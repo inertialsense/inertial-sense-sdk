@@ -2045,14 +2045,19 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'BaseToRoverVector')
 
+
     def rtkObsGPS1(self, fig=None, axs=None):
         self.rtkObs("Compassing", DID_GPS1_RAW, fig=fig, axs=axs)
+
 
     def rtkObsGPS2(self, fig=None, axs=None):
         self.rtkObs("Compassing", DID_GPS2_RAW, fig=fig, axs=axs)
 
+
     def rtkObs(self, name, relDid, fig=None, axs=None):
-        Nf = 2
+        if len(self.active_devs) == 0:
+            return
+
         n_plots = 8
         if fig is None:
             fig = plt.figure()
@@ -2068,94 +2073,133 @@ class logPlot:
         self.configureSubplot(ax[6], 'L1 LLI')
         self.configureSubplot(ax[7], 'L5 LLI')
 
-        for i, d in enumerate(self.active_devs):
+        for idev, d in enumerate(self.active_devs):
             gps_data = self.log.data[d, relDid][0]
-            N = len(gps_data)
-            j0 = 0 # skip a few samples that may be corrupted
+            if len(gps_data) == 0:
+                continue
+            
+            Nf = len(self.log.data[0, relDid][0][0]['P'][0])
+            Nsat = 30                                           # predicted number of satellites in the log
+            Nt = round(len(self.log.data[0, relDid][0]) * 0.6)  # predicted number of time stamps in the log (usually 2 data frames per each time stamp)
+            t   = np.empty(Nt, dtype=float)
+            sat = np.empty(Nsat, dtype=int)
+            P   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+            L   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+            D   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+            LLI = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+            P[:]   = np.nan # NaNs are convenient because they are not plotted
+            L[:]   = np.nan
+            D[:]   = np.nan
 
-            # Build satellite array
-            sat = np.empty(0, dtype=int)
-            for j in range(j0, N):
-                obs = gps_data[j]
-                M = len(obs)
-                for k in range(M):
-                    sat_k = obs['sat'][k]
-                    # add satellite if not in the list and if L1 observations are valid
-                    if (sat_k != 0 and (sat_k not in sat) and 
-                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0):
-                        sat = np.append(sat, sat_k)
+            i = Nt = Nsat = 0
+            while i < len(gps_data) - 1:
+                obs = gps_data[i]
 
-            Nsat = len(sat)
-            tgps = np.zeros([N, Nsat])
-            P = np.empty([Nf, N, Nsat])
-            L = np.empty([Nf, N, Nsat])
-            D = np.empty([Nf, N, Nsat])
-            LLI  = np.empty([Nf, N, Nsat])
-            P[:] = np.nan
-            L[:] = np.nan
-            D[:] = np.nan
-            LLI[:]  = np.nan
-
-            # Fill observation arrays
-            for j in range(j0, N):
-                obs = gps_data[j]
-                M = len(obs)
-                for k in range(M):
-                    sat_k = obs['sat'][k]
-                    if sat_k == 0:
-                        continue
-                    indo = np.where(obs['sat'] == sat_k)
-                    inds = np.where(sat == sat_k)
-                    if np.size(indo) == 0 or np.size(inds) == 0:
-                        continue
-                    indo = indo[0][0]
-                    inds = inds[0][0]
-                    tgps[j,inds] = obs['time']['time'][indo] + obs['time']['sec'][indo]
-                    # Use only non-zero pseudorange and phase
-                    indP = np.flatnonzero(obs['P'][indo])
-                    indL = np.flatnonzero(obs['L'][indo])
-                    indD = np.flatnonzero(obs['D'][indo])
-                    if np.size(indP) > 0 and np.size(indL) > 0:
-                        P[indP,j,inds] = obs['P'][indo][indP]
-                        L[indL,j,inds] = obs['L'][indo][indL]
-                        D[indD,j,inds] = obs['D'][indo][indD]
-                        LLI[:,j,inds]  = obs['LLI'][indo]
-
-            for k in range(len(sat)):
-                ind = np.squeeze(np.where(tgps[:,k] != 0.0))
-                # Do not plot satellites with invalid L1 pseudorange
-                if np.isnan(P[0,ind,k]).all():
+                # Find common time stamps
+                ind = np.flatnonzero(obs['time']['time'])
+                if len(ind) == 0:
+                    i += 1
                     continue
-                # Do not plot satellites with invalid L1 phase
-                if np.isnan(L[0,ind,k]).all():
+                t1 = obs['time']['time'][ind[0]] + obs['time']['sec'][ind[0]]
+
+                # Merge data frames with the same time stamp
+                obs_next = gps_data[i + 1]
+                ind_next = np.flatnonzero(obs_next['time']['time'])
+                t1_next = obs_next['time']['time'][ind_next[0]] + obs_next['time']['sec'][ind_next[0]]
+                if t1 == t1_next:
+                    obs = np.append(obs, obs_next)
+                    ind = np.flatnonzero(obs['time']['time'])
+                    i += 1
+
+                if Nt > 0 and Nt == len(t) and t1 >= t[-1]:
+                    # Preallocated arrays need to be expanded for time
+                    t = np.append(t, t1)
+                    tmp = np.empty((Nf, len(sat), 1))
+                    tmp[:] = np.nan
+                    P   = np.append(P, tmp, axis=2)
+                    L   = np.append(L, tmp, axis=2)
+                    D   = np.append(D, tmp, axis=2)
+                    LLI = np.append(LLI, tmp, axis=2)
+                    Nt += 1
+                elif Nt == 0 or t1 >= t[Nt-1]:
+                    t[Nt] = t1
+                    Nt += 1
+                else:
+                    i += 1
                     continue
-                dt = np.diff(tgps[ind,k])
-                t = np.squeeze(tgps[ind, k])
-                Pk = P[:,ind,k]
-                Lk = L[:,ind,k]
-                Dk = D[:,ind,k]
-                LLIk = LLI[:,ind,k]
-                ind1 = np.squeeze(np.where(dt > 10*dt[0])) # jump in time
-                if np.size(ind1) == 0:
-                    ind1 = 0
-                elif np.size(ind1) > 1:
-                    ind1 = ind1[-1]
-                ind1 = ind1 + 1
-                ax[0].plot(t[ind1:,], Pk[0,ind1:], label=('Sat %s' % sat[k]))
-                ax[1].plot(t[ind1:,], Pk[1,ind1:])
-                ax[2].plot(t[ind1:,], Lk[0,ind1:])
-                ax[3].plot(t[ind1:,], Lk[1,ind1:])
-                ax[4].plot(t[ind1:,], Dk[0,ind1:])
-                ax[5].plot(t[ind1:,], Dk[1,ind1:])
-                ax[6].plot(t[ind1:,], LLIk[0,ind1:])
-                ax[7].plot(t[ind1:,], LLIk[1,ind1:])
-                self.legends_add(ax[0].legend(ncol=2))
+
+                # Find common satellites and create data arrays. Assumption: satellites are sorted in ascending order.
+                sats = obs['sat'][ind]
+                P_   = obs['P'][ind]
+                L_   = obs['L'][ind]
+                D_   = obs['D'][ind]
+                LLI_ = obs['LLI'][ind]
+                i_ = 0
+                while i_ < len(sats):
+                    sat_i = sats[i_]
+                    P_i   = P_[i_]
+                    L_i   = L_[i_]
+                    D_i   = D_[i_]
+                    LLI_i = LLI_[i_]
+                    if P_i[0] == 0 or L_i[0] == 0: # skip data with zero L1 observations
+                        i_ += 1
+                        continue
+                    if sat_i not in sat:
+                        if Nsat > 0 and Nsat == len(sat):
+                            # Preallocated arrays need to be expanded in sat dimension
+                            sat = np.append(sat, sat_i)
+                            tmp = np.empty((Nf, 1, len(t)))
+                            tmp[:] = np.nan
+                            P   = np.append(P, tmp, axis=1)
+                            L   = np.append(L, tmp, axis=1)
+                            D   = np.append(D, tmp, axis=1)
+                            tmp = np.zeros((Nf, 1, len(t)))
+                            LLI = np.append(LLI, tmp, axis=1)
+                        else:
+                            sat[Nsat] = sat_i
+                        isat = Nsat
+                        Nsat += 1
+                    else:
+                        isat = np.squeeze(np.where(sat == sat_i))
+
+                    for f in range(Nf):
+                        if P_i[f] != 0:
+                            P[f, isat, Nt-1] = P_i[f]
+                        if L_i[f] != 0:
+                            L[f, isat, Nt-1] = L_i[f]
+                        if D_i[f] != 0:
+                            D[f, isat, Nt-1] = D_i[f]
+                    LLI[:, isat, Nt-1] = LLI_i
+                    i_ += 1
+                i += 1
+                #### End of data processing loop ###
+
+            # Reduce data arrays if they are too big
+            t   = t[0:Nt]
+            sat = sat[0:Nsat]
+            P   = P[:, 0:Nsat, 0:Nt]
+            L   = L[:, 0:Nsat, 0:Nt]
+            D   = D[:, 0:Nsat, 0:Nt]
+            LLI = LLI[:, 0:Nsat, 0:Nt]
+
+            for k in range(Nsat):
+                ax[0].plot(t, P[0,k,:], label=('Sat %s' % sat[k]))
+                ax[1].plot(t, P[1,k,:])
+                ax[2].plot(t, L[0,k,:])
+                ax[3].plot(t, L[1,k,:])
+                ax[4].plot(t, D[0,k,:])
+                ax[5].plot(t, D[1,k,:])
+                ax[6].plot(t, LLI[0,k,:])
+                ax[7].plot(t, LLI[1,k,:])
+                if idev == 0:
+                    self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
             a.grid(True)
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs')
+
 
     def rtkObsDoubleDiff(self, fig=None, axs=None):
         name = "Compassing"
@@ -2166,9 +2210,6 @@ class logPlot:
         if len(self.active_devs) == 0:
             return
         
-        Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
-        Nsat = 30                                                 # predicted number of satellites in the log
-        Nt = round(len(self.log.data[0, DID_GPS1_RAW][0]) * 0.6)  # predicted number of time stamps in the log (usually 2 data frames per each time stamp)
         n_plots = 8
         if fig is None:
             fig = plt.figure()
@@ -2184,13 +2225,16 @@ class logPlot:
         self.configureSubplot(ax[6], 'L1 Receiver-2 SNR', 'dB*Hz')
         self.configureSubplot(ax[7], 'L5 Receiver-2 SNR', 'dB*Hz')
 
-        # for id_, d in enumerate(self.active_devs):
+        # for idev, d in enumerate(self.active_devs):
         
         d = self.active_devs[0]
 
         gps1_data = self.log.data[d, DID_GPS1_RAW][0]
         gps2_data = self.log.data[d, DID_GPS2_RAW][0]
 
+        Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
+        Nsat = 30                                                 # predicted number of satellites in the log
+        Nt = round(len(self.log.data[0, DID_GPS1_RAW][0]) * 0.6)  # predicted number of time stamps in the log (usually 2 data frames per each time stamp)
         t    = np.empty(Nt, dtype=float)
         sat  = np.empty(Nsat, dtype=int)
         dP   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
@@ -2270,16 +2314,15 @@ class logPlot:
             snr2_ = obs2['SNR'][ind2]
             dPref = np.zeros(Nf)
             dLref = np.zeros(Nf)
-            i_ = 0
-            j_ = 0
+            i_ = j_ = 0
             while i_ < len(sats1) and j_ < len(sats2):
                 sat_i = sats1[i_]
                 sat_j = sats2[j_]
                 if sat_i < sat_j:
-                    i_ = i_ + 1
+                    i_ += 1
                     continue
                 if sat_i > sat_j:
-                    j_ = j_ + 1
+                    j_ += 1
                     continue
                 # First matching sat for double-differencing (makes plots centered around zero)
                 for f in range(Nf):
@@ -2294,8 +2337,8 @@ class logPlot:
                 snr1_i = snr1_[i_]
                 snr2_j = snr2_[j_]
                 if P1_i[0] == 0 or P2_j[0] == 0 or L1_i[0] == 0 or L2_j[0] == 0: # skip data with zero L1 observations
-                    i_ = i_ + 1
-                    j_ = j_ + 1
+                    i_ += 1
+                    j_ += 1
                     continue
                 if sat_i not in sat:
                     if Nsat > 0 and Nsat == len(sat):
