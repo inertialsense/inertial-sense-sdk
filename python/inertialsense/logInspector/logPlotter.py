@@ -2155,9 +2155,9 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_sd')
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs')
 
-    def rtkObsSingleDiff(self, fig=None, axs=None):
+    def rtkObsDoubleDiff(self, fig=None, axs=None):
         name = "Compassing"
         if len(self.log.data[0, DID_GPS1_RAW][0]) == 0:
             return
@@ -2167,6 +2167,8 @@ class logPlot:
             return
         
         Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
+        Nsat = 30                                                 # predicted number of satellites in the log
+        Nt = round(len(self.log.data[0, DID_GPS1_RAW][0]) * 0.6)  # predicted number of time stamps in the log (usually 2 data frames per each time stamp)
         n_plots = 8
         if fig is None:
             fig = plt.figure()
@@ -2189,14 +2191,18 @@ class logPlot:
         gps1_data = self.log.data[d, DID_GPS1_RAW][0]
         gps2_data = self.log.data[d, DID_GPS2_RAW][0]
 
-        t    = np.empty(0, dtype=float)
-        sat  = np.empty(0, dtype=int)
-        dP   = np.empty((Nf, 0, 0), dtype=float) # (freq, sat, time)
-        dL   = np.empty((Nf, 0, 0), dtype=float) # (freq, sat, time)
-        snr1 = np.empty((Nf, 0, 0), dtype=float) # (freq, sat, time)
-        snr2 = np.empty((Nf, 0, 0), dtype=float) # (freq, sat, time)
-        i = 0
-        j = 0
+        t    = np.empty(Nt, dtype=float)
+        sat  = np.empty(Nsat, dtype=int)
+        dP   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+        dL   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+        snr1 = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+        snr2 = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+        dP[:]   = np.nan # NaNs are convenient because they are not plotted
+        dL[:]   = np.nan
+        snr1[:] = np.nan
+        snr2[:] = np.nan
+
+        i = j = Nt = Nsat = 0
         while i < len(gps1_data) - 1 and j < len(gps2_data) - 1:
             obs1 = gps1_data[i]
             obs2 = gps2_data[j]
@@ -2205,18 +2211,18 @@ class logPlot:
             ind1 = np.flatnonzero(obs1['time']['time'])
             ind2 = np.flatnonzero(obs2['time']['time'])
             if len(ind1) == 0:
-                i = i + 1
+                i += 1
                 continue
             if len(ind2) == 0:
-                j = j + 1
+                j += 1
                 continue
             t1 = obs1['time']['time'][ind1[0]] + obs1['time']['sec'][ind1[0]]
             t2 = obs2['time']['time'][ind2[0]] + obs2['time']['sec'][ind2[0]]
             if t1 < t2:
-                i = i + 1
+                i += 1
                 continue
             if t1 > t2:
-                j = j + 1
+                j += 1
                 continue
 
             # Merge data frames with the same time stamp
@@ -2229,13 +2235,14 @@ class logPlot:
             if t1 == t1_next:
                 obs1 = np.append(obs1, obs1_next)
                 ind1 = np.flatnonzero(obs1['time']['time'])
-                i = i + 1
+                i += 1
             if t2 == t2_next:
                 obs2 = np.append(obs2, obs2_next)
                 ind2 = np.flatnonzero(obs2['time']['time'])
-                j = j + 1
+                j += 1
 
-            if len(t) == 0 or t1 >= t[-1]:
+            if Nt > 0 and Nt == len(t) and t1 >= t[-1]:
+                # Preallocated arrays need to be expanded for time
                 t = np.append(t, t1)
                 tmp = np.empty((Nf, len(sat), 1))
                 tmp[:] = np.nan
@@ -2243,9 +2250,13 @@ class logPlot:
                 dL   = np.append(dL, tmp, axis=2)
                 snr1 = np.append(snr1, tmp, axis=2)
                 snr2 = np.append(snr2, tmp, axis=2)
+                Nt += 1
+            elif Nt == 0 or t1 >= t[Nt-1]:
+                t[Nt] = t1
+                Nt += 1
             else:
-                i = i + 1
-                j = j + 1
+                i += 1
+                j += 1
                 continue
 
             # Find common satellites and create data arrays. Assumption: satellites are sorted in ascending order.
@@ -2257,7 +2268,6 @@ class logPlot:
             L2_   = obs2['L'][ind2]
             snr1_ = obs1['SNR'][ind1]
             snr2_ = obs2['SNR'][ind2]
-            N  = len(t)
             dPref = np.zeros(Nf)
             dLref = np.zeros(Nf)
             i_ = 0
@@ -2288,34 +2298,46 @@ class logPlot:
                     j_ = j_ + 1
                     continue
                 if sat_i not in sat:
-                    sat = np.append(sat, sat_i)
-                    tmp = np.empty((Nf, 1, N))
-                    tmp[:] = np.nan
-                    dP   = np.append(dP, tmp, axis=1)
-                    dL   = np.append(dL, tmp, axis=1)
-                    snr1 = np.append(snr1, tmp, axis=1)
-                    snr2 = np.append(snr2, tmp, axis=1)
-                    isat = -1
+                    if Nsat > 0 and Nsat == len(sat):
+                        # Preallocated arrays need to be expanded in sat dimension
+                        sat = np.append(sat, sat_i)
+                        tmp = np.empty((Nf, 1, len(t)))
+                        tmp[:] = np.nan
+                        dP   = np.append(dP, tmp, axis=1)
+                        dL   = np.append(dL, tmp, axis=1)
+                        snr1 = np.append(snr1, tmp, axis=1)
+                        snr2 = np.append(snr2, tmp, axis=1)
+                    else:
+                        sat[Nsat] = sat_i
+                    isat = Nsat
+                    Nsat += 1
                 else:
                     isat = np.squeeze(np.where(sat == sat_i))
 
                 for f in range(Nf):
                     if dPref[f] != 0 and P1_i[f] != 0 and P2_j[f] != 0:
-                        dP[f,isat,-1] = P1_i[f] - P2_j[f] - dPref[f]
+                        dP[f, isat, Nt-1] = P1_i[f] - P2_j[f] - dPref[f]
                     if dLref[f] != 0 and L1_i[f] != 0 and L2_j[f] != 0:
-                        dL[f,isat,-1] = L1_i[f] - L2_j[f] - dLref[f]
+                        dL[f, isat, Nt-1] = L1_i[f] - L2_j[f] - dLref[f]
 
-                snr1[:,isat,-1] = snr1_i * 0.25 # scaled by 4 in the log
-                snr2[:,isat,-1] = snr2_j * 0.25 #
-                i_ = i_ + 1
-                j_ = j_ + 1
-
-            i = i + 1
-            j = j + 1
+                snr1[:, isat, Nt-1] = snr1_i
+                snr2[:, isat, Nt-1] = snr2_j
+                i_ += 1
+                j_ += 1
+            i += 1
+            j += 1
             #### End of data processing loop ###
 
+        # Reduce data arrays if they are too big
+        t    = t[0:Nt]
+        sat  = sat[0:Nsat]
+        dP   = dP[:, 0:Nsat, 0:Nt]
+        dL   = dL[:, 0:Nsat, 0:Nt]
+        snr1 = snr1[:, 0:Nsat, 0:Nt] * 0.25 # scaled by 4 in the log
+        snr2 = snr2[:, 0:Nsat, 0:Nt] * 0.25 #
+
         # Build common satellite array for gps1 and gps2
-        for k in range(len(sat)):
+        for k in range(Nsat):
             # Do not plot satellites that appeared only for a short time
             ind = np.flatnonzero(~np.isnan(dP[0,k,:]))
             ax[0].plot(t, dP[0,k,:], label=('Sat %s' % sat[k]))
@@ -2332,7 +2354,7 @@ class logPlot:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_sd')
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_dd')
 
     def rtkPosMisc(self, fig=None, axs=None):
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig, axs=axs)
