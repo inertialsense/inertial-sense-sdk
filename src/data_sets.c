@@ -991,6 +991,7 @@ int getNmeaMsgId(const void *msg, int msgSize)
         else if (UINT32_MATCH(talker+2,"GSV_"))     { return decodeGSV(talker, msgSize-1); }
         else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GNRMC; }
         else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GNVTG; }
+        else if (UINT32_MATCH(talker+2,"HDT,"))     { return NMEA_MSG_ID_GNHDT; }
         else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GNZDA; }
         break;
 
@@ -1048,6 +1049,7 @@ int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
     case NMEA_MSG_ID_INFO:      memcpy(buf, "INFO",  n = 4);    break;
     case NMEA_MSG_ID_GNGSV:     memcpy(buf, "GNGSV", n = 5);    break;
     case NMEA_MSG_ID_GNVTG:     memcpy(buf, "GNVTG", n = 5);    break;
+    case NMEA_MSG_ID_GNHDT:     memcpy(buf, "GNHDT", n = 5);    break;
     case NMEA_MSG_ID_INTEL:     memcpy(buf, "INTEL", n = 5);    break;
     case NMEA_MSG_ID_POWGPS:    memcpy(buf, "POWGPS", n = 6);   break;
     case NMEA_MSG_ID_POWTLV:    memcpy(buf, "POWTLV", n = 6);   break;
@@ -1074,4 +1076,3 @@ unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
     for (i = pos; i < pos + len; i++) bits = (bits << 1) + ((buff[i / 8] >> (7 - i % 8)) & 1u);
     return bits;
 }
-

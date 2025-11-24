@@ -1014,6 +1014,18 @@ TEST(protocol_nmea, VTG)
     }
 }
 
+TEST(protocol_nmea, HDT)
+{
+    const char msg[] = "$GPHDT,123.4,T*2C\r\n";
+    float headingRad = 0.0f;
+    ASSERT_EQ(0, nmea_parse_hdt(msg, sizeof(msg), headingRad));
+    ASSERT_NEAR(123.4f * C_DEG2RAD_F, headingRad, 1.0e-5f);
+
+    const char invalidMsg[] = "$GPHDT,,T*1C\r\n";
+    headingRad = 0.0f;
+    ASSERT_EQ(-1, nmea_parse_hdt(invalidMsg, sizeof(invalidMsg), headingRad));
+}
+
 TEST(protocol_nmea, INTEL)
 {
     dev_info_t info = {};
@@ -1950,5 +1962,4 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     ASSERT_TRUE(gpsSat->numSats <= MAX_NUM_SATELLITES);
     ASSERT_TRUE(gpsSig->numSigs <= MAX_NUM_SAT_SIGNALS);
 }
-
 

@@ -3127,6 +3127,33 @@ int nmea_parse_vtg(const char a[], int aSize, gps_vel_t &vel, const double refLl
     return 0;
 }
 
+int nmea_parse_hdt(const char a[], const int aSize, float &headingRad)
+{
+    (void)aSize;
+    char *ptr = (char *)&a[7];    // $GxHDT,
+
+    // Heading in degrees (true)
+    char *fieldEnd = ptr;
+    while (*fieldEnd != 0 && *fieldEnd != ',' && *fieldEnd != '*')
+    {
+        ++fieldEnd;
+    }
+    if (fieldEnd == ptr)
+    {
+        return -1;
+    }
+    headingRad = strtof(ptr, nullptr) * C_DEG2RAD_F;
+
+    // Literal 'T' field
+    ptr = ASCII_find_next_field(ptr);
+    if (*ptr != 'T' && *ptr != 't')
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS)
 {
     (void)aSize;
@@ -3181,6 +3208,7 @@ std::string nmeaMsgIdToTalker(int msgId)
         case NMEA_MSG_ID_INFO:  return "INFO";
         case NMEA_MSG_ID_GNGSV: return "GNGSV";
         case NMEA_MSG_ID_GNVTG: return "GNVTG";
+        case NMEA_MSG_ID_GNHDT: return "GNHDT";
         case NMEA_MSG_ID_INTEL: return "INTEL";
         case NMEA_MSG_ID_ASCE:  return "ASCE";
         case NMEA_MSG_ID_BLEN:  return "BLEN";
@@ -3194,4 +3222,3 @@ std::string nmeaMsgIdToTalker(int msgId)
 
     return "";
 }
-

@@ -2005,9 +2005,10 @@ enum eNmeaMsgId
     NMEA_MSG_ID_INFO        = 14,
     NMEA_MSG_ID_GNGSV       = 15,
     NMEA_MSG_ID_GNVTG       = 16,
-    NMEA_MSG_ID_INTEL       = 17,
-    NMEA_MSG_ID_POWGPS      = 18,
-    NMEA_MSG_ID_POWTLV      = 19,
+    NMEA_MSG_ID_GNHDT       = 17,
+    NMEA_MSG_ID_INTEL       = 18,
+    NMEA_MSG_ID_POWGPS      = 19,
+    NMEA_MSG_ID_POWTLV      = 20,
     NMEA_MSG_ID_COUNT,
 
     // IMX/GPX Input Commands
@@ -2122,6 +2123,7 @@ typedef struct {
 #define NMEA_RMC_BITS_INFO          (1<<NMEA_MSG_ID_INFO)
 #define NMEA_RMC_BITS_GNGSV         (1<<NMEA_MSG_ID_GNGSV)
 #define NMEA_RMC_BITS_GNVTG         (1<<NMEA_MSG_ID_GNVTG)
+#define NMEA_RMC_BITS_GNHDT         (1<<NMEA_MSG_ID_GNHDT)
 #define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 #define NMEA_RMC_BITS_POWGPS        (1<<NMEA_MSG_ID_POWGPS)
 #define NMEA_RMC_BITS_POWTLV        (1<<NMEA_MSG_ID_POWTLV)
