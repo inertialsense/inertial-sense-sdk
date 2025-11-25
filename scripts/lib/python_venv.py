@@ -24,7 +24,7 @@ def find_virtualenv() -> str:
     Locate the best .venv to use for this repo layout.
     If none found, create one under <this>/../.venv (i.e., alongside SDK/scripts).
     """
-    script_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # …/SDK/scripts
+    script_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # …/scripts
     search_roots = [
         os.getcwd(),
         script_dir,
