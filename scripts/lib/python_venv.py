@@ -13,8 +13,11 @@ def is_virtual_environment(path: str) -> bool:
 
 def create_virtual_environment(path: str) -> str:
     if os.path.exists(path):
-        print(f"Virtual environment already exists: '{path}'.")
-        return path
+        if is_virtual_environment(path):
+            print(f"Virtual environment already exists: '{path}'.")
+            return path
+        else:
+            raise ValueError(f"Path exists but is not a valid virtual environment: '{path}'.")
     venv.create(path, with_pip=True)
     print(f"New virtual environment created: '{path}'.")
     return path
