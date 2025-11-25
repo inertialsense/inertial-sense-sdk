@@ -130,7 +130,7 @@ if (WIN32)
 elseif(APPLE)
     # macOS specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/apple
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/Xcode
 			${UDEV_INCLUDE_DIRS}
 			${UDEV_LIB_INCLUDE}
     )
