@@ -74,7 +74,9 @@ def activate_virtual_environment() -> bool:
         return False
     if sp not in sys.path:
         sys.path.insert(0, sp)
-    print(f"Activated virtual environment: {venv_path}")
+        print(f"Activated virtual environment: {venv_path}")
+    else:
+        print(f"Virtual environment already active: {venv_path}")
     return True
 
 if __name__ == "__main__":
