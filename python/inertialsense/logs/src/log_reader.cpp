@@ -224,6 +224,7 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
             HANDLE_MSG(DID_GPS1_RAW, dev_log_->gps1Raw);
             HANDLE_MSG(DID_GPS2_RAW, dev_log_->gps2Raw);
             HANDLE_MSG(DID_WHEEL_ENCODER, dev_log_->wheelEncoder);
+            HANDLE_MSG(DID_EXTERNAL_HEADING, dev_log_->externalHeading);
             HANDLE_MSG(DID_GROUND_VEHICLE, dev_log_->groundVehicle);
             HANDLE_MSG(DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl);
             HANDLE_MSG(DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage);
@@ -321,6 +322,7 @@ void LogReader::forwardData(int device_id)
     forward_message(DID_GPS1_RAW, dev_log_->gps1Raw, device_id);
     forward_message(DID_GPS2_RAW, dev_log_->gps2Raw, device_id);
     forward_message(DID_WHEEL_ENCODER, dev_log_->wheelEncoder, device_id);
+    forward_message(DID_EXTERNAL_HEADING, dev_log_->externalHeading, device_id);
     forward_message(DID_GROUND_VEHICLE, dev_log_->groundVehicle, device_id);
     forward_message(DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl, device_id);
     forward_message(DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage, device_id);

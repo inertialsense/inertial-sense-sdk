@@ -98,6 +98,7 @@ struct DeviceLog
     std::vector<gps_raw_wrapper_t> gps1Raw {1};
     std::vector<gps_raw_wrapper_t> gps2Raw {1};
     std::vector<wheel_encoder_t> wheelEncoder;
+    std::vector<external_heading_t> externalHeading;
     std::vector<ground_vehicle_t> groundVehicle;
     std::vector<evb_luna_velocity_control_t> evbVelocityControl;
     std::vector<diag_msg_t> diagnosticMessage;

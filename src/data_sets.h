@@ -150,6 +150,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
 #define DID_GPX_PORT_MONITOR            (eDataIDs)127 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_GPX_LAST                              127 /** Last of GPX DIDs */
+#define DID_EXTERNAL_HEADING            (eDataIDs)128 /** (external_heading_t) External heading truth measurement */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -1895,6 +1896,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 #define RMC_BITS_GPX_RTK_DBG            0x0010000000000000
+#define RMC_BITS_EXTERNAL_HEADING       0x0020000000000000      // External heading truth measurements
 
 #define RMC_BITS_EVENT                  0x0800000000000000
 
@@ -3390,6 +3392,17 @@ typedef struct PACKED
     float var_wheel_theta;
 
 } wheel_encoder_t;
+
+/** (DID_EXTERNAL_HEADING) Message to communicate external heading measurements to GPS-INS */
+typedef struct PACKED
+{
+    /** Time of measurement in seconds within the current GPS week */
+    double timeOfWeek;
+
+    /** Heading measurement relative to true north (rad) */
+    float heading;
+
+} external_heading_t;
 
 enum eWheelCfgBits
 {
@@ -5791,6 +5804,7 @@ typedef union PACKED
     mag_cal_t                   magCal;
     barometer_t                 baro;
     wheel_encoder_t             wheelEncoder;
+    external_heading_t          externalHeading;
     ground_vehicle_t            groundVehicle;
     pos_measurement_t           posMeasurement;
     pimu_t                      pImu;

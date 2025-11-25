@@ -110,6 +110,7 @@ DID_GPX_DEBUG_ARRAY             = 124
 DID_GPX_BIT                     = 125
 DID_GPX_RMC                     = 126
 DID_GPX_PORT_MONITOR            = 127
+DID_EXTERNAL_HEADING            = 128
 
 NUM_DIDS                        = 132
 
@@ -184,8 +185,9 @@ did_name_lookup = {
  DID_STROBE_IN_TIME : "strobeInTime",
  DID_GPS1_RAW : "gps1Raw",
  DID_GPS2_RAW : "gps2Raw",
- DID_WHEEL_ENCODER : "wheelEncoder",
- DID_GROUND_VEHICLE : "groundVehicle",
+DID_WHEEL_ENCODER : "wheelEncoder",
+DID_EXTERNAL_HEADING : "externalHeading",
+DID_GROUND_VEHICLE : "groundVehicle",
  DID_DIAGNOSTIC_MESSAGE : "diagnosticMessage",
  DID_SURVEY_IN : "surveyIn",
  DID_EVB2 : "evb2",

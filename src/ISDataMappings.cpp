@@ -876,6 +876,13 @@ static void PopulateMapWheelEncoder(data_set_t data_set[DID_COUNT], uint32_t did
     mapper.AddMember("var_wheel_theta", &wheel_encoder_t::var_wheel_theta, DATA_TYPE_F32, "rad^2",     "Wheel encoder angle noise variance");
 }
 
+static void PopulateMapExternalHeading(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<external_heading_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeek", &external_heading_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of measurement within current GPS week", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("heading", &external_heading_t::heading, DATA_TYPE_F32, SYM_DEG, "Heading measurement relative to true north", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
+}
+
 static void PopulateMapGroundVehicle(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ground_vehicle_t> mapper(data_set, did);
@@ -1762,7 +1769,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_BIT",                      // 125
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
-    "",                                 // 128
+    "DID_EXTERNAL_HEADING",             // 128
     "",                                 // 129
     "",                                 // 130
     ""                                  // 131
@@ -1813,6 +1820,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapMagnetometer(m_data_set, DID_MAGNETOMETER);
     PopulateMapBarometer(m_data_set, DID_BAROMETER);
     PopulateMapWheelEncoder(m_data_set, DID_WHEEL_ENCODER);
+    PopulateMapExternalHeading(m_data_set, DID_EXTERNAL_HEADING);
 
     PopulateMapGpsPos(m_data_set, DID_GPS1_RTK_POS);
     PopulateMapGpsRtkRel(m_data_set, DID_GPS1_RTK_POS_REL);
@@ -2041,6 +2049,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_COMMUNICATIONS_LOOPBACK:
     case DID_BIT:
     case DID_WHEEL_ENCODER:
+    case DID_EXTERNAL_HEADING:
     case DID_SYS_FAULT:
     case DID_SURVEY_IN:
     case DID_PORT_MONITOR:

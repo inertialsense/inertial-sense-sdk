@@ -3937,6 +3937,27 @@ class logPlot:
             a.set_title(titles[i])
             a.grid(True)
 
+    def externalHeading(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('External Heading - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(1, 1, sharex=True)
+        if isinstance(ax, np.ndarray):
+            ax = ax[0]
+
+        for d in self.active_devs:
+            time = getTimeFromGpsTow(self.getData(d, DID_EXTERNAL_HEADING, 'timeOfWeek'), True)
+            if len(time) == 0:
+                continue
+            heading = self.getData(d, DID_EXTERNAL_HEADING, 'heading')
+            ax.plot(time, heading, label=self.log.serials[d])
+
+        ax.set_ylabel('Heading (rad)')
+        ax.set_xlabel('Time (s)')
+        ax.legend(ncol=2)
+        ax.grid(True)
+
     def groundVehicleStatus(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()

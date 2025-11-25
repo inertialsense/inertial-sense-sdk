@@ -754,6 +754,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);              break;
         case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);      break;
         case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr);  break;
+        case DID_EXTERNAL_HEADING:  str = DataToStringExternalHeading(d.externalHeading, data->hdr); break;
         case DID_GPX_RTOS_INFO:     str = DataToStringGRTOS(d.gRtosInfo, data->hdr);            break;
         case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr);        break;
         case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr);   break;
@@ -1674,6 +1675,29 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
         wheel.wrap_count_l,     // Left wheel angle wrap
         wheel.wrap_count_r      // Right wheel angle wrap
     );
+    return buf;
+}
+
+string cInertialSenseDisplay::DataToStringExternalHeading(const external_heading_t &heading, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime = 0;
+    double dtMs = 1000.0 * (heading.timeOfWeek - lastTime);
+    lastTime = heading.timeOfWeek;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", heading.timeOfWeek);
+#endif
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", heading %7.3f rad (%7.3f deg)\n",
+        heading.heading,
+        heading.heading * C_RAD2DEG_F);
     return buf;
 }
 

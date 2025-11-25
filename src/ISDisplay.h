@@ -129,6 +129,7 @@ public:
     static std::string DataToStringDevInfo(const dev_info_t &info, int flags=0);
     std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
     std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
+    std::string DataToStringExternalHeading(const external_heading_t &heading, const p_data_hdr_t& hdr);
     std::string DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr);
     std::string DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr);
     std::string DataToStringPortMonitor(const port_monitor_t &portMon, const p_data_hdr_t& hdr);

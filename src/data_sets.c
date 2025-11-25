@@ -552,6 +552,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 95: DID_REFERENCE_IMU
         0,                      // 96: DID_IMU3_RAW
         0,                      // 97: DID_IMU_RAW
+        [DID_EXTERNAL_HEADING]  = offsetsOnlyTimeFirst,
         0,                      // 98:
         0,                      // 99:
         0,                      // 100:
@@ -685,6 +686,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GPX_BIT]               = RMC_BITS_GPX_BIT,
     [DID_GPX_PORT_MONITOR]      = RMC_BITS_GPX_PORT_MON,
     [DID_RTK_DEBUG]             = RMC_BITS_GPX_RTK_DBG,
+    [DID_EXTERNAL_HEADING]      = RMC_BITS_EXTERNAL_HEADING,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -1074,4 +1076,3 @@ unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
     for (i = pos; i < pos + len; i++) bits = (bits << 1) + ((buff[i / 8] >> (7 - i % 8)) & 1u);
     return bits;
 }
-
