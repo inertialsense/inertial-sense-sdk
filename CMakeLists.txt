@@ -158,7 +158,7 @@ elseif(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 	# Link in macOS specific packages
-    target_link_libraries(${PROJECT_NAME} PUBLIC $"<LINK_LIBRARY:FRAMEWORK,Foundation>" "$<LINK_LIBRARY:FRAMEWORK,IOKit>" "$<LINK_LIBRARY:FRAMEWORK,Security>")
+    target_link_libraries(${PROJECT_NAME} PUBLIC "$<LINK_LIBRARY:FRAMEWORK,Foundation>" "$<LINK_LIBRARY:FRAMEWORK,IOKit>" "$<LINK_LIBRARY:FRAMEWORK,Security>")
 elseif(LINUX)
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
