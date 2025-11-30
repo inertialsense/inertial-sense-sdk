@@ -75,6 +75,9 @@ endif()
 list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSony.*")
 list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 
+# Exclude ISDeviceCal (Qt-dependent code, moved to standard C++ but not needed for SDK builds)
+# list(FILTER SOURCES_SDK EXCLUDE REGEX "ISDeviceCal.*")
+
 list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
 # find_package(udev)

@@ -578,6 +578,16 @@ public:
     bool LoadImxFlashConfigFromFile(std::string path, port_handle_t port = 0);
     bool LoadGpxFlashConfigFromFile(std::string path, port_handle_t port = 0);
 
+
+    /**
+     * @brief UploadImxCalibrationFromFile
+     * @param path - Path to YAML calibration file
+     * @param port - Handle of current device
+     * @return true for failure to upload file, false for success.
+     */
+    bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
+
+
     std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
     std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 

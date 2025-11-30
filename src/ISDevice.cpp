@@ -1146,7 +1146,6 @@ bool ISDevice::LoadGpxFlashConfigFromFile(std::string path)
         [this](gpx_flash_cfg_t& cfg) { return SetGpxFlashConfig(cfg); });
 }
 
-
 bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 

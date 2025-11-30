@@ -26,7 +26,8 @@ extern "C" {
 
 
 #define DEBUG_LOGGING
-#define IS_LOG_LEVEL           IS_LOG_LEVEL_INFO
+// #define IS_LOG_LEVEL           IS_LOG_LEVEL_INFO
+#define IS_LOG_LEVEL           IS_LOG_LEVEL_WARN
 #define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
 
 #ifndef DEBUG_LOGGING

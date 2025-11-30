@@ -500,7 +500,12 @@ public:
 
     void SaveFlashConfigFile(std::string path);
 
-    int LoadFlashConfig(std::string path);
+    /**
+     * @brief LoadImxCalibration
+     * @param cal - Reference to sensor_cal_t struct to be populated
+     * @return 0 on complete, 1 on partial, -1 on failure.
+     */
+    // int LoadImxCalibration(sensor_cal_t &cal, bool start);
 
     /**
     * Gets current update status for selected device index
