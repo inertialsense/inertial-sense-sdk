@@ -1661,7 +1661,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_SENSORS_UCAL",                 // 24
     "DID_SENSORS_TCAL",                 // 25
     "DID_SENSORS_TC_BIAS",              // 26
-    "DID_UNUSED_27",                    // 27
+    "DID_GPS2_TIMEPULSE",               // 27
     "DID_SENSORS_ADC",                  // 28
     "DID_SCOMP",                        // 29
     "DID_GPS1_VEL",                     // 30
@@ -1836,6 +1836,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpsVersion(m_data_set, DID_GPS1_VERSION);
     PopulateMapGpsVersion(m_data_set, DID_GPS2_VERSION);
     PopulateMapGpsTimepulse(m_data_set, DID_GPS1_TIMEPULSE);
+    PopulateMapGpsTimepulse(m_data_set, DID_GPS2_TIMEPULSE);
 
     PopulateMapGpsRaw(m_data_set, DID_GPS1_RAW);
     PopulateMapGpsRaw(m_data_set, DID_GPS2_RAW);
@@ -2012,6 +2013,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_GPS1_VERSION:
     case DID_GPS2_VERSION:
     case DID_GPS1_TIMEPULSE:
+    case DID_GPS2_TIMEPULSE:
     case DID_SYS_SENSORS:
     case DID_SENSORS_ADC:
     case DID_SENSORS_ADC_SIGMA:
