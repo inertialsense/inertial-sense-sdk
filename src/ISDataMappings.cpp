@@ -137,7 +137,8 @@ std::string renderVariableAndStatsToString(const data_info_t& info, std::any val
     } catch (std::bad_any_cast& e) {
     }
 
-    ss << " " << info.units[0];
+    if (info.units.size() > 0)  ss << " " << info.units[0];
+    
     return ss.str();
 }
 
