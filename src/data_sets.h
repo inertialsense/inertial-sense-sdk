@@ -962,18 +962,18 @@ typedef struct PACKED
 /** IMU Status */
 enum eImuStatus
 {
-    /** Sensor saturation on IMU1 gyro */
-    IMU_STATUS_SATURATION_IMU1_GYR              = (int)0x00000001,
-    /** Sensor saturation on IMU2 gyro */
-    IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
-    /** Sensor saturation on IMU3 gyro */
-    IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000004,
-    /** Sensor saturation on IMU1 accelerometer */
-    IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000008,
-    /** Sensor saturation on IMU2 accelerometer */
-    IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000010,
-    /** Sensor saturation on IMU3 accelerometer */
-    IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000020,
+    /** Sensor saturation on IMU1 gyro X */
+    IMU_STATUS_SATURATION_IMU_GYR_X             = (int)0x00000001,
+    /** Sensor saturation on IMU2 gyro Y */
+    IMU_STATUS_SATURATION_IMU_GYR_Y             = (int)0x00000002,
+    /** Sensor saturation on IMU3 gyro Z */
+    IMU_STATUS_SATURATION_IMU_GYR_Z             = (int)0x00000004,
+    /** Sensor saturation on IMU accelerometer X */
+    IMU_STATUS_SATURATION_IMU_ACC_X             = (int)0x00000008,
+    /** Sensor saturation on IMU accelerometer Y */
+    IMU_STATUS_SATURATION_IMU_ACC_Y             = (int)0x00000010,
+    /** Sensor saturation on IMU accelerometer Z */
+    IMU_STATUS_SATURATION_IMU_ACC_Z             = (int)0x00000020,
     /** Sensor saturation mask */
     IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
 
