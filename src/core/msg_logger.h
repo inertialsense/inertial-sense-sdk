@@ -22,7 +22,7 @@ extern "C" {
 #include <stdarg.h>
 #include <string.h>
 
-#include "types.h"
+#include "core/types.h"
 
 
 #define DEBUG_LOGGING
@@ -81,13 +81,13 @@ extern "C" {
         } \
     } while (0); }
 
-    #define log_error(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_ERROR,      "[ERROR]", __VA_ARGS__)
-    #define log_warn(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_WARN,       "[WARN]",  __VA_ARGS__)
-    #define log_info(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO,       "[INFO]",  __VA_ARGS__)
-    #define log_info_more(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO_MORE,  "[INFO]",  __VA_ARGS__)
-    #define log_debug(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG,      "[DEBUG]", __VA_ARGS__)
-    #define log_debug_more(facility, ...)   IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG_MORE, "[DEBUG]", __VA_ARGS__)
-    #define log_bombastic(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_BOMBASTIC,  "[CRAZY]", __VA_ARGS__)
+    #define log_error(facility, ...)        ( IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_ERROR,      "[ERROR]", __VA_ARGS__) )
+    #define log_warn(facility, ...)         ( IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_WARN,       "[WARN]",  __VA_ARGS__) )
+    #define log_info(facility, ...)         ( IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO,       "[INFO]",  __VA_ARGS__) )
+    #define log_info_more(facility, ...)    ( IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO_MORE,  "[INFO]",  __VA_ARGS__) )
+    #define log_debug(facility, ...)        ( IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG,      "[DEBUG]", __VA_ARGS__) )
+    #define log_debug_more(facility, ...)   ( IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG_MORE, "[DEBUG]", __VA_ARGS__) )
+    #define log_bombastic(facility, ...)    ( IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_BOMBASTIC,  "[CRAZY]", __VA_ARGS__) )
 
     // #define debug_message(facility, ...)    IS_LOG_MSG(facility, "[DEBUG]", 4, __VA_ARGS__)
 
