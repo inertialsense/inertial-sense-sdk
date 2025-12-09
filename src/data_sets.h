@@ -64,7 +64,7 @@ typedef uint32_t eDataIDs;
 #define DID_SENSORS_UCAL                (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
 #define DID_SENSORS_TCAL                (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
-#define DID_UNUSED_27                   (eDataIDs)27 /** UNUSED */
+#define DID_GPS2_TIMEPULSE              (eDataIDs)27 /** (gps_timepulse_t) GPS2 PPS time synchronization. */
 #define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SCOMP                       (eDataIDs)29 /** INTERNAL USE ONLY (sensor_compensation_t) */
 #define DID_GPS1_VEL                    (eDataIDs)30 /** (gps_vel_t) GPS 1 velocity data */
@@ -3300,7 +3300,7 @@ enum eIoConfig2
     IO_CFG2_GNSS2_PPS_SOURCE_G13_val        = (int)0xC0,
 };
 
-#define IO_CFG_GNSS2_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG2_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG2_GNSS2_PPS_SOURCE_MASK)
+#define IO_CFG2_GNSS2_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG2_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG2_GNSS2_PPS_SOURCE_MASK)
 
 enum ePlatformConfig
 {
@@ -4536,7 +4536,7 @@ typedef struct PACKED
     uGpsRawData data;
 } gps_raw_t;
 
-// (DID_GPS1_TIMEPULSE)
+// (DID_GPS1_TIMEPULSE, DID_GPS2_TIMEPULSE)
 typedef struct
 {
     /*! (s)    Week seconds offset from MCU to GPS time. */
