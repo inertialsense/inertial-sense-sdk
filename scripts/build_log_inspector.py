@@ -176,8 +176,9 @@ def launch_log_inspector(open_dir: str | None = None, internal: bool | None = No
     except Exception:
         pass
     args = ["logInspector"] + ([open_dir] if open_dir else [])
+    module_name = "inertialsense.logInspector.logInspectorInternal" if internal else "inertialsense.logInspector.logInspector"
     with _argv(args):
-        runpy.run_module(("inertialsense.logInspector.logInspectorInternal" if "--run-internal" in sys.argv else "inertialsense.logInspector.logInspector"), run_name="__main__")
+        runpy.run_module(module_name, run_name="__main__")
 
 # ---------- CLI ----------
 def main() -> int:
