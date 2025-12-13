@@ -6,7 +6,6 @@ import subprocess
 import sys, os, signal, ctypes, yaml
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
-from PyQt5.QtWidgets import QApplication
 
 # import logInspector as logInspector
 
