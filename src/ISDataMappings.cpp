@@ -772,7 +772,7 @@ static void PopulateMapGpsTimepulse(data_set_t data_set[DID_COUNT], uint32_t did
     mapper.AddMember("syncCount", &gps_timepulse_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
     mapper.AddMember("badPulseAgeCount", &gps_timepulse_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
     mapper.AddMember("ppsInterruptReinitCount", &gps_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GPS PPS interrupt re-initalization.");
-    mapper.AddMember("plsCount", &gps_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "Counter for hardware PPS timepulse events.");
+    mapper.AddMember("plsCount", &gps_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GPS PPS via GPIO, not interrupt.");
     mapper.AddMember("lastSyncTimeMs", &gps_timepulse_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
     mapper.AddMember("sinceLastSyncTimeMs", &gps_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
 }
