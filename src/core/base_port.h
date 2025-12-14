@@ -244,8 +244,8 @@ static inline port_stats_t* portStats(port_handle_t port) { return portIsValid(p
  * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
  */
 static inline uint16_t portStatsReset(port_handle_t port) {
-    if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    if (!BASE_PORT(port)->stats) return PORT_ERROR__NOT_SUPPORTED;
+    if (!portIsValid(port)) return (uint16_t)PORT_ERROR__INVALID;
+    if (!BASE_PORT(port)->stats) return (uint16_t)PORT_ERROR__NOT_SUPPORTED;
 
     memset(BASE_PORT(port)->stats, 0, sizeof(port_stats_t)) ;
     return PORT_ERROR__NONE;

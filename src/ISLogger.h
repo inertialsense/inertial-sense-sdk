@@ -211,7 +211,7 @@ public:
 
         for (auto d : DeviceLogs())
         {
-            d->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+            d->SetKmlConfig(m_gpsData, m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
         }
     }
 
@@ -248,6 +248,7 @@ public:
     std::shared_ptr<cDeviceLog> getDeviceLogByPort(port_handle_t port);
 
     static inline int logPortData(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData) {
+        (void)op; // Suppress unused parameter warning
         // remember, that as a logger, we GENERALLY are only interested in WRITING data, regardless of whether that data is sent or received.
         if (!userData)
             return -1;

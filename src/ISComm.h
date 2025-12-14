@@ -679,11 +679,6 @@ typedef struct {
 /** Pop off the packing argument, we can safely allow packing and shifting in memory at this point */
 POP_PACK
 
-// Read parse general message handler function
-// typedef void(*pfnIsCommParseMsgHandler)(com_manager_t* cmInstance, com_manager_port_t* cmPort, is_comm_instance_t* comm, int32_t port, protocol_type_t ptype)
-// typedef protocol_type_t(*pfnIsCommParseMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
-
-
 /**
 * Init simple communications interface - call this before doing anything else
 * @param instance communications instance, please ensure that you have set the buffer and bufferSize

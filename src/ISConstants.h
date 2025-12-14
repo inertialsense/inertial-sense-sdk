@@ -149,7 +149,7 @@ extern "C" {
     #define FREE(m) free(m)
 #endif 
 
-#if __ZEPHYR__
+#if defined(__ZEPHYR__)
     // #define SNPRINTF snprintfcb
     #define SNPRINTF snprintf
     #define VSNPRINTF vsnprintf
@@ -195,7 +195,7 @@ extern "C" {
     #endif
 #endif // defined(_MSC_VER)
 
-#if __ZEPHYR__
+#if defined(__ZEPHYR__)
     #include <zephyr/irq.h>
     #define BEGIN_CRITICAL_SECTION  irq_lock();
     #define END_CRITICAL_SECTION    irq_unlock(0);
@@ -211,7 +211,7 @@ extern "C" {
     #define _RMDIR(dir) f_unlink(dir)
     #define _GETCWD(buf, len) f_getcwd(buf, len)
 #elif !PLATFORM_IS_EMBEDDED
-    #if PLATFORM_IS_WINDOWS
+    #if defined(PLATFORM_IS_WINDOWS)
         #include <direct.h>
         #include <sys/utime.h>
         #define _MKDIR(dir) _mkdir(dir)
@@ -778,9 +778,9 @@ extern "C" {
 #define C_180p0_DEG2RAD_F   3.1415926535897900f
 
 // Angle Unwrap
-#define UNWRAP_DEG_F64(x)           { if ((x) < (-180.0)) { (x) += (360.0);    } if ((x) > (180.0))    { (x) -= (360.0);    } }    // unwrap to +- 180
+#define UNWRAP_DEG_F64(x)           { if ((x) < (-180.0))  { (x) += (360.0);     } if ((x) > (180.0))     { (x) -= (360.0);     } }    // unwrap to +- 180
 #define UNWRAP_DEG_F32(x)           { if ((x) < (-180.0f)) { (x) += (360.0f);    } if ((x) > (180.0f))    { (x) -= (360.0f);    } }    // unwrap to +- 180
-#define UNWRAP_90DEG_F64(x)         { if ((x) < (-90.0))  { (x) += (180.0);    } if ((x) > (90.0))     { (x) -= (180.0);    } }    // unwrap to +- 90
+#define UNWRAP_90DEG_F64(x)         { if ((x) < (-90.0))   { (x) += (180.0);     } if ((x) > (90.0))      { (x) -= (180.0);     } }    // unwrap to +- 90
 #define UNWRAP_90DEG_F32(x)         { if ((x) < (-90.0f))  { (x) += (180.0f);    } if ((x) > (90.0f))     { (x) -= (180.0f);    } }    // unwrap to +- 90
 #define UNWRAP_F64(x)               { if ((x) < (-C_PI))   { (x) += (C_TWOPI);   } if ((x) > (C_PI))      { (x) -= (C_TWOPI);   } }    // unwrap to +- PI
 #define UNWRAP_F32(x)               { if ((x) < (-C_PI_F)) { (x) += (C_TWOPI_F); } if ((x) > (C_PI_F))    { (x) -= (C_TWOPI_F); } }    // unwrap to +- PI

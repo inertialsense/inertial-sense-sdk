@@ -689,7 +689,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             break;
         }
     }
-    debugDumpBuffer("<< ", buffer, totalRead);
+    // debugDumpBuffer("{{ ", buffer, totalRead);
     return totalRead;
 }
 
@@ -725,7 +725,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         serialPort->error = NULL;
     }
 
-    debugDumpBuffer("{{ ", buffer, result);
+    debugDumpBuffer("<< ", buffer, result);
     return result;
 }
 
@@ -879,9 +879,10 @@ static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 
     int bytesAvailable = 0;
     struct pollfd p = { .fd = handle->fd, .events = POLLIN };
+    int rc;
 
-    again:
-    int rc = poll(&p, 1, 0);
+again:
+    rc = poll(&p, 1, 0);
     if (rc > 0) {
         /* Treat POLLIN or urgent/hangup with data as readable */
         if (p.revents & (POLLIN | POLLPRI)) {

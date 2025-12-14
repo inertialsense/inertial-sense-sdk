@@ -9,6 +9,8 @@
 #include "CorrectionService.h"
 
 #include <utility>
+#include <algorithm>
+#include <string>
 
 #include "PortManager.h"
 
@@ -17,11 +19,8 @@ CorrectionService::CorrectionService(port_handle_t srcPort) {
 }
 
 CorrectionService::CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories) {
-    std::vector<PortFactory*> localFactories = factories;
-    if (localFactories == nullFactories) {
-        PortManager* portManager = &PortManager::getInstance();
-        localFactories = portManager->getPortFactories();
-    }
+    PortManager* portManager = &PortManager::getInstance();
+    std::vector<PortFactory*> localFactories = factories.empty() ? portManager->getPortFactories() : factories;
     PortFactory* portFactory = nullptr;
     uint16_t type = PORT_TYPE__UNKNOWN;
     std::string name; // Final portName
@@ -70,30 +69,34 @@ bool CorrectionService::hasDevice(device_handle_t device) {
 }
 
 uint32_t CorrectionService::addRTCM3Msg1029Listeners(const std::function<void(std::string)>& callback) {
-    this->rtcm3Msg1029Listeners.push_back(callback);
-    return this->rtcm3Msg1029Listeners.size()-1;
+    rtcm3Msg1029Listeners.push_back(callback);
+    return (uint32_t)rtcm3Msg1029Listeners.size()-1;
 }
 
 void CorrectionService::removeRTCM3Msg1029Listeners(const uint32_t id) {
-    this->rtcm3Msg1029Listeners.erase(this->rtcm3Msg1029Listeners.begin() + id);
+    if (id < rtcm3Msg1029Listeners.size()) {
+        rtcm3Msg1029Listeners.erase(rtcm3Msg1029Listeners.begin() + id);
+    }
 }
 
 uint32_t CorrectionService::addRTCM3PacketListeners(const std::function<void(uint16_t, const void*, uint32_t)>& callback) {
-    this->rtcm3PacketListeners.push_back(callback);
-    return this->rtcm3PacketListeners.size()-1;
+    rtcm3PacketListeners.push_back(callback);
+    return (uint32_t)rtcm3PacketListeners.size()-1;
 }
 
 void CorrectionService::removeRTCM3PacketListeners(const uint32_t id) {
-    this->rtcm3PacketListeners.erase(this->rtcm3PacketListeners.begin() + id);
+    if (id < rtcm3PacketListeners.size()) {
+        rtcm3PacketListeners.erase(rtcm3PacketListeners.begin() + id);
+    }
 }
 
 int CorrectionService::step() const {
     if (!portIsOpened(source) && portOpen(source)) {
         return -1;
     }
-    int rtcm3PacketsProcessedPrevCount = rtcm3PacketsProcessed;
+    unsigned int rtcm3PacketsProcessedPrevCount = rtcm3PacketsProcessed;
     is_comm_port_parse_messages(source);
-    return rtcm3PacketsProcessed - rtcm3PacketsProcessedPrevCount;
+    return (int)(rtcm3PacketsProcessed - rtcm3PacketsProcessedPrevCount);
 }
 
 /**
@@ -106,6 +109,10 @@ int CorrectionService::step() const {
  * @return Number of bytes processed
  */
 uint32_t CorrectionService::packetTransformer(const uint8_t *inputBuffer, const uint32_t inputLength, uint8_t *finalBuffer, const uint32_t finalBufferSize) {
+    (void)inputBuffer;
+    (void)inputLength;
+    (void)finalBuffer;
+    (void)finalBufferSize;
     return 0;
 }
 
@@ -172,26 +179,42 @@ void CorrectionService::sendData(const uint8_t *inputBuffer, const uint32_t inpu
     }
 }
 
-void CorrectionService::init(port_handle_t srcPort) {
-    source = srcPort;
-    ports = std::vector<port_handle_t>();
-    rtcm3Msg1029Listeners = std::vector<tRTCM3Msg1029ListenerCallback>();
-    //is_comm_init(&packetParser, packetBuffer, sizeof(packetBuffer), NULL);
+void CorrectionService::setSourcePort(port_handle_t srcPort) {
+    if (source != nullptr) {
+        if (portIsValid(source)) {
+            is_comm_register_port_msg_handler(source, _PTYPE_RTCM3, previousRtcm3Handler);
+            is_comm_register_port_msg_handler(source, _PTYPE_PARSE_ERROR, previousErrorHandler);
+        }
+    }
 
+    if (!srcPort) {     // if null, then we're intentionally clearing the source port
+        source = nullptr;
+        return;
+    }
+
+    if (!portIsValid(srcPort))  // if not null, but neither valid, ignore it
+        return;
+
+    source = srcPort;
     COMM_PORT(source)->comm.cb.context = this;
-    COMM_PORT(source)->comm.cb.protocolMask = _PTYPE_RTCM3;
-    is_comm_register_port_msg_handler(source, _PTYPE_RTCM3, [](void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) {
+    previousRtcm3Handler = is_comm_register_port_msg_handler(source, _PTYPE_RTCM3, [](void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) {
         auto* cs = static_cast<CorrectionService*>(ctx);
         return (cs && cs->source == port) ? cs->onRtcm3Handler(msg, msgSize, port) : -1;
     });
-    COMM_PORT(source)->comm.cb.context = this;
-    is_comm_register_port_msg_handler(source, _PTYPE_PARSE_ERROR, [](void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) {
+    previousErrorHandler = is_comm_register_port_msg_handler(source, _PTYPE_PARSE_ERROR, [](void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) {
         auto* cs = static_cast<CorrectionService*>(ctx);
         return (cs && cs->source == port) ? cs->onRawDataHandler(msg, msgSize, port) : -1;
     });
 }
 
+void CorrectionService::init(port_handle_t srcPort) {
+    ports.clear();
+    rtcm3Msg1029Listeners.clear();
+    setSourcePort(srcPort);
+}
+
 int CorrectionService::onRtcm3Handler(const unsigned char* msg, int msgSize, port_handle_t port) {
+    (void)port;
     rtcm3PacketsProcessed++;
 
     if ((COMM_PORT(source)->comm.rxPkt.id == 1029) && (COMM_PORT(source)->comm.rxPkt.data.size < 1024))
@@ -214,6 +237,7 @@ int CorrectionService::onRtcm3Handler(const unsigned char* msg, int msgSize, por
 }
 
 int CorrectionService::onRawDataHandler(const unsigned char* msg, int msgSize, port_handle_t port) {
+    (void)port;
     uint8_t bufferA[PKT_BUF_SIZE] = {0};
     uint8_t bufferB[PKT_BUF_SIZE] = {0};
 

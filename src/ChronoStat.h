@@ -82,8 +82,8 @@ public:
      */
     inline uint32_t lastLocalTsMs() {
         if (cnt < 1) return 0;
-        auto duration = localTimeTs.time_since_epoch(); // Get the duration since the epoch
-        return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+        auto dur = localTimeTs.time_since_epoch(); // Get the duration since the epoch
+        return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count());
     }
 
     /**
@@ -185,9 +185,9 @@ public:
                 dtMax = -INVALID_DDT_MIN_STAT;
             } else {
                 ddt = dt - dtLast;
-                double alpha = 1.0 / (1.0 + ddtCnt);
-                double beta = 1.0 - alpha;
-                ddtAvg = beta * ddtAvg + alpha * ddt;
+                double alphaLocal = 1.0 / (1.0 + ddtCnt);
+                double betaLocal = 1.0 - alphaLocal;
+                ddtAvg = betaLocal * ddtAvg + alphaLocal * ddt;
                 ddtCnt++;
 
                 if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMin %.3f  ", dtMin); }
@@ -205,7 +205,7 @@ public:
 
     /**
      * @brief a utility function to generate a summary of the stat values
-     * @param multiline if true, will generate a multi-line string with the second line contianing ddt stats.
+     * @param multiline if true, will generate a multi-line string with the second line containing ddt stats.
      * @return a string summarizing the values managed by this stat.
      */
     std::string toString(bool multiline = false) {

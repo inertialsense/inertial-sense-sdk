@@ -74,8 +74,9 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
                         return 1;       // success, we match all 'waitForLength' bytes
                     nMatch++;
                 } else {
+                    // failed to match the full sequence, so reset back to looking for the first char
                     nMatch = 0;
-                    mPtr = sPtr;
+                    mPtr = NULL;
                 }
             }
             if (mPtr && nMatch) {

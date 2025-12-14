@@ -128,16 +128,21 @@ float ISDevice::fwUpdatePercentCompleted() {
  */
 bool ISDevice::fwUpdate(p_data_t* msg) {
     std::unique_lock<std::mutex> lock(fwUpdateMutex, std::try_to_lock);
+    // check if our mutex is already locked, if so, we're recursing into this function, and we shouldn't...
     if (!lock.owns_lock())
         return true;
 
     if (fwUpdater) {
-        // check if our mutex is already locked, if so, we're recursing into this function, and we shouldn't...
+        if (portIsValid(port) && !isConnected())
+            connect(true);  // especially if we're updated - this port should never really be closed (right??)
 
         if (msg) fwUpdater->processMessage(msg);
         fwUpdater->step();
 
         auto activeCmd = fwUpdater->getActiveCommand();
+        if (&activeCmd != &nullCmd)
+            fwLastMessage = activeCmd.resultMsg;
+
         if (activeCmd.cmd == "upload") {
             if (fwUpdater->getActiveTarget() != fwLastTarget) {
                 fwHasError = false;
@@ -162,13 +167,6 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
                     fwHasError = true;
                 }
             }
-
-        } else if (activeCmd.cmd == "waitfor") {
-            fwLastMessage = "Waiting for response from device.";
-        } else if (activeCmd.cmd == "reset") {
-            fwLastMessage = "Resetting device.";
-        } else if (activeCmd.cmd == "delay") {
-            fwLastMessage = "Waiting...";
         }
 
         if (!fwUpdater->hasPendingCommands()) {
@@ -205,17 +203,21 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
 
 bool ISDevice::handshakeISbl() {
     static const uint8_t handshakerChar = 'U';
+    uint8_t readCh = 0;
 
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
-    for (int i = 0; i < BOOTLOADER_RETRIES; i++) {
+    for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
+        // OLD WAY : if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
+        while (portRead(port, &readCh, 1) == 1) {
+            if (readCh == handshakerChar)
+                return true;    // received a responding handshake char, so success
+        }
+
         if (portWrite(port, &handshakerChar, 1) != 1) {
             return false;   // failed to write, so there is an error
         }
-
-        if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
-            return true;    // received a responding handshake char, so success
-        }
+        SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
     }
 
     return false;
@@ -228,6 +230,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
         hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
     }
 
+    // clear any partial commands and flush the rx buffer
     for (int i = 0; i < 5; i++) {
         portWrite(port, (uint8_t*)"\n", 1);
         SLEEP_MS(2);
@@ -308,7 +311,7 @@ bool ISDevice::validate(uint32_t timeout) {
         }
 
         // FIXME - Don't tolerate SERIAL_PORT specific conditions in ISDevice
-        if (SERIAL_PORT(port)->errorCode == ENOENT) {
+        if (port && (SERIAL_PORT(port)->errorCode == ENOENT)) {
             hdwId = oldHdwId, devInfo = oldDevInfo;
             return false;
         }
@@ -326,12 +329,14 @@ bool ISDevice::validate(uint32_t timeout) {
                 GetData(DID_DEV_INFO);
                 break;
             case QUERYTYPE_ISbootloader:
+                queryDeviceInfoISbl(250);
+                break;
             case QUERYTYPE_mcuBoot:
                 break;
 
         }
 
-        SLEEP_MS(20);
+        SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
         step();
 
         nextQueryType = static_cast<queryTypes>((int)nextQueryType + 1 % (int)QUERYTYPE_MAX);
@@ -342,6 +347,7 @@ bool ISDevice::validate(uint32_t timeout) {
         GetData(DID_DEV_INFO);
         GetData(DID_SYS_PARAMS);
         GetData(DID_FLASH_CONFIG);
+        GetData(DID_GPX_FLASH_CFG);
     }
 
     previousQueryType = QUERYTYPE_NMEA;
@@ -397,20 +403,20 @@ int ISDevice::validateAsync(uint32_t timeout) {
         case ISDevice::queryTypes::QUERYTYPE_NMEA :
             // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using NMEA protocol.", SERIAL_PORT(port)->portName);
             SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
-            SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISB :
             // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using ISB protocol.", SERIAL_PORT(port)->portName);
             GetData(DID_DEV_INFO);
-            SLEEP_MS(2); // give just enough time for the device to receive, process and respond to the query
             break;
         case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
+            queryDeviceInfoISbl(250);
+            break;
         case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
             // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' mcuBoot/SMP protocol.", SERIAL_PORT(port)->portName);
             break;
     }
 
-
+    SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
     previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
     return 0;
 }
@@ -591,6 +597,12 @@ bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
     return true;
 }
 
+/**
+ * Issues the specified SYS_CMD to the device. Note that this does not confirm or validate whether the requested command
+ * was received and processed, only that the command was successfully sent.
+ * @param command the command to issue
+ * @return 0 on success, -1 on failure
+ */
 int ISDevice::SetSysCmd(const uint32_t command) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
@@ -615,8 +627,8 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
     int n = 0;
     if (nmeaMsg[0] != '$') buf[n++] = '$'; // Append header if missing
     memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
-    n += nmeaMsg.size();
-    nmea_sprint_footer((char*)buf, sizeof(buf), n);
+    n += static_cast<int>(nmeaMsg.size());
+    nmea_sprint_footer(reinterpret_cast<char *>(buf), sizeof(buf), n);
     return SendRaw(buf, n);
 }
 
@@ -1196,7 +1208,8 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             log_debug(IS_LOG_ISDEVICE, "Received DID_GPX_FLASH_CFG");
             break;
         case DID_FIRMWARE_UPDATE:
-            fwUpdater->processMessage(data);
+            if (fwUpdater)
+                fwUpdater->processMessage(data);
             break;
 
         // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
@@ -1312,14 +1325,7 @@ bool ISDevice::assignPort(port_handle_t newPort) {
 
         is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), portCbs.all);
         is_comm_register_port_callbacks(port, &portCbs);
-
-#if ENABLE_PACKET_CONTINUATION
-        // Packet data continuation
-        memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
-#endif
     }
-//    if ((hdwId != IS_HARDWARE_ANY) || devInfo.serialNumber)
-//        log_debug(IS_LOG_ISDEVICE, "Device %s bound to port %s.", getIdAsString().c_str(), getPortName().c_str());
     return true;
 }
 

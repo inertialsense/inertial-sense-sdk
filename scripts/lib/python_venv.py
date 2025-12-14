@@ -25,7 +25,7 @@ def find_virtualenv() -> str:
     Locate the best .venv to use for this repo layout.
     If none found, create one under <this>/../.venv (i.e., alongside SDK/scripts).
     """
-    script_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # …/scripts
+    script_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # …/SDK/scripts
     search_roots = [
         os.getcwd(),
         script_dir,
@@ -59,13 +59,14 @@ def _site_packages_path(venv_path: str) -> Optional[str]:
     py_dirs = [d for d in os.listdir(lib_dir) if d.startswith('python')]
     if not py_dirs:
         return None
-    py_dirs.sort()
-    sp = os.path.join(lib_dir, py_dirs[-1], 'site-packages')
+    # Select the highest version directory using version-aware comparison
+    latest_py_dir = max(py_dirs, key=lambda d: tuple(map(int, d.replace('python', '').split('.'))))
+    sp = os.path.join(lib_dir, latest_py_dir, 'site-packages')
     return sp if os.path.isdir(sp) else None
 
 def activate_virtual_environment() -> bool:
     """
-    “Activate” the venv for this Python process by prepending its site-packages to sys.path.
+    "Activate" the venv for this Python process by prepending its site-packages to sys.path.
     Returns True on success, False otherwise.
     """
     venv_path = find_virtualenv()
@@ -74,10 +75,8 @@ def activate_virtual_environment() -> bool:
         print(f"Warning: site-packages not found under venv: {venv_path}")
         return False
     if sp not in sys.path:
-        sys.path.insert(0, sp)
+        sys.path.insert(1, sp)
         print(f"Activated virtual environment: {venv_path}")
-    else:
-        print(f"Virtual environment already active: {venv_path}")
     return True
 
 if __name__ == "__main__":

@@ -64,7 +64,7 @@ typedef uint32_t eDataIDs;
 #define DID_SENSORS_UCAL                (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
 #define DID_SENSORS_TCAL                (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
-#define DID_UNUSED_27                   (eDataIDs)27 /** UNUSED */
+#define DID_GPS2_TIMEPULSE              (eDataIDs)27 /** (gps_timepulse_t) GPS2 PPS time synchronization. */
 #define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SCOMP                       (eDataIDs)29 /** INTERNAL USE ONLY (sensor_compensation_t) */
 #define DID_GPS1_VEL                    (eDataIDs)30 /** (gps_vel_t) GPS 1 velocity data */
@@ -378,7 +378,7 @@ enum eHdwStatusFlags
     /** Communications parse error count */
     HDW_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x00F00000,
     HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 20,
-#define HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
+#define HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus & HDW_STATUS_COM_PARSE_ERR_COUNT_MASK) >> HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
     /** (BIT) Built-in self-test running */
     HDW_STATUS_BIT_RUNNING                      = (int)0x01000000,
@@ -454,7 +454,7 @@ enum eGpsStatus
     GPS_STATUS_FIX_3D                               = (int)0x00000300,
     GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK               = (int)0x00000400,
     GPS_STATUS_FIX_TIME_ONLY                        = (int)0x00000500,
-    GPS_STATUS_FIX_UNUSED1                          = (int)0x00000600,
+    GPS_STATUS_FIX_REF_LLA                          = (int)0x00000600,
     GPS_STATUS_FIX_UNUSED2                          = (int)0x00000700,
     GPS_STATUS_FIX_DGPS                             = (int)0x00000800,
     GPS_STATUS_FIX_SBAS                             = (int)0x00000900,
@@ -595,6 +595,7 @@ static const is_hardware_t IS_HARDWARE_EVB_2_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE
 static const is_hardware_t IS_HARDWARE_UINS_3_2 = ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2);
 static const is_hardware_t IS_HARDWARE_IMX      = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, -1, -1);
 static const is_hardware_t IS_HARDWARE_IMX_5_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
+static const is_hardware_t IS_HARDWARE_IMX_6_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 6, 0);
 static const is_hardware_t IS_HARDWARE_GPX      = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, -1, -1);
 static const is_hardware_t IS_HARDWARE_GPX_1_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, 1, 0);
 
@@ -1638,25 +1639,6 @@ enum eSystemCommand
     SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
     SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967287)
     SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967287)
-
-    // TODO: DEBUG REMOVE ONCE TX->RX bug (TM)
-    SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
-    SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 71,           // (uint32 inv: 4294967224)
-
-    SYS_CMD_TEST_SER0_TX_INPUT                          = 72,           // (uint32 inv: 4294967223)
-    
-    // PULL UP/DOWN RESISTOR COMMANDS
-    SYS_CMD_TEST_SER0_TX_PP_NONE                        = 80,           // (uint32 inv: 4294967215)
-    SYS_CMD_TEST_SER0_TX_PP_U                           = 81,           // (uint32 inv: 4294967214)
-    SYS_CMD_TEST_SER0_TX_PP_D                           = 82,           // (uint32 inv: 4294967213)
-
-    // The following two commands are EXPERIMENTAL for debuging TX->RX bug (TM) 
-    // THEY ARE UNTESTED AND MAY CAUSE UNEXPECTED BEHAVIOR.
-    // TODO: Action date (after 8/8/25): 
-    //  A: Remove if does not fix tx->rx bug. 
-    //  B: If it does help consider expanding to all pins to prevent from happening.
-    SYS_CMD_OUTPUT_IDLE                                 = 95,           // (uint32 inv: 4294967200)
-    SYS_CMD_EXIT_OUTPUT_IDLE                            = 96,           // (uint32 inv: 4294967199)
     
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
@@ -2768,8 +2750,8 @@ enum eSysConfigBits
     SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
     SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
     SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
-    SYS_CFG_BITS_BOR_THREHOLD_MASK                      = (int)0x00C00000,
-    SYS_CFG_BITS_BOR_THREHOLD_OFFSET                    = 22,
+    SYS_CFG_BITS_BOR_THRESHOLD_MASK                     = (int)0x00C00000,
+    SYS_CFG_BITS_BOR_THRESHOLD_OFFSET                   = 22,
 
     /** Use reference IMU in EKF instead of onboard IMU */
     SYS_CFG_USE_REFERENCE_IMU_IN_EKF                    = (int)0x01000000,
@@ -2942,20 +2924,42 @@ enum eRTKConfigBits
 
     /** Enable RTK base and output RTCM3 data from GPS 2 on the current serial port */
     RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT        = (int)0x02000000,
+    
+    /** If this bit is set in conjuction with set current port this will clear current port */
+    RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CLEAR_CUR_PORT       = (int)0x04000000,
 
     /** Mask of RTK base and output RTCM3 data on the current serial ports */
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CUR_PORT_MASK        = (RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_CUR_PORT | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_CUR_PORT),
 
+    RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK = (
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  ),
+
+    RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK = (
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB  ),
+
+    RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK = (
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  ),
+
+    RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK = (
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 |
+            RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB  ),
+
+    RTK_CFG_BITS_BASE_UBLOX_MASK = ( RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK | RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK),
+    RTK_CFG_BITS_BASE_RTCM3_MASK = ( RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK | RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK),
+
     /** All base station bits */
-    RTK_CFG_BITS_BASE_MODE = (
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB),
+    RTK_CFG_BITS_BASE_MODE = ( RTK_CFG_BITS_BASE_UBLOX_MASK | RTK_CFG_BITS_BASE_RTCM3_MASK),
 
     /** Base station bits enabled on Ser0 */
     RTK_CFG_BITS_RTK_BASE_SER0 = (
@@ -3240,61 +3244,63 @@ enum eIoConfig
 
 enum eIoConfig2
 {
-    // NOTE IO_CFG_G11_STROBE_INPUT and IO_CFG_G12_STROBE_INPUT
+    // NOTE IO_CFG2_G11_STROBE_INPUT and IO_CFG2_G12_STROBE_INPUT
     // cannot be set at the same time. If this is attemped 
-    // IO_CFG_G12_STROBE_INPUT will be set to IO_CFG_G12_SWO
+    // IO_CFG2_G12_STROBE_INPUT will be set to IO_CFG2_G12_SWO
     /** G11 (SWDIO) - (eIoConfig2[0]) */
-    IO_CFG_G11_OFFSET                       = (int)0,
-    IO_CFG_G11_MASK                         = (int)0x01,
-    IO_CFG_G11_BITMASK                      = (int)(IO_CFG_G11_MASK<<IO_CFG_G11_OFFSET),
-    IO_CFG_G11_SWDIO                        = (int)0,
-    IO_CFG_G11_STROBE_INPUT                 = (int)1,
-    IO_CFG_G11_SWDIO_val                    = (int)0x00,
-    IO_CFG_G11_STROBE_INPUT_val             = (int)0x01,
-    IO_CFG_G11_DEFAULT                      = IO_CFG_G11_SWDIO,
+    IO_CFG2_G11_OFFSET                      = (int)0,
+    IO_CFG2_G11_MASK                        = (int)0x01,
+    IO_CFG2_G11_BITMASK                     = (int)(IO_CFG2_G11_MASK<<IO_CFG2_G11_OFFSET),
+    IO_CFG2_G11_SWDIO                       = (int)0,
+    IO_CFG2_G11_STROBE_INPUT                = (int)1,
+    IO_CFG2_G11_SWDIO_val                   = (int)0x00,
+    IO_CFG2_G11_STROBE_INPUT_val            = (int)0x01,
+    IO_CFG2_G11_DEFAULT                     = IO_CFG2_G11_SWDIO,
 
 
     /** G12 (SWO) - (eIoConfig2[2-1]) */
-    IO_CFG_G12_OFFSET                       = (int)1,
-    IO_CFG_G12_MASK                         = (int)0x03,
-    IO_CFG_G12_BITMASK                      = (int)(IO_CFG_G12_MASK<<IO_CFG_G12_OFFSET),
-    IO_CFG_G12_SWO                          = (int)0,
-    IO_CFG_G12_XSCL                         = (int)1,
-    IO_CFG_G12_STROBE_INPUT                 = (int)2,
-    IO_CFG_G12_SWO_val                      = (int)0x00,
-    IO_CFG_G12_XSCL_val                     = (int)0x02,
-    IO_CFG_G12_STROBE_INPUT_val             = (int)0x04,
-    IO_CFG_G12_DEFAULT                      = IO_CFG_G12_SWO,
+    IO_CFG2_G12_OFFSET                      = (int)1,
+    IO_CFG2_G12_MASK                        = (int)0x03,
+    IO_CFG2_G12_BITMASK                     = (int)(IO_CFG2_G12_MASK<<IO_CFG2_G12_OFFSET),
+    IO_CFG2_G12_SWO                         = (int)0,
+    IO_CFG2_G12_XSCL                        = (int)1,
+    IO_CFG2_G12_STROBE_INPUT                = (int)2,
+    IO_CFG2_G12_SWO_val                     = (int)0x00,
+    IO_CFG2_G12_XSCL_val                    = (int)0x02,
+    IO_CFG2_G12_STROBE_INPUT_val            = (int)0x04,
+    IO_CFG2_G12_DEFAULT                     = IO_CFG2_G12_SWO,
 
     /** G13 (DRDY) - (eIoConfig2[4-3]) */
-    IO_CFG_G13_OFFSET                       = (int)3,
-    IO_CFG_G13_MASK                         = (int)0x03,
-    IO_CFG_G13_BITMASK                      = (int)(IO_CFG_G13_MASK<<IO_CFG_G13_OFFSET),
-    IO_CFG_G13_DRDY                         = (int)0,
-    IO_CFG_G13_XSDA                         = (int)1,
-    IO_CFG_G13_STROBE_INPUT                 = (int)2,
-    IO_CFG_G13_DRDY_val                     = (int)0x00,
-    IO_CFG_G13_XSDA_val                     = (int)0x08,
-    IO_CFG_G13_STROBE_INPUT_val             = (int)0x10,
-    IO_CFG_G13_DEFAULT                      = (int)IO_CFG_G13_DRDY,
+    IO_CFG2_G13_OFFSET                      = (int)3,
+    IO_CFG2_G13_MASK                        = (int)0x03,
+    IO_CFG2_G13_BITMASK                     = (int)(IO_CFG2_G13_MASK<<IO_CFG2_G13_OFFSET),
+    IO_CFG2_G13_DRDY                        = (int)0,
+    IO_CFG2_G13_XSDA                        = (int)1,
+    IO_CFG2_G13_STROBE_INPUT                = (int)2,
+    IO_CFG2_G13_DRDY_val                    = (int)0x00,
+    IO_CFG2_G13_XSDA_val                    = (int)0x08,
+    IO_CFG2_G13_STROBE_INPUT_val            = (int)0x10,
+    IO_CFG2_G13_DEFAULT                     = (int)IO_CFG2_G13_DRDY,
 
-    /** UNUSED (eIoConfig2[5]) */
+    /** Use GNSS 2 as NMEA Source (eIoConfig2[5]) */
+    IO_CFG2_USE_GNSS2_AS_SOURCE_OFFSET      = (int)5,
+    IO_CFG2_USE_GNSS2_AS_SOURCE             = (int)0x20,
 
     /** GNSS2 TIMEPULSE source (eIoConfig2[7-6]) */
-    IO_CFG_GNSS2_PPS_SOURCE_OFFSET          = (int)6,
-    IO_CFG_GNSS2_PPS_SOURCE_MASK            = (int)0x03,
-    IO_CFG_GNSS2_PPS_SOURCE_BITMASK         = (int)(IO_CFG_GNSS2_PPS_SOURCE_MASK<<IO_CFG_GNSS2_PPS_SOURCE_OFFSET),    
-    IO_CFG_GNSS2_PPS_SOURCE_DISABLED        = (int)0,
-    IO_CFG_GNSS2_PPS_SOURCE_G11             = (int)1,
-    IO_CFG_GNSS2_PPS_SOURCE_G12             = (int)2,
-    IO_CFG_GNSS2_PPS_SOURCE_G13             = (int)3,    
-    IO_CFG_GNSS2_PPS_SOURCE_DISABLED_val    = (int)0x00,
-    IO_CFG_GNSS2_PPS_SOURCE_G11_val         = (int)0x04,
-    IO_CFG_GNSS2_PPS_SOURCE_G12_val         = (int)0x80,
-    IO_CFG_GNSS2_PPS_SOURCE_G13_val         = (int)0xC0,
+    IO_CFG2_GNSS2_PPS_SOURCE_OFFSET         = (int)6,
+    IO_CFG2_GNSS2_PPS_SOURCE_MASK           = (int)0x03,
+    IO_CFG2_GNSS2_PPS_SOURCE_BITMASK        = (int)(IO_CFG2_GNSS2_PPS_SOURCE_MASK<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET),    
+    IO_CFG2_GNSS2_PPS_SOURCE_DISABLED       = (int)0,
+    IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)1,
+    IO_CFG2_GNSS2_PPS_SOURCE_G12            = (int)2,
+    IO_CFG2_GNSS2_PPS_SOURCE_G13            = (int)3,    
+    IO_CFG2_GNSS2_PPS_SOURCE_DISABLED_val   = (int)0x00,
+    IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x04,
+    IO_CFG2_GNSS2_PPS_SOURCE_G12_val        = (int)0x80,
+    IO_CFG2_GNSS2_PPS_SOURCE_G13_val        = (int)0xC0,
 };
 
-#define IO_CFG_GNSS2_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG_GNSS2_PPS_SOURCE_MASK)
+#define IO_CFG2_GNSS2_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG2_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG2_GNSS2_PPS_SOURCE_MASK)
 
 enum ePlatformConfig
 {
@@ -3479,6 +3485,7 @@ typedef struct PACKED
 typedef enum
 {
     DYNAMIC_MODEL_PORTABLE          = 0,
+    DYNAMIC_MODEL_FIXED_POSITION    = 1,
     DYNAMIC_MODEL_STATIONARY        = 2,
     DYNAMIC_MODEL_PEDESTRIAN        = 3,
     DYNAMIC_MODEL_GROUND_VEHICLE    = 4,
@@ -4529,7 +4536,7 @@ typedef struct PACKED
     uGpsRawData data;
 } gps_raw_t;
 
-// (DID_GPS1_TIMEPULSE)
+// (DID_GPS1_TIMEPULSE, DID_GPS2_TIMEPULSE)
 typedef struct
 {
     /*! (s)    Week seconds offset from MCU to GPS time. */
@@ -4641,8 +4648,8 @@ enum eGpxSysConfigBits
     GPX_SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
     GPX_SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
     GPX_SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
-    GPX_SYS_CFG_BITS_BOR_THREHOLD_MASK                      = (int)0x00C00000,
-    GPX_SYS_CFG_BITS_BOR_THREHOLD_OFFSET                    = 22,
+    GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK                     = (int)0x00C00000,
+    GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET                   = 22,
 };
 
 /**
@@ -4684,7 +4691,7 @@ typedef struct
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t                gnssSatSigConst;
 
-    /** Dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** Dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 1=FIXED POSITION, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t                 dynamicModel;
 
     /** Debug */
@@ -4716,6 +4723,9 @@ typedef struct
 
     /** Reserved */
     uint32_t                reserved2;
+    
+    /** Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
+    double                  refLla[3];
 
 } gpx_flash_cfg_t;
 

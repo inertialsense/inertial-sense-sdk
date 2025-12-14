@@ -18,6 +18,7 @@
 #define IS_SDK__DEVICE_MANAGER_H
 
 #include <list>
+#include <mutex>
 
 #include "core/msg_logger.h"
 
@@ -76,9 +77,10 @@ public:
      * @return true if one more more devices were discovered, otherwise false
      */
     bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         bool result = false;
         // options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
-        for (auto port : portManager) {
+        for (auto port : portManager.locked_range()) {
             // FIXME: sometimes this segfaults - I think the portManager's set gets updated while iterating here.
             //  we may need to put a mutex on the PortManager so we can't add/remove ports while iterating on the base set.
             //  probably s smart thing to do for the DeviceManager too
@@ -98,6 +100,7 @@ public:
      * @return true if a device was discovered on the specified port, otherwise false
      */
     bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
         options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
 
@@ -143,6 +146,7 @@ public:
      * @return true if the device is a known device, otherwise false
      */
     bool contains(device_handle_t device) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         for (auto kd : knownDevices) {
             if (kd.device == device)
                 return true;
@@ -153,21 +157,19 @@ public:
     /**
      * Removed all previously registered DeviceFactories
      */
-    void clearDeviceFactories() { factories.clear(); }
+    void clearDeviceFactories() { std::lock_guard<std::recursive_mutex> lock(mutex); factories.clear(); }
 
     /**
      * Adds a custom DeviceFactory to be used when new Devices are discovered
      * @param df a pointer to the DeviceFactory instance
      */
-    void addDeviceFactory(DeviceFactory* df) { factories.push_back(df); };
+    void addDeviceFactory(DeviceFactory* df) { std::lock_guard<std::recursive_mutex> lock(mutex); factories.push_back(df); };
 
     /**
      * Gets all registered DeviceFactories
      * @return A vector of DeviceFactory Instances
      */
-    std::vector<DeviceFactory*> getDeviceFactories() {
-        return factories;
-    }
+    std::vector<DeviceFactory*> getDeviceFactories() { std::lock_guard<std::recursive_mutex> lock(mutex); return factories; }
 
     /**
      * Convenience function that clears any existing registered DeviceFactories, and adds a new custom DeviceFactory to be used when new Devices are discovered.
@@ -185,9 +187,7 @@ public:
      * @param handler a function pointer to be called when a new device is discovered
      * @return the previously registered handler, if any
      */
-    void addDeviceListener(const device_listener& listener) {
-        listeners.push_back(listener);
-    }
+    void addDeviceListener(const device_listener& listener) { std::lock_guard<std::recursive_mutex> lock(mutex); listeners.push_back(listener); }
 
     /**
      * Removes a previously registered device listener.
@@ -195,6 +195,7 @@ public:
      * @return the previously registered handler, if any
      */
     bool removeDeviceListener(const device_listener& listener) {
+        (void)listener; // Suppress unused parameter warning
         // TODO: locate the listener, and remove it if found and return true, otherwise return false
         return false;
     }
@@ -205,6 +206,7 @@ public:
      * @param event the specific event id that occurred.
      */
     void notifyListeners(device_handle_t device, uint8_t event) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         for (device_listener& l : listeners) l(event, device);    // notify that this device's port has been updated
     }
 
@@ -248,6 +250,7 @@ public:
      * Remove and release/free all known/discovered devices.
      */
     void clear(bool closePorts = true) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         auto tmpSet = getDevicesAsVector();
         for (auto d : tmpSet) releaseDevice(d, closePorts, true);
 
@@ -367,6 +370,30 @@ private:
     std::vector<device_entry_t> knownDevices;                           //!< vector of previously discovered devices, by factory & hdwid (bits 47-63) + serial (bits 0-31) - different than actual, allocated devices
 
     int managementOptions = DISCOVERY__DEFAULTS;                        //!< a bit mask of various options used to modify the behavior of the device manager during various operations
+    std::recursive_mutex mutex;
+
+    class LockedRangeProxy {
+    private:
+        DeviceManager& container;
+        std::scoped_lock<std::recursive_mutex> lock_guard;                     // The lock_guard/scoped_lock ensures RAII
+
+    public:
+        LockedRangeProxy(DeviceManager& container_ref) : container(container_ref), lock_guard(container_ref.mutex) { }
+
+        // The destructor will be called automatically when the for loop ends,
+        // releasing the lock_guard and thus the mutex.
+        ~LockedRangeProxy() = default;
+
+        // Provide begin and end iterators to the underlying data
+        auto begin() { return container.begin(); }
+        auto end() { return container.end(); }
+        auto begin() const { return container.begin(); }
+        auto end() const { return container.end(); }
+    };
+
+public:
+    LockedRangeProxy locked_range() { return LockedRangeProxy(*this); }
+
 };
 
 
