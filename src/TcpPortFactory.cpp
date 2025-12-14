@@ -7,8 +7,10 @@
  */
 
 #ifdef _WIN32
-// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
-#define NOMINMAX
+    // Windows.h is included somewhere and this prevents it from defining max as a macro which breaks uri.hpp
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
 #endif
 
 #include "TcpPortFactory.h"

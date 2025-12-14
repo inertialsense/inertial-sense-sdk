@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "core/base_port.h"
+#include "core/msg_logger.h"
 #include "serialPort.h"
 #include "serialPortPlatform.h"
 #include "ISConstants.h"
@@ -93,24 +94,41 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
 
-// #define DEBUG_COMMS   // Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
+#define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+#define IS_ENABLED_FACILITIES  (IS_LOG_PORT)
+
+#define DEBUG_COMMS   // Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
 #ifdef DEBUG_COMMS
-#define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)))
+#define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) ) //  || ((n >= 0xA1) && (n <= 0xDF)))
+
 static inline void debugDumpBuffer(const char* prefix, const unsigned char* buffer, int len) {
     if (len > 0) {
-        struct timeval start;
-        gettimeofday(&start, NULL);
-        printf("%ld.%03d: %s", start.tv_sec, (uint16_t) (start.tv_usec / 1000), prefix);
-        for (int i = 0; i < len; i++)
-            printf(" %02x", buffer[i]);
+        const int bytes_per_line = 16;
 
-        int linePos = 16 + strlen(prefix) + (len * 3);
-        printf("%*c", 80 - linePos, ' ');
+        struct timespec ts;
+        timespec_get(&ts, TIME_UTC);
+        printf("%lld.%06ld: %s", ts.tv_sec, ts.tv_nsec / 1000, prefix);
 
-        for (int i = 0; i < len; i++)
-            printf("%c", IS_PRINTABLE(buffer[i]) ? buffer[i] : 0xB7);
+        unsigned char* buff_ofs = buffer;
+        int remaining = len, i = 0;
+        do {
+            for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
+                printf(" %02x", buff_ofs[i]);
 
-        printf("\n");
+            int pad = (strlen(prefix) + (bytes_per_line * 3) + 3) - (i * 3);    // note that 'i' is carried from the above for-loop
+            printf("%*c", pad, ' ');
+
+            for (i = 0; i < len && i < bytes_per_line; i++)
+                printf("%c", IS_PRINTABLE(buff_ofs[i]) ? buff_ofs[i] : 0xB7);
+
+            buff_ofs += i;
+            remaining -= i;
+
+            printf("\n");
+            if (remaining > 0)
+                printf("                      ");
+        } while (remaining > 0);
+        // printf("\n");
     }
 }
 #else
@@ -119,6 +137,7 @@ static inline void debugDumpBuffer(const char* prefix, const unsigned char* buff
 #endif
 #ifndef error_message
     #define error_message printf
+    #define debug_message printf
 #endif
 
 
@@ -317,18 +336,21 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 #if PLATFORM_IS_WINDOWS
 
     void* platformHandle = 0;
-    platformHandle = CreateFileA(portName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
+    platformHandle = CreateFileA(portName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, !blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
     if (platformHandle == INVALID_HANDLE_VALUE)
     {
         // don't modify the originally requested port value, just create a new value that Windows needs for COM10 and above
         char tmpPort[MAX_SERIAL_PORT_NAME_LENGTH];
         sprintf_s(tmpPort, sizeof(tmpPort), "\\\\.\\%s", portName);
-        platformHandle = CreateFileA(tmpPort, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
+        platformHandle = CreateFileA(tmpPort, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, !blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
         if (platformHandle == INVALID_HANDLE_VALUE)
         {
             return 0;
         }
     }
+
+    // clear any pending data associated with the port, incoming or outgoing; and ignore any errors
+    PurgeComm(platformHandle, PURGE_RXCLEAR | PURGE_TXCLEAR);
 
     DCB serialParams;
     serialParams.DCBlength = sizeof(DCB);
@@ -371,7 +393,13 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialPortClose(port);
         return 0;
     }
-    COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 10 : 0) };
+    COMMTIMEOUTS timeouts = {
+        (!blocking ? 1 : MAXDWORD), // ReadTimeoutInterval
+        (!blocking ? 1 : 0),        // ReadTotalTimeoutMultiplier
+        (!blocking ? 1 : 0),        // ReadTotalTimeoutConstant
+        (!blocking ? 1 : 0),        // WriteTotalTimeoutMultiplier
+        (!blocking ? 10 : 0)        // WriteTotalTimeoutConstant
+    };
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
         serialPortClose(port);
@@ -380,7 +408,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->blocking = blocking;
     handle->platformHandle = platformHandle;
-    if (blocking)
+    if (!blocking)
     {
         handle->ovRead.hEvent = CreateEvent(0, 1, 0, 0);
         handle->ovWrite.hEvent = CreateEvent(0, 1, 0, 0);
@@ -485,7 +513,7 @@ static int serialPortClosePlatform(port_handle_t port)
     {
         while (1) {}
     }*/
-    if (handle->blocking)
+    if (!handle->blocking)
     {
         CloseHandle(handle->ovRead.hEvent);
         CloseHandle(handle->ovWrite.hEvent);
@@ -516,10 +544,17 @@ static int serialPortFlushPlatform(port_handle_t port)
         return 0;
     }
 
+    log_more_debug(IS_LOG_PORT, "serialPortFlushPlatform() called.");
+
 #if PLATFORM_IS_WINDOWS
 
-    if (!FlushFileBuffers(handle->platformHandle))
+    // Use PurgeComm to clear receive (RX) buffer.
+    if (!PurgeComm(handle->platformHandle, PURGE_RXCLEAR))
     {
+        DWORD dwRes = GetLastError();
+        error_message("[%s] serialPortDrainPlatform():: Error draining: %s (%d)\n", portName(portName), strerror(errno), errno);
+        serialPort->errorCode = dwRes;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
@@ -545,10 +580,17 @@ static int serialPortDrainPlatform(port_handle_t port)
         return 0;
     }
 
+    log_more_debug(IS_LOG_PORT, "serialPortDrainPlatform() called.");
+
 #if PLATFORM_IS_WINDOWS
 
-    if (!FlushFileBuffers(handle->platformHandle))
+    // Use PurgeComm to clear transmit (TX) buffer.
+    if (!PurgeComm(handle->platformHandle, PURGE_TXCLEAR))
     {
+        DWORD dwRes = GetLastError();
+        error_message("[%s] serialPortDrainPlatform():: Error draining: %s (%d)\n", portName(portName), strerror(errno), errno);
+        serialPort->errorCode = dwRes;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
@@ -577,15 +619,15 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
     ULONGLONG startTime = GetTickCount64();
     do
     {
-        if (ReadFile(handle->platformHandle, buffer + totalRead, readCount - totalRead, &dwRead, handle->blocking ? &handle->ovRead : 0))
+        if (ReadFile(handle->platformHandle, buffer + totalRead, readCount - totalRead, &dwRead, !handle->blocking ? &handle->ovRead : 0))
         {
-            if (handle->blocking)
+            if (!handle->blocking)
             {
                 GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);
             }
             totalRead += dwRead;
         }
-        else if (handle->blocking)
+        else if (!handle->blocking)
         {
             DWORD dwRes = GetLastError();
             if (dwRes == ERROR_IO_PENDING)
@@ -618,12 +660,12 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
             }
         }
 
-        if (handle->blocking && totalRead < readCount && timeoutMilliseconds > 0)
+        if (!handle->blocking && (totalRead < readCount) && (timeoutMilliseconds > 0))
         {
-            Sleep(1);
+            Sleep(1);   // keep waiting for additional data, until we timeout...
         }
-    }
-    while (totalRead < readCount && GetTickCount64() - startTime < timeoutMilliseconds);
+    } while ((totalRead < readCount) && (GetTickCount64() - startTime < timeoutMilliseconds));
+
     return totalRead;
 }
 
@@ -787,7 +829,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
 #if PLATFORM_IS_WINDOWS
 
     DWORD dwWritten;
-    if (!WriteFile(handle->platformHandle, buffer, writeCount, &dwWritten, handle->blocking ? &handle->ovWrite : 0))
+    if (!WriteFile(handle->platformHandle, buffer, writeCount, &dwWritten, !handle->blocking ? &handle->ovWrite : 0))
     {
         DWORD result = GetLastError();
         if (result != ERROR_IO_PENDING)
@@ -797,7 +839,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         }
     }
 
-    if (handle->blocking)
+    if (!handle->blocking)
     {
         if (!GetOverlappedResult(handle->platformHandle, &handle->ovWrite, &dwWritten, 1))
         {
@@ -805,8 +847,9 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             return 0;
         }
     }
-    return dwWritten;
 
+    debugDumpBuffer(">> ", buffer, dwWritten);
+    return dwWritten;
 
 #else
 

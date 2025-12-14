@@ -14,6 +14,9 @@
 #include "imx_defaults.h"
 #include "ISLogger.h"
 
+#define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+#define IS_ENABLED_FACILITIES  (IS_LOG_ISDEVICE)
+
 const ISDevice ISDevice::invalidRef;
 
 /**
@@ -205,6 +208,19 @@ bool ISDevice::handshakeISbl() {
     static const uint8_t handshakerChar = 'U';
     uint8_t readCh = 0;
 
+    log_more_debug(IS_LOG_ISDEVICE, "ISDevice::handshakeISbl() called.");
+
+    // first, flush all incoming data and ensure we have a clean buffer...
+    for (int i = 0; i < 5; i++) {
+        if (portAvailable(port))
+            portFlush(port);
+
+        if ((i == 4) && portAvailable(port)) {
+            log_warn(IS_LOG_ISDEVICE, "ISDevice::handshakeISbl() is unable to clear the port RX buffer. Handshaking is not possible.");
+            return false;   // unable to clear buffer, so we can't handshake
+        }
+    }
+
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
@@ -226,16 +242,18 @@ bool ISDevice::handshakeISbl() {
 bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     uint8_t buf[64] = {};
 
+    log_more_debug(IS_LOG_ISDEVICE, "ISDevice::queryDeviceInfoISbl() called.");
     if (!hasHandshake) {
         hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
     }
 
     // clear any partial commands and flush the rx buffer
     for (int i = 0; i < 5; i++) {
-        portWrite(port, (uint8_t*)"\n", 1);
-        SLEEP_MS(2);
-        portFlush(port);
-        portRead(port, buf, sizeof(buf));    // empty Rx buffer
+        if (portWrite(port, (uint8_t*)"\n", 1) == 1) {
+            SLEEP_MS(2);
+            if (portAvailable(port))
+                portFlush(port);
+        }
     }
 
     // Query device
@@ -295,6 +313,8 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
 bool ISDevice::validate(uint32_t timeout) {
     if (!isConnected())
         return false;
+
+    log_more_debug(IS_LOG_ISDEVICE, "ISDevice::validate() called.");
 
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
     is_hardware_t oldHdwId = hdwId;
@@ -363,6 +383,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
     if (!isConnected())
         return -1;
 
+    log_more_debug(IS_LOG_ISDEVICE, "ISDevice::validateAsync() called.");
     if (hasDeviceInfo()) {
         // we got out Device Info, so reset our timer (stop trying) and return true
         validationStartMs = 0;
@@ -399,25 +420,28 @@ int ISDevice::validateAsync(uint32_t timeout) {
         return -1;
     }
 
-    switch (previousQueryType) {
-        case ISDevice::queryTypes::QUERYTYPE_NMEA :
-            // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using NMEA protocol.", SERIAL_PORT(port)->portName);
-            SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
-            break;
-        case ISDevice::queryTypes::QUERYTYPE_ISB :
-            // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using ISB protocol.", SERIAL_PORT(port)->portName);
-            GetData(DID_DEV_INFO);
-            break;
-        case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
-            queryDeviceInfoISbl(250);
-            break;
-        case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
-            // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' mcuBoot/SMP protocol.", SERIAL_PORT(port)->portName);
-            break;
-    }
+    if (nextValidationQueryMs < current_timeMs()) {
+        switch (previousQueryType) {
+            case ISDevice::queryTypes::QUERYTYPE_NMEA :
+                // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using NMEA protocol.", SERIAL_PORT(port)->portName);
+                SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
+                break;
+            case ISDevice::queryTypes::QUERYTYPE_ISB :
+                // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using ISB protocol.", SERIAL_PORT(port)->portName);
+                GetData(DID_DEV_INFO);
+                break;
+            case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
+                queryDeviceInfoISbl(250);
+                break;
+            case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
+                // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' mcuBoot/SMP protocol.", SERIAL_PORT(port)->portName);
+                break;
+        }
 
-    SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
-    previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
+        // SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
+        previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
+        nextValidationQueryMs = current_timeMs() + 10;  // 10 millis to respond before we try the next query method
+    }
     return 0;
 }
 

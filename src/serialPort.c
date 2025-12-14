@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISUtilities.h"
 
-int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
+int SERIAL_PORT_DEFAULT_TIMEOUT = 500;
 
 void serialPortInit(port_handle_t port, int id, int type) {
     serial_port_t* serialPort = (serial_port_t*)port;

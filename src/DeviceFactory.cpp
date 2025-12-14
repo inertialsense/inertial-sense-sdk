@@ -66,6 +66,7 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
         do {
             is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
             validationResult = localDev.validateAsync(timeoutMs);
+            SLEEP_MS(2);
         } while (!validationResult);
 
         if (localDev.hasDeviceInfo() && localDev.matchesHdwId(hdwId)) {

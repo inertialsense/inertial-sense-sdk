@@ -21,6 +21,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <time.h>
 
 #include "types.h"
 
@@ -36,29 +37,6 @@ extern "C" {
     #define log_error(...)
     #define debug_message(...)
 #else
-    // #define IS_LOG_LEVEL_NONE          0       // use this to disable all log messages
-    // #define IS_LOG_LEVEL_ERROR         1       // errors - that that prevents the application from proceeding as normal
-    // #define IS_LOG_LEVEL_WARN          2       // warnings - important to now, but we can move on anyway
-    // #define IS_LOG_LEVEL_INFO          3       // informative for the customer regarding normal operations
-    // #define IS_LOG_LEVEL_INFO_MORE     4       // additional information for the customer regarding normal operations - might be annoying
-    // #define IS_LOG_LEVEL_DEBUG         5       // informative for support & basic troubleshooting
-    // #define IS_LOG_LEVEL_DEBUG_MORE    6       // informative for advanced troubleshooting - maybe annoying
-    // #define IS_LOG_LEVEL_BOMBASTIC     7       // excessive on all but the most extreme cases - will definitely be annoying
-
-
-    // Define facility bitmasks. Use powers of 2 for unique bits.
-    #define IS_LOG_FACILITY_NONE       0x0000                          // This facility is ALWAYS enabled (but still followed LOG_LEVEL)
-    #define IS_LOG_PORT                0x0001
-    #define IS_LOG_FWUPDATE            ((IS_LOG_PORT << 1))
-    #define IS_LOG_ISDEVICE            ((IS_LOG_FWUPDATE << 1))
-    #define IS_LOG_PORT_FACTORY        ((IS_LOG_ISDEVICE << 1))
-    #define IS_LOG_PORT_MANAGER        ((IS_LOG_PORT_FACTORY << 1))
-    #define IS_LOG_DEVICE_FACTORY      ((IS_LOG_PORT_MANAGER << 1))
-    #define IS_LOG_DEVICE_MANAGER      ((IS_LOG_DEVICE_FACTORY << 1))
-    #define IS_LOG_CHRONO_STATS        ((IS_LOG_DEVICE_MANAGER << 1))
-    #define IS_LOG_FACILITY_MDNS       ((IS_LOG_CHRONO_STATS << 1))
-    #define IS_LOG_FACILITY_ALL        0xFFFF
-
     // --- Compile-time configuration ---
     // Define the desired log level to show messages at or above this level.
     #ifndef IS_LOG_LEVEL
@@ -84,9 +62,9 @@ extern "C" {
     #define log_error(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_ERROR,      "[ERROR]", __VA_ARGS__)
     #define log_warn(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_WARN,       "[WARN]",  __VA_ARGS__)
     #define log_info(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO,       "[INFO]",  __VA_ARGS__)
-    #define log_info_more(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO_MORE,  "[INFO]",  __VA_ARGS__)
+    #define log_more_info(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_INFO,  "[INFO]",  __VA_ARGS__)
     #define log_debug(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG,      "[DEBUG]", __VA_ARGS__)
-    #define log_debug_more(facility, ...)   IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG_MORE, "[DEBUG]", __VA_ARGS__)
+    #define log_more_debug(facility, ...)   IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_DEBUG, "[DEBUG]", __VA_ARGS__)
     #define log_bombastic(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_BOMBASTIC,  "[CRAZY]", __VA_ARGS__)
 
     // #define debug_message(facility, ...)    IS_LOG_MSG(facility, "[DEBUG]", 4, __VA_ARGS__)
@@ -111,6 +89,10 @@ extern "C" {
         memset(logMsg, 0, 512);
         vsnprintf(logMsg, sizeof(logMsg) - 1, format, args);
         va_end(args);
+
+        struct timespec ts;
+        timespec_get(&ts, TIME_UTC);
+        printf("%lld.%06ld: ", ts.tv_sec, ts.tv_nsec / 1000);
 
         if (facility_code)
             printf("%s ", facility_name);
