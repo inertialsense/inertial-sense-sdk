@@ -393,18 +393,41 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialPortClose(port);
         return 0;
     }
-    COMMTIMEOUTS timeouts = {
-        (!blocking ? 1 : MAXDWORD), // ReadTimeoutInterval
-        (!blocking ? 1 : 0),        // ReadTotalTimeoutMultiplier
-        (!blocking ? 1 : 0),        // ReadTotalTimeoutConstant
-        (!blocking ? 1 : 0),        // WriteTotalTimeoutMultiplier
-        (!blocking ? 10 : 0)        // WriteTotalTimeoutConstant
-    };
+
+    COMMTIMEOUTS timeouts;
+    if (!GetCommTimeouts(platformHandle, &timeouts))
+    {
+        serialPortClose(port);
+        return 0;
+    }
+
+    if (blocking)
+    {
+        // For blocking, ReadFile returns immediately with whatever is in the buffer.
+        // The read loop in serialPortReadTimeoutPlatformWindows will poll.
+        timeouts.ReadIntervalTimeout = MAXDWORD;
+        timeouts.ReadTotalTimeoutMultiplier = 0;
+        timeouts.ReadTotalTimeoutConstant = 0;
+    }
+    else // non-blocking
+    {
+        // For non-blocking (overlapped), we want ReadFile to pend if no data is available.
+        // Setting read timeouts to 0 disables them, and the wait is handled by WaitForSingleObject.
+        timeouts.ReadIntervalTimeout = 0;
+        timeouts.ReadTotalTimeoutMultiplier = 0;
+        timeouts.ReadTotalTimeoutConstant = 0;
+    }
+
+    // Set a reasonable write timeout for both modes.
+    timeouts.WriteTotalTimeoutMultiplier = 0;
+    timeouts.WriteTotalTimeoutConstant = 10;
+
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
         serialPortClose(port);
         return 0;
     }
+
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->blocking = blocking;
     handle->platformHandle = platformHandle;
@@ -658,11 +681,6 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
             {
                 CancelIo(handle->platformHandle);
             }
-        }
-
-        if (!handle->blocking && (totalRead < readCount) && (timeoutMilliseconds > 0))
-        {
-            Sleep(1);   // keep waiting for additional data, until we timeout...
         }
     } while ((totalRead < readCount) && (GetTickCount64() - startTime < timeoutMilliseconds));
 
