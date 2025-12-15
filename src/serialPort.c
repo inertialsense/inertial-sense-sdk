@@ -19,16 +19,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 int SERIAL_PORT_DEFAULT_TIMEOUT = 500;
 
-void serialPortInit(port_handle_t port, int id, int type) {
+void serialPortInit(port_handle_t port, int id, int type, int flags) {
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPort->base.pnum = id;
-    serialPort->base.ptype = type | PORT_FLAG__VALID;
+    serialPort->base.ptype = type;
+    serialPort->base.pflags = flags;
 
     serialPort->base.stats = (port_stats_t*)&(serialPort->stats);
 
     serialPort->pfnOpen = serialPortOpen;
     serialPort->pfnClose = serialPortClose;
     serialPort->pfnReadTimeout = serialPortReadTimeout;
+
+    portFlagsSet(port, PORT_FLAG__VALID);
 }
 
 void serialPortSetOptions(port_handle_t port, uint32_t options)
@@ -71,7 +74,7 @@ int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int b
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
-    serialPort->base.ptype |= PORT_FLAG__OPENED;
+    portFlagsSet(port, PORT_FLAG__OPENED);
     return 1;
 }
 
@@ -142,7 +145,7 @@ int serialPortClose(port_handle_t port)
             serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
-    serialPort->base.ptype &= ~PORT_FLAG__OPENED;       // safe to do before closing - because if the close fails, its fair the say the port is still invalid
+    portFlagsClear(port, PORT_FLAG__OPENED);       // safe to do before closing - because if the close fails, its fair the say the port is still invalid
     return serialPort->pfnClose(port);
 }
 

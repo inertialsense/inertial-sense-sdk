@@ -71,7 +71,10 @@ bool ISDevice::Update() {
 bool ISDevice::step() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (isConnected() && (portType(port) & PORT_TYPE__COMM)) {
+    if (!isConnected() || portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
+        return false;
+
+    if (portType(port) & PORT_TYPE__COMM) {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
         if (!hasDeviceInfo()) {
             validateAsync();
@@ -170,6 +173,12 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
                     fwHasError = true;
                 }
             }
+        } else if (activeCmd.cmd == "waitfor") {
+            fwLastMessage = "Waiting for response from device.";
+        } else if (activeCmd.cmd == "reset") {
+            fwLastMessage = "Resetting device.";
+        } else if (activeCmd.cmd == "delay") {
+            fwLastMessage = "Waiting...";
         }
 
         if (!fwUpdater->hasPendingCommands()) {
@@ -959,7 +968,8 @@ bool ISDevice::GpxFlashConfigUploadFailure() {
  * A blocking function calls which waits until both a DID_FLASH_CFG and DID_SYS_PARAMS have
  * been received which have a matching flashCfg checksum; ensuring that we have a valid copy
  * of the devices' flash configuration.
- * @param timeout
+ * @param forceSync if true, invalidates any existing checksum ensuring the both messages must be received and validated
+ * @param timeout the maximum time to wait for the synchronization to occur, before returning false
  * @return true if both the flashCfg.checksum and sysParams.flashCfgChecksum match (and neither are zero)
  */
 bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
@@ -1325,6 +1335,10 @@ bool ISDevice::assignPort(port_handle_t newPort) {
 
     if (port) {
         // releaseSerialPort()  TODO: I'm sure there is something we probably need to do before we can just assign the new port - close, flush, delete, etc?
+    }
+
+    if ((portFlags(newPort) & PORT_FLAG__NO_ISDEVICE)) {
+        return false;   // we cannot assign a NO_ISDEVICE port to an ISDevice (We would probably make the device or the other-end of the port unhappy)
     }
 
     port = newPort;

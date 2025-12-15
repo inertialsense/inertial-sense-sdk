@@ -161,7 +161,7 @@ typedef struct serial_port_s serial_port_t;
 #define SERIAL_PORT(n)  ((serial_port_t*)n)
 
 
-void serialPortInit(port_handle_t, int id, int type);
+void serialPortInit(port_handle_t, int id, int type, int flags);
 
 // set the port name for a serial port, in case you are opening it later
 void serialPortSetPort(port_handle_t port, const char* portName);

@@ -82,7 +82,7 @@ extern "C" {
         va_end(args);
 
         // LOG_DBG(logMsg);
-    #else
+    #elif defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
         static char logMsg[512];
         va_list args;
         va_start(args, format);
@@ -92,7 +92,7 @@ extern "C" {
 
         struct timespec ts;
         timespec_get(&ts, TIME_UTC);
-        printf("%lld.%06ld: ", ts.tv_sec, ts.tv_nsec / 1000);
+        printf("%ld.%06ld: ", ts.tv_sec, ts.tv_nsec / 1000);
 
         if (facility_code)
             printf("%s ", facility_name);

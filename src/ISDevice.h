@@ -180,7 +180,7 @@ public:
      */
     bool isConnected() const {
         bool valid = portIsValid(port);
-        bool comPort = portType(port) & PORT_TYPE__COMM;
+        bool comPort = portType(port) & PORT_TYPE__COMM;    // Not sure that this is entirely required; but it doesn't really hurt currently
         bool open = portIsOpened(port);
         return valid && comPort && open;
     }

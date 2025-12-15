@@ -107,7 +107,7 @@ static inline void debugDumpBuffer(const char* prefix, const unsigned char* buff
 
         struct timespec ts;
         timespec_get(&ts, TIME_UTC);
-        printf("%lld.%06ld: %s", ts.tv_sec, ts.tv_nsec / 1000, prefix);
+        printf("%ld.%06ld: %s", ts.tv_sec, ts.tv_nsec / 1000, prefix);
 
         unsigned char* buff_ofs = buffer;
         int remaining = len, i = 0;
@@ -987,7 +987,7 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
 {
     serial_port_t* serialPort = (serial_port_t*)port;
     // very important - the serial port must be initialized to zeros
-    base_port_t tmp = { .pnum = portId(port), .ptype = portType(port) };
+    base_port_t tmp = { .pnum = portId(port), .ptype = portType(port), .pflags = portFlags(port), .chksum = BASE_PORT(port)->chksum };
 
     // FIXME:  I really don't like this having to copy and clean, and copy back.  It shouldn't be necessary.
     char tmpName[64];
@@ -996,6 +996,7 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     memcpy(serialPort->portName, tmpName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
 
     serialPort->base = tmp;
+    portRecalcChksum(port);
 
     serialPort->base.portName = serialPortName;
     // serialPort->base.portValidate = serialPortValidate;

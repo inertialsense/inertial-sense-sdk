@@ -24,30 +24,34 @@
 #define PORT_TYPE__CAN              0x0004      //!< this port wraps the CAN protocol
 #define PORT_TYPE__TCP              0x0005      //!< this port wraps a TCP-based network socket
 #define PORT_TYPE__UDP              0x0006      //!< this port wraps a UDP-based network socket
-#define PORT_TYPE__FILE             0x0007      //!< this port is nothing more than a mapping to a file on the OS
-#define PORT_TYPE__LOOPBACK         0x000F      //!< this port is a loopback to another port
+#define PORT_TYPE__FILE             0x0007      //!< this port wraps a OS file handle/stream
+#define PORT_TYPE__LOOPBACK         0x00FE      //!< this port is a loopback to another port.
+#define PORT_TYPE__COMM             0x1000      //!< this is a modifier for other port types, indicating that the port is a communication port, with a is_comm instance and message/packet parsing capabilities
 
-#define PORT_TYPE__GNSS             0x0020      //!< bit indicates that this port is a GNSS receiver port
-#define PORT_TYPE__COMM             0x0040      //!< bit indicates that this port has an ISComm associated with it
-#define PORT_TYPE__HDW              0x0080      //!< bit indicates that this port is static/hardware-defined
+#define PORT_FLAG__HDW              0x0001      //!< bit indicates that this port is static/hardware-defined
+#define PORT_FLAG__VALID            0x0002      //!< bit indicates that this port programmatically marked as valid; this allows an implementation to mark invalidate a port
+#define PORT_FLAG__OPENED           0x0004      //!< bit indicates that this port is opened, and able to process data
+#define PORT_FLAG__NO_ISDEVICE      0x0008      //!< bit indicates that this port cannot be used to connect an ISDevice -- Calls to ISDevice::assignPort() will fail.
+#define PORT_FLAG__GNSS             0x0010      //!< bit indicates that this port is a GNSS receiver port
+#define PORT_FLAG__BLOCKING         0x0020      //!< bit indicates that this port uses blocking I/O
 
-#define PORT_FLAG__VALID            0x8000      //!< bit indicates that this port is valid, and can be operated on
-#define PORT_FLAG__OPENED           0x4000      //!< bit indicates that this port is opened, and able to process data
-
-#define PORT_ERROR__NONE                 0      //!< Indicates no error and/or successful execution
-#define PORT_ERROR__NOT_SUPPORTED       -1      //!< Indicates that the operation requested/called was not support by the specified port
-#define PORT_ERROR__INVALID             -2      //!< Indicates that the port specified in the operation was invalid; The port_handle_t should probably be abandoned.
-#define PORT_ERROR__WRITE_FAILURE       -3      //!< Indicates that an attempt to write to the port failed.
-#define PORT_ERROR__OPEN_FAILURE        -4      //!< Indicates that an attempt to open the port failed.
+#define PORT_ERROR__NONE                 0      //!< No error and/or successful execution
+#define PORT_ERROR__NOT_SUPPORTED       -1      //!< The operation requested/called was not support by the specified port
+#define PORT_ERROR__INVALID             -2      //!< The port specified in the operation was invalid; The port_handle_t should probably be abandoned, or revalidated.
+#define PORT_ERROR__OPEN_FAILURE        -3      //!< Attempt to open the port failed.
+#define PORT_ERROR__WRITE_FAILURE       -4      //!< Attempt to write to the port failed.
+#define PORT_ERROR__READ_FAILURE        -5      //!< Attempt to read from the port failed.
+#define PORT_ERROR__WRITE_TIMEOUT       -6      //!< Attempt to write to the port timed out (but otherwise, no other error occurred); this typically doesn't happen on OSs, but may on hardware implementations if the hardware is unavailable, etc.
+#define PORT_ERROR__READ_TIMEOUT        -7      //!< Attempt to read from the port timed out (but otherwise, no other error occurred)
 
 #define PORT_OP__READ               0x00        //!< A portLogger operation flag indicating a READ/RX was performed
 #define PORT_OP__WRITE              0x01        //!< A portLogger operation flag indicating a WRITE/TX was performed
 #define PORT_OP__OPEN               0x02        //!< A portLogger operation flag indicating a OPEN was performed
 #define PORT_OP__CLOSE              0x03        //!< A portLogger operation flag indicating a CLOSE was performed
-#define PORT_OP__FLUSH              0x04        //!< A portLogger operation flag indicating a FLUSH was performed
+#define PORT_OP__FLUSH              0x04        //!< A portLogger operation flag indicating a FLUSH was performed (all pending RX data discarded)
+#define PORT_OP__DRAIN              0x05        //!< A portLogger operation flag indicating a DRAIN was performed (block until all TX data is sent, and discard after timeout)
 
-#define PORT_DEFAULT_TIMEOUT        1000        //!< A portLogger operation flag indicating a READ was performed
-
+#define PORT_DEFAULT_TIMEOUT        1000        //!< A default timeout period (in milliseconds) for READ and other operations.
 
 typedef void* port_handle_t;
 
@@ -106,6 +110,7 @@ typedef struct base_port_s {
     pfnPortLogger portLogger;               //!< a function, if set, to be called anytime a portRead or portWrite call is made; used to monitor/copy all data that goes through the port
 
     void *portLoggerData;                   //!< an opaque pointer of "user data" associated with the portLogger that is passed whenever the portLogger() callback function is called
+    uint32_t chksum;                        //!< to be valid:  chksum == ^~((pflags << 16) | ptype) - this is a validation mechanism to help ensure that this is a valid port
     port_stats_t* stats;                    //!< if not-null, contains the stats associated with this port (bytes sent/received, etc)
 } base_port_t;
 #define BASE_PORT(n)        ((base_port_t*)(n))
@@ -155,7 +160,60 @@ static inline uint16_t portType(port_handle_t port) {
     return (port) ? BASE_PORT(port)->ptype : 0xFFFF;
 }
 
+/**
+ * Recalculates the port's internal checksum - this is a validation technique use to ensure
+ * the pointer and settings of the port are valid. This should be called anytime the port
+ * id, ptype, or pflags is updated.
+ * WARNING: This call makes no assumptions about the validity/state of the port - if the
+ * port is referencing an invalid port or bad address, this will calculate a checksum (and
+ * attempt to assign it) and subsequently indicate that the invalid port is now valid.
+ * @param port the port to recalculate the checksum for
+ */
+static inline void portRecalcChksum(port_handle_t port) {
+    BASE_PORT(port)->chksum = ~((BASE_PORT(port)->pnum << 16) | BASE_PORT(port)->ptype);
+}
+
+/**
+ * Calculates the current checksum of the port, and validates that it matches the internal
+ * chksum value. This is the primary means for determine if a port handle is valid.
+ * @param port the port and test
+ * @return non-zero (true) if the port_handle maintains integrity, otherwise zero (false)
+ */
+static inline int portCheckIntegrity(port_handle_t port) {
+    return (port && (BASE_PORT(port)->chksum == ~(uint32_t)((BASE_PORT(port)->pnum << 16) | BASE_PORT(port)->ptype)));
+}
+
 #define NOT_GNSS_PORT(port) ((portType(port) & PORT_TYPE__GNSS) == 0)
+
+/**
+ * @brief sets the specified bit-flags on the port, without modifying previously set flags
+ * @param port the port to modify
+ * @param f a bit mask of flags to set
+ */
+static inline void portFlagsSet(port_handle_t port, uint16_t f) {
+    BASE_PORT(port)->pflags |= f;
+    portRecalcChksum(port);
+}
+
+/**
+ * @brief clears the specified bit-flags on the port, without modifying previously set flags
+ * @param port the port to modify
+ * @param f the bit mask of flags to clear
+ */
+static inline void portFlagsClear(port_handle_t port, uint16_t f) {
+    BASE_PORT(port)->pflags &= ~f;
+    portRecalcChksum(port);
+}
+
+/**
+ * @brief checks if the specified bit-flags on the port are set
+ * @param port the port to check
+ * @param f the flags to check
+ * @returns turns if all bits specified by f are also set on the port, otherwise false
+ */
+static inline int portFlagsIsSet(port_handle_t port, uint16_t f) {
+    return (BASE_PORT(port)->pflags & f) == f;
+}
 
 /**
  * returns true if the port's ptype's has the PORT_FLAG__VALID bit set
@@ -163,34 +221,37 @@ static inline uint16_t portType(port_handle_t port) {
  * @return the port type
  */
 static inline uint8_t portIsValid(port_handle_t port) {
-    return (port && ((BASE_PORT(port)->ptype & PORT_FLAG__VALID) == PORT_FLAG__VALID));
+    return portCheckIntegrity(port) && portFlagsIsSet(port, PORT_FLAG__VALID);
 }
 
 /**
- * clears the PORT_FLAG__VALID bit from the portType mask, incidating that this port is no longer valid.
+ * Invalidates the port checksum, incidating that this port is no longer valid.
  * NOTE: When marking a port as invalid, you are indicating that it is no longer suitable for use and
- * its state can not be trusted. You should release the port handle and reallocate it, before attempting
+ * its state can not be trusted. You should release the port handle and reallocate it before attempting
  * to use this port again.
  * @param port the port handle
  * @return the port type
  */
 static inline void portInvalidate(port_handle_t port) {
-    if (port) { BASE_PORT(port)->ptype &= ~PORT_FLAG__VALID; }
+    if (portIsValid(port)) { BASE_PORT(port)->chksum = UINT32_MAX; portFlagsClear(port, PORT_FLAG__VALID); }
 }
 
 /**
  * Determines viability of the specified port. Does not connect or otherwise interface with the port
  * directly, but generally indicates whether the underlying OS devices and resources exist in order to
- * successfully open and operate on the port. If the port is successfully validated, it is flagged with
- * PORT_FLAG__VALID until cleared by portInvalidate(), or this function is called again on the same port
+ * successfully open and operate on the port. If the port is successfully validated, its cksum field updated
+ * to reflect a valid indication of the port, until cleared by portInvalidate().
  * @param port the port to validate
  * @return 1 if the port is determined to be viable, 0 if the port is invalid, or <0 if an error occurred
  */
 static inline int portValidate(port_handle_t port) {
-    if (!port) return PORT_ERROR__INVALID;
-    BASE_PORT(port)->ptype &= ~PORT_FLAG__VALID;
-    BASE_PORT(port)->ptype |= BASE_PORT(port)->portValidate ? ( BASE_PORT(port)->portValidate(port) ? PORT_FLAG__VALID : 0 ) : 0;
-    return ((BASE_PORT(port)->ptype & PORT_FLAG__VALID) == PORT_FLAG__VALID) ? 1 : 0;
+    if (!portCheckIntegrity(port)) return 0;
+    if (BASE_PORT(port)->portValidate && BASE_PORT(port)->portValidate(port))
+        portFlagsSet(port, PORT_FLAG__VALID);
+    else
+        portFlagsClear(port, PORT_FLAG__VALID);
+
+    return portFlagsIsSet(port, PORT_FLAG__VALID);
 }
 
 /**
@@ -199,7 +260,7 @@ static inline int portValidate(port_handle_t port) {
  * @return the port type
  */
 static inline uint8_t portIsOpened(port_handle_t port) {
-    return (portIsValid(port) && ((BASE_PORT(port)->ptype & PORT_FLAG__OPENED) == PORT_FLAG__OPENED));
+    return (portIsValid(port) && portFlagsIsSet(port, PORT_FLAG__OPENED));
 }
 
 /**
