@@ -17,12 +17,16 @@
 static int s_protocol_version = NMEA_PROTOCOL_2P3;  // Default to protocol version 2.3
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
+#define HISTORY_SIZE    3  
+
 static struct  
 {
     uint32_t    timeOfWeekMs;
     ixVector3   velNed;
-    float       speed2dMps;
+    float       speed2dMps[HISTORY_SIZE];
+    float       speed2dMpsFiltered;     // Median filtered
     float       speed2dKnots;
+    bool        enableMedianSpeedFilter;
 } s_dataSpeed;
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
@@ -1028,8 +1032,28 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
             quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
             quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
         }
-        s_dataSpeed.speed2dMps = mag_Vec2(s_dataSpeed.velNed);
-        s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
+        // Update history buffer
+        for (int i = HISTORY_SIZE-1; i > 0; i--)
+        {
+            s_dataSpeed.speed2dMps[i] = s_dataSpeed.speed2dMps[i-1];
+        }
+        s_dataSpeed.speed2dMps[0] = mag_Vec2(s_dataSpeed.velNed);
+
+        // Median filter - find middle value of 3 samples
+        float a = s_dataSpeed.speed2dMps[0];
+        float b = s_dataSpeed.speed2dMps[1];
+        float c = s_dataSpeed.speed2dMps[2];
+        if (s_dataSpeed.enableMedianSpeedFilter)
+        {
+            // Apply median filter
+            s_dataSpeed.speed2dMpsFiltered = fmaxf(fminf(a, b), fminf(fmaxf(a, b), c));
+        }
+        else
+        {
+            // No filtering
+            s_dataSpeed.speed2dMpsFiltered = s_dataSpeed.speed2dMps[0];
+        }
+        s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMpsFiltered;
     }
 }
 
