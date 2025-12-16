@@ -23,8 +23,8 @@ static struct
 {
     uint32_t    timeOfWeekMs;
     ixVector3   velNed;
-    float       speed2dMps[HISTORY_SIZE];
-    float       speed2dMpsFiltered;     // Median filtered
+    float       speed2dMpsHistory[HISTORY_SIZE];
+    float       speed2dMps;     // Median filtered
     float       speed2dKnots;
     bool        enableSpeedFilter;
 } s_dataSpeed;
@@ -1035,23 +1035,23 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
         // Update history buffer
         for (int i = HISTORY_SIZE-1; i > 0; i--)
         {
-            s_dataSpeed.speed2dMps[i] = s_dataSpeed.speed2dMps[i-1];
+            s_dataSpeed.speed2dMpsHistory[i] = s_dataSpeed.speed2dMpsHistory[i-1];
         }
-        s_dataSpeed.speed2dMps[0] = mag_Vec2(s_dataSpeed.velNed);
+        s_dataSpeed.speed2dMpsHistory[0] = mag_Vec2(s_dataSpeed.velNed);
 
         // Median filter - find middle value of 3 samples
-        float a = s_dataSpeed.speed2dMps[0];
-        float b = s_dataSpeed.speed2dMps[1];
-        float c = s_dataSpeed.speed2dMps[2];
+        float a = s_dataSpeed.speed2dMpsHistory[0];
+        float b = s_dataSpeed.speed2dMpsHistory[1];
+        float c = s_dataSpeed.speed2dMpsHistory[2];
         if (s_dataSpeed.enableSpeedFilter)
         {   // Apply median filter
-            s_dataSpeed.speed2dMpsFiltered = fmaxf(fminf(a, b), fminf(fmaxf(a, b), c));
+            s_dataSpeed.speed2dMps = fmaxf(fminf(a, b), fminf(fmaxf(a, b), c));
         }
         else
         {   // No filtering
-            s_dataSpeed.speed2dMpsFiltered = s_dataSpeed.speed2dMps[0];
+            s_dataSpeed.speed2dMps = s_dataSpeed.speed2dMpsHistory[0];
         }
-        s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMpsFiltered;
+        s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
     }
 }
 
@@ -1153,12 +1153,12 @@ int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
     {
         nmea_sprint_f(a, aSize, n, ",%.2f", courseMadeTrue + magVarCorrectionRad*C_RAD2DEG_F);
     }
-    nmea_sprint(a, aSize, n, ",M");                                                     // 4
-    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);                      // 5
-    nmea_sprint(a, aSize, n, ",N");                                                     // 6
-    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dMpsFiltered*C_MPS2KMPH_F);   // 7
-    nmea_sprint(a, aSize, n, ",K");                                                     // 8
-    switch(pos.status & GPS_STATUS_FIX_MASK)                                            // 9
+    nmea_sprint(a, aSize, n, ",M");                                             // 4
+    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);              // 5
+    nmea_sprint(a, aSize, n, ",N");                                             // 6
+    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dMps*C_MPS2KMPH_F);   // 7
+    nmea_sprint(a, aSize, n, ",K");                                             // 8
+    switch(pos.status & GPS_STATUS_FIX_MASK)                                    // 9
     {
     case GPS_STATUS_FIX_2D:
     case GPS_STATUS_FIX_3D:
