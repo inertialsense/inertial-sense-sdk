@@ -24,7 +24,7 @@ static struct
     uint32_t    timeOfWeekMs;
     ixVector3   velNed;
     float       speed2dMpsHistory[HISTORY_SIZE];
-    float       speed2dMps;     // Median filtered
+    float       speed2dMps;
     float       speed2dKnots;
     bool        enableSpeedFilter;
 } s_dataSpeed;
