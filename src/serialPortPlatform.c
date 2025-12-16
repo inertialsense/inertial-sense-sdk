@@ -97,7 +97,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
 #define IS_ENABLED_FACILITIES  (IS_LOG_PORT)
 
-#define DEBUG_COMMS   // Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
+// #define DEBUG_COMMS   // Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
 #ifdef DEBUG_COMMS
 #define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) ) //  || ((n >= 0xA1) && (n <= 0xDF)))
 
@@ -322,6 +322,8 @@ int set_nonblocking(int fd)
 // Return 1 on success, 0 on failure
 static int serialPortOpenPlatform(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
+    log_more_debug(IS_LOG_PORT, "serialPortOpenPlatform(blocking=%s) called.", blocking ? "true" : "false");
+
     serial_port_t* serialPort = (serial_port_t*)port;
     if (serialPort->handle != 0)
     {
@@ -401,26 +403,28 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         return 0;
     }
 
+    // COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 10 : 0) };
+
     if (blocking)
     {
         // For blocking, ReadFile returns immediately with whatever is in the buffer.
         // The read loop in serialPortReadTimeoutPlatformWindows will poll.
-        timeouts.ReadIntervalTimeout = MAXDWORD;
-        timeouts.ReadTotalTimeoutMultiplier = 0;
-        timeouts.ReadTotalTimeoutConstant = 0;
+        timeouts.ReadIntervalTimeout = 1;
+        timeouts.ReadTotalTimeoutMultiplier = 1;
+        timeouts.ReadTotalTimeoutConstant = 1;
     }
     else // non-blocking
     {
         // For non-blocking (overlapped), we want ReadFile to pend if no data is available.
         // Setting read timeouts to 0 disables them, and the wait is handled by WaitForSingleObject.
-        timeouts.ReadIntervalTimeout = 0;
+        timeouts.ReadIntervalTimeout = MAXDWORD;
         timeouts.ReadTotalTimeoutMultiplier = 0;
         timeouts.ReadTotalTimeoutConstant = 0;
     }
 
     // Set a reasonable write timeout for both modes.
     timeouts.WriteTotalTimeoutMultiplier = 0;
-    timeouts.WriteTotalTimeoutConstant = 10;
+    timeouts.WriteTotalTimeoutConstant = 5;
 
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
@@ -488,6 +492,8 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
 static int serialPortIsOpenPlatform(port_handle_t port)
 {
+    log_more_debug(IS_LOG_PORT, "serialPortIsOpenPlatform() called.");
+
     serial_port_t* serialPort = (serial_port_t*)port;
     if (!serialPort->handle)
         return 0;
@@ -514,6 +520,7 @@ static int serialPortIsOpenPlatform(port_handle_t port)
 
 static int serialPortClosePlatform(port_handle_t port)
 {
+    log_more_debug(IS_LOG_PORT, "serialPortClosePlatform() called.");
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -559,6 +566,8 @@ static int serialPortClosePlatform(port_handle_t port)
 
 static int serialPortFlushPlatform(port_handle_t port)
 {
+    log_more_debug(IS_LOG_PORT, "serialPortFlushPlatform() called.");
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -567,7 +576,6 @@ static int serialPortFlushPlatform(port_handle_t port)
         return 0;
     }
 
-    log_more_debug(IS_LOG_PORT, "serialPortFlushPlatform() called.");
 
 #if PLATFORM_IS_WINDOWS
 
@@ -595,6 +603,8 @@ static int serialPortFlushPlatform(port_handle_t port)
 
 static int serialPortDrainPlatform(port_handle_t port)
 {
+    log_more_debug(IS_LOG_PORT, "serialPortDrainPlatform() called.");
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -602,8 +612,6 @@ static int serialPortDrainPlatform(port_handle_t port)
         // not open, no close needed
         return 0;
     }
-
-    log_more_debug(IS_LOG_PORT, "serialPortDrainPlatform() called.");
 
 #if PLATFORM_IS_WINDOWS
 
@@ -630,6 +638,15 @@ static int serialPortDrainPlatform(port_handle_t port)
 
 #if PLATFORM_IS_WINDOWS
 
+/**
+ * Reads a specified number of bytes from the serial port with a timeout.
+ *
+ * @param hSerial   Handle to the COM port (must be opened with FILE_FLAG_OVERLAPPED).
+ * @param buffer    Pointer to the destination buffer.
+ * @param bufSize   The number of bytes requested to read.
+ * @param timeoutMs Maximum time to wait in milliseconds.
+ * @return          The actual number of bytes read (may be less than bufSize on timeout).
+ */
 static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
     if (readCount < 1)
@@ -637,48 +654,37 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
         return 0;
     }
 
+    DWORD dwRes = 0;
     DWORD dwRead = 0;
     int totalRead = 0;
     ULONGLONG startTime = GetTickCount64();
-    do
-    {
-        if (ReadFile(handle->platformHandle, buffer + totalRead, readCount - totalRead, &dwRead, !handle->blocking ? &handle->ovRead : 0))
-        {
-            if (!handle->blocking)
-            {
+    do {
+        if (ReadFile(handle->platformHandle, buffer + totalRead, readCount - totalRead, &dwRead, !handle->blocking ? &handle->ovRead : 0)) {
+            dwRes = GetLastError();
+            if (!handle->blocking) {
                 GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);
             }
             totalRead += dwRead;
-        }
-        else if (!handle->blocking)
-        {
-            DWORD dwRes = GetLastError();
-            if (dwRes == ERROR_IO_PENDING)
-            {
-                dwRes = WaitForSingleObject(handle->ovRead.hEvent, _MAX(1, timeoutMilliseconds - (int)(GetTickCount64() - startTime)));
-                switch (dwRes)
-                {
-                case WAIT_OBJECT_0:
-                    if (!GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 0))
-                    {
+        } else if (!handle->blocking) {
+            dwRes = GetLastError();
+            if (dwRes == ERROR_IO_PENDING) {
+                dwRes = WaitForSingleObject(handle->ovRead.hEvent, _MAX(5, timeoutMilliseconds - (int)(GetTickCount64() - startTime)));
+                switch (dwRes) {
+                    case WAIT_OBJECT_0:
+                        if (!GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1))
+                            CancelIo(handle->platformHandle);
+                        else
+                            totalRead += dwRead;
+                        break;
+                    case WAIT_TIMEOUT:
+                    default:
+                        // cancel io and just take whatever was in the buffer
                         CancelIo(handle->platformHandle);
-                    }
-                    else
-                    {
+                        GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 0);
                         totalRead += dwRead;
-                    }
-                    break;
-
-                default:
-                    // cancel io and just take whatever was in the buffer
-                    CancelIo(handle->platformHandle);
-                    GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);
-                    totalRead += dwRead;
-                    break;
+                        break;
                 }
-            }
-            else
-            {
+            } else {
                 CancelIo(handle->platformHandle);
             }
         }
@@ -757,6 +763,8 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
 
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds)
 {
+    log_bombastic(IS_LOG_PORT, "serialPortReadTimeoutPlatform() called.");
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
@@ -836,6 +844,7 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
 
 static int serialPortWritePlatform(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
+    log_bombastic(IS_LOG_PORT, "serialPortWritePlatform() called.");
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
@@ -923,6 +932,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
 
 static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 {
+    log_more_debug(IS_LOG_PORT, "serialPortGetByteCountAvailableToReadPlatform() called.");
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
 
@@ -970,6 +980,7 @@ again:
 
 static int serialPortGetByteCountAvailableToWritePlatform(port_handle_t port)
 {
+    log_more_debug(IS_LOG_PORT, "serialPortGetByteCountAvailableToWritePlatform() called.");
     serial_port_t* serialPort = (serial_port_t*)port;
     // serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     (void)serialPort;
@@ -1003,6 +1014,7 @@ static int serialPortSleepPlatform(int sleepMilliseconds)
 
 int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
 {
+    log_more_debug(IS_LOG_PORT, "serialPortPlatformInit() called.");
     serial_port_t* serialPort = (serial_port_t*)port;
     // very important - the serial port must be initialized to zeros
     base_port_t tmp = { .pnum = portId(port), .ptype = portType(port), .pflags = portFlags(port), .chksum = BASE_PORT(port)->chksum };

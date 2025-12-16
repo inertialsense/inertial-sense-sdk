@@ -92,7 +92,7 @@ extern "C" {
 
         struct timespec ts;
         timespec_get(&ts, TIME_UTC);
-        printf("%ld.%06ld: ", ts.tv_sec, ts.tv_nsec / 1000);
+        printf("%ld.%06ld: ", (long)ts.tv_sec, (long)ts.tv_nsec / 1000);
 
         if (facility_code)
             printf("%s ", facility_name);
