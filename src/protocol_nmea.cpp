@@ -26,7 +26,7 @@ static struct
     float       speed2dMps[HISTORY_SIZE];
     float       speed2dMpsFiltered;     // Median filtered
     float       speed2dKnots;
-    bool        enableMedianSpeedFilter;
+    bool        enableSpeedFilter;
 } s_dataSpeed;
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
@@ -1043,14 +1043,12 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
         float a = s_dataSpeed.speed2dMps[0];
         float b = s_dataSpeed.speed2dMps[1];
         float c = s_dataSpeed.speed2dMps[2];
-        if (s_dataSpeed.enableMedianSpeedFilter)
-        {
-            // Apply median filter
+        if (s_dataSpeed.enableSpeedFilter)
+        {   // Apply median filter
             s_dataSpeed.speed2dMpsFiltered = fmaxf(fminf(a, b), fminf(fmaxf(a, b), c));
         }
         else
-        {
-            // No filtering
+        {   // No filtering
             s_dataSpeed.speed2dMpsFiltered = s_dataSpeed.speed2dMps[0];
         }
         s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMpsFiltered;
@@ -1155,12 +1153,12 @@ int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
     {
         nmea_sprint_f(a, aSize, n, ",%.2f", courseMadeTrue + magVarCorrectionRad*C_RAD2DEG_F);
     }
-    nmea_sprint(a, aSize, n, ",M");                                             // 4
-    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);              // 5
-    nmea_sprint(a, aSize, n, ",N");                                             // 6
-    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dMps*C_MPS2KMPH_F);   // 7
-    nmea_sprint(a, aSize, n, ",K");                                             // 8
-    switch(pos.status & GPS_STATUS_FIX_MASK)                                    // 9
+    nmea_sprint(a, aSize, n, ",M");                                                     // 4
+    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);                      // 5
+    nmea_sprint(a, aSize, n, ",N");                                                     // 6
+    nmea_sprint_f(a, aSize, n, ",%.2f", s_dataSpeed.speed2dMpsFiltered*C_MPS2KMPH_F);   // 7
+    nmea_sprint(a, aSize, n, ",K");                                                     // 8
+    switch(pos.status & GPS_STATUS_FIX_MASK)                                            // 9
     {
     case GPS_STATUS_FIX_2D:
     case GPS_STATUS_FIX_3D:
@@ -2273,6 +2271,10 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
 
     // extract port from options
     ports = options&RMC_OPTIONS_PORT_MASK;
+
+    // enable speed filter if requested.  
+    if (options & RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE) { s_dataSpeed.enableSpeedFilter = true; }
+    if (options & RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE){ s_dataSpeed.enableSpeedFilter = false; }
     
     for (int i=0; i<20; i++)
     {

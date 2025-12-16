@@ -1830,15 +1830,17 @@ typedef struct PACKED
     this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs.
 */
 
-#define RMC_OPTIONS_PORT_MASK           0x000000FF
-#define RMC_OPTIONS_PORT_ALL            (RMC_OPTIONS_PORT_MASK)
-#define RMC_OPTIONS_PORT_CURRENT        0x00000000
-#define RMC_OPTIONS_PORT_SER0           0x00000001
-#define RMC_OPTIONS_PORT_SER1           0x00000002    // also SPI
-#define RMC_OPTIONS_PORT_SER2           0x00000004
-#define RMC_OPTIONS_PORT_USB            0x00000008
-#define RMC_OPTIONS_PRESERVE_CTRL       0x00000100    // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_PERSISTENT          0x00000200    // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+#define RMC_OPTIONS_PORT_MASK                   0x000000FF
+#define RMC_OPTIONS_PORT_ALL                    (RMC_OPTIONS_PORT_MASK)
+#define RMC_OPTIONS_PORT_CURRENT                0x00000000
+#define RMC_OPTIONS_PORT_SER0                   0x00000001
+#define RMC_OPTIONS_PORT_SER1                   0x00000002      // also SPI
+#define RMC_OPTIONS_PORT_SER2                   0x00000004
+#define RMC_OPTIONS_PORT_USB                    0x00000008
+#define RMC_OPTIONS_PRESERVE_CTRL               0x00000100      // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+#define RMC_OPTIONS_PERSISTENT                  0x00000200      // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    0x00000400      // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE   0x00000800      // Disable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).
 
                                                                 // RMC message data rates:
 #define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)
