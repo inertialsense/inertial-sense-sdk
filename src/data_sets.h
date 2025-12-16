@@ -1575,6 +1575,8 @@ enum eGenFaultCodes
     GFC_GNSS_RECEIVER_TIME                  = 0x04000000,
     /*! Fault: GNSS reciever ceneral fault. See the corresponding GPS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK) */
     GFC_GNSS_GENERAL_FAULT                  = 0x08000000,
+    /*! Fault: Invalid IMU input rejected by EKF */
+    GFC_EKF_INPUT_INVALID_IMU               = 0x10000000,
 
     /*! IMX GFC flags that relate to GPX status flags */
     GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,
