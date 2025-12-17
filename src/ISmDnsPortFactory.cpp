@@ -47,6 +47,7 @@ uint32_t minor(uint64_t devnum) {
     return minor;
 }
 
+#if !defined(PLATFORM_IS_APPLE)
 /**
  * makedev function from glibc reimplemented as a normal C function instead of as a define
  * See https://github.com/bminor/glibc/blob/c744519bad81067697600bd01e90b90ae338bf08/bits/sysmacros.h#L26 for more info
@@ -62,7 +63,7 @@ uint64_t makedev(uint32_t major, uint32_t minor) {
     devnum |= (((uint64_t) (minor & 0xffffff00u)) << 12);    \
     return devnum;
 }
-
+#endif
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port

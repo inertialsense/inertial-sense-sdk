@@ -69,7 +69,7 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 #if PLATFORM_IS_WINDOWS
     char targetPath[256];
     return (QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath)) != 0);
-#else   // Linux
+#elif PLATFORM_IS_LINUX
     return validate_port__linux(pType, pName);
 #endif
 }
@@ -194,7 +194,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
         }
     }
 
-#else   // Linux
+#elif PLATFORM_IS_LINUX
 
     struct dirent **namelist;
     std::vector<std::string> comList8250;
