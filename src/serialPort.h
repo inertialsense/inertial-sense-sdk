@@ -109,12 +109,6 @@ struct serial_port_s
     // length of error
     int errorLength;
 
-    // Number of bytes sent
-    // int txBytes;    // are these still needed?
-
-    // Number of bytes received
-    // int rxBytes;    // are these still needed?
-
     // Options for encoding like parity, stop bits, etc. (see eSerialPortOptions)
     uint32_t options;
 

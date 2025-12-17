@@ -33,7 +33,7 @@ TEST(test_PortFactory, tcpServerPortFactory) {
     auto& pm = PortManager::getInstance();
     pm.clearPortFactories();
     pm.addPortFactory(&serverFactory);
-    pm.addPortListener([](PortManager::port_event_e event, uint16_t pId, std::string pName, port_handle_t port) {
+    pm.addPortListener([](PortManager::port_event_e event, uint16_t pId, std::string pName, port_handle_t port, PortFactory& portFactory) {
         switch (event) {
             case PortManager::PORT_ADDED:
                 TEST_COUT << "Received incoming connection request from " << pName << std::endl;
