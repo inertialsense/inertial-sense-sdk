@@ -194,8 +194,8 @@ public:
                 if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMax %.3f  ", dtMax); }
             }
 
-            rate = (1.0 / dt);
-            accrualRate = accrual / rate;
+            rate = (dt != 0) ? (1.0 / dt) : 0;
+            accrualRate = (rate != 0) ? ((double)accrual / rate) : 0;
             dtLast = dt;
         }
         timeLast = time;

@@ -432,7 +432,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('RTK Cmp BaseVector', 'rtkBaselineVector')
         self.addListItem('RTK Obs GPS1', 'rtkObsGPS1')
         self.addListItem('RTK Obs GPS2', 'rtkObsGPS2')
-        self.addListItem('RTK Obs Rover-Base Single Diff', 'rtkObsSingleDiff')
+        self.addListItem('RTK Obs Rover-Base Double Diff', 'rtkObsDoubleDiff')
         self.addListItem('GPS Position NED Map', 'gpsPosNEDMap')
         self.addListItem('GPS Position NED', 'gpsPosNED')
         self.addListItem('GPS Velocity NED', 'gpsVelNED')

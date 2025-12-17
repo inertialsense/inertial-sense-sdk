@@ -22,7 +22,7 @@ extern "C" {
 #include <stdarg.h>
 #include <string.h>
 
-#include "types.h"
+#include "core/types.h"
 
 
 #define DEBUG_LOGGING

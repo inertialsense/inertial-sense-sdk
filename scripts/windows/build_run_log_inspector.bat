@@ -8,7 +8,7 @@ echo.
 for %%i in ("%~dp0..\..") do set SDK_DIR="%%~fi"
 
 :: Build Log Inspector locally
-python %SDK_DIR%\scripts\build_log_inspector.py -r %*
+python %SDK_DIR%\scripts\build_log_inspector.py --run %*
 
 :: Propagate the exit code
 set "ec=%ERRORLEVEL%"
