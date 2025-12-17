@@ -41,7 +41,7 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
 
     serialPortPlatformInit(port);
 
-    serialPort->base.portOpen = SerialPortFactory::open_port;
+    // serialPort->base.portOpen = SerialPortFactory::open_port;
     serialPort->base.portValidate = SerialPortFactory::validate_port;
     serialPort->pfnError = SerialPortFactory::onPortError;
 

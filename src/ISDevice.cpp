@@ -14,7 +14,7 @@
 #include "imx_defaults.h"
 #include "ISLogger.h"
 
-#define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+#define IS_LOG_LEVEL IS_LOG_LEVEL_WARN
 #define IS_ENABLED_FACILITIES  (IS_LOG_ISDEVICE)
 
 const ISDevice ISDevice::invalidRef;
@@ -718,6 +718,9 @@ int ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMas
  */
 void ISDevice::SyncFlashConfig()
 {
+    if (devInfo.hdwRunState != HDW_STATE_APP)
+        return;
+
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     unsigned int timeMs = current_timeMs();
@@ -741,6 +744,9 @@ void ISDevice::SyncFlashConfig()
 
 int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum)
 {
+    if (devInfo.hdwRunState != HDW_STATE_APP)
+        return -1;
+
     if (uploadTimeMs)
     {	// Upload in progress
         if (timeMs - uploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
@@ -779,6 +785,9 @@ int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint
 
 void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
 {
+    if (devInfo.hdwRunState != HDW_STATE_APP)
+        return;
+
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     bool platformCfgUpdateIoConfig = flashCfg_.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
@@ -807,7 +816,7 @@ bool ISDevice::ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout)
 {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected()) {
+    if (!isConnected() || (devInfo.hdwRunState != HDW_STATE_APP)) {
         return false;   // No device, no flash config
     }
 
@@ -827,7 +836,7 @@ bool ISDevice::GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout)
 {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected()) {
+    if (!isConnected() || (devInfo.hdwRunState != HDW_STATE_APP)) {
         return false;   // No device, no flash config
     }
 

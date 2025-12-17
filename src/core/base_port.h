@@ -11,7 +11,8 @@
 
 #include <string.h>
 
-#include "types.h"
+#include "core/types.h"
+#include "core/msg_logger.h"
 #include "ISConstants.h"
 
 /**
@@ -41,8 +42,7 @@
 #define PORT_ERROR__OPEN_FAILURE        -3      //!< Attempt to open the port failed.
 #define PORT_ERROR__WRITE_FAILURE       -4      //!< Attempt to write to the port failed.
 #define PORT_ERROR__READ_FAILURE        -5      //!< Attempt to read from the port failed.
-#define PORT_ERROR__WRITE_TIMEOUT       -6      //!< Attempt to write to the port timed out (but otherwise, no other error occurred); this typically doesn't happen on OSs, but may on hardware implementations if the hardware is unavailable, etc.
-#define PORT_ERROR__READ_TIMEOUT        -7      //!< Attempt to read from the port timed out (but otherwise, no other error occurred)
+#define PORT_ERROR__TIMEOUT             -6      //!< The port operation reported a timeout (could be read, write, open, etc)
 
 #define PORT_OP__READ               0x00        //!< A portLogger operation flag indicating a READ/RX was performed
 #define PORT_OP__WRITE              0x01        //!< A portLogger operation flag indicating a WRITE/TX was performed
@@ -191,6 +191,7 @@ static inline int portCheckIntegrity(port_handle_t port) {
  * @param f a bit mask of flags to set
  */
 static inline void portFlagsSet(port_handle_t port, uint16_t f) {
+    if (!port) return;
     BASE_PORT(port)->pflags |= f;
     portRecalcChksum(port);
 }
@@ -201,6 +202,7 @@ static inline void portFlagsSet(port_handle_t port, uint16_t f) {
  * @param f the bit mask of flags to clear
  */
 static inline void portFlagsClear(port_handle_t port, uint16_t f) {
+    if (!port) return;
     BASE_PORT(port)->pflags &= ~f;
     portRecalcChksum(port);
 }
@@ -212,25 +214,27 @@ static inline void portFlagsClear(port_handle_t port, uint16_t f) {
  * @returns turns if all bits specified by f are also set on the port, otherwise false
  */
 static inline int portFlagsIsSet(port_handle_t port, uint16_t f) {
-    return (BASE_PORT(port)->pflags & f) == f;
+    return port && ((BASE_PORT(port)->pflags & f) == f);
 }
 
 /**
- * returns true if the port's ptype's has the PORT_FLAG__VALID bit set
+ * Verifies the state of the port.
  * @param port the port handle
- * @return the port type
+ * @return true (non-zero) if the port's passes an integrity check and has the PORT_FLAG__VALID set, otherwise false (zero)
  */
 static inline uint8_t portIsValid(port_handle_t port) {
-    return portCheckIntegrity(port) && portFlagsIsSet(port, PORT_FLAG__VALID);
+    if (!port) return 0;
+    int integrity = portCheckIntegrity(port);
+    int validFlag = portFlagsIsSet(port, PORT_FLAG__VALID);
+    return (integrity && validFlag);
 }
 
 /**
- * Invalidates the port checksum, incidating that this port is no longer valid.
+ * Invalidates the port checksum, indicating that this port is no longer valid.
  * NOTE: When marking a port as invalid, you are indicating that it is no longer suitable for use and
  * its state can not be trusted. You should release the port handle and reallocate it before attempting
  * to use this port again.
  * @param port the port handle
- * @return the port type
  */
 static inline void portInvalidate(port_handle_t port) {
     if (portIsValid(port)) { BASE_PORT(port)->chksum = UINT32_MAX; portFlagsClear(port, PORT_FLAG__VALID); }
@@ -321,6 +325,15 @@ static inline int portOpen(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
     return (BASE_PORT(port)->portOpen) ? BASE_PORT(port)->portOpen(port) : PORT_ERROR__NOT_SUPPORTED;
 }
+
+/**
+ * Attempts to open the specified port, until a timeout occurs.
+ * @param port the port to open
+ * @param timeoutMs the maximum time to wait for the port to open/connect
+ * @param retryDelayMs the number of milliseconds to wait between failed open attempts
+ * @return PORT_ERROR__NONE if successful, else of PORT_ERROR__* indicating the reason for failure.
+ */
+int portOpenRetry(port_handle_t port, unsigned int timeoutMs, unsigned int retryDelayMs);
 
 /**
  * Closes or disconnects a connection to port. This function may not be supported on all port implementations.

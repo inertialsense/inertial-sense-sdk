@@ -164,7 +164,7 @@ typedef struct serial_port_s serial_port_t;
 void serialPortInit(port_handle_t, int id, int type, int flags);
 
 // set the port name for a serial port, in case you are opening it later
-void serialPortSetPort(port_handle_t port, const char* portName);
+void serialPortSetName(port_handle_t port, const char* portName);
 
 /**
  * returns the name associated with this port (this is usually the OS's identifier)
@@ -187,6 +187,12 @@ const char *serialPortName(port_handle_t port);
  */
 int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int blocking);
 
+/**
+ * opens the specified serial port, using previously set options for name, baudrate, and flags/options
+ * @param port the port to open
+ * @return
+ */
+int serialPortOpen_internal(port_handle_t port);
 
 /**
  * open a serial port with retry
@@ -356,6 +362,9 @@ int serialPortSleep(port_handle_t port, int sleepMilliseconds);
 
 // Set the port options
 void serialPortSetOptions(port_handle_t port, uint32_t options);
+
+// Set the port baud rate
+void serialPortSetBaud(port_handle_t port, int baudRate);
 
 // Set callback for error events
 int serialPortSetErrorCB(port_handle_t port, pfnSerialPortOnErrorCB onErrorCb);

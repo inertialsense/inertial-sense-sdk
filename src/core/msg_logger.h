@@ -23,12 +23,16 @@ extern "C" {
 #include <string.h>
 #include <time.h>
 
+#include "ISConstants.h"
 #include "types.h"
 
 
 #define DEBUG_LOGGING
-#define IS_LOG_LEVEL           IS_LOG_LEVEL_INFO
-#define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
+// #define IS_LOG_LEVEL           IS_LOG_LEVEL_INFO
+// #define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
+#define IS_LOG_LEVEL            IS_LOG_LEVEL_MORE_DEBUG
+#define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE | IS_LOG_PORT)
+
 
 #ifndef DEBUG_LOGGING
     #define log_debug(...)
@@ -69,6 +73,7 @@ extern "C" {
 
     // #define debug_message(facility, ...)    IS_LOG_MSG(facility, "[DEBUG]", 4, __VA_ARGS__)
 
+    static FILE* log_file = NULL;
 
     // --- Internal static inline functions ---
     static inline void static_log_msg(int facility_code, int log_level, const char *level_name, const char *facility_name, const char *format, ...) {
@@ -90,16 +95,58 @@ extern "C" {
         vsnprintf(logMsg, sizeof(logMsg) - 1, format, args);
         va_end(args);
 
+        if (log_file == NULL)
+            log_file = fopen("inertial_sense.log", "a+"); // stdout;
+        if (log_file == NULL)
+            log_file = stdout;
+
         struct timespec ts;
         timespec_get(&ts, TIME_UTC);
-        printf("%ld.%06ld: ", (long)ts.tv_sec, (long)ts.tv_nsec / 1000);
+        fprintf(log_file, "%ld.%06ld: ", (long)ts.tv_sec, (long)ts.tv_nsec / 1000);
 
         if (facility_code)
-            printf("%s ", facility_name);
-        printf("%s : %s\n", level_name, logMsg);
-        fflush(stdout);
+            fprintf(log_file, "%s ", facility_name);
+        fprintf(log_file, "%s : %s\n", level_name, logMsg);
+        fflush(log_file);
     #endif
     }
+
+    #define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) ) //  || ((n >= 0xA1) && (n <= 0xDF)))
+
+    static inline void static_log_buffer(const char* prefix, const unsigned char* buffer, int len) {
+    #if defined(__ZEPHYR__) // defined(PLATFORM_IS_EMBEDDED) ||
+    #elif defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
+        if (len > 0) {
+            const int bytes_per_line = 32;
+
+            struct timespec ts;
+            timespec_get(&ts, TIME_UTC);
+            fprintf(log_file, "%ld.%06ld: %s", (long)ts.tv_sec, (long)ts.tv_nsec / 1000, prefix);
+
+            const unsigned char* buff_ofs = buffer;
+            int remaining = len, i = 0;
+            do {
+                for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
+                    fprintf(log_file, " %02x", buff_ofs[i]);
+
+                int pad = (strlen(prefix) + (bytes_per_line * 3) + 3) - (i * 3);    // note that 'i' is carried from the above for-loop
+                fprintf(log_file, "%*c", pad, ' ');
+
+                for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
+                    fprintf(log_file, "%c", IS_PRINTABLE(buff_ofs[i]) ? buff_ofs[i] : 0xB7);
+
+                buff_ofs += i;
+                remaining -= i;
+
+                fprintf(log_file, "\n");
+                if (remaining > 0)
+                    fprintf(log_file, "                      ");
+            } while (remaining > 0);
+            // fprintf(log_file, "\n");
+        }
+    #endif
+    }
+
 #endif
 
 #ifdef __cplusplus
