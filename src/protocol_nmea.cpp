@@ -17,7 +17,7 @@
 static int s_protocol_version = NMEA_PROTOCOL_2P3;  // Default to protocol version 2.3
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
-#define HISTORY_SIZE    3  
+#define HISTORY_SIZE    3
 
 static struct  
 {
