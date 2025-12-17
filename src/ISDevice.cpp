@@ -66,29 +66,33 @@ bool ISDevice::Update() {
 
 /**
  * Steps the communications for this device, sending any scheduled requests and parsing any received data on the device's associated port (if connected).
- * @return
+ * @return false if the device is inactionable, either through configuration or port status; otherwise true indicates a sufficient state to perform work, even if there was nothing to do.
  */
 bool ISDevice::step() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected() || portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
+    if (portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
         return false;
 
-    if (portType(port) & PORT_TYPE__COMM) {
-        is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-        if (!hasDeviceInfo()) {
-            validateAsync();
-        } else {
-            SyncFlashConfig();
+    bool didStuff = false;
+    if (isConnected()) {
+        if (portType(port) & PORT_TYPE__COMM) {
+            is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+            if (!hasDeviceInfo()) {
+                validateAsync();
+            } else {
+                SyncFlashConfig();
+            }
         }
+        didStuff = true;
     }
 
     if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
         fwUpdate();
-        return true;    // always return true if we're updating, regardless if we're connected
+        didStuff = true;
     }
 
-    return isConnected();
+    return didStuff;
 }
 
 is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)()) {
