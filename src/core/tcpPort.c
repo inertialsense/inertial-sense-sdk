@@ -399,6 +399,8 @@ void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* nam
     // tcpPort->addr.storage = *ip;
     tcpPort->blocking = portFlagsIsSet(port, PORT_FLAG__BLOCKING);
     tcpPort->blocking_internal = true;
+
+    portFlagsSet(port, PORT_FLAG__VALID);
 }
 
 /**

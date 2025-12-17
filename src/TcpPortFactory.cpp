@@ -130,7 +130,7 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     }
     std::string uriPort {url.get_port()};
 
-    if (pType != PORT_TYPE__TCP) {
+    if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) {
         return false;
     }
 
