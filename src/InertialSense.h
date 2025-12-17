@@ -35,7 +35,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISDevice.h"
-#include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
@@ -54,8 +53,8 @@ extern "C"
 
 class InertialSense;
 
-typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
-typedef ISDevice*(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
+typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
+typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)> pfnHandleAckData;
@@ -72,9 +71,6 @@ public:
 
     struct com_manager_cpp_state_t
     {
-        // per device vars
-        // std::list<ISDevice*> devices;
-
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
         pfnHandleAckData binaryAckCallback;    // acknowledgment command and set data callback
@@ -156,15 +152,15 @@ public:
      * @return a vector of available ports
      * NOTE that this may return ports which do not have a corresponding ISDevice
      */
-    std::unordered_set<port_handle_t> getPorts() { return portManager; }
+    std::set<port_handle_t> getPorts() { return portManager; }
 
-    int DeviceCount() { return deviceManager.DeviceCount(); }
+    int DeviceCount() { return (int)deviceManager.DeviceCount(); }
 
-    std::list<ISDevice*>& getDevices() { return deviceManager; };
+    std::list<device_handle_t>& getDevices() { return deviceManager; };
 
-    ISDevice* getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
+    device_handle_t getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
 
-    ISDevice* getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
+    device_handle_t getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -237,14 +233,7 @@ public:
      * @param dataSize Number of bytes of raw data.
      * @param data Pointer to raw data.
      */
-    void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
-
-    /**
-    * Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
-    * @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
-    * @return true if connection opened, false if failure
-    */
-    bool OpenConnectionToServer(const std::string& connectionString);
+    void LogRawData(device_handle_t device, int dataSize, const uint8_t* data);
 
     /**
     * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
@@ -262,16 +251,16 @@ public:
     /**
      * Locates the device associated with the specified port
      * @param port
-     * @return ISDevice* which is connected to port, otherwise NULL
+     * @return device_handle_t which is connected to port, otherwise NULL
      */
-    ISDevice* DeviceByPort(port_handle_t port = 0);
+    device_handle_t DeviceByPort(port_handle_t port = 0);
 
     /**
      * Locates the device associated with the specified port name
      * @param port
-     * @return ISDevice* which is connected to port, otherwise NULL
+     * @return device_handle_t which is connected to port, otherwise NULL
      */
-    ISDevice* DeviceByPortName(const std::string& port_name);
+    device_handle_t DeviceByPortName(const std::string& port_name);
 
     /**
      * @return a list of discovered ports which are not currently associated with a open device
@@ -310,12 +299,6 @@ public:
     * @return string IP address and port
     */
     std::string TcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
-
-    /**
-    * Get Client connection info string (i.e. "127.0.0.1:7777")
-    * @return string IP address and port
-    */
-    std::string ClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
 
     /**
     * Flush all data from receive port
@@ -600,7 +583,6 @@ public:
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
-    // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
     /**
      * Registers a custom handler to instantiate discovered devices. Default behavior is to
@@ -620,17 +602,17 @@ public:
     template<typename Func>
     bool WithDevice(port_handle_t port, Func&& func)
     {
-        ISDevice* device = (port == NULL) ? deviceManager.front() : DeviceByPort(port);
+        device_handle_t device = (port == NULL) ? deviceManager.front() : DeviceByPort(port);
         return (device ? func(device) : false);
     }
 
 
-    // bool registerDevice(ISDevice* device);
-    // ISDevice* registerNewDevice(const ISDevice& orig);
-    // ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
+    // bool registerDevice(device_handle_t device);
+    // device_handle_t registerNewDevice(const ISDevice& orig);
+    // device_handle_t registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
 
     // bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
-    // bool releaseDevice(ISDevice* device, bool closePort = true);
+    // bool releaseDevice(device_handle_t device, bool closePort = true);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
@@ -667,7 +649,6 @@ private:
     bool m_forwardGpgga;
 
     cISTcpServer m_tcpServer;
-    cISStream* m_clientStream;                // Our client connection to a server
     uint64_t m_clientServerByteCount;
     int m_clientConnectionsCurrent = 0;
     int m_clientConnectionsTotal = 0;
@@ -679,10 +660,6 @@ private:
 
     mul_msg_stats_t m_serverMessageStats = {};
 
-    // these are used for RTCM3 corrections for RTK/NTRIP streams.
-    is_comm_instance_t m_gpComm;
-    uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
-
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 
     std::set<port_handle_t> portsToValidate;    //!< ports which were discovered but have not been validated as an ISDevice
@@ -690,7 +667,6 @@ private:
 
     // returns false if logger failed to open
     bool UpdateServer();
-    bool UpdateClient();
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
     bool HasReceivedDeviceInfoFromAllDevices();
@@ -700,7 +676,7 @@ private:
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
     void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port);
-    void deviceManagerHandler(uint8_t event, ISDevice*);
+    void deviceManagerHandler(uint8_t event, device_handle_t device);
 };
 
 #endif

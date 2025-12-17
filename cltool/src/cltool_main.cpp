@@ -38,6 +38,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "cltool.h"
 #include "protocol_nmea.h"
 #include "util/natsort.h"
+#include "CorrectionService.h"
 
 using namespace std;
 
@@ -48,6 +49,7 @@ static bool g_cmdSuccessExitAppNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 InertialSense *g_inertialSenseInterface = NULL;
+CorrectionService *g_roverConnection = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
@@ -88,10 +90,6 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
         if (server)
         {
             outstream << "Server: " << i->TcpServerIpAddressPort()   << "     Tx: ";
-        }
-        else
-        {
-            outstream << "Client: " << i->ClientConnectionInfo()     << "     Rx: ";
         }
         outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->ClientServerByteCount() << " bytes    \n";
 
@@ -412,7 +410,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 
     // we can only display a single device at a time; so use the first available device.  - FIXME: This should be selectable while running
-    ISDevice* activeDevice = inertialSenseInterface.getDevices().front();
+    device_handle_t activeDevice = inertialSenseInterface.getDevices().front();
     g_inertialSenseDisplay.setDevice(activeDevice);
 
     if (!g_commandLineOptions.disableDeviceValidation)
@@ -532,26 +530,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
-        vector<string> pieces;
-        splitString(g_commandLineOptions.roverConnection, ':', pieces);
-        if (pieces[0] != "TCP" &&
-            pieces[0] != "SERIAL")
-        {
-            cout << "Invalid base connection, 1st field must be: TCP or SERIAL\n  -rover=" << g_commandLineOptions.roverConnection << endl;
-            return false;
-        }
-        if (pieces[1] != "RTCM3" &&
-            pieces[1] != "IS" &&
-            pieces[1] != "UBLOX")
-        {
-            cout << "Invalid base connection, 2nd field must be: RTCM3, UBLOX, or IS\n  -rover=" << g_commandLineOptions.roverConnection << endl;
-            return false;
-        }
-
-        if (!inertialSenseInterface.OpenConnectionToServer(g_commandLineOptions.roverConnection))
-        {
-            cout << "Failed to connect to server (base)." << endl;
-        }
+        g_roverConnection = new CorrectionService(g_commandLineOptions.roverConnection);
+        g_roverConnection->addDevices(std::vector<device_handle_t> { std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices()) });
     }
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
@@ -804,12 +784,11 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
         cout << buffer << endl;
     } else if (fwPtr) {
         if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority
-            ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS))) {
-            printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, portName(fwPtr->port), fwPtr->devInfo->serialNumber, fwPtr->fwUpdate_getSessionTargetName());
-            if (fwPtr->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
-                int tot = fwPtr->fwUpdate_getProgressTotal();
-                int num = fwPtr->fwUpdate_getProgressNum();
-                float percent = fwPtr->fwUpdate_getProgressPercent() * 100.f;
+            ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS))) {
+            printf("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->getActiveTargetName());
+            if (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS) {
+                int tot, num;
+                float percent = fwPtr->getProgress(&num, &tot) * 100.f;
                 printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
             } else if (g_commandLineOptions.verboseLevel > ::IS_LOG_LEVEL_MORE_INFO) {
                 // printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
@@ -1007,8 +986,17 @@ static int cltool_dataStreaming()
             // [C++ COMM INSTRUCTION] STEP 4: Read data
             while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
+                // FIXME: this is a little jank -- we should periodically check for ports, but in the cltool, but we only want to check for the same ports that we originally connected on??
+                if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST)
+                    PortManager::getInstance().discoverPorts();
+
                 if (!inertialSenseInterface.Update())
                 {   // device disconnected, exit
+                    exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
+                    break;
+                }
+
+                if (g_roverConnection && (g_roverConnection->step() < 0)) {
                     exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
                     break;
                 }
@@ -1111,7 +1099,7 @@ static int inertialSenseMain()
 {
     g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
-    g_inertialSenseDisplay.Clear();     // clear display
+    // g_inertialSenseDisplay.Clear();     // clear display
 
     // if replay data log specified on command line, do that now and return
     if (g_commandLineOptions.replayDataLog)

@@ -33,6 +33,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     #include <process.h>
 #elif PLATFORM_IS_LINUX
     // Nothing to do
+#elif PLATFORM_IS_APPLE
+    // Nothing to do
 #else
     #error "Unsupported platform"
 #endif
@@ -278,11 +280,7 @@ uint64_t current_timeUs() {
  */
 uint32_t current_uptimeMs() {
     uint32_t upTimeMs = UINT32_MAX;
-#if defined(IMX_5)
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
-#elif defined(GPX_1)
+#if (defined(IS_IMX) || defined(GPX_1))
     struct timeval tv;
     gettimeofday(&tv, NULL);
     upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;

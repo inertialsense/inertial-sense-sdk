@@ -8,16 +8,20 @@
 
 #ifdef PLATFORM_IS_WINDOWS
 #include <winsock2.h>
-#define errno WSAGetLastError()
 #define close closesocket
 #define ioctl ioctlsocket
 #define ssize_t SSIZE_T
+// Use WSAGetLastError() directly instead of redefining errno
+#define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, (const char*)(optval), optlen)
+#define HANDLE_SOCKET_ERROR(tcpPort) do{ tcpPort->base.perror = WSAGetLastError(); return -WSAGetLastError(); } while(0)
 #else
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
+#define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->base.perror = errno; return -errno; } while(0)
 #endif
 
 /**
@@ -206,10 +210,9 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
 
     // Tell the kernel to send everything
     int flag = 1;
-    int retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+    int retval = SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
     if (retval != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     tcpPortSetBlocking(port, false);
@@ -217,16 +220,14 @@ int tcpPortDrain(port_handle_t port, uint32_t timeout) {
     // Makes sures the kernel actually tries to send something
     retval = send(tcpPort->socket, NULL, 0, 0);
     if (retval < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     // Tell the kernel to buffer messages again cause TCP_NODELAY kills network performance
     flag = 0;
-    retval = setsockopt(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+    retval = SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
     if (retval != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
     return 0;
 }
@@ -283,9 +284,8 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
     tv.tv_sec = timeout/1000;
     tv.tv_usec = (timeout % 1000) * 1000;
 #endif
-    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+    if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     // Receive data from the socket
@@ -298,15 +298,13 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 #endif
-    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+    if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     // Return
     if (retval < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
     return retval;
 }
@@ -327,27 +325,78 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 
     // Reset socket timeout
 #ifdef PLATFORM_IS_WINDOWS
+    const int MSG_NOSIGNAL = 0;
     DWORD tv = 0;
 #else
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 #endif
-    if (setsockopt(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+
+    if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+        HANDLE_SOCKET_ERROR(tcpPort);
     }
 
     tcpPortSetBlocking(port, tcpPort->blocking);
 
     // Receive data from the socket
-    ssize_t retval = send(tcpPort->socket, buf, len, 0);
+#ifdef PLATFORM_IS_LINUX
+    errno = 0;      // reset errno, so we make sure we're not looking at stale errors
+#endif
+    ssize_t retval = send(tcpPort->socket, buf, len, MSG_NOSIGNAL);
     if (retval < 0) {
+        if (errno == EPIPE)
+            tcpPortClose(port); // remote has disconnected, so force this socket closed.
         tcpPort->base.perror = errno;
         return -errno;
     }
 
     return retval;
+}
+
+/**
+ * Initializes a tcp port with the specified name and socket
+ * @param port The port handle to initialize
+ * @param id The id of the new port handle (a unique id)
+ * @param type The type modifier (OR'd with PORT_TYPE__TCP | PORT_FLAG__VALID)
+ * @param name The name to be associated with the new port
+ * @param socket a socket handle describing an existing and valid tcp socket
+ * @param blocking if true, configure the port for blocking operations, or false for non-blocking
+ *
+ * Note that initializing a TCP Port with a valid socket implied that the underlying socket is already
+ * connected. As a result, the PORT_FLAG__OPENED will also be set, and there is no need to call portOpen()
+ */
+void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* name, const int socket, bool blocking) {
+    tcp_port_t* tcpPort = TCP_PORT(port);
+    tcpPort->base.pnum = id;
+    tcpPort->base.ptype = PORT_TYPE__TCP | PORT_FLAG__VALID | PORT_FLAG__OPENED | type;
+
+    tcpPort->base.stats = (port_stats_t*)&(tcpPort->stats);
+
+    tcpPort->base.portName = tcpPortGetName;
+    tcpPort->base.portValidate = tcpPortValidate;
+    tcpPort->base.portOpen = tcpPortOpen;
+    tcpPort->base.portClose = tcpPortClose;
+    tcpPort->base.portFree = tcpPortFree;
+    tcpPort->base.portAvailable = tcpPortAvailable;
+    tcpPort->base.portFlush = tcpPortFlush;
+    tcpPort->base.portDrain = tcpPortDrain;
+    tcpPort->base.portRead = tcpPortRead;
+    tcpPort->base.portReadTimeout = tcpPortReadTimeout;
+    tcpPort->base.portWrite = tcpPortWrite;
+
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_init(COMM_PORT(port), NULL);
+
+    tcpPort->socket = socket;
+    tcpPort->name = strdup(name);
+
+    socklen_t peer_addr_len = sizeof(tcpPort->addr.storage);
+    getpeername(socket, (struct sockaddr *)&tcpPort->addr.storage, &peer_addr_len);
+
+    // tcpPort->addr.storage = *ip;
+    tcpPort->blocking = blocking;
+    tcpPort->blocking_internal = true;
 }
 
 /**
@@ -376,6 +425,9 @@ void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, co
     tcpPort->base.portRead = tcpPortRead;
     tcpPort->base.portReadTimeout = tcpPortReadTimeout;
     tcpPort->base.portWrite = tcpPortWrite;
+
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_init(COMM_PORT(port), NULL);
 
     tcpPort->socket = -EBADF;
     tcpPort->name = strdup(name);

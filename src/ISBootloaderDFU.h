@@ -85,8 +85,8 @@ public:
     ISBootloader::eImageSignature check_is_compatible();
     
     is_operation_result download_image(std::string image);
-    is_operation_result upload_image(std::string image) { return IS_OP_OK; }
-    is_operation_result verify_image(std::string image) { return IS_OP_OK; }
+    is_operation_result upload_image(std::string image) { (void)image; return IS_OP_OK; }
+    is_operation_result verify_image(std::string image) { (void)image; return IS_OP_OK; }
 
     static int get_num_devices();
     static is_operation_result list_devices(is_dfu_list* list);

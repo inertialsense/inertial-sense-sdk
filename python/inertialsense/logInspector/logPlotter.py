@@ -35,7 +35,6 @@ DEG2RAD = 3.14159 / 180.0
 
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
-SHOW_GPS2 = 0
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
 
@@ -48,6 +47,7 @@ class logPlot:
         self.residual = False
         self.timestamp = False
         self.xAxisSample = False
+        self.showGps2 = False
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
         if self.enableLegends:
@@ -56,6 +56,8 @@ class logPlot:
             self.setLog(log)
         else:
             self.log = None
+        self.refLla = np.zeros(3)
+
             
     def setup_and_wire_legend(self):
         if self.enableLegends:
@@ -72,6 +74,23 @@ class logPlot:
         if len(self.log.data[0, DID_INS_2]):
             setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
 
+        rlla = np.zeros(3)
+
+        for did, field in (
+            (DID_FLASH_CONFIG, 'refLla'),
+            (DID_GPS1_POS,    'lla'),
+            (DID_GPS2_POS,    'lla'),
+        ):
+            arr = self.log.data[0, did]
+            if len(arr):
+                lla = arr[field][-1]
+                if not np.allclose(lla, 0, atol=1e-12):
+                    rlla = lla  # keep updating; last non-zero wins
+
+        if not np.allclose(rlla, 0, atol=1e-12):
+            self.refLla = rlla
+
+
     def setDownSample(self, dwns):
         self.d = dwns
 
@@ -84,9 +103,15 @@ class logPlot:
     def enableXAxisSample(self, enable):
         self.xAxisSample = enable
 
+    def enableGps2(self, enable):
+        self.showGps2 = enable
+
     def enableUtcTime(self, enable):
         self.utcTime = enable
         setShowUtcTime(enable)        
+
+    def setRefLla(self, lla):
+        self.refLla = lla
 
     def setActiveSerials(self, serials):
         self.active_devs = []
@@ -208,7 +233,7 @@ class logPlot:
             if refTime is None or refLla is None:
                 for d in self.active_devs:
                     lla = self.getData(d, DID_GPS1_POS, 'lla', True)
-                    if len(refLla) == 0:
+                    if len(lla) == 0:
                         # No position data: AHRS?
                         continue
                     refLla = lla[0]
@@ -225,6 +250,7 @@ class logPlot:
                 refLla = lla[0]
             ned = lla2ned(refLla, lla)
             tow = self.getData(d, DID_INS_2, 'timeOfWeek', True)
+
             time = getTimeFromGpsTow(tow, True)
             ax[0,0].plot(time, ned[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, ned[:,1])
@@ -232,16 +258,18 @@ class logPlot:
 
             if (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
-                if not self.isEmpty(timeGPS):
-                    nedGps1 = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
+                gps1Lla = self.getData(d, DID_GPS1_POS, 'lla', True)
+                if not self.isEmpty(timeGPS) and not self.isEmpty(gps1Lla):
+                    nedGps1 = lla2ned(refLla, gps1Lla)
                     ax[0,0].plot(timeGPS, nedGps1[:, 0], label=("%s GPS1" % (self.log.serials[d])))
                     ax[1,0].plot(timeGPS, nedGps1[:, 1])
                     ax[2,0].plot(timeGPS, nedGps1[:, 2])
 
-            if (np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
+            if (np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and self.showGps2)):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs', True))
-                if not self.isEmpty(timeGPS):
-                    nedGps2 = lla2ned(refLla, self.getData(d, DID_GNSS2_POS, 'lla', True))
+                gps2Lla = self.getData(d, DID_GNSS2_POS, 'lla', True)
+                if not self.isEmpty(timeGPS) and not self.isEmpty(gps2Lla):
+                    nedGps2 = lla2ned(refLla, gps2Lla)
                     ax[0,0].plot(timeGPS, nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
                     ax[1,0].plot(timeGPS, nedGps2[:, 1])
                     ax[2,0].plot(timeGPS, nedGps2[:, 2])
@@ -266,8 +294,6 @@ class logPlot:
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'posNED')
-        self.joinFigXAxes(ax,axs)
-        return ax
 
     def nedAnnotateTimestamp(self, ax, time, east, north, textOffset=(0.0, 0.0)):
         ax.annotate('%.1f' % time, xy=(east, north), xycoords='data', xytext=textOffset, textcoords='offset points')
@@ -306,7 +332,10 @@ class logPlot:
             if refLla is None:
                 refLla = lla[0]
             time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
-            ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla', True))
+            ins2Lla = self.getData(d, DID_INS_2, 'lla', True)
+            if self.isEmpty(ins2Lla):
+                continue
+            ned = lla2ned(refLla, ins2Lla)
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b', True))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
@@ -319,7 +348,7 @@ class logPlot:
                     nedGps1 = lla2ned(refLla, lla1)
                     ax.plot(nedGps1[:, 1], nedGps1[:, 0], label=("%s GPS1" % (self.log.serials[d])))
 
-                if SHOW_GPS2 or len(lla1) == 0:
+                if self.showGps2 or len(lla1) == 0:
                     lla2 = self.getData(d, DID_GNSS2_POS, 'lla', True)
                     if len(lla2):
                         nedGps2 = lla2ned(refLla, lla2)
@@ -362,9 +391,11 @@ class logPlot:
                         self.nedAnnotateTimestamp(ax, time, east, north)
 
 
-            if SHOW_GPS2:
-                nedGps2 = lla2ned(refLla, self.getData(d, DID_GNSS2_POS, 'lla'))
-                ax.plot(nedGps2[:, 1], nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
+            if self.showGps2:
+                gps2Lla = self.getData(d, DID_GNSS2_POS, 'lla')
+                if not self.isEmpty(gps2Lla):
+                    nedGps2 = lla2ned(refLla, gps2Lla)
+                    ax.plot(nedGps2[:, 1], nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
         self.legends_add(ax.legend(ncol=2))
@@ -435,7 +466,7 @@ class logPlot:
                 ax[2].plot(time1, lla1[:,2])
 
             time2 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs'))
-            if (len(time2) and (SHOW_GPS2 or len(time1) == 0)):
+            if (len(time2) and (self.showGps2 or len(time1) == 0)):
                 lla2 = self.getData(d, DID_GNSS2_POS, 'lla')
                 ax[0].plot(time2, lla2[:,0], label=('%s GPS2' % self.log.serials[d]))
                 ax[1].plot(time2, lla2[:,1])
@@ -450,7 +481,10 @@ class logPlot:
 
     def getGpsPosNED(self, device, did, refLla):
         gpsTime = getTimeFromGpsTowMs(self.getData(device, did, 'timeOfWeekMs'))
-        gpsNed = lla2ned(refLla, self.getData(device, did, 'lla'))
+        gpsLla = self.getData(device, did, 'lla')
+        if self.isEmpty(gpsLla):
+            return [[], []]
+        gpsNed = lla2ned(refLla, gpsLla)
         return [gpsTime, gpsNed]
 
     def gpsPosNED(self, fig=None, axs=None):
@@ -479,7 +513,7 @@ class logPlot:
             ax[2].plot(gpsTime, gpsNed[:, 2])
             ax[3].plot(gpsTime, gpsNedNorm)
 
-            if (np.shape(self.active_devs)[0]==1) or SHOW_GPS2:
+            if (np.shape(self.active_devs)[0]==1) or self.showGps2:
                 [gps2Time, gps2Ned] = self.getGpsPosNED(d, DID_GNSS2_POS, refLla)
                 gps2NedNorm = np.linalg.norm(gps2Ned, axis=1)
                 ax[0].plot(gps2Time, gps2Ned[:, 0], label=("%s GPS2" % (self.log.serials[d])))
@@ -583,7 +617,7 @@ class logPlot:
                 ax[1,0].plot(gps1Time, gps1VelNed[:, 1])
                 ax[2,0].plot(gps1Time, gps1VelNed[:, 2])
                 ax[3,0].plot(gps1Time, gps1VelNorm, label=("%s GPS1" % (self.log.serials[d])))
-            if len(gps2Time) and (SHOW_GPS2 or len(gps1Time) == 0):
+            if len(gps2Time) and (self.showGps2 or len(gps1Time) == 0):
                 gps2VelNorm = np.linalg.norm(gps2VelNed, axis=1)
                 ax[0,0].plot(gps2Time, gps2VelNed[:, 0])
                 ax[1,0].plot(gps2Time, gps2VelNed[:, 1])
@@ -615,7 +649,7 @@ class logPlot:
         
     def getGpsNedVel(self, d):
         velNed = None
-        velDid = DID_GNSS2_VEL if self.getData(d, DID_GNSS1_VEL, 'status').size == 0 else DID_GNSS1_VEL
+        velDid = DID_GNSS2_VEL if ((self.getData(d, DID_GNSS1_VEL, 'status').size == 0) or self.showGps2) else DID_GNSS1_VEL
         status = self.getData(d, velDid, 'status')
         if len(status) == 0:
             return []
@@ -624,7 +658,7 @@ class logPlot:
             velNed = self.getData(d, velDid, 'vel')    # NED velocity
         else:
             velEcef = self.getData(d, velDid, 'vel')   # ECEF velocity
-            qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
+            qe2n = quat_ecef2ned(self.refLla[0:2]*np.pi/180.0)
             if len(velEcef) > 0:
                 velNed = quatConjRot(qe2n, velEcef)
             # velNed = np.copy(velEcef)     # Override to ECEF velocity
@@ -683,7 +717,7 @@ class logPlot:
             ax[3,0].plot(time, insVelNorm, label=self.log.serials[d])
 
             if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
-                timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_VEL, 'timeOfWeekMs'))
+                timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_VEL if self.showGps2 else DID_GNSS1_VEL, 'timeOfWeekMs'))
                 if len(timeGPS) == 0:
                     continue
                 gpsVelNed = self.getGpsNedVel(d)
@@ -691,7 +725,7 @@ class logPlot:
                 ax[0,0].plot(timeGPS, gpsVelNed[:, 0])
                 ax[1,0].plot(timeGPS, gpsVelNed[:, 1])
                 ax[2,0].plot(timeGPS, gpsVelNed[:, 2])
-                ax[3,0].plot(timeGPS, gpsVelNorm, label=('%s GPS' % self.log.serials[d]))
+                ax[3,0].plot(timeGPS, gpsVelNorm, label=f"{self.log.serials[d]} {'GPS2' if self.showGps2 else 'GPS1'}")
 
             if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 intVelNed = np.empty_like(refVelNed)
@@ -1185,7 +1219,7 @@ class logPlot:
             self.setup_and_wire_legend()
             return self.saveFigJoinAxes(ax, axs, fig, 'imuStatus')
         except:
-            print(RED + "problem plotting imuStatus: " + sys.exc_info()[0] + RESET)
+            print(RED + "problem plotting imuStatus: " + str(sys.exc_info()[1]) + RESET)
 
     def insStatus(self, fig=None, axs=None):
         try:
@@ -1239,6 +1273,9 @@ class logPlot:
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000800) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'MAG aiding Hdg')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000008) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Wheel Enc. aiding Vel')
                 cnt += 1
                 cnt += 1
                 # ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00001000) != 0))
@@ -1311,7 +1348,7 @@ class logPlot:
             self.setup_and_wire_legend()
             return self.saveFigJoinAxes(ax, axs, fig, 'iStatus')
         except:
-            print(RED + "problem plotting insStatus: " + sys.exc_info()[0] + RESET)
+            print(RED + "problem plotting insStatus: " + str(sys.exc_info()[1]) + RESET)
         self.joinFigXAxes(ax,axs)
         return ax
 
@@ -1430,7 +1467,7 @@ class logPlot:
             self.setup_and_wire_legend()
             return self.saveFigJoinAxes(ax, axs, fig, 'Hardware Status')
         except:
-            print(RED + "problem plotting hdwStatus: " + sys.exc_info()[0] + RESET)
+            print(RED + "problem plotting hdwStatus: " + str(sys.exc_info()[1]) + RESET)
 
     def genFaultCodes(self, fig=None, axs=None):
         try:
@@ -1539,7 +1576,7 @@ class logPlot:
             self.setup_and_wire_legend()
             return self.saveFigJoinAxes(ax, axs, fig, 'genFaultCode')
         except:
-            print(RED + "problem plotting insStatus: " + sys.exc_info()[0] + RESET)
+            print(RED + "problem plotting insStatus: " + str(sys.exc_info()[1]) + RESET)
 
     def portMonitor(self, fig=None, axs=None):
         if fig is None:
@@ -1557,18 +1594,19 @@ class logPlot:
         ax[3, 1].set_ylabel('ChecksumErrors (RX)')
 
         for d in self.active_devs:
-            activePorts = self.getData(d, DID_PORT_MONITOR, 'activePorts')[0]
-            port_sets = self.getData(d, DID_PORT_MONITOR, 'port')
-            for i in range(activePorts):
-                data = port_sets[:,i]
-                ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
-                ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
-                ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
-                ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
-                ax[2,0].plot(np.diff(data['txDataDrops']), label=f'{self.log.serials[d]}:{i}')
-                ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
-                ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
-                ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
+            activePorts = self.getData(d, DID_PORT_MONITOR, 'activePorts')
+            if activePorts.size > 0:
+                port_sets = self.getData(d, DID_PORT_MONITOR, 'port')
+                for i in range(activePorts[0]):  # note that "activePorts" will probably never change - so just take the first element
+                    data = port_sets[:,i]
+                    ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                    ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                    ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
+                    ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
+                    ax[2,0].plot(np.diff(data['txDataDrops']), label=f'{self.log.serials[d]}:{i}')
+                    ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
+                    ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
+                    ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
 
 
         self.legends_add(ax[0,0].legend(ncol=2))
@@ -1592,19 +1630,19 @@ class logPlot:
         ax[3, 1].set_ylabel('ChecksumErrors (RX)')
 
         for d in self.active_devs:
-            activePorts = self.getData(d, DID_GPX_PORT_MONITOR, 'activePorts')[0]
-            port_sets = self.getData(d, DID_GPX_PORT_MONITOR, 'port')
-            for i in range(activePorts):
-                data = port_sets[:,i]
-                ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
-                ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
-                ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
-                ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
-                ax[2,0].plot(np.diff(data['txDataDrops']), label=f'{self.log.serials[d]}:{i}')
-                ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
-                ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
-                ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
-
+            activePorts = self.getData(d, DID_GPX_PORT_MONITOR, 'activePorts')
+            if activePorts.size > 0:
+                port_sets = self.getData(d, DID_GPX_PORT_MONITOR, 'port')
+                for i in range(activePorts[0]):
+                    data = port_sets[:,i]
+                    ax[0,0].plot(data['txBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                    ax[0,1].plot(data['rxBytesPerSec'], label=f'{self.log.serials[d]}:{i}')
+                    ax[1,0].plot(data['txBytes'], label=f'{self.log.serials[d]}:{i}')
+                    ax[1,1].plot(data['rxBytes'], label=f'{self.log.serials[d]}:{i}')
+                    ax[2,0].plot(np.diff(data['txDataDrops']), label=f'{self.log.serials[d]}:{i}')
+                    ax[2,1].plot(np.diff(data['rxOverflows']), label=f'{self.log.serials[d]}:{i}')
+                    ax[3,0].plot(np.diff(data['txBytesDropped']), label=f'{self.log.serials[d]}:{i}')
+                    ax[3,1].plot(np.diff(data['rxChecksumErrors']), label=f'{self.log.serials[d]}:{i}')
 
         self.legends_add(ax[0,0].legend(ncol=2))
         for b in ax:
@@ -1623,22 +1661,94 @@ class logPlot:
                 cnt = 0
                 time = getTimeFromGpsTowMs(self.getData(d, DID_GPX_STATUS, 'timeOfWeekMs'))
                 status = self.getData(d, DID_GPX_STATUS, 'status')
+                gnssStatus = self.getData(d, DID_GPX_STATUS, 'gnssStatus')
+                # lastRstCause, fwUpdateState, initState, runState
+                gnssStatus1_rstCause = np.array(list(zip(*gnssStatus[:,0]))[0])
+                gnssStatus1_fwUpdate = np.array(list(zip(*gnssStatus[:,0]))[1])
+                gnssStatus1_init = np.array(list(zip(*gnssStatus[:,0]))[2])
+                gnssStatus1_run = np.array(list(zip(*gnssStatus[:,0]))[3])
 
-                ax.plot(time, -cnt * 1.5 + ((status & 0x0000000F) >> 0))
-                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Com parse err count')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0xFF000000) >> 24))
-                if r: ax.text(p1, -cnt * 1.5, 'Fatal event')
-                cnt += 1
-                cnt += 1
-                
+                # gnssStatus2_rstCause = np.array(list(zip(*gnssStatus[:,1]))[0])
+                # gnssStatus2_fwUpdate = np.array(list(zip(*gnssStatus[:,1]))[1])
+                # gnssStatus2_init = np.array(list(zip(*gnssStatus[:,1]))[2])
+                # gnssStatus2_run = np.array(list(zip(*gnssStatus[:,1]))[3])
+
+                if time.size and status.size and gnssStatus.size:
+                    # CXD-1 Init State
+                    ax.plot(time, -cnt * 1.5 + (gnssStatus1_init / 20))                 # / 20 because CXD5610::InitSteps::kDone
+                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Init State')
+                    cnt += 1
+
+                    # CXD-1 fwUpdate
+                    # gnssStatus1_fwUpdate[gnssStatus1_fwUpdate == 255] = -1
+                    ax.plot(time, -cnt * 1.5 + ((gnssStatus1_fwUpdate + 1) / 17))       # / 17 because CXD5610::FirmwareUpdateState::kDone
+                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 fwUpdate')
+                    cnt += 1
+
+                    # CXD-1 Run State
+                    ax.plot(time, -cnt * 1.5 + (gnssStatus1_run / 9))                   # / 9 because CXD5610::RunState::kHardReset
+                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Run State')
+                    cnt += 1
+
+                    # CXD-1 Reset Cause
+                    ax.plot(time, -cnt * 1.5 + (gnssStatus1_rstCause / 13))             # /13 because eGNSSDriverRstCause::cxdRst_Max
+                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Reset Cause')
+                    cnt += 1
+
+                    ####  rest of Gpx Status
+                    errCnt = (status & 0x0000000F)
+                    faultCode = ((status & 0xFF000000) >> 24)
+
+                    ax.plot(time, -cnt * 1.5 + (errCnt / 16))
+                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                    if r: ax.text(p1, -cnt * 1.5, 'Com parse err count')
+                    cnt += 1
+
+                    ### No Comms flags
+                    ax.plot(time, -cnt * 1.5 + ((status & 0x00000010) >> 8))
+                    if r: ax.text(p1, -cnt * 1.5, 'No Ser0 Comms')
+                    cnt += 1
+
+                    ax.plot(time, -cnt * 1.5 + ((status & 0x00000020) >> 9))
+                    if r: ax.text(p1, -cnt * 1.5, 'No Ser1 Comms')
+                    cnt += 1
+
+                    ax.plot(time, -cnt * 1.5 + ((status & 0x00000040) >> 10))
+                    if r: ax.text(p1, -cnt * 1.5, 'No Ser2 Comms')
+                    cnt += 1
+
+                    ax.plot(time, -cnt * 1.5 + ((status & 0x00000080) >> 11))
+                    if r: ax.text(p1, -cnt * 1.5, 'No USB Comms')
+                    cnt += 1
+
+                    ### General Faults
+                    ax.plot(time, -cnt * 1.5 + ((status & 0x00010000) >> 16))
+                    if r: ax.text(p1, -cnt * 1.5, 'RTK Queue Limited')
+                    cnt += 1
+
+                    ax.plot(time, -cnt * 1.5 + ((status & 0x00100000) >> 20))
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS Rcvr Time Fault')
+                    cnt += 1
+
+                    ax.plot(time, -cnt * 1.5 + ((status & 0x00800000) >> 23))
+                    if r: ax.text(p1, -cnt * 1.5, 'DMA Fault')
+                    cnt += 1
+
+                    ax.plot(time, -cnt * 1.5 + (faultCode / 15))
+                    if r: ax.text(p1, -cnt * 1.5, 'Fatal Fault Code')
+                    cnt += 1
+                    cnt += 1
+
             ax.grid(True)
 
             self.setup_and_wire_legend()
             return self.saveFigJoinAxes(ax, axs, fig, 'GPX Status')
         except:
-            print(RED + "problem plotting GPX status: " + sys.exc_info()[0] + RESET)
+            print(RED + "Problem plotting GPX status: " + str(sys.exc_info()[1]) + RESET)
 
     def gpxHdwStatus(self, fig=None, axs=None):
         try:
@@ -1653,108 +1763,109 @@ class logPlot:
                 time = getTimeFromGpsTowMs(self.getData(d, DID_GPX_STATUS, 'timeOfWeekMs'))
                 hStatus = self.getData(d, DID_GPX_STATUS, 'hdwStatus')
 
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000001) != 0))
-                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Sat RX')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Sat RX')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 TOW Valid')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000005) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 TOW Valid')
-                cnt += 1
-                cnt += 1
+                if time.size and hStatus.size:
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000001) != 0))
+                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Sat RX')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000002) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Sat RX')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000004) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS1 TOW Valid')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000005) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS2 TOW Valid')
+                    cnt += 1
+                    cnt += 1
 
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 4))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Reset Count')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 8))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Reset Count')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000080) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Fault')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Fault')
-                cnt += 1
-                cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 4))
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Reset Count')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 8))
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Reset Count')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000080) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Fault')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Fault')
+                    cnt += 1
+                    cnt += 1
 
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00001000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'FW Update Required')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00004000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Sys Reset Required')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00008000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Flash Write Pending')
-                cnt += 1
-                cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00001000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'FW Update Required')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00004000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Sys Reset Required')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00008000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Flash Write Pending')
+                    cnt += 1
+                    cnt += 1
 
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00010000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err Com Tx Limited')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00020000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00040000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 PPS')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00080000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 PPS')
-                cnt += 1
-                cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00010000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err Com Tx Limited')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00020000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00040000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 PPS')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00080000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 PPS')
+                    cnt += 1
+                    cnt += 1
 
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00100000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 low CN0')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00200000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 low CN0')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00400000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 CN0 IR')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00800000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 CN0 IR')
-                cnt += 1
-                cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00100000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 low CN0')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00200000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 low CN0')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00400000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 CN0 IR')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00800000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 CN0 IR')
+                    cnt += 1
+                    cnt += 1
 
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x0300000) >> 24))
-                if r: ax.text(p1, -cnt * 1.5, 'BIT: Off, Running, Passed, Fault')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x04000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err Temperature')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x08000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GPS PPS Timesync')
-                cnt += 1
-                cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x0300000) >> 24))
+                    if r: ax.text(p1, -cnt * 1.5, 'BIT: Off, Running, Passed, Fault')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x04000000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Err Temperature')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x08000000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'GPS PPS Timesync')
+                    cnt += 1
+                    cnt += 1
 
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x10000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x20000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x30000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x40000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x80000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Critical Sys Fault')
-                cnt += 1
-                cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x10000000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x20000000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x30000000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x40000000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
+                    cnt += 1
+                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x80000000) != 0))
+                    if r: ax.text(p1, -cnt * 1.5, 'Critical Sys Fault')
+                    cnt += 1
+                    cnt += 1
                 
             ax.grid(True)
 
             self.setup_and_wire_legend()
             return self.saveFigJoinAxes(ax, axs, fig, 'GPX Hardware Status')
         except:
-            print(RED + "problem plotting GPX hdwStatus: " + sys.exc_info()[0] + RESET)
+            print(RED + "problem plotting GPX hdwStatus: " + str(sys.exc_info()[1]) + RESET)
 
 
     def gpsStats(self, fig=None, axs=None, did_gps_pos=DID_GPS1_POS):
@@ -1934,14 +2045,21 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'BaseToRoverVector')
 
+
     def rtkObsGPS1(self, fig=None, axs=None):
-        self.rtkObs("Compassing", DID_GNSS1_RAW, fig=fig, axs=axs)
+        self.rtkObs("Compassing", DID_GNSS1_RAW, fig=fig, axs=axs) 
+
+
 
     def rtkObsGPS2(self, fig=None, axs=None):
-        self.rtkObs("Compassing", DID_GNSS2_RAW, fig=fig, axs=axs)
+        self.rtkObs("Compassing", DID_GNSS2_RAW, fig=fig, axs=axs) 
+
+
 
     def rtkObs(self, name, relDid, fig=None, axs=None):
-        Nf = 2
+        if len(self.active_devs) == 0:
+            return
+
         n_plots = 8
         if fig is None:
             fig = plt.figure()
@@ -1957,272 +2075,331 @@ class logPlot:
         self.configureSubplot(ax[6], 'L1 LLI')
         self.configureSubplot(ax[7], 'L5 LLI')
 
-        for i, d in enumerate(self.active_devs):
+        for idev, d in enumerate(self.active_devs):
             gps_data = self.log.data[d, relDid][0]
-            N = len(gps_data)
-            j0 = 0 # skip a few samples that may be corrupted
+            if len(gps_data) == 0:
+                continue
+            
+            Nf = len(gps_data[0]['P'][0])
+            Nsat = 30                                           # predicted number of satellites in the log
+            Nt = round(len(gps_data) * 0.6)  # predicted number of time stamps in the log (usually 2 data frames per each time stamp)
+            t   = np.empty(Nt, dtype=float)
+            sat = np.empty(Nsat, dtype=int)
+            P   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+            L   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+            D   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+            LLI = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+            P[:]   = np.nan # NaNs are convenient because they are not plotted
+            L[:]   = np.nan
+            D[:]   = np.nan
 
-            # Build satellite array
-            sat = np.empty(0, dtype=int)
-            for j in range(j0, N):
-                obs = gps_data[j]
-                M = len(obs)
-                for k in range(M):
-                    sat_k = obs['sat'][k]
-                    # add satellite if not in the list and if L1 observations are valid
-                    if (sat_k != 0 and (sat_k not in sat) and 
-                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0):
-                        sat = np.append(sat, sat_k)
+            i = Nt = Nsat = 0
+            while i < len(gps_data) - 1:
+                obs = gps_data[i]
 
-            Nsat = len(sat)
-            tgps = np.zeros([N, Nsat])
-            P = np.empty([Nf, N, Nsat])
-            L = np.empty([Nf, N, Nsat])
-            D = np.empty([Nf, N, Nsat])
-            LLI  = np.empty([Nf, N, Nsat])
-            P[:] = np.nan
-            L[:] = np.nan
-            D[:] = np.nan
-            LLI[:]  = np.nan
-
-            # Fill observation arrays
-            for j in range(j0, N):
-                obs = gps_data[j]
-                M = len(obs)
-                for k in range(M):
-                    sat_k = obs['sat'][k]
-                    if sat_k == 0:
-                        continue
-                    indo = np.where(obs['sat'] == sat_k)
-                    inds = np.where(sat == sat_k)
-                    if np.size(indo) == 0 or np.size(inds) == 0:
-                        continue
-                    indo = indo[0][0]
-                    inds = inds[0][0]
-                    tgps[j,inds] = obs['time']['time'][indo] + obs['time']['sec'][indo]
-                    # Use only non-zero pseudorange and phase
-                    indP = np.flatnonzero(obs['P'][indo])
-                    indL = np.flatnonzero(obs['L'][indo])
-                    indD = np.flatnonzero(obs['D'][indo])
-                    if np.size(indP) > 0 and np.size(indL) > 0:
-                        P[indP,j,inds] = obs['P'][indo][indP]
-                        L[indL,j,inds] = obs['L'][indo][indL]
-                        D[indD,j,inds] = obs['D'][indo][indD]
-                        LLI[:,j,inds]  = obs['LLI'][indo]
-
-            for k in range(len(sat)):
-                ind = np.squeeze(np.where(tgps[:,k] != 0.0))
-                # Do not plot satellites with invalid L1 pseudorange
-                if np.isnan(P[0,ind,k]).all():
+                # Find common time stamps
+                ind = np.flatnonzero(obs['time']['time'])
+                if len(ind) == 0:
+                    i += 1
                     continue
-                # Do not plot satellites with invalid L1 phase
-                if np.isnan(L[0,ind,k]).all():
+                t1 = obs['time']['time'][ind[0]] + obs['time']['sec'][ind[0]]
+
+                # Merge data frames with the same time stamp
+                obs_next = gps_data[i + 1]
+                ind_next = np.flatnonzero(obs_next['time']['time'])
+                t1_next = obs_next['time']['time'][ind_next[0]] + obs_next['time']['sec'][ind_next[0]]
+                if t1 == t1_next:
+                    obs = np.append(obs, obs_next)
+                    ind = np.flatnonzero(obs['time']['time'])
+                    i += 1
+
+                if Nt > 0 and Nt == len(t) and t1 >= t[-1]:
+                    # Preallocated arrays need to be expanded for time
+                    t = np.append(t, t1)
+                    tmp = np.empty((Nf, len(sat), 1))
+                    tmp[:] = np.nan
+                    P   = np.append(P, tmp, axis=2)
+                    L   = np.append(L, tmp, axis=2)
+                    D   = np.append(D, tmp, axis=2)
+                    LLI = np.append(LLI, tmp, axis=2)
+                    Nt += 1
+                elif Nt == 0 or t1 >= t[Nt-1]:
+                    t[Nt] = t1
+                    Nt += 1
+                else:
+                    i += 1
                     continue
-                dt = np.diff(tgps[ind,k])
-                t = np.squeeze(tgps[ind, k])
-                Pk = P[:,ind,k]
-                Lk = L[:,ind,k]
-                Dk = D[:,ind,k]
-                LLIk = LLI[:,ind,k]
-                ind1 = np.squeeze(np.where(dt > 10*dt[0])) # jump in time
-                if np.size(ind1) == 0:
-                    ind1 = 0
-                elif np.size(ind1) > 1:
-                    ind1 = ind1[-1]
-                ind1 = ind1 + 1
-                ax[0].plot(t[ind1:,], Pk[0,ind1:], label=('Sat %s' % sat[k]))
-                ax[1].plot(t[ind1:,], Pk[1,ind1:])
-                ax[2].plot(t[ind1:,], Lk[0,ind1:])
-                ax[3].plot(t[ind1:,], Lk[1,ind1:])
-                ax[4].plot(t[ind1:,], Dk[0,ind1:])
-                ax[5].plot(t[ind1:,], Dk[1,ind1:])
-                ax[6].plot(t[ind1:,], LLIk[0,ind1:])
-                ax[7].plot(t[ind1:,], LLIk[1,ind1:])
-                self.legends_add(ax[0].legend(ncol=2))
+
+                # Find common satellites and create data arrays. Assumption: satellites are sorted in ascending order.
+                sats = obs['sat'][ind]
+                P_   = obs['P'][ind]
+                L_   = obs['L'][ind]
+                D_   = obs['D'][ind]
+                LLI_ = obs['LLI'][ind]
+                i_ = 0
+                while i_ < len(sats):
+                    sat_i = sats[i_]
+                    P_i   = P_[i_]
+                    L_i   = L_[i_]
+                    D_i   = D_[i_]
+                    LLI_i = LLI_[i_]
+                    if P_i[0] == 0 or L_i[0] == 0: # skip data with zero L1 observations
+                        i_ += 1
+                        continue
+                    if sat_i not in sat:
+                        if Nsat > 0 and Nsat == len(sat):
+                            # Preallocated arrays need to be expanded in sat dimension
+                            sat = np.append(sat, sat_i)
+                            tmp = np.empty((Nf, 1, len(t)))
+                            tmp[:] = np.nan
+                            P   = np.append(P, tmp, axis=1)
+                            L   = np.append(L, tmp, axis=1)
+                            D   = np.append(D, tmp, axis=1)
+                            tmp = np.zeros((Nf, 1, len(t)))
+                            LLI = np.append(LLI, tmp, axis=1)
+                        else:
+                            sat[Nsat] = sat_i
+                        isat = Nsat
+                        Nsat += 1
+                    else:
+                        isat = np.squeeze(np.where(sat == sat_i))
+
+                    for f in range(Nf):
+                        if P_i[f] != 0:
+                            P[f, isat, Nt-1] = P_i[f]
+                        if L_i[f] != 0:
+                            L[f, isat, Nt-1] = L_i[f]
+                        if D_i[f] != 0:
+                            D[f, isat, Nt-1] = D_i[f]
+                    LLI[:, isat, Nt-1] = LLI_i
+                    i_ += 1
+                i += 1
+                #### End of data processing loop ###
+
+            # Reduce data arrays if they are too big
+            t   = t[0:Nt]
+            sat = sat[0:Nsat]
+            P   = P[:, 0:Nsat, 0:Nt]
+            L   = L[:, 0:Nsat, 0:Nt]
+            D   = D[:, 0:Nsat, 0:Nt]
+            LLI = LLI[:, 0:Nsat, 0:Nt]
+
+            for k in range(Nsat):
+                ax[0].plot(t, P[0,k,:], label=('Sat %s' % sat[k]))
+                ax[1].plot(t, P[1,k,:])
+                ax[2].plot(t, L[0,k,:])
+                ax[3].plot(t, L[1,k,:])
+                ax[4].plot(t, D[0,k,:])
+                ax[5].plot(t, D[1,k,:])
+                ax[6].plot(t, LLI[0,k,:])
+                ax[7].plot(t, LLI[1,k,:])
+                if idev == 0:
+                    self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_sd')
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs')
 
-    def rtkObsSingleDiff(self, fig=None, axs=None):
+
+    def rtkObsDoubleDiff(self, fig=None, axs=None):
         name = "Compassing"
         if len(self.log.data[0, DID_GNSS1_RAW][0]) == 0:
             return
+        if len(self.log.data[0, DID_GNSS2_RAW][0]) == 0:
+            return
+        if len(self.active_devs) == 0:
+            return
         
-        Nf = len(self.log.data[0, DID_GNSS1_RAW][0][0]['P'][0])
         n_plots = 8
         if fig is None:
             fig = plt.figure()
 
         ax = fig.subplots(n_plots, 1, sharex=True)
-        fig.suptitle('RTK Rover-Base Single Differences')
-        self.configureSubplot(ax[0], 'L1 Pseudorange difference', 'm')
-        self.configureSubplot(ax[1], 'L5 Pseudorange difference', 'm')
-        self.configureSubplot(ax[2], 'L1 Carier phase difference', 'cycles')
-        self.configureSubplot(ax[3], 'L5 Carier phase difference', 'cycles')
-        self.configureSubplot(ax[4], 'L1 GPS1 SNR', 'dB*Hz')
-        self.configureSubplot(ax[5], 'L5 GPS1 SNR', 'dB*Hz')
-        self.configureSubplot(ax[6], 'L1 GPS2 SNR', 'dB*Hz')
-        self.configureSubplot(ax[7], 'L5 GPS2 SNR', 'dB*Hz')
+        fig.suptitle('RTK Rover-Base Double Differences')
+        self.configureSubplot(ax[0], 'L1 Pseudorange Difference', 'm')
+        self.configureSubplot(ax[1], 'L5 Pseudorange Difference', 'm')
+        self.configureSubplot(ax[2], 'L1 Carrier Phase Difference', 'cycles')
+        self.configureSubplot(ax[3], 'L5 Carrier Phase Difference', 'cycles')
+        self.configureSubplot(ax[4], 'L1 Receiver-1 SNR', 'dB*Hz')
+        self.configureSubplot(ax[5], 'L5 Receiver-1 SNR', 'dB*Hz')
+        self.configureSubplot(ax[6], 'L1 Receiver-2 SNR', 'dB*Hz')
+        self.configureSubplot(ax[7], 'L5 Receiver-2 SNR', 'dB*Hz')
 
-        for id_, d in enumerate(self.active_devs):
+        # for idev, d in enumerate(self.active_devs):
+        
+        d = self.active_devs[0]
 
-            gps1_data = self.log.data[d, DID_GNSS1_RAW][0]
-            gps2_data = self.log.data[d, DID_GNSS2_RAW][0]
+        gps1_data = self.log.data[d, DID_GNSS1_RAW][0]
+        gps2_data = self.log.data[d, DID_GNSS2_RAW][0]
 
-            # Reassemble multiple chunks of data by timestamp
-            j0 = 10 # skip a few first samples in case there is some odd data corruption
-            t1 = np.empty(0)
-            del_ind = range(j0) #np.empty(0, dtype=int)
-            for j in range(j0, len(gps1_data)):
-                ind = np.flatnonzero(gps1_data[j]['time']['time'])
-                if len(ind) == 0:
-                    # Empty chunk of data (all time stamps are zero)
-                    del_ind = np.append(del_ind, j)
-                    continue
-                ind = ind[0]
-                t_ = gps1_data[j]['time']['time'][ind] + gps1_data[j]['time']['sec'][ind]
-                if j > j0 and t_ == t1[-1]:
-                    # add chunk to the previous data and mark for deletion
-                    gps1_data[j-1] = np.append(gps1_data[j-1], gps1_data[j])
-                    del_ind = np.append(del_ind, j)
-                    continue
-                else:
-                    # new data
-                    t1 = np.append(t1, t_)
-            gps1_data = np.asarray(gps1_data, dtype = object) # newer Numpy can't delete inhomogeneous arrays unless we set dtype=object
-            gps1_data = np.delete(gps1_data, del_ind)
+        Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
+        Nsat = 30                                                 # predicted number of satellites in the log
+        Nt = round(len(self.log.data[0, DID_GPS1_RAW][0]) * 0.6)  # predicted number of time stamps in the log (usually 2 data frames per each time stamp)
+        t    = np.empty(Nt, dtype=float)
+        sat  = np.empty(Nsat, dtype=int)
+        dP   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+        dL   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+        snr1 = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+        snr2 = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
+        dP[:]   = np.nan # NaNs are convenient because they are not plotted
+        dL[:]   = np.nan
+        snr1[:] = np.nan
+        snr2[:] = np.nan
 
-            t2 = np.empty(0)
-            del_ind = range(j0) #np.empty(0, dtype=int)
-            for j in range(j0, len(gps2_data)):
-                ind = np.flatnonzero(gps2_data[j]['time']['time'])
-                if len(ind) == 0:
-                    # Empty chunk of data (all time stamps are zero)
-                    del_ind = np.append(del_ind, j)
-                    continue
-                ind = ind[0]
-                t_ = gps2_data[j]['time']['time'][ind] + gps2_data[j]['time']['sec'][ind]
-                if j > j0 and t_ == t2[-1]:
-                    # add chunk to the previous data and mark for deletion
-                    gps2_data[j-1] = np.append(gps2_data[j-1], gps2_data[j])
-                    del_ind = np.append(del_ind, j)
-                    continue
-                else:
-                    # new data
-                    t2 = np.append(t2, t_)
-            gps2_data = np.asarray(gps2_data, dtype = object) # newer Numpy can't delete inhomogeneous arrays unless we set dtype=object
-            gps2_data = np.delete(gps2_data, del_ind)
+        i = j = Nt = Nsat = 0
+        while i < len(gps1_data) - 1 and j < len(gps2_data) - 1:
+            obs1 = gps1_data[i]
+            obs2 = gps2_data[j]
 
-            N1 = len(gps1_data)
-            N2 = len(gps2_data)
-
-            # Build common satellite array for gps1 and gps2
-            sat = np.empty(0, dtype=int)
-            for j in range(N1):
-                obs = gps1_data[j]
-                M = len(obs)
-                for k in range(M):
-                    sat_k = obs['sat'][k]
-                    # add satellite if not in the list and if L1 observations are valid
-                    if (sat_k != 0 and (sat_k not in sat) and 
-                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0):
-                        sat = np.append(sat, sat_k)
-            sat2 = np.empty(0, dtype=int)
-            for j in range(N2):
-                obs = gps2_data[j]
-                M = len(obs)
-                for k in range(M):
-                    sat_k = obs['sat'][k]
-                    # add satellite if not in the list and if L1 observations are valid
-                    if (sat_k != 0 and (sat_k not in sat2) and 
-                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0):
-                        sat2 = np.append(sat2, sat_k)
-            del_ind = np.empty(0, dtype = int)
-            for is_, j in enumerate(sat):
-                if j not in sat2:
-                    del_ind = np.append(del_ind, is_)
-            sat = np.delete(sat, del_ind)
-
-            # Build array of common timestamps for gps1 and gps2
-            del_ind = np.empty(0, dtype = int)
-            for j in range(N1):
-                if t1[j] not in t2:
-                    del_ind = np.append(del_ind, j)
-            gps1_data = np.asarray(gps1_data, dtype = object) # newer Numpy can't delete inhomogeneous arrays unless we set dtype=object
-            gps1_data = np.delete(gps1_data, del_ind)
-            t1 = np.delete(t1, del_ind)
-            N1 = len(gps1_data)
-
-            del_ind = np.empty(0, dtype = int)
-            t = np.empty(0, dtype=int)
-            for j in range(N2):
-                if t2[j] not in t1:
-                    del_ind = np.append(del_ind, j)
-            gps2_data = np.asarray(gps2_data, dtype = object) # newer Numpy can't delete inhomogeneous arrays unless we set dtype=object
-            gps2_data = np.delete(gps2_data, del_ind)
-            t2 = np.delete(t2, del_ind)
-            N2 = len(gps2_data)
-            if (N1 != N2):
+            # Find common time stamps
+            ind1 = np.flatnonzero(obs1['time']['time'])
+            ind2 = np.flatnonzero(obs2['time']['time'])
+            if len(ind1) == 0:
+                i += 1
+                continue
+            if len(ind2) == 0:
+                j += 1
+                continue
+            t1 = obs1['time']['time'][ind1[0]] + obs1['time']['sec'][ind1[0]]
+            t2 = obs2['time']['time'][ind2[0]] + obs2['time']['sec'][ind2[0]]
+            if t1 < t2:
+                i += 1
+                continue
+            if t1 > t2:
+                j += 1
                 continue
 
-            Nsat = len(sat)
-            delta_P = np.empty([Nf, N1, Nsat])
-            delta_L = np.empty([Nf, N1, Nsat])
-            delta_P[:] = np.nan
-            delta_L[:] = np.nan
-            snr1 = np.empty([Nf, N1, Nsat])
-            snr2 = np.empty([Nf, N1, Nsat])
-            snr1[:] = np.nan
-            snr2[:] = np.nan
+            # Merge data frames with the same time stamp
+            obs1_next = gps1_data[i + 1]
+            obs2_next = gps2_data[j + 1]
+            ind1_next = np.flatnonzero(obs1_next['time']['time'])
+            ind2_next = np.flatnonzero(obs2_next['time']['time'])
+            t1_next = obs1_next['time']['time'][ind1_next[0]] + obs1_next['time']['sec'][ind1_next[0]]
+            t2_next = obs2_next['time']['time'][ind2_next[0]] + obs2_next['time']['sec'][ind2_next[0]]
+            if t1 == t1_next:
+                obs1 = np.append(obs1, obs1_next)
+                ind1 = np.flatnonzero(obs1['time']['time'])
+                i += 1
+            if t2 == t2_next:
+                obs2 = np.append(obs2, obs2_next)
+                ind2 = np.flatnonzero(obs2['time']['time'])
+                j += 1
 
-            # Compute single differences
-            for j in range(N1):
-                obs1 = gps1_data[j]
-                obs2 = gps2_data[j]
+            if Nt > 0 and Nt == len(t) and t1 >= t[-1]:
+                # Preallocated arrays need to be expanded for time
+                t = np.append(t, t1)
+                tmp = np.empty((Nf, len(sat), 1))
+                tmp[:] = np.nan
+                dP   = np.append(dP, tmp, axis=2)
+                dL   = np.append(dL, tmp, axis=2)
+                snr1 = np.append(snr1, tmp, axis=2)
+                snr2 = np.append(snr2, tmp, axis=2)
+                Nt += 1
+            elif Nt == 0 or t1 >= t[Nt-1]:
+                t[Nt] = t1
+                Nt += 1
+            else:
+                i += 1
+                j += 1
+                continue
 
-                for k in range(Nsat):
-                    sat_k = sat[k]
-                    # is this satellite present in both gps1 and gps2 data?
-                    ind1 = np.where(obs1['sat'] == sat_k)
-                    ind2 = np.where(obs2['sat'] == sat_k)
-                    if np.size(ind1) == 0 or np.size(ind2) == 0:
-                        continue
-                    ind1 = ind1[0][0]
-                    ind2 = ind2[0][0]
-
-                    # Use only non-zero pseudorange and phase
-                    indval1 = np.flatnonzero(obs1['P'][ind1])
-                    indval2 = np.flatnonzero(obs2['P'][ind2])
-                    if np.size(indval1) > 0 and np.size(indval2) > 0:
-                        delta_P[:,j,k] = obs1['P'][ind1][indval1] - obs2['P'][ind2][indval2]
-                        delta_L[:,j,k] = obs1['L'][ind1][indval1] - obs2['L'][ind2][indval2]
-                        snr1[:,j,k] = obs1['SNR'][ind1][indval1] * 0.25
-                        snr2[:,j,k] = obs2['SNR'][ind2][indval2] * 0.25
-
-            for k in range(Nsat):
-                # Do not plot satellites that appeared only for a short time
-                ind = np.flatnonzero(~np.isnan(delta_P[0,:,k]))
-                if (np.size(ind) / N1) < 0.1 and len(ind) < 100:
+            # Find common satellites and create data arrays. Assumption: satellites are sorted in ascending order.
+            sats1 = obs1['sat'][ind1]
+            sats2 = obs2['sat'][ind2]
+            P1_   = obs1['P'][ind1]
+            L1_   = obs1['L'][ind1]
+            P2_   = obs2['P'][ind2]
+            L2_   = obs2['L'][ind2]
+            snr1_ = obs1['SNR'][ind1]
+            snr2_ = obs2['SNR'][ind2]
+            dPref = np.zeros(Nf)
+            dLref = np.zeros(Nf)
+            i_ = j_ = 0
+            while i_ < len(sats1) and j_ < len(sats2):
+                sat_i = sats1[i_]
+                sat_j = sats2[j_]
+                if sat_i < sat_j:
+                    i_ += 1
                     continue
-                ax[0].plot(t1, delta_P[0,:,k], label=('Sat %s' % sat[k]))
-                ax[1].plot(t1, delta_P[1,:,k])
-                ax[2].plot(t1, delta_L[0,:,k])
-                ax[3].plot(t1, delta_L[1,:,k])
-                ax[4].plot(t1, snr1[0,:,k])
-                ax[5].plot(t1, snr1[1,:,k])
-                ax[6].plot(t1, snr2[0,:,k])
-                ax[7].plot(t1, snr2[1,:,k])
+                if sat_i > sat_j:
+                    j_ += 1
+                    continue
+                # First matching sat for double-differencing (makes plots centered around zero)
+                for f in range(Nf):
+                    if dPref[f] == 0 and P1_[i_][f] != 0 and P2_[j_][f] != 0:
+                        dPref[f] = P1_[i_][f] - P2_[j_][f]
+                    if dLref[f] == 0 and L1_[i_][f] != 0 and L2_[j_][f] != 0:
+                        dLref[f] = L1_[i_][f] - L2_[j_][f]
+                P1_i = P1_[i_]
+                L1_i = L1_[i_]
+                P2_j = P2_[j_]
+                L2_j = L2_[j_]
+                snr1_i = snr1_[i_]
+                snr2_j = snr2_[j_]
+                if P1_i[0] == 0 or P2_j[0] == 0 or L1_i[0] == 0 or L2_j[0] == 0: # skip data with zero L1 observations
+                    i_ += 1
+                    j_ += 1
+                    continue
+                if sat_i not in sat:
+                    if Nsat > 0 and Nsat == len(sat):
+                        # Preallocated arrays need to be expanded in sat dimension
+                        sat = np.append(sat, sat_i)
+                        tmp = np.empty((Nf, 1, len(t)))
+                        tmp[:] = np.nan
+                        dP   = np.append(dP, tmp, axis=1)
+                        dL   = np.append(dL, tmp, axis=1)
+                        snr1 = np.append(snr1, tmp, axis=1)
+                        snr2 = np.append(snr2, tmp, axis=1)
+                    else:
+                        sat[Nsat] = sat_i
+                    isat = Nsat
+                    Nsat += 1
+                else:
+                    isat = np.squeeze(np.where(sat == sat_i))
 
-                self.legends_add(ax[0].legend(ncol=2))
+                for f in range(Nf):
+                    if dPref[f] != 0 and P1_i[f] != 0 and P2_j[f] != 0:
+                        dP[f, isat, Nt-1] = P1_i[f] - P2_j[f] - dPref[f]
+                    if dLref[f] != 0 and L1_i[f] != 0 and L2_j[f] != 0:
+                        dL[f, isat, Nt-1] = L1_i[f] - L2_j[f] - dLref[f]
+
+                snr1[:, isat, Nt-1] = snr1_i
+                snr2[:, isat, Nt-1] = snr2_j
+                i_ += 1
+                j_ += 1
+            i += 1
+            j += 1
+            #### End of data processing loop ###
+
+        # Reduce data arrays if they are too big
+        t    = t[0:Nt]
+        sat  = sat[0:Nsat]
+        dP   = dP[:, 0:Nsat, 0:Nt]
+        dL   = dL[:, 0:Nsat, 0:Nt]
+        snr1 = snr1[:, 0:Nsat, 0:Nt] * 0.25 # scaled by 4 in the log
+        snr2 = snr2[:, 0:Nsat, 0:Nt] * 0.25 #
+
+        # Build common satellite array for gps1 and gps2
+        for k in range(Nsat):
+            # Do not plot satellites that appeared only for a short time
+            ind = np.flatnonzero(~np.isnan(dP[0,k,:]))
+            ax[0].plot(t, dP[0,k,:], label=('Sat %s' % sat[k]))
+            ax[1].plot(t, dP[1,k,:])
+            ax[2].plot(t, dL[0,k,:])
+            ax[3].plot(t, dL[1,k,:])
+            ax[4].plot(t, snr1[0,k,:])
+            ax[5].plot(t, snr1[1,k,:])
+            ax[6].plot(t, snr2[0,k,:])
+            ax[7].plot(t, snr2[1,k,:])
+            self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
             a.grid(True)
 
         self.setup_and_wire_legend()
-        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_sd')
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtk'+name+'obs_dd')
 
     def rtkPosMisc(self, fig=None, axs=None):
         self.rtkMisc("Position", DID_GNSS1_RTK_POS_MISC, fig=fig, axs=axs)
@@ -3124,7 +3301,7 @@ class logPlot:
             self.setup_and_wire_legend()
             return self.saveFigJoinAxes(ax, axs, fig, 'Temp')
         except:
-            print(RED + "problem plotting temp: " + sys.exc_info()[0] + RESET)
+            print(RED + "problem plotting temp: " + str(sys.exc_info()[1]) + RESET)
 
     def debugfArr(self, fig=None, axs=None):
         if fig is None:

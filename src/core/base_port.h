@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "types.h"
+#include "ISConstants.h"
 
 /**
  * Port definitions used across the entire product line & SDK.
@@ -64,6 +65,7 @@ typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int 
 typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData);
 // typedef int(*pfnPortSetName)(port_handle_t port, const char* name, unsigned int len);
 
+PUSH_PACK_1
 typedef struct
 {
     uint8_t         portInfo;               //!< High nib port type (see ePortMonPortType) low nib index
@@ -81,6 +83,7 @@ typedef struct
     uint32_t        txBytesDropped;         //!< Tx number of bytes that were not sent
     uint32_t        rxChecksumErrors;       //!< Rx number of errors while reading (not bytes)
 } port_stats_t;
+POP_PACK
 
 
 typedef struct base_port_s {
@@ -241,8 +244,8 @@ static inline port_stats_t* portStats(port_handle_t port) { return portIsValid(p
  * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
  */
 static inline uint16_t portStatsReset(port_handle_t port) {
-    if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    if (!BASE_PORT(port)->stats) return PORT_ERROR__NOT_SUPPORTED;
+    if (!portIsValid(port)) return (uint16_t)PORT_ERROR__INVALID;
+    if (!BASE_PORT(port)->stats) return (uint16_t)PORT_ERROR__NOT_SUPPORTED;
 
     memset(BASE_PORT(port)->stats, 0, sizeof(port_stats_t)) ;
     return PORT_ERROR__NONE;
@@ -436,7 +439,7 @@ static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int
         if (bytesWritten >= 0) 
         {
             BASE_PORT(port)->stats->txBytes += bytesWritten;
-            if (bytesWritten < len)
+            if (bytesWritten < (int)len)
             {
                 BASE_PORT(port)->stats->txDataDrops++;
                 BASE_PORT(port)->stats->txBytesDropped += (len - bytesWritten);

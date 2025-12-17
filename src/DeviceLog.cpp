@@ -35,12 +35,12 @@ cDeviceLog::cDeviceLog() {
     m_logStats.Clear();
 }
 
-cDeviceLog::cDeviceLog(const ISDevice* dev) : device(dev)  {
+cDeviceLog::cDeviceLog(device_handle_t dev) : device(dev)  {
     if (dev == nullptr)
         throw std::invalid_argument("cDeviceLog() must be passed a valid ISDevice instance.");
     m_devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
     m_devSerialNo = dev->devInfo.serialNumber;
-    m_deviceId = ((ISDevice*)dev)->getIdAsString();
+    m_deviceId = dev->getIdAsString();
     m_logStats.Clear();
 }
 
@@ -126,7 +126,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
     if (dataHdr != NULL)
     {
         double timestamp = (ptype == _PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf) : current_timeSecD());
-        m_logStats.LogData(ptype, dataHdr->id, timestamp);
+        m_logStats.LogData(ptype, dataHdr->id, dataHdr->size, timestamp);
 
         addIndexRecord();
         m_lastIndexOffset += dataHdr->size;
@@ -273,17 +273,18 @@ std::string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount
 void cDeviceLog::UpdateStatsFromFile(p_data_buf_t *data)
 {
     double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-    m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);
+    m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, data->hdr.size, timestamp);
 }
 
 void cDeviceLog::UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp)
 {
-    m_logStats.LogData(ptype, id, timestamp);
+    m_logStats.LogData(ptype, id, 0, timestamp);    // FIXME!! is bytes really 0? Maybe its the size of the ID struct?
 }
 
-ISDevice* cDeviceLog::Device() {
-    return (ISDevice*)device;
+device_handle_t cDeviceLog::Device() {
+    return device;
 }
+
 dev_info_t cDeviceLog::DeviceInfo() {
     return device->devInfo;
 }
@@ -292,7 +293,7 @@ void cDeviceLog::OnReadPacket(packet_t* pkt, protocol_type_t ptype) {
     if (pkt != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&pkt->dataHdr, pkt->data.ptr);
-        m_logStats.LogData(ptype, pkt->dataHdr.id, timestamp);
+        m_logStats.LogData(ptype, pkt->dataHdr.id, pkt->dataHdr.size, timestamp);
     }
 }
 
@@ -301,7 +302,7 @@ void cDeviceLog::OnReadData(p_data_buf_t* data)
     if (data != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, data->hdr.size, timestamp);
     }
 }
 

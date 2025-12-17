@@ -103,7 +103,7 @@ public:
     bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float driveUsageLimitPercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
     // Establish link between devices and this logger
-    std::shared_ptr<cDeviceLog> registerDevice(ISDevice* device);
+    std::shared_ptr<cDeviceLog> registerDevice(device_handle_t device);
     std::shared_ptr<cDeviceLog> registerDevice(uint16_t hdwId, uint32_t serialNo);
     std::shared_ptr<cDeviceLog> registerDevice(dev_info_t& devInfo) { return registerDevice(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber); }
 
@@ -211,7 +211,7 @@ public:
 
         for (auto d : DeviceLogs())
         {
-            d->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+            d->SetKmlConfig(m_gpsData, m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
         }
     }
 
@@ -248,6 +248,7 @@ public:
     std::shared_ptr<cDeviceLog> getDeviceLogByPort(port_handle_t port);
 
     static inline int logPortData(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData) {
+        (void)op; // Suppress unused parameter warning
         // remember, that as a logger, we GENERALLY are only interested in WRITING data, regardless of whether that data is sent or received.
         if (!userData)
             return -1;
@@ -264,7 +265,7 @@ private:
     cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-    bool InitDevicesForWriting(std::vector<ISDevice*>& devices);
+    bool InitDevicesForWriting(std::vector<device_handle_t>& devices);
     void PrintProgress();
 
     static time_t GetTime()

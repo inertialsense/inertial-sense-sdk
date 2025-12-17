@@ -19,6 +19,7 @@
 #include <ostream>
 #include <cstring>
 #include <algorithm>
+#include <chrono>
 
 #include <sstream>
 #include <functional>
@@ -107,6 +108,7 @@ namespace utils {
         }
         auto size = static_cast<size_t>(size_s);
         std::unique_ptr<char[]> buf(new char[ size ]);
+        memset(buf.get(), 0, size);
         std::snprintf(buf.get(), size, format.c_str(), args ...);
         return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
     }
@@ -170,8 +172,8 @@ namespace utils {
      * @return returns the number of elements parsed.
      */
     template <typename T=uint8_t, int N=4>
-    int split_from_string(const std::string& s, T vOut[N], const char* d = ".", std::function<T(const std::string&)> lambda = [](const std::string& ss) -> T { return stoi(ss); } ) {
-        long unsigned int start = 0, n = 0, end = 0, len = s.length();
+    int split_from_string(const std::string& s, T vOut[N], const char* d = ".", std::function<T(const std::string&)> lambda = [](const std::string& ss) -> T { return static_cast<T>(std::stoul(ss)); } ) {
+        size_t start = 0, n = 0, end = 0, len = s.length();
         while ( (start < len) && (n < len) && (end = s.find_first_of(d, start)) != std::string::npos) {
             vOut[n++] = lambda(s.substr(start, end - start));
             start = end + 1;
@@ -189,6 +191,22 @@ namespace utils {
      * @return a vector of strings
      */
     std::vector<std::string> split_string(const std::string& str, const std::string& delimiter);
+
+
+    /**
+     * Returns the index of an entry (type E) within a container (type T)
+     * @tparam E the data type of the collection; defaults to std::string
+     * @tparam T the collection type; defaults to std::vector
+     * @param c a reference to the collection containing the element to index
+     * @param e a reference to the element to locate in the collection
+     * @returns the index number of the element e within collection c, or -1 if not found.
+     */
+    template <typename E=std::string, typename T=std::vector<E>>
+    int indexOf(const T& c, const E& e) {
+        ptrdiff_t pos = find(c.begin(), c.end(), e) - c.begin();
+        if(pos >= c.size()) return -1;
+        return (int)pos;
+    }
 
     std::string raw_hexdump(const char* raw_data, int bytesLen, int bytesPerLine);
     std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
@@ -351,5 +369,39 @@ private:
     ByteBuffer& buffer_;
 };
 
+
+class FnProfiler {
+public:
+    // Constructor records the start time and function name
+    FnProfiler(const std::string& functionName, uint32_t threshold = 100) : m_functionName(functionName), m_threshold(threshold), m_startTime(std::chrono::high_resolution_clock::now()) { }
+
+    // Destructor calculates and prints the duration
+    ~FnProfiler() {
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - m_startTime);
+        if (duration.count() < m_threshold)
+            return;
+
+        std::cout << utils::string_format("'%s' executed in %lluus", m_functionName.c_str(), duration.count()) << std::endl;
+        auto lastMark = m_startTime;
+        for (auto [m, msg] : markers) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(m - m_startTime);
+            auto span = std::chrono::duration_cast<std::chrono::microseconds>(m - lastMark);
+            float pct = ((float)span.count() / (float)duration.count()) * 100.0f;
+            std::cout << utils::string_format("    %7uus (%7uus, %4.1f%%) ::  %s", elapsed, span, pct, msg.c_str()) << std::endl;
+            lastMark = m;
+        }
+    }
+
+    void mark(const std::string& msg) {
+        markers.emplace_back(std::make_pair(std::chrono::high_resolution_clock::now(), msg));
+    }
+
+private:
+    std::string m_functionName;
+    uint32_t m_threshold;
+    std::chrono::high_resolution_clock::time_point m_startTime;
+    std::vector<std::pair<std::chrono::high_resolution_clock::time_point, std::string>> markers;
+};
 
 #endif //IS_SDK__UTIL_H

@@ -41,7 +41,7 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
         g_commandLineOptions.rmcPreset,
         RMC_OPTIONS_PRESERVE_CTRL);
 
-    for (ISDevice* d : inertialSenseInterface.getDevices())
+    for (auto& d : inertialSenseInterface.getDevices())
         inertialSenseInterface.Logger()->registerDevice(d);
 
     return result;

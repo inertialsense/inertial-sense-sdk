@@ -30,7 +30,7 @@ void mdns::tick() {
     if(!lock.try_lock()) return; // If the mutex is locked return
 
     if (createMdnsSockets() <= 0) {
-        debug_message("[WRN] Failed to open any sockets to listen for MDNS responses on");
+        log_warn(IS_LOG_FACILITY_MDNS, "Failed to open any sockets to listen for MDNS responses on");
         return;
     }
 
@@ -47,25 +47,14 @@ void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
     size_t capacity = 2048;
     void* buffer = malloc(capacity);
     if (buffer == nullptr) {
-        printf("[ERR] Failed to allocate memory for MDNS query are you out of memory?\n");
+        log_error(IS_LOG_FACILITY_MDNS, "Failed to allocate memory for MDNS query are you out of memory?");
         return;
     }
 
     for (int isock = 0; isock < socketsOpened; ++isock) {
-        // This code is slightly obtuse, but it simply generates random queryIds until it generates one that isn't already used in usedQueryIds
-        uint16_t queryId = 0;
-        do {
-            queryId = hwRandom();
-        } while (std::find_if(usedQueryIds.begin(), usedQueryIds.end(), [&queryId](used_query_id_t x) {
-            return x.queryId == queryId;
-        }) != usedQueryIds.end());
-
-        if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, queryId)) {
-            debug_message("[WRN] Failed to send DNS-DS discovery: %s\n", strerror(errno));
+        if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, 0)) {
+            log_warn(IS_LOG_FACILITY_MDNS, "Failed to send DNS-DS discovery: %s", strerror(errno));
         }
-
-        used_query_id_t newPair = {queryId, std::chrono::steady_clock::now(), false};
-        usedQueryIds.push_back(newPair);
     }
 
     free(buffer);
@@ -174,7 +163,7 @@ int mdns::createMdnsSockets() {
     // Thus we need to open one socket for each interface and address family
     int num_sockets = 0;
     int max_sockets = sizeof(mdnsSockets) / sizeof(mdnsSockets[0]);
-    int port = 0;
+    int port = 5353; // 0 for random port
 
 #ifdef _WIN32
 
@@ -255,7 +244,7 @@ int mdns::createMdnsSockets() {
     struct ifaddrs* ifa = 0;
 
     if (getifaddrs(&ifaddr) < 0)
-        printf("Unable to get interface addresses\n");
+        log_warn(IS_LOG_FACILITY_MDNS, "Unable to get interface addresses.");
 
     for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
         if (!ifa->ifa_addr)
@@ -329,24 +318,9 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
                         size_t size, size_t name_offset, size_t name_length, size_t record_offset,
                         size_t record_length, void* user_data) {
 
-    // Find which query we sent that this is a response to
-    std::list<used_query_id_t>::iterator foundQuery =
-        std::find_if(usedQueryIds.begin(), usedQueryIds.end(),
-                     [&query_id](used_query_id_t x) -> bool {
-            return x.queryId == query_id;
-        });
-
-    // Mark query as received and return an error if we can't find which query this is a response to
-    if (foundQuery == usedQueryIds.end()) {
-        debug_message("[ERR] Unable to find received query ID is local list")
-        return -EBADMSG;
-    } else {
-        foundQuery->queryRecieved = true;
-    }
-
     // Do not process ANSWER messages
     if (entry != MDNS_ENTRYTYPE_ANSWER) {
-        debug_message("[WRN] Unable to process non ANSWER responses: Not Supported")
+        log_warn(IS_LOG_FACILITY_MDNS, "Unable to process non ANSWER responses: Not Supported.");
         return -ENOTSUP;
     }
 
@@ -398,7 +372,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             mdns_record_srv_cpp_t srvRecord = mdns_record_srv_cpp_t(srv.priority, srv.weight, srv.port, std::string(MDNS_STRING_ARGS(srv.name)));
             newRecord.data.srv = srvRecord;
         } else {
-            debug_message("[WRN] Unable to process unknown MDNS record type: Not Supported")
+            log_warn(IS_LOG_FACILITY_MDNS, "Unable to process unknown MDNS record type: Not Supported.");
             return -ENOTSUP;
         }
         // Save the type of record to struct so that we know how to parse the union
@@ -418,7 +392,13 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             newRecord.name = std::string(MDNS_STRING_ARGS(entryName));
             newRecord.rclass = rclass;
             newRecord.ttl = ttl;
-            mdns_record_txt_cpp_t txtRecord = mdns_record_txt_cpp_t(std::string(MDNS_STRING_ARGS(txtbuffer[itxt].key)), std::string(MDNS_STRING_ARGS(txtbuffer[itxt].value)));
+            //mdns_record_txt_cpp_t txtRecord = mdns_record_txt_cpp_t(std::string(MDNS_STRING_ARGS(txtbuffer[itxt].key)), std::string(MDNS_STRING_ARGS(txtbuffer[itxt].value)));
+            std::string key(MDNS_STRING_ARGS(txtbuffer[itxt].key));
+            // std::string value(MDNS_STRING_ARGS(txtbuffer[itxt].value));
+            std::vector<unsigned char> value;
+            for (std::size_t p = 0; p < txtbuffer[itxt].value.length; p++) { value.push_back(txtbuffer[itxt].value.str[p]); }
+
+            mdns_record_txt_cpp_t txtRecord = mdns_record_txt_cpp_t(key, value);
             newRecord.data.txt = txtRecord;
             newRecord.type = (mdns_record_type)rtype;
             responses.insert_or_assign(newRecord, std::chrono::steady_clock::now()-std::chrono::microseconds(100*backtick));
@@ -467,16 +447,6 @@ int mdns::handleMdnsQueryResponses() {
     } while (res > 0);
 
     free(buffer);
-
-    // Cleanup used query ids
-    std::list<used_query_id_t>::iterator i = usedQueryIds.begin();
-    while (i != usedQueryIds.end()) {
-        if (i->queryRecieved || (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - i->querySent).count() > MDNS_REQUEST_TIMEOUT_MS)) {
-            i = usedQueryIds.erase(i);
-        } else {
-            i++;
-        }
-    }
 
     return records;
 }

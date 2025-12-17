@@ -145,100 +145,105 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         switch (data->hdr.id)
         {
 
-        // This is a helper macro, simply define the DID you want to forward,
-        // as well as the datatype of that DID.  So long as the data type
-        // has been defined in the PYBIND11_NUMPY_DTYPE macros below,
-        // then this will work.  It uses templates to abstract a lot
-        // of the tedium of this type of work
-        #define HANDLE_MSG(DID, vec) \
-        case DID: \
-            log_message(data->hdr.id, data->buf, vec); \
-            break;
+            // This is a helper macro, simply define the DID you want to forward,
+            // as well as the datatype of that DID.  So long as the data type
+            // has been defined in the PYBIND11_NUMPY_DTYPE macros below,
+            // then this will work.  It uses templates to abstract a lot
+            // of the tedium of this type of work
+            #define HANDLE_MSG(DID, vec) \
+            case DID: \
+                log_message(data->hdr.id, data->buf, vec); \
+                break;
 
-        HANDLE_MSG(DID_DEV_INFO, dev_log_->devInfo);
-        HANDLE_MSG(DID_SYS_FAULT, dev_log_->sysFault);
-        HANDLE_MSG(DID_INS_1, dev_log_->ins1);
-        HANDLE_MSG(DID_INS_2, dev_log_->ins2);
-        HANDLE_MSG(DID_GNSS1_RCVR_POS, dev_log_->gps1UbxPos);
-        HANDLE_MSG(DID_SYS_CMD, dev_log_->sysCmd);
-        // HANDLE_MSG(DID_NMEA_BCAST_PERIOD, dev_log_->nmeaBcastPeriod);
-        // HANDLE_MSG(DID_RMC, dev_log_->rmc);
-        HANDLE_MSG(DID_SYS_PARAMS, dev_log_->sysParams);
-        HANDLE_MSG(DID_SYS_SENSORS, dev_log_->sysSensors);
-        HANDLE_MSG(DID_FLASH_CONFIG, dev_log_->flashCfg);
-        HANDLE_MSG(DID_GNSS1_POS, dev_log_->gps1Pos);
-        HANDLE_MSG(DID_GNSS2_POS, dev_log_->gps2Pos);
-        HANDLE_MSG(DID_GNSS1_SAT, dev_log_->gps1Sat);
-        HANDLE_MSG(DID_GNSS2_SAT, dev_log_->gps2Sat);
-        HANDLE_MSG(DID_GNSS1_VERSION, dev_log_->gps1Version);
-        HANDLE_MSG(DID_GNSS2_VERSION, dev_log_->gps2Version);
-        HANDLE_MSG(DID_MAG_CAL, dev_log_->magCal);
-        HANDLE_MSG(DID_GNSS1_RTK_POS_REL, dev_log_->gps1RtkPosRel);
-        HANDLE_MSG(DID_GNSS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc);
-        HANDLE_MSG(DID_GNSS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel);
-        HANDLE_MSG(DID_GNSS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc);
-        // HANDLE_MSG(DID_FEATURE_BITS, dev_log_->featureBits);
-        HANDLE_MSG(DID_SENSORS_UCAL, dev_log_->sensorsUcal);
-        HANDLE_MSG(DID_SENSORS_TCAL, dev_log_->sensorsTcal);
-        HANDLE_MSG(DID_SENSORS_MCAL, dev_log_->sensorsMcal);
-        HANDLE_MSG(DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias);
-        // HANDLE_MSG(DID_SENSORS_ADC, dev_log_->sensorsAdc);
-        HANDLE_MSG(DID_SCOMP, dev_log_->scomp);
-        HANDLE_MSG(DID_REFERENCE_IMU, dev_log_->refImu);
-        HANDLE_MSG(DID_REFERENCE_PIMU, dev_log_->refPImu);
-        HANDLE_MSG(DID_REFERENCE_MAGNETOMETER, dev_log_->refMag);
-        HANDLE_MSG(DID_GNSS1_VEL, dev_log_->gps1Vel);
-        HANDLE_MSG(DID_GNSS2_VEL, dev_log_->gps2Vel);
-        // HANDLE_MSG(DID_HDW_PARAMS, dev_log_->hdwParams);
-        // HANDLE_MSG(DID_NVR_MANAGE_USERPAGE, dev_log_->nvrManageUserpage);
-        // HANDLE_MSG(DID_NVR_USERPAGE_SN, dev_log_->nvrUserpageSn);
-        // HANDLE_MSG(DID_NVR_USERPAGE_G0, dev_log_->nvrUserpageG0);
-        // HANDLE_MSG(DID_NVR_USERPAGE_G1, dev_log_->nvrUserpageG1);
-        // HANDLE_MSG(DID_RTOS_INFO, dev_log_->rtosInfo);
-        HANDLE_MSG(DID_DEBUG_STRING, dev_log_->debugString);
-        HANDLE_MSG(DID_DEBUG_ARRAY, dev_log_->debugArray);
-        // HANDLE_MSG(DID_CAL_SC, dev_log_->calSc);
-        // HANDLE_MSG(DID_CAL_SC1, dev_log_->calSc1);
-        // HANDLE_MSG(DID_CAL_SC2, dev_log_->calSc2);
-        HANDLE_MSG(DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma);
-        HANDLE_MSG(DID_INL2_STATES, dev_log_->inl2States);
-        HANDLE_MSG(DID_INL2_STATUS, dev_log_->inl2Status);
-        // HANDLE_MSG(DID_INL2_MISC, dev_log_->inl2Misc);
-        HANDLE_MSG(DID_MAGNETOMETER, dev_log_->magnetometer);
-        HANDLE_MSG(DID_BAROMETER, dev_log_->barometer);
-        HANDLE_MSG(DID_GNSS1_RTK_POS, dev_log_->gps1RtkPos);
-        HANDLE_MSG(DID_IMU3_UNCAL, dev_log_->imu3Uncal);
-        HANDLE_MSG(DID_IMU3_RAW, dev_log_->imu3Raw);
-        HANDLE_MSG(DID_IMU_RAW, dev_log_->imuRaw);
-        HANDLE_MSG(DID_PIMU, dev_log_->pimu);
-        HANDLE_MSG(DID_IMU, dev_log_->imu);
-        HANDLE_MSG(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo);
-        HANDLE_MSG(DID_GNSS_BASE_RAW, dev_log_->gpsBaseRaw);
-        // HANDLE_MSG(DID_GNSS_RTK_OPT, dev_log_->gpsRtkOpt);
-        HANDLE_MSG(DID_MANUFACTURING_INFO, dev_log_->manufacturingInfo);
-        HANDLE_MSG(DID_BIT, dev_log_->bit);
-        HANDLE_MSG(DID_INS_3, dev_log_->ins3);
-        HANDLE_MSG(DID_INS_4, dev_log_->ins4);
-        HANDLE_MSG(DID_INL2_NED_SIGMA, dev_log_->inl2NedSigma);
-        HANDLE_MSG(DID_STROBE_IN_TIME, dev_log_->strobeInTime);
-        HANDLE_MSG(DID_GNSS1_RAW, dev_log_->gps1Raw);
-        HANDLE_MSG(DID_GNSS2_RAW, dev_log_->gps2Raw);
-        HANDLE_MSG(DID_WHEEL_ENCODER, dev_log_->wheelEncoder);
-        HANDLE_MSG(DID_GROUND_VEHICLE, dev_log_->groundVehicle);
-        HANDLE_MSG(DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl);
-        HANDLE_MSG(DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage);
-        HANDLE_MSG(DID_SURVEY_IN, dev_log_->surveyIn);
-        // HANDLE_MSG(DID_EVB2, dev_log_->evb2);
-        HANDLE_MSG(DID_PORT_MONITOR, dev_log_->portMonitor);
-        // HANDLE_MSG(DID_RTK_STATE, dev_log_->rtkState);
-        HANDLE_MSG(DID_RTK_CODE_RESIDUAL, dev_log_->rtkCodeResidual);
-        HANDLE_MSG(DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual);
-        HANDLE_MSG(DID_RTK_DEBUG, dev_log_->rtkDebug);
-        // HANDLE_MSG(DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
-        HANDLE_MSG(DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray);
-        HANDLE_MSG(DID_GPX_PORT_MONITOR, dev_log_->gpxPortMonitor);
+            HANDLE_MSG(DID_DEV_INFO, dev_log_->devInfo);
+            HANDLE_MSG(DID_SYS_FAULT, dev_log_->sysFault);
+            HANDLE_MSG(DID_INS_1, dev_log_->ins1);
+            HANDLE_MSG(DID_INS_2, dev_log_->ins2);
+            HANDLE_MSG(DID_GNSS1_RCVR_POS, dev_log_->gps1UbxPos);
+            HANDLE_MSG(DID_SYS_CMD, dev_log_->sysCmd);
+            // HANDLE_MSG(DID_NMEA_BCAST_PERIOD, dev_log_->nmeaBcastPeriod);
+            // HANDLE_MSG(DID_RMC, dev_log_->rmc);
+            HANDLE_MSG(DID_SYS_PARAMS, dev_log_->sysParams);
+            HANDLE_MSG(DID_SYS_SENSORS, dev_log_->sysSensors);
+            HANDLE_MSG(DID_FLASH_CONFIG, dev_log_->flashCfg);
+            HANDLE_MSG(DID_GNSS1_POS, dev_log_->gps1Pos);
+            HANDLE_MSG(DID_GNSS2_POS, dev_log_->gps2Pos);
+            HANDLE_MSG(DID_GNSS1_SAT, dev_log_->gps1Sat);
+            HANDLE_MSG(DID_GNSS2_SAT, dev_log_->gps2Sat);
+            HANDLE_MSG(DID_GNSS1_VERSION, dev_log_->gps1Version);
+            HANDLE_MSG(DID_GNSS2_VERSION, dev_log_->gps2Version);
+            HANDLE_MSG(DID_MAG_CAL, dev_log_->magCal);
+            HANDLE_MSG(DID_GNSS1_RTK_POS_REL, dev_log_->gps1RtkPosRel);
+            HANDLE_MSG(DID_GNSS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc);
+            HANDLE_MSG(DID_GNSS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel);
+            HANDLE_MSG(DID_GNSS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc);
+            // HANDLE_MSG(DID_FEATURE_BITS, dev_log_->featureBits);
+            HANDLE_MSG(DID_SENSORS_UCAL, dev_log_->sensorsUcal);
+            HANDLE_MSG(DID_SENSORS_TCAL, dev_log_->sensorsTcal);
+            HANDLE_MSG(DID_SENSORS_MCAL, dev_log_->sensorsMcal);
+            HANDLE_MSG(DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias);
+            // HANDLE_MSG(DID_SENSORS_ADC, dev_log_->sensorsAdc);
+            HANDLE_MSG(DID_SCOMP, dev_log_->scomp);
+            HANDLE_MSG(DID_REFERENCE_IMU, dev_log_->refImu);
+            HANDLE_MSG(DID_REFERENCE_PIMU, dev_log_->refPImu);
+            HANDLE_MSG(DID_REFERENCE_MAGNETOMETER, dev_log_->refMag);
+            HANDLE_MSG(DID_GNSS1_VEL, dev_log_->gps1Vel);
+            HANDLE_MSG(DID_GNSS2_VEL, dev_log_->gps2Vel);
+            // HANDLE_MSG(DID_HDW_PARAMS, dev_log_->hdwParams);
+            // HANDLE_MSG(DID_NVR_MANAGE_USERPAGE, dev_log_->nvrManageUserpage);
+            // HANDLE_MSG(DID_NVR_USERPAGE_SN, dev_log_->nvrUserpageSn);
+            // HANDLE_MSG(DID_NVR_USERPAGE_G0, dev_log_->nvrUserpageG0);
+            // HANDLE_MSG(DID_NVR_USERPAGE_G1, dev_log_->nvrUserpageG1);
+            // HANDLE_MSG(DID_RTOS_INFO, dev_log_->rtosInfo);
+            HANDLE_MSG(DID_DEBUG_STRING, dev_log_->debugString);
+            HANDLE_MSG(DID_DEBUG_ARRAY, dev_log_->debugArray);
+            // HANDLE_MSG(DID_CAL_SC, dev_log_->calSc);
+            // HANDLE_MSG(DID_CAL_SC1, dev_log_->calSc1);
+            // HANDLE_MSG(DID_CAL_SC2, dev_log_->calSc2);
+            HANDLE_MSG(DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma);
+            HANDLE_MSG(DID_INL2_STATES, dev_log_->inl2States);
+            HANDLE_MSG(DID_INL2_STATUS, dev_log_->inl2Status);
+            // HANDLE_MSG(DID_INL2_MISC, dev_log_->inl2Misc);
+            HANDLE_MSG(DID_MAGNETOMETER, dev_log_->magnetometer);
+            HANDLE_MSG(DID_BAROMETER, dev_log_->barometer);
+            HANDLE_MSG(DID_GNSS1_RTK_POS, dev_log_->gps1RtkPos);
+            HANDLE_MSG(DID_IMU3_UNCAL, dev_log_->imu3Uncal);
+            HANDLE_MSG(DID_IMU3_RAW, dev_log_->imu3Raw);
+            HANDLE_MSG(DID_IMU_RAW, dev_log_->imuRaw);
+            HANDLE_MSG(DID_PIMU, dev_log_->pimu);
+            HANDLE_MSG(DID_IMU, dev_log_->imu);
+            HANDLE_MSG(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo);
+            HANDLE_MSG(DID_GNSS_BASE_RAW, dev_log_->gpsBaseRaw);
+            // HANDLE_MSG(DID_GNSS_RTK_OPT, dev_log_->gpsRtkOpt);
+            HANDLE_MSG(DID_MANUFACTURING_INFO, dev_log_->manufacturingInfo);
+            HANDLE_MSG(DID_BIT, dev_log_->bit);
+            HANDLE_MSG(DID_INS_3, dev_log_->ins3);
+            HANDLE_MSG(DID_INS_4, dev_log_->ins4);
+            HANDLE_MSG(DID_INL2_NED_SIGMA, dev_log_->inl2NedSigma);
+            HANDLE_MSG(DID_STROBE_IN_TIME, dev_log_->strobeInTime);
+            HANDLE_MSG(DID_GNSS1_RAW, dev_log_->gps1Raw);
+            HANDLE_MSG(DID_GNSS2_RAW, dev_log_->gps2Raw);
+            HANDLE_MSG(DID_WHEEL_ENCODER, dev_log_->wheelEncoder);
+            HANDLE_MSG(DID_GROUND_VEHICLE, dev_log_->groundVehicle);
+            HANDLE_MSG(DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl);
+            HANDLE_MSG(DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage);
+            HANDLE_MSG(DID_SURVEY_IN, dev_log_->surveyIn);
+            // HANDLE_MSG(DID_EVB2, dev_log_->evb2);
+            HANDLE_MSG(DID_PORT_MONITOR, dev_log_->portMonitor);
+            // HANDLE_MSG(DID_RTK_STATE, dev_log_->rtkState);
+            HANDLE_MSG(DID_RTK_CODE_RESIDUAL, dev_log_->rtkCodeResidual);
+            HANDLE_MSG(DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual);
+            HANDLE_MSG(DID_RTK_DEBUG, dev_log_->rtkDebug);
+            // HANDLE_MSG(DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
 
-        default:
+            HANDLE_MSG(DID_GPX_DEV_INFO, dev_log_->gpxDevInfo);
+            HANDLE_MSG(DID_GPX_FLASH_CFG, dev_log_->gpxFlashCfg);
+            HANDLE_MSG(DID_GPX_RTOS_INFO, dev_log_->gpxRtosInfo);
+            HANDLE_MSG(DID_GPX_STATUS, dev_log_->gpxStatus);
+            HANDLE_MSG(DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray);
+            HANDLE_MSG(DID_GPX_BIT, dev_log_->gpxBit);
+            HANDLE_MSG(DID_GPX_PORT_MONITOR, dev_log_->gpxPortMonitor);
+            default:
             //            printf("Unhandled IS message DID: %d\n", message_type);
             break;
         }
@@ -328,7 +333,13 @@ void LogReader::forwardData(int device_id)
     forward_message(DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual, device_id);
     forward_message(DID_RTK_DEBUG, dev_log_->rtkDebug, device_id);
     // forward_message(DID_RTK_DEBUG_2, dev_log_->rtkDebug2, device_id);
+
+    forward_message(DID_GPX_DEV_INFO, dev_log_->gpxDevInfo, device_id);
+    forward_message(DID_GPX_FLASH_CFG, dev_log_->gpxFlashCfg, device_id);
+    forward_message(DID_GPX_RTOS_INFO, dev_log_->gpxRtosInfo, device_id);
+    forward_message(DID_GPX_STATUS, dev_log_->gpxStatus, device_id);
     forward_message(DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray, device_id);
+    forward_message(DID_GPX_BIT, dev_log_->gpxBit, device_id);
     forward_message(DID_GPX_PORT_MONITOR, dev_log_->gpxPortMonitor, device_id);
 }
 

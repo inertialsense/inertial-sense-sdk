@@ -129,7 +129,7 @@ int msgHandlerNmea2(port_handle_t port, const uint8_t* msg, int msgSize)
     DEBUG_PRINTF("[%2d] asciiMessageHandler() size: %3d, %.30s...\n", (int)g_testRxDeque.size(), msgSize, buf);
 
     EXPECT_EQ(td.size, msgSize);
-    EXPECT_TRUE(memcmp(&td.data, msg, td.size) == 0);
+    EXPECT_EQ(memcmp(&td.data, msg, td.size), 0);
 
     return 0;
 }
@@ -141,7 +141,7 @@ static int msgHandlerUblox2(port_handle_t port, const uint8_t* msg, int msgSize)
     DEBUG_PRINTF("[%2d] ubloxMessageHandler() size: %3d, (0x%02x 0x%02x)\n", (int)g_testRxDeque.size(), msgSize, msg[2], msg[3]);
 
     EXPECT_EQ(td.size, msgSize);
-    EXPECT_TRUE(memcmp(&td.data, msg, td.size) == 0);
+    EXPECT_EQ(memcmp(&td.data, msg, td.size), 0);
 
     return 0;
 }
@@ -153,7 +153,7 @@ static int msgHandlerRtcm32(port_handle_t port, const uint8_t* msg, int msgSize)
     DEBUG_PRINTF("[%2d] rtcm3MessageHandler() size: %3d, (0x%02x 0x%02x 0x%02x 0x%02x)\n", (int)g_testRxDeque.size(), msgSize, msg[0], msg[1], msg[2], msg[3]);
 
     EXPECT_EQ(td.size, msgSize);
-    EXPECT_TRUE(memcmp(&td.data, msg, td.size) == 0);
+    EXPECT_EQ(memcmp(&td.data, msg, td.size), 0);
 
 #if 0
     rtcm_t raw = {};

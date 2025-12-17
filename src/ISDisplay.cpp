@@ -2278,10 +2278,11 @@ void cInertialSenseDisplay::GetKeyboardInput()
                 m_editData.uploadNeeded = true;
 
                 // Copy data into local Rx buffer
-                if (m_editData.pData.hdr.id == m_editData.did &&
-                    m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.size+m_editData.info.offset)
+                int hdrPos = static_cast<int>(m_editData.pData.hdr.size + m_editData.pData.hdr.offset);
+                int infoPos = static_cast<int>(m_editData.info.size + m_editData.info.offset);
+                if ((m_editData.pData.hdr.id == m_editData.did) && (hdrPos >= infoPos))
                 {
-                    memcpy(m_editData.pData.ptr + m_editData.info.offset + m_editData.selectionArrayIdx*m_editData.info.elementSize, m_editData.data, m_editData.info.elementSize);
+                    memcpy(m_editData.pData.ptr + m_editData.info.offset + m_editData.selectionArrayIdx * m_editData.info.elementSize, m_editData.data, m_editData.info.elementSize);
                 }
             }
             StopEditing();

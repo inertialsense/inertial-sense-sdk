@@ -12,20 +12,14 @@
 #include <mutex>
 #include <deque>
 
-#include "serialPort.h"
+#include "PortManager.h"
+#include "DeviceManager.h"
 #include "ISFirmwareUpdater.h"
 #include "protocol/FirmwareUpdate.h"
 #include "util/util.h"
 
-
-// Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-#define SUPPORT_BOOTLOADER_V5A
-
-/** uINS bootloader baud rate */
-#define IS_BAUD_RATE_BOOTLOADER 921600
-
-// #define BOOTLOADER_RETRIES          100
-// #define BOOTLOADER_RESPONSE_DELAY   10
+//#define BOOTLOADER_RETRIES                  12
+//#define BOOTLOADER_RESPONSE_DELAY           10
 #define BOOTLOADER_REFRESH_DELAY            500
 #define MAX_VERIFY_CHUNK_SIZE               1024
 #define BOOTLOADER_TIMEOUT_DEFAULT          1000
@@ -43,12 +37,10 @@ public:
      * @param hdwId the hardware id (from manufacturing info) used to identify which specific hdwType + hdwVer we should be targeting (used in validation)
      * @param serialNo the device-specific unique Id (or serial number) that is used to uniquely identify a particular device (used in validation)
      */
-    ISBFirmwareUpdater(fwUpdate::target_t target, const ISDevice* device, std::deque<uint8_t>& toHost) : FirmwareUpdateDevice(target), device((ISDevice*)device), toHost(toHost) {
-        // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
-        // as soon as this is instantiated, we should attempt to target and boot the device into ISB mode.
-        // rebootToISB(5, 0, false);
-    }
-    ~ISBFirmwareUpdater() override = default;
+    ISBFirmwareUpdater(fwUpdate::target_t target, const device_handle_t& device, std::deque<uint8_t>& toHost) : FirmwareUpdateDevice(target), device(device), target_devInfo(), toHost(toHost) { }
+
+
+    ~ISBFirmwareUpdater() override { };
 
     /**
      * We override this in this class, because we have to do some better handling for erase/write, rather than chunks.
@@ -144,7 +136,7 @@ private:
         IS_PROCESSOR_UNKNOWN = -1,
         IS_PROCESSOR_SAMx70 = 0,        // uINS-3/4, EVB-2
         IS_PROCESSOR_STM32L4,           // IMX-5
-        IS_PROCESSOR_STM32U5,           // GPX-1, IMX-5.1
+        IS_PROCESSOR_STM32U5,           // GPX-1, IMX-6.0
 
         IS_PROCESSOR_NUM,               // Must be last
     } eProcessorType;
@@ -177,28 +169,26 @@ private:
 
     static const int HEX_BUFFER_SIZE = 1024;
 
-    ISDevice* device;                       //!< an ISDevice instance to which are are communicating/updating
+    inline static PortManager& portManager = PortManager::getInstance();
+    inline static DeviceManager& deviceManager = DeviceManager::getInstance();
+
+
+    device_handle_t device;       //!< an ISDevice instance to which are are communicating/updating
     dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
-
-    uint32_t m_sn = 0;                      //!< Inertial Sense serial number, i.e. SN60000
-    uint16_t hardwareId = 0;                //!< Inertial Sense Hardware Type (IMX, GPX, etc)
-    uint8_t m_isb_major = 0;                //!< ISB Major revision on device
-    char m_isb_minor = 0;                   //!< ISB Minor revision on device
-    bool isb_mightUpdate = false;           //!< true if device will be updated if bootloader continues
-
     uint32_t last_reboot = 0;               //!< time when the last reboot to the device was issued
 
     struct {
+        bool isValid = false;               //!< true if the data in this struct is valid
         bool is_evb = false;                //!< Available on version 6+, otherwise false
         int processor = 0;                  //!< Differentiates between uINS-3 and IMX-5
         bool rom_available = 0;             //!< ROM bootloader is available on this port
 
         uint32_t app_offset = 0;            //!< Helps in loading bin files
         uint32_t verify_size = 0;           //!< Chunk size, limited on Windows
-    } m_isb_props = {};
+    } m_isb_props = {};                     //!< Essential properties for the ISbootloader to properly install an APP firmware image
+
 
     static std::vector<uint32_t> serial_list;
-
     static std::vector<uint32_t> rst_serial_list;
 
     fwUpdate::target_t getTargetType();
@@ -213,7 +203,7 @@ private:
     is_operation_result sync();
     uint32_t get_device_info();
     eImageSignature check_is_compatible();
-    is_operation_result fetch_device_info_and_signature(eImageSignature* out_signature);
+    is_operation_result fetch_device_info_and_signature(eImageSignature* out_signature = nullptr);
     int checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum);
     is_operation_result select_page(int page);
     is_operation_result begin_program_for_current_page(int startOffset, int endOffset);
@@ -291,14 +281,18 @@ private:
     const unsigned char* outputPtrEnd = output + (HEX_BUFFER_SIZE * 2);
     unsigned char* outputPtr = output;
 
+    PortManager::port_listener_handle_t portListenerHandle;
+    bool portsChanged = false;
+
     int lastSubOffset = -1;
 
     fwUpdate::update_status_e last_session_status = fwUpdate::NOT_STARTED;
 
     std::deque<uint8_t>& toHost;
+    uint32_t nextPortCheck = 0;
 
-    eraseState_t eraseFlash_step(uint32_t timeout = 60000);
-    writeState_t writeFlash_step(uint32_t timeout = 60000);
+    eraseState_t eraseFlash_step(uint32_t timeout = 20000);
+    writeState_t writeFlash_step(uint32_t timeout = 20000);
 };
 
 #endif //IS_ISB_FIRMWAREUPDATER_H

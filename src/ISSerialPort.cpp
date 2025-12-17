@@ -20,6 +20,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <linux/serial.h>
 #endif
 
+#if PLATFORM_IS_APPLE
+#include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/serial/IOSerialKeys.h>
+#include <IOKit/serial/ioss.h>
+#include <IOKit/IOBSD.h>
+#include <sys/param.h>
+#endif
+
 using namespace std;
 
 
@@ -162,7 +171,29 @@ int cISSerialPort::GetComPorts(vector<string>& ports)
         }
     }
 
-#else   // Linux
+#elif PLATFORM_IS_APPLE
+
+    auto classesToMatch = IOServiceMatching(kIOSerialBSDServiceValue);
+    io_iterator_t portIterator;
+    auto result = IOServiceGetMatchingServices(kIOMainPortDefault, classesToMatch, &portIterator);
+    if(result != KERN_SUCCESS)
+    {
+        return 0;
+    }
+
+    auto serialService = IOIteratorNext(portIterator);
+    while(serialService != 0)
+    {
+        auto bsdPathAsCFString = IORegistryEntrySearchCFProperty(serialService, kIOServicePlane, CFSTR(kIOCalloutDeviceKey), kCFAllocatorDefault, kIORegistryIterateRecursively);
+
+        char bsdPath[MAXPATHLEN];
+        result = CFStringGetCString((CFStringRef) bsdPathAsCFString, bsdPath, sizeof(bsdPath), kCFStringEncodingUTF8);
+        CFRelease(bsdPathAsCFString);
+
+        ports.push_back(bsdPath);
+    }
+
+#elif PLATFORM_IS_LINUX
 
     struct dirent **namelist;
     vector<string> comList8250;
@@ -197,6 +228,8 @@ int cISSerialPort::GetComPorts(vector<string>& ports)
     // serial8250-devices must be probe to check for validity
     probe_serial8250_comports(ports, comList8250);
 
+#else
+    #error "Unsupported platform."
 #endif
 
 #if 0

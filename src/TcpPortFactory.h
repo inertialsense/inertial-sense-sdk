@@ -8,6 +8,11 @@
 
 #ifndef IS_SDK__TCP_PORT_FACTORY_H
 #define IS_SDK__TCP_PORT_FACTORY_H
+
+#include <csignal>
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 #include "PortFactory.h"
 #include "core/tcpPort.h"
 
@@ -40,8 +45,20 @@ public:
     bool releasePort(port_handle_t port) override;
 
 private:
-    TcpPortFactory() = default;
-    ~TcpPortFactory() = default;
+    TcpPortFactory() {
+#ifdef PLATFORM_IS_LINUX
+        signal(SIGPIPE, SIG_IGN); // ignore broken pipes
+#endif
+#ifdef _WIN32
+        WSADATA wsa_data;
+        WSAStartup(MAKEWORD(2, 2), &wsa_data);
+#endif
+    };
+    ~TcpPortFactory() {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+    }
 };
 
 #endif //IS_SDK__TCP_PORT_FACTORY_H

@@ -27,7 +27,7 @@ int portReadTimeout_internal(port_handle_t port, uint8_t* buffer, unsigned int r
     uint32_t timeout = current_timeMs() + timeoutMs;
     uint16_t bytesPending = portAvailable(port);
     while ((bytesPending < readCount) && (current_timeMs() > timeout)) {
-        SLEEP_US(50000);
+        SLEEP_MS(timeoutMs / 4);
         bytesPending = portAvailable(port);
     }
 
@@ -37,7 +37,7 @@ int portReadTimeout_internal(port_handle_t port, uint8_t* buffer, unsigned int r
 /**
  * Waits timeoutMilliseconds for a sequence of waitForLength bytes matching waitFor to be read from a part.
  * No data is retained or buffered while waiting. If the sequence is read within the timeout period, this returns
- * true, otherwise false. NOTE: This is a blocking call
+ * true, otherwise false. NOTE: This is a blocking call, and any data read while looking for a match is discarded.
  * @param port the port monitor for the anticipated bytes
  * @param waitFor the sequence of bytes to wait for, not to exceed 128 bytes
  * @param waitForLength the number of bytes in waitFor
@@ -74,8 +74,9 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
                         return 1;       // success, we match all 'waitForLength' bytes
                     nMatch++;
                 } else {
+                    // failed to match the full sequence, so reset back to looking for the first char
                     nMatch = 0;
-                    mPtr = sPtr;
+                    mPtr = NULL;
                 }
             }
             if (mPtr && nMatch) {

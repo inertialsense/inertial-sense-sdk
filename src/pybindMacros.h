@@ -10,7 +10,7 @@ PYBIND11_NUMPY_DTYPE(imus_t, pqr, acc);
 PYBIND11_NUMPY_DTYPE(imu3_t, time, status, I);
 PYBIND11_NUMPY_DTYPE(mag_xyz_t, xyz);
 PYBIND11_NUMPY_DTYPE(sensors_mpu_t, pqr, acc, mag);
-PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omega_l, omega_r, wrap_count_l, wrap_count_r);
+PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omega_l, omega_r, wrap_count_l, wrap_count_r, var_wheel_omega, var_wheel_theta);
 PYBIND11_NUMPY_DTYPE(wheel_transform_t, e_b2w, e_b2w_sigma, t_b2w, t_b2w_sigma);
 PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, transform, track_width, radius);
 PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
@@ -76,8 +76,11 @@ PYBIND11_NUMPY_DTYPE(debug_string_t, s);
 // PYBIND11_NUMPY_DTYPE(pimu_mag_t, pimu, mag);
 // PYBIND11_NUMPY_DTYPE(can_config_t, can_period_mult, can_transmit_address, can_baudrate_kbps, can_receive_address);
 
+PYBIND11_NUMPY_DTYPE(gpx_flash_cfg_t, size, checksum, key, ser0BaudRate, ser1BaudRate, ser2BaudRate, startupGPSDtMs, gps1AntOffset, gps2AntOffset, gnssSatSigConst, dynamicModel, debug, gpsTimeSyncPeriodMs, gpsTimeUserDelay, gpsMinimumElevation, RTKCfgBits, gnssCn0Minimum, gnssCn0DynMinOffset, reserved1, sysCfgBits, reserved2);
 PYBIND11_NUMPY_DTYPE(gpx_gnss_status_t, lastRstCause, fwUpdateState, initState, runState);
 PYBIND11_NUMPY_DTYPE(gpx_status_t, timeOfWeekMs, status, grmcBitsSer0, grmcBitsSer1, grmcBitsSer2, grmcBitsUSB, grmcNMEABitsSer0, grmcNMEABitsSer1, grmcNMEABitsSer2, grmcNMEABitsUSB, hdwStatus, mcuTemp, navOutputPeriodMs, flashCfgChecksum, rtkMode, gnssStatus, gpxSourcePort, upTime);
+PYBIND11_NUMPY_DTYPE(gpx_rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
+PYBIND11_NUMPY_DTYPE(gpx_bit_t, results, command, port, testMode, state, detectedHardwareId, reserved);
 
 PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);
 PYBIND11_NUMPY_DTYPE(rtk_state_t, time, rp_ecef, rv_ecef, ra_ecef, bp_ecef, bv_ecef, qr, b, qb, sat_id);

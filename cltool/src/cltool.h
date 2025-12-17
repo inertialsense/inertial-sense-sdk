@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 #include <string>
 #include <any>
+#include <memory>
 
 // change these includes to be the correct path for your system
 #include "InertialSense.h" // best to include this file first
@@ -26,6 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISBootloaderBase.h"
 #include "util/util.h"
+#include "CorrectionService.h"
 
 #define APP_NAME                "cltool"
 #if PLATFORM_IS_WINDOWS
@@ -48,7 +50,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 enum eExitCodes
 {
-    EXIT_CODE_SUCCESS 	                            =  0,
+    EXIT_CODE_SUCCESS                               =  0,
     EXIT_CODE_INVALID_COMMAND_LINE                  = -1,
     EXIT_CODE_PARSE_COMMAND_LINE_FAILED             = -2,
     EXIT_CODE_NO_DEVICES_FOUND                      = -3,
@@ -94,12 +96,12 @@ typedef struct
 
 typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
-    std::string comPort; 					// -c com_port
-    std::string updateAppFirmwareFilename; 	// -uf file_name
-    std::string updateBootloaderFilename; 	// -ub file_name
+    std::string comPort;                     // -c com_port
+    std::string updateAppFirmwareFilename;     // -uf file_name
+    std::string updateBootloaderFilename;     // -ub file_name
     std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
-    bool forceBootloaderUpdate;				// -fb
-    bool bootloaderVerify; 					// -bv
+    bool forceBootloaderUpdate;                // -fb
+    bool bootloaderVerify;                     // -bv
     bool replayDataLog;
     bool softwareReset;
     bool magRecal;
@@ -134,7 +136,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     std::string imxFlashCfg;
     std::string gpxFlashCfg;
     uint32_t timeoutFlushLoggerSeconds;
-    std::vector<uint32_t> outputOnceDid;	
+    std::vector<uint32_t> outputOnceDid;    
     std::vector<uint32_t> setAckDid;
 
     YAML::Node getNode;
@@ -207,7 +209,7 @@ private:
      * @param devInfo
      * @return
      */
-    virtual ISDevice* allocateDevice(const dev_info_t &devInfo, port_handle_t port) override { return (ISDevice*) new CltoolDevice(devInfo, port); };
+    virtual device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override { return std::make_shared<CltoolDevice>(devInfo, port); };
 };
 
 #endif // __CLTOOL_H__

@@ -19,6 +19,7 @@
 #endif
 
 #include "util/util.h"
+#include "ISUtilities.h"
 
 #include "PortManager.h"
 #include "serialPort.h"
@@ -47,7 +48,7 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
     serialPort->baudRate = portOptions.defaultBaudRate;
     serialPort->blocking = portOptions.defaultBlocking;
 
-    debug_message("[DBG] Allocated new serial port '%s'\n", portName(port));
+    log_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
     return port;
 }
 
@@ -55,7 +56,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
 
-    debug_message("[DBG] Releasing serial port '%s'\n", ((serial_port_t*)port)->portName);
+    log_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 
@@ -66,7 +67,7 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 #if PLATFORM_IS_WINDOWS
     char targetPath[256];
     return (QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath)) != 0);
-#else   // Linux
+#elif PLATFORM_IS_LINUX
     return validate_port__linux(pType, pName);
 #endif
 }
@@ -82,15 +83,35 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
 }
 
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
+#ifdef DEBUG_LOGGING
     const char* portStr = portName(port);
     const char* safeErrMsg = errMsg ? errMsg : "";
-    // Split the printf into two calls (helps avoid inlining inference)
-    printf("%s :: Error %d : ", portStr, errCode);
-    printf("%s\n", safeErrMsg);
+#endif
+
+    static int lastErrorCode = 0;       // the previous error code
+    static int repeatCount = 0;         // number of time the same code has repeated
+    static uint32_t lastErrorMs = 0;    // the time when the lastErrorCode changed to the current error code
+
+    if (errCode != lastErrorCode) {
+        repeatCount = 0;
+        lastErrorMs = current_timeMs();
+
+        // Split the printf into two calls (helps avoid inlining inference)
+        log_debug(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
+    } else {
+        // Split the printf into two calls (helps avoid inlining inference)
+        log_debug(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
+
+        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount >= 10)){
+            // any error which repeats for more than 30 seconds, and more than 10 times, close & invalidate
+            portClose(port);
+            portInvalidate(port);
+            return 0;
+        }
+    }
 
     // decide which of these should result in a port-closure, vs a port invalid, vs nothing...
     switch (errCode) {
-
         // close but don't invalidate
         case EIO:       /* I/O error */
         case ENXIO:     /* No such device or address */
@@ -171,7 +192,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
         }
     }
 
-#else   // Linux
+#elif PLATFORM_IS_LINUX
 
     struct dirent **namelist;
     std::vector<std::string> comList8250;

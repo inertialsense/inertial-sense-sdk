@@ -45,6 +45,7 @@ uint32_t minor(uint64_t devnum) {
     return minor;
 }
 
+#if !defined(PLATFORM_IS_APPLE)
 /**
  * makedev function from glibc reimplemented as a normal C function instead of as a define
  * See https://github.com/bminor/glibc/blob/c744519bad81067697600bd01e90b90ae338bf08/bits/sysmacros.h#L26 for more info
@@ -60,7 +61,7 @@ uint64_t makedev(uint32_t major, uint32_t minor) {
     devnum |= (((uint64_t) (minor & 0xffffff00u)) << 12);    \
     return devnum;
 }
-
+#endif
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
@@ -109,7 +110,7 @@ bool ISmDnsPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    debug_message("[DBG] Releasing network port '%s'\n", ((tcp_port_t*)port)->portName);
+    log_debug(IS_LOG_FACILITY_NONE, "Releasing network port '%s'", portName(port));
     tcpPortDelete(port);
     delete static_cast<tcp_port_t*>(port);
 
@@ -215,8 +216,8 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
     if (!uriPath.empty()) {
         int major = 0; // 12 bits
         int minor = 0; // 20 bits
-        std::regex regexp1(R"(^([0-9]+):([0-9]+)$)");
-        std::regex regexp2(R"(^\/dev\/(.*)$)");
+        static const std::regex regexp1(R"(^([0-9]+):([0-9]+)$)");
+        static const std::regex regexp2(R"(^\/dev\/(.*)$)");
         std::smatch match;
 
         if (std::regex_match(uriPath, match, regexp1)) {
@@ -373,7 +374,7 @@ std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPo
             if (record.type == MDNS_RECORDTYPE_TXT && record.name == PTRrecord.data.ptr.name && record.data.txt.key.length() > 5 && record.data.txt.key.starts_with("ports")) {
                 std::string txtPortsIndex = record.data.txt.key.substr(5);
                 if (std::find_if(txtPortsIndex.begin(), txtPortsIndex.end(), [](unsigned char c) { return !std::isdigit(c); }) == txtPortsIndex.end()) {
-                    return record.data.txt.value.length() % 6 == 0 && record.data.txt.value.length() > 0; // Length of value must be divide by 6 with no remainder and be greater then 0
+                    return record.data.txt.value.size() % 6 == 0 && record.data.txt.value.size() > 0; // Length of value must be divide by 6 with no remainder and be greater then 0
                 }
             }
             return false;
@@ -384,11 +385,11 @@ std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPo
         for (const mdns::mdns_record_cpp_t& TXTrecord : TXTrecords) {
             std::string txtPortsIndex = TXTrecord.data.txt.key.substr(5);
             int portsIndex = std::stoi(txtPortsIndex);
-            const char *portTxt = TXTrecord.data.txt.value.c_str();
-            for (int j = 0; j < (int)TXTrecord.data.txt.value.length(); j = j + 6) {
+            std::vector<unsigned char> val = TXTrecord.data.txt.value;
+            for (int j = 0; j < (int)val.size(); j = j + 6) {
                 port_t port;
-                port.devid = ntohl(*(uint32_t*)&portTxt[j]);
-                port.port = ntohs(*(uint16_t*)&portTxt[j+4]);
+                port.devid = ntohl(*(uint32_t*)&val[j]);
+                port.port = ntohs(*(uint16_t*)&val[j+4]);
                 portListNonAssembled[portsIndex].push_back(port);
             }
         }

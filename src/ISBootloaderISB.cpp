@@ -32,15 +32,15 @@ std::vector<uint32_t> cISBootloaderISB::rst_serial_list;
 std::mutex cISBootloaderISB::serial_list_mutex;
 std::mutex cISBootloaderISB::rst_serial_list_mutex;
 
-// Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-// #define SUPPORT_BOOTLOADER_V5A
-
 /** uINS bootloader baud rate */
-#define IS_BAUD_RATE_BOOTLOADER 921600
+//#define IS_BAUD_RATE_BOOTLOADER      921600  -+
+// #define BOOTLOADER_RETRIES          100      |-  Remove these by 2/1/2026
+// #define BOOTLOADER_RESPONSE_DELAY   10       |
+// #define BOOTLOADER_REFRESH_DELAY    500     -+
 
-#define BOOTLOADER_RETRIES          100
-#define BOOTLOADER_RESPONSE_DELAY   10
-#define BOOTLOADER_REFRESH_DELAY    500
+#define BOOTLOADER_HANDSHAKE_COUNT  10
+#define BOOTLOADER_HANDSHAKE_DELAY  10
+
 #define MAX_VERIFY_CHUNK_SIZE       1024
 #define BOOTLOADER_TIMEOUT_DEFAULT  3000
 #define MAX_SEND_COUNT              510
@@ -106,7 +106,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     m_isb_props.is_evb = false;
     m_sn = 0;
 
-    m_info_callback(NULL, IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
+    logStatus(IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {   // Valid packet found
@@ -151,10 +151,10 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     if (valid_signatures == 0)
     {
-        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | %s: (ISB) Error: Device has no valid ISB signature.", portName(m_port));
+        logStatus(IS_LOG_LEVEL_ERROR, "    | %s: (ISB) Error: Device has no valid ISB signature.", portName(m_port));
         // TODO?? m_info_callback(this, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", ((serial_port_t*)m_port)->portName);
     } else {
-        m_info_callback(NULL, IS_LOG_LEVEL_DEBUG, "    | %s: (ISB) Device is ISB compatible.", portName(m_port));
+        logStatus(IS_LOG_LEVEL_DEBUG, "    | %s: (ISB) Device is ISB compatible.", portName(m_port));
     }
 
     return (eImageSignature)valid_signatures;
@@ -165,13 +165,13 @@ is_operation_result cISBootloaderISB::reboot_up()
     m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
-    if (serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15) == 15) {
+    if (portWrite(m_port, (unsigned char*)":020000040300F7", 15) == 15) {
         for (int i = 0; i < 3; i++)
-            serialPortWrite(m_port, (unsigned char*)"\r\n", 2);
+            portWrite(m_port, (unsigned char*)"\r\n", 2);
     }
-    serialPortFlush(m_port);
+    portFlush(m_port);
     SLEEP_MS(100);
-    serialPortClose(m_port);
+    portClose(m_port);
     return IS_OP_OK;
 }
 
@@ -219,7 +219,8 @@ is_operation_result cISBootloaderISB::reboot_force()
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error in reboot force");
         return IS_OP_ERROR;
     }
-   
+
+    portClose(m_port);
     return IS_OP_OK;
 }
 
@@ -238,14 +239,15 @@ is_operation_result cISBootloaderISB::reboot()
     // restart bootloader command
     if (reboot_force() == IS_OP_OK)
     {
+        portClose(m_port);
         rst_serial_list.push_back(m_sn);
         rst_serial_list_mutex.unlock();
 
         return IS_OP_OK;
     }
 
+    portClose(m_port);
     rst_serial_list_mutex.unlock();
-
     return IS_OP_CLOSED;
 }
 
@@ -279,7 +281,7 @@ uint32_t cISBootloaderISB::get_device_info()
     m_isb_minor = (char)buf[3];
     m_isb_props.rom_available = buf[4];
 
-    m_info_callback(NULL, IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
+    logStatus(IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {
@@ -306,7 +308,7 @@ uint32_t cISBootloaderISB::get_device_info()
     }
     else
     {
-        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "(ISB) (%s) (ISB) get_device_info invalid m_isb_major: %d", ((serial_port_t*)m_port)->portName, m_isb_major);
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) (%s) (ISB) get_device_info invalid m_isb_major: %d", ((serial_port_t*)m_port)->portName, m_isb_major);
         return 0;
     }
 
@@ -324,34 +326,26 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
 {
     static const uint8_t handshakerChar = 'U';
 
-    // Bootloader sync requires at least 6 'U' characters to be sent every 10ms. 
-    // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
-    for (int i = 0; i < BOOTLOADER_RETRIES; i++)
-    {
-        if (serialPortWrite(port, &handshakerChar, 1) != 1)
-        {
-            return IS_OP_ERROR;
+    if (hasHandshake)
+        return IS_OP_OK;
+
+    uint8_t readCh = 0;
+
+    // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
+    // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
+    for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
+        while (portRead(port, &readCh, 1) == 1) {
+            if (readCh == handshakerChar) {
+                hasHandshake = true;
+                return IS_OP_OK;    // received a responding handshake char, so success
+            }
         }
 
-        if (serialPortWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {	// Success
-            return IS_OP_OK;
+        if (portWrite(port, &handshakerChar, 1) != 1) {
+            return IS_OP_ERROR;   // failed to write, so there is an error
         }
+        SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
     }
-
-#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and associated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
-
-    // Attempt handshake using extended string for bootloader v5a
-    for (int i = 0; i < BOOTLOADER_RETRIES; i++)
-    {
-        if (serialPortWriteAndWaitForTimeout(port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {   // Success
-            // FIXME: logStatus(IS_LOG_LEVEL_DEBUG_MORE, "(ISB) Handshake v5a");
-            return IS_OP_OK;
-        }
-    }
-#endif
 
     return IS_OP_ERROR;
 }
@@ -403,7 +397,7 @@ is_operation_result cISBootloaderISB::erase_flash()
         count += serialPortReadTimeout(m_port, bufPtr, 3, 100);
         bufPtr = buf + count;
 
-        float factor = pow(i / 600, 3);
+        float factor = powf(static_cast<float>(i) / 600.f, 3);
         if (m_update_callback(std::make_any<cISBootloaderBase*>(this), factor, "Erasing Flash", 0, 0) != IS_OP_OK)
         {
             return IS_OP_CANCELLED;
@@ -414,7 +408,7 @@ is_operation_result cISBootloaderISB::erase_flash()
             if (bufScan) {
                 if (memcmp(bufScan, ".\r\n", 3) == 0)
                     return IS_OP_OK;
-                int mvCnt = bufScan - buf;
+                long mvCnt = static_cast<long>(bufScan - buf);
                 if (mvCnt > 0) {
                     memmove(buf, bufScan, sizeof(buf) - mvCnt);
                     count -= mvCnt;
