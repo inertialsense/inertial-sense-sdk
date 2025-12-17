@@ -73,7 +73,9 @@ extern "C" {
 
     // #define debug_message(facility, ...)    IS_LOG_MSG(facility, "[DEBUG]", 4, __VA_ARGS__)
 
+#if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
     static FILE* log_file = NULL;
+#endif
 
     // --- Internal static inline functions ---
     static inline void static_log_msg(int facility_code, int log_level, const char *level_name, const char *facility_name, const char *format, ...) {
