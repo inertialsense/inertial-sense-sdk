@@ -7,8 +7,10 @@
  */
 
 #ifdef _WIN32
-// Windows.h is included somewhere and this prevents it from defining max as a macro which breaks uri.hpp
-#define NOMINMAX
+    // Windows.h is included somewhere and this prevents it from defining max as a macro which breaks uri.hpp
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
 #endif
 
 #include <util.h>
@@ -94,7 +96,7 @@ port_handle_t ISmDnsPortFactory::bindPort(const std::string& pName, uint16_t pTy
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    tcpPortInit(port, id, this->portOptions.defaultBlocking, URL.c_str(), &addr);
+    tcpPortInit(port, id, URL.c_str(), &addr, this->portOptions.defaultBlocking ? PORT_FLAG__BLOCKING : 0);
 
     return port;
 }
@@ -125,7 +127,7 @@ bool ISmDnsPortFactory::releasePort(port_handle_t port) {
  */
 bool ISmDnsPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     tick(); // Tick everything to ensure we have the latest data
-    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) return false;
+    if (pType != PORT_TYPE__TCP) return false;
     if (!validatePortName(pName)) return false;
 
     std::pair<std::string, ISmDnsPortFactory::port_t> portPair = parsePortName(pName);
@@ -156,7 +158,7 @@ void ISmDnsPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
             portPair = getCanonicalPortData(portPair);
             std::string portURL = getPortURL(portPair);
             if (std::regex_match(portURL, regexPattern)) {
-                portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, portURL);
+                portCallback(this, PORT_TYPE__TCP | pType, portURL);
             }
         }
     }

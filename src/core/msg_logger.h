@@ -21,13 +21,19 @@ extern "C" {
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <time.h>
 
-#include "core/types.h"
+#include "ISConstants.h"
+#include "types.h"
+
 
 
 #define DEBUG_LOGGING
-#define IS_LOG_LEVEL           IS_LOG_LEVEL_INFO
-#define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
+// #define IS_LOG_LEVEL           IS_LOG_LEVEL_INFO
+// #define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
+#define IS_LOG_LEVEL            IS_LOG_LEVEL_MORE_DEBUG
+#define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE | IS_LOG_PORT)
+
 
 #ifndef DEBUG_LOGGING
     #define log_debug(...)
@@ -36,29 +42,6 @@ extern "C" {
     #define log_error(...)
     #define debug_message(...)
 #else
-    // #define IS_LOG_LEVEL_NONE          0       // use this to disable all log messages
-    // #define IS_LOG_LEVEL_ERROR         1       // errors - that that prevents the application from proceeding as normal
-    // #define IS_LOG_LEVEL_WARN          2       // warnings - important to now, but we can move on anyway
-    // #define IS_LOG_LEVEL_INFO          3       // informative for the customer regarding normal operations
-    // #define IS_LOG_LEVEL_INFO_MORE     4       // additional information for the customer regarding normal operations - might be annoying
-    // #define IS_LOG_LEVEL_DEBUG         5       // informative for support & basic troubleshooting
-    // #define IS_LOG_LEVEL_DEBUG_MORE    6       // informative for advanced troubleshooting - maybe annoying
-    // #define IS_LOG_LEVEL_BOMBASTIC     7       // excessive on all but the most extreme cases - will definitely be annoying
-
-
-    // Define facility bitmasks. Use powers of 2 for unique bits.
-    #define IS_LOG_FACILITY_NONE       0x0000                          // This facility is ALWAYS enabled (but still followed LOG_LEVEL)
-    #define IS_LOG_PORT                0x0001
-    #define IS_LOG_FWUPDATE            ((IS_LOG_PORT << 1))
-    #define IS_LOG_ISDEVICE            ((IS_LOG_FWUPDATE << 1))
-    #define IS_LOG_PORT_FACTORY        ((IS_LOG_ISDEVICE << 1))
-    #define IS_LOG_PORT_MANAGER        ((IS_LOG_PORT_FACTORY << 1))
-    #define IS_LOG_DEVICE_FACTORY      ((IS_LOG_PORT_MANAGER << 1))
-    #define IS_LOG_DEVICE_MANAGER      ((IS_LOG_DEVICE_FACTORY << 1))
-    #define IS_LOG_CHRONO_STATS        ((IS_LOG_DEVICE_MANAGER << 1))
-    #define IS_LOG_FACILITY_MDNS       ((IS_LOG_CHRONO_STATS << 1))
-    #define IS_LOG_FACILITY_ALL        0xFFFF
-
     // --- Compile-time configuration ---
     // Define the desired log level to show messages at or above this level.
     #ifndef IS_LOG_LEVEL
@@ -84,13 +67,16 @@ extern "C" {
     #define log_error(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_ERROR,      "[ERROR]", __VA_ARGS__)
     #define log_warn(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_WARN,       "[WARN]",  __VA_ARGS__)
     #define log_info(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO,       "[INFO]",  __VA_ARGS__)
-    #define log_info_more(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO_MORE,  "[INFO]",  __VA_ARGS__)
+    #define log_more_info(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_INFO,  "[INFO]",  __VA_ARGS__)
     #define log_debug(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG,      "[DEBUG]", __VA_ARGS__)
-    #define log_debug_more(facility, ...)   IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG_MORE, "[DEBUG]", __VA_ARGS__)
+    #define log_more_debug(facility, ...)   IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_DEBUG, "[DEBUG]", __VA_ARGS__)
     #define log_bombastic(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_BOMBASTIC,  "[CRAZY]", __VA_ARGS__)
 
     // #define debug_message(facility, ...)    IS_LOG_MSG(facility, "[DEBUG]", 4, __VA_ARGS__)
 
+#if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
+    static FILE* log_file = NULL;
+#endif
 
     // --- Internal static inline functions ---
     static inline void static_log_msg(int facility_code, int log_level, const char *level_name, const char *facility_name, const char *format, ...) {
@@ -104,7 +90,7 @@ extern "C" {
         va_end(args);
 
         // LOG_DBG(logMsg);
-    #else
+    #elif defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
         static char logMsg[512];
         va_list args;
         va_start(args, format);
@@ -112,12 +98,58 @@ extern "C" {
         vsnprintf(logMsg, sizeof(logMsg) - 1, format, args);
         va_end(args);
 
+        if (log_file == NULL)
+            log_file = fopen("inertial_sense.log", "a+"); // stdout;
+        if (log_file == NULL)
+            log_file = stdout;
+
+        struct timespec ts;
+        timespec_get(&ts, TIME_UTC);
+        fprintf(log_file, "%ld.%06ld: ", (long)ts.tv_sec, (long)ts.tv_nsec / 1000);
+
         if (facility_code)
-            printf("%s ", facility_name);
-        printf("%s : %s\n", level_name, logMsg);
-        fflush(stdout);
+            fprintf(log_file, "%s ", facility_name);
+        fprintf(log_file, "%s : %s\n", level_name, logMsg);
+        fflush(log_file);
     #endif
     }
+
+    #define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) ) //  || ((n >= 0xA1) && (n <= 0xDF)))
+
+    static inline void static_log_buffer(const char* prefix, const unsigned char* buffer, int len) {
+    #if defined(__ZEPHYR__) // defined(PLATFORM_IS_EMBEDDED) ||
+    #elif defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
+        if (len > 0) {
+            const int bytes_per_line = 32;
+
+            struct timespec ts;
+            timespec_get(&ts, TIME_UTC);
+            fprintf(log_file, "%ld.%06ld: %s", (long)ts.tv_sec, (long)ts.tv_nsec / 1000, prefix);
+
+            const unsigned char* buff_ofs = buffer;
+            int remaining = len, i = 0;
+            do {
+                for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
+                    fprintf(log_file, " %02x", buff_ofs[i]);
+
+                int pad = (strlen(prefix) + (bytes_per_line * 3) + 3) - (i * 3);    // note that 'i' is carried from the above for-loop
+                fprintf(log_file, "%*c", pad, ' ');
+
+                for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
+                    fprintf(log_file, "%c", IS_PRINTABLE(buff_ofs[i]) ? buff_ofs[i] : 0xB7);
+
+                buff_ofs += i;
+                remaining -= i;
+
+                fprintf(log_file, "\n");
+                if (remaining > 0)
+                    fprintf(log_file, "                      ");
+            } while (remaining > 0);
+            // fprintf(log_file, "\n");
+        }
+    #endif
+    }
+
 #endif
 
 #ifdef __cplusplus

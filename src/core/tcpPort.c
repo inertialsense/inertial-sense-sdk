@@ -85,7 +85,7 @@ int tcpPortOpen(port_handle_t port) {
     tcpPort->blocking_internal = true;
     tcpPortSetBlocking(port, tcpPort->blocking);
 
-    tcpPort->base.ptype |= PORT_FLAG__OPENED;
+    portFlagsSet(port, PORT_FLAG__OPENED);
     return 0;
 }
 
@@ -106,7 +106,7 @@ int tcpPortClose(port_handle_t port) {
         // close will permit the kernel to reuse the file descriptor immediately even if there is an error.
     }
     tcpPort->socket = -EBADF; // Mark the File Descriptor as closed.
-    tcpPort->base.ptype &= ~PORT_FLAG__OPENED;
+    portFlagsClear(port, PORT_FLAG__OPENED);
     return 0;
 }
 
@@ -359,6 +359,7 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
  * @param port The port handle to initialize
  * @param id The id of the new port handle (a unique id)
  * @param type The type modifier (OR'd with PORT_TYPE__TCP | PORT_FLAG__VALID)
+ * @param flags port-specific bit-flags to associated with this port
  * @param name The name to be associated with the new port
  * @param socket a socket handle describing an existing and valid tcp socket
  * @param blocking if true, configure the port for blocking operations, or false for non-blocking
@@ -366,10 +367,11 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
  * Note that initializing a TCP Port with a valid socket implied that the underlying socket is already
  * connected. As a result, the PORT_FLAG__OPENED will also be set, and there is no need to call portOpen()
  */
-void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* name, const int socket, bool blocking) {
+void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* name, const int socket, int flags) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     tcpPort->base.pnum = id;
-    tcpPort->base.ptype = PORT_TYPE__TCP | PORT_FLAG__VALID | PORT_FLAG__OPENED | type;
+    tcpPort->base.ptype = PORT_TYPE__TCP | PORT_TYPE__COMM | type;
+    tcpPort->base.pflags = PORT_FLAG__OPENED | flags;
 
     tcpPort->base.stats = (port_stats_t*)&(tcpPort->stats);
 
@@ -395,8 +397,10 @@ void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* nam
     getpeername(socket, (struct sockaddr *)&tcpPort->addr.storage, &peer_addr_len);
 
     // tcpPort->addr.storage = *ip;
-    tcpPort->blocking = blocking;
+    tcpPort->blocking = portFlagsIsSet(port, PORT_FLAG__BLOCKING);
     tcpPort->blocking_internal = true;
+
+    portFlagsSet(port, PORT_FLAG__VALID);
 }
 
 /**
@@ -407,10 +411,11 @@ void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* nam
  * @param name The name of the new port
  * @param ip The address and port to connect to over TCP
  */
-void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr_storage* ip) {
+void tcpPortInit(port_handle_t port, int id, const char* name, const struct sockaddr_storage* ip, int flags) {
     tcp_port_t* tcpPort = TCP_PORT(port);
     tcpPort->base.pnum = id;
-    tcpPort->base.ptype = PORT_TYPE__TCP | PORT_TYPE__COMM | PORT_FLAG__VALID;
+    tcpPort->base.ptype = PORT_TYPE__TCP | PORT_TYPE__COMM;
+    tcpPort->base.pflags = flags;
 
     tcpPort->base.stats = (port_stats_t*)&(tcpPort->stats);
 
@@ -432,8 +437,10 @@ void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, co
     tcpPort->socket = -EBADF;
     tcpPort->name = strdup(name);
     tcpPort->addr.storage = *ip;
-    tcpPort->blocking = blocking;
+    tcpPort->blocking = portFlagsIsSet(port, PORT_FLAG__BLOCKING);
     tcpPort->blocking_internal = true;
+
+    portFlagsSet(port, PORT_FLAG__VALID);
 }
 
 /**
