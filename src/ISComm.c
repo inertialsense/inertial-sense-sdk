@@ -10,6 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "core/msg_logger.h"
 #include "ISConstants.h"
 #include "ISComm.h"
 
@@ -19,6 +20,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MAX_MSG_LENGTH_UBX          1024
 #define MAX_MSG_LENGTH_SONY         4090
 #define PKT_PARSER_TIMEOUT_MS       100   // Set to 0 to disable timeout
+
+#define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+#define IS_ENABLED_FACILITIES  (IS_LOG_ISCOMM)
+
 
 typedef union 
 {
@@ -1149,11 +1154,15 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 
 static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
 {
+    static char log_msg[512];
+    int log_msg_pos = 0;
+
     if (!comm)
         return;
 
     // Search comm buffer for valid packets
     protocol_type_t ptype;
+    log_msg_pos += sprintf(log_msg + log_msg_pos, "parse_messages() parsed: ");
     while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
     {
         int notConsumed = -1;  // if 0, this message was successfully processed by a protocol-specific handler; Do not process it again with the ALL callback
@@ -1165,13 +1174,17 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 {
                     p_data_t data;
                     is_comm_to_isb_p_data(comm, &data);
+                    log_msg_pos += sprintf(log_msg + log_msg_pos, " [ISB.%03d]", data.hdr.id);
                     notConsumed = comm->cb.isbData(comm->cb.context, &data, port);
+                } else {
+                    log_msg_pos += sprintf(log_msg + log_msg_pos, " [ISB]");
                 }
                 break;
             case _PTYPE_INERTIAL_SENSE_ACK:
             case _PTYPE_INERTIAL_SENSE_CMD:
                 break;
             default:
+                log_msg_pos += sprintf(log_msg + log_msg_pos, " [PKT.%d]", ptype);
                 if (comm->cb.generic[ptype]) {
                     notConsumed = comm->cb.generic[ptype](comm->cb.context, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
                 }
@@ -1183,6 +1196,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
             comm->cb.all(comm->cb.context, ptype, &(comm->rxPkt), port);
         }
     }
+    log_more_debug(IS_LOG_ISCOMM, "%s", log_msg);
 }
 
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm)
