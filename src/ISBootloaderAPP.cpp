@@ -10,6 +10,9 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+#define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
+
 #include "ISBootloaderAPP.h"
 #include "ISComm.h"
 #include "protocol_nmea.h"
@@ -62,9 +65,10 @@ eImageSignature devInfoToValidSignatures(dev_info_t *devInfo)
 
 eImageSignature cISBootloaderAPP::check_is_compatible()
 {
-    serialPortFlush(m_port);
-
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderAPP::check_is_compatible()");
     logStatus(IS_LOG_LEVEL_MORE_INFO, "(APP) Checking device compatibility...");
+
+    serialPortFlush(m_port);
 
     // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
@@ -167,6 +171,7 @@ is_operation_result cISBootloaderAPP::reboot()
     // TODO: Implement
     // SYS_CMD_SOFTWARE_RESET
 
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderAPP::reboot()");
     logStatus(IS_LOG_LEVEL_INFO, "(APP) Rebooting...");
 
     return IS_OP_OK;
@@ -178,6 +183,7 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
     (void)minor;
     (void)major;
 
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderAPP::reboot_down()");
     logStatus(IS_LOG_LEVEL_INFO, "(APP) Rebooting to IS-bootloader mode...");
 
     // In case we are in program mode, try and send the commands to go into bootloader mode
@@ -207,6 +213,7 @@ uint32_t cISBootloaderAPP::get_device_info()
 {
     serialPortFlush(m_port);
 
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderAPP::get_device_info()");
     logStatus(IS_LOG_LEVEL_INFO, "(APP) Requesting device info...");
 
     // Get DID_DEV_INFO from the IMX.

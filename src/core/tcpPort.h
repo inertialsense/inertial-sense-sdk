@@ -69,7 +69,7 @@ struct tcp_port_s
 typedef struct tcp_port_s tcp_port_t;
 #define TCP_PORT(n)  ((tcp_port_t*)n)
 
-void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr_storage* ip);
+void tcpPortInit(port_handle_t port, int id, const char* name, const struct sockaddr_storage* ip, int flags);
 
 /**
  * Initializes a tcp port with the specified name and socket
@@ -78,9 +78,9 @@ void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, co
  * @param type The type modifier (OR'd with PORT_TYPE__TCP | PORT_FLAG__VALID)
  * @param name The name to be associated with the new port
  * @param socket a socket handle describing an existing and valid tcp socket
- * @param blocking if true, configure the port for blocking operations, or false for non-blocking
+ * @param flags port-specific bit-flags to associated with this port (defaults to PORT_FLAG__COMM)
  */
-void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* name, const int socket, bool blocking);
+void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* name, const int socket, int flags);
 
 void tcpPortDelete(port_handle_t port);
 int tcpPortSetBlocking(port_handle_t port, bool blocking);

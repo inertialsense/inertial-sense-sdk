@@ -18,6 +18,9 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+#define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
+
 #include "ISBootloaderISB.h"
 #include "ISUtilities.h"
 #include "intel_hex_utils.h"
@@ -62,12 +65,13 @@ is_operation_result cISBootloaderISB::match_test(void* param)
 
 eImageSignature cISBootloaderISB::check_is_compatible()
 {
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::check_is_compatible()");
     uint8_t buf[14] = { 0 };
     int count = 0;
 
-    serialPortFlush(m_port);
-    serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    bool handshake = handshake_sync(m_port) == IS_OP_OK;
+    // serialPortFlush(m_port);
+    // serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
+    bool handshake = (hasHandshake || (handshake_sync(m_port) == IS_OP_OK));
 
     logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Checking for ISB compatibility.");
 
@@ -162,6 +166,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
 is_operation_result cISBootloaderISB::reboot_up()
 {
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::reboot_up()");
     m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
@@ -177,6 +182,8 @@ is_operation_result cISBootloaderISB::reboot_up()
 
 is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, bool force)
 {
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::reboot_down()");
+
     char message[100] = {0};
     int n = SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c. ", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
 
@@ -213,6 +220,8 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
 
 is_operation_result cISBootloaderISB::reboot_force()
 {
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::reboot_force()");
+
     // restart bootloader command
     if (serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) != 15)
     {
@@ -226,6 +235,8 @@ is_operation_result cISBootloaderISB::reboot_force()
 
 is_operation_result cISBootloaderISB::reboot()
 {
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::reboot()");
+
     rst_serial_list_mutex.lock();
     if (find(rst_serial_list.begin(), rst_serial_list.end(), m_sn) != rst_serial_list.end())
     {
@@ -253,6 +264,8 @@ is_operation_result cISBootloaderISB::reboot()
 
 uint32_t cISBootloaderISB::get_device_info()
 {
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::get_device_info()");
+
     bool handshake = handshake_sync(m_port) == IS_OP_OK;
     serialPortFlush(m_port);
 
@@ -329,6 +342,7 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
     if (hasHandshake)
         return IS_OP_OK;
 
+    log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::handshake_sync()");
     uint8_t readCh = 0;
 
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.

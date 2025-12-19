@@ -333,7 +333,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.nmeaMessage = "";
     g_commandLineOptions.updateBootloaderFilename = "";
     g_commandLineOptions.forceBootloaderUpdate = false;
-    g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO;
+    g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_WARN;
 
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
@@ -368,6 +368,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-baud="))
         {
             g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
+        }
+        else if (startsWith(a, "-cal-upload"))
+        {
+            i++;
+            g_commandLineOptions.imxCalUploadFile = &argv[i][0];
+        }
+        else if (startsWith(a, "-chipEraseIMX"))
+        {
+            g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
         }
         else if (startsWith(a, "-chipEraseIMX"))
         {
@@ -874,7 +883,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-verbose") || startsWith(a, "-ll"))
         {
-            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO;
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO;
             if (a[8] == '=')
             {
                 switch (a[9])
@@ -1172,6 +1181,8 @@ void cltool_outputUsage()
 
     cout << endlbOn;
     cout << "OPTIONS (Special)" << endl;
+    cout << "    -cal-upload" << boldOff << "FILE_PATH      Upload calibration data from FILE_PATH file to the IMX." << endlbOn;
+    cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
     cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
     cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
     if (g_internal)
@@ -1349,4 +1360,9 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
     }
 
     return true;
+}
+
+bool cltool_uploadImxCalibrationFile(InertialSense& inertialSenseInterface, string calFilePath)
+{
+    return inertialSenseInterface.UploadImxCalibrationFromFile(calFilePath);
 }
