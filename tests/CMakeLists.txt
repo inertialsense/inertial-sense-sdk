@@ -77,11 +77,6 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-# Suppress deprecation warnings for this target
-if(NOT WIN32)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wno-deprecated-declarations)
-endif()
-
 # Link IS-SDK libraries to the executable
 include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
 
