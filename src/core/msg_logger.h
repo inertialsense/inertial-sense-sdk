@@ -27,32 +27,29 @@ extern "C" {
 #include "types.h"
 
 
+// #define DEBUG_LOGGING
 
-#define DEBUG_LOGGING
-// #define IS_LOG_LEVEL           IS_LOG_LEVEL_INFO
-// #define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
-#define IS_LOG_LEVEL            IS_LOG_LEVEL_MORE_DEBUG
-#define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE | IS_LOG_PORT)
+// --- Compile-time configuration ---
+// Define the desired log level to show messages at or above this level.
+#ifndef IS_LOG_LEVEL
+#define IS_LOG_LEVEL  IS_LOG_LEVEL_WARN // Default to WARNING
+#endif
 
+// Define the facilities you want to enable.
+// Combine multiple facilities using the bitwise OR operator.
+#ifndef IS_ENABLED_FACILITIES
+#define IS_ENABLED_FACILITIES (IS_LOG_ISDEVICE)
+#endif
 
 #ifndef DEBUG_LOGGING
-    #define log_debug(...)
-    #define log_info(...)
-    #define log_warn(...)
-    #define log_error(...)
+    #define log_debug(...)      {}
+    #define log_more_debug(...) {}
+    #define log_bombastic(...)  {}
+    #define log_info(...)       {}
+    #define log_warn(...)       {}
+    #define log_error(...)      {}
     #define debug_message(...)
 #else
-    // --- Compile-time configuration ---
-    // Define the desired log level to show messages at or above this level.
-    #ifndef IS_LOG_LEVEL
-    #define IS_LOG_LEVEL  IS_LOG_LEVEL_WARN // Default to WARNING
-    #endif
-
-    // Define the facilities you want to enable.
-    // Combine multiple facilities using the bitwise OR operator.
-    #ifndef IS_ENABLED_FACILITIES
-    #define IS_ENABLED_FACILITIES (IS_LOG_ISDEVICE)
-    #endif
 
     // Macro to check if a facility is enabled
     #define IS_FACILITY_ENABLED(facility) ((IS_ENABLED_FACILITIES & (facility)) == (facility))

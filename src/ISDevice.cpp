@@ -10,6 +10,7 @@
 #include "ISDevice.h"
 #include "ISBootloaderBase.h"
 #include "ISFirmwareUpdater.h"
+#include "ISDeviceCal.h"
 #include "util/util.h"
 #include "imx_defaults.h"
 #include "ISLogger.h"
@@ -1193,6 +1194,37 @@ bool ISDevice::LoadGpxFlashConfigFromFile(std::string path)
         [this](gpx_flash_cfg_t& cfg) { return SetGpxFlashConfig(cfg); });
 }
 
+bool ISDevice::UploadImxCalibrationFromFile(std::string path)
+{
+    // Load Calibration data
+    sensor_cal_t scal = {};
+    if( !ISDeviceCal::loadCalibrationFromJsonObj( path, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal) ) )
+        return false;
+
+    if (!port)
+    {
+        return false;        
+    }
+
+    int calUploadState = 0;
+    int result = 0;
+    do {
+        result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, scal);
+        
+        SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
+    } while (result == 0);
+    
+    if (result == 1)
+    {
+        log_info(IS_LOG_ISDEVICE, "Calibration upload complete.");
+        return true;
+    }
+    else
+    {
+        log_error(IS_LOG_ISDEVICE, "Calibration upload failed!");
+        return false;
+    }       
+}
 
 bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
