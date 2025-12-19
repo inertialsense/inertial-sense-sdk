@@ -207,7 +207,7 @@ void initTestPorts() {
     int portNum = 0;
     for (test_port_t& port : g_testPorts) {
         port.base.pnum = portNum;
-        port.base.ptype = (PORT_FLAG__VALID | PORT_TYPE__COMM);
+        port.base.ptype = PORT_TYPE__COMM;
         if (portNum <= 1)
             port.base.ptype |= PORT_TYPE__LOOPBACK;  // only PORT0 and PORT1 are Loopbacks
         port.base.portRead = testPortRead;
@@ -215,6 +215,7 @@ void initTestPorts() {
         port.base.portFree = testPortFree;
         port.base.portAvailable = testPortAvailable;
         port.base.portName = testPortName;
+        portFlagsSet(&port, PORT_FLAG__VALID);
 
         ringBufInit(&port.portRingBuf, port.portBuffer, PORT_BUFFER_SIZE, 1);
         SNPRINTF((char *)port.name, 6, "TEST%1d", portNum);

@@ -263,27 +263,11 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
     device = obj->check_is_compatible();
     if (device && (device != IS_IMAGE_SIGN_ERROR))
     {   // Firmware for a device must be specified to update its bootloader
-        if (((device & IS_IMAGE_SIGN_APP) & fw_EVB_2) && ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2))
+        if  (  ( ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)) ||
+               ( ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)) ||
+               ( ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)) )
         {
-            obj->isb_mightUpdate = true;
-            addMutex->lock();
-            contexts.push_back(obj);
-            *new_context = obj;
-            addMutex->unlock();
-            return IS_OP_CLOSED;
-        }
-        else if (((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5) && ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5))
-        {
-            obj->isb_mightUpdate = true;
-            addMutex->lock();
-            contexts.push_back(obj);
-            *new_context = obj;
-            addMutex->unlock();
-            return IS_OP_CLOSED;
-        }
-        else if (((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3) && ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3))
-        {
-            obj->isb_mightUpdate = true;
+            obj->isb_mightUpdate = ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5) || ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2) || ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3);
             addMutex->lock();
             contexts.push_back(obj);
             *new_context = obj;
