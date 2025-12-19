@@ -2,6 +2,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(InertialSenseSDK)
 
+# Define LINUX variable for use in this file
+if(UNIX AND NOT APPLE)
+	set(LINUX TRUE)
+endif()
+
 # set(CMAKE_FIND_DEBUG_MODE TRUE)
 if(LINUX)
 	find_package(UDev QUIET)	# try using find_package as a last resort (this seems to not exist on some platforms).
