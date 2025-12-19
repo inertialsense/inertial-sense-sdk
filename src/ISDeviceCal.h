@@ -172,7 +172,7 @@ public:
      * @param pose Pointer to current pose value (can be NULL)
      * @return true if calibration was successfully loaded, false otherwise
      */
-    static bool loadCalibrationFromJSON(const std::string& filePath, 
+    static bool loadCalibrationFromJsonObj(const std::string& filePath, 
                                        sOrthoCal *ocal, 
                                        sensor_cal_info_t *info = NULL, 
                                        sensor_data_info_t *dinfo = NULL,
@@ -191,7 +191,7 @@ public:
      * @param pose Current pose value (default -1)
      * @return true if calibration was successfully saved, false otherwise
      */
-    static bool saveCalibrationToJSON(const std::string& filePath, 
+    static bool saveCalibrationToJsonObj(const std::string& filePath, 
                                      sOrthoCal* cal, 
                                      sensor_cal_info_t* info = NULL, 
                                      sensor_tcal_group_t* tcal = NULL, 
@@ -206,7 +206,7 @@ public:
      * @param ocal Pointer to orthonormalization calibration data (can be NULL)
      * @param mcal Pointer to motion calibration (can be NULL)
      */
-    static void loadMcFromJSON(const json& jCal, 
+    static void loadMcFromJsonObj(const json& jCal, 
                               int *pose, 
                               sOrthoCal *ocal, 
                               sensor_mcal_group_t *mcal);
@@ -220,7 +220,7 @@ public:
      * @param mcal Pointer to motion calibration (can be NULL)
      * @return JSON object containing the motion calibration data
      */
-    static json saveMcToJSON(const std::string& filePath, 
+    static json saveMcToJsonObj(const std::string& filePath, 
                                    int pose, 
                                    sOrthoCal *cal, 
                                    sensor_mcal_group_t *mcal);

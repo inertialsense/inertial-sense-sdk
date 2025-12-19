@@ -1198,7 +1198,7 @@ bool ISDevice::UploadImxCalibrationFromFile(std::string path)
 {
     // Load Calibration data
     sensor_cal_t scal = {};
-    if( !ISDeviceCal::loadCalibrationFromJSON( path, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal) ) )
+    if( !ISDeviceCal::loadCalibrationFromJsonObj( path, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal) ) )
         return false;
 
     if (!port)
