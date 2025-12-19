@@ -2275,7 +2275,7 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     ports = options&RMC_OPTIONS_PORT_MASK;
 
     // speed filter if requested
-    switch ((options & RMC_OPTIONS_NMEA_SPEED_FILTER_MASK) >> RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET)
+    switch ((options & RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK) >> RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET)
     {
         case RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE:
             s_dataSpeed.enableSpeedFilter = true;
