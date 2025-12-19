@@ -827,40 +827,7 @@ bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, port_handle_t p
 
 bool InertialSense::UploadImxCalibrationFromFile(std::string path, port_handle_t port)
 {
-    // return WithDevice(port, [&](device_handle_t dev) { return dev->LoadImxCalibrationFromFile(path); });
-
-    // Load Calibration data
-    sensor_cal_t scal = {};
-    if( !ISDeviceCal::loadCalibrationFromJSON( path, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal) ) )
-        return false;
-
-    if (port==NULL)
-    {
-        port = deviceManager.front()->port;
-    }
-    if (port==NULL)
-    {
-        return false;        
-    }
-
-    int calUploadState = 0;
-    int result = 0;
-    do {
-        result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, scal);
-        
-        SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
-    } while (result == 0);
-    
-    if (result == 1)
-    {
-        cout << "Calibration upload complete." << endl;
-        return true;
-    }
-    else
-    {
-        cout << "Calibration upload failed!" << endl;
-        return false;
-    }       
+    return WithDevice(port, [&](device_handle_t dev) { return dev->UploadImxCalibrationFromFile(path); });
 }
 
 

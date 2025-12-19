@@ -498,6 +498,13 @@ public:
     bool LoadImxFlashConfigFromFile(std::string path);
     bool LoadGpxFlashConfigFromFile(std::string path);
 
+    /**
+     * @brief UploadImxCalibrationFromFile
+     * @param path - Path to JSON calibration file
+     * @return true for success, false for failure.
+     */
+    bool UploadImxCalibrationFromFile(std::string path);
+
     void SaveFlashConfigFile(std::string path);
 
     /**

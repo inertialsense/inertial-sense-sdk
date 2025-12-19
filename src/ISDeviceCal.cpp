@@ -23,6 +23,7 @@
 #endif
 
 #include "com_manager.h"
+#include "ISLogFile.h"
 
 using namespace std;
 using json = nlohmann::json;
@@ -36,9 +37,6 @@ static std::string getFilename(const std::string& path);
 static std::string getParentPath(const std::string& path);
 static bool createDirectoryRecursive(const std::string& path);
 static bool mat3x3_IsIdentity(const float* mat);
-// static uint32_t flashChecksum32(const void* data, int size);
-static std::string formatString(const char* format, ...);
-static void logDebug(const char* format, ...);
 
 // Helper function implementations
 static std::vector<std::string> split(const std::string& s, char delimiter) {
@@ -100,32 +98,6 @@ static bool mat3x3_IsIdentity(const float* mat) {
     return true;
 }
 
-// static uint32_t flashChecksum32(const void* data, int size) {
-//     // Simple checksum implementation
-//     const uint8_t* bytes = (const uint8_t*)data;
-//     uint32_t checksum = 0;
-//     for (int i = 0; i < size; i++) {
-//         checksum += bytes[i];
-//     }
-//     return checksum;
-// }
-
-static void logDebug(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    vprintf(format, args);
-    va_end(args);
-}
-
-static std::string formatString(const char* format, ...) {
-    char buffer[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
-    return std::string(buffer);
-}
-
 std::string VectorToString(const float* vec, int len) {
     std::ostringstream oss;
     for (int i = 0; i < len; i++) {
@@ -169,15 +141,15 @@ void StringToMatrix(const std::string& str, float* mat, int rows, int cols) {
 }
 
 static std::string calInfoVersionToString(const sensor_cal_info_t& info) {
-    return formatString("%d.%d.%d %d", info.version[0], info.version[1], info.version[2], info.version[3]);
+    return cISLogFile::formatString("%d.%d.%d %d", info.version[0], info.version[1], info.version[2], info.version[3]);
 }
 
 static std::string calInfoDateToString(const sensor_cal_info_t& info) {
-    return formatString("%04d-%02d-%02d %d", info.calDate[0] + 2000, info.calDate[1], info.calDate[2], info.calDate[3]);
+    return cISLogFile::formatString("%04d-%02d-%02d %d", info.calDate[0] + 2000, info.calDate[1], info.calDate[2], info.calDate[3]);
 }
 
 static std::string calInfoTimeToString(const sensor_cal_info_t& info) {
-    return formatString("%02d:%02d:%02d %d", info.calTime[0], info.calTime[1], info.calTime[2], info.calTime[3]);
+    return cISLogFile::formatString("%02d:%02d:%02d %d", info.calTime[0], info.calTime[1], info.calTime[2], info.calTime[3]);
 }
 
 static void JSONToTcal3axis(const json& jTC, const std::string& key, nvm_sensor_tcal_3axis_t &dev)
@@ -192,7 +164,7 @@ static void JSONToTcal3axis(const json& jTC, const std::string& key, nvm_sensor_
             const json& jPt = jPts[p];
             if (!jPt.contains("index") || jPt["index"].get<int>() != (int)p)
             {
-                logDebug("TC index mismatch.\n");
+                printf("TC index mismatch.\n");
                 return;
             }
         }
@@ -200,7 +172,7 @@ static void JSONToTcal3axis(const json& jTC, const std::string& key, nvm_sensor_
         // Error check number of points
         if (jPts.size() > TCAL_MAX_NUM_POINTS)
         {
-            logDebug("TC point index from file too large.\n");
+            printf("TC point index from file too large.\n");
             return;
         }
 
@@ -210,19 +182,19 @@ static void JSONToTcal3axis(const json& jTC, const std::string& key, nvm_sensor_
             const json& jPt = jPts[p];
             if (!jPt.contains("tmp"))
             {
-                logDebug("TC point tmp value missing.\n");
+                printf("TC point tmp value missing.\n");
                 return;
             }
             dev.pt[p].temp = jPt["tmp"].get<float>();
             if (!jPt.contains("SS"))
             {
-                logDebug("TC point SS array missing.\n");
+                printf("TC point SS array missing.\n");
                 return;
             }
             const json& jSS = jPt["SS"];
             if (jSS.size() != 3)
             {
-                logDebug("TC point SS array wrong size.\n");
+                printf("TC point SS array wrong size.\n");
                 return;
             }
             for (int i = 0; i < 3; i++)
@@ -237,12 +209,12 @@ static void JSONToSensor(const json& jTC, sensor_tcal_group_t& tcal)
 {
     for (int d = 0; d < NUM_IMU_DEVICES; d++)
     {
-        JSONToTcal3axis(jTC, formatString("gyr%d", d + 1), tcal.gyr[d]);
-        JSONToTcal3axis(jTC, formatString("acc%d", d + 1), tcal.acc[d]);
+        JSONToTcal3axis(jTC, cISLogFile::formatString("gyr%d", d + 1), tcal.gyr[d]);
+        JSONToTcal3axis(jTC, cISLogFile::formatString("acc%d", d + 1), tcal.acc[d]);
     }
     for (int d = 0; d < NUM_MAG_DEVICES; d++)
     {
-        JSONToTcal3axis(jTC, formatString("mag%d", d + 1), tcal.mag[d]);
+        JSONToTcal3axis(jTC, cISLogFile::formatString("mag%d", d + 1), tcal.mag[d]);
     }
 }
 
@@ -252,13 +224,13 @@ static void JSONv1p2ToSensor(const json& jTC, int device, sensor_tcal_group_t &t
     for (size_t i = 0; i < jTC.size(); i++)
         if (jTC[i]["index"].get<int>() != (int)i)
         {
-            logDebug("TC index mismatch.\n");
+            printf("TC index mismatch.\n");
             return;
         }
 
     if (jTC.size() > TCAL_MAX_NUM_POINTS)
     {
-        logDebug("TC point index from file too large.\n");
+        printf("TC point index from file too large.\n");
         return;
     }
 
@@ -341,7 +313,7 @@ bool ISDeviceCal::loadCalibrationFromJSON(const std::string& filePath, sOrthoCal
     }
 
     // cout << "Loading calibration: " << filePath << endl;
-    logDebug("Loading calibration: %s\n", filePath.c_str());
+    printf("Loading calibration: %s\n", filePath.c_str());
 
     // Parse JSON
     json jObj;
@@ -550,11 +522,11 @@ static json saveTcToJSON(sensor_tcal_group_t* tcal)
     {
         if (tcal->gyr[d].numPts > 0)
         {
-            jTC[formatString("gyr%d", d + 1)] = saveSensorToJSON(tcal->gyr[d]);
+            jTC[cISLogFile::formatString("gyr%d", d + 1)] = saveSensorToJSON(tcal->gyr[d]);
         }
         if (tcal->acc[d].numPts > 0)
         {
-            jTC[formatString("acc%d", d + 1)] = saveSensorToJSON(tcal->acc[d]);
+            jTC[cISLogFile::formatString("acc%d", d + 1)] = saveSensorToJSON(tcal->acc[d]);
         }
     }
 
@@ -562,7 +534,7 @@ static json saveTcToJSON(sensor_tcal_group_t* tcal)
     {
         if (tcal->mag[d].numPts > 0)
         {
-            jTC[formatString("mag%d", d + 1)] = saveSensorToJSON(tcal->mag[d]);
+            jTC[cISLogFile::formatString("mag%d", d + 1)] = saveSensorToJSON(tcal->mag[d]);
         }
     }
 
@@ -571,7 +543,7 @@ static json saveTcToJSON(sensor_tcal_group_t* tcal)
 
 bool ISDeviceCal::saveCalibrationToJSON(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose)
 {
-    logDebug("saveCalibrationToJSON: %s\n", filePath.c_str());
+    printf("saveCalibrationToJSON: %s\n", filePath.c_str());
 
     // Create parent directory if needed
     std::string parentPath = getParentPath(filePath);
@@ -686,7 +658,7 @@ void ISDeviceCal::loadMcFromJSON(const json& jCal, int *pose, sOrthoCal *ocal, s
         }
 
         // Gyro Data
-        std::string key = formatString("gyr%d", d+1);
+        std::string key = cISLogFile::formatString("gyr%d", d+1);
         if (jCal.contains(key))
         {
 			if (ocal) OrthoLeastSquaresDataJSONToSensor(jCal[key], ocal->gyr[d]);
@@ -694,7 +666,7 @@ void ISDeviceCal::loadMcFromJSON(const json& jCal, int *pose, sOrthoCal *ocal, s
         }
 
         // Accel Data
-        key = formatString("acc%d", d+1);
+        key = cISLogFile::formatString("acc%d", d+1);
         if (jCal.contains(key))
         {
 			if (ocal) OrthoLeastSquaresDataJSONToSensor(jCal[key], ocal->acc[d]);
@@ -711,7 +683,7 @@ void ISDeviceCal::loadMcFromJSON(const json& jCal, int *pose, sOrthoCal *ocal, s
             mcal->mag[d].orth[i] = val;
         }
 
-        std::string key = formatString("mag%d", d+1);
+        std::string key = cISLogFile::formatString("mag%d", d+1);
         if (jCal.contains(key))
         {
 			if (ocal) OrthoLeastSquaresDataJSONToSensor(jCal[key], ocal->mag[d]);
@@ -723,7 +695,7 @@ void ISDeviceCal::loadMcFromJSON(const json& jCal, int *pose, sOrthoCal *ocal, s
 json ISDeviceCal::saveMcToJSON(const std::string& filePath, int pose, sOrthoCal *cal, sensor_mcal_group_t *mcal)
 {
     json jCal = json::object();
-    jCal["comment_line1"] = formatString(" Sensor Calibration Data - %s ", filePath.c_str());
+    jCal["comment_line1"] = cISLogFile::formatString(" Sensor Calibration Data - %s ", filePath.c_str());
     jCal["comment_line2"] = " Y = A * X.  Y = truth data, X = adc measured data, A = calibration data. ";
 
     // Add last pose saved to xml.  If we crash, we can restart from here.
@@ -740,7 +712,7 @@ json ISDeviceCal::saveMcToJSON(const std::string& filePath, int pose, sOrthoCal 
             json jGyr = json::object();
             if (cal)   jGyr = OrthoLeastSquaresDataSensorToJSON(jGyr, cal->gyr[d]);
             if (mcal && mcal->pqr[d].orth)  jGyr = OrthoSensorToJSON(jGyr, mcal->pqr[d].orth, mcal->pqr[d].bias);
-            jCal[formatString("gyr%d", d + 1)] = jGyr;
+            jCal[cISLogFile::formatString("gyr%d", d + 1)] = jGyr;
         }
 
         // Accel Data
@@ -749,7 +721,7 @@ json ISDeviceCal::saveMcToJSON(const std::string& filePath, int pose, sOrthoCal 
             json jAcc = json::object();
             if (cal)   jAcc = OrthoLeastSquaresDataSensorToJSON(jAcc, cal->acc[d]);
             if (mcal && mcal->acc[d].orth)  jAcc = OrthoSensorToJSON(jAcc, mcal->acc[d].orth, mcal->acc[d].bias);
-            jCal[formatString("acc%d", d + 1)] = jAcc;
+            jCal[cISLogFile::formatString("acc%d", d + 1)] = jAcc;
         }
     }
 
@@ -761,7 +733,7 @@ json ISDeviceCal::saveMcToJSON(const std::string& filePath, int pose, sOrthoCal 
             json jMag = json::object();
             if (cal)   jMag = OrthoLeastSquaresDataSensorToJSON(jMag, cal->mag[d]);
             if (mcal && mcal->mag[d].orth)  jMag = OrthoSensorToJSON(jMag, mcal->mag[d].orth, mcal->mag[d].bias);
-            jCal[formatString("mag%d", d + 1)] = jMag;
+            jCal[cISLogFile::formatString("mag%d", d + 1)] = jMag;
         }
     }
 
