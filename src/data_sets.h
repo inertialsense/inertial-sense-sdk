@@ -1557,7 +1557,7 @@ enum eGenFaultCodes
     GFC_SYS_FAULT_CRITICAL                  = 0x00020000,
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION                   = 0x00040000,
-    /*! INS extended kalman filter state invalid and the EKF was reset */
+    /*! INS extended kalman filter states invalid and the EKF was reset */
     GFC_EKF_STATES_INVALID                  = 0x00080000,
     /*! Fault: IMU initialization */
     GFC_INIT_IMU                            = 0x00100000,
@@ -1640,10 +1640,10 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
     SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
-    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // 
-    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // 
+    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967234)
+    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967233)
 
-    SYS_CMD_RESET_EKF_STATES                            = 70,           // 
+    SYS_CMD_RESET_EKF_STATES                            = 70,           // (uint32 inv: 4294967226) // Resets the Extended Kalman Filter (EKF) states in the INS solution. Use to reinitialize navigation filter without a full system reset.
 
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
