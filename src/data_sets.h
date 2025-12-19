@@ -1839,8 +1839,10 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_USB                    0x00000008
 #define RMC_OPTIONS_PRESERVE_CTRL               0x00000100      // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
 #define RMC_OPTIONS_PERSISTENT                  0x00000200      // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
-#define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    0x00000400      // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
-#define RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE   0x00000800      // Disable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_MASK      0x00000C00      // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET    10              // Bit offset for NMEA speed filter options
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    1               // NMEA speed filtering: Enable  
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE   2               // NMEA speed filtering: Disable 
 
                                                                 // RMC message data rates:
 #define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)
