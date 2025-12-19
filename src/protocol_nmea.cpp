@@ -1032,19 +1032,21 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
             quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
             quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
         }
-        // Update history buffer
-        for (int i = HISTORY_SIZE-1; i > 0; i--)
-        {
-            s_dataSpeed.speed2dMpsHistory[i] = s_dataSpeed.speed2dMpsHistory[i-1];
+        if (s_dataSpeed.enableSpeedFilter)
+        {   // Update history buffer
+            for (int i = HISTORY_SIZE-1; i > 0; i--)
+            {
+                s_dataSpeed.speed2dMpsHistory[i] = s_dataSpeed.speed2dMpsHistory[i-1];
+            }
         }
         s_dataSpeed.speed2dMpsHistory[0] = mag_Vec2(s_dataSpeed.velNed);
 
-        // Median filter - find middle value of 3 samples
-        float a = s_dataSpeed.speed2dMpsHistory[0];
-        float b = s_dataSpeed.speed2dMpsHistory[1];
-        float c = s_dataSpeed.speed2dMpsHistory[2];
         if (s_dataSpeed.enableSpeedFilter)
         {   // Apply median filter
+            // Median filter - find middle value of 3 samples
+            float a = s_dataSpeed.speed2dMpsHistory[0];
+            float b = s_dataSpeed.speed2dMpsHistory[1];
+            float c = s_dataSpeed.speed2dMpsHistory[2];
             s_dataSpeed.speed2dMps = fmaxf(fminf(a, b), fminf(fmaxf(a, b), c));
         }
         else
