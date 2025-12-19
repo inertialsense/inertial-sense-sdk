@@ -15,7 +15,7 @@
 
 #include <string>
 #include <vector>
-#include "../../cpp/libs/families/imx/IS_internal.h"
+#include "IS_calibration.h"
 #include "json.hpp"
 
 #define NUM_POSES                           18
