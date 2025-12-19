@@ -28,16 +28,16 @@ extern "C" {
 
 
 
-#define DEBUG_LOGGING
-#define IS_LOG_LEVEL           IS_LOG_LEVEL_WARN
-#define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE | IS_LOG_PORT)
+// #define DEBUG_LOGGING
 
 #ifndef DEBUG_LOGGING
-    #define log_debug(...)
-    #define log_info(...)
-    #define log_warn(...)
-    #define log_error(...)
-    #define debug_message(...)
+    #define log_debug(...)      {}
+    #define log_more_debug(...) {}
+    #define log_bombastic(...)  {}
+    #define log_info(...)       {}
+    #define log_warn(...)       {}
+    #define log_error(...)      {}
+    #define debug_message(...)  {}
 #else
     // --- Compile-time configuration ---
     // Define the desired log level to show messages at or above this level.
