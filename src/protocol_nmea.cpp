@@ -27,7 +27,7 @@ static struct
     float       speed2dMps;
     float       speed2dKnots;
     bool        enableSpeedFilter;
-} s_dataSpeed;
+} s_dataSpeed = {0};
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 bool gsv_freq_ena(gps_sig_sv_t* sig);
