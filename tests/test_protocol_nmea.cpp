@@ -1509,13 +1509,13 @@ TEST(protocol_nmea, GPGSV)
         EXPECT_TRUE(outSat.numSats == 12);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GNSS);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GPS_ID_GNSS);
         }
 
         EXPECT_TRUE(outSig.numSigs == 19);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GNSS);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GPS_ID_GNSS);
         }
     }
 
@@ -1536,13 +1536,13 @@ TEST(protocol_nmea, GPGSV)
         EXPECT_TRUE(outSat.numSats == 12);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GNSS);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GPS_ID_GNSS);
         }
 
         EXPECT_TRUE(outSig.numSigs == 19);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GNSS);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GPS_ID_GNSS);
         }
     }
 }
@@ -1844,18 +1844,18 @@ void init_sat_and_sig(gnss_sat_t* gnssSat, gnss_sig_t* gnssSig)
     // Satellite data array
     static const gnss_sat_sv_t sat_data[] = 
     {
-        {SAT_SV_GNSS_ID_GNSS, 2, 40, 310, 43, 95},
-        {SAT_SV_GNSS_ID_GNSS, 8, 7, 324, 31, 95},
-        {SAT_SV_GNSS_ID_GNSS, 10, 48, 267, 45, 31},
-        {SAT_SV_GNSS_ID_GNSS, 15, 37, 53, 45, 31},
-        {SAT_SV_GNSS_ID_GNSS, 16, 12, 268, 37, 95},
-        {SAT_SV_GNSS_ID_GNSS, 18, 69, 78, 41, 31},
-        {SAT_SV_GNSS_ID_GNSS, 23, 74, 336, 41, 31},
-        {SAT_SV_GNSS_ID_GNSS, 24, 15, 111, 37, 31},
-        {SAT_SV_GNSS_ID_GNSS, 26, 2, 239, 31, 31},
-        {SAT_SV_GNSS_ID_GNSS, 27, 35, 307, 41, 95},
-        {SAT_SV_GNSS_ID_GNSS, 29, 12, 162, 36, 31},
-        {SAT_SV_GNSS_ID_GNSS, 32, 14, 199, 40, 95},
+        {SAT_SV_GNSS_ID_GPS, 2, 40, 310, 43, 95},
+        {SAT_SV_GNSS_ID_GPS, 8, 7, 324, 31, 95},
+        {SAT_SV_GNSS_ID_GPS, 10, 48, 267, 45, 31},
+        {SAT_SV_GNSS_ID_GPS, 15, 37, 53, 45, 31},
+        {SAT_SV_GNSS_ID_GPS, 16, 12, 268, 37, 95},
+        {SAT_SV_GNSS_ID_GPS, 18, 69, 78, 41, 31},
+        {SAT_SV_GNSS_ID_GPS, 23, 74, 336, 41, 31},
+        {SAT_SV_GNSS_ID_GPS, 24, 15, 111, 37, 31},
+        {SAT_SV_GNSS_ID_GPS, 26, 2, 239, 31, 31},
+        {SAT_SV_GNSS_ID_GPS, 27, 35, 307, 41, 95},
+        {SAT_SV_GNSS_ID_GPS, 29, 12, 162, 36, 31},
+        {SAT_SV_GNSS_ID_GPS, 32, 14, 199, 40, 95},
         {SAT_SV_GNSS_ID_SBS, 131, 43, 188, 43, 95},
         {SAT_SV_GNSS_ID_SBS, 133, 40, 206, 43, 95},
         {SAT_SV_GNSS_ID_SBS, 138, 43, 173, 35, 95},
@@ -1882,28 +1882,28 @@ void init_sat_and_sig(gnss_sat_t* gnssSat, gnss_sig_t* gnssSig)
     // Signal data array
     static const gnss_sig_sv_t sig_data[] = 
     {
-        {SAT_SV_GNSS_ID_GNSS, 2, SAT_SV_SIG_ID_GPS_L1CA, 43, 7, 361},
-        {SAT_SV_GNSS_ID_GNSS, 8, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 10, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 15, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 16, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 361},
-        {SAT_SV_GNSS_ID_GNSS, 18, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 23, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 24, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 26, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 27, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 361},
-        {SAT_SV_GNSS_ID_GNSS, 29, SAT_SV_SIG_ID_GPS_L1CA, 36, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 32, SAT_SV_SIG_ID_GPS_L1CA, 40, 7, 361},
+        {SAT_SV_GNSS_ID_GPS, 2, SAT_SV_SIG_ID_GPS_L1CA, 43, 7, 361},
+        {SAT_SV_GNSS_ID_GPS, 8, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 10, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 15, SAT_SV_SIG_ID_GPS_L1CA, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 16, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 361},
+        {SAT_SV_GNSS_ID_GPS, 18, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 23, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 24, SAT_SV_SIG_ID_GPS_L1CA, 37, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 26, SAT_SV_SIG_ID_GPS_L1CA, 31, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 27, SAT_SV_SIG_ID_GPS_L1CA, 41, 7, 361},
+        {SAT_SV_GNSS_ID_GPS, 29, SAT_SV_SIG_ID_GPS_L1CA, 36, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 32, SAT_SV_SIG_ID_GPS_L1CA, 40, 7, 361},
         {2, 131, 0, 43, 7, 361}, 
         {2, 133, 0, 43, 7, 361}, 
         {2, 138, 0, 35, 7, 361},
-        {SAT_SV_GNSS_ID_GNSS, 10, SAT_SV_SIG_ID_GPS_L2CL, 45, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 15, SAT_SV_SIG_ID_GPS_L2CL, 27, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 18, SAT_SV_SIG_ID_GPS_L2CL, 33, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 23, SAT_SV_SIG_ID_GPS_L2CL, 34, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 27, SAT_SV_SIG_ID_GPS_L2CL, 23, 7, 9},
-        {SAT_SV_GNSS_ID_GNSS, 29, SAT_SV_SIG_ID_GPS_L2CL, 25, 7, 41},
-        {SAT_SV_GNSS_ID_GNSS, 32, SAT_SV_SIG_ID_GPS_L5, 28, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 10, SAT_SV_SIG_ID_GPS_L2CL, 45, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 15, SAT_SV_SIG_ID_GPS_L2CL, 27, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 18, SAT_SV_SIG_ID_GPS_L2CL, 33, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 23, SAT_SV_SIG_ID_GPS_L2CL, 34, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 27, SAT_SV_SIG_ID_GPS_L2CL, 23, 7, 9},
+        {SAT_SV_GNSS_ID_GPS, 29, SAT_SV_SIG_ID_GPS_L2CL, 25, 7, 41},
+        {SAT_SV_GNSS_ID_GPS, 32, SAT_SV_SIG_ID_GPS_L5, 28, 7, 41},
         {SAT_SV_GNSS_ID_GAL, 5, SAT_SV_SIG_ID_Galileo_E1C2, 41, 7, 41},
         {SAT_SV_GNSS_ID_GAL, 9, SAT_SV_SIG_ID_Galileo_E1C2, 43, 7, 41},
         {SAT_SV_GNSS_ID_GAL, 34, SAT_SV_SIG_ID_Galileo_E1C2, 42, 7, 41},

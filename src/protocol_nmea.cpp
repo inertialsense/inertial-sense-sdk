@@ -173,7 +173,7 @@ static int gnssId_to_talkerId(char* a, uint8_t gnssId)
 
     switch (gnssId)
     {
-        case SAT_SV_GNSS_ID_GNSS:
+        case SAT_SV_GNSS_ID_GPS:
         case SAT_SV_GNSS_ID_SBS:
             a[1] = 'P';
             break;
@@ -233,12 +233,12 @@ void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint16_t &svId, uint8_t
                 gnssId = SAT_SV_GNSS_ID_SBS;
                 if (svId <= 64){ svId += 87; }
             }
-            else{ gnssId = SAT_SV_GNSS_ID_GNSS; }        break;
-        case 'A':    gnssId = SAT_SV_GNSS_ID_GAL;        break;
-        case 'B':    gnssId = SAT_SV_GNSS_ID_BEI;        break;    
-        case 'L':    gnssId = SAT_SV_GNSS_ID_GLO;         break;
-        case 'I':    gnssId = SAT_SV_GNSS_ID_IRN;         break;
-        case 'Q':    gnssId = SAT_SV_GNSS_ID_QZS;        break;
+            else{ gnssId = SAT_SV_GNSS_ID_GPS; }        break;
+        case 'A':    gnssId = SAT_SV_GNSS_ID_GAL;       break;
+        case 'B':    gnssId = SAT_SV_GNSS_ID_BEI;       break;    
+        case 'L':    gnssId = SAT_SV_GNSS_ID_GLO;       break;
+        case 'I':    gnssId = SAT_SV_GNSS_ID_IRN;       break;
+        case 'Q':    gnssId = SAT_SV_GNSS_ID_QZS;       break;
         default:    gnssId = SAT_SV_GNSS_ID_UNKNOWN;    break;
     }
 
@@ -1394,7 +1394,7 @@ bool gsv_sig_match(uint8_t gnssId, uint8_t sigId, gnss_sig_sv_t &s, bool noCno=f
 
     switch (gnssId)
     {
-    case SAT_SV_GNSS_ID_GNSS:
+    case SAT_SV_GNSS_ID_GPS:
         if ((s.gnssId != gnssId) && (s.gnssId != SAT_SV_GNSS_ID_SBS))
         {
             return false;
@@ -1435,7 +1435,7 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
 {
     switch(gnssId)
     {
-        case SAT_SV_GNSS_ID_GNSS:
+        case SAT_SV_GNSS_ID_GPS:
             switch(sigId)
             {
                 case SAT_SV_SIG_ID_GPS_L1CA:        return '1';
@@ -1502,7 +1502,7 @@ uint8_t nmea4p11_signalId_to_sigId(uint8_t gnssId, char nmeaSignalId)
 {
     switch(gnssId)
     {
-    case SAT_SV_GNSS_ID_GNSS:
+    case SAT_SV_GNSS_ID_GPS:
         switch(nmeaSignalId)
         {
             case '1':   return SAT_SV_SIG_ID_GPS_L1CA;
@@ -1569,7 +1569,7 @@ uint16_t sigId_to_nmea2p3_svId(uint8_t gnssId, uint8_t sigId, uint16_t svId)
 {
     switch(gnssId)
     {
-    case SAT_SV_GNSS_ID_GNSS:
+    case SAT_SV_GNSS_ID_GPS:
         switch(sigId)
         {
             case SAT_SV_SIG_ID_GPS_L1CA:    return svId;
@@ -1643,7 +1643,7 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
     {   // L5/E5 - most common band
         switch(gnssId)
         {
-            case SAT_SV_GNSS_ID_GNSS:    return SAT_SV_SIG_ID_GPS_L5Q;
+            case SAT_SV_GNSS_ID_GPS:    return SAT_SV_SIG_ID_GPS_L5Q;
             case SAT_SV_GNSS_ID_SBS:    return 0;
             case SAT_SV_GNSS_ID_GAL:    return SAT_SV_SIG_ID_Galileo_E5;
             case SAT_SV_GNSS_ID_BEI:    return SAT_SV_SIG_ID_BeiDou_B2a;
@@ -1656,7 +1656,7 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
     {   // L2/E2 - most common band
         switch(gnssId)
         {
-            case SAT_SV_GNSS_ID_GNSS:    return SAT_SV_SIG_ID_GPS_L2CL;
+            case SAT_SV_GNSS_ID_GPS:    return SAT_SV_SIG_ID_GPS_L2CL;
             case SAT_SV_GNSS_ID_SBS:    return 0;
             case SAT_SV_GNSS_ID_GAL:    return SAT_SV_SIG_ID_Galileo_E5a;
             case SAT_SV_GNSS_ID_BEI:    return SAT_SV_SIG_ID_BeiDou_B2;
@@ -1697,7 +1697,7 @@ bool gsv_freq_ena(gnss_sig_sv_t* sig)
 
     switch(sig->gnssId)
     {
-        case SAT_SV_GNSS_ID_GNSS:
+        case SAT_SV_GNSS_ID_GPS:
             switch(sig->sigId)
             {
                 case SAT_SV_SIG_ID_GPS_L1CA:
@@ -1912,7 +1912,7 @@ int nmea_gsv_gnss(char a[], int aSize, gnss_sat_t &gsat, gnss_sig_t &gsig, uint8
     int n = 0;
     switch(gnssId)
     {
-        case SAT_SV_GNSS_ID_GNSS:    sigIds = gpsSigIds; numSigIds = sizeof(gpsSigIds);  break;
+        case SAT_SV_GNSS_ID_GPS:    sigIds = gpsSigIds; numSigIds = sizeof(gpsSigIds);  break;
         case SAT_SV_GNSS_ID_GAL:    sigIds = galSigIds; numSigIds = sizeof(galSigIds);  break;
         case SAT_SV_GNSS_ID_BEI:    sigIds = beiSigIds; numSigIds = sizeof(beiSigIds);  break;
         case SAT_SV_GNSS_ID_QZS:    sigIds = qzsSigIds; numSigIds = sizeof(qzsSigIds);  break;
@@ -2195,15 +2195,15 @@ int parseASCE_GSV(int inId, int period)
         {
             case SAT_SV_GNSS_ID_GNSS:
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
-                s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
                 break;
-            case SAT_SV_GNSS_ID_GNSS:
-                s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
+            case SAT_SV_GNSS_ID_GPS:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
                 break;
             case SAT_SV_GNSS_ID_GAL:
                 s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;

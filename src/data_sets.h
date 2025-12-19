@@ -1114,7 +1114,7 @@ enum eSatSvGnssId
 {
     SAT_SV_GNSS_ID_UNKNOWN  = 0,
     SAT_SV_GNSS_ID_GNSS     = 0,    // (multi-constellation)
-    SAT_SV_GNSS_ID_GNSS     = 1,    // GNSS (USA)
+    SAT_SV_GNSS_ID_GPS      = 1,    // GPS (USA)
     SAT_SV_GNSS_ID_SBS      = 2,    // SBAS (multiple regional systems, see flash config for selection)
     SAT_SV_GNSS_ID_GAL      = 3,    // Galileo (European Union)    
     SAT_SV_GNSS_ID_BEI      = 4,    // BeiDou (China)
@@ -1980,7 +1980,7 @@ typedef struct PACKED
 #define NMEA_GNGSV_FREQ_BAND3_BIT   (0x01 << 2)
 #define NMEA_GNGSV_FREQ_5_BIT       (0x01 << 3)
 
-#define NMEA_GNGSV_GPS_OFFSET       (SAT_SV_GNSS_ID_GNSS << 4)
+#define NMEA_GNGSV_GPS_OFFSET       (SAT_SV_GNSS_ID_GPS << 4)
 #define NMEA_GNGSV_GAL_OFFSET       (SAT_SV_GNSS_ID_GAL << 4)
 #define NMEA_GNGSV_BEI_OFFSET       (SAT_SV_GNSS_ID_BEI << 4)
 #define NMEA_GNGSV_QZS_OFFSET       (SAT_SV_GNSS_ID_QZS << 4)
@@ -2176,7 +2176,7 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_GNSS2_POS =            11,
     GRMC_BIT_POS_GNSS2_VEL =            12,
     GRMC_BIT_POS_GNSS2_SAT =            13,
-    GRMC_BIT_POS_GNSS2_SAT =            14,
+    GRMC_BIT_POS_GNSS2_SIG =            14,
     GRMC_BIT_POS_GNSS2_RAW =            15,
     GRMC_BIT_POS_GNSS2_VERSION =        16,
     GRMC_BIT_POS_GNSS1_RTK_POS =        17,

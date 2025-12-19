@@ -257,22 +257,22 @@ std::string renderHdwStatus(const data_info_t& info, std::any value, int arrayId
         BIT_MSG(hdwStatus, HDW_STATUS_IMU_FAULT_REJECT_GYR             , "0x00000004 - IMU gyro fault rejection. A Gyro sensor is divergent and being excluded.");
         BIT_MSG(hdwStatus, HDW_STATUS_IMU_FAULT_REJECT_ACC             , "0x00000008 - IMU accelerometer fault rejection. An accelerometer sensors is divergent and being excluded.");
 
-        BIT_MSG(hdwStatus, HDW_STATUS_GPS_SATELLITE_RX_VALID           , "0x00000010 - GPS satellite signals are being received (antenna and cable are good).");
+        BIT_MSG(hdwStatus, HDW_STATUS_GNSS_SATELLITE_RX_VALID          , "0x00000010 - GNSS satellite signals are being received (antenna and cable are good).");
         BIT_MSG(hdwStatus, HDW_STATUS_STROBE_IN_EVENT                  , "0x00000020 - Event occurred on strobe input pin.");
-        BIT_MSG(hdwStatus, HDW_STATUS_GPS_TIME_OF_WEEK_VALID           , "0x00000040 - GPS time of week is valid and reported.");
+        BIT_MSG(hdwStatus, HDW_STATUS_GNSS_TIME_OF_WEEK_VALID          , "0x00000040 - GNSS time of week is valid and reported.");
         BIT_MSG(hdwStatus, HDW_STATUS_REFERENCE_IMU_RX                 , "0x00000080 - Reference IMU data being received.");
         BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_GYR                   , "0x00000100 - Sensor saturation on gyro.");
         BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_ACC                   , "0x00000200 - Sensor saturation on accelerometer.");
         BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_MAG                   , "0x00000400 - Sensor saturation on magnetometer.");
         BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_BARO                  , "0x00000800 - Sensor saturation on barometric pressure.");
         BIT_MSG(hdwStatus, HDW_STATUS_SYSTEM_RESET_REQUIRED            , "0x00001000 - System Reset is required for proper function.");
-        BIT_MSG(hdwStatus, HDW_STATUS_ERR_GPS_PPS_NOISE                , "0x00002000 - GPS PPS timepulse signal has noise and occurred too frequently.");
+        BIT_MSG(hdwStatus, HDW_STATUS_ERR_GNSS_PPS_NOISE               , "0x00002000 - GNSS PPS timepulse signal has noise and occurred too frequently.");
         BIT_MSG(hdwStatus, HDW_STATUS_MAG_RECAL_COMPLETE               , "0x00004000 - Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).");
         BIT_MSG(hdwStatus, HDW_STATUS_FLASH_WRITE_PENDING              , "0x00008000 - System flash write staging or occurring now.");
         BIT_MSG(hdwStatus, HDW_STATUS_ERR_COM_TX_LIMITED               , "0x00010000 - Communications Tx buffer limited.");
         BIT_MSG(hdwStatus, HDW_STATUS_ERR_COM_RX_OVERRUN               , "0x00020000 - Communications Rx buffer overrun.");
-        BIT_MSG(hdwStatus, HDW_STATUS_ERR_NO_GPS_PPS                   , "0x00040000 - GPS PPS timepulse signal has not been received or is in error.");
-        BIT_MSG(hdwStatus, HDW_STATUS_GPS_PPS_TIMESYNC                 , "0x00080000 - Time synchronized by GPS PPS.");
+        BIT_MSG(hdwStatus, HDW_STATUS_ERR_NO_GNSS_PPS                  , "0x00040000 - GNSS PPS timepulse signal has not been received or is in error.");
+        BIT_MSG(hdwStatus, HDW_STATUS_GNSS_PPS_TIMESYNC                , "0x00080000 - Time synchronized by GNSS PPS.");
 
     //  BIT_MSG(hdwStatus, HDW_STATUS_COM_PARSE_ERR_COUNT_MASK         , "0x00F00000 - Communications parse error count");
     //  BIT_MSG(hdwStatus, HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET       , = 20,
