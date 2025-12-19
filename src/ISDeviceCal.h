@@ -20,7 +20,6 @@
 
 #define NUM_POSES                           18
 #define NUM_RATES_PER_POSE                  3       // rates per pose, each stage has a rate
-// #define NUM_RATES_PER_POSE                  5       // rates per pose, each stage has a rate
 #define NUM_HEADINGS_PER_POSE               8       // headings per pose, each stage has a rate
 #define NUM_PQR_SAMPLES                     (NUM_POSES*NUM_RATES_PER_POSE)
 #define NUM_HDG_SAMPLES                     (NUM_POSES*NUM_HEADINGS_PER_POSE)
@@ -128,13 +127,6 @@ struct sCalData
         Xhat.debug();
     }
 };
-
-// struct sMpuCalDataPtr
-// {
-//     sCalData *gyr;
-//     sCalData *acc; 
-//     sCalData *mag;
-// };
 
 struct sOrthoCal
 {

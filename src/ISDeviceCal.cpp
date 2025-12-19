@@ -27,10 +27,6 @@
 using namespace std;
 using json = nlohmann::json;
 
-// Forward declarations for types that may have external dependencies
-struct sOrthoCal;
-struct sCalData;
-
 // Macro for checking if vector is all zeros
 #define VEC3_ALL_ZERO(v) ((v)[0] == 0.0f && (v)[1] == 0.0f && (v)[2] == 0.0f)
 
