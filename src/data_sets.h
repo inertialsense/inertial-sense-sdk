@@ -962,18 +962,18 @@ typedef struct PACKED
 /** IMU Status */
 enum eImuStatus
 {
-    /** Sensor saturation on IMU1 gyro */
-    IMU_STATUS_SATURATION_IMU1_GYR              = (int)0x00000001,
-    /** Sensor saturation on IMU2 gyro */
-    IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
-    /** Sensor saturation on IMU3 gyro */
-    IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000004,
-    /** Sensor saturation on IMU1 accelerometer */
-    IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000008,
-    /** Sensor saturation on IMU2 accelerometer */
-    IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000010,
-    /** Sensor saturation on IMU3 accelerometer */
-    IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000020,
+    /** Sensor saturation on IMU gyro X */
+    IMU_STATUS_SATURATION_IMU_GYR_X             = (int)0x00000001,
+    /** Sensor saturation on IMU gyro Y */
+    IMU_STATUS_SATURATION_IMU_GYR_Y             = (int)0x00000002,
+    /** Sensor saturation on IMU gyro Z */
+    IMU_STATUS_SATURATION_IMU_GYR_Z             = (int)0x00000004,
+    /** Sensor saturation on IMU accelerometer X */
+    IMU_STATUS_SATURATION_IMU_ACC_X             = (int)0x00000008,
+    /** Sensor saturation on IMU accelerometer Y */
+    IMU_STATUS_SATURATION_IMU_ACC_Y             = (int)0x00000010,
+    /** Sensor saturation on IMU accelerometer Z */
+    IMU_STATUS_SATURATION_IMU_ACC_Z             = (int)0x00000020,
     /** Sensor saturation mask */
     IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
 
@@ -992,26 +992,26 @@ enum eImuStatus
 //     /** Sample rate fault happened within past 10 seconds */
 //     IMU_STATUS_SAMPLE_RATE_FAULT_HISTORY        = (int)0x00000200,
 
-    /** IMU1 gyros available */
-    IMU_STATUS_GYR1_OK                          = (int)0x00010000,
-    /** IMU2 gyros and accelerometers available */
-    IMU_STATUS_GYR2_OK                          = (int)0x00020000,
-    /** IMU3 gyros available */
-    IMU_STATUS_GYR3_OK                          = (int)0x00040000,
-    /** IMU1 accelerometers available */
-    IMU_STATUS_ACC1_OK                          = (int)0x00080000,
-    /** IMU2 accelerometers available */
-    IMU_STATUS_ACC2_OK                          = (int)0x00100000,
-    /** IMU3 accelerometers available */
-    IMU_STATUS_ACC3_OK                          = (int)0x00200000,
-    /** IMU1 available */
-    IMU_STATUS_IMU1_OK                          = (int)(IMU_STATUS_GYR1_OK | IMU_STATUS_ACC1_OK),
-    /** IMU2 available */
-    IMU_STATUS_IMU2_OK                          = (int)(IMU_STATUS_GYR2_OK | IMU_STATUS_ACC2_OK),
-    /** IMU3 available */
-    IMU_STATUS_IMU3_OK                          = (int)(IMU_STATUS_GYR3_OK | IMU_STATUS_ACC3_OK),
-    /** IMU gyros and accelerometers available */
-    IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
+    // /** IMU1 gyros available */
+    // IMU_STATUS_GYR1_OK                          = (int)0x00010000,
+    // /** IMU2 gyros and accelerometers available */
+    // IMU_STATUS_GYR2_OK                          = (int)0x00020000,
+    // /** IMU3 gyros available */
+    // IMU_STATUS_GYR3_OK                          = (int)0x00040000,
+    // /** IMU1 accelerometers available */
+    // IMU_STATUS_ACC1_OK                          = (int)0x00080000,
+    // /** IMU2 accelerometers available */
+    // IMU_STATUS_ACC2_OK                          = (int)0x00100000,
+    // /** IMU3 accelerometers available */
+    // IMU_STATUS_ACC3_OK                          = (int)0x00200000,
+    // /** IMU1 available */
+    // IMU_STATUS_IMU1_OK                          = (int)(IMU_STATUS_GYR1_OK | IMU_STATUS_ACC1_OK),
+    // /** IMU2 available */
+    // IMU_STATUS_IMU2_OK                          = (int)(IMU_STATUS_GYR2_OK | IMU_STATUS_ACC2_OK),
+    // /** IMU3 available */
+    // IMU_STATUS_IMU3_OK                          = (int)(IMU_STATUS_GYR3_OK | IMU_STATUS_ACC3_OK),
+    // /** IMU gyros and accelerometers available */
+    // IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
 
     /** IMU fault rejection is excluding one of the gyros from the combined IMU output */
     IMU_STATUS_GYR_FAULT_REJECT                 = (int)0x01000000,

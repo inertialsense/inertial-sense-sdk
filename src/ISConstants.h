@@ -346,9 +346,25 @@ extern "C" {
 #define _ROUNDUP(numToRound, multiple) ((((numToRound) + (multiple) - 1) / (multiple)) * (multiple))
 #endif
 
-#ifndef _ISNAN
-#define _ISNAN(a) ((a)!=(a))
-#endif
+static inline int is_nan_f(float v)
+{
+    return v != v;
+}
+
+static inline int is_valid_f(float v)
+{
+    return v == v;
+}
+
+static inline int is_nan(double v)
+{
+    return v != v;
+}
+
+static inline int is_valid(double v)
+{
+    return v == v;
+}
 
 #ifndef _ARRAY_BYTE_COUNT
 #define _ARRAY_BYTE_COUNT(a) sizeof(a)
