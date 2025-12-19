@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "protocol_nmea.h"
 #include "InertialSense.h"
 #include "ISDevice.h"
+#include "ISDeviceCal.h"
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
 #include "ISmDnsPortFactory.h"
@@ -823,6 +824,12 @@ bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, port_handle_t p
 {
     return WithDevice(port, [&](device_handle_t dev) { return dev->LoadGpxFlashConfigFromFile(path); });
 }
+
+bool InertialSense::UploadImxCalibrationFromFile(std::string path, port_handle_t port)
+{
+    return WithDevice(port, [&](device_handle_t dev) { return dev->UploadImxCalibrationFromFile(path); });
+}
+
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
 {

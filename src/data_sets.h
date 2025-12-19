@@ -1557,7 +1557,8 @@ enum eGenFaultCodes
     GFC_SYS_FAULT_CRITICAL                  = 0x00020000,
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION                   = 0x00040000,
-
+    /*! INS extended kalman filter states invalid and the EKF was reset */
+    GFC_EKF_STATES_INVALID                  = 0x00080000,
     /*! Fault: IMU initialization */
     GFC_INIT_IMU                            = 0x00100000,
     /*! Fault: Barometer initialization */
@@ -1574,6 +1575,8 @@ enum eGenFaultCodes
     GFC_GNSS_RECEIVER_TIME                  = 0x04000000,
     /*! Fault: GNSS reciever ceneral fault. See the corresponding GPS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK) */
     GFC_GNSS_GENERAL_FAULT                  = 0x08000000,
+    /*! Fault: Invalid IMU input rejected by EKF */
+    GFC_EKF_INPUT_INVALID_IMU               = 0x10000000,
 
     /*! IMX GFC flags that relate to GPX status flags */
     GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,
@@ -1637,9 +1640,11 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
     SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
-    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967287)
-    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967287)
-    
+    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967234)
+    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967233)
+
+    SYS_CMD_RESET_EKF_STATES                            = 70,           // (uint32 inv: 4294967226) // Resets the Extended Kalman Filter (EKF) states in the INS solution. Use to reinitialize navigation filter without a full system reset.
+
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
@@ -1832,15 +1837,19 @@ typedef struct PACKED
     this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs.
 */
 
-#define RMC_OPTIONS_PORT_MASK           0x000000FF
-#define RMC_OPTIONS_PORT_ALL            (RMC_OPTIONS_PORT_MASK)
-#define RMC_OPTIONS_PORT_CURRENT        0x00000000
-#define RMC_OPTIONS_PORT_SER0           0x00000001
-#define RMC_OPTIONS_PORT_SER1           0x00000002    // also SPI
-#define RMC_OPTIONS_PORT_SER2           0x00000004
-#define RMC_OPTIONS_PORT_USB            0x00000008
-#define RMC_OPTIONS_PRESERVE_CTRL       0x00000100    // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_PERSISTENT          0x00000200    // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+#define RMC_OPTIONS_PORT_MASK                   0x000000FF
+#define RMC_OPTIONS_PORT_ALL                    (RMC_OPTIONS_PORT_MASK)
+#define RMC_OPTIONS_PORT_CURRENT                0x00000000
+#define RMC_OPTIONS_PORT_SER0                   0x00000001
+#define RMC_OPTIONS_PORT_SER1                   0x00000002      // also SPI
+#define RMC_OPTIONS_PORT_SER2                   0x00000004
+#define RMC_OPTIONS_PORT_USB                    0x00000008
+#define RMC_OPTIONS_PRESERVE_CTRL               0x00000100      // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+#define RMC_OPTIONS_PERSISTENT                  0x00000200      // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK   0x00000C00      // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET    10              // Bit offset for NMEA speed filter options
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    1               // NMEA speed filtering: Enable  
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE   2               // NMEA speed filtering: Disable 
 
                                                                 // RMC message data rates:
 #define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)

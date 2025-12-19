@@ -87,6 +87,9 @@ endif()
 list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSony.*")
 list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 
+# Exclude ISDeviceCal (Qt-dependent code, moved to standard C++ but not needed for SDK builds)
+# list(FILTER SOURCES_SDK EXCLUDE REGEX "ISDeviceCal.*")
+
 list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
 # find_package(udev)
@@ -108,6 +111,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# Add compile options that will propagate to targets linking against the SDK
+# Use INTERFACE to only affect dependent targets (since SDK headers have deprecated code)
+if(NOT WIN32)
+    target_compile_options(${PROJECT_NAME} INTERFACE -Wno-deprecated-declarations)
+endif()
 
 # Other settings
 if (WIN32)
@@ -156,8 +165,8 @@ elseif(APPLE)
     )
 
     # macOS compiler flags
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
 
     # Set macOS compiler linker flag
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
