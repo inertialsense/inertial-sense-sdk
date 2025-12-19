@@ -266,7 +266,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
     m_serial_thread_mutex.unlock();
 
     // Start at 115200 always, we will switch to user specified rate after we check for SAM-BA devices
-    serialPortSetPort(port, serial_name);
+    serialPortSetName(port, serial_name);
     if (!serialPortOpenRetry(port, serial_name, BAUDRATE_115200, 1))
     {
         m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);

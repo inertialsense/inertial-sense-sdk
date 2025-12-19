@@ -842,7 +842,7 @@ static void PopulateMapInfieldCal(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("status", &infield_cal_t::status, DATA_TYPE_UINT32, "", "Infield cal status (see eInfieldCalStatus)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("sampleTimeMs", &infield_cal_t::sampleTimeMs, DATA_TYPE_UINT32, "ms", "Duration of IMU sample averaging. sampleTimeMs = 0 means \"imu\" member contains the IMU bias from flash.");
 
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("imu" + std::to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Sampled angular rate.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
         mapper.AddArray2("imu" + std::to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Sampled linear acceleration.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1517,13 +1517,13 @@ static void PopulateMapSensorsADC(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<sys_sensors_adc_t> mapper(data_set, did);
     mapper.AddMember("time", &sys_sensors_adc_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);    
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("imu" + to_string(i) + ".pqr",   i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].pqr), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
         mapper.AddArray2("imu" + to_string(i) + ".acc",   i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].acc), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
         mapper.AddMember2("imu" + to_string(i) + ".temp", i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].temp), DATA_TYPE_F32, "LSB", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     }
-    for (int i=0; i<NUM_MAG_DEVICES; i++)
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
     {
         mapper.AddArray2("mag" + to_string(i) + ".mag", i*sizeof(sensors_mag_t) + offsetof(sys_sensors_adc_t, mag[0].mag), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     }
@@ -1539,13 +1539,13 @@ static void PopulateMapSensorsWTemp(data_set_t data_set[DID_COUNT], uint32_t did
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2;
     mapper.AddMember2("imu3.time",   offsetof(sensors_w_temp_t, imu3.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember2("imu3.status", offsetof(sensors_w_temp_t, imu3.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
         mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Uncalibrated sensor output."}, flags);
     }
     mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, 3, {SYM_DEG_C}, {"Uncalibrated sensor output."}, flags);
-    for (int i=0; i<NUM_MAG_DEVICES; i++)
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
     {
         mapper.AddArray2("mag" + to_string(i) + ".xyz", i*sizeof(mag_xyz_t) + offsetof(sensors_w_temp_t, mag[0].xyz), DATA_TYPE_F32, 3, {""}, {"Uncalibrated sensor output."}, flags);
     }
@@ -1556,7 +1556,7 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<sensors_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GPS time of week (since Sunday morning).");
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("pqr" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Temperature compensation bias"}, flags);
         mapper.AddArray2("acc" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Temperature compensation bias"}, flags);

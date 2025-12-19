@@ -48,8 +48,8 @@ void TcpServerPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t
 
     processPendingConnections([&](const socket_entry_t& e) {
         // The base TCP Port Factory doesn't provide a discovery service, but we must still "locate" any ports we determine are valid
-        if (validatePort(e.portName, PORT_TYPE__TCP | PORT_TYPE__COMM)) {
-            portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, e.portName);
+        if (validatePort(e.portName, PORT_TYPE__TCP)) {
+            portCallback(this, PORT_TYPE__TCP, e.portName);
         }
     });
 }
@@ -119,7 +119,7 @@ bool TcpServerPortFactory::releasePort(port_handle_t port) {
 /**
  * Validate that a provided pName can create a TCP Port
  * @param pName The URL to validate starting with tcp://
- * @param pType Must be PORT_TYPE__TCP | PORT_TYPE__COMM
+ * @param pType Must be PORT_TYPE__TCP
  * @return True if port can be created, false otherwise
  */
 bool TcpServerPortFactory::validatePort(const std::string& pName, uint16_t pType) {
@@ -133,7 +133,7 @@ bool TcpServerPortFactory::validatePort(const std::string& pName, uint16_t pType
     }
     std::string uriPort {url.get_port()};
 
-    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) {
+    if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) {
         return false;
     }
 

@@ -45,8 +45,8 @@ This [ISBootloaderExample](https://github.com/inertialsense/inertial-sense-sdk/t
 	//  implements all the function pointers on the serial_port_t struct.
 	serialPortPlatformInit(&serialPort);
 
-	// set the port - the bootloader uses this to open the port and enable bootload mode, etc.
-	serialPortSetPort(&serialPort, argv[1]);
+	// set the port name - the bootloader uses this to open the port and enable bootload mode, etc.
+	serialPortSetName(&serialPort, argv[1]);
 ```
 
 ### Step 3: Set bootloader parameters

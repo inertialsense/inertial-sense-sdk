@@ -235,7 +235,7 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 }
 
 
-void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port) {
+void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port, PortFactory& factory) {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
@@ -247,7 +247,7 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
             device_handle_t device = getDevice(port);
             if (device) {
                 device->assignPort(nullptr); // revoke the removed port from the device...
-                for (device_listener& l : listeners) l(DEVICE_PORT_LOST, device);
+                notifyListeners(device, DEVICE_PORT_LOST);
             }
             break;
     }

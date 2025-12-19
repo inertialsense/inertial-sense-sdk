@@ -193,9 +193,9 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE    2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
-// Max number of devices across all hardware types: uINS-3, uINS-4, and IMX-5
-#define NUM_IMU_DEVICES     3        // g_numImuDevices defines the actual number of hardware specific devices
-#define NUM_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
+// Max number of devices across all hardware types: uINS-3, uINS-4, IMX-5, and IMX-6
+#define MAX_IMU_DEVICES     5        // g_numImuDevices defines the actual number of hardware specific devices
+#define MAX_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
 
 /** INS status flags */
 enum eInsStatusFlags
@@ -1744,9 +1744,9 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
-    double                  time;                                       // Units only apply for calibrated data
+    double                  time;       // Units only apply for calibrated data
 
-    sensors_mpu_t           mpu[NUM_IMU_DEVICES];
+    sensors_mpu_t           mpu[MAX_IMU_DEVICES];
 } sensors_t;
 
 typedef struct PACKED
@@ -1757,13 +1757,13 @@ typedef struct PACKED
 // (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
 typedef struct PACKED
 {
-    imu3_t                    imu3;
+    imu3_t                  imu3;
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    float                        temp[NUM_IMU_DEVICES];
+    float                   temp[MAX_IMU_DEVICES];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
-    mag_xyz_t                mag[NUM_MAG_DEVICES];
+    mag_xyz_t               mag[MAX_MAG_DEVICES];
 } sensors_w_temp_t;
 
 typedef struct PACKED
@@ -1782,9 +1782,9 @@ typedef struct PACKED
 typedef struct PACKED
 {                                                   // Sensor temperature compensation
     uint32_t                timeMs;                 // (ms) Time since boot up.
-    sensor_comp_unit_t      pqr[NUM_IMU_DEVICES];
-    sensor_comp_unit_t      acc[NUM_IMU_DEVICES];
-    sensor_comp_unit_t      mag[NUM_MAG_DEVICES];
+    sensor_comp_unit_t      pqr[MAX_IMU_DEVICES];
+    sensor_comp_unit_t      acc[MAX_IMU_DEVICES];
+    sensor_comp_unit_t      mag[MAX_MAG_DEVICES];
     imus_t                  referenceImu;            // External reference IMU
     float                   referenceMag[3];        // External reference magnetometer (heading reference)
     uint32_t                sampleCount;            // Number of samples collected
@@ -1794,11 +1794,13 @@ typedef struct PACKED
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS    4
+
+/** (DID_SENSORS_ADC) INTERNAL USE ONLY */
 typedef struct PACKED
 {                                                   // LSB units for all except temperature, which is Celsius.
     double                  time;
-    sensors_imu_w_temp_t    imu[NUM_IMU_DEVICES];
-    sensors_mag_t           mag[NUM_MAG_DEVICES];   // Magnetometers
+    sensors_imu_w_temp_t    imu[MAX_IMU_DEVICES];
+    sensors_mag_t           mag[MAX_MAG_DEVICES];   // Magnetometers
     float                   bar;                    // Barometric pressure
     float                   barTemp;                // Temperature of barometric pressure sensor
     float                   humidity;               // Relative humidity as a percent (%rH).  Range is 0% - 100%
@@ -2670,7 +2672,7 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    imus_acc_t              dev[NUM_IMU_DEVICES];
+    imus_acc_t              dev[MAX_IMU_DEVICES];
 
     float                    yaw;        // (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
 } infield_cal_direction_t;
@@ -2694,7 +2696,7 @@ typedef struct PACKED
     uint32_t                sampleTimeMs;
 
     /** Dual purpose variable.  1.) This is the averaged IMU sample when sampleTimeMs != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleTimeMs = 0. */ 
-    imus_t                  imu[NUM_IMU_DEVICES];
+    imus_t                  imu[MAX_IMU_DEVICES];
 
     /** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
     infield_cal_vaxis_t     calData[3];
