@@ -90,7 +90,7 @@ private:
             return PORT_ERROR__INVALID;
 
         ((ISArduinoSerialPort*)port)->m_serial.begin(((ISArduinoSerialPort*)port)->m_baud, ((ISArduinoSerialPort*)port)->m_config);
-        ((ISArduinoSerialPort*)port)->ptype |= PORT_FLAG__OPENED;
+        portFlagsSet(port, PORT_FLAG__OPENED);
         return PORT_ERROR__NONE;
     }
 
@@ -99,7 +99,7 @@ private:
             return PORT_ERROR__INVALID;
 
         ((ISArduinoSerialPort*)port)->m_serial.end();                   // deinitialize the port
-        ((ISArduinoSerialPort*)port)->ptype ^= ~PORT_FLAG__OPENED;      // mark the port as closed
+        portFlagsClear(port, PORT_FLAG__OPENED);                        // mark the port as closed
         return PORT_ERROR__NONE;
     }
 

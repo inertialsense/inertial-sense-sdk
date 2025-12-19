@@ -180,7 +180,7 @@ public:
      */
     bool isConnected() const {
         bool valid = portIsValid(port);
-        bool comPort = portType(port) & PORT_TYPE__COMM;
+        bool comPort = portType(port) & PORT_TYPE__COMM;    // Not sure that this is entirely required; but it doesn't really hurt currently
         bool open = portIsOpened(port);
         return valid && comPort && open;
     }
@@ -588,6 +588,7 @@ public:
 private:
 
     uint32_t validationStartMs = 0;                                  //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
+    uint32_t nextValidationQueryMs = 0;                              //!< if current_timeMs() > than this time, we'll perform the next validation query, otherwise we wait to see if the previous responds.
     unsigned int syncCheckTimeMs = 0;
 
     pfnIsCommHandler packetHandler = nullptr;

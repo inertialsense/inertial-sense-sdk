@@ -149,7 +149,7 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
     } else {
         for (auto f : pFactories) portManager.addPortFactory(f);
     }
-    portManager.addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4) { portManagerHandler(PH1, PH2, PH3, PH4); });
+    portManager.addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4, auto && PH5) { portManagerHandler(PH1, PH2, PH3, PH4, PH5); });
 
 
     for (int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
@@ -205,7 +205,7 @@ InertialSense::InertialSense(
     portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
     portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
     portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
-    portManager.addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4) { portManagerHandler(PH1, PH2, PH3, PH4); });
+    portManager.addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4, auto && PH5) { portManagerHandler(PH1, PH2, PH3, PH4, PH5); });
 
     for (int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
     {
@@ -954,7 +954,7 @@ is_operation_result InertialSense::updateFirmware(fwUpdate::target_t targetDevic
     // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
     // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
     auto plHandle = portManager.addPortListener(
-            [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
+            [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
                 printf("Detected port change (%s) during Firmware Udpate: %s\n", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
                 if (event == PortManager::PORT_ADDED) {
                     deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
@@ -1417,7 +1417,7 @@ std::vector<device_handle_t> InertialSense::selectByHdwId(const uint16_t hdwId) 
  * @param port the port handle that is associated with this event - this maybe null if the port is being removed since this handler is called
  *   after the port has already been identified as having been removed.
  */
-void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port) {
+void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port, PortFactory& portFactory) {
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
             log_debug(IS_LOG_PORT_MANAGER, "PortManager::PORT_ADDED '%s'", pName.c_str());

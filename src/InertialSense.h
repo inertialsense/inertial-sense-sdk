@@ -685,7 +685,7 @@ private:
     static void LoggerThread(void* info);
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
-    void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port);
+    void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory);
     void deviceManagerHandler(uint8_t event, device_handle_t device);
 };
 

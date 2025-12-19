@@ -33,7 +33,7 @@ TEST(test_PortFactory, tcpServerPortFactory) {
     auto& pm = PortManager::getInstance();
     pm.clearPortFactories();
     pm.addPortFactory(&serverFactory);
-    pm.addPortListener([](PortManager::port_event_e event, uint16_t pId, std::string pName, port_handle_t port) {
+    pm.addPortListener([](PortManager::port_event_e event, uint16_t pId, std::string pName, port_handle_t port, PortFactory& portFactory) {
         switch (event) {
             case PortManager::PORT_ADDED:
                 TEST_COUT << "Received incoming connection request from " << pName << std::endl;
@@ -41,9 +41,7 @@ TEST(test_PortFactory, tcpServerPortFactory) {
             case PortManager::PORT_REMOVED:
                 break;
         }
-
     });
-
 
     // run a test for 5 seconds, every 1000ms (1sec) attempt to connect to the local port
     // test succeeds when the port is discovered, and fails if the test times-out.
@@ -53,15 +51,20 @@ TEST(test_PortFactory, tcpServerPortFactory) {
     while ((current_timeMs() < timeout) && (pm.size() == 0)) {
         if (current_timeMs() > nextConnect) {
             if (!clientPort) {
-                TEST_COUT << "Creating an local client tcpPort to connect to the server." << std::endl;
+                TEST_COUT << "Creating tcpPort to connect to localhost." << std::endl;
                 clientPort = clientFactory.bindPort("tcp://127.0.0.1:4321", PORT_TYPE__TCP | PORT_TYPE__COMM);
             }
 
-            portClose(clientPort);
-            portOpen(clientPort);   // make an attempt to connect
+            if (!clientPort) {
+                SLEEP_MS(500);
+            } else {
+                // portClose(clientPort);
+                portOpen(clientPort);   // make an attempt to connect
+            }
         }
 
         pm.discoverPorts();
+        SLEEP_MS(10);
     }
 
     EXPECT_GT(pm.size(), 0);

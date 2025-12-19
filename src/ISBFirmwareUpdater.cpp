@@ -541,8 +541,9 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
         fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Sending 'BOOT UP' command.");
         int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7", 15);
         if (writeCnt == 15) {
-            for (int i = 0; i < 3; i++)
-                portWrite(device->port, (unsigned char *) "\r\n", 2);
+            for (int i = 0; (portWrite(device->port, (unsigned char *) "\r\n", 2) >= 0) && (i < 3); i++) {
+                SLEEP_MS(25);
+            }
         } else if (writeCnt < 0) {
             fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Failed to send 'JUMP-TO-APP' command to serial port: %s [%d]", portName(device->port), writeCnt);
             break;
