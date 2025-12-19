@@ -11,24 +11,25 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "serialPort.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
 
+#include "serialPortPlatform.h"
 #include "ISUtilities.h"
 
-int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
+int SERIAL_PORT_DEFAULT_TIMEOUT = 500;
 
-void serialPortInit(port_handle_t port, int id, int type) {
+void serialPortInit(port_handle_t port, int id, int type, int flags) {
     serial_port_t* serialPort = (serial_port_t*)port;
+
     serialPort->base.pnum = id;
-    serialPort->base.ptype = type | PORT_FLAG__VALID;
+    serialPort->base.ptype = type;
+    serialPort->base.pflags = flags;
+    serialPortPlatformInit(port);
 
-    serialPort->base.stats = (port_stats_t*)&(serialPort->stats);
-
-    serialPort->pfnOpen = serialPortOpen;
-    serialPort->pfnClose = serialPortClose;
-    serialPort->pfnReadTimeout = serialPortReadTimeout;
+    portFlagsSet(port, PORT_FLAG__VALID);
 }
 
 void serialPortSetOptions(port_handle_t port, uint32_t options)
@@ -40,7 +41,15 @@ void serialPortSetOptions(port_handle_t port, uint32_t options)
     }
 }
 
-void serialPortSetPort(port_handle_t port, const char* portName)
+void serialPortSetBaud(port_handle_t port, int baudRate) {
+    serial_port_t* serialPort = (serial_port_t*)port;
+    if (serialPort != NULL)
+    {
+        serialPort->baudRate = baudRate;
+    }
+}
+
+void serialPortSetName(port_handle_t port, const char* portName)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
     if ((serialPort != NULL) && (portName != NULL))
@@ -71,8 +80,15 @@ int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int b
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
-    serialPort->base.ptype |= PORT_FLAG__OPENED;
+    portFlagsSet(port, PORT_FLAG__OPENED);
     return 1;
+}
+
+int serialPortOpen_internal(port_handle_t port) {
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    serial_port_t* serialPort = (serial_port_t*)port;
+    int result = serialPortOpen(port, serialPort->portName, serialPort->baudRate, (portFlagsIsSet(port, PORT_FLAG__BLOCKING) ? 1 : 0));
+    return (result ? PORT_ERROR__NONE : PORT_ERROR__OPEN_FAILURE);
 }
 
 int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, int blocking)
@@ -87,7 +103,6 @@ int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, 
     if (serialPortIsOpen(port))
         return 1;
 
-    serialPortClose(port);  // Note that if port->handle is NULL, which usually indicates a closed port, we won't be able to close it. This is kind of superfluous.
     for (int retry = 0; retry < 5; retry++)
     {
         if (serialPortOpen(port, portName, baudRate, blocking))
@@ -142,7 +157,7 @@ int serialPortClose(port_handle_t port)
             serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
-    serialPort->base.ptype &= ~PORT_FLAG__OPENED;       // safe to do before closing - because if the close fails, its fair the say the port is still invalid
+    portFlagsClear(port, PORT_FLAG__OPENED);       // safe to do before closing - because if the close fails, its fair the say the port is still invalid
     return serialPort->pfnClose(port);
 }
 

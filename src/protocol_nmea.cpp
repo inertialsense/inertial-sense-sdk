@@ -17,13 +17,17 @@
 static int s_protocol_version = NMEA_PROTOCOL_2P3;  // Default to protocol version 2.3
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
+#define HISTORY_SIZE    3
+
 static struct  
 {
     uint32_t    timeOfWeekMs;
     ixVector3   velNed;
+    float       speed2dMpsHistory[HISTORY_SIZE];
     float       speed2dMps;
     float       speed2dKnots;
-} s_dataSpeed;
+    bool        enableSpeedFilter;
+} s_dataSpeed = {0};
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 bool gsv_freq_ena(gps_sig_sv_t* sig);
@@ -1028,7 +1032,27 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
             quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
             quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
         }
-        s_dataSpeed.speed2dMps = mag_Vec2(s_dataSpeed.velNed);
+        if (s_dataSpeed.enableSpeedFilter)
+        {   // Update history buffer
+            for (int i = HISTORY_SIZE-1; i > 0; i--)
+            {
+                s_dataSpeed.speed2dMpsHistory[i] = s_dataSpeed.speed2dMpsHistory[i-1];
+            }
+        }
+        s_dataSpeed.speed2dMpsHistory[0] = mag_Vec2(s_dataSpeed.velNed);
+
+        if (s_dataSpeed.enableSpeedFilter)
+        {   // Apply median filter
+            // Median filter - find middle value of 3 samples
+            float a = s_dataSpeed.speed2dMpsHistory[0];
+            float b = s_dataSpeed.speed2dMpsHistory[1];
+            float c = s_dataSpeed.speed2dMpsHistory[2];
+            s_dataSpeed.speed2dMps = fmaxf(fminf(a, b), fminf(fmaxf(a, b), c));
+        }
+        else
+        {   // No filtering
+            s_dataSpeed.speed2dMps = s_dataSpeed.speed2dMpsHistory[0];
+        }
         s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
     }
 }
@@ -2249,6 +2273,17 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
 
     // extract port from options
     ports = options&RMC_OPTIONS_PORT_MASK;
+
+    // speed filter if requested
+    switch ((options & RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK) >> RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET)
+    {
+        case RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE:
+            s_dataSpeed.enableSpeedFilter = true;
+            break;
+        case RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE:
+            s_dataSpeed.enableSpeedFilter = false;
+            break;
+    }
     
     for (int i=0; i<20; i++)
     {

@@ -578,6 +578,15 @@ public:
     bool LoadImxFlashConfigFromFile(std::string path, port_handle_t port = 0);
     bool LoadGpxFlashConfigFromFile(std::string path, port_handle_t port = 0);
 
+    /**
+     * @brief Uploads IMX Calibration from file to device
+     * @param path File path to calibration JSON file
+     * @param port Port handle to device. If NULL, first device found will be used.
+     * @return true on success
+     * @return false on failure
+     */
+    bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
+
     std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
     std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
@@ -675,7 +684,7 @@ private:
     static void LoggerThread(void* info);
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
-    void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port);
+    void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory);
     void deviceManagerHandler(uint8_t event, device_handle_t device);
 };
 

@@ -1,2 +1,2 @@
-import logInspectorInternal as app
+from . import logInspectorInternal as app
 app.main()

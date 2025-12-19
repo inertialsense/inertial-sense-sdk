@@ -7,8 +7,10 @@
  */
 
 #ifdef _WIN32
-// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
-#define NOMINMAX
+    // Windows.h is included somewhere and this prevents it from defining max as a macro which breaks uri.hpp
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
 #endif
 
 #include "TcpPortFactory.h"
@@ -89,7 +91,7 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), &addr);
+    tcpPortInit(port, id, pName.c_str(), &addr, this->portOptions.defaultBlocking ? PORT_FLAG__BLOCKING : 0);
 
     return port;
 }
@@ -114,7 +116,7 @@ bool TcpPortFactory::releasePort(port_handle_t port) {
 /**
  * Validate that a provided pName can create a TCP Port
  * @param pName The URL to validate starting with tcp://
- * @param pType Must be PORT_TYPE__TCP | PORT_TYPE__COMM
+ * @param pType Must be PORT_TYPE__TCP
  * @return True if port can be created, false otherwise
  */
 bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
@@ -128,7 +130,7 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     }
     std::string uriPort {url.get_port()};
 
-    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) {
+    if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) {
         return false;
     }
 
@@ -158,7 +160,7 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
  */
 void TcpPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     // The base TCP Port Factory doesn't provide a discovery service, but we must still "locate" any ports we determine are valid
-    if (validatePort(pattern, PORT_TYPE__TCP | PORT_TYPE__COMM)) {
-        portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, pattern);
+    if (validatePort(pattern, PORT_TYPE__TCP)) {
+        portCallback(this, PORT_TYPE__TCP, pattern);
     }
 }
