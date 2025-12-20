@@ -662,7 +662,7 @@ void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal
         if (jCal.contains(key))
         {
 			if (ocal) OrthoLeastSquaresDataJsonObjToSensor(jCal[key], ocal->gyr[d]);
-            if (mcal && mcal->pqr[d].orth) OrthoJsonObjToSensor(jCal[key], mcal->pqr[d].orth, mcal->pqr[d].bias);
+            if (mcal) OrthoJsonObjToSensor(jCal[key], mcal->pqr[d].orth, mcal->pqr[d].bias);
         }
 
         // Accel Data
@@ -670,7 +670,7 @@ void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal
         if (jCal.contains(key))
         {
 			if (ocal) OrthoLeastSquaresDataJsonObjToSensor(jCal[key], ocal->acc[d]);
-            if (mcal && mcal->acc[d].orth) OrthoJsonObjToSensor(jCal[key], mcal->acc[d].orth, mcal->acc[d].bias);
+            if (mcal) OrthoJsonObjToSensor(jCal[key], mcal->acc[d].orth, mcal->acc[d].bias);
         }
     }
 
@@ -687,7 +687,7 @@ void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal
         if (jCal.contains(key))
         {
 			if (ocal) OrthoLeastSquaresDataJsonObjToSensor(jCal[key], ocal->mag[d]);
-            if (mcal && mcal->mag[d].orth) OrthoJsonObjToSensor(jCal[key], mcal->mag[d].orth, mcal->mag[d].bias);
+            if (mcal) OrthoJsonObjToSensor(jCal[key], mcal->mag[d].orth, mcal->mag[d].bias);
         }
     }
 }
@@ -711,7 +711,7 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
         {
             json jGyr = json::object();
             if (cal)   jGyr = OrthoLeastSquaresDataSensorToJsonObj(jGyr, cal->gyr[d]);
-            if (mcal && mcal->pqr[d].orth)  jGyr = OrthoSensorToJsonObj(jGyr, mcal->pqr[d].orth, mcal->pqr[d].bias);
+            if (mcal)  jGyr = OrthoSensorToJsonObj(jGyr, mcal->pqr[d].orth, mcal->pqr[d].bias);
             jCal[cISLogFile::formatString("gyr%d", d + 1)] = jGyr;
         }
 
@@ -720,7 +720,7 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
         {
             json jAcc = json::object();
             if (cal)   jAcc = OrthoLeastSquaresDataSensorToJsonObj(jAcc, cal->acc[d]);
-            if (mcal && mcal->acc[d].orth)  jAcc = OrthoSensorToJsonObj(jAcc, mcal->acc[d].orth, mcal->acc[d].bias);
+            if (mcal)  jAcc = OrthoSensorToJsonObj(jAcc, mcal->acc[d].orth, mcal->acc[d].bias);
             jCal[cISLogFile::formatString("acc%d", d + 1)] = jAcc;
         }
     }
@@ -732,7 +732,7 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
         {
             json jMag = json::object();
             if (cal)   jMag = OrthoLeastSquaresDataSensorToJsonObj(jMag, cal->mag[d]);
-            if (mcal && mcal->mag[d].orth)  jMag = OrthoSensorToJsonObj(jMag, mcal->mag[d].orth, mcal->mag[d].bias);
+            if (mcal)  jMag = OrthoSensorToJsonObj(jMag, mcal->mag[d].orth, mcal->mag[d].bias);
             jCal[cISLogFile::formatString("mag%d", d + 1)] = jMag;
         }
     }
