@@ -130,20 +130,20 @@ struct sCalData
 
 struct sOrthoCal
 {
-    sCalData gyr[NUM_IMU_DEVICES];
-    sCalData acc[NUM_IMU_DEVICES];
-    sCalData mag[NUM_MAG_DEVICES];
+    sCalData gyr[MAX_IMU_DEVICES];
+    sCalData acc[MAX_IMU_DEVICES];
+    sCalData mag[MAX_MAG_DEVICES];
 
     sOrthoCal()
     {
-        for (int d = 0; d < NUM_IMU_DEVICES; d++)
+        for (int d = 0; d < MAX_IMU_DEVICES; d++)
         {
             gyr[d].resize(NUM_PQR_SAMPLES);
             gyr[d].zero();
             acc[d].resize(NUM_POSES);
             acc[d].zero();
         }
-        for (int d = 0; d < NUM_MAG_DEVICES; d++)
+        for (int d = 0; d < MAX_MAG_DEVICES; d++)
         {
             mag[d].resize(NUM_HDG_SAMPLES);
             mag[d].zero();

@@ -207,12 +207,12 @@ static void JsonObjToTcal3axis(const json& jTC, const std::string& key, nvm_sens
 
 static void JsonObjToSensor(const json& jTC, sensor_tcal_group_t& tcal)
 {
-    for (int d = 0; d < NUM_IMU_DEVICES; d++)
+    for (int d = 0; d < MAX_IMU_DEVICES; d++)
     {
         JsonObjToTcal3axis(jTC, cISLogFile::formatString("gyr%d", d + 1), tcal.gyr[d]);
         JsonObjToTcal3axis(jTC, cISLogFile::formatString("acc%d", d + 1), tcal.acc[d]);
     }
-    for (int d = 0; d < NUM_MAG_DEVICES; d++)
+    for (int d = 0; d < MAX_MAG_DEVICES; d++)
     {
         JsonObjToTcal3axis(jTC, cISLogFile::formatString("mag%d", d + 1), tcal.mag[d]);
     }
@@ -518,7 +518,7 @@ static json saveTcToJsonObj(sensor_tcal_group_t* tcal)
 
     json jTC = json::object();
 
-    for (int d = 0; d < NUM_IMU_DEVICES; d++)
+    for (int d = 0; d < MAX_IMU_DEVICES; d++)
     {
         if (tcal->gyr[d].numPts > 0)
         {
@@ -530,7 +530,7 @@ static json saveTcToJsonObj(sensor_tcal_group_t* tcal)
         }
     }
 
-    for (int d = 0; d < NUM_MAG_DEVICES; d++)
+    for (int d = 0; d < MAX_MAG_DEVICES; d++)
     {
         if (tcal->mag[d].numPts > 0)
         {
@@ -647,7 +647,7 @@ void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal
         *pose = jCal["curPose"].get<int>();
     }
 
-    for (int d = 0; d < NUM_IMU_DEVICES; d++)
+    for (int d = 0; d < MAX_IMU_DEVICES; d++)
     {
         // Set default identity matrix
         for (int i = 0; i < 9; i++)
@@ -674,7 +674,7 @@ void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal
         }
     }
 
-    for (int d = 0; d < NUM_MAG_DEVICES; d++)
+    for (int d = 0; d < MAX_MAG_DEVICES; d++)
     {   // Mag Data
         // Set default identity matrix
         for (int i = 0; i < 9; i++)
@@ -704,7 +704,7 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
         jCal["curPose"] = pose;
     }
 
-    for (int d = 0; d < NUM_IMU_DEVICES; d++)
+    for (int d = 0; d < MAX_IMU_DEVICES; d++)
     {
         // Gyro Data
         if (motionCalPresent(mcal->pqr[d].orth, mcal->pqr[d].bias))
@@ -725,7 +725,7 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
         }
     }
 
-    for (int d = 0; d < NUM_MAG_DEVICES; d++)
+    for (int d = 0; d < MAX_MAG_DEVICES; d++)
     {
         // Mag Data
         if (motionCalPresent(mcal->mag[d].orth, mcal->mag[d].bias))
@@ -755,28 +755,28 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     // Upload Temperature Cal
     case 2:     // Temp comp - Gyros
-        if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP, NUM_IMU_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, gyr)) != 0) { return 0; }
+        if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP, MAX_IMU_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, gyr)) != 0) { return 0; }
         break;
 
     case 3:     // Temp comp - Accelerometers
-        if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP, NUM_IMU_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, acc)) != 0) { return 0; }
+        if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP, MAX_IMU_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, acc)) != 0) { return 0; }
         break;
 
     case 4:     // Temp comp - Magnetometers
-        if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP, NUM_MAG_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, mag)) != 0) { return 0; }
+        if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP, MAX_MAG_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, mag)) != 0) { return 0; }
         break;  
 
     // Upload Motion Cal
     case 5:     // Motion cal - Gyros
-        if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION, NUM_IMU_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, pqr)) != 0) { return 0; }
+        if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION, MAX_IMU_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, pqr)) != 0) { return 0; }
         break;
 
     case 6:     // Motion cal - Accelerometers
-        if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION, NUM_IMU_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, acc)) != 0) { return 0; }
+        if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION, MAX_IMU_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, acc)) != 0) { return 0; }
         break;
 
     case 7:     // Motion cal - Magnetometers
-        if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION, NUM_MAG_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, mag)) != 0) { return 0; }
+        if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION, MAX_MAG_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, mag)) != 0) { return 0; }
         // printf("Done uploadSensorCal() - hdl: %d, serial#: %d, devSerialNum: %d\n", port, serialNum, cal.info.devSerialNum);
         return 1;    // Done
         
