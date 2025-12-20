@@ -38,6 +38,44 @@ RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
 
+def median_filter(data, history_size=3):
+    """
+    Apply median filter to data array with arbitrary history size.
+    
+    Args:
+        data: numpy array to be filtered (can be 1D or 2D)
+        history_size: size of filter window (default 3)
+    
+    Returns:
+        Filtered numpy array with same shape as input
+    """
+    if len(data) == 0:
+        return data
+    
+    # Handle both 1D and 2D arrays
+    is_1d = len(data.shape) == 1
+    if is_1d:
+        data = data.reshape(-1, 1)
+    
+    filtered = np.copy(data)
+    
+    # For each axis/column
+    for col in range(data.shape[1]):
+        history = [data[0, col]] * history_size  # Initialize history with first value
+        
+        for i in range(len(data)):
+            # Update history buffer (shift right)
+            for j in range(history_size - 1, 0, -1):
+                history[j] = history[j - 1]
+            history[0] = data[i, col]
+            
+            # Sort history to find median
+            sorted_history = sorted(history)
+            # Return median value (middle element)
+            filtered[i, col] = sorted_history[history_size // 2]
+    
+    return filtered.flatten() if is_1d else filtered
+
 class logPlot:
     def __init__(self, show=False, save=False, format='svg', log=None):
         self.show = show
@@ -48,6 +86,7 @@ class logPlot:
         self.timestamp = False
         self.xAxisSample = False
         self.showGps2 = False
+        self.medianFilterGpsVel = False
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
         if self.enableLegends:
@@ -105,6 +144,9 @@ class logPlot:
 
     def enableGps2(self, enable):
         self.showGps2 = enable
+
+    def enableMedianFilterGpsVel(self, enable):
+        self.medianFilterGpsVel = enable
 
     def enableUtcTime(self, enable):
         self.utcTime = enable
@@ -665,6 +707,11 @@ class logPlot:
 
             #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
             #velNed = R.dot(velEcef.T).T
+        
+        # Apply median filter to GPS velocity data
+        if self.medianFilterGpsVel and velNed is not None and len(velNed) > 0:
+            velNed = median_filter(velNed, 5)
+        
         return velNed
 
     def velNED(self, fig=None, axs=None):

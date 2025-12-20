@@ -505,6 +505,8 @@ class LogInspectorWindow(QMainWindow):
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
         self.showGps2 = QCheckBox("GPS2", self)
         self.showGps2.stateChanged.connect(self.changeShowGps2Checkbox)
+        self.medianFilterGpsVel = QCheckBox("Med Flt GPS Vel", self)
+        self.medianFilterGpsVel.stateChanged.connect(self.changeMedianFilterGpsVelCheckbox)
 
         self.VLayoutOptions1 = QVBoxLayout()
         self.VLayoutOptions1.setSpacing(0)
@@ -518,6 +520,7 @@ class LogInspectorWindow(QMainWindow):
         self.VLayoutOptions3 = QVBoxLayout()
         self.VLayoutOptions3.setSpacing(0)
         self.VLayoutOptions3.addWidget(self.showGps2)
+        self.VLayoutOptions3.addWidget(self.medianFilterGpsVel)
 
         group_box = QGroupBox("")
         self.LayoutVTests = QVBoxLayout()
@@ -669,6 +672,12 @@ class LogInspectorWindow(QMainWindow):
         for mplot in self.mplots:
             if mplot.plotter:
                 mplot.plotter.enableGps2(state)
+                self.updatePlot()
+
+    def changeMedianFilterGpsVelCheckbox(self, state):
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableMedianFilterGpsVel(state)
                 self.updatePlot()
 
     def changeUtcCheckbox(self, state):
