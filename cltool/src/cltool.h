@@ -138,6 +138,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t timeoutFlushLoggerSeconds;
     std::vector<uint32_t> outputOnceDid;    
     std::vector<uint32_t> setAckDid;
+    std::string imxCalUploadFile;
 
     YAML::Node getNode;
     YAML::Node setNode;
@@ -176,6 +177,7 @@ void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char*
 void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
+bool cltool_uploadImxCalibrationFile(InertialSense& inertialSenseInterface, std::string calFilePath);
 
 /**
  * Override the ISDevice class so we can implement our own data handlers

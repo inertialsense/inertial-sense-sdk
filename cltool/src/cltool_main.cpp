@@ -573,6 +573,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         }
         g_cmdSuccessExitAppNow = true;
     }
+    if (g_commandLineOptions.imxCalUploadFile.size() > 0)
+    {
+        if (!cltool_uploadImxCalibrationFile(inertialSenseInterface, g_commandLineOptions.imxCalUploadFile))
+        {   // Exit cltool now and report error code
+            std::exit(-3);
+        }
+        g_cmdSuccessExitAppNow = true;
+    }
 
     if (g_cmdSuccessExitAppNow)
     {   // Exit cltool now and report success code.  Return false to tell cltool to close.
