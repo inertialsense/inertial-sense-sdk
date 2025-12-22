@@ -284,6 +284,22 @@ char *ASCII_to_u32(uint32_t *val, char *ptr)
     return ptr;
 }
 
+char *ASCII_options_to_u32(uint32_t *options, char *ptr)
+{
+    // check if next index is ','
+    if (*ptr != ',')
+    {
+        // Check if string starts with "0x" or "0X" for hexadecimal
+        if ((ptr[0] == '0') && (ptr[1] == 'x' || ptr[1] == 'X'))
+            *options = (uint32_t)strtoul(ptr, NULL, 16);  // Parse as hexadecimal
+        else
+            *options = (uint32_t)atoi(ptr);               // Parse as decimal
+    }
+
+    ptr = ASCII_find_next_field(ptr);
+    return ptr;
+}
+
 char *ASCII_to_u64(uint64_t *val, char *ptr)
 {
     char *endPtr = nullptr;
@@ -2279,13 +2295,9 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     
     char *ptr = (char*)&a[6];                // $ASCE
     char *end = (char*)&a[aSize];
-    
-    // check if next index is ','
-    if (*ptr != ',')
-        options = (uint32_t)atoi(ptr);
-    
-    // get next uint32_t and assign it to options and move pointer
-    ptr = ASCII_to_u32(&options, ptr);
+
+    // extract options
+    ptr = ASCII_options_to_u32(&options, ptr);
 
     // extract port from options
     ports = options&RMC_OPTIONS_PORT_MASK;
