@@ -1016,7 +1016,7 @@ int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
     return nmea_sprint_footer(a, aSize, n);
 }
 
-float median_filter(float newValue, float history[], int historySize, int halfHistorySize)
+float median_filter(float newValue, float history[], float sorted[], int historySize, int halfHistorySize)
 {
     // Update history buffer
     for (int i = historySize-1; i > 0; i--)
@@ -1026,7 +1026,6 @@ float median_filter(float newValue, float history[], int historySize, int halfHi
     history[0] = newValue;
 
     // Create temporary array for sorting
-    float sorted[historySize];
     for (int i = 0; i < historySize; i++)
     {
         sorted[i] = history[i];
@@ -1068,7 +1067,8 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
         }
 
         float speed2dMps = mag_Vec2(s_dataSpeed.velNed);
-        s_dataSpeed.speed2dMps = s_dataSpeed.enableSpeedFilter ? median_filter(speed2dMps, s_dataSpeed.speed2dMpsHistory, HISTORY_SIZE, HISTORY_SIZE/2) : speed2dMps;
+        float sorted[HISTORY_SIZE];
+        s_dataSpeed.speed2dMps = s_dataSpeed.enableSpeedFilter ? median_filter(speed2dMps, s_dataSpeed.speed2dMpsHistory, sorted, HISTORY_SIZE, HISTORY_SIZE/2) : speed2dMps;
         s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
     }
 }
