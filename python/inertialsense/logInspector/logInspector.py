@@ -505,8 +505,11 @@ class LogInspectorWindow(QMainWindow):
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
         self.showGps2 = QCheckBox("GPS2", self)
         self.showGps2.stateChanged.connect(self.changeShowGps2Checkbox)
-        self.medianFilterGpsVel = QCheckBox("Med Flt GPS Vel", self)
-        self.medianFilterGpsVel.stateChanged.connect(self.changeMedianFilterGpsVelCheckbox)
+        self.GpsVelFilterLabel = QLabel(" GPS Vel Filter", self)
+        self.gpsVelFilter = QSpinBox(self)
+        self.gpsVelFilter.setValue(0)
+        self.gpsVelFilter.setMaximumWidth(35)
+        self.gpsVelFilter.valueChanged.connect(self.changeGpsVelFilterInput)
 
         self.VLayoutOptions1 = QVBoxLayout()
         self.VLayoutOptions1.setSpacing(0)
@@ -520,7 +523,12 @@ class LogInspectorWindow(QMainWindow):
         self.VLayoutOptions3 = QVBoxLayout()
         self.VLayoutOptions3.setSpacing(0)
         self.VLayoutOptions3.addWidget(self.showGps2)
-        self.VLayoutOptions3.addWidget(self.medianFilterGpsVel)
+        
+        if 0:   # Show GPS Velocity Filter Input in UI
+            self.HLayoutOptions3 = QHBoxLayout()
+            self.HLayoutOptions3.addWidget(self.gpsVelFilter)
+            self.HLayoutOptions3.addWidget(self.GpsVelFilterLabel)
+            self.VLayoutOptions3.addLayout(self.HLayoutOptions3)
 
         group_box = QGroupBox("")
         self.LayoutVTests = QVBoxLayout()
@@ -674,11 +682,15 @@ class LogInspectorWindow(QMainWindow):
                 mplot.plotter.enableGps2(state)
                 self.updatePlot()
 
-    def changeMedianFilterGpsVelCheckbox(self, state):
-        for mplot in self.mplots:
-            if mplot.plotter:
-                mplot.plotter.enableMedianFilterGpsVel(state)
-                self.updatePlot()
+    def changeGpsVelFilterInput(self, text):
+        try:
+            filter_mode = int(text) if text else 0
+            for mplot in self.mplots:
+                if mplot.plotter:
+                    mplot.plotter.setGpsVelFilterMode(filter_mode)
+                    self.updatePlot()
+        except ValueError:
+            pass  # Ignore invalid input
 
     def changeUtcCheckbox(self, state):
         for mplot in self.mplots:
