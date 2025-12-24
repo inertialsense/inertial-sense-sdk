@@ -910,25 +910,3 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
     }
     return NULL;
 }
-
-//void ISComManager::registerSystemHandler(pfnIsCommHandler cbHandler, port_handle_t port) {
-
-//    if (port == NULL)
-//    {
-
-//    }
-
-//    if (port && portType(port) & PORT_TYPE__COMM) {
-//        is_comm_register_system_handler(&COMM_PORT(port)->comm, cbHandler);
-//        return;
-//    }
-
-//    if (ports && !port){
-//        // if port is null, set this for all available ports
-//        for (auto port : *ports) {
-//            if (port && portType(port) & PORT_TYPE__COMM) {
-//                is_comm_register_system_handler(&COMM_PORT(port)->comm, cbHandler);
-//            }
-//        }
-//    }
-//}
