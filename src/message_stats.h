@@ -44,10 +44,8 @@ public:
         stats_t parseError;
     };
     // Static functions (can be called without an instance)
-    static std::string messageStatsDescriptionUblox(uint8_t msgClass, uint8_t msgID);
-    static std::string messageStatsDescriptionRtcm3(int id);
-    static void messageStatsAppend(const std::string& message, mul_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs);
-    static std::string messageStatsSummary(mul_stats_t &msgStats);
+    static void append(const std::string& message, mul_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs);
+    static std::string summary(mul_stats_t &msgStats);
     
     static inline std::string join(
         const std::vector<std::string>& list,
@@ -76,12 +74,11 @@ public:
     }
 
     // Instance methods
-    void historyWrite(const std::string& message, int ptype, int id, int bytes, int timeMs);
-    int processData(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
-    void summaryISB(p_data_t *data);
-    void summaryASCII(const uint8_t *msg, int msgSize);
-    void summaryUblox(const uint8_t* msg, int msgSize);
-    void summaryRTCM3(const uint8_t* msg, int msgSize);
+    int  processData(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+    void processISB(p_data_t *data);
+    void processASCII(const uint8_t *msg, int msgSize);
+    void processUblox(const uint8_t* msg, int msgSize);
+    void processRTCM3(const uint8_t* msg, int msgSize);
     void clear()
     {
         stats.isb.clear();
@@ -99,7 +96,12 @@ public:
     bool                        update;
 
 private:
+    // Private instance methods
+    void historyWrite(const std::string& message, int ptype, int id, int bytes, int timeMs);
+
     // Private helper functions
+    static std::string descriptionUblox(uint8_t msgClass, uint8_t msgID);
+    static std::string descriptionRtcm3(int id);
     static stats_t createNewMsgStats(int timeMs, const std::string& description = "");
     static void updateTimeMs(stats_t &s, int timeMs, int bytes);
     static std::string getCurrentTimeString();

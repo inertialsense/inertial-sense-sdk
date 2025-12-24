@@ -595,7 +595,7 @@ bool InertialSense::UpdateServer()
 
             if (ptype != _PTYPE_NONE)
             {   // Record message info
-                MessageStats::messageStatsAppend(str, m_serverMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
+                MessageStats::append(str, m_serverMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
             }
         }
     }

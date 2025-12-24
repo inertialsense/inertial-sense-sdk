@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-string MessageStats::messageStatsDescriptionUblox(uint8_t msgClass, uint8_t msgID)
+string MessageStats::descriptionUblox(uint8_t msgClass, uint8_t msgID)
 {
     string s;
     switch (msgClass)
@@ -51,7 +51,7 @@ string MessageStats::messageStatsDescriptionUblox(uint8_t msgClass, uint8_t msgI
     return s;
 }
 
-string MessageStats::messageStatsDescriptionRtcm3(int id)
+string MessageStats::descriptionRtcm3(int id)
 {
     // RTCM3 descriptions: https://www.use-snip.com/kb/knowledge-base/rtcm-3-message-list/
     switch (id)
@@ -121,7 +121,7 @@ void MessageStats::updateTimeMs(MessageStats::stats_t &s, int timeMs, int bytes)
     }
 }
 
-void MessageStats::messageStatsAppend(const string& message, MessageStats::mul_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs)
+void MessageStats::append(const string& message, MessageStats::mul_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs)
 {
     switch (ptype)
     {
@@ -153,7 +153,7 @@ void MessageStats::messageStatsAppend(const string& message, MessageStats::mul_s
         {   // Create new 
             uint8_t msgClass = (uint8_t)id;
             uint8_t msgID = (uint8_t)(id >> 8);
-            msgStats.ublox[id] = createNewMsgStats(timeMs, messageStatsDescriptionUblox(msgClass, msgID));
+            msgStats.ublox[id] = createNewMsgStats(timeMs, descriptionUblox(msgClass, msgID));
         }
 
         {   // Update count and timestamps
@@ -164,7 +164,7 @@ void MessageStats::messageStatsAppend(const string& message, MessageStats::mul_s
     case _PTYPE_RTCM3:
         if (msgStats.rtcm3.find(id) == msgStats.rtcm3.end())
         {   // Create new 
-            msgStats.rtcm3[id] = createNewMsgStats(timeMs, messageStatsDescriptionRtcm3(id));
+            msgStats.rtcm3[id] = createNewMsgStats(timeMs, descriptionRtcm3(id));
         }
 
         {   // Update count and timestamps
@@ -202,11 +202,11 @@ void MessageStats::historyWrite(const std::string& message, int ptype, int id, i
     }
     history.push_back(message);
 
-    messageStatsAppend(message, stats, ptype, id, bytes, timeMs);
+    append(message, stats, ptype, id, bytes, timeMs);
     update = true;
 }
 
-string MessageStats::messageStatsSummary(MessageStats::mul_stats_t &msgStats)
+string MessageStats::summary(MessageStats::mul_stats_t &msgStats)
 {
     string str;
 #define BUF_SIZE 512
@@ -312,13 +312,13 @@ int MessageStats::processData(void* ctx, protocol_type_t ptype, packet_t *pkt, p
             p_data_t data;
             data.hdr = pkt->dataHdr;
             data.ptr = pkt->data.ptr;
-            summaryISB(&data);
+            processISB(&data);
             break;
         }
 
-        case _PTYPE_NMEA:   summaryASCII(pkt->data.ptr, pkt->size); break;
-        case _PTYPE_UBLOX:  summaryUblox(pkt->data.ptr, pkt->size); break;
-        case _PTYPE_RTCM3:  summaryRTCM3(pkt->data.ptr, pkt->size); break;
+        case _PTYPE_NMEA:   processASCII(pkt->data.ptr, pkt->size); break;
+        case _PTYPE_UBLOX:  processUblox(pkt->data.ptr, pkt->size); break;
+        case _PTYPE_RTCM3:  processRTCM3(pkt->data.ptr, pkt->size); break;
 
         default:
             break;
@@ -353,7 +353,7 @@ int MessageStats::getCurrentTimeMs()
     return static_cast<int>(now_ms.count());
 }
 
-void MessageStats::summaryISB(p_data_t *data)
+void MessageStats::processISB(p_data_t *data)
 {
     char buf[256];
     snprintf(buf, sizeof(buf), "IS-DID %2d, size %3d, ", data->hdr.id, data->hdr.size);
@@ -386,7 +386,7 @@ void MessageStats::summaryISB(p_data_t *data)
     historyWrite(str, _PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, ISB_HDR_TO_PACKET_SIZE(data->hdr), getCurrentTimeMs());
 }
 
-void MessageStats::summaryASCII(const uint8_t *msg, int msgSize)
+void MessageStats::processASCII(const uint8_t *msg, int msgSize)
 {
     std::string s;
     for (int i = 0; i < msgSize; i++)
@@ -410,26 +410,26 @@ void MessageStats::summaryASCII(const uint8_t *msg, int msgSize)
     historyWrite(str, _PTYPE_NMEA, id, msgSize, getCurrentTimeMs());
 }
 
-void MessageStats::summaryUblox(const uint8_t* msg, int msgSize)
+void MessageStats::processUblox(const uint8_t* msg, int msgSize)
 {
     uint8_t msgClass = msg[2];
     uint8_t msgID = msg[3];
     char buf[64];
     snprintf(buf, sizeof(buf), "(0x%02x 0x%02x) UBX", msgClass, msgID);
     std::string strIDs = buf;
-    std::string str = getCurrentTimeString() + strIDs + messageStatsDescriptionUblox(msgClass, msgID) + "\n";
+    std::string str = getCurrentTimeString() + strIDs + descriptionUblox(msgClass, msgID) + "\n";
     int id = *((uint16_t*)(&msg[2]));
 
     historyWrite(str, _PTYPE_UBLOX, id, msgSize, getCurrentTimeMs());
 }
 
-void MessageStats::summaryRTCM3(const uint8_t* msg, int msgSize)
+void MessageStats::processRTCM3(const uint8_t* msg, int msgSize)
 {
     int id = RTCM3_MSG_ID(msg);
     char buf[64];
     snprintf(buf, sizeof(buf), "RTCM3: %d ", id);
     std::string strID = buf;
-    std::string str = getCurrentTimeString() + strID + messageStatsDescriptionRtcm3(id) + "\n";
+    std::string str = getCurrentTimeString() + strID + descriptionRtcm3(id) + "\n";
 
     historyWrite(str, _PTYPE_RTCM3, id, msgSize, getCurrentTimeMs());
 }

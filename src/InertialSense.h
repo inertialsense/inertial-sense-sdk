@@ -587,8 +587,8 @@ public:
      */
     bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
 
-    std::string ServerMessageStatsSummary() { return MessageStats::messageStatsSummary(m_serverMessageStats); }
-    std::string ClientMessageStatsSummary() { return MessageStats::messageStatsSummary(m_clientMessageStats); }
+    std::string ServerMessageStatsSummary() { return MessageStats::summary(m_serverMessageStats); }
+    std::string ClientMessageStatsSummary() { return MessageStats::summary(m_clientMessageStats); }
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
