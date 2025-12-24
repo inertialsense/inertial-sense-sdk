@@ -243,7 +243,7 @@ public:
     }
 
     /**
-     * Specifies an handler for protocol messages, which will be called when any message is successfully parsed. This 
+     * Specifies a handler for protocol messages, which will be called when any message is successfully parsed. This 
      * function will return the previously registered handler. It is the callers responsibility to restore the previous 
      * handler, when this handler is no longer required.
      * @param cbHandler a function pointer or lambda function which will be called when any Data packet is received

@@ -303,6 +303,8 @@ string MessageStats::summary(MessageStats::mul_stats_t &msgStats)
 
 int MessageStats::processData(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
+    (void)ctx; // ctx is currently unused but kept for interface compatibility
+    
     switch( ptype )
     {
         case _PTYPE_INERTIAL_SENSE_DATA:
@@ -359,29 +361,28 @@ void MessageStats::processISB(p_data_t *data)
     snprintf(buf, sizeof(buf), "IS-DID %2d, size %3d, ", data->hdr.id, data->hdr.size);
     std::string strID = buf;
     
-    std::string strDecription;
+    std::string strDescription;
     if (data->hdr.id == DID_DEBUG_STRING)
     {
-        int n = (data->hdr.size < DEBUG_STRING_SIZE - 1) ? data->hdr.size : (DEBUG_STRING_SIZE - 1);    // Ensure null termination
-        data->ptr[n] = 0;
-        strDecription = std::string((char*)data->ptr);
+        int n = (data->hdr.size < DEBUG_STRING_SIZE - 1) ? data->hdr.size : (DEBUG_STRING_SIZE - 1);    // Limit number of bytes copied
+        strDescription = std::string((const char*)data->ptr, static_cast<size_t>(n));
     }
     else if (data->hdr.id == DID_DIAGNOSTIC_MESSAGE)
     {
-        strDecription = std::string(((diag_msg_t*)data->ptr)->message);
+        strDescription = std::string(((diag_msg_t*)data->ptr)->message);
         // Trim whitespace
-        size_t start = strDecription.find_first_not_of(" \t\n\r");
-        size_t end = strDecription.find_last_not_of(" \t\n\r");
+        size_t start = strDescription.find_first_not_of(" \t\n\r");
+        size_t end = strDescription.find_last_not_of(" \t\n\r");
         if (start != std::string::npos && end != std::string::npos)
-            strDecription = strDecription.substr(start, end - start + 1);
+            strDescription = strDescription.substr(start, end - start + 1);
         else if (start == std::string::npos)
-            strDecription = "";
+            strDescription = "";
     }
     else
     {
-        strDecription = std::string(cISDataMappings::DataName(data->hdr.id));
+        strDescription = std::string(cISDataMappings::DataName(data->hdr.id));
     }
-    std::string str = getCurrentTimeString() + strID + strDecription + "\n";
+    std::string str = getCurrentTimeString() + strID + strDescription + "\n";
 
     historyWrite(str, _PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, ISB_HDR_TO_PACKET_SIZE(data->hdr), getCurrentTimeMs());
 }
@@ -395,12 +396,17 @@ void MessageStats::processASCII(const uint8_t *msg, int msgSize)
     }
     std::string str = getCurrentTimeString() + s;
 
-    // Use first four characters before comma (e.g. PGGA in $GPGGA,...)
+    // Use a 4-character NMEA sentence identifier: the last four characters before the first comma
+    // (e.g. "PGGA" from "$GPGGA,..."). If there are fewer than 4 characters before the comma,
+    // fall back to the 4 characters starting after the '$'.
     int id = 0;
     const char* comma_pos = strchr((const char*)msg, ',');
     if (!comma_pos || (comma_pos - (const char*)msg) < 4)
     {   // Not enough characters before the first comma
-        memcpy(&id, msg+1, 4);
+        if (msgSize >= 5)
+        {
+            mmemcpy(&id, msg+1, 4);
+        }
     }
     else
     {
@@ -412,6 +418,11 @@ void MessageStats::processASCII(const uint8_t *msg, int msgSize)
 
 void MessageStats::processUblox(const uint8_t* msg, int msgSize)
 {
+    if (msg == nullptr || msgSize < 4)
+    {   // Not enough data to safely read UBX message class and ID
+        return; 
+    }
+
     uint8_t msgClass = msg[2];
     uint8_t msgID = msg[3];
     char buf[64];
