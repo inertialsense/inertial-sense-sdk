@@ -14,34 +14,96 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __GPS_STATS_H__
 
 #include <string>
+#include <map>
+#include <vector>
 
+#include "ISComm.h"
 
-typedef struct
+class MessageStats
 {
-    int count;
-    int timeMs;
-    int prevTimeMs;
-    int bytes;
-    unsigned int startTimeMs;
-    int bytesPerSec;
-    std::string description;
-} msg_stats_t;
+public:
+    // Nested types
+    struct stats_t
+    {
+        int count;
+        int timeMs;
+        int prevTimeMs;
+        int bytes;
+        unsigned int startTimeMs;
+        int bytesPerSec;
+        std::string description;
+    };
 
-typedef struct
-{
-    std::map<int, msg_stats_t> isb;
-    std::map<int, msg_stats_t> nmea;
-    std::map<int, msg_stats_t> ublox;
-    std::map<int, msg_stats_t> rtcm3;
-    msg_stats_t ack;
-    msg_stats_t parseError;
-} mul_msg_stats_t;
+    struct mul_stats_t
+    {
+        std::map<int, stats_t> isb;
+        std::map<int, stats_t> nmea;
+        std::map<int, stats_t> ublox;
+        std::map<int, stats_t> rtcm3;
+        stats_t ack;
+        stats_t parseError;
+    };
+    // Static functions (can be called without an instance)
+    static std::string messageStatsDescriptionUblox(uint8_t msgClass, uint8_t msgID);
+    static std::string messageStatsDescriptionRtcm3(int id);
+    static void messageStatsAppend(const std::string& message, mul_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs);
+    static std::string messageStatsSummary(mul_stats_t &msgStats);
+    
+    static inline std::string join(
+        const std::vector<std::string>& list,
+        const std::string& delim = "")
+    {
+        std::string result;
 
+        // Pre-compute size to avoid reallocations (important in hot paths)
+        size_t total = 0;
+        for (const auto& s : list)
+            total += s.size();
 
-std::string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID);
-std::string messageDescriptionRtcm3(int id);
-void messageStatsAppend(std::string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs);
-std::string messageStatsSummary(mul_msg_stats_t &msgStats);
+        if (!delim.empty() && list.size() > 1)
+            total += delim.size() * (list.size() - 1);
 
+        result.reserve(total);
+
+        for (size_t i = 0; i < list.size(); ++i)
+        {
+            if (i && !delim.empty())
+                result += delim;
+            result += list[i];
+        }
+
+        return result;
+    }
+
+    // Instance methods
+    void historyWrite(const std::string& message, int ptype, int id, int bytes, int timeMs);
+    int processData(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+    void summaryISB(p_data_t *data);
+    void summaryASCII(const uint8_t *msg, int msgSize);
+    void summaryUblox(const uint8_t* msg, int msgSize);
+    void summaryRTCM3(const uint8_t* msg, int msgSize);
+    void clear()
+    {
+        stats.isb.clear();
+        stats.nmea.clear();
+        stats.ublox.clear();
+        stats.rtcm3.clear();
+        history.clear();
+        historyPaused = false;
+        update = false;
+    }
+
+    std::vector<std::string>    history;
+    bool                        historyPaused;
+    mul_stats_t                 stats = {};
+    bool                        update;
+
+private:
+    // Private helper functions
+    static stats_t createNewMsgStats(int timeMs, const std::string& description = "");
+    static void updateTimeMs(stats_t &s, int timeMs, int bytes);
+    static std::string getCurrentTimeString();
+    static int getCurrentTimeMs();
+};
 
 #endif // __GPS_STATS_H__

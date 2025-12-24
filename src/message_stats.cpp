@@ -11,6 +11,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <map>
+#include <chrono>
+#include <ctime>
 
 #include "ISComm.h"
 #include "ISDataMappings.h"
@@ -19,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID)
+string MessageStats::messageStatsDescriptionUblox(uint8_t msgClass, uint8_t msgID)
 {
     string s;
     switch (msgClass)
@@ -49,7 +51,7 @@ string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID)
     return s;
 }
 
-string messageDescriptionRtcm3(int id)
+string MessageStats::messageStatsDescriptionRtcm3(int id)
 {
     // RTCM3 descriptions: https://www.use-snip.com/kb/knowledge-base/rtcm-3-message-list/
     switch (id)
@@ -87,15 +89,15 @@ string messageDescriptionRtcm3(int id)
     return "";
 }
 
-static msg_stats_t createNewMsgStats(int timeMs, string description = "")
+MessageStats::stats_t MessageStats::createNewMsgStats(int timeMs, const string& description)
 {
-    msg_stats_t s = {};
+    MessageStats::stats_t s = {};
     s.prevTimeMs = s.timeMs = timeMs;
     s.description = description;
     return s;
 }
 
-static void updateTimeMs(msg_stats_t &s, int timeMs, int bytes)
+void MessageStats::updateTimeMs(MessageStats::stats_t &s, int timeMs, int bytes)
 {
     s.count++;
     s.prevTimeMs = s.timeMs;
@@ -119,7 +121,7 @@ static void updateTimeMs(msg_stats_t &s, int timeMs, int bytes)
     }
 }
 
-void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs)
+void MessageStats::messageStatsAppend(const string& message, MessageStats::mul_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs)
 {
     switch (ptype)
     {
@@ -151,7 +153,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
         {   // Create new 
             uint8_t msgClass = (uint8_t)id;
             uint8_t msgID = (uint8_t)(id >> 8);
-            msgStats.ublox[id] = createNewMsgStats(timeMs, messageDescriptionUblox(msgClass, msgID));
+            msgStats.ublox[id] = createNewMsgStats(timeMs, messageStatsDescriptionUblox(msgClass, msgID));
         }
 
         {   // Update count and timestamps
@@ -162,11 +164,11 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
     case _PTYPE_RTCM3:
         if (msgStats.rtcm3.find(id) == msgStats.rtcm3.end())
         {   // Create new 
-            msgStats.rtcm3[id] = createNewMsgStats(timeMs, messageDescriptionRtcm3(id));
+            msgStats.rtcm3[id] = createNewMsgStats(timeMs, messageStatsDescriptionRtcm3(id));
         }
 
         {   // Update count and timestamps
-            msg_stats_t &s = msgStats.rtcm3[id];
+            MessageStats::stats_t &s = msgStats.rtcm3[id];
             updateTimeMs(s, timeMs, bytes);
 
             if (id == 1029)
@@ -191,7 +193,20 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
     }
 }
 
-string messageStatsSummary(mul_msg_stats_t &msgStats)
+void MessageStats::historyWrite(const std::string& message, int ptype, int id, int bytes, int timeMs)
+{
+    // Limit number of lines in history
+    while (history.size() > 300)
+    {
+        history.erase(history.begin());
+    }
+    history.push_back(message);
+
+    messageStatsAppend(message, stats, ptype, id, bytes, timeMs);
+    update = true;
+}
+
+string MessageStats::messageStatsSummary(MessageStats::mul_stats_t &msgStats)
 {
     string str;
 #define BUF_SIZE 512
@@ -201,11 +216,10 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
     {
         str.append("Inertial Sense Binary: __________________\n");
         str.append(" DID   Count  dtMs   Bps  Description\n");
-        std::map<int, msg_stats_t>::iterator it;
-        for (it = msgStats.isb.begin(); it != msgStats.isb.end(); it++)
+        for (auto it = msgStats.isb.begin(); it != msgStats.isb.end(); it++)
         {
             int did = it->first;
-            msg_stats_t &s = it->second;
+            MessageStats::stats_t &s = it->second;
             int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 
             SNPRINTF(buf, BUF_SIZE, "%4d %7d %5d %5d  %s\n", did, s.count, dtMs, s.bytesPerSec, s.description.c_str());
@@ -217,10 +231,9 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
     {
         str.append("NMEA: __________________________________\n");
         str.append("  ID   Count  dtMs   Bps  Description\n");
-        std::map<int, msg_stats_t>::iterator it;
-        for (it = msgStats.nmea.begin(); it != msgStats.nmea.end(); it++)
+        for (auto it = msgStats.nmea.begin(); it != msgStats.nmea.end(); it++)
         {
-            msg_stats_t &s = it->second;
+            MessageStats::stats_t &s = it->second;
             int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
             union
             {
@@ -237,11 +250,10 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
     {
         str.append("Ublox: __________________________________\n");
         str.append("(Class  ID)   Count  dtMs   Bps  Description\n");
-        std::map<int, msg_stats_t>::iterator it;
-        for (it = msgStats.ublox.begin(); it != msgStats.ublox.end(); it++)
+        for (auto it = msgStats.ublox.begin(); it != msgStats.ublox.end(); it++)
         {
             int id = it->first;
-            msg_stats_t &s = it->second;
+            MessageStats::stats_t &s = it->second;
             uint8_t msgClass = (uint8_t)id;
             uint8_t msgID = (uint8_t)(id >> 8);
             int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
@@ -254,11 +266,10 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
     {
         str.append("RTCM3: __________________________________\n");
         str.append("  ID   Count  dtMs   Bps  Description\n");
-        std::map<int, msg_stats_t>::iterator it;
-        for (it = msgStats.rtcm3.begin(); it != msgStats.rtcm3.end(); it++)
+        for (auto it = msgStats.rtcm3.begin(); it != msgStats.rtcm3.end(); it++)
         {
             int id = it->first;
-            msg_stats_t &s = it->second;
+            MessageStats::stats_t &s = it->second;
             int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
             SNPRINTF(buf, BUF_SIZE, "%3d %7d %5d %5d  %s\n", id, s.count, dtMs, s.bytesPerSec, s.description.c_str());
             str.append(string(buf));
@@ -269,7 +280,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
     {
         str.append("Acknowledge: ____________________________\n");
         str.append("   Count  dtMs   Bps\n");
-        msg_stats_t &s = msgStats.ack;
+        MessageStats::stats_t &s = msgStats.ack;
         int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
         SNPRINTF(buf, BUF_SIZE, "%8d %5d %5d\n", s.count, dtMs, s.bytesPerSec);
         str.append(string(buf));
@@ -280,11 +291,145 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
     {
         str.append("Parse Error: ____________________________\n");
         str.append("   Count   dtMs   Bps\n");
-        msg_stats_t &s = msgStats.parseError;
+        MessageStats::stats_t &s = msgStats.parseError;
         int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
         SNPRINTF(buf, BUF_SIZE, "%8d %5d\n", s.count, dtMs, s.bytesPerSec);
         str.append(string(buf));
     }
 #endif
     return str;
+}
+
+
+int MessageStats::processData(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
+{
+    switch( ptype )
+    {
+        case _PTYPE_INERTIAL_SENSE_DATA:
+        case _PTYPE_INERTIAL_SENSE_CMD:
+        case _PTYPE_INERTIAL_SENSE_ACK:
+        {
+            p_data_t data;
+            data.hdr = pkt->dataHdr;
+            data.ptr = pkt->data.ptr;
+            summaryISB(&data);
+            break;
+        }
+
+        case _PTYPE_NMEA:   summaryASCII(pkt->data.ptr, pkt->size); break;
+        case _PTYPE_UBLOX:  summaryUblox(pkt->data.ptr, pkt->size); break;
+        case _PTYPE_RTCM3:  summaryRTCM3(pkt->data.ptr, pkt->size); break;
+
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+std::string MessageStats::getCurrentTimeString()
+{
+    auto now = std::chrono::system_clock::now();
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    
+    std::tm tm;
+#ifdef _WIN32
+    localtime_s(&tm, &now_time_t);
+#else
+    localtime_r(&now_time_t, &tm);
+#endif
+    
+    char buf[32];
+    snprintf(buf, sizeof(buf), "[%02d:%02d:%02d.%03d] ", 
+             tm.tm_hour, tm.tm_min, tm.tm_sec, (int)now_ms.count());
+    return std::string(buf);
+}
+
+int MessageStats::getCurrentTimeMs()
+{
+    auto now = std::chrono::system_clock::now();
+    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+    return static_cast<int>(now_ms.count());
+}
+
+void MessageStats::summaryISB(p_data_t *data)
+{
+    char buf[256];
+    snprintf(buf, sizeof(buf), "IS-DID %2d, size %3d, ", data->hdr.id, data->hdr.size);
+    std::string strID = buf;
+    
+    std::string strDecription;
+    if (data->hdr.id == DID_DEBUG_STRING)
+    {
+        int n = (data->hdr.size < DEBUG_STRING_SIZE - 1) ? data->hdr.size : (DEBUG_STRING_SIZE - 1);    // Ensure null termination
+        data->ptr[n] = 0;
+        strDecription = std::string((char*)data->ptr);
+    }
+    else if (data->hdr.id == DID_DIAGNOSTIC_MESSAGE)
+    {
+        strDecription = std::string(((diag_msg_t*)data->ptr)->message);
+        // Trim whitespace
+        size_t start = strDecription.find_first_not_of(" \t\n\r");
+        size_t end = strDecription.find_last_not_of(" \t\n\r");
+        if (start != std::string::npos && end != std::string::npos)
+            strDecription = strDecription.substr(start, end - start + 1);
+        else if (start == std::string::npos)
+            strDecription = "";
+    }
+    else
+    {
+        strDecription = std::string(cISDataMappings::DataName(data->hdr.id));
+    }
+    std::string str = getCurrentTimeString() + strID + strDecription + "\n";
+
+    historyWrite(str, _PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, ISB_HDR_TO_PACKET_SIZE(data->hdr), getCurrentTimeMs());
+}
+
+void MessageStats::summaryASCII(const uint8_t *msg, int msgSize)
+{
+    std::string s;
+    for (int i = 0; i < msgSize; i++)
+    {
+        s += msg[i];
+    }
+    std::string str = getCurrentTimeString() + s;
+
+    // Use first four characters before comma (e.g. PGGA in $GPGGA,...)
+    int id = 0;
+    const char* comma_pos = strchr((const char*)msg, ',');
+    if (!comma_pos || (comma_pos - (const char*)msg) < 4)
+    {   // Not enough characters before the first comma
+        memcpy(&id, msg+1, 4);
+    }
+    else
+    {
+        memcpy(&id, comma_pos-4, 4);
+    }
+
+    historyWrite(str, _PTYPE_NMEA, id, msgSize, getCurrentTimeMs());
+}
+
+void MessageStats::summaryUblox(const uint8_t* msg, int msgSize)
+{
+    uint8_t msgClass = msg[2];
+    uint8_t msgID = msg[3];
+    char buf[64];
+    snprintf(buf, sizeof(buf), "(0x%02x 0x%02x) UBX", msgClass, msgID);
+    std::string strIDs = buf;
+    std::string str = getCurrentTimeString() + strIDs + messageStatsDescriptionUblox(msgClass, msgID) + "\n";
+    int id = *((uint16_t*)(&msg[2]));
+
+    historyWrite(str, _PTYPE_UBLOX, id, msgSize, getCurrentTimeMs());
+}
+
+void MessageStats::summaryRTCM3(const uint8_t* msg, int msgSize)
+{
+    int id = RTCM3_MSG_ID(msg);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "RTCM3: %d ", id);
+    std::string strID = buf;
+    std::string str = getCurrentTimeString() + strID + messageStatsDescriptionRtcm3(id) + "\n";
+
+    historyWrite(str, _PTYPE_RTCM3, id, msgSize, getCurrentTimeMs());
 }

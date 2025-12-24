@@ -587,8 +587,8 @@ public:
      */
     bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
 
-    std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
-    std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
+    std::string ServerMessageStatsSummary() { return MessageStats::messageStatsSummary(m_serverMessageStats); }
+    std::string ClientMessageStatsSummary() { return MessageStats::messageStatsSummary(m_clientMessageStats); }
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
@@ -661,13 +661,13 @@ private:
     uint64_t m_clientServerByteCount;
     int m_clientConnectionsCurrent = 0;
     int m_clientConnectionsTotal = 0;
-    mul_msg_stats_t m_clientMessageStats = {};
+    MessageStats::mul_stats_t m_clientMessageStats = {};
 
     int m_baudRate = IS_BAUDRATE_DEFAULT;
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
 
-    mul_msg_stats_t m_serverMessageStats = {};
+    MessageStats::mul_stats_t m_serverMessageStats = {};
 
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 
