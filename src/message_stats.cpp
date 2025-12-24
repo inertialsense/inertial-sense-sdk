@@ -405,7 +405,7 @@ void MessageStats::processASCII(const uint8_t *msg, int msgSize)
     {   // Not enough characters before the first comma
         if (msgSize >= 5)
         {
-            mmemcpy(&id, msg+1, 4);
+            memcpy(&id, msg+1, 4);
         }
     }
     else
