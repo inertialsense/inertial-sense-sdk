@@ -304,6 +304,7 @@ string MessageStats::summary(MessageStats::mul_stats_t &msgStats)
 int MessageStats::processData(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
     (void)ctx; // ctx is currently unused but kept for interface compatibility
+    (void)ctx; // ctx is currently unused but kept for interface compatibility
     
     switch( ptype )
     {
