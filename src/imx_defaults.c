@@ -154,8 +154,8 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
         break;
 
     case PLATFORM_CFG_TYPE_IG2:
-    case PLATFORM_CFG_TYPE_TBED3:
     case PLATFORM_CFG_TYPE_TBED3_0:
+    case PLATFORM_CFG_TYPE_TBED3:
         SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
         SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
         SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_GPX);
