@@ -2078,9 +2078,9 @@ class logPlot:
             if len(gps_data) == 0:
                 continue
             
-            Nf = len(self.log.data[0, relDid][0][0]['P'][0])
+            Nf = len(gps_data[0]['P'][0])
             Nsat = 30                                           # predicted number of satellites in the log
-            Nt = round(len(self.log.data[0, relDid][0]) * 0.6)  # predicted number of time stamps in the log (usually 2 data frames per each time stamp)
+            Nt = round(len(gps_data) * 0.6)  # predicted number of time stamps in the log (usually 2 data frames per each time stamp)
             t   = np.empty(Nt, dtype=float)
             sat = np.empty(Nsat, dtype=int)
             P   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)

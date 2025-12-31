@@ -336,10 +336,10 @@ public:
     std::vector<std::pair<device_handle_t, std::string>> getUpgradableDevices(const std::string& firmwarePath);
 
 protected:
-    void portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port);
+    void portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port, PortFactory& factory);
 
     DeviceManager() {
-        PortManager::getInstance().addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4) { portHandler(PH1, PH2, PH3, PH4); });
+        PortManager::getInstance().addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4, auto && PH5) { portHandler(PH1, PH2, PH3, PH4, PH5); });
     };
 
     ~DeviceManager()  = default;

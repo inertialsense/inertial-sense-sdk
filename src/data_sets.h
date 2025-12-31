@@ -64,7 +64,7 @@ typedef uint32_t eDataIDs;
 #define DID_SENSORS_UCAL                (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
 #define DID_SENSORS_TCAL                (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
-#define DID_UNUSED_27                   (eDataIDs)27 /** UNUSED */
+#define DID_GPS2_TIMEPULSE              (eDataIDs)27 /** (gps_timepulse_t) GPS2 PPS time synchronization. */
 #define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SCOMP                       (eDataIDs)29 /** INTERNAL USE ONLY (sensor_compensation_t) */
 #define DID_GPS1_VEL                    (eDataIDs)30 /** (gps_vel_t) GPS 1 velocity data */
@@ -193,9 +193,9 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE    2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
-// Max number of devices across all hardware types: uINS-3, uINS-4, and IMX-5
-#define NUM_IMU_DEVICES     3        // g_numImuDevices defines the actual number of hardware specific devices
-#define NUM_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
+// Max number of devices across all hardware types: uINS-3, uINS-4, IMX-5, and IMX-6
+#define MAX_IMU_DEVICES     5        // g_numImuDevices defines the actual number of hardware specific devices
+#define MAX_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
 
 /** INS status flags */
 enum eInsStatusFlags
@@ -1557,7 +1557,8 @@ enum eGenFaultCodes
     GFC_SYS_FAULT_CRITICAL                  = 0x00020000,
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION                   = 0x00040000,
-
+    /*! INS extended kalman filter states invalid and the EKF was reset */
+    GFC_EKF_STATES_INVALID                  = 0x00080000,
     /*! Fault: IMU initialization */
     GFC_INIT_IMU                            = 0x00100000,
     /*! Fault: Barometer initialization */
@@ -1574,6 +1575,8 @@ enum eGenFaultCodes
     GFC_GNSS_RECEIVER_TIME                  = 0x04000000,
     /*! Fault: GNSS reciever ceneral fault. See the corresponding GPS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK) */
     GFC_GNSS_GENERAL_FAULT                  = 0x08000000,
+    /*! Fault: Invalid IMU input rejected by EKF */
+    GFC_EKF_INPUT_INVALID_IMU               = 0x10000000,
 
     /*! IMX GFC flags that relate to GPX status flags */
     GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,
@@ -1637,9 +1640,11 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
     SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
-    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967287)
-    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967287)
-    
+    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967234)
+    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967233)
+
+    SYS_CMD_RESET_EKF_STATES                            = 70,           // (uint32 inv: 4294967226) // Resets the Extended Kalman Filter (EKF) states in the INS solution. Use to reinitialize navigation filter without a full system reset.
+
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
@@ -1744,9 +1749,9 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
-    double                  time;                                       // Units only apply for calibrated data
+    double                  time;       // Units only apply for calibrated data
 
-    sensors_mpu_t           mpu[NUM_IMU_DEVICES];
+    sensors_mpu_t           mpu[MAX_IMU_DEVICES];
 } sensors_t;
 
 typedef struct PACKED
@@ -1757,13 +1762,13 @@ typedef struct PACKED
 // (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
 typedef struct PACKED
 {
-    imu3_t                    imu3;
+    imu3_t                  imu3;
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    float                        temp[NUM_IMU_DEVICES];
+    float                   temp[MAX_IMU_DEVICES];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
-    mag_xyz_t                mag[NUM_MAG_DEVICES];
+    mag_xyz_t               mag[MAX_MAG_DEVICES];
 } sensors_w_temp_t;
 
 typedef struct PACKED
@@ -1782,9 +1787,9 @@ typedef struct PACKED
 typedef struct PACKED
 {                                                   // Sensor temperature compensation
     uint32_t                timeMs;                 // (ms) Time since boot up.
-    sensor_comp_unit_t      pqr[NUM_IMU_DEVICES];
-    sensor_comp_unit_t      acc[NUM_IMU_DEVICES];
-    sensor_comp_unit_t      mag[NUM_MAG_DEVICES];
+    sensor_comp_unit_t      pqr[MAX_IMU_DEVICES];
+    sensor_comp_unit_t      acc[MAX_IMU_DEVICES];
+    sensor_comp_unit_t      mag[MAX_MAG_DEVICES];
     imus_t                  referenceImu;            // External reference IMU
     float                   referenceMag[3];        // External reference magnetometer (heading reference)
     uint32_t                sampleCount;            // Number of samples collected
@@ -1794,11 +1799,13 @@ typedef struct PACKED
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS    4
+
+/** (DID_SENSORS_ADC) INTERNAL USE ONLY */
 typedef struct PACKED
 {                                                   // LSB units for all except temperature, which is Celsius.
     double                  time;
-    sensors_imu_w_temp_t    imu[NUM_IMU_DEVICES];
-    sensors_mag_t           mag[NUM_MAG_DEVICES];   // Magnetometers
+    sensors_imu_w_temp_t    imu[MAX_IMU_DEVICES];
+    sensors_mag_t           mag[MAX_MAG_DEVICES];   // Magnetometers
     float                   bar;                    // Barometric pressure
     float                   barTemp;                // Temperature of barometric pressure sensor
     float                   humidity;               // Relative humidity as a percent (%rH).  Range is 0% - 100%
@@ -1830,15 +1837,19 @@ typedef struct PACKED
     this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs.
 */
 
-#define RMC_OPTIONS_PORT_MASK           0x000000FF
-#define RMC_OPTIONS_PORT_ALL            (RMC_OPTIONS_PORT_MASK)
-#define RMC_OPTIONS_PORT_CURRENT        0x00000000
-#define RMC_OPTIONS_PORT_SER0           0x00000001
-#define RMC_OPTIONS_PORT_SER1           0x00000002    // also SPI
-#define RMC_OPTIONS_PORT_SER2           0x00000004
-#define RMC_OPTIONS_PORT_USB            0x00000008
-#define RMC_OPTIONS_PRESERVE_CTRL       0x00000100    // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_PERSISTENT          0x00000200    // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+#define RMC_OPTIONS_PORT_MASK                   0x000000FF
+#define RMC_OPTIONS_PORT_ALL                    (RMC_OPTIONS_PORT_MASK)
+#define RMC_OPTIONS_PORT_CURRENT                0x00000000
+#define RMC_OPTIONS_PORT_SER0                   0x00000001
+#define RMC_OPTIONS_PORT_SER1                   0x00000002      // also SPI
+#define RMC_OPTIONS_PORT_SER2                   0x00000004
+#define RMC_OPTIONS_PORT_USB                    0x00000008
+#define RMC_OPTIONS_PRESERVE_CTRL               0x00000100      // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+#define RMC_OPTIONS_PERSISTENT                  0x00000200      // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK   0x00000C00      // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET    10              // Bit offset for NMEA speed filter options
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    1               // NMEA speed filtering: Enable  
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE   2               // NMEA speed filtering: Disable 
 
                                                                 // RMC message data rates:
 #define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)
@@ -2668,7 +2679,7 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    imus_acc_t              dev[NUM_IMU_DEVICES];
+    imus_acc_t              dev[MAX_IMU_DEVICES];
 
     float                    yaw;        // (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
 } infield_cal_direction_t;
@@ -2692,7 +2703,7 @@ typedef struct PACKED
     uint32_t                sampleTimeMs;
 
     /** Dual purpose variable.  1.) This is the averaged IMU sample when sampleTimeMs != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleTimeMs = 0. */ 
-    imus_t                  imu[NUM_IMU_DEVICES];
+    imus_t                  imu[MAX_IMU_DEVICES];
 
     /** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
     infield_cal_vaxis_t     calData[3];
@@ -3300,7 +3311,7 @@ enum eIoConfig2
     IO_CFG2_GNSS2_PPS_SOURCE_G13_val        = (int)0xC0,
 };
 
-#define IO_CFG_GNSS2_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG2_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG2_GNSS2_PPS_SOURCE_MASK)
+#define IO_CFG2_GNSS2_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG2_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG2_GNSS2_PPS_SOURCE_MASK)
 
 enum ePlatformConfig
 {
@@ -4536,7 +4547,7 @@ typedef struct PACKED
     uGpsRawData data;
 } gps_raw_t;
 
-// (DID_GPS1_TIMEPULSE)
+// (DID_GPS1_TIMEPULSE, DID_GPS2_TIMEPULSE)
 typedef struct
 {
     /*! (s)    Week seconds offset from MCU to GPS time. */

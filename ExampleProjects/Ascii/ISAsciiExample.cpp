@@ -48,14 +48,14 @@ int main(int argc, char* argv[])
 
     // STEP 3: Enable prior message broadcasting
     // Stop all broadcasts on the device on all ports.  We don't want binary message coming through while we are doing ASCII
-    if (!serialPortWriteAscii(&serialPort, "STPB", 4))
+    if (!portWriteAscii(&serialPort, "STPB", 4))
     {
         printf("Failed to encode stop broadcasts message\r\n");
         return -3;
     }
 #if 0
     // Query device version information
-    if (!serialPortWriteAscii(&serialPort, "INFO", 4))
+    if (!portWriteAscii(&serialPort, "INFO", 4))
     {
         printf("Failed to encode stop broadcasts message\r\n");
         return -3;
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 
     // ASCII protocol is based on NMEA protocol https://en.wikipedia.org/wiki/NMEA_0183
     // turn on the INS message at a period of 100 milliseconds (10 hz)
-    // serialPortWriteAscii takes care of the leading $ character, checksum and ending \r\n newline
+    // portWriteAscii takes care of the leading $ character, checksum and ending \r\n newline
     // ASCE message enables ASCII broadcasts
     // ASCE fields: 1:options, ID0, Period0, ID1, Period1, ........ ID19, Period19
     // IDs:
@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 
     
 
-    if (!serialPortWriteAscii(&serialPort, asciiMessage, (int)strnlen(asciiMessage, 128)))
+    if (!portWriteAscii(&serialPort, asciiMessage, (int)strnlen(asciiMessage, 128)))
     {
         printf("Failed to encode ASCII get INS message\r\n");
         return -4;
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 
 #if 0
     // STEP 5: (optional) Save Persistent Messages.  This remembers the current communications and automatically streams data following reboot.
-    if (!serialPortWriteAscii(&serialPort, "PERS", 4))
+    if (!portWriteAscii(&serialPort, "PERS", 4))
     {
         printf("Failed to encode ASCII save persistent message\r\n");
         return -4;

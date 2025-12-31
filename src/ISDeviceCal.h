@@ -15,12 +15,11 @@
 
 #include <string>
 #include <vector>
-#include "../../cpp/libs/families/imx/IS_internal.h"
+#include "IS_calibration.h"
 #include "json.hpp"
 
 #define NUM_POSES                           18
 #define NUM_RATES_PER_POSE                  3       // rates per pose, each stage has a rate
-// #define NUM_RATES_PER_POSE                  5       // rates per pose, each stage has a rate
 #define NUM_HEADINGS_PER_POSE               8       // headings per pose, each stage has a rate
 #define NUM_PQR_SAMPLES                     (NUM_POSES*NUM_RATES_PER_POSE)
 #define NUM_HDG_SAMPLES                     (NUM_POSES*NUM_HEADINGS_PER_POSE)
@@ -129,29 +128,22 @@ struct sCalData
     }
 };
 
-// struct sMpuCalDataPtr
-// {
-//     sCalData *gyr;
-//     sCalData *acc; 
-//     sCalData *mag;
-// };
-
 struct sOrthoCal
 {
-    sCalData gyr[NUM_IMU_DEVICES];
-    sCalData acc[NUM_IMU_DEVICES];
-    sCalData mag[NUM_MAG_DEVICES];
+    sCalData gyr[MAX_IMU_DEVICES];
+    sCalData acc[MAX_IMU_DEVICES];
+    sCalData mag[MAX_MAG_DEVICES];
 
     sOrthoCal()
     {
-        for (int d = 0; d < NUM_IMU_DEVICES; d++)
+        for (int d = 0; d < MAX_IMU_DEVICES; d++)
         {
             gyr[d].resize(NUM_PQR_SAMPLES);
             gyr[d].zero();
             acc[d].resize(NUM_POSES);
             acc[d].zero();
         }
-        for (int d = 0; d < NUM_MAG_DEVICES; d++)
+        for (int d = 0; d < MAX_MAG_DEVICES; d++)
         {
             mag[d].resize(NUM_HDG_SAMPLES);
             mag[d].zero();
@@ -180,7 +172,7 @@ public:
      * @param pose Pointer to current pose value (can be NULL)
      * @return true if calibration was successfully loaded, false otherwise
      */
-    static bool loadCalibrationFromJSON(const std::string& filePath, 
+    static bool loadCalibrationFromJsonObj(const std::string& filePath, 
                                        sOrthoCal *ocal, 
                                        sensor_cal_info_t *info = NULL, 
                                        sensor_data_info_t *dinfo = NULL,
@@ -199,7 +191,7 @@ public:
      * @param pose Current pose value (default -1)
      * @return true if calibration was successfully saved, false otherwise
      */
-    static bool saveCalibrationToJSON(const std::string& filePath, 
+    static bool saveCalibrationToJsonObj(const std::string& filePath, 
                                      sOrthoCal* cal, 
                                      sensor_cal_info_t* info = NULL, 
                                      sensor_tcal_group_t* tcal = NULL, 
@@ -214,7 +206,7 @@ public:
      * @param ocal Pointer to orthonormalization calibration data (can be NULL)
      * @param mcal Pointer to motion calibration (can be NULL)
      */
-    static void loadMcFromJSON(const json& jCal, 
+    static void loadMcFromJsonObj(const json& jCal, 
                               int *pose, 
                               sOrthoCal *ocal, 
                               sensor_mcal_group_t *mcal);
@@ -228,7 +220,7 @@ public:
      * @param mcal Pointer to motion calibration (can be NULL)
      * @return JSON object containing the motion calibration data
      */
-    static json saveMcToJSON(const std::string& filePath, 
+    static json saveMcToJsonObj(const std::string& filePath, 
                                    int pose, 
                                    sOrthoCal *cal, 
                                    sensor_mcal_group_t *mcal);

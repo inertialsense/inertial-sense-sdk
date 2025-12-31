@@ -1614,7 +1614,7 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
     {   // Spacious format
         ss << "\n";
 #define SADC_WIDTH      5
-        for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
+        for (size_t i = 0; i < MAX_IMU_DEVICES; ++i)
         {
             auto &imu = sensorsADC.imu[i];
             ss << "\timu[" << i << "]: " << setprecision(0);
@@ -1622,7 +1622,7 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
             ss << "acc[" << setw(SADC_WIDTH) << imu.acc[0] << "," << setw(SADC_WIDTH) << imu.acc[1] << "," << setw(SADC_WIDTH) << imu.acc[2] << "], ";
             ss << "temp " << setprecision(3) << imu.temp << ",";
         }
-        for (size_t i = 0; i < NUM_MAG_DEVICES; ++i)
+        for (size_t i = 0; i < MAX_MAG_DEVICES; ++i)
         {
             auto &mag = sensorsADC.mag[i];
             ss << "mag[" << setw(SADC_WIDTH) << mag.mag[0] << "," << setw(SADC_WIDTH) << mag.mag[1] << "," << setw(SADC_WIDTH) << mag.mag[2] << "], ";
@@ -1631,7 +1631,7 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
     }
     else
     {
-        for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
+        for (size_t i = 0; i < MAX_IMU_DEVICES; ++i)
         {
             auto &imu = sensorsADC.imu[i];
             ss << "mpu[" << i << "]: " << setprecision(0);
@@ -1639,7 +1639,7 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
             ss << "acc[" << imu.acc[0] << "," << imu.acc[1] << "," << imu.acc[2] << "], ";
             ss << "temp " << setprecision(3) << imu.temp << ",";
         }
-        for (size_t i = 0; i < NUM_MAG_DEVICES; ++i)
+        for (size_t i = 0; i < MAX_MAG_DEVICES; ++i)
         {
             auto &mag = sensorsADC.mag[i];
             ss << "mag[" << mag.mag[0] << "," << mag.mag[1] << "," << mag.mag[2] << "], ";

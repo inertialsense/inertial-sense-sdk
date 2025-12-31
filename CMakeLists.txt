@@ -2,8 +2,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(InertialSenseSDK)
 
+# Define LINUX variable for use in this file
+if(UNIX AND NOT APPLE)
+	set(LINUX TRUE)
+endif()
+
 # set(CMAKE_FIND_DEBUG_MODE TRUE)
-if(NOT WIN32)
+if(LINUX)
 	find_package(UDev QUIET)	# try using find_package as a last resort (this seems to not exist on some platforms).
 	if (NOT UDEV_FOUND)
 		message(STATUS "`find_package` could not locate the libudev package. Trying again using 'pkg_check'.")
@@ -61,6 +66,13 @@ if(WIN32)
 	if(MSVC)
 		set_source_files_properties(${SOURCES_LIB_USB} PROPERTIES COMPILE_FLAGS "/wd5287")
 	endif()
+elseif(APPLE)
+	file(GLOB SOURCES_LIB_USB
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*darwin*"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*posix*"
+	)
 else()
 	file(GLOB SOURCES_LIB_USB
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
@@ -100,6 +112,12 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Add compile options that will propagate to targets linking against the SDK
+# Use INTERFACE to only affect dependent targets (since SDK headers have deprecated code)
+if(NOT WIN32)
+    target_compile_options(${PROJECT_NAME} INTERFACE -Wno-deprecated-declarations)
+endif()
+
 # Other settings
 if (WIN32)
     # yamlcpp needs to know it's a static lib.
@@ -123,7 +141,39 @@ if (WIN32)
 
     # We need to ensure windows static libs are found
     target_link_libraries(${PROJECT_NAME} Ws2_32.lib Iphlpapi.lib)
-else ()
+elseif(APPLE)
+    # macOS specific include dir
+    target_include_directories(${PROJECT_NAME} PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/Xcode
+			${UDEV_INCLUDE_DIRS}
+			${UDEV_LIB_INCLUDE}
+    )
+
+	add_custom_command(
+			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
+			COMMAND bash -c "scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			DEPENDS scripts/lib/version_tools.py
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+	add_custom_target(gen_files
+			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
+	)
+	add_dependencies(${PROJECT_NAME} gen_files)
+    set_source_files_properties(
+        src/libusb/libusb/core.c
+        PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable"
+    )
+
+    # macOS compiler flags
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
+
+    # Set macOS compiler linker flag
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+
+	# Link in macOS specific packages
+    target_link_libraries(${PROJECT_NAME} PUBLIC "$<LINK_LIBRARY:FRAMEWORK,Foundation>" "$<LINK_LIBRARY:FRAMEWORK,IOKit>" "$<LINK_LIBRARY:FRAMEWORK,Security>")
+elseif(LINUX)
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux

@@ -14,7 +14,8 @@
 // Define facility bitmasks. Use powers of 2 for unique bits.
 #define IS_LOG_FACILITY_NONE       0x0000                          // This facility is ALWAYS enabled (but still followed LOG_LEVEL)
 #define IS_LOG_PORT                0x0001
-#define IS_LOG_FWUPDATE            ((IS_LOG_PORT << 1))
+#define IS_LOG_ISCOMM              ((IS_LOG_PORT << 1))
+#define IS_LOG_FWUPDATE            ((IS_LOG_ISCOMM << 1))
 #define IS_LOG_ISDEVICE            ((IS_LOG_FWUPDATE << 1))
 #define IS_LOG_PORT_FACTORY        ((IS_LOG_ISDEVICE << 1))
 #define IS_LOG_PORT_MANAGER        ((IS_LOG_PORT_FACTORY << 1))

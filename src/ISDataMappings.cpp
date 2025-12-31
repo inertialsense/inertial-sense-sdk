@@ -137,7 +137,7 @@ std::string renderVariableAndStatsToString(const data_info_t& info, std::any val
     } catch (std::bad_any_cast& e) {
     }
 
-    ss << " " << info.units[0];
+    if (!info.units.empty()) ss << " " << info.units[0];
     return ss.str();
 }
 
@@ -355,6 +355,7 @@ std::string renderGenFaultCode(const data_info_t& info, std::any value, int arra
         BIT_MSG(genFault, GFC_SYS_FAULT_GENERAL         , "0x00010000 - System Fault: general.");
         BIT_MSG(genFault, GFC_SYS_FAULT_CRITICAL        , "0x00020000 - System Fault: CRITICAL system fault (see DID_SYS_FAULT).");
         BIT_MSG(genFault, GFC_SENSOR_SATURATION         , "0x00040000 - Sensor(s) saturated.");
+        BIT_MSG(genFault, GFC_EKF_STATES_INVALID        , "0x00080000 - EKF states invalid.");
         BIT_MSG(genFault, GFC_INIT_IMU                  , "0x00100000 - Fault: IMU initialization.");
         BIT_MSG(genFault, GFC_INIT_BAROMETER            , "0x00200000 - Fault: Barometer initialization.");
         BIT_MSG(genFault, GFC_INIT_MAGNETOMETER         , "0x00400000 - Fault: Magnetometer initialization.");
@@ -363,6 +364,7 @@ std::string renderGenFaultCode(const data_info_t& info, std::any value, int arra
         BIT_MSG(genFault, GFC_EKF_GNSS_TIME_FAULT       , "0x02000000 - Fault: EKF GPS time fault.");
         BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GPS receiver time fault.");
         BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GPS status fault flags).");
+        BIT_MSG(genFault, GFC_EKF_INPUT_INVALID_IMU     , "0x10000000 - Fault: Invalid IMU input rejected by EKF.");
 
         return buff.str();
     } catch (std::bad_any_cast& e) {
@@ -772,7 +774,7 @@ static void PopulateMapGpsTimepulse(data_set_t data_set[DID_COUNT], uint32_t did
     mapper.AddMember("syncCount", &gps_timepulse_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
     mapper.AddMember("badPulseAgeCount", &gps_timepulse_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
     mapper.AddMember("ppsInterruptReinitCount", &gps_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GPS PPS interrupt re-initalization.");
-    mapper.AddMember("plsCount", &gps_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "");
+    mapper.AddMember("plsCount", &gps_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GPS PPS via GPIO, not interrupt.");
     mapper.AddMember("lastSyncTimeMs", &gps_timepulse_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
     mapper.AddMember("sinceLastSyncTimeMs", &gps_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
 }
@@ -842,7 +844,7 @@ static void PopulateMapInfieldCal(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("status", &infield_cal_t::status, DATA_TYPE_UINT32, "", "Infield cal status (see eInfieldCalStatus)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("sampleTimeMs", &infield_cal_t::sampleTimeMs, DATA_TYPE_UINT32, "ms", "Duration of IMU sample averaging. sampleTimeMs = 0 means \"imu\" member contains the IMU bias from flash.");
 
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("imu" + std::to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Sampled angular rate.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
         mapper.AddArray2("imu" + std::to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Sampled linear acceleration.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_4);
@@ -931,7 +933,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";              // Ser0 (x == 0x1)  0x000100
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRTKCfgBits;
     mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig2)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";
@@ -1517,13 +1519,13 @@ static void PopulateMapSensorsADC(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<sys_sensors_adc_t> mapper(data_set, did);
     mapper.AddMember("time", &sys_sensors_adc_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);    
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("imu" + to_string(i) + ".pqr",   i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].pqr), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
         mapper.AddArray2("imu" + to_string(i) + ".acc",   i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].acc), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
         mapper.AddMember2("imu" + to_string(i) + ".temp", i*sizeof(sensors_imu_w_temp_t) + offsetof(sys_sensors_adc_t, imu[0].temp), DATA_TYPE_F32, "LSB", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     }
-    for (int i=0; i<NUM_MAG_DEVICES; i++)
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
     {
         mapper.AddArray2("mag" + to_string(i) + ".mag", i*sizeof(sensors_mag_t) + offsetof(sys_sensors_adc_t, mag[0].mag), DATA_TYPE_F32, 3, {"LSB"}, {"Uncalibrated sensor output."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     }
@@ -1539,13 +1541,13 @@ static void PopulateMapSensorsWTemp(data_set_t data_set[DID_COUNT], uint32_t did
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2;
     mapper.AddMember2("imu3.time",   offsetof(sensors_w_temp_t, imu3.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember2("imu3.status", offsetof(sensors_w_temp_t, imu3.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
         mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Uncalibrated sensor output."}, flags);
     }
     mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, 3, {SYM_DEG_C}, {"Uncalibrated sensor output."}, flags);
-    for (int i=0; i<NUM_MAG_DEVICES; i++)
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
     {
         mapper.AddArray2("mag" + to_string(i) + ".xyz", i*sizeof(mag_xyz_t) + offsetof(sensors_w_temp_t, mag[0].xyz), DATA_TYPE_F32, 3, {""}, {"Uncalibrated sensor output."}, flags);
     }
@@ -1556,7 +1558,7 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<sensors_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GPS time of week (since Sunday morning).");
-    for (int i=0; i<NUM_IMU_DEVICES; i++)
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("pqr" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Temperature compensation bias"}, flags);
         mapper.AddArray2("acc" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Temperature compensation bias"}, flags);
@@ -1661,7 +1663,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_SENSORS_UCAL",                 // 24
     "DID_SENSORS_TCAL",                 // 25
     "DID_SENSORS_TC_BIAS",              // 26
-    "DID_UNUSED_27",                    // 27
+    "DID_GPS2_TIMEPULSE",               // 27
     "DID_SENSORS_ADC",                  // 28
     "DID_SCOMP",                        // 29
     "DID_GPS1_VEL",                     // 30
@@ -1836,6 +1838,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpsVersion(m_data_set, DID_GPS1_VERSION);
     PopulateMapGpsVersion(m_data_set, DID_GPS2_VERSION);
     PopulateMapGpsTimepulse(m_data_set, DID_GPS1_TIMEPULSE);
+    PopulateMapGpsTimepulse(m_data_set, DID_GPS2_TIMEPULSE);
 
     PopulateMapGpsRaw(m_data_set, DID_GPS1_RAW);
     PopulateMapGpsRaw(m_data_set, DID_GPS2_RAW);
@@ -2012,6 +2015,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_GPS1_VERSION:
     case DID_GPS2_VERSION:
     case DID_GPS1_TIMEPULSE:
+    case DID_GPS2_TIMEPULSE:
     case DID_SYS_SENSORS:
     case DID_SENSORS_ADC:
     case DID_SENSORS_ADC_SIGMA:
