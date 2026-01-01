@@ -34,7 +34,7 @@ public:
         PORT_REMOVED,
     };
 
-    typedef std::function<void(port_event_e, uint16_t, std::string, port_handle_t)> port_listener;
+    typedef std::function<void(port_event_e, uint16_t, std::string, port_handle_t, PortFactory& factory)> port_listener;
     typedef std::shared_ptr<port_listener> port_listener_handle_t;
 
     static PortManager& getInstance() {

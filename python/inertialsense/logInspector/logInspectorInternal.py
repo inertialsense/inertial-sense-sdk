@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
-from .logInspector import LogInspectorWindow
+try:
+    from .logInspector import LogInspectorWindow
+except ImportError:
+    # Fallback for direct script execution
+    from logInspector import LogInspectorWindow
 
 import subprocess
 import sys, os, signal, ctypes, yaml

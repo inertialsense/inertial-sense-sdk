@@ -36,17 +36,19 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
 
     *serialPort = {};
     serialPort->base.pnum = (uint16_t)PortManager::getInstance().getPortCount();
-    serialPort->base.ptype = (pType | PORT_TYPE__UART | PORT_TYPE__COMM | PORT_FLAG__VALID);
+    serialPort->base.ptype = (pType | PORT_TYPE__UART | PORT_TYPE__COMM);
     strncpy(serialPort->portName, pName.c_str(), pName.length());
 
     serialPortPlatformInit(port);
 
-    serialPort->base.portOpen = SerialPortFactory::open_port;
+    // serialPort->base.portOpen = SerialPortFactory::open_port;
     serialPort->base.portValidate = SerialPortFactory::validate_port;
     serialPort->pfnError = SerialPortFactory::onPortError;
 
     serialPort->baudRate = portOptions.defaultBaudRate;
     serialPort->blocking = portOptions.defaultBlocking;
+
+    portValidate(port);
 
     log_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
     return port;
@@ -67,7 +69,7 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 #if PLATFORM_IS_WINDOWS
     char targetPath[256];
     return (QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath)) != 0);
-#else   // Linux
+#elif PLATFORM_IS_LINUX
     return validate_port__linux(pType, pName);
 #endif
 }
@@ -192,7 +194,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
         }
     }
 
-#else   // Linux
+#elif PLATFORM_IS_LINUX
 
     struct dirent **namelist;
     std::vector<std::string> comList8250;

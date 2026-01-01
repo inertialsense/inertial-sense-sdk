@@ -22,7 +22,7 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device) : FirmwareUpdateHos
         // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
         // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
         portListenerHdl = PortManager::getInstance().addPortListener(
-                [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port) {
+                [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
                     if (event == PortManager::PORT_ADDED) {
                         DeviceManager::getInstance().discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
                     }
