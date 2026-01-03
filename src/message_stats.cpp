@@ -402,7 +402,7 @@ void MessageStats::processASCII(const uint8_t *msg, int msgSize)
     // fall back to the 4 characters starting after the '$'.
     int id = 0;
     const char* comma_pos = strchr((const char*)msg, ',');
-    if (!comma_pos || (comma_pos - (const char*)msg) < 4)
+    if (!comma_pos || (comma_pos - (const char*)msg) < 5)
     {   // Not enough characters before the first comma
         if (msgSize >= 5)
         {
