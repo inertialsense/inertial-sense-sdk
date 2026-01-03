@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISComm.h"
 #include "ISDataMappings.h"
+#include "ISUtilities.h"
 #include "message_stats.h"
 
 using namespace std;
@@ -349,13 +350,6 @@ std::string MessageStats::getCurrentTimeString()
     return std::string(buf);
 }
 
-int MessageStats::getCurrentTimeMs()
-{
-    auto now = std::chrono::system_clock::now();
-    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
-    return static_cast<int>(now_ms.count());
-}
-
 void MessageStats::processISB(p_data_t *data)
 {
     char buf[256];
@@ -385,7 +379,7 @@ void MessageStats::processISB(p_data_t *data)
     }
     std::string str = getCurrentTimeString() + strID + strDescription + "\n";
 
-    historyWrite(str, _PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, ISB_HDR_TO_PACKET_SIZE(data->hdr), getCurrentTimeMs());
+    historyWrite(str, _PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, ISB_HDR_TO_PACKET_SIZE(data->hdr), current_timeMs());
 }
 
 void MessageStats::processASCII(const uint8_t *msg, int msgSize)
@@ -414,7 +408,7 @@ void MessageStats::processASCII(const uint8_t *msg, int msgSize)
         memcpy(&id, comma_pos-4, 4);
     }
 
-    historyWrite(str, _PTYPE_NMEA, id, msgSize, getCurrentTimeMs());
+    historyWrite(str, _PTYPE_NMEA, id, msgSize, current_timeMs());
 }
 
 void MessageStats::processUblox(const uint8_t* msg, int msgSize)
@@ -432,7 +426,7 @@ void MessageStats::processUblox(const uint8_t* msg, int msgSize)
     std::string str = getCurrentTimeString() + strIDs + descriptionUblox(msgClass, msgID) + "\n";
     int id = *((uint16_t*)(&msg[2]));
 
-    historyWrite(str, _PTYPE_UBLOX, id, msgSize, getCurrentTimeMs());
+    historyWrite(str, _PTYPE_UBLOX, id, msgSize, current_timeMs());
 }
 
 void MessageStats::processRTCM3(const uint8_t* msg, int msgSize)
@@ -443,5 +437,5 @@ void MessageStats::processRTCM3(const uint8_t* msg, int msgSize)
     std::string strID = buf;
     std::string str = getCurrentTimeString() + strID + descriptionRtcm3(id) + "\n";
 
-    historyWrite(str, _PTYPE_RTCM3, id, msgSize, getCurrentTimeMs());
+    historyWrite(str, _PTYPE_RTCM3, id, msgSize, current_timeMs());
 }

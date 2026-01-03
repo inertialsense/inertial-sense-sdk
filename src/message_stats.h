@@ -47,32 +47,6 @@ public:
     static void append(const std::string& message, mul_stats_t &msgStats, unsigned int ptype, int id, int bytes, int timeMs);
     static std::string summary(mul_stats_t &msgStats);
     
-    static inline std::string join(
-        const std::vector<std::string>& list,
-        const std::string& delim = "")
-    {
-        std::string result;
-
-        // Pre-compute size to avoid reallocations (important in hot paths)
-        size_t total = 0;
-        for (const auto& s : list)
-            total += s.size();
-
-        if (!delim.empty() && list.size() > 1)
-            total += delim.size() * (list.size() - 1);
-
-        result.reserve(total);
-
-        for (size_t i = 0; i < list.size(); ++i)
-        {
-            if (i && !delim.empty())
-                result += delim;
-            result += list[i];
-        }
-
-        return result;
-    }
-
     // Instance methods
     int  processData(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     void processISB(p_data_t *data);
@@ -105,7 +79,6 @@ private:
     static stats_t createNewMsgStats(int timeMs, const std::string& description = "");
     static void updateTimeMs(stats_t &s, int timeMs, int bytes);
     static std::string getCurrentTimeString();
-    static int getCurrentTimeMs();
 };
 
 #endif // __GPS_STATS_H__
