@@ -1183,7 +1183,6 @@ void cltool_outputUsage()
     cout << "OPTIONS (Special)" << endl;
     cout << "    -cal-upload" << boldOff << "FILE_PATH      Upload calibration data from FILE_PATH file to the IMX." << endlbOn;
     cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
-    cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
     cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
     if (g_internal)
     {
