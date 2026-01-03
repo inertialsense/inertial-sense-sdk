@@ -56,7 +56,8 @@ int ISDevice::processNmeaMsgs(void* ctx, const unsigned char* msg, int msgSize, 
     return (device && device->port == port) ? device->onNmeaHandler(msg, msgSize, port) : -1;
 }
 
-int ISDevice::processPacket(void *ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port) {
+int ISDevice::processPacket(void *ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port) 
+{
     ISDevice* device = (ISDevice*)ctx;
     return (device && device->port == port) ? device->onPacketHandler(ptype, pkt, port) : -1;
 }
@@ -1395,7 +1396,7 @@ bool ISDevice::assignPort(port_handle_t newPort) {
         originalCbs = COMM_PORT(newPort)->comm.cb; // make a copy of the new port's original callbacks/context, which we'll restore when this device is destroyed
     }
 
-    defaultCbs.all = processPacket;
+    registerAllHandler(processPacket);
     registerIsbDataHandler(processIsbMsgs);
     // registerIsbAckDataHandler(processIsbAckMsgs);
     registerProtocolHandler(_PTYPE_NMEA, processNmeaMsgs);
@@ -1412,6 +1413,20 @@ bool ISDevice::assignPort(port_handle_t newPort) {
     return true;
 }
 
+pfnIsCommHandler ISDevice::registerAllHandler(pfnIsCommHandler cbHandler) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    pfnIsCommHandler oldHandler = defaultCbs.all;
+    defaultCbs.context = this;
+    defaultCbs.all = cbHandler;
+
+    if (port && (portType(port) & PORT_TYPE__COMM)) {
+        COMM_PORT(port)->comm.cb.context = this;
+        oldHandler = is_comm_register_all_handler(&COMM_PORT(port)->comm, cbHandler);
+    }
+
+    return oldHandler;
+}
 
 pfnIsCommIsbDataHandler ISDevice::registerIsbDataHandler(pfnIsCommIsbDataHandler cbHandler) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);

@@ -1928,6 +1928,7 @@ typedef struct PACKED
                                             | RMC_BITS_GPS_BASE_RAW \
                                             | RMC_BITS_GPS1_RTK_POS_REL \
                                             | RMC_BITS_GPS1_RTK_HDG_REL \
+                                            | RMC_BITS_GPX_STATUS \
                                             | RMC_BITS_INTERNAL_PPD \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
@@ -1950,7 +1951,6 @@ typedef struct PACKED
                                             | RMC_BITS_GPS1_SAT \
                                             | RMC_BITS_GPS2_SAT \
                                             | RMC_BITS_EVENT \
-                                            | RMC_BITS_GPX_STATUS \
                                             | RMC_BITS_GPX_RTK_DBG)
 #define RMC_PRESET_IMX_PPD_GROUND_VEHICLE   (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_WHEEL_ENCODER \

@@ -243,6 +243,15 @@ public:
     }
 
     /**
+     * Specifies a handler for protocol messages, which will be called when any message is successfully parsed. This 
+     * function will return the previously registered handler. It is the callers responsibility to restore the previous 
+     * handler, when this handler is no longer required.
+     * @param cbHandler a function pointer or lambda function which will be called when any Data packet is received
+     * @return the previously registered handler, if any.
+     */
+    pfnIsCommHandler registerAllHandler(pfnIsCommHandler cbHandler);
+
+    /**
      * Specifies an alternate handler for Inertial Sense "Data" binary protocol messages, which will be called when
      * any DID message is successfully parsed. This function will return the previously registered handler. It is the
      * callers responsibility to restore the previous handler, when this handler is no longer required.
@@ -597,6 +606,7 @@ private:
     std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> bcastMsgBuffers = {}; // [MAX_NUM_BCAST_MSGS];
     is_comm_callbacks_t originalCbs = {}; // a copy of the port's original CBs before it was bound to this ISDevice; will be restored if this device is destroyed
     is_comm_callbacks_t defaultCbs = {}; // local copy of any callbacks passed at init
+    pfnIsCommHandler externalAllHandler = nullptr;
 
     static int processPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     static int processIsbMsgs(void* ctx, p_data_t* data, port_handle_t port);
