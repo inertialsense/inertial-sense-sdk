@@ -91,7 +91,7 @@ void CorrectionService::removeRTCM3PacketListeners(const uint32_t id) {
 }
 
 int CorrectionService::step() const {
-    if (!portIsOpened(source) && portOpen(source)) {
+    if (!portIsOpened(source) && (portOpen(source) != PORT_ERROR__NONE)) {
         return -1;
     }
     unsigned int rtcm3PacketsProcessedPrevCount = rtcm3PacketsProcessed;

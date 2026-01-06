@@ -52,23 +52,7 @@ public:
         }
 #endif
 
-        factoryOptions.listenerPort = listenPort;
-        factoryOptions.maxConnections = maxConnections;
-        factoryOptions.portDefaultBlocking = portDefaultBlocking;
-        factoryOptions.backgroundListener = backgroundListener;
-        factoryOptions.listeningAddr.sin_family = AF_INET;
-        factoryOptions.listeningAddr.sin_port = htons(listenPort);
-
-        // we expect either a string "<address>" or "<address> (<name>)" - in either case, we just want the <address> part (upto the space)
-        std::string ipAddr = listenAddr.substr(0, listenAddr.find_first_of(' '));
-
-        struct in_addr addr = {};
-        if (inet_pton(AF_INET, ipAddr.c_str(), &addr) <= 0) {
-            // Handle error: invalid address or address not supported
-            factoryOptions.listeningAddr.sin_addr.s_addr = INADDR_NONE; // A common error indicator for in_addr_t
-        }
-        factoryOptions.listeningAddr.sin_addr = addr;
-
+        configure(listenPort, listenAddr, maxConnections, portDefaultBlocking, backgroundListener);
     };
     ~TcpServerPortFactory() {
 #ifdef PLATFORM_IS_WINDOWS
@@ -103,6 +87,25 @@ protected:
         }
 
     };
+
+    void configure(uint16_t listenPort = 4321, const std::string& listenAddr = "127.0.0.1", int maxConnections = 10, bool portDefaultBlocking = false, bool backgroundListener = false) {
+        factoryOptions.listenerPort = listenPort;
+        factoryOptions.maxConnections = maxConnections;
+        factoryOptions.portDefaultBlocking = portDefaultBlocking;
+        factoryOptions.backgroundListener = backgroundListener;
+        factoryOptions.listeningAddr.sin_family = AF_INET;
+        factoryOptions.listeningAddr.sin_port = htons(listenPort);
+
+        // we expect either a string "<address>" or "<address> (<name>)" - in either case, we just want the <address> part (upto the space)
+        std::string ipAddr = listenAddr.substr(0, listenAddr.find_first_of(' '));
+
+        struct in_addr addr = {};
+        if (inet_pton(AF_INET, ipAddr.c_str(), &addr) <= 0) {
+            // Handle error: invalid address or address not supported
+            factoryOptions.listeningAddr.sin_addr.s_addr = INADDR_NONE; // A common error indicator for in_addr_t
+        }
+        factoryOptions.listeningAddr.sin_addr = addr;
+    }
 
     bool startListening();
 

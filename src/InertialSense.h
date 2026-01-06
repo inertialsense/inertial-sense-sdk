@@ -26,21 +26,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <vector>
 
 #include "core/msg_logger.h"
+#include "message_stats.h"
 #include "ISConstants.h"
-#include "ISTcpClient.h"
-#include "ISTcpServer.h"
 #include "ISLogger.h"
 #include "ISDisplay.h"
 #include "ISUtilities.h"
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISDevice.h"
-#include "message_stats.h"
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
 
 #include "PortManager.h"
 #include "DeviceManager.h"
+
+#include "CorrectionService.h"
+#include "Rtcm3CorrectionServer.h"
 
 extern "C"
 {
@@ -63,7 +64,7 @@ typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifi
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
 */
-class InertialSense : public iISTcpServerDelegate
+class InertialSense
 {
 public:
     PortManager& portManager = PortManager::getInstance();
@@ -236,19 +237,6 @@ public:
     void LogRawData(device_handle_t device, int dataSize, const uint8_t* data);
 
     /**
-    * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
-    * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
-    * @return true if success, false if error
-    */
-    bool CreateHost(const std::string& connectionString);
-
-    /**
-    * Close any open connection to a server
-    */
-    void CloseServerConnection();
-
-
-    /**
      * Locates the device associated with the specified port
      * @param port
      * @return device_handle_t which is connected to port, otherwise NULL
@@ -277,40 +265,15 @@ public:
     void ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize);
 
     /**
-    * Get the number of bytes read or written to/from client or server connections
-    * @return byte count
-    */
-    uint64_t ClientServerByteCount() { return m_clientServerByteCount; }
-
-    /**
-    * Get the current number of client connections
-    * @return int number of current client connected
-    */
-    int ClientConnectionCurrent() { return m_clientConnectionsCurrent; }
-
-    /**
-    * Get the total number of client connections
-    * @return int number of total client that have connected
-    */
-    int ClientConnectionTotal() { return m_clientConnectionsTotal; }
-
-    /**
-    * Get TCP server IP address and port (i.e. "127.0.0.1:7777")
-    * @return string IP address and port
-    */
-    std::string TcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
-
-    /**
     * Flush all data from receive port
     */
     void FlushRx()
     {
-        uint8_t buf[10];
         for (auto device : deviceManager)
         {
             if (device->isConnected())
             {
-                while (portReadTimeout(device->port, buf, sizeof(buf), 50));
+                portFlush(device->port);
             }
         }
     }
@@ -626,12 +589,16 @@ public:
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
+
+    CorrectionService& getCorrectionService() { return m_correctionService; }
+    Rtcm3CorrectionServer& getCorrectionsServer() { return m_correctionsServer; }
+
 protected:
-    bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
-    void OnClientConnecting(cISTcpServer* server) OVERRIDE;
-    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
-    void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
-    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
+//    bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
+//    void OnClientConnecting(cISTcpServer* server) OVERRIDE;
+//    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
+//    void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
+//    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
 
     static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
 
@@ -657,10 +624,13 @@ private:
     int m_clientBufferBytesToSend;
     bool m_forwardGpgga;
 
-    cISTcpServer m_tcpServer;
-    uint64_t m_clientServerByteCount;
-    int m_clientConnectionsCurrent = 0;
-    int m_clientConnectionsTotal = 0;
+    CorrectionService m_correctionService;
+    Rtcm3CorrectionServer m_correctionsServer;
+
+    // cISTcpServer m_tcpServer;
+    // uint64_t m_clientServerByteCount;
+    // int m_clientConnectionsCurrent = 0;
+    // int m_clientConnectionsTotal = 0;
     MessageStats::mul_stats_t m_clientMessageStats = {};
 
     int m_baudRate = IS_BAUDRATE_DEFAULT;
