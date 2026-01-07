@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.16.3)
 
 project(InertialSenseSDK)
 
@@ -109,7 +109,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 # Build using C17 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Add compile options that will propagate to targets linking against the SDK

@@ -136,6 +136,8 @@ public:
         ISFwUpdaterCmd cmd;                                 //!< the command that generated this message
         int severity;                                       //!< the severity level of the message - use one of IS_LOG_LEVEL_*
         std::string msg;                                    //!< the fully-formatted message
+
+        update_msgs(const std::string& _target, const ISFwUpdaterCmd& _cmd, int _severity, const std::string& _msg) : target(_target), cmd(_cmd), severity(_severity), msg(_msg) { };
     };
 
     port_handle_t port = nullptr;                           //!< a handle to the comm port which we use to talk to the device - if possible, we should be using the device->port

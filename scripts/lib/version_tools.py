@@ -248,9 +248,11 @@ class RepositoryInfo:
                 rel_type = 'snap'
                 latest_ver = latest_ver.replace(prerelease=f'snap.{distance}')
 
+        if latest_ver is None:
+            latest_ver = semver.Version.parse("0.0.0") # Fallback version
+
         latest_ver = latest_ver.replace(prerelease=None) if rel_type is None else latest_ver.replace(prerelease=f'{rel_type}.{distance}' if distance > 0 else f'{rel_type}')
         return latest_ver
-
 
 
     def get_latest_release(self):

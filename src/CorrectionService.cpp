@@ -49,11 +49,11 @@ void CorrectionService::addPort(port_handle_t port) {
 }
 
 void CorrectionService::removePort(port_handle_t port) {
-    std::erase(this->ports, port);
+    ports.erase(std::remove(ports.begin(), ports.end(), port), ports.end());
 }
 
 bool CorrectionService::hasPort(port_handle_t port) {
-    return std::ranges::find(this->ports, port) != this->ports.end();
+    return std::find(this->ports.begin(), this->ports.end(), port) != this->ports.end();
 }
 
 void CorrectionService::addDevice(device_handle_t device) {
