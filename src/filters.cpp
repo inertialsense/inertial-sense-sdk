@@ -182,9 +182,9 @@ void tripleToSingleImu(imu_t *result, const imu3_t *imu3)
         float acc = 0.0f;
         for (int d=0; d<NUM_IMU_DEVICES; d++)
         {
-            imus_t &I = imu3->I[d];
-            float &g = I.pqr[i];
-            float &a = I.acc[i];
+            const imus_t &I = imu3->I[d];
+            const float &g = I.pqr[i];
+            const float &a = I.acc[i];
             if (is_valid_f(g))  // Not NaN or INF
             {
                 pqr += g;
@@ -227,7 +227,7 @@ int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
 
     int cnt = 0;
 
-    for (int idev = 0; idev < 3; idev++)
+    for (int idev = 0; idev < NUM_IMU_DEVICES; idev++)
     {
         if (!exclude[idev])
         {
@@ -248,12 +248,12 @@ int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
     return cnt;
 }
 
-void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis)
+void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[NUM_IMU_DEVICES], bool exclude_acc[NUM_IMU_DEVICES], int iaxis)
 {
     float w = 0.0f, a = 0.0f;
     int cnt_gyro = 0, cnt_acc = 0;
 
-    for (int idev = 0; idev < 3; idev++)
+    for (int idev = 0; idev < NUM_IMU_DEVICES; idev++)
     {
         if (!exclude_gyro[idev])
         {
@@ -279,12 +279,12 @@ void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3]
 void singleToTripleImu(imu3_t *result, imu_t *imu)
 {
     result->time = imu->time;
-    for (int i=0; i<3; i++)
+    for (int i=0; i<NUM_IMU_DEVICES; i++)
     {
         cpy_Vec3_Vec3(result->I[i].pqr, imu->I.pqr);
         cpy_Vec3_Vec3(result->I[i].acc, imu->I.acc);
     }
-    result->status = imu->status | (IMU_STATUS_IMU1_OK | IMU_STATUS_IMU2_OK | IMU_STATUS_IMU3_OK);
+    // result->status = imu->status | (IMU_STATUS_IMU1_OK | IMU_STATUS_IMU2_OK | IMU_STATUS_IMU3_OK);
 }
 
 
@@ -333,7 +333,7 @@ void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
 {
     output->time = imu->time;
     output->status |= imu->status;                                                      // Bitwise OR to preserve IMU status
-    output->status &= (~IMU_STATUS_IMU_OK_MASK) | (imu->status&IMU_STATUS_IMU_OK_MASK); // Clear OK bits in PIMU status if not set in IMU status
+    // output->status &= (~IMU_STATUS_IMU_OK_MASK) | (imu->status&IMU_STATUS_IMU_OK_MASK); // Clear OK bits in PIMU status if not set in IMU status
 
     //  output->dt += deltaThetaDeltaVelRiemannSum(output, imu, imuLast);
     //  output->dt += deltaThetaDeltaVelTrapezoidal(output, imu, imuLast);
@@ -520,7 +520,7 @@ void zeroPimu(pimu_t *pimu)
 {
     pimu->time = 0.0;
     pimu->dt = 0.0f;
-    pimu->status = IMU_STATUS_IMU_OK_MASK;  // IMU OK bits get cleared inside integratePimu() if not OK.
+    pimu->status = 0;
     pimu->theta[2] = pimu->theta[1] = pimu->theta[0] = 0.0f;
     pimu->vel[2]   = pimu->vel[1]   = pimu->vel[0]   = 0.0f;
 }

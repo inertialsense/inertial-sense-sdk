@@ -346,7 +346,22 @@ extern "C" {
 #define _ROUNDUP(numToRound, multiple) ((((numToRound) + (multiple) - 1) / (multiple)) * (multiple))
 #endif
 
+static inline int is_inf_f(float v)
+{
+    return isinff(v);
+}
+
+static inline int is_inf(double v)
+{
+    return isinf(v);
+}
+
 static inline int is_nan_f(float v)
+{
+    return v != v;
+}
+
+static inline int is_nan(double v)
 {
     return v != v;
 }
@@ -354,11 +369,6 @@ static inline int is_nan_f(float v)
 static inline int is_valid_f(float v)
 {
     return v == v;
-}
-
-static inline int is_nan(double v)
-{
-    return v != v;
 }
 
 static inline int is_valid(double v)
@@ -838,7 +848,7 @@ static inline int is_valid(double v)
 #define C_GPS_LEAP_SECONDS              18
 
 typedef float       f_t;
-typedef int            i_t;
+typedef int         i_t;
 typedef double      ixVector2d[2];        // V = | 0 1 |
 typedef f_t         ixVector2[2];         // V = | 0 1 |
 typedef double      ixVector3d[3];        // V = | 0 1 2 |

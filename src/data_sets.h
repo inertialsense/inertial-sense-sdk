@@ -881,7 +881,7 @@ typedef struct PACKED
     uint32_t                status;
 
     /** Inertial Measurement Units (IMUs) */
-    imus_t                  I[3];
+    imus_t                  I[NUM_IMU_DEVICES];
 
 } imu3_t;
 
