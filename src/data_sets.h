@@ -193,7 +193,7 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE    2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
-// Max number of devices across all hardware types: uINS-3 and IMX-5
+// Max number of devices across all hardware types: IMX-5 and IMX-6
 #define NUM_IMU_DEVICES     3        // g_numImuDevices defines the actual number of hardware specific devices
 #define NUM_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
 
@@ -2398,6 +2398,7 @@ enum eBitTestMode
     BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
     BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
     BIT_TEST_MODE_IMU_FAULT_REJECTION               = (int)104,     // Simulate a fault on each IMU sensor and ensure it is detected and rejected.
+    BIT_TEST_MODE_IMU_INVALID_DATA                  = (int)105,     // Simulate invalid IMU data (NaN, Inf, out-of-range) and ensure it is detected and rejected.
 };
 
 /** Hardware built-in test (BIT) flags */

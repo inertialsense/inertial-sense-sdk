@@ -171,54 +171,51 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 }
 
 
-#define INVALID_ACCEL 1.0e-6f
-void errorCheckImu3(imu3_t *di)
+void tripleToSingleImu(imu_t *result, const imu3_t *imu3)
 {
-    // Error Checking
-    if (di->time != 0.0) 
+    // Triple IMU Averaging
+    for (int i=0; i<3; i++)
     {
-        // Compare to a small number much smaller than IMU noise sigma
-        for (int i = 0; i < 3; i++)
+        int nPqr = 0;
+        int nAcc = 0;
+        float pqr = 0.0f;
+        float acc = 0.0f;
+        for (int d=0; d<NUM_IMU_DEVICES; d++)
         {
-            if (fabs(di->I[i].acc[0]) < INVALID_ACCEL && 
-                fabs(di->I[i].acc[1]) < INVALID_ACCEL && 
-                fabs(di->I[i].acc[2]) < INVALID_ACCEL)
+            imus_t &I = imu3->I[d];
+            float &g = I.pqr[i];
+            float &a = I.acc[i];
+            if (is_valid_f(g))  // Not NaN or INF
             {
-                di->status &= ~IMU_STATUS_IMU_OK_MASK;
+                pqr += g;
+                ++nPqr;
+            }
+            if (is_valid_f(a))  // Not NaN or INF
+            {
+                acc += a;
+                ++nAcc;
             }
         }
-    }
-}
-
-
-int tripleToSingleImu(imu_t *result, const imu3_t *di)
-{
-    imu_t imu = {};
-    imu.time = di->time;
-    imu.status = di->status;
-
-    int cnt = 0;
-
-    for (int d=0; d<3; d++)
-    {
-        uint32_t imuOkBitMask = IMU_STATUS_IMU1_OK<<d;
-        if ((di->status&imuOkBitMask)==imuOkBitMask)
+        if (nPqr)
         {
-            add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[d].pqr);
-            add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[d].acc);
-            cnt++;
+            result->I.pqr[i] = pqr / (float)nPqr;
+        }
+        else
+        {
+            result->I.pqr[i] = NAN;
+        }
+        if (nAcc)
+        {
+            result->I.acc[i] = acc / (float)nAcc;
+        }
+        else
+        {
+            result->I.acc[i] = NAN;
         }
     }
 
-    if (cnt)
-    {
-        float div = 1.0f/(float)cnt;
-        mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
-        mul_Vec3_X(imu.I.acc, imu.I.acc, div);
-    }
-
-    *result = imu;
-    return cnt;
+    result->time = imu3->time;
+    result->status = imu3->status;
 }
 
 
