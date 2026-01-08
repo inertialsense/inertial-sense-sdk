@@ -1202,6 +1202,26 @@ char inv_Mat4(ixMatrix4 result, const ixMatrix4 m)
     return 0;
 }
 
+
+int isAllLessThanX_array(f_t *a, f_t x, int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (a[i] >= x) return 0;
+    }
+    return 1;
+}
+
+int isAllAbsLessThanX_array(f_t *a, f_t x, int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (_FABS(a[i]) >= x) return 0;
+    }
+    return 1;
+}
+
+
 // Initialize Alpha Filter alpha and beta values
 void LPFO0_init_Vec3(sLpfO0 *lpf, f_t dt, f_t cornerFreqHz, const ixVector3 initVal)
 {

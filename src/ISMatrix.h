@@ -865,23 +865,8 @@ static __inline int isFinite_array_d(double *a, int size)
     return 1;
 }
 
-int isAllLessThanX_array(f_t *a, f_t x, int size)
-{
-    for (int i = 0; i < size; i++)
-    {
-        if (a[i] >= x) return 0;
-    }
-    return 1;
-}
-
-int isAllAbsLessThanX_array(f_t *a, f_t x, int size)
-{
-    for (int i = 0; i < size; i++)
-    {
-        if (_FABS(a[i]) >= x) return 0;
-    }
-    return 1;
-}
+int isAllLessThanX_array(f_t *a, f_t x, int size);
+int isAllAbsLessThanX_array(f_t *a, f_t x, int size);
 
 // Low-Pass Alpha Filter
 void LPFO0_init_Vec3(sLpfO0 *lpf, f_t dt, f_t cornerFreqHz, const ixVector3 initVal);
