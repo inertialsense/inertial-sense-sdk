@@ -348,7 +348,7 @@ extern "C" {
 
 static inline int is_inf_f(float v)
 {
-    return isinff(v);
+    return isinf(v);
 }
 
 static inline int is_inf(double v)
