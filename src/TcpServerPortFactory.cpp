@@ -10,22 +10,18 @@
  */
 
 #ifdef PLATFORM_IS_WINDOWS
-// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
-#define NOMINMAX
+    #define NOMINMAX    // Windows.h is included somewhere and this prevents it from defining 'max' as a macro which breaks uri.hpp
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+#else
+    #include <unistd.h>
+    #include <fcntl.h>
+    #include <arpa/inet.h>
+    #include <netdb.h>
 #endif
 
 #include <cerrno>
 #include <iostream>
-
-#ifdef PLATFORM_IS_WINDOWS
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <unistd.h>
-#include <fcntl.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#endif
 
 #include "util/uri.hpp"
 #include "util/util.h"
