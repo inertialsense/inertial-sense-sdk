@@ -15,9 +15,6 @@
 #include "imx_defaults.h"
 #include "ISLogger.h"
 
-#define IS_LOG_LEVEL IS_LOG_LEVEL_WARN
-#define IS_ENABLED_FACILITIES  (IS_LOG_ISDEVICE)
-
 const ISDevice ISDevice::invalidRef;
 
 /**
@@ -648,7 +645,7 @@ int ISDevice::SetSysCmd(const uint32_t command) {
     sysCmd.command = command;
     sysCmd.invCommand = ~command;
     // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
-    log_debug(IS_LOG_ISDEVICE, "Issuing SYS_CMD %d to %s (%s)\n", command, getIdAsString().c_str(), getPortName().c_str());
+    log_debug(IS_LOG_ISDEVICE, "Issuing SYS_CMD %d to %s (%s)", command, getIdAsString().c_str(), getPortName().c_str());
     return comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 }
 
@@ -770,20 +767,20 @@ int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint
             if (uploadTimeMs)
             {   // Upload complete.  Allow sync.
                 bool success = (uploadChecksum == syncChecksum);
-                log_debug(IS_LOG_ISDEVICE, "%s upload %s.\n", cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
+                log_debug(IS_LOG_ISDEVICE, "%s upload %s.", cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
                 uploadTimeMs = 0;
                 return (success ? 1 : 0);
             }
         }
         else
         {	// Out of sync.  Request flash config.
-            log_debug(IS_LOG_ISDEVICE, "Out of sync.  Requesting %s...\n", cISDataMappings::DataName(flashCfgDid));
+            log_debug(IS_LOG_ISDEVICE, "Out of sync.  Requesting %s...", cISDataMappings::DataName(flashCfgDid));
             BroadcastBinaryData(flashCfgDid);
         }
     }
     else
     {	// Out of sync.  Request sysParams or gpxStatus.
-        log_debug(IS_LOG_ISDEVICE, "Out of sync.  Requesting %s...\n", cISDataMappings::DataName(syncDid));
+        log_debug(IS_LOG_ISDEVICE, "Out of sync.  Requesting %s...", cISDataMappings::DataName(syncDid));
         BroadcastBinaryData(syncDid);
     }
     return 0;
@@ -940,7 +937,7 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
     for (const cISDataMappings::MemoryUsage& usage : usageVec)
     {
         int offset = static_cast<int>(usage.ptr - newData);
-        log_debug(IS_LOG_ISDEVICE, "Sending %s: size %lu, offset %d\n", cISDataMappings::DataName(flashCfgDid), usage.size, offset);
+        log_debug(IS_LOG_ISDEVICE, "Sending %s: size %lu, offset %d", cISDataMappings::DataName(flashCfgDid), usage.size, offset);
         failure |= (SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset) != 0);   // SendData() returns 0 on success
 
         if (!failure)
@@ -1006,13 +1003,13 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for IMX flash config
-            log_debug(IS_LOG_ISDEVICE, "Timeout waiting for DID_FLASH_CONFIG failure!\n");
+            log_info(IS_LOG_ISDEVICE, "Timeout waiting for DID_FLASH_CONFIG to sync!");
             return false;
         }
         else
         {   // Query DID_SYS_PARAMS
             GetData(DID_SYS_PARAMS);
-            log_debug(IS_LOG_ISDEVICE, "Waiting for IMX flash sync...\n");
+            log_debug(IS_LOG_ISDEVICE, "Waiting for IMX flash sync...");
         }
     }
 
@@ -1038,13 +1035,13 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for GPX flash config
-            log_debug(IS_LOG_ISDEVICE, "Timeout waiting for DID_GPX_FLASH_CONFIG failure!\n");
+            log_info(IS_LOG_ISDEVICE, "Timeout waiting for DID_GPX_FLASH_CONFIG to sync!");
             return false;
         }
         else
         {   // Query DID_GPX_STATUS
             GetData(DID_GPX_STATUS);
-            log_debug(IS_LOG_ISDEVICE, "Waiting for GPX flash sync...\n");
+            log_debug(IS_LOG_ISDEVICE, "Waiting for GPX flash sync...");
         }
     }
 

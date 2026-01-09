@@ -107,8 +107,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         external
 )
 
-# Build using C17 and CXX20
-set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
+# Build using C11 and CXX17
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 

@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <string>
 
+#include "core/msg_logger.h"
 #include "PortManager.h"
 
 CorrectionService::CorrectionService(port_handle_t srcPort) {
@@ -174,8 +175,19 @@ int CorrectionService::finalPacketFilter(const uint8_t *inputBuffer, const uint3
 }
 
 void CorrectionService::sendData(const uint8_t *inputBuffer, const uint32_t inputLength) {
+    std::vector<port_handle_t> deadPorts;
+
     for (const auto port: ports) {
-        portWrite(port, inputBuffer, inputLength);
+        switch (portWrite(port, inputBuffer, inputLength)) {
+            case PORT_ERROR__INVALID:
+                deadPorts.push_back(port);  // invalid port - did the device reboot?
+                break;
+        }
+    }
+
+    // cleanup dead ports...
+    for (const auto port: deadPorts) {
+        removePort(port);
     }
 }
 

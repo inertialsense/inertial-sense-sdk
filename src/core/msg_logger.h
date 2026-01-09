@@ -32,13 +32,13 @@ extern "C" {
 // --- Compile-time configuration ---
 // Define the desired log level to show messages at or above this level.
 #ifndef IS_LOG_LEVEL
-#define IS_LOG_LEVEL  IS_LOG_LEVEL_WARN // Default to WARNING
+#define IS_LOG_LEVEL  IS_LOG_LEVEL_DEBUG // Default to WARNING
 #endif
 
 // Define the facilities you want to enable.
 // Combine multiple facilities using the bitwise OR operator.
 #ifndef IS_ENABLED_FACILITIES
-#define IS_ENABLED_FACILITIES (IS_LOG_ISDEVICE)
+#define IS_ENABLED_FACILITIES (IS_LOG_FACILITY_ALL)
 #endif
 
 #ifndef DEBUG_LOGGING
@@ -48,35 +48,39 @@ extern "C" {
     #define log_info(...)       {}
     #define log_warn(...)       {}
     #define log_error(...)      {}
-    #define debug_message(...)
+    #define log_message(...)    {}
+    // #define debug_message(...)  {}
 #else
 
     // Macro to check if a facility is enabled
     #define IS_FACILITY_ENABLED(facility) ((IS_ENABLED_FACILITIES & (facility)) == (facility))
 
     // --- Macros for different log levels and facilities ---
-    #define IS_LOG_MSG(facility, facility_name, level_code, level_name, ...) { do { \
-        if (IS_FACILITY_ENABLED(facility) && (IS_LOG_LEVEL >= level_code)) { \
-            static_log_msg(facility, level_code, level_name, facility_name, __VA_ARGS__); \
+    #define IS_LOG_MSG(facility, facility_name, level_code, ...) { do { \
+        if (IS_FACILITY_ENABLED(facility) && (IS_LOG_LEVEL >= level_code)) {        \
+            static_log_msg(facility, level_code, facility_name, __VA_ARGS__); \
         } \
     } while (0); }
 
-    #define log_error(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_ERROR,      "[ERROR]", __VA_ARGS__)
-    #define log_warn(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_WARN,       "[WARN]",  __VA_ARGS__)
-    #define log_info(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO,       "[INFO]",  __VA_ARGS__)
-    #define log_more_info(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_INFO,  "[INFO]",  __VA_ARGS__)
-    #define log_debug(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG,      "[DEBUG]", __VA_ARGS__)
-    #define log_more_debug(facility, ...)   IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_DEBUG, "[DEBUG]", __VA_ARGS__)
-    #define log_bombastic(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_BOMBASTIC,  "[CRAZY]", __VA_ARGS__)
+    #define log_message(facility, level, ...)         IS_LOG_MSG(facility, #facility, level, __VA_ARGS__)
+    #define log_error(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_ERROR, __VA_ARGS__)
+    #define log_warn(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_WARN, __VA_ARGS__)
+    #define log_info(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO, __VA_ARGS__)
+    #define log_more_info(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_INFO, __VA_ARGS__)
+    #define log_debug(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG, __VA_ARGS__)
+    #define log_more_debug(facility, ...)   IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_DEBUG, __VA_ARGS__)
+    #define log_bombastic(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_BOMBASTIC, __VA_ARGS__)
 
-    // #define debug_message(facility, ...)    IS_LOG_MSG(facility, "[DEBUG]", 4, __VA_ARGS__)
+    // #define debug_message(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG, __VA_ARGS__)
 
 #if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
     static FILE* log_file = NULL;
 #endif
 
     // --- Internal static inline functions ---
-    static inline void static_log_msg(int facility_code, int log_level, const char *level_name, const char *facility_name, const char *format, ...) {
+    static inline void static_log_msg(int facility_code, int log_level, const char *facility_name, const char *format, ...) {
+        static const char* log_level_names[] = { "[NONE]", "[ERROR]", "[WARN]", "[INFO]", "[INFO+]", "[DEBUG]", "[DEBUG+]", "[CRAZY]" };
+
         (void)log_level; // Suppress unused parameter warning
     #if defined(__ZEPHYR__) // defined(PLATFORM_IS_EMBEDDED) ||
         static char logMsg[512];
@@ -106,7 +110,7 @@ extern "C" {
 
         if (facility_code)
             fprintf(log_file, "%s ", facility_name);
-        fprintf(log_file, "%s : %s\n", level_name, logMsg);
+        fprintf(log_file, "%s : %s\n", log_level_names[log_level], logMsg);
         fflush(log_file);
     #endif
     }
@@ -118,6 +122,11 @@ extern "C" {
     #elif defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
         if (len > 0) {
             const int bytes_per_line = 32;
+
+            if (log_file == NULL)
+                log_file = fopen("inertial_sense.log", "a+"); // stdout;
+            if (log_file == NULL)
+                log_file = stdout;
 
             struct timespec ts;
             timespec_get(&ts, TIME_UTC);
