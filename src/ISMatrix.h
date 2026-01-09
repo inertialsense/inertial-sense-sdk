@@ -866,6 +866,7 @@ static __inline int isFinite_array_d(double *a, int size)
 }
 
 int isAllLessThanX_array(f_t *a, f_t x, int size);
+int isAllMoreThanX_array(f_t *a, f_t x, int size);
 int isAllAbsLessThanX_array(f_t *a, f_t x, int size);
 
 // Low-Pass Alpha Filter
