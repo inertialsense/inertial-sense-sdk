@@ -2866,15 +2866,15 @@ class logPlot:
                         imu1 = []
                         imu2 = []
                         imu3 = []
-                        if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
-                            for sample in range(0, len(I)):
-                                imu1.append(I[sample][0][accelSensor])
-                        if (imuStatus[0] & (0x00020000<<(accelSensor*3))):     # Gyro or accel 2
-                            for sample in range(0, len(I)):
-                                imu2.append(I[sample][1][accelSensor])
-                        if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 3
-                            for sample in range(0, len(I)):
-                                imu3.append(I[sample][2][accelSensor])
+                        # if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
+                        for sample in range(0, len(I)):
+                            imu1.append(I[sample][0][accelSensor])
+                        # if (imuStatus[0] & (0x00020000<<(accelSensor*3))):     # Gyro or accel 2
+                        for sample in range(0, len(I)):
+                            imu2.append(I[sample][1][accelSensor])
+                        # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 3
+                        for sample in range(0, len(I)):
+                            imu3.append(I[sample][2][accelSensor])
                         imu1 = np.array(imu1)
                         imu2 = np.array(imu2)
                         imu3 = np.array(imu3)
@@ -2944,7 +2944,7 @@ class logPlot:
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                     for n, snr in enumerate([ snr0, snr1, snr2 ]):
                         if n<sensorCnt:
-                            if np.all(snr) is not None:
+                            if snr is not None and snr.size > 0 and snr.ndim == 2 and snr.shape[1] >= 3:
                                 snr = quatRot(self.log.mount_bias_quat[d,:], snr)
                                 mean = np.mean(snr[:, i])
                                 std = np.std(snr[:, i])
