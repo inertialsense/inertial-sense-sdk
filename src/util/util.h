@@ -384,11 +384,10 @@ public:
 
         log_debug(IS_LOG_FN_PROFILER, "'%s' executed in %lluus", m_functionName.c_str(), duration.count());
         auto lastMark = m_startTime;
-        for (auto [m, msg] : markers) {
+        for (const auto& [m, msg] : markers) {
             auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(m - m_startTime);
             auto span = std::chrono::duration_cast<std::chrono::microseconds>(m - lastMark);
-            auto pct = ((float)span.count() / (float)duration.count()) * 100.0f;
-            log_debug(IS_LOG_FN_PROFILER, "    %7uus (%7uus, %5.1f%%) ::  %s", elapsed, span, pct, msg.c_str());
+            log_debug(IS_LOG_FN_PROFILER, "    %7uus (%7uus, %5.1f%%) ::  %s", elapsed, span, ((float)span.count() / (float)duration.count()) * 100.0f, msg.c_str());
             lastMark = m;
         }
     }
