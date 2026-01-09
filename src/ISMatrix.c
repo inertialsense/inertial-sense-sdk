@@ -1212,6 +1212,15 @@ int isAllLessThanX_array(f_t *a, f_t x, int size)
     return 1;
 }
 
+int isAllMoreThanX_array(f_t *a, f_t x, int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (a[i] <= x) return 0;
+    }
+    return 1;
+}
+
 int isAllAbsLessThanX_array(f_t *a, f_t x, int size)
 {
     for (int i = 0; i < size; i++)
