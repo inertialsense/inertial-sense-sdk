@@ -31,7 +31,7 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
         ASSERT_EQ(gpsTowMs, gpsTowMs2);
         ASSERT_EQ(gpsWeek,  gpsWeek2);
 
-	    int datetime[7] = { 
+        int datetime[7] = { 
             utcTime.tm_year + 1900, 
             utcTime.tm_mon + 1, 
             utcTime.tm_mday, 
@@ -42,7 +42,7 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
         uint32_t gpsTowMs4, gpsWeek4;
         UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs4, gpsWeek4);
 
-    	utc_time_t t;
+        utc_time_t t;
         gpsTowMsToUtcTime(gpsTowMs, leapS, &t);
         ASSERT_EQ(utcTime.tm_hour, t.hour);
         ASSERT_EQ(utcTime.tm_min, t.minute);
@@ -81,8 +81,8 @@ TEST(time_conversion, GPS_to_UTC_to_GPS_time)
             gpsWeekTowMsToUtcDateTime(gpsWeek, gpsTowMs, leapS, &d, &t, &milliseconds);
             gpsTowMsToUtcTime(gpsTowMs, leapS, &t);
 
-            // Convert UTC date and time to GPS time and week 		
-            int datetime[7] = { d.year, d.month, d.day, t.hour, t.minute, t.second, (int)milliseconds };	// year,month,day,hour,min,sec,msec
+            // Convert UTC date and time to GPS time and week         
+            int datetime[7] = { d.year, d.month, d.day, t.hour, t.minute, t.second, (int)milliseconds };    // year,month,day,hour,min,sec,msec
             uint32_t gpsTowMs2, gpsWeek2;
             UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs2, gpsWeek2);
 
@@ -167,7 +167,7 @@ TEST(time_conversion, GPS_to_julian)
     uint32_t gpsTowMs = 425870; 
     uint32_t leapSeconds = 18;
 
-	double julian = gpsToJulian(gpsWeek, gpsTowMs, leapSeconds);
+    double julian = gpsToJulian(gpsWeek, gpsTowMs, leapSeconds);
 
     ASSERT_EQ(julian, 2460307.429053);
 }
@@ -185,11 +185,11 @@ TEST(time_conversion, GPS_to_UTC)
     unsigned char     utc_minute;
     float             utc_seconds;
 
-    gps_week = 2294;
-    gps_towMs = 421338800;
-    gps_tow = gps_towMs * 0.001;
+    gps_week        = 2294;
+    gps_towMs       = 421338800;
+    gps_tow         = gps_towMs * 0.001;
 
-    int gps_time = 2294 * 604800 + gps_tow;   // seconds since Jan 6, 1980
+    int gps_time    = 2294 * 604800 + gps_tow;   // seconds since Jan 6, 1980
 
     TIMECONV_UTCTimeFromGPSTime(
         gps_week,

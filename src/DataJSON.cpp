@@ -32,7 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 
 #ifdef USE_IS_INTERNAL
-#	include "../../cpp/libs/families/imx/IS_internal.h"
+#    include "../../cpp/libs/families/imx/IS_internal.h"
 #endif
 
 using namespace std;
@@ -40,22 +40,22 @@ using namespace std;
 
 int cDataJSON::WriteDataToFile(cISLogFileBase* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix)
 {
-	// Verify file pointer
-	if (pFile == NULLPTR || cISDataMappings::DataSize(dataHdr.id) == 0)
-	{
-		return 0;
-	}
+    // Verify file pointer
+    if (pFile == NULLPTR || cISDataMappings::DataSize(dataHdr.id) == 0)
+    {
+        return 0;
+    }
 
-	string s;
+    string s;
     if (!DataToStringJSON(dataHdr, dataBuf, s))
-	{
-		return 0;
-	}
+    {
+        return 0;
+    }
     if (prefix != NULLPTR)
     {
         pFile->puts(prefix);
     }
-	pFile->puts(s.c_str());
+    pFile->puts(s.c_str());
     return (int)s.length();
 }
 
@@ -72,107 +72,107 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
     }
     uint32_t id = strtoul(s.c_str() + pos + 5, NULLPTR, 10);
     hdr.id = id;
-	const map_name_to_info_t* offsetMap = cISDataMappings::NameToInfoMap(hdr.id);
+    const map_name_to_info_t* offsetMap = cISDataMappings::NameToInfoMap(hdr.id);
     if (offsetMap == NULLPTR)
-	{
-		return false;
-	}
+    {
+        return false;
+    }
     hdr.size = cISDataMappings::DataSize(hdr.id);
-	char c;
-	char pc = 0;
-	map_name_to_info_t::const_iterator offset;
-	string fieldName;
-	size_t fieldStart = 0;
-	bool inName = true;
-	bool inQuote = false;
-	for (size_t i = 0; i < s.size(); i++)
-	{
-		c = s[i];
-		if (c == '"' && pc != '\\')
-		{
-			if ((inQuote = !inQuote))
-			{
-				fieldStart = i + 1;
-				pc = c;
-				continue;
-			}
-		}
-
-		if (inName)
-		{
-			if (c == ':')
-			{
+    char c;
+    char pc = 0;
+    map_name_to_info_t::const_iterator offset;
+    string fieldName;
+    size_t fieldStart = 0;
+    bool inName = true;
+    bool inQuote = false;
+    for (size_t i = 0; i < s.size(); i++)
+    {
+        c = s[i];
+        if (c == '"' && pc != '\\')
+        {
+            if ((inQuote = !inQuote))
+            {
                 fieldStart = i + 1;
-				inName = inQuote = false;
-				pc = c;
-				continue;
-			}
-			else if (inQuote)
-			{
-				fieldName.append(1, c);
-			}
-		}
+                pc = c;
+                continue;
+            }
+        }
+
+        if (inName)
+        {
+            if (c == ':')
+            {
+                fieldStart = i + 1;
+                inName = inQuote = false;
+                pc = c;
+                continue;
+            }
+            else if (inQuote)
+            {
+                fieldName.append(1, c);
+            }
+        }
         else if ((c == '}' || c == '"' || (!inQuote && c == ',')) && pc != '\\')
-		{
+        {
             if (fieldStart != 0)
-			{
-				offset = offsetMap->find(fieldName);
+            {
+                offset = offsetMap->find(fieldName);
                 string json = s.substr(fieldStart, i - fieldStart);
                 if (offset != offsetMap->end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, true))
-				{
-					return false;
-				}
-			}
+                {
+                    return false;
+                }
+            }
             fieldName.clear();
             fieldStart = 0;
-			inName = true;
-		}
-		pc = c;
-	}
+            inName = true;
+        }
+        pc = c;
+    }
 
-	return true;
+    return true;
 }
 
 
 bool cDataJSON::DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, string& json)
 {
     json.clear();
-	const map_name_to_info_t* offsetMap = cISDataMappings::NameToInfoMap(hdr.id);
-	if (offsetMap == NULLPTR)
-	{
-		return false;
-	}
-	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
-	const uint8_t* bufPtr = buf;
-	uint8_t tmpBuffer[MAX_DATASET_SIZE];
-	uint32_t size = cISDataMappings::DataSize(hdr.id);
-	if (size > hdr.size)
-	{
-		// copy into temp buffer, zeroing out bytes that are not part of this packet
-		memset(tmpBuffer, 0, hdr.offset);
-		memcpy(tmpBuffer + hdr.offset, buf, hdr.size);
-		uint32_t dataEnd = hdr.offset + hdr.size;
-		memset(tmpBuffer + dataEnd, 0, size - dataEnd);
-		bufPtr = tmpBuffer;
-	}
+    const map_name_to_info_t* offsetMap = cISDataMappings::NameToInfoMap(hdr.id);
+    if (offsetMap == NULLPTR)
+    {
+        return false;
+    }
+    char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
+    const uint8_t* bufPtr = buf;
+    uint8_t tmpBuffer[MAX_DATASET_SIZE];
+    uint32_t size = cISDataMappings::DataSize(hdr.id);
+    if (size > hdr.size)
+    {
+        // copy into temp buffer, zeroing out bytes that are not part of this packet
+        memset(tmpBuffer, 0, hdr.offset);
+        memcpy(tmpBuffer + hdr.offset, buf, hdr.size);
+        uint32_t dataEnd = hdr.offset + hdr.size;
+        memset(tmpBuffer + dataEnd, 0, size - dataEnd);
+        bufPtr = tmpBuffer;
+    }
 
-	// copy header as we are now storing an entire struct, even if we got a partial hdr and buf
-	p_data_hdr_t hdrCopy = hdr;
-	hdrCopy.offset = 0;
-	hdrCopy.size = size;
+    // copy header as we are now storing an entire struct, even if we got a partial hdr and buf
+    p_data_hdr_t hdrCopy = hdr;
+    hdrCopy.offset = 0;
+    hdrCopy.size = size;
 
-	SNPRINTF(tmp, sizeof(tmp), "{\"id\":%d", (int)hdr.id);
-	json.append(tmp);
-	for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
-	{
-		cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp, true);
-		json.append(1, ',');
-		json.append(1, '"');
-		json.append(offset->second.name);
-		json.append(1, '"');
-		json.append(1, ':');
-		json.append(tmp);
-	}
-	json.append(1, '}');
-	return true;
+    SNPRINTF(tmp, sizeof(tmp), "{\"id\":%d", (int)hdr.id);
+    json.append(tmp);
+    for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
+    {
+        cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp, true);
+        json.append(1, ',');
+        json.append(1, '"');
+        json.append(offset->second.name);
+        json.append(1, '"');
+        json.append(1, ':');
+        json.append(tmp);
+    }
+    json.append(1, '}');
+    return true;
 }

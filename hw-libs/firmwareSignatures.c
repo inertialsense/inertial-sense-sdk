@@ -20,6 +20,6 @@ sign_IMX5p0;
 sign_GPX1p0;
 #else
 #error "Unknown device type"
-#endif	// Device type
+#endif    // Device type
 
-#endif	// PLATFORM_IS_EMBEDDED
+#endif    // PLATFORM_IS_EMBEDDED

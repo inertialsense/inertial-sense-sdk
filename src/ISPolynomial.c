@@ -18,70 +18,70 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // 0 on success, -1 on failure
 char ixPolyFit(const int n, const float x[], const float y[], float coef[], const int num_coefs)
 {
-#define MAX_NUM_COEF		3
+#define MAX_NUM_COEF        3
 #define MAX_NUMBER_SAMPLES  10
 
-	if (num_coefs < 2 || num_coefs > MAX_NUM_COEF ||
+    if (num_coefs < 2 || num_coefs > MAX_NUM_COEF ||
         n < num_coefs || n > MAX_NUMBER_SAMPLES)
-		return -1;
+        return -1;
 
-	int p = num_coefs;
+    int p = num_coefs;
 
-#define P_MAX	(MAX_NUM_COEF)
+#define P_MAX               (MAX_NUM_COEF)
 
     float A[P_MAX * MAX_NUMBER_SAMPLES];
     float AtA[P_MAX * P_MAX];     // At A
     float iAtA[P_MAX * P_MAX];    // inv(A)
-	float Aty[P_MAX];
+    float Aty[P_MAX];
 
-	// Populate A matrix
-	switch (num_coefs)
-	{
-	case 2:	// 1st order 
-		for (int i = 0; i < n; i++)
-		{
-			A[i*p] = x[i];
-			A[i*p + 1] = 1.0f;
-		}
-		break;
-	case 3: // 2nd order
-		for (int i = 0; i < n; i++)
-		{
-			A[i*p] = x[i] * x[i];
-			A[i*p + 1] = x[i];
-			A[i*p + 2] = 1.0f;
-		}
-		break;
-	}
+    // Populate A matrix
+    switch (num_coefs)
+    {
+    case 2:    // 1st order 
+        for (int i = 0; i < n; i++)
+        {
+            A[i*p] = x[i];
+            A[i*p + 1] = 1.0f;
+        }
+        break;
+    case 3: // 2nd order
+        for (int i = 0; i < n; i++)
+        {
+            A[i*p] = x[i] * x[i];
+            A[i*p + 1] = x[i];
+            A[i*p + 2] = 1.0f;
+        }
+        break;
+    }
 
-	// AtA[pxp] = At[pxn] * A[nxp]
-	mul_MatMxN(AtA, A, A, p, n, p, 1, 0, 0);
+    // AtA[pxp] = At[pxn] * A[nxp]
+    mul_MatMxN(AtA, A, A, p, n, p, 1, 0, 0);
 
-	// iAtA[pxp] = (AtA[pxp])^-1
-	switch (num_coefs)
-	{
-	case 2: inv_Mat2(iAtA, AtA); break;		// 1st order
-	case 3: inv_Mat3(iAtA, AtA); break;		// 2nd order
-	}
+    // iAtA[pxp] = (AtA[pxp])^-1
+    switch (num_coefs)
+    {
+    case 2: inv_Mat2(iAtA, AtA); break; // 1st order
+    case 3: inv_Mat3(iAtA, AtA); break; // 2nd order
+    }
 
-	// Aty[px1] = At[pxn] * y[nx1]
-	mul_MatMxN(Aty, A, y, p, n, 1, 1, 0, 0);
+    // Aty[px1] = At[pxn] * y[nx1]
+    mul_MatMxN(Aty, A, y, p, n, 1, 1, 0, 0);
 
-	// coef[px1] = (At A)^-1 At y =  iAtA[pxp] Aty[px1]
-	mul_MatMxN(coef, iAtA, Aty, p, p, 1, 0, 0, 0);
+    // coef[px1] = (At A)^-1 At y =  iAtA[pxp] Aty[px1]
+    mul_MatMxN(coef, iAtA, Aty, p, p, 1, 0, 0, 0);
 
-	return 0;
+    return 0;
 }
 
 
 float ixPolyHorner(const int coef_size, const float coef[], const float x) 
 {
-	float y;
+    float y;
 
-	y = coef[0];
-	for (int i = 1; i < coef_size; i++)
-	{
-		y = y*x + coef[i];
-	}
-	return y;
+    y = coef[0];
+    for (int i = 1; i < coef_size; i++)
+    {
+        y = y*x + coef[i];
+    }
+    return y;
 }

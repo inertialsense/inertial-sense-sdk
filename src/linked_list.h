@@ -34,10 +34,10 @@ typedef struct
 
 //_____ P R O T O T Y P E S ________________________________________________
 
-void linkedListClear( linked_list_t *ll );
-void linkedListInsertAtHead( linked_list_t *ll, linked_list_node_t *newNode );
-void linkedListInsertBefore( linked_list_t *ll, linked_list_node_t *node, linked_list_node_t *newNode );
-void linkedListRemove( linked_list_t *ll, linked_list_node_t *node );
+void linkedListClear(linked_list_t *ll);
+void linkedListInsertAtHead(linked_list_t *ll, linked_list_node_t *newNode);
+void linkedListInsertBefore(linked_list_t *ll, linked_list_node_t *node, linked_list_node_t *newNode);
+void linkedListRemove(linked_list_t *ll, linked_list_node_t *node);
 
 
 #ifdef __cplusplus

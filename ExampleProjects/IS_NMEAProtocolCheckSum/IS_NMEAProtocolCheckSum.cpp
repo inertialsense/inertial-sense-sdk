@@ -26,69 +26,69 @@ using namespace std;
 
 unsigned int ASCIIComputeChecksum(uint8_t* str, int size)
 {
-	unsigned int checksum = 0;
+    unsigned int checksum = 0;
 
-	uint8_t* end = str + size;
-	for (uint8_t* ptr = str; ptr < end; ptr++)
-	{
-		checksum ^= *ptr;
-	}
+    uint8_t* end = str + size;
+    for (uint8_t* ptr = str; ptr < end; ptr++)
+    {
+        checksum ^= *ptr;
+    }
 
-	return checksum;
+    return checksum;
 }
 
 int main(int argc, char* argv[])
 {
-	string fileName = "../../../NMEAReads/Serial38400.txt";
-	string line = "";
-	char inChecksumTmpStr[3];
-	int lineNum = 1;
-	int failCnt = 0;
+    string fileName = "../../../NMEAReads/Serial38400.txt";
+    string line = "";
+    char inChecksumTmpStr[3];
+    int lineNum = 1;
+    int failCnt = 0;
 
-	unsigned int calcChecksum;
-	unsigned int inChecksum;
+    unsigned int calcChecksum;
+    unsigned int inChecksum;
 
-	// Null terminate temp string
-	inChecksumTmpStr[2] = 0;
+    // Null terminate temp string
+    inChecksumTmpStr[2] = 0;
 
-	// check if we are using a static COM port
-	if (argc == 2)
-	{
-		fileName = argv[1];
-	}
+    // check if we are using a static COM port
+    if (argc == 2)
+    {
+        fileName = argv[1];
+    }
 
-	// print COM port to console
-	printf("File name: %s\r\n", fileName.c_str());
+    // print COM port to console
+    printf("File name: %s\r\n", fileName.c_str());
 
-	// create ifstream
-	std::ifstream srcFile(fileName);
+    // create ifstream
+    std::ifstream srcFile(fileName);
 
-	// Go through file line by line
-	while (std::getline(srcFile,line))
-	{
-		// calculate checksum
-		calcChecksum = ASCIIComputeChecksum((uint8_t*)(line.c_str() + 1), line.size()-4);
+    // Go through file line by line
+    while (std::getline(srcFile,line))
+    {
+        // calculate checksum
+        calcChecksum = ASCIIComputeChecksum((uint8_t*)(line.c_str() + 1), line.size()-4);
 
-		// copy expected checksum to temp
-		memcpy(inChecksumTmpStr, line.c_str() + line.size() - 2, 2);
+        // copy expected checksum to temp
+        memcpy(inChecksumTmpStr, line.c_str() + line.size() - 2, 2);
 
-		// Extract checksum
-		inChecksum = strtol(inChecksumTmpStr, 0, 16);
+        // Extract checksum
+        inChecksum = strtol(inChecksumTmpStr, 0, 16);
 
-		// Check for chekcsum missmatch
-		if (inChecksum != calcChecksum)
-		{
-			//increment fail count
-			failCnt++;
+        // Check for chekcsum missmatch
+        if (inChecksum != calcChecksum)
+        {
+            //increment fail count
+            failCnt++;
 
-			// print current line
-			printf("Mismatch %d:\r\nLine: %d Expected: %d Calculated: %d\r\nString:\r\n%s\r\n", failCnt, lineNum, inChecksum, calcChecksum, line.c_str());
-		}
+            // print current line
+            printf("Mismatch %d:\r\nLine: %d Expected: %d Calculated: %d\r\nString:\r\n%s\r\n", failCnt, lineNum, inChecksum, calcChecksum, line.c_str());
+        }
 
-		lineNum++;
-	}
+        lineNum++;
+    }
 
-	printf("\r\nRun finished with %d lines run with %d checksum mismatches!\r\n\r\n", lineNum, failCnt);
+    printf("\r\nRun finished with %d lines run with %d checksum mismatches!\r\n\r\n", lineNum, failCnt);
 
-	return 0;
+    return 0;
 }

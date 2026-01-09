@@ -71,14 +71,14 @@ void md5_init(md5Context_t& context) {
 }
 
 // MD5 block update operation
-void md5_update(md5Context_t& context, const unsigned char *input, unsigned int inputLen) {
-    unsigned int i, index, partLen;
+void md5_update(md5Context_t& context, const unsigned char *input, size_t inputLen) {
+    size_t i, index, partLen;
 
     if (!inputLen)
         return; // don't do ANY processing if there is no data passed.
 
     // Compute number of bytes mod 64
-    index = (unsigned int)((context.count[0] >> 3) & 0x3F);
+    index = (size_t)((context.count[0] >> 3) & 0x3F);
 
     // Update number of bits
     if ((context.count[0] += ((uint32_t)inputLen << 3)) < ((uint32_t)inputLen << 3)) {
@@ -438,7 +438,7 @@ md5hash_t* altMD5_hash(size_t data_len, uint8_t* data) {
     // Process the message in successive 512-bit chunks:
     //for each 512-bit chunk of message:
     int offset;
-    for(offset=0; offset<new_len; offset += (512/8)) {
+    for (offset=0; offset<new_len; offset += (512/8)) {
 
         // break chunk into sixteen 32-bit words w[j], 0 ≤ j ≤ 15
         uint32_t *w = (uint32_t *) (msg + offset);
@@ -451,7 +451,7 @@ md5hash_t* altMD5_hash(size_t data_len, uint8_t* data) {
 
         // Main loop:
         uint32_t i;
-        for(i = 0; i<64; i++) {
+        for (i = 0; i<64; i++) {
             uint32_t f, g;
 
             if (i < 16) {
