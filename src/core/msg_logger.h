@@ -48,7 +48,7 @@ extern "C" {
     #define log_info(...)       {}
     #define log_warn(...)       {}
     #define log_error(...)      {}
-    #define log_message(...)    {}
+    #define log_msg(...)        {}
     // #define debug_message(...)  {}
 #else
 
@@ -62,16 +62,15 @@ extern "C" {
         } \
     } while (0); }
 
-    #define log_message(facility, level, ...)         IS_LOG_MSG(facility, #facility, level, __VA_ARGS__)
-    #define log_error(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_ERROR, __VA_ARGS__)
-    #define log_warn(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_WARN, __VA_ARGS__)
-    #define log_info(facility, ...)         IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO, __VA_ARGS__)
-    #define log_more_info(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_INFO, __VA_ARGS__)
-    #define log_debug(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG, __VA_ARGS__)
-    #define log_more_debug(facility, ...)   IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_DEBUG, __VA_ARGS__)
-    #define log_bombastic(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_BOMBASTIC, __VA_ARGS__)
-
-    // #define debug_message(facility, ...)    IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG, __VA_ARGS__)
+    #define log_mmsg(facility, level, ...)      IS_LOG_MSG(facility, #facility, level, __VA_ARGS__)
+    #define log_error(facility, ...)            IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_ERROR, __VA_ARGS__)
+    #define log_warn(facility, ...)             IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_WARN, __VA_ARGS__)
+    #define log_info(facility, ...)             IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_INFO, __VA_ARGS__)
+    #define log_more_info(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_INFO, __VA_ARGS__)
+    #define log_debug(facility, ...)            IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG, __VA_ARGS__)
+    #define log_more_debug(facility, ...)       IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_MORE_DEBUG, __VA_ARGS__)
+    #define log_bombastic(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_BOMBASTIC, __VA_ARGS__)
+    // #define debug_message(facility, ...)        IS_LOG_MSG(facility, #facility, IS_LOG_LEVEL_DEBUG, __VA_ARGS__)
 
 #if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
     static FILE* log_file = NULL;

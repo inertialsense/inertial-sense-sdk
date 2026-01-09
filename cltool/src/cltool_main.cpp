@@ -792,7 +792,7 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
     if ((isblPtr == NULL) && (fwPtr == NULL) && (level <= g_commandLineOptions.verboseLevel)) {
         msgOut += buffer;
         cout << msgOut << endl;
-        log_message(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
+        log_msg(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
     } else if (fwPtr) {
         if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority
             ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS))) {
@@ -808,7 +808,7 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
                 msgOut += utils::string_format(" :: %s", buffer);
 
             cout << msgOut << endl;
-            log_message(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
+            log_msg(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
         }
     }
 
