@@ -338,7 +338,7 @@ private:
     ISFwUpdaterCmd& getNextQueuedCmd(ISFwUpdaterCmd* curCmd = nullptr);
     ISFwUpdaterCmd& jumpToStep(const std::string& stepLabel);
     ISFwUpdaterCmd& runCommand(ISFwUpdaterCmd& cmd);
-    void cmd_ExtractPackage(ISFwUpdaterCmd& cmd);
+    void cmd_ExtractPackage(ISFwUpdaterCmd cmd);
     void cmd_SetTarget(ISFwUpdaterCmd& cmd);
     void cmd_WaitFor(ISFwUpdaterCmd& cmd);
     void cmd_Delay(ISFwUpdaterCmd& cmd);
