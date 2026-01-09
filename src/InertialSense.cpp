@@ -1544,7 +1544,7 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
     event.time = 123,
     event.senderSN = 0,
     event.senderHdwId = 0,
-    event.length = sizeof(did_event_filter_t),
+    event.length = sizeof(did_event_filter_t);
 
     did_event_filter_t filter = {};
     filter.portMask = portMask;
