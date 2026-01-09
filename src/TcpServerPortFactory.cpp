@@ -9,8 +9,8 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
+#include "ISConstants.h"
 #ifdef PLATFORM_IS_WINDOWS
-    #define NOMINMAX    // Windows.h is included somewhere and this prevents it from defining 'max' as a macro which breaks uri.hpp
     #include <winsock2.h>
     #include <ws2tcpip.h>
 #else
