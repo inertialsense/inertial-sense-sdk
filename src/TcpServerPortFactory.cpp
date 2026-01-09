@@ -9,26 +9,22 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
+#include "ISConstants.h"
 #ifdef PLATFORM_IS_WINDOWS
-// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
-#define NOMINMAX
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+#else
+    #include <unistd.h>
+    #include <fcntl.h>
+    #include <arpa/inet.h>
+    #include <netdb.h>
 #endif
 
 #include <cerrno>
 #include <iostream>
-#include <uri.hpp>
-#include <util.h>
 
-#ifdef PLATFORM_IS_WINDOWS
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <unistd.h>
-#include <fcntl.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#endif
-
+#include "util/uri.hpp"
+#include "util/util.h"
 #include "TcpPortFactory.h"
 #include "TcpServerPortFactory.h"
 #include "PortManager.h"
@@ -72,7 +68,7 @@ port_handle_t TcpServerPortFactory::bindPort(const std::string& pName, uint16_t 
         return nullptr;
     }
     std::string uriHost {url.get_host()};
-    if (uriHost.starts_with("[") && uriHost.ends_with("]")) {
+    if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
         uriHost = uriHost.substr(1, uriHost.size() - 2);
     }
     std::string uriPort {url.get_port()};
@@ -128,7 +124,7 @@ bool TcpServerPortFactory::validatePort(const std::string& pName, uint16_t pType
         return false;
     }
     std::string uriHost {url.get_host()};
-    if (uriHost.starts_with("[") && uriHost.ends_with("]")) {
+    if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
         uriHost = uriHost.substr(1, uriHost.size() - 2);
     }
     std::string uriPort {url.get_port()};

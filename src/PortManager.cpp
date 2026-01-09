@@ -48,8 +48,8 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
 
     // check to make sure all knownPorts are also representing in the top-level PortManager's set
     for (auto& [entry, port] : knownPorts ) {
-        if (!this->contains(port)) {
-            this->insert(port);
+        if (std::find_if(begin(), end(), [&](port_handle_t p){ return p == port; }) == end()) { // C++17 compliant, since we can't used set::contains()
+            insert(port);
             portsChanged = true;   // note that we added/updated the list of ports
         }
     }

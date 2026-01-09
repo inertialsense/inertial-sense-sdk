@@ -922,7 +922,7 @@ is_operation_result InertialSense::updateFirmware(fwUpdate::target_t targetDevic
     // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
     auto plHandle = portManager.addPortListener(
             [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
-                printf("Detected port change (%s) during Firmware Udpate: %s\n", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
+                log_info(IS_LOG_PORT_MANAGER, "Detected port change (%s) during Firmware Update: %s", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
                 if (event == PortManager::PORT_ADDED) {
                     deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
                 }
@@ -1168,7 +1168,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     }
 
     if (m_enableDeviceValidation) {
-        log_info(IS_LOG_FACILITY_NONE, "Starting device validation on %lu registered ports.\n", portManager.size());
+        log_info(IS_LOG_FACILITY_NONE, "Starting device validation on %lu registered ports.", portManager.size());
 
         // we'll make a copy of all the port handles (into a set); as we validate each, we'll remove it from this new set until they are all gone
         for (auto port : portManager.locked_range()) portsToValidate.insert(port);
@@ -1179,7 +1179,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // remove all ports from portToValidate if a device has bound to that port
         for ( auto d : deviceManager ) portsToValidate.erase(d->port);
 
-        log_info(IS_LOG_FACILITY_NONE, "Completed device validation for %lu devices, on %lu ports.\n", deviceManager.size(), portManager.size());
+        log_info(IS_LOG_FACILITY_NONE, "Completed device validation for %lu devices, on %lu ports.", deviceManager.size(), portManager.size());
         if (!portsToValidate.empty()) {
             std::string names;
             for (auto port : portsToValidate) {
@@ -1187,7 +1187,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                 names += std::string(portName(port));
             }
             // auto names = utils::join_to_string<std::set<std::string>>(portsToValidate, ", ");
-            log_error(IS_LOG_FACILITY_NONE, "Timeout waiting to validate %lu ports: %s.\n", portsToValidate.size(), names.c_str());
+            log_error(IS_LOG_FACILITY_NONE, "Timeout waiting to validate %lu ports: %s.", portsToValidate.size(), names.c_str());
         }
     }
 
@@ -1540,17 +1540,14 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
 
-    did_event_t event = {
-            .time = 123,
-            .senderSN = 0,
-            .senderHdwId = 0,
-            .length = sizeof(did_event_filter_t),
-    };
+    did_event_t event = {};
+    event.time = 123,
+    event.senderSN = 0,
+    event.senderHdwId = 0,
+    event.length = sizeof(did_event_filter_t);
 
-    did_event_filter_t filter = {
-            .portMask = portMask,
-    };
-
+    did_event_filter_t filter = {};
+    filter.portMask = portMask;
     filter.eventMask.priorityLevel = priorityLevel;
     filter.eventMask.msgTypeIdMask = msgTypeIdMask;
 
