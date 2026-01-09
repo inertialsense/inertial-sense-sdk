@@ -1639,9 +1639,9 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
     SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
 
-    SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
-    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967234)
-    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967233)
+    SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) // Puts the GNSS receiver into no transmit "quiet" mode.  This command is useful to prevent the GNSS transmitter from interfering with firmware updates.
+    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967234) // Soft resets the GNSS receiver without a full system reset.
+    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967233) // Hard resets the GNSS receiver.
 
     SYS_CMD_RESET_EKF_STATES                            = 70,           // (uint32 inv: 4294967226) // Resets the Extended Kalman Filter (EKF) states in the INS solution. Use to reinitialize navigation filter without a full system reset.
 
