@@ -151,7 +151,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t
     // let's get the file's MD5 hash
     int hashError = (flags & fwUpdate::IMG_FLAG_useAlternateMD5)
             ? altMD5_file_details(srcFile, fileSize, session_md5)
-            : md5_file_details(srcFile, fileSize, session_md5);
+            : md5_stream_details(*srcFile, fileSize, session_md5);
     if (hashError != 0) {
         return fwUpdate::ERR_INVALID_IMAGE;
     }
@@ -612,12 +612,15 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
     return *activeCmd;
 }
 
-void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd& cmd) {
-    // std::lock_guard<std::recursive_mutex> lock(mutex);
+void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
+    // NOTE: Unlike other actions, use of copy of the ISFwUpdaterCmd, because processPackageManifest() by design
+    // modifies the list of commands to process, which could possibly invalidate the underlying reference to this
+    // command.
 
-    // !! REMEBMER cmd[0] is getting the first argument (std::string) from cmd !!!
-    bool isManifest = (cmd[0].length() >= 5) && (0 == cmd[0].compare (cmd[0].length() - 5, 5, ".yaml"));
-    pkg_error_e err_result = isManifest ? processPackageManifest(cmd[0]) : openFirmwarePackage(cmd[0]);
+    // std::lock_guard<std::recursive_mutex> lock(mutex);
+    std::string arg0 = cmd[0];  // REMEMBER cmd[0] is getting the first argument (std::string) from cmd
+    bool isManifest = (arg0.length() >= 5) && (0 == arg0.compare (arg0.length() - 5, 5, ".yaml"));
+    pkg_error_e err_result = isManifest ? processPackageManifest(arg0) : openFirmwarePackage(arg0);
     if (err_result != PKG_SUCCESS) {
         const char *err_msg = nullptr;
         switch (err_result) {
@@ -660,7 +663,7 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd& cmd) {
             case PKG_SUCCESS:
                 break;
         }
-        handleCommandError(cmd, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", cmd[0].c_str(), err_result, err_msg);
+        handleCommandError(cmd, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", arg0.c_str(), err_result, err_msg);
     }
 }
 
@@ -1064,9 +1067,13 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
                             } else
                                 return PKG_ERR_IMAGE_FILE_NOT_FOUND;
                         } else {
-                            std::ifstream stream(filename);
-                            if (md5_file_details((std::istream*)&stream, file_size, file_hash) != 0)
+                            std::ifstream stream(filename, std::ios_base::binary);
+                            if (md5_stream_details(stream, file_size, file_hash) != 0) {
+                                // If you're here, and you don't know why.. check your current working directory.
+                                // std::string workDir = ISFileManager::CurrentWorkingDirectory();
+                                // printf("%s", workDir.c_str());
                                 return PKG_ERR_IMAGE_FILE_NOT_FOUND; // file is invalid or non-existent
+                            }
                         }
 
                         // the following are optional parameters; including them in the manifest image forces us to validate that parameter BEFORE allowing the image to be send to the device
