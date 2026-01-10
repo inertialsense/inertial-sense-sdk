@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.16.3)
 
 project(InertialSenseSDK)
 
@@ -107,16 +107,18 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         external
 )
 
-# Build using C17 and CXX20
-set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
-set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-# Add compile options that will propagate to targets linking against the SDK
-# Use INTERFACE to only affect dependent targets (since SDK headers have deprecated code)
 if(NOT WIN32)
-    target_compile_options(${PROJECT_NAME} INTERFACE -Wno-deprecated-declarations)
+	# Build using C11 and CXX17 -- Except for Windows, which required CXX20
+	set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
+	set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+
+	target_compile_options(${PROJECT_NAME} INTERFACE -Wno-deprecated-declarations)
+else()
+	set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
+	set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 endif()
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Other settings
 if (WIN32)
@@ -130,7 +132,7 @@ if (WIN32)
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND cmd /C scripts\\lib\\update_version_files.bat "${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND cmd /C scripts\\lib\\update_version_files.bat -p IS_SDK_ "${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
@@ -151,7 +153,7 @@ elseif(APPLE)
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND bash -c "scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND bash -c "scripts/lib/update_version_files.sh -p IS_SDK_ ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
@@ -183,7 +185,7 @@ elseif(LINUX)
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND bash -c "scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND bash -c "scripts/lib/update_version_files.sh -p IS_SDK_ ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)

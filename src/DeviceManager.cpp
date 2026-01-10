@@ -414,7 +414,7 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
         printf("Evaluating %s\n", imgFile.c_str());
         if (utils::devInfoFromString(imgFile, tmpDevInfo)) {
             auto hdwId = ENCODE_DEV_INFO_TO_HDW_ID(tmpDevInfo);
-            if (!fwImages.contains(hdwId))
+            if (fwImages.find(hdwId) != fwImages.end())
                 fwImages[hdwId] = std::map<dev_info_t, std::string, decltype(&utils::compareFirmwareVersions)>(&utils::compareFirmwareVersions);
             fwImages[hdwId][tmpDevInfo] = imgPath;
         }

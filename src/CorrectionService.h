@@ -163,7 +163,7 @@ public:
      * Checks the source port for data and forwards it to all devices
      * @return 0 if no packets processed, positive number representing number of packets processed, negative number representing errno
      */
-    [[nodiscard]] int step() const;
+    int step();
 
 protected:
     port_handle_t source {};
@@ -175,6 +175,7 @@ private:
     std::vector<tRTCM3PacketListenerCallback> rtcm3PacketListeners;
     is_comm_instance_t packetParser = {};
     uint32_t rtcm3PacketsProcessed = 0;
+    uint32_t lastConnAttemptTs = 0;
 
     pfnIsCommGenMsgHandler previousRtcm3Handler = nullptr;
     pfnIsCommGenMsgHandler previousErrorHandler = nullptr;

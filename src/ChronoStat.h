@@ -9,12 +9,26 @@
 #ifndef IS_SDK__CHRONO_STAT_H
 #define IS_SDK__CHRONO_STAT_H
 
+
 #include <string>
 #include <chrono>
 #include <cmath>
 
 #include "util/util.h"
 #include "core/msg_logger.h"
+
+// #define ADDITIONAL_DEBUGGING     // Use this if you are troubleshooting the ChronoStat calculations in sample();
+
+#ifdef ADDITIONAL_DEBUGGING
+#define START_DEBUG_MSG()           std::string logMsg = utils::string_format("%-20s ts:%6.3f :: ", label.c_str(), time)
+#define APPEND_DEBUG_MSG(...)       logMsg += utils::string_format(__VA_ARGS__)
+#define END_DEBUG_MSG(msg_level)    msg_level(IS_LOG_CHRONO_STATS, "%s", logMsg.c_str())
+#else
+#define START_DEBUG_MSG()           {}
+#define APPEND_DEBUG_MSG(...)       {}
+#define END_DEBUG_MSG(msg_level)    {}
+#endif
+
 
 /**
  * A utility class which calculates a number of time-based measurements from 2 or more samples over time.
@@ -149,6 +163,7 @@ public:
      * @brief samples the specified time (or current clock time as seconds since epoch if not specified) and updates stats
      * @param time a numberical representation of some time, as seconds.
      */
+
     void sample(double time = NAN) {
         localTimeTs = std::chrono::high_resolution_clock::now();
         if (std::isnan(time)) {      // == FP_NAN
@@ -157,7 +172,7 @@ public:
             time = seconds_double.count();                                          // Get the count of seconds as a double
         }
 
-        log_debug(IS_LOG_CHRONO_STATS, "%-20s ts:%6.3f :: ", label.c_str(), time);
+        START_DEBUG_MSG();
 
         cnt++;
         if (std::isnan(timeLast))
@@ -174,11 +189,11 @@ public:
             dtCnt++;
             duration += dt;
 
-            log_debug(IS_LOG_CHRONO_STATS, "dt %.4f  ", dt);
-            log_debug(IS_LOG_CHRONO_STATS, "avg %.4f  ", dtAvg);
+            APPEND_DEBUG_MSG("dt %.4f  ", dt);
+            APPEND_DEBUG_MSG("avg %.4f  ", dtAvg);
 
-            if (dt < dtMin) { dtMin = dt;  dtMinTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMin %.3f  ", dtMin); }
-            if (dt > dtMax) { dtMax = dt;  dtMaxTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMax %.3f  ", dtMax); }
+            if (dt < dtMin) { dtMin = dt;  dtMinTime = time; APPEND_DEBUG_MSG("dtMin %.3f  ", dtMin); }
+            if (dt > dtMax) { dtMax = dt;  dtMaxTime = time; APPEND_DEBUG_MSG("dtMax %.3f  ", dtMax); }
 
             if (std::isnan(dtLast)) {   // First sample
                 ddtMin = INVALID_DDT_MIN_STAT;
@@ -190,8 +205,8 @@ public:
                 ddtAvg = betaLocal * ddtAvg + alphaLocal * ddt;
                 ddtCnt++;
 
-                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMin %.3f  ", dtMin); }
-                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; log_debug(IS_LOG_CHRONO_STATS, "dtMax %.3f  ", dtMax); }
+                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; APPEND_DEBUG_MSG("dtMin %.3f  ", dtMin); }
+                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; APPEND_DEBUG_MSG("dtMax %.3f  ", dtMax); }
             }
 
             rate = (dt != 0) ? (1.0 / dt) : 0;
@@ -199,7 +214,7 @@ public:
             dtLast = dt;
         }
         timeLast = time;
-        log_debug(IS_LOG_CHRONO_STATS, "\n");
+        END_DEBUG_MSG(log_more_debug);
     };
 
 
@@ -209,12 +224,14 @@ public:
      * @return a string summarizing the values managed by this stat.
      */
     std::string toString(bool multiline = false) {
-        if (!hasData())
-            return "  !! Insufficient number of samples to determine statistics.";
-
-        std::string out = utils::string_format("  dt: avg %5.1f ms, min %5.1f ms, max %5.1f ms (period: %.3fs %4d smpls)", dtAvg * 1.0e3, dtMin * 1.0e3, dtMax * 1.0e3, duration, cnt);
-        if (multiline) {
-            out += utils::string_format("\n ddt: avg %5.1f ms, min %5.1f ms, max %5.1f ms", ddtAvg * 1.0e3, ddtMin * 1.0e3, ddtMax * 1.0e3);
+        std::string out = getLabel() + " ::";
+        if (!hasData()) {
+            out += "  !! Insufficient number of samples to determine statistics.";
+        } else {
+            out += utils::string_format("  dt: avg %5.1f ms, min %5.1f ms, max %5.1f ms (period: %.3fs %4d smpls)", dtAvg * 1.0e3, dtMin * 1.0e3, dtMax * 1.0e3, duration, cnt);
+            if (multiline) {
+                out += utils::string_format("\n ddt: avg %5.1f ms, min %5.1f ms, max %5.1f ms", ddtAvg * 1.0e3, ddtMin * 1.0e3, ddtMax * 1.0e3);
+            }
         }
         return out;
     };

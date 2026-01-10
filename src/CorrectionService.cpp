@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <string>
 
+#include "core/msg_logger.h"
 #include "PortManager.h"
 
 CorrectionService::CorrectionService(port_handle_t srcPort) {
@@ -49,11 +50,11 @@ void CorrectionService::addPort(port_handle_t port) {
 }
 
 void CorrectionService::removePort(port_handle_t port) {
-    std::erase(this->ports, port);
+    ports.erase(std::remove(ports.begin(), ports.end(), port), ports.end());
 }
 
 bool CorrectionService::hasPort(port_handle_t port) {
-    return std::ranges::find(this->ports, port) != this->ports.end();
+    return std::find(this->ports.begin(), this->ports.end(), port) != this->ports.end();
 }
 
 void CorrectionService::addDevice(device_handle_t device) {
@@ -90,10 +91,14 @@ void CorrectionService::removeRTCM3PacketListeners(const uint32_t id) {
     }
 }
 
-int CorrectionService::step() const {
-    if (!portIsOpened(source) && portOpen(source)) {
+int CorrectionService::step() {
+    if (!portIsOpened(source)) {
+        if ((lastConnAttemptTs < current_timeMs()) && (portOpen(source) != PORT_ERROR__NONE)) {
+            lastConnAttemptTs = current_timeMs() + 2500;    // retry again in 2.5 seconds
+        }
         return -1;
     }
+
     unsigned int rtcm3PacketsProcessedPrevCount = rtcm3PacketsProcessed;
     is_comm_port_parse_messages(source);
     return (int)(rtcm3PacketsProcessed - rtcm3PacketsProcessedPrevCount);
@@ -174,8 +179,19 @@ int CorrectionService::finalPacketFilter(const uint8_t *inputBuffer, const uint3
 }
 
 void CorrectionService::sendData(const uint8_t *inputBuffer, const uint32_t inputLength) {
+    std::vector<port_handle_t> deadPorts;
+
     for (const auto port: ports) {
-        portWrite(port, inputBuffer, inputLength);
+        switch (portWrite(port, inputBuffer, inputLength)) {
+            case PORT_ERROR__INVALID:
+                deadPorts.push_back(port);  // invalid port - did the device reboot?
+                break;
+        }
+    }
+
+    // cleanup dead ports...
+    for (const auto port: deadPorts) {
+        removePort(port);
     }
 }
 

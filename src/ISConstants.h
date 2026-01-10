@@ -41,6 +41,8 @@ extern "C" {
     #define _CRT_SECURE_NO_DEPRECATE
     #endif
 
+    #define NOMINMAX    // Windows.h is included somewhere and this prevents it from defining 'max' as a macro which breaks uri.hpp
+
     // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
     #include <winsock2.h>
     #define _WINSOCKAPI_        // THIS shouldn't be necessary - winsock2.h should define it.

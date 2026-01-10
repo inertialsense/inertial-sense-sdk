@@ -1928,6 +1928,7 @@ typedef struct PACKED
                                             | RMC_BITS_GPS_BASE_RAW \
                                             | RMC_BITS_GPS1_RTK_POS_REL \
                                             | RMC_BITS_GPS1_RTK_HDG_REL \
+                                            | RMC_BITS_GPX_STATUS \
                                             | RMC_BITS_INTERNAL_PPD \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
@@ -1950,7 +1951,6 @@ typedef struct PACKED
                                             | RMC_BITS_GPS1_SAT \
                                             | RMC_BITS_GPS2_SAT \
                                             | RMC_BITS_EVENT \
-                                            | RMC_BITS_GPX_STATUS \
                                             | RMC_BITS_GPX_RTK_DBG)
 #define RMC_PRESET_IMX_PPD_GROUND_VEHICLE   (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_WHEEL_ENCODER \
@@ -3322,7 +3322,7 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
     PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,          
-    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3
+    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3 (excluding TBED-3.0) Timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
     PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
@@ -3331,7 +3331,8 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,          // "
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
-    PLATFORM_CFG_TYPE_COUNT                     = (int)21,
+    PLATFORM_CFG_TYPE_TBED3_0                   = (int)21,          // Testbed-3.0.  Timepulse on G5 (pin 9)
+    PLATFORM_CFG_TYPE_COUNT                     = (int)22,
 
     // Presets
     PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,

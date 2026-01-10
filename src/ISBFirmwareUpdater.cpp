@@ -106,11 +106,8 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, int total_chu
 
 // this is called internally by processMessage() to do the things to do, it should also be called periodically to send status updated, etc.
 bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
-
     if (session_status == fwUpdate::NOT_STARTED)
         return false;
-
-    // printf("fwUpdate_step(): %s\n", fwUpdate_getStatusName(session_status)); fflush(stdout);
 
     // if we're running ISBootloader, so we need to make sure that we have EXPLICIT_READ access to the port - so that the ISComm parser doesn't try and pull data...
     if (device && portIsValid(device->port) && (portType(device->port) & PORT_TYPE__COMM)) {
@@ -156,18 +153,6 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Waiting for device [%s] to reboot into ISbl mode.", ISDevice::getIdAsString(target_devInfo).c_str()); // note we use target_devInfo since we don't have a good device yet
                 }
             }
-        } else {
-/*
-            // FIXME: This causes the EvalTool to crash occasionally -
-            //   I think the Port Discovery interferes with the normal EvalTool Port Discovery
-            if (nextPortCheck < current_timeMs()) {
-                nextPortCheck = current_timeMs() + 2500;
-                // NO Device found -- probably waiting for it to reboot.  Let's check for knew ports with no known Devices
-                if (portManager.discoverPorts()) {
-                    deviceManager.discoverDevices();
-                }
-            }
-*/
         }
     }
 
@@ -227,7 +212,6 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         fwUpdate_sendProgress();
     }
 
-    // printf(" %s\n", fwUpdate_getStatusName(session_status)); fflush(stdout);
     return true;
 }
 
@@ -858,7 +842,6 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     unsigned char checkSumHex[3];
     SNPRINTF((char*)checkSumHex, 3, "%02X", checkSum);
 
-
     if (!portWriteAndWaitForTimeout(device->port, checkSumHex, 2, (unsigned char *) ".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT)) {
         fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
         return IS_OP_ERROR;
@@ -871,10 +854,9 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     return IS_OP_OK;
 }
 
-is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint16_t charCount)
+is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint16_t charCount, bool& dataSent)
 {
-    (void)currentPage;
-
+    dataSent = false;
     if (charCount > MAX_SEND_COUNT)
     {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): charCount (%d) exceeded MAX_SEND_COUNT (%d).", charCount, MAX_SEND_COUNT);
@@ -891,7 +873,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
     if (currentOffset + byteCount > FLASH_PAGE_SIZE)
     {
         int pageByteCount = FLASH_PAGE_SIZE - currentOffset;
-        if ((pageByteCount < 0) || (pageByteCount > 255) || upload_hex_page(hexData, pageByteCount) != IS_OP_OK)
+        if ((pageByteCount < 0) || (pageByteCount > 255) || (upload_hex_page(hexData, pageByteCount) != IS_OP_OK))
         {
             fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): pageByteCount (%d) invalid or upload overruns current page.", pageByteCount);
             return IS_OP_ERROR;
@@ -899,12 +881,16 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
         hexData += (pageByteCount * 2);
         charCount -= (pageByteCount * 2);
+        dataSent = true;
     }
 
-    if (charCount != 0 && upload_hex_page(hexData, charCount / 2) != IS_OP_OK)
+    if (charCount != 0)
     {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): Unknown!!");
-        return IS_OP_ERROR;
+        if (upload_hex_page(hexData, charCount / 2) != IS_OP_OK) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): Unknown!!");
+            return IS_OP_ERROR;
+        }
+        dataSent = true;
     }
 
     return IS_OP_OK;
@@ -948,6 +934,176 @@ is_operation_result ISBFirmwareUpdater::fill_current_page()
 
     return IS_OP_OK;
 }
+
+/**
+ * This function processes an Intel HEX stream, line by line, and re-encodes it into a slightly more
+ * compact format, by combining short, contiguous but discrete records into a single larger record,
+ * before sending it over the wire to the device. This function will process as many records as it
+ * can until a record is sent to the device, at which point it will return.  This function is intended
+ * to be called repeatedly until the entire file is processed.
+ * @param byteStream
+ * @return one of IS_OP_* indicating the status of the processing of the stream.
+ *    IS_OP_OK if a record was sent to the device
+ *    IS_OP_CLOSED is the entire stream has been processed and there is no more data
+ *    IS_OP_ERROR if an error occurred while trying to process the stream
+ */
+is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byteStream)
+{
+    int lineLength;
+    // m_update_progress = 0.0f;
+    char line[HEX_BUFFER_SIZE];
+    int outputSize = 0;
+    int pad;
+    unsigned char tmp[5];
+    int subOffset = 0, i = 0;
+    bool recordSent = false;
+
+    if (lastSubOffset < 0) {
+        lastSubOffset = currentOffset;
+        outputPtr = output;
+    }
+
+    while (!recordSent && (lineLength = is_isb_read_line(byteStream, line)) != 0) {
+
+        if (lineLength > 12 && line[7] == '0' && line[8] == '0') {
+            if (lineLength > HEX_BUFFER_SIZE * 4) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) hex file line length too long");
+                return IS_OP_ERROR;
+            }
+
+            // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
+            memcpy(tmp, line + 3, 4);
+            tmp[4] = '\0';
+            subOffset = strtol((char*)tmp, 0, 16);
+
+            // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
+            // that the bytes that were skipped get set to something
+            if (subOffset > lastSubOffset) {
+
+                // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
+                pad = (subOffset - lastSubOffset);
+                if (outputPtr + pad >= outputPtrEnd) {
+                    if ((currentPage != 0) || (lastSubOffset != 0)) {
+                        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
+                        return IS_OP_ERROR;
+                    }
+
+                    lastSubOffset = m_isb_props.app_offset;
+                    pad = (subOffset - lastSubOffset);
+                }
+
+                while (pad-- != 0) {
+                    *outputPtr++ = 'F';
+                    *outputPtr++ = 'F';
+                }
+            }
+
+            // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
+            // check for overflow
+            pad = lineLength - 11;
+            if (outputPtr + pad >= outputPtrEnd) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Line data overflowed output buffer");
+                return IS_OP_ERROR;
+            }
+
+            for (i = 9; i < lineLength - 2; i++) {
+                *outputPtr++ = line[i];
+            }
+
+            // set the end offset so we can check later for skipped offsets
+            lastSubOffset = subOffset + ((lineLength - 11) / 2);
+            outputSize = (int)(outputPtr - output);
+
+            // we try to send the most allowed by this hex file format
+            if (outputSize < MAX_SEND_COUNT) {
+                // keep buffering
+                continue; // return IS_OP_OK;
+            }
+
+            // upload this chunk
+            if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), recordSent) != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload chunk");
+                return IS_OP_ERROR;
+            }
+
+            outputSize -= MAX_SEND_COUNT;
+
+            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (1)");
+                return IS_OP_ERROR;
+            }
+
+            if (outputSize > 0) {
+                // move the left-over data to the beginning
+                memmove(output, output + MAX_SEND_COUNT, outputSize);
+            }
+
+            // reset output ptr back to the next chunk of data
+            outputPtr = output + outputSize;
+        } else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13) {
+            memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
+            tmp[1] = '\0';
+            int newPage = strtol((char*)tmp, 0, 16);
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) flash page changed (%d) in stream.", newPage);
+
+            if (newPage == 0) {
+                lastSubOffset = currentOffset = m_isb_props.app_offset;
+                continue; // return IS_OP_OK;   // we've updated the page offset, let's keep going....
+            }
+
+            lastSubOffset = 0;
+            outputSize = (int)(outputPtr - output);
+
+            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (2)");
+                return IS_OP_ERROR;
+            }
+
+            // flush the remainder of data to the current page
+            if (upload_hex(output, outputSize, recordSent) != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex");
+                return IS_OP_ERROR;
+            }
+
+            // fill remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
+            if (fill_current_page() != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page");
+                return IS_OP_ERROR;
+            }
+
+            // change to the next page
+            currentPage = newPage;
+            currentOffset = 0;
+            if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to issue select page or to start programming");
+                return IS_OP_ERROR;
+            }
+
+            // set the output ptr back to the beginning, no more data is in the queue
+            outputPtr = output;
+        }
+        else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
+        {   // End of last page (end of file marker)
+            fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) End of last page/file.");
+            outputSize = (int)(outputPtr - output);
+
+            // flush the remainder of data to the page
+            if (upload_hex(output, outputSize, recordSent) != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex (last)");
+                return IS_OP_ERROR;
+            }
+            if (currentOffset != 0 && fill_current_page() != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page (last)");
+                return IS_OP_ERROR;
+            }
+
+            outputPtr = output;
+        }
+    }
+
+    return (lineLength == 0 ? IS_OP_CLOSED : IS_OP_OK);
+}
+
 
 /**
  * Processes an Intel hex file, one chunk/line at a time. This function is meant to be called
@@ -1016,165 +1172,6 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
     }
 
     return writeState;
-}
-
-is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byteStream)
-{
-
-    int lineLength;
-    // m_update_progress = 0.0f;
-    char line[HEX_BUFFER_SIZE];
-    int outputSize = 0;
-    int pad;
-    unsigned char tmp[5];
-    int subOffset = 0, i = 0;
-
-    if (lastSubOffset < 0) {
-        lastSubOffset = currentOffset;
-        outputPtr = output;
-    }
-
-    if ((lineLength = is_isb_read_line(byteStream, line)) == 0)
-        return IS_OP_CLOSED;
-
-    if (lineLength > 12 && line[7] == '0' && line[8] == '0') {
-        if (lineLength > HEX_BUFFER_SIZE * 4) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) hex file line length too long");
-            return IS_OP_ERROR;
-        }
-
-        // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
-        memcpy(tmp, line + 3, 4);
-        tmp[4] = '\0';
-        subOffset = strtol((char*)tmp, 0, 16);
-
-        // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
-        // that the bytes that were skipped get set to something
-        if (subOffset > lastSubOffset) {
-
-            // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
-            pad = (subOffset - lastSubOffset);
-            if (outputPtr + pad >= outputPtrEnd) {
-                // FIXME: There is some race-condition here that occasionally allows lastSubOffset = 0 when the current page is 0, when it should be lastSubOffset = m_isb_props.app_offset
-                //  this results in pad being > the buffersize - for now we'll check for that condition and correct it, if necessary
-                if ((currentPage != 0) || (lastSubOffset != 0)) {
-                    fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
-                    return IS_OP_ERROR;
-                }
-
-                lastSubOffset = m_isb_props.app_offset;
-                pad = (subOffset - lastSubOffset);
-            }
-
-            while (pad-- != 0) {
-                *outputPtr++ = 'F';
-                *outputPtr++ = 'F';
-            }
-        }
-
-        // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
-        // check for overflow
-        pad = lineLength - 11;
-        if (outputPtr + pad >= outputPtrEnd) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Line data overflowed output buffer");
-            return IS_OP_ERROR;
-        }
-
-        for (i = 9; i < lineLength - 2; i++) {
-            *outputPtr++ = line[i];
-        }
-
-        // set the end offset so we can check later for skipped offsets
-        lastSubOffset = subOffset + ((lineLength - 11) / 2);
-        outputSize = (int)(outputPtr - output);
-
-        // we try to send the most allowed by this hex file format
-        if (outputSize < MAX_SEND_COUNT) {
-            // keep buffering
-            return IS_OP_OK;
-        }
-
-        // upload this chunk
-        if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize)) != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload chunk");
-            return IS_OP_ERROR;
-        }
-
-        outputSize -= MAX_SEND_COUNT;
-
-        if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (1)");
-            return IS_OP_ERROR;
-        }
-
-        if (outputSize > 0) {
-            // move the left-over data to the beginning
-            memmove(output, output + MAX_SEND_COUNT, outputSize);
-        }
-
-        // reset output ptr back to the next chunk of data
-        outputPtr = output + outputSize;
-    } else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13) {
-        memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
-        tmp[1] = '\0';
-        int newPage = strtol((char*)tmp, 0, 16);
-        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) flash page changed (%d) in stream.", newPage);
-
-        if (newPage == 0) {
-            lastSubOffset = currentOffset = m_isb_props.app_offset;
-            return IS_OP_OK;
-        }
-
-        lastSubOffset = 0;
-        outputSize = (int)(outputPtr - output);
-
-        if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (2)");
-            return IS_OP_ERROR;
-        }
-
-        // flush the remainder of data to the current page
-        if (upload_hex(output, outputSize) != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex");
-            return IS_OP_ERROR;
-        }
-
-        // fill remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
-        if (fill_current_page() != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page");
-            return IS_OP_ERROR;
-        }
-
-        // change to the next page
-        currentPage = newPage;
-        currentOffset = 0;
-        if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to issue select page or to start programming");
-            return IS_OP_ERROR;
-        }
-
-        // set the output ptr back to the beginning, no more data is in the queue
-        outputPtr = output;
-    }
-    else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
-    {   // End of last page (end of file marker)
-        fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) End of last page/file.");
-        outputSize = (int)(outputPtr - output);
-
-        // flush the remainder of data to the page
-        if (upload_hex(output, outputSize) != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex (last)");
-            return IS_OP_ERROR;
-        }
-        if (currentOffset != 0 && fill_current_page() != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page (last)");
-            return IS_OP_ERROR;
-        }
-
-        outputPtr = output;
-    }
-
-    return IS_OP_OK;
 }
 
 

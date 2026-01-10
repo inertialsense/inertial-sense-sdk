@@ -764,8 +764,9 @@ void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char*
 void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...)
 {
     print_mutex.lock();
-    static char buffer[256];
+    std::string msgOut;
 
+    static char buffer[256];
     memset(buffer, 0, sizeof(buffer));
     if (str) {
         va_list ap;
@@ -789,21 +790,25 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
     }
 
     if ((isblPtr == NULL) && (fwPtr == NULL) && (level <= g_commandLineOptions.verboseLevel)) {
-        cout << buffer << endl;
+        msgOut += buffer;
+        cout << msgOut << endl;
+        log_msg(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
     } else if (fwPtr) {
         if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority
             ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS))) {
-            printf("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->getActiveTargetName());
+            msgOut += utils::string_format("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->getActiveTargetName());
             if (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS) {
                 int tot, num;
                 float percent = fwPtr->getProgress(&num, &tot) * 100.f;
-                printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
+                msgOut += utils::string_format(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
             } else if (g_commandLineOptions.verboseLevel > ::IS_LOG_LEVEL_MORE_INFO) {
                 // printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
             }
             if (buffer[0])
-                printf(" :: %s", buffer);
-            printf("\n");
+                msgOut += utils::string_format(" :: %s", buffer);
+
+            cout << msgOut << endl;
+            log_msg(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
         }
     }
 
@@ -990,13 +995,16 @@ static int cltool_dataStreaming()
             SLEEP_MS(1);
 
             uint8_t loopCnt = 0;
+            uint32_t nextPortCheck = current_timeMs() + 1000;
 
             // [C++ COMM INSTRUCTION] STEP 4: Read data
             while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
                 // FIXME: this is a little jank -- we should periodically check for ports, but in the cltool, but we only want to check for the same ports that we originally connected on??
-                if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST)
+                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
                     PortManager::getInstance().discoverPorts();
+                    nextPortCheck = current_timeMs() + 1500;
+                }
 
                 if (!inertialSenseInterface.Update())
                 {   // device disconnected, exit
