@@ -91,10 +91,14 @@ void CorrectionService::removeRTCM3PacketListeners(const uint32_t id) {
     }
 }
 
-int CorrectionService::step() const {
-    if (!portIsOpened(source) && portOpen(source)) {
+int CorrectionService::step() {
+    if (!portIsOpened(source)) {
+        if ((lastConnAttemptTs < current_timeMs()) && (portOpen(source) != PORT_ERROR__NONE)) {
+            lastConnAttemptTs = current_timeMs() + 2500;    // retry again in 2.5 seconds
+        }
         return -1;
     }
+
     unsigned int rtcm3PacketsProcessedPrevCount = rtcm3PacketsProcessed;
     is_comm_port_parse_messages(source);
     return (int)(rtcm3PacketsProcessed - rtcm3PacketsProcessedPrevCount);

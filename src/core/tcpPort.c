@@ -63,15 +63,14 @@ int tcpPortValidate(port_handle_t port) {
  */
 int tcpPortOpen(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
-    if (tcpPort->socket >= 0) { // The socket is already open, we don't need to do anything
-        return -EISCONN;
-    }
-    // Create new socket
-    tcpPort->socket = socket(tcpPort->addr.domain, SOCK_STREAM, IPPROTO_TCP);
-    if (tcpPort->socket < 0) {
-        tcpPort->socket = -errno; // File descriptors should always be positive so we can store the errno here
-        tcpPort->base.perror = errno; // Store errno somewhere where clients can read it
-        return tcpPort->socket; // Return error code to calling function
+    if (tcpPort->socket < 0) { // The socket is already open, we don't need to do anything
+        // Create new socket
+        tcpPort->socket = socket(tcpPort->addr.domain, SOCK_STREAM, IPPROTO_TCP);
+        if (tcpPort->socket < 0) {
+            tcpPort->socket = -errno; // File descriptors should always be positive so we can store the errno here
+            tcpPort->base.perror = errno; // Store errno somewhere where clients can read it
+            return tcpPort->socket; // Return error code to calling function
+        }
     }
 
     // Connect socket to remote
