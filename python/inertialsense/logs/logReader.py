@@ -704,7 +704,7 @@ class Log:
             if not success: 
                 failures.append(str)
             f.write(   "[%s] %s\n" % (("PASSED" if success else "FAILED"), str))
-        thresh_str = "Required    (<%ss, <%2.0f%% )    >%3.0f,  <%3.1f°" % (
+        thresh_str = "Required    (<%ss, >%2.0f%% )    >%3.0f,  <%3.1f°" % (
             self.format_minutes_seconds(threshold['timeToFirstFix']), 
             threshold['percentFix'], 
             threshold['arRatio'], 

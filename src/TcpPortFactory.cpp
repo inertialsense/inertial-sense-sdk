@@ -16,8 +16,8 @@
 #include "TcpPortFactory.h"
 #include "PortManager.h"
 #include <iostream>
-#include <uri.hpp>
-#include <util.h>
+#include <util/uri.hpp>
+#include <util/util.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -44,7 +44,7 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
         return nullptr;
     }
     std::string uriHost {url.get_host()};
-    if (uriHost.starts_with("[") && uriHost.ends_with("]")) {
+    if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
         uriHost = uriHost.substr(1, uriHost.size() - 2);
     }
     std::string uriPort {url.get_port()};
@@ -125,7 +125,7 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
         return false;
     }
     std::string uriHost {url.get_host()};
-    if (uriHost.starts_with("[") && uriHost.ends_with("]")) {
+    if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
         uriHost = uriHost.substr(1, uriHost.size() - 2);
     }
     std::string uriPort {url.get_port()};

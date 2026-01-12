@@ -43,7 +43,7 @@ void md5_final(md5Context_t& context, md5hash_t& hash);
 
 // Hash generation functions
 void md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data);
-int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5);
+int md5_stream_details(std::istream& is, size_t& filesize, md5hash_t& md5);
 int md5_file_details(const std::string& filename, size_t& filesize, md5hash_t& md5);
 
 // Hash match check

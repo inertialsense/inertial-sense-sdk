@@ -320,7 +320,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
 
     // Do not process ANSWER messages
     if (entry != MDNS_ENTRYTYPE_ANSWER) {
-        log_warn(IS_LOG_FACILITY_MDNS, "Unable to process non ANSWER responses: Not Supported.");
+        log_more_debug(IS_LOG_FACILITY_MDNS, "Unable to process non ANSWER responses: Not Supported.");
         return -ENOTSUP;
     }
 
