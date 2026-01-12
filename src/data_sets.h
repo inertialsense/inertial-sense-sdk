@@ -969,7 +969,9 @@ enum eImu3Status
     IMU3_STATUS_ACC_Y_OK                        = (int)0x00000010,
     IMU3_STATUS_ACC_Z_OK                        = (int)0x00000020,    
     /** Number of IMU OK bits */
-    IMU3_STATUS_IMU_BITSIZE                     = 6,
+    IMU3_STATUS_IMU_OK_BITSIZE                  = 6,
+    /** IMU valid mask */
+    IMU3_STATUS_IMU_OK_MASK                     = (int)0x0000003F,
     
     /** Sensor saturation */
     IMU3_STATUS_SATURATION_GYR                  = (int)0x40000000,

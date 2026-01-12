@@ -181,8 +181,8 @@ void tripleToSingleImu(imu_t *result, const imu3_t *imu3)
     for (int d=0; d<NUM_IMU_DEVICES; d++)
     {
         const imus_t *I = &imu3->I[d];
-        uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (d*IMU3_STATUS_IMU_BITSIZE));
-        uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (d*IMU3_STATUS_IMU_BITSIZE));
+        uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (d*IMU3_STATUS_IMU_OK_BITSIZE));
+        uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (d*IMU3_STATUS_IMU_OK_BITSIZE));
         
         for (int a=0; a<3; a++)
         {
