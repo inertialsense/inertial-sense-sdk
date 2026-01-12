@@ -1391,10 +1391,10 @@ class logPlot:
                     time   = self.getData(d, DID_IMU, 'time')
                     status = self.getData(d, DID_IMU, 'status')
                     title  = 'IMU Status - '
-                if not len(time):
-                    time   = self.getData(d, DID_IMU3_RAW, 'time')
-                    status = self.getData(d, DID_IMU3_RAW, 'status')
-                    title  = 'IMU3-RAW Status - '
+                # if not len(time):
+                #     time   = self.getData(d, DID_IMU3_RAW, 'time')
+                #     status = self.getData(d, DID_IMU3_RAW, 'status')
+                #     title  = 'IMU3-RAW Status - '
                 if not len(time):
                     return
 
@@ -1406,22 +1406,22 @@ class logPlot:
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000001) != 0))
                 p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr1 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'X Gyr OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr2 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'Y Gyr OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr3 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'Z Gyr OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000008) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc1 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'X Acc1 OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc2 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'Y Acc2 OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc3 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'Z Acc3 OK')
                 cnt += 1
                 cnt += 1
 
@@ -1438,30 +1438,19 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00010000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr1 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00020000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr2 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00040000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr3 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00080000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc1 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00100000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc2 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00200000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc3 OK')
-                cnt += 1
-                cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x01000000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Gyr Reject')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x02000000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Acc Reject')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((status & 0x40000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Gyro Saturation')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x80000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Accel Saturation')
                 cnt += 1
                 cnt += 1
 

@@ -744,16 +744,16 @@ static inline int is_nan_vec3(double v[3])
 
 static inline int is_valid_vec3_f(float v[3])
 {
-    return  is_valid_f(v[0]) && 
-            is_valid_f(v[1]) && 
-            is_valid_f(v[2]);
+    return  is_finite_f(v[0]) && 
+            is_finite_f(v[1]) && 
+            is_finite_f(v[2]);
 }
 
 static inline int is_valid_vec3(double v[3])
 {
-    return  is_valid(v[0]) && 
-            is_valid(v[1]) && 
-            is_valid(v[2]);
+    return  is_finite(v[0]) && 
+            is_finite(v[1]) && 
+            is_finite(v[2]);
 }
 
 /* Array contains NAN

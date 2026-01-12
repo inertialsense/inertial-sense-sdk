@@ -346,6 +346,46 @@ extern "C" {
 #define _ROUNDUP(numToRound, multiple) ((((numToRound) + (multiple) - 1) / (multiple)) * (multiple))
 #endif
 
+static inline float inv_count_upto10(int n)
+{
+    // n expected 0..10
+    // Table lookup is usually cheaper than float divide on Cortex-M.
+    // If there's any chance n could exceed 10, clamp or fall back.
+    static const float inv[11] = {
+        0.0f,               // 0 -> output 0
+        1.0f,               // 1
+        0.5f,               // 2
+        0.333333343f,       // 3
+        0.25f,              // 4
+        0.2f,               // 5
+        0.166666667f,       // 6
+        0.142857143f,       // 7
+        0.125f,             // 8
+        0.111111111f,       // 9
+        0.1f                // 10
+    };
+
+    return inv[n];
+}
+
+static inline int is_nan_f(float v)
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v != v);
+#else
+    return isnan(v);
+#endif
+}
+
+static inline int is_nan(double v)
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v != v);
+#else
+    return isnan(v);
+#endif
+}
+
 static inline int is_inf_f(float v)
 {
     return isinf(v);
@@ -356,24 +396,22 @@ static inline int is_inf(double v)
     return isinf(v);
 }
 
-static inline int is_nan_f(float v)
+static inline int is_finite_f(float v)  // Not NaN or INF
 {
-    return v != v;
+#if PLATFORM_IS_EMBEDDED
+    return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
+#else
+    return isfinite(v);
+#endif
 }
 
-static inline int is_nan(double v)
+static inline int is_finite(double v)   // Not NaN or INF
 {
-    return v != v;
-}
-
-static inline int is_valid_f(float v)
-{
-    return v == v;
-}
-
-static inline int is_valid(double v)
-{
-    return v == v;
+#if PLATFORM_IS_EMBEDDED
+    return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
+#else
+    return isfinite(v);
+#endif
 }
 
 #ifndef _ARRAY_BYTE_COUNT
