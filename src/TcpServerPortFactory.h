@@ -108,6 +108,10 @@ protected:
 
     void stopListening();
 
+    int getClientConnectionCount() {
+        return knownSockets.size();
+    }
+
     std::vector<socket_entry_t> getClientSockets() {
         std::vector<socket_entry_t> out;
         for (const auto& ks : knownSockets)

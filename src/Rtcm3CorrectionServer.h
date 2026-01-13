@@ -13,7 +13,7 @@
 #include "CorrectionService.h"
 #include "TcpServerPortFactory.h"
 
-class Rtcm3CorrectionServer : protected CorrectionService, protected TcpServerPortFactory {
+class Rtcm3CorrectionServer : public CorrectionService, protected TcpServerPortFactory {
 public:
     explicit Rtcm3CorrectionServer(int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : TcpServerPortFactory(port, listenAddr, max_connections) {
         startListening();
@@ -29,6 +29,7 @@ public:
 
     ~Rtcm3CorrectionServer() {
         stopListening();        // don't accept new connections
+        for (auto p : ports) portClose(p);  // disconnect all clients when we shutdown
         shutdownAllClients();   // terminate existing connections
     };
 
@@ -68,8 +69,6 @@ public:
     device_handle_t& getSourceDevice() { return sourceDevice; }
 
     uint64_t getSourceDeviceID() { return srcDeviceId; }
-
-    port_handle_t getSourcePort() { return (sourceDevice ? sourceDevice->port : nullptr); }
 
 private:
     uint64_t        srcDeviceId = 0;             // selected device UID (derived from hdwId + SN)

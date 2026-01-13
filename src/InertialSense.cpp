@@ -116,14 +116,13 @@ static int staticProcessRxNmea(void* ctx, const unsigned char* msg, int msgSize,
     return 0;
 }
 
-InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<DeviceFactory*> dFactories) : m_tcpServer(this)
+InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<DeviceFactory*> dFactories)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
     m_logThread = NULLPTR;
     m_lastLogReInit = time(0);
     m_clientBufferBytesToSend = 0;
-    m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;  // For Intel.
 
     // register device factories before we do port factories, so if (for some strange reason) ports get discovered early, there is a device factory to handle it
@@ -189,14 +188,13 @@ InertialSense::InertialSense(
         pfnIsCommGenMsgHandler  handlerUblox,
         pfnIsCommGenMsgHandler  handlerRtcm3,
         pfnIsCommGenMsgHandler  handlerSpartn,
-        pfnOnNewDeviceHandler handlerNewDevice) : m_tcpServer(this)
+        pfnOnNewDeviceHandler handlerNewDevice)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
     m_logThread = NULLPTR;
     m_lastLogReInit = time(0);
     m_clientBufferBytesToSend = 0;
-    m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;  // For Intel.
 
     deviceManager.addDeviceFactory((DeviceFactory*)&ImxDeviceFactory::getInstance());
@@ -236,7 +234,6 @@ InertialSense::InertialSense(
 InertialSense::~InertialSense()
 {
     Close();
-    CloseServerConnection();
     DisableLogging();
     s_is = nullptr;
 }
@@ -407,120 +404,18 @@ bool InertialSense::SetLoggerEnabled(
     return EnableLogger(logEnable, logPath, logOptions, rmcPreset, rmcOptions);
 }
 
-void InertialSense::CloseServerConnection()
-{
-    m_tcpServer.Close();
-    // m_serialServer.Close();
-}
-
-// [type]:[ip/url]:[port]
-bool InertialSense::CreateHost(const string& connectionString)
-{
-    // if no serial connection, fail
-    if (!IsOpen())
-    {
-        return false;
-    }
-
-    CloseServerConnection();
-
-    vector<string> pieces;
-    splitString(connectionString, ':', pieces);
-    if (pieces.size() < 3)
-    {
-        return false;
-    }
-
-    string type     = pieces[0];    // TCP, SERIAL
-    string host     = pieces[1];    // IP / URL
-    string port     = pieces[2];
-
-    if (type != "TCP")
-    {
-        return false;
-    }
-
-    StopBroadcasts();
-
-    return (m_tcpServer.Open(host, atoi(port.c_str())) == 0);
-}
-
-#if 0
-size_t InertialSense::DeviceCount()
-{
-    //return m_comManagerState.devices.size();
-    return size();
-}
-
-/**
- * Returns a vector of available, connected devices
- * @return
- */
-std::list<device_handle_t>& InertialSense::getDevices() {
-    // return m_comManagerState.devices;
-    return *this;
-}
-
-/**
- * Returns a vector of available, connected devices
- * @return
- */
-std::vector<device_handle_t> InertialSense::getDevicesAsVector() {
-    std::vector<device_handle_t> vecOut;
-    for (auto device : m_comManagerState.devices) {
-        vecOut.push_back(device);
-    }
-    return vecOut;
-}
-
-/**
- * Returns the ISDevice instance associated with the specified port, or NULL if there is no associated device
- * @param port
- * @return
- */
-device_handle_t InertialSense::getDevice(port_handle_t port) {
-    for (auto device : m_comManagerState.devices) {
-        if (device->port == port)
-            return device;
-    }
-
-    return NULL;
-}
-
-/**
- * Returns the ISDevice instance associated with the specified port, or NULL if there is no associated device
- * @param port
- * @return
- */
-device_handle_t InertialSense::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
-    for (auto device : m_comManagerState.devices) {
-        if ((device->hdwId == hdwId) && (device->devInfo.serialNumber == serialNum))
-            return device;
-    }
-
-    return NULL;
-}
-
-#endif
 
 
 bool InertialSense::Update()
 {
     m_timeMs = current_timeMs();
 
-    if (m_tcpServer.IsOpen() && DeviceCount() > 0)
-    {
-        UpdateServer();
-    }
-    else
-    {
-        // [C COMM INSTRUCTION]  2.) Update each device at regular interval to send and receive data.
-        // Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
-        // task system with serial port read function that does NOT incorporate a timeout.
-        for (auto device : deviceManager)
-            if (device)
-                device->step();
-    }
+    // [C COMM INSTRUCTION]  2.) Update each device at regular interval to send and receive data.
+    // Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
+    // task system with serial port read function that does NOT incorporate a timeout.
+    for (auto device : deviceManager)
+        if (device)
+            device->step();
 
     // if all serial ports have closed, shutdown
     bool anyOpen = false;
@@ -531,77 +426,6 @@ bool InertialSense::Update()
     }
 
     return anyOpen;
-}
-
-/**
- * TCP Server primary handler - parses data received via the first connected device, looking for RTCM3/UBLOX protocol
- * and sends that same data out to the underlying ISTCPServer's connected clients
- * @return always returns true, though should probably return false if the m_tcpServer has no active clients (or something)
- */
-bool InertialSense::UpdateServer()
-{
-    // As I understand it, this function is responsible for reading RTCM3, and other useful data sets from connected IMX,
-    // and publishing it to connected clients (because it is the server).
-
-    // This is a little different, kind-of, because we don't actually let the ISDevice parse any data (but maybe we should).
-    // Rather, we parse data directly from the COMM buffer, so we can determine what type of data it is (though we should
-    // already know this). then, based on the packet type (RTCM3/UBLOX, etc) we'll send that data out to the socket.
-    //
-    // Ideally, the TCP socket would also be a port_handle_t, and we'd essentially plumb up a passthrough:  Let the ISDevice
-    // parse data FROM the device, call a custom callback for the data types we're interested in, and then when those are
-    // received, we'd send them right back out the TCP port_handle_t.  Perhaps one day; not today.
-
-    // as a tcp server, only the first serial port is read from
-    port_handle_t port = deviceManager.front()->port;
-    is_comm_instance_t *comm = &(COMM_PORT(port)->comm);
-    protocol_type_t ptype = _PTYPE_NONE;
-
-    // Get available size of comm buffer
-    int n = is_comm_free(comm);         // TODO:  This is a little janky; as a Serial/COMM port, this should already know how to do these things...
-
-    // Read data directly into comm buffer
-    if ((n = portReadTimeout(port, comm->rxBuf.tail, n, 0)))
-    {
-        // Update comm buffer tail pointer
-        comm->rxBuf.tail += n;
-
-        // Search comm buffer for valid packets
-        while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-        {
-            string str;
-
-            switch (ptype)
-            {
-                case _PTYPE_RTCM3:
-                case _PTYPE_UBLOX:
-                    // forward data on to connected clients
-                    m_clientServerByteCount += comm->rxPkt.data.size;
-                    if (m_tcpServer.Write(comm->rxPkt.data.ptr, comm->rxPkt.data.size) != (int)comm->rxPkt.data.size)
-                    {
-                        cout << endl << "Failed to write bytes to tcp server!" << endl;
-                    }
-                    if (ptype == _PTYPE_RTCM3)
-                    {
-                        if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
-                        {
-                            str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
-                        }
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            if (ptype != _PTYPE_NONE)
-            {   // Record message info
-                MessageStats::append(str, m_serverMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
-            }
-        }
-    }
-    m_tcpServer.Update();
-
-    return true;
 }
 
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)

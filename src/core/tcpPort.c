@@ -21,7 +21,7 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
-#define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->base.perror = errno; return -errno; } while(0)
+#define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->socket = -errno; tcpPort->base.perror = errno; return -errno; } while(0)
 #endif
 
 /**
@@ -67,17 +67,16 @@ int tcpPortOpen(port_handle_t port) {
         // Create new socket
         tcpPort->socket = socket(tcpPort->addr.domain, SOCK_STREAM, IPPROTO_TCP);
         if (tcpPort->socket < 0) {
-            tcpPort->socket = -errno; // File descriptors should always be positive so we can store the errno here
-            tcpPort->base.perror = errno; // Store errno somewhere where clients can read it
-            return tcpPort->socket; // Return error code to calling function
+            portFlagsClear(port, PORT_FLAG__OPENED);
+            HANDLE_SOCKET_ERROR(tcpPort);
         }
     }
 
     // Connect socket to remote
     int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.storage));
     if (retval != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        portFlagsClear(port, PORT_FLAG__OPENED);
+        HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?
     }
 
     // Set socket mode
@@ -85,6 +84,7 @@ int tcpPortOpen(port_handle_t port) {
     tcpPortSetBlocking(port, tcpPort->blocking);
 
     portFlagsSet(port, PORT_FLAG__OPENED);
+    tcpPort->base.perror = 0;
     return 0;
 }
 
@@ -99,6 +99,13 @@ int tcpPortClose(port_handle_t port) {
         tcpPort->base.perror = -(tcpPort->socket);
         return tcpPort->socket;
     }
+
+#ifdef PLATFORM_IS_WINDOWS
+    shutdown(ks.socket, SD_BOTH);
+#else
+    shutdown(tcpPort->socket, SHUT_RDWR);
+#endif
+
     int retval = close(tcpPort->socket);
     if (retval != 0) {
         tcpPort->base.perror = errno;
@@ -131,14 +138,12 @@ int tcpPortFree(port_handle_t port) {
     int bufferSize = 0;
     socklen_t bufferSizeLen = sizeof(bufferSize); // in/out parameter
     if (getsockopt(tcpPort->socket, SOL_SOCKET, SO_SNDBUF, &bufferSize, &bufferSizeLen) < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
     }
 
     int bytesUsed;
     if (ioctl(tcpPort->socket,TIOCOUTQ, &bytesUsed) < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
     }
     return bufferSize - bytesUsed;
 #endif
@@ -158,6 +163,7 @@ int tcpPortAvailable(port_handle_t port) {
 
     int bytesAvailable;
     if (ioctl(tcpPort->socket, FIONREAD, &bytesAvailable) < 0) {
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
         tcpPort->base.perror = errno;
         return -errno;
     }
@@ -182,6 +188,7 @@ int tcpPortFlush(port_handle_t port) {
         tcpPortSetBlocking(port, true);
         ssize_t retval = recv(tcpPort->socket, throwAwayBuf, sizeof(throwAwayBuf), 0);
         if (retval < 0) {
+            HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
             tcpPort->base.perror = errno;
             return -errno;
         }
@@ -246,13 +253,17 @@ int tcpPortRead(port_handle_t port, uint8_t* buf, unsigned int len) {
         return tcpPort->socket;
     }
 
-    tcpPortSetBlocking(port, tcpPort->blocking);
-
     // Receive data from the socket
+    // NOTE: recv() returns 0 when the remote end is closed; but returns -1 && errno == EAGAIN or EWOULDBLOCK is connected, but no data
+    tcpPortSetBlocking(port, tcpPort->blocking);
     ssize_t retval = recv(tcpPort->socket, buf, len, 0);
-    if (retval < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+
+    if ((retval < 0) && (errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
+    } else if (retval == 0) {
+        // retval == 0 means the remote has disconnected...
+        tcpPortClose(port);
+        tcpPort->base.perror = ENOTCONN;    // denote that the socket is not connected anymore.
     }
 
     return retval;
@@ -344,10 +355,11 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 #endif
     ssize_t retval = send(tcpPort->socket, buf, len, MSG_NOSIGNAL);
     if (retval < 0) {
-        if (errno == EPIPE)
+        if (errno == EPIPE) {
             tcpPortClose(port); // remote has disconnected, so force this socket closed.
-        tcpPort->base.perror = errno;
-        return -errno;
+            portInvalidate(port);   // since we can't re-establish to the client (because TCP), invalidate the port
+        }
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
     }
 
     return retval;

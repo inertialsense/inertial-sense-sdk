@@ -15,10 +15,6 @@
 #include "core/msg_logger.h"
 #include "PortManager.h"
 
-CorrectionService::CorrectionService(port_handle_t srcPort) {
-    init(srcPort);
-}
-
 CorrectionService::CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories) {
     PortManager* portManager = &PortManager::getInstance();
     std::vector<PortFactory*> localFactories = factories.empty() ? portManager->getPortFactories() : factories;
@@ -45,16 +41,17 @@ CorrectionService::CorrectionService(const std::string& portName, const std::vec
     throw std::invalid_argument("Couldn't find port of given name to use as RCTM3 corrections source");
 }
 
+bool CorrectionService::hasPort(port_handle_t port) {
+    return std::find(this->ports.begin(), this->ports.end(), port) != this->ports.end();
+}
+
 void CorrectionService::addPort(port_handle_t port) {
-    this->ports.push_back(port);
+    if (!hasPort(port))
+        this->ports.push_back(port);
 }
 
 void CorrectionService::removePort(port_handle_t port) {
     ports.erase(std::remove(ports.begin(), ports.end(), port), ports.end());
-}
-
-bool CorrectionService::hasPort(port_handle_t port) {
-    return std::find(this->ports.begin(), this->ports.end(), port) != this->ports.end();
 }
 
 void CorrectionService::addDevice(device_handle_t device) {
@@ -96,7 +93,8 @@ int CorrectionService::step() {
         if ((lastConnAttemptTs < current_timeMs()) && (portOpen(source) != PORT_ERROR__NONE)) {
             lastConnAttemptTs = current_timeMs() + 2500;    // retry again in 2.5 seconds
         }
-        return -1;
+        if (!portIsOpened(source))
+            return -1;
     }
 
     unsigned int rtcm3PacketsProcessedPrevCount = rtcm3PacketsProcessed;
@@ -226,12 +224,14 @@ void CorrectionService::setSourcePort(port_handle_t srcPort) {
 void CorrectionService::init(port_handle_t srcPort) {
     ports.clear();
     rtcm3Msg1029Listeners.clear();
+    rtcm3PacketListeners.clear();
     setSourcePort(srcPort);
 }
 
 int CorrectionService::onRtcm3Handler(const unsigned char* msg, int msgSize, port_handle_t port) {
     (void)port;
     rtcm3PacketsProcessed++;
+    rtcm3PacketLastMs = current_timeMs();
 
     if ((COMM_PORT(source)->comm.rxPkt.id == 1029) && (COMM_PORT(source)->comm.rxPkt.data.size < 1024))
     {

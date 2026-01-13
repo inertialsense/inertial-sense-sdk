@@ -34,7 +34,6 @@
  */
 class CorrectionService {
 public:
-    virtual ~CorrectionService() = default;
     typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;
     typedef std::function<void(uint16_t, const void*, uint32_t)> tRTCM3PacketListenerCallback;
 
@@ -45,7 +44,7 @@ public:
      * will be forwarded to all associated ISDevices
      * @param srcPort The port on which incoming RCTM3 data to recieved from
      */
-    explicit CorrectionService(port_handle_t srcPort);
+    explicit CorrectionService(port_handle_t srcPort) { init(srcPort); };
 
     /**
      * A convenience constructor which creates/binds the necessary port as described by the portName, by
@@ -56,6 +55,12 @@ public:
      * @param factories An optional list of factories to ask to create the given port name
      */
     explicit CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories = nullFactories);
+
+    virtual ~CorrectionService() {
+        // Don't actually close down any ports for the base CorrectionService - extended services can choose to, if they need but don't do it here
+        // if (source) portClose(source);
+        // for (auto a : ports)  portClose(a);
+    }
 
     /**
      * Sets the port to read corrections from
@@ -165,6 +170,16 @@ public:
      */
     int step();
 
+    /**
+     * @return the age, in milliseconds, of the last received RTCM3 message.
+     */
+    uint32_t getLastRtcm3PacketAge() { return current_timeMs() - rtcm3PacketLastMs; }
+
+    /**
+     * @return the number of opened "downstream" ports to which RTCM3 messages will be forwarded
+     */
+    int getActiveConnections() { return ports.size(); }
+
 protected:
     port_handle_t source {};
     std::vector<port_handle_t> ports;
@@ -174,7 +189,8 @@ private:
     std::vector<tRTCM3Msg1029ListenerCallback> rtcm3Msg1029Listeners;
     std::vector<tRTCM3PacketListenerCallback> rtcm3PacketListeners;
     is_comm_instance_t packetParser = {};
-    uint32_t rtcm3PacketsProcessed = 0;
+    uint32_t rtcm3PacketsProcessed = 0;                                 // total number of RTCM3 packets that have been processed
+    uint32_t rtcm3PacketLastMs = 0;                                     // timestamp in ms, since the last RTCM3 packet was seen
     uint32_t lastConnAttemptTs = 0;
 
     pfnIsCommGenMsgHandler previousRtcm3Handler = nullptr;

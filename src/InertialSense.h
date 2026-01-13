@@ -277,30 +277,6 @@ public:
     void ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize);
 
     /**
-    * Get the number of bytes read or written to/from client or server connections
-    * @return byte count
-    */
-    uint64_t ClientServerByteCount() { return m_clientServerByteCount; }
-
-    /**
-    * Get the current number of client connections
-    * @return int number of current client connected
-    */
-    int ClientConnectionCurrent() { return m_clientConnectionsCurrent; }
-
-    /**
-    * Get the total number of client connections
-    * @return int number of total client that have connected
-    */
-    int ClientConnectionTotal() { return m_clientConnectionsTotal; }
-
-    /**
-    * Get TCP server IP address and port (i.e. "127.0.0.1:7777")
-    * @return string IP address and port
-    */
-    std::string TcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
-
-    /**
     * Flush all data from receive port
     */
     void FlushRx()
@@ -657,8 +633,6 @@ private:
     int m_clientBufferBytesToSend;
     bool m_forwardGpgga;
 
-    cISTcpServer m_tcpServer;
-    uint64_t m_clientServerByteCount;
     int m_clientConnectionsCurrent = 0;
     int m_clientConnectionsTotal = 0;
     MessageStats::mul_stats_t m_clientMessageStats = {};
