@@ -1891,7 +1891,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_REFERENCE_IMU          0x0000004000000000      // DID_FLASH_CONFIG.startupNavDtMs
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000      // "
-#define RMC_BITS_IMU3_RAW               0x0000010000000000
+#define RMC_BITS_IMUX_RAW               0x0000010000000000
 #define RMC_BITS_IMU_RAW                0x0000020000000000
 #define RMC_BITS_GPS1_SIG               0x0000040000000000      // 1s
 #define RMC_BITS_GPS2_SIG               0x0000080000000000
@@ -1936,7 +1936,7 @@ typedef struct PACKED
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_RAW \
+                                            | RMC_BITS_IMUX_RAW \
                                             | RMC_BITS_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_IMUX_UNCAL \
