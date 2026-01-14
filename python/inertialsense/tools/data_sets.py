@@ -98,7 +98,7 @@ DID_GPS2_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
 DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
-DID_IMU3_RAW                    = 96
+DID_IMUX_RAW                    = 96
 DID_IMU_RAW                     = 97
 DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
@@ -169,7 +169,7 @@ did_name_lookup = {
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
  DID_IMU3_UNCAL : "imu3Uncal",
- DID_IMU3_RAW : "imu3Raw",
+ DID_IMUX_RAW : "imu3Raw",
  DID_IMU_RAW : "imuRaw",
  DID_PIMU : "pimu",
  DID_IMU : "imu",

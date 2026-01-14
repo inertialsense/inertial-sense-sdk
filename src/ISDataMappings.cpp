@@ -1732,7 +1732,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EVB_DEV_INFO",                 // 93
     "DID_INFIELD_CAL",                  // 94 
     "DID_REFERENCE_IMU",                // 95 
-    "DID_IMU3_RAW",                     // 96 
+    "DID_IMUX_RAW",                     // 96 
     "DID_IMU_RAW",                      // 97 
     "DID_FIRMWARE_UPDATE",              // 98 
     "DID_RUNTIME_PROFILER",             // 99 
@@ -1804,8 +1804,8 @@ cISDataMappings::cISDataMappings()
     // SENSORS
     PopulateMapPimu(m_data_set, DID_PIMU, "Preintegrated IMU.");
     PopulateMapImu(m_data_set, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
-    PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMU3_RAW.");
-    PopulateMapImu3(m_data_set, DID_IMU3_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
+    PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMUX_RAW.");
+    PopulateMapImu3(m_data_set, DID_IMUX_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
     PopulateMapImu3(m_data_set, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
 
     PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");

@@ -1141,8 +1141,8 @@ class logPlot:
                     status = self.getData(d, DID_IMU, 'status')
                     title  = 'IMU Status - '
                 if not len(time):
-                    time   = self.getData(d, DID_IMU3_RAW, 'time')
-                    status = self.getData(d, DID_IMU3_RAW, 'status')
+                    time   = self.getData(d, DID_IMUX_RAW, 'time')
+                    status = self.getData(d, DID_IMUX_RAW, 'status')
                     title  = 'IMU3-RAW Status - '
                 if not len(time):
                     return
@@ -2604,12 +2604,12 @@ class logPlot:
                     imuCount = 1
 
                 else:   
-                    time = self.getData(device, DID_IMU3_RAW, 'time')
+                    time = self.getData(device, DID_IMUX_RAW, 'time')
                     name = "IMU3"
 
-                    if len(time) != 0: # DID_IMU3_RAW 
-                        I = self.getData(device, DID_IMU3_RAW, 'I')
-                        imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
+                    if len(time) != 0: # DID_IMUX_RAW 
+                        I = self.getData(device, DID_IMUX_RAW, 'I')
+                        imuStatus = self.getData(device, DID_IMUX_RAW, 'status')
                         dt = time[1:] - time[:-1]
                         dt = np.append(dt, dt[-1])
                         imu1 = []
@@ -3445,7 +3445,7 @@ class logPlot:
             timeImu  = 0
             timePimu = self.getData(d, DID_PIMU, 'time')
             timeIMU  = self.getData(d, DID_IMU, 'time')
-            timeImu3 = self.getData(d, DID_IMU3_RAW, 'time')
+            timeImu3 = self.getData(d, DID_IMUX_RAW, 'time')
             if timePimu.size:
                 deltaTimestamp = timePimu[1:] - timePimu[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d

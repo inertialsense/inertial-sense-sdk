@@ -360,7 +360,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 93: DID_EVB_DEV_INFO
         0,                      // 94: DID_INFIELD_CAL
         offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
-        offsetsOnlyTimeFirst,   // 96: DID_IMU3_RAW
+        offsetsOnlyTimeFirst,   // 96: DID_IMUX_RAW
         offsetsOnlyTimeFirst,   // 97: DID_IMU_RAW
         0,                      // 98:
         0,                      // 99:
@@ -550,7 +550,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 93: DID_EVB_DEV_INFO
         0,                      // 94: DID_INFIELD_CAL
         0,                      // 95: DID_REFERENCE_IMU
-        0,                      // 96: DID_IMU3_RAW
+        0,                      // 96: DID_IMUX_RAW
         0,                      // 97: DID_IMU_RAW
         0,                      // 98:
         0,                      // 99:
@@ -641,7 +641,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_INS_3]                 = RMC_BITS_INS3,
     [DID_INS_4]                 = RMC_BITS_INS4,
     [DID_IMU3_UNCAL]            = RMC_BITS_IMU3_UNCAL,
-    [DID_IMU3_RAW]              = RMC_BITS_IMU3_RAW,
+    [DID_IMUX_RAW]              = RMC_BITS_IMU3_RAW,
     [DID_IMU_RAW]               = RMC_BITS_IMU_RAW,
     [DID_IMU]                   = RMC_BITS_IMU,
     [DID_PIMU]                  = RMC_BITS_PIMU,
