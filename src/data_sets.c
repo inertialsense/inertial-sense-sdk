@@ -321,7 +321,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 54: DID_GPS1_RTK_POS
         offsetsOnlyTimeFirst,   // 55: DID_ROS_COVARIANCE_POSE_TWIST
         0,                      // 56: DID_COMMUNICATIONS_LOOPBACK
-        offsetsOnlyTimeFirst,   // 57: DID_IMU3_UNCAL
+        offsetsOnlyTimeFirst,   // 57: DID_IMUX_UNCAL
         offsetsOnlyTimeFirst,   // 58: DID_IMU
         0,                      // 59: DID_INL2_MAG_OBS_INFO
         0,                      // 60: DID_GPS_BASE_RAW
@@ -511,7 +511,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 54: DID_GPS1_RTK_POS
         0,                      // 55: DID_ROS_COVARIANCE_POSE_TWIST
         0,                      // 56: DID_COMMUNICATIONS_LOOPBACK
-        0,                      // 57: DID_IMU3_UNCAL
+        0,                      // 57: DID_IMUX_UNCAL
         0,                      // 58: DID_IMU
         0,                      // 59: DID_INL2_MAG_OBS_INFO
         0,                      // 60: DID_GPS_BASE_RAW
@@ -640,7 +640,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_INS_2]                 = RMC_BITS_INS2,
     [DID_INS_3]                 = RMC_BITS_INS3,
     [DID_INS_4]                 = RMC_BITS_INS4,
-    [DID_IMU3_UNCAL]            = RMC_BITS_IMU3_UNCAL,
+    [DID_IMUX_UNCAL]            = RMC_BITS_IMU3_UNCAL,
     [DID_IMUX_RAW]              = RMC_BITS_IMU3_RAW,
     [DID_IMU_RAW]               = RMC_BITS_IMU_RAW,
     [DID_IMU]                   = RMC_BITS_IMU,

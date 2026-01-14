@@ -94,7 +94,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
 #define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
-#define DID_IMU3_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imuX_t) Uncalibrated triple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define DID_IMUX_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imuX_t) Uncalibrated triple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
@@ -133,7 +133,7 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
 #define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
-#define DID_IMUX_RAW                    (eDataIDs)96 /** (imuX_t) Triple IMU data calibrated from DID_IMU3_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
+#define DID_IMUX_RAW                    (eDataIDs)96 /** (imuX_t) Triple IMU data calibrated from DID_IMUX_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMUX_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
@@ -871,7 +871,7 @@ typedef struct PACKED
 } imu_t;
 
 
-/** (DID_IMU3_UNCAL) Dual Inertial Measurement Units (IMUs) data */
+/** (DID_IMUX_UNCAL) Dual Inertial Measurement Units (IMUs) data */
 typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -1790,7 +1790,7 @@ typedef struct PACKED
     sensor_comp_unit_t      pqr[MAX_IMU_DEVICES];
     sensor_comp_unit_t      acc[MAX_IMU_DEVICES];
     sensor_comp_unit_t      mag[MAX_MAG_DEVICES];
-    imus_t                  referenceImu;            // External reference IMU
+    imus_t                  referenceImu;           // External reference IMU
     float                   referenceMag[3];        // External reference magnetometer (heading reference)
     uint32_t                sampleCount;            // Number of samples collected
     uint32_t                calState;               // state machine (see eScompCalState)

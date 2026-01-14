@@ -1693,7 +1693,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPS1_RTK_POS",                 // 54
     "DID_ROS_COVARIANCE_POSE_TWIST",    // 55
     "DID_COMMUNICATIONS_LOOPBACK",      // 56
-    "DID_IMU3_UNCAL",                   // 57
+    "DID_IMUX_UNCAL",                   // 57
     "DID_IMU",                          // 58
     "DID_INL2_MAG_OBS_INFO",            // 59
     "DID_GPS_BASE_RAW",                 // 60
@@ -1805,8 +1805,8 @@ cISDataMappings::cISDataMappings()
     PopulateMapPimu(m_data_set, DID_PIMU, "Preintegrated IMU.");
     PopulateMapImu(m_data_set, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
     PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMUX_RAW.");
-    PopulateMapImu3(m_data_set, DID_IMUX_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
-    PopulateMapImu3(m_data_set, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
+    PopulateMapImu3(m_data_set, DID_IMUX_RAW, "Triple IMU data calibrated from DID_IMUX_UNCAL.");
+    PopulateMapImu3(m_data_set, DID_IMUX_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
 
     PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
     PopulateMapPimu(m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");
