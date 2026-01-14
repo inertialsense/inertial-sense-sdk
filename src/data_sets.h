@@ -1935,7 +1935,7 @@ typedef struct PACKED
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
-#define RMC_PRESET_IMX_PPD_IMU3_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
+#define RMC_PRESET_IMX_PPD_IMUX_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_IMUX_RAW \
                                             | RMC_BITS_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
