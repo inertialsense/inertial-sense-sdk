@@ -379,7 +379,9 @@ bool ISDevice::validate(uint32_t timeout) {
         GetData(DID_DEV_INFO);
         GetData(DID_SYS_PARAMS);
         GetData(DID_FLASH_CONFIG);
+        // if we aren't connected to a GPX, these should be ignored -- but if a GPX is available, we want to know about it.
         GetData(DID_GPX_FLASH_CFG);
+        GetData(DID_GPX_STATUS);
     }
 
     previousQueryType = QUERYTYPE_NMEA;

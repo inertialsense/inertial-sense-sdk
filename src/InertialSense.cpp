@@ -410,19 +410,19 @@ bool InertialSense::Update()
 {
     m_timeMs = current_timeMs();
 
-    // [C COMM INSTRUCTION]  2.) Update each device at regular interval to send and receive data.
-    // Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
-    // task system with serial port read function that does NOT incorporate a timeout.
-    for (auto device : deviceManager)
-        if (device)
-            device->step();
+//    m_correctionsServer.step();
+//    if (m_correctionService.step() <= 0) {
+//        // usually an error because the correction service (base) port is closed or invalid.
+//        portOpen(m_correctionService.getSourcePort());
+//    }
 
-    // if all serial ports have closed, shutdown
-    bool anyOpen = false;
-    for (auto device : deviceManager)
-    {
-        if (device->fwUpdateInProgress() || device->isConnected())
-            anyOpen = true;
+    bool anyOpen = false;   // if all serial ports have closed, shutdown
+    for (auto device : deviceManager) {
+        if (device) {
+            device->step();
+            if (device->fwUpdateInProgress() || device->isConnected())
+                anyOpen = true;
+        }
     }
 
     return anyOpen;
@@ -903,40 +903,6 @@ is_operation_result InertialSense::BootloadFile(
     #endif
 
     return IS_OP_OK;
-}
-
-bool InertialSense::OnClientPacketReceived(const uint8_t* data, uint32_t dataLength)
-{
-    for (auto device : deviceManager) { device->SendRaw(data, dataLength); }
-    return false; // do not parse, since we are just forwarding it on
-}
-
-void InertialSense::OnClientConnecting(cISTcpServer* server)
-{
-    (void)server;
-    // cout << endl << "Client connecting..." << endl;
-}
-
-void InertialSense::OnClientConnected(cISTcpServer* server, is_socket_t socket)
-{
-    // cout << endl << "Client connected: " << (int)socket << endl;
-    m_clientConnectionsCurrent++;
-    m_clientConnectionsTotal++;
-}
-
-void InertialSense::OnClientConnectFailed(cISTcpServer* server)
-{
-    // cout << endl << "Client connection failed!" << endl;
-}
-
-void InertialSense::OnClientDisconnected(cISTcpServer* server, is_socket_t socket)
-{
-    // cout << endl << "Client disconnected: " << (int)socket << endl;
-    m_clientConnectionsCurrent--;
-    if (m_clientConnectionsCurrent<0)
-    {
-        m_clientConnectionsCurrent = 0;
-    }
 }
 
 int InertialSense::OnPortError(port_handle_t port, int errCode, const char *errMsg) {

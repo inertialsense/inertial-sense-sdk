@@ -26,9 +26,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <vector>
 
 #include "core/msg_logger.h"
+#include "message_stats.h"
 #include "ISConstants.h"
-#include "ISTcpClient.h"
-#include "ISTcpServer.h"
 #include "ISLogger.h"
 #include "ISDisplay.h"
 #include "ISUtilities.h"
@@ -41,6 +40,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "PortManager.h"
 #include "DeviceManager.h"
+
+#include "CorrectionService.h"
+#include "Rtcm3CorrectionServer.h"
 
 extern "C"
 {
@@ -63,7 +65,7 @@ typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifi
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
 */
-class InertialSense : public iISTcpServerDelegate
+class InertialSense
 {
 public:
     PortManager& portManager = PortManager::getInstance();
@@ -236,19 +238,6 @@ public:
     void LogRawData(device_handle_t device, int dataSize, const uint8_t* data);
 
     /**
-    * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
-    * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
-    * @return true if success, false if error
-    */
-    bool CreateHost(const std::string& connectionString);
-
-    /**
-    * Close any open connection to a server
-    */
-    void CloseServerConnection();
-
-
-    /**
      * Locates the device associated with the specified port
      * @param port
      * @return device_handle_t which is connected to port, otherwise NULL
@@ -281,13 +270,10 @@ public:
     */
     void FlushRx()
     {
-        uint8_t buf[10];
         for (auto device : deviceManager)
         {
             if (device->isConnected())
-            {
-                while (portReadTimeout(device->port, buf, sizeof(buf), 50));
-            }
+                portFlush(device->port);
         }
     }
 
@@ -563,9 +549,6 @@ public:
      */
     bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
 
-    std::string ServerMessageStatsSummary() { return MessageStats::summary(m_serverMessageStats); }
-    std::string ClientMessageStatsSummary() { return MessageStats::summary(m_clientMessageStats); }
-
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
 
@@ -602,13 +585,11 @@ public:
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
-protected:
-    bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
-    void OnClientConnecting(cISTcpServer* server) OVERRIDE;
-    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
-    void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
-    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
 
+    // CorrectionService& getCorrectionService() { return m_correctionService; }
+    // Rtcm3CorrectionServer& getCorrectionsServer() { return m_correctionsServer; }
+
+protected:
     static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
 
 private:
@@ -633,8 +614,6 @@ private:
     int m_clientBufferBytesToSend;
     bool m_forwardGpgga;
 
-    int m_clientConnectionsCurrent = 0;
-    int m_clientConnectionsTotal = 0;
     MessageStats::mul_stats_t m_clientMessageStats = {};
 
     int m_baudRate = IS_BAUDRATE_DEFAULT;
