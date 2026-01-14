@@ -1871,7 +1871,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS_BASE_RAW           0x0000000000010000      // 
 #define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
-#define RMC_BITS_IMU3_UNCAL             0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+#define RMC_BITS_IMUX_UNCAL             0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
 #define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
 #define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
@@ -1939,7 +1939,7 @@ typedef struct PACKED
                                             | RMC_BITS_IMU3_RAW \
                                             | RMC_BITS_PIMU)
 #define RMC_PRESET_IMX_PPD_IMU3_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
-                                            | RMC_BITS_IMU3_UNCAL \
+                                            | RMC_BITS_IMUX_UNCAL \
                                             | RMC_BITS_PIMU)
 #define RMC_PRESET_INS                      (RMC_BITS_INS2 \
                                             | RMC_BITS_GPS1_POS \
