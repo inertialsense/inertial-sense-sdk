@@ -222,7 +222,6 @@ void tripleToSingleImu(imu_t *result, const imu3_t *imu3)
             result->I.acc[a] = 0.0f;
         }
     }
-
     result->time = imu3->time;
 }
 
