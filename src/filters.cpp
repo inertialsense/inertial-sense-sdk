@@ -172,7 +172,7 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 
 
 #define INVALID_ACCEL 1.0e-6f
-void errorCheckImu3(imu3_t *di)
+void errorCheckImu3(imuX_t *di)
 {
     // Error Checking
     if (di->time != 0.0) 
@@ -191,7 +191,7 @@ void errorCheckImu3(imu3_t *di)
 }
 
 
-int tripleToSingleImu(imu_t *result, const imu3_t *di)
+int tripleToSingleImu(imu_t *result, const imuX_t *di)
 {
     imu_t imu = {};
     imu.time = di->time;
@@ -222,7 +222,7 @@ int tripleToSingleImu(imu_t *result, const imu3_t *di)
 }
 
 
-int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
+int tripleToSingleImuExc(imu_t *result, const imuX_t *di, bool *exclude)
 {
     imu_t imu = {};
     imu.time = di->time;
@@ -251,7 +251,7 @@ int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
     return cnt;
 }
 
-void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis)
+void tripleToSingleImuAxis(imu_t* result, const imuX_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis)
 {
     float w = 0.0f, a = 0.0f;
     int cnt_gyro = 0, cnt_acc = 0;
@@ -279,7 +279,7 @@ void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3]
 }
 
 
-void singleToTripleImu(imu3_t *result, imu_t *imu)
+void singleToTripleImu(imuX_t *result, imu_t *imu)
 {
     result->time = imu->time;
     for (int i=0; i<3; i++)

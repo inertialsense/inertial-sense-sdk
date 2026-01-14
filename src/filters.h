@@ -518,15 +518,15 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 
 
 // Look for error in dual IMU data
-void errorCheckImu3(imu3_t *di);
+void errorCheckImu3(imuX_t *di);
 
 // Condense triple IMUs down to one IMU
-int tripleToSingleImu(imu_t *result, const imu3_t *di);
-int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude); // for individual IMU exclusion
-void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
+int tripleToSingleImu(imu_t *result, const imuX_t *di);
+int tripleToSingleImuExc(imu_t *result, const imuX_t *di, bool *exclude); // for individual IMU exclusion
+void tripleToSingleImuAxis(imu_t* result, const imuX_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
 
 // Duplicate one IMU to triple IMUs
-void singleToTripleImu(imu3_t *result, imu_t *imu);
+void singleToTripleImu(imuX_t *result, imu_t *imu);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
 int preintegratedImuToIMU(imu_t *imu, const pimu_t *imuInt);
