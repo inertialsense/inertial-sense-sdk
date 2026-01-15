@@ -8,7 +8,6 @@
 
 #include "core/msg_logger.h"
 #include "ISDevice.h"
-#include "ISBootloaderBase.h"
 #include "ISFirmwareUpdater.h"
 #include "ISDeviceCal.h"
 #include "util/util.h"

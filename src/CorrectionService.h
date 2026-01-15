@@ -26,6 +26,7 @@
 
 #include "PortFactory.h"
 #include "ISDevice.h"
+#include "message_stats.h"
 
 /**
  * The CorrectionService is a "Rover"-side manager responsible for establishing a connection to
@@ -180,6 +181,18 @@ public:
      */
     int getActiveConnections() { return ports.size(); }
 
+    /**
+     * If a pointer to a MessageStats object is provided that object will be updated as correction messages are parsed.
+     * @param stats a pointer to a MessageStats object, or nullptr if no stats should be collected
+     */
+    void setMessageStats(MessageStats::mul_stats_t* stats) { msgStats = stats; }
+
+    /**
+     * @return the associated MessageStats instance, if any.
+     */
+    MessageStats::mul_stats_t* getMessageStats() { return msgStats; }
+
+
 protected:
     port_handle_t source {};
     std::vector<port_handle_t> ports;
@@ -192,6 +205,8 @@ private:
     uint32_t rtcm3PacketsProcessed = 0;                                 // total number of RTCM3 packets that have been processed
     uint32_t rtcm3PacketLastMs = 0;                                     // timestamp in ms, since the last RTCM3 packet was seen
     uint32_t lastConnAttemptTs = 0;
+
+    MessageStats::mul_stats_t* msgStats = nullptr;                      // if not-null, call into the msgStats when parsing the source port
 
     pfnIsCommGenMsgHandler previousRtcm3Handler = nullptr;
     pfnIsCommGenMsgHandler previousErrorHandler = nullptr;

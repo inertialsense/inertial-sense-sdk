@@ -27,9 +27,7 @@ public:
         setSourceDevice(srcDeviceId);
     }
 
-    ~Rtcm3CorrectionServer() {
-        shutdown();
-    }
+    ~Rtcm3CorrectionServer() override = default;
 
     void configure(int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) {
         stopListening();

@@ -14,6 +14,7 @@
 
 #include "core/msg_logger.h"
 #include "PortManager.h"
+#include "message_stats.h"
 
 CorrectionService::CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories) {
     PortManager* portManager = &PortManager::getInstance();
@@ -151,6 +152,7 @@ int CorrectionService::finalPacketFilter(const uint8_t *inputBuffer, const uint3
                         (*bytesProcessed)++;
                     }
                     packetsProcessed++;
+
                     if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
                     {
                         std::string msg = std::string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
@@ -232,6 +234,8 @@ int CorrectionService::onRtcm3Handler(const unsigned char* msg, int msgSize, por
     (void)port;
     rtcm3PacketsProcessed++;
     rtcm3PacketLastMs = current_timeMs();
+
+    if (msgStats) MessageStats::append("", *msgStats, _PTYPE_RTCM3, COMM_PORT(source)->comm.rxPkt.id, COMM_PORT(source)->comm.rxPkt.data.size, rtcm3PacketLastMs);
 
     if ((COMM_PORT(source)->comm.rxPkt.id == 1029) && (COMM_PORT(source)->comm.rxPkt.data.size < 1024))
     {

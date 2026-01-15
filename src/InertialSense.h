@@ -35,14 +35,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISStream.h"
 #include "ISDevice.h"
 #include "message_stats.h"
-#include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
 
 #include "PortManager.h"
 #include "DeviceManager.h"
-
-#include "CorrectionService.h"
-#include "Rtcm3CorrectionServer.h"
 
 extern "C"
 {
@@ -295,6 +291,7 @@ public:
     */
     void EnableDeviceValidation(bool enable) { m_enableDeviceValidation = enable; }
 
+#if !PLATFORM_IS_EMBEDDED
     /**
     * Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
     * Please ensure that all other connections to the com port are closed before calling this function.
@@ -312,7 +309,8 @@ public:
             fwUpdate::pfnProgressCb verifyProgress = NULLPTR,
             fwUpdate::pfnStatusCb infoProgress = NULLPTR,
             void (*waitAction)() = NULLPTR
-);
+    );
+#endif
 
     /**
      * V2 firmware update mechanism. Calling this function will attempt to initiate a firmware update with the targeted device(s), with callbacks to provide information about the status
@@ -614,13 +612,9 @@ private:
     int m_clientBufferBytesToSend;
     bool m_forwardGpgga;
 
-    MessageStats::mul_stats_t m_clientMessageStats = {};
-
     int m_baudRate = IS_BAUDRATE_DEFAULT;
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
-
-    MessageStats::mul_stats_t m_serverMessageStats = {};
 
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 

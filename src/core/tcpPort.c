@@ -402,7 +402,7 @@ void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* nam
         is_comm_port_init(COMM_PORT(port), NULL);
 
     tcpPort->socket = socket;
-    tcpPort->name = strdup(name);
+    strncpy(tcpPort->name, name, MAX_TCP_PORT_NAME_LENGTH);
 
     socklen_t peer_addr_len = sizeof(tcpPort->addr.storage);
     getpeername(socket, (struct sockaddr *)&tcpPort->addr.storage, &peer_addr_len);
@@ -446,7 +446,7 @@ void tcpPortInit(port_handle_t port, int id, const char* name, const struct sock
         is_comm_port_init(COMM_PORT(port), NULL);
 
     tcpPort->socket = -EBADF;
-    tcpPort->name = strdup(name);
+    strncpy(tcpPort->name, name, MAX_TCP_PORT_NAME_LENGTH);
     tcpPort->addr.storage = *ip;
     tcpPort->blocking = portFlagsIsSet(port, PORT_FLAG__BLOCKING);
     tcpPort->blocking_internal = true;
@@ -461,8 +461,6 @@ void tcpPortInit(port_handle_t port, int id, const char* name, const struct sock
 void tcpPortDelete(port_handle_t port) {
     if (!port)
         return;
-    tcp_port_t* tcpPort = TCP_PORT(port);
-    free(tcpPort->name);
     memset(port, 0, sizeof(tcp_port_t));
 }
 

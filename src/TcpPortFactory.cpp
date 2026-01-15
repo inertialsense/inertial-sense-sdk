@@ -6,7 +6,8 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
  */
 
-#ifdef _WIN32
+#include "ISConstants.h"
+#if PLATFORM_IS_WINDOWS
     // Windows.h is included somewhere and this prevents it from defining max as a macro which breaks uri.hpp
     #ifndef NOMINMAX
         #define NOMINMAX
@@ -19,9 +20,9 @@
 #include <util/uri.hpp>
 #include <util/util.h>
 
-#ifdef _WIN32
+#if PLATFORM_IS_WINDOWS_WIN32
 #include <winsock2.h>
-#else
+#elif !PLATFORM_IS_EMBEDDED
 #include <arpa/inet.h>
 #include <netdb.h>
 #endif

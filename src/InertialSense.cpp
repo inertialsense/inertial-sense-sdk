@@ -13,18 +13,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 #include <vector>
 
-#include "protocol_nmea.h"
-#include "yaml-cpp/yaml.h"
-#include "protocol_nmea.h"
 #include "InertialSense.h"
-#include "ISDevice.h"
-#include "ISDeviceCal.h"
-#include "ISBootloaderThread.h"
-#include "ISBootloaderDFU.h"
 #include "ISmDnsPortFactory.h"
 #include "TcpPortFactory.h"
+#include "protocol_nmea.h"
 #include "protocol/FirmwareUpdate.h"
+
 #include "imx_defaults.h"
+
+#if !PLATFORM_IS_EMBEDDED
+#include "ISBootloaderThread.h"
+#endif
 
 using namespace std;
 
@@ -808,6 +807,7 @@ int InertialSense::getFirmwareUpdatePercent() {
     return 100;
 }
 
+#if !PLATFORM_IS_EMBEDDED
 is_operation_result InertialSense::BootloadFile(
         const string& comPort,
         const uint32_t serialNum,
@@ -904,6 +904,7 @@ is_operation_result InertialSense::BootloadFile(
 
     return IS_OP_OK;
 }
+#endif
 
 int InertialSense::OnPortError(port_handle_t port, int errCode, const char *errMsg) {
     printf("%s\n", errMsg);
@@ -988,6 +989,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             device->GetData(DID_SYS_PARAMS);
             device->GetData(DID_FLASH_CONFIG);
             device->GetData(DID_GPX_FLASH_CFG);
+            device->GetData(DID_GPX_STATUS);
         }
         device->WaitForImxFlashCfgSynced();
     }

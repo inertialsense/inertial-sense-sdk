@@ -9,24 +9,11 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#include "ISConstants.h"
-#ifdef PLATFORM_IS_WINDOWS
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-#else
-    #include <unistd.h>
-    #include <fcntl.h>
-    #include <arpa/inet.h>
-    #include <netdb.h>
-#endif
-
-#include <cerrno>
-#include <iostream>
+#include "TcpServerPortFactory.h"
 
 #include "util/uri.hpp"
 #include "util/util.h"
-#include "TcpPortFactory.h"
-#include "TcpServerPortFactory.h"
+
 #include "PortManager.h"
 
 
@@ -223,6 +210,7 @@ void TcpServerPortFactory::shutdownAllClients() {
 #else
         shutdown(ks.socket, SHUT_RDWR);
 #endif
+        portClose(ks.port);
     }
 }
 

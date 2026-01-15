@@ -14,7 +14,6 @@
 
 #include "core/msg_logger.h"
 #include "DeviceLog.h"
-#include "ISBootloaderBase.h"
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"

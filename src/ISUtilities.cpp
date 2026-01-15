@@ -27,7 +27,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #if PLATFORM_IS_EMBEDDED
-    #include "drivers/d_time.h"
+    #if __cplusplus >= 201703L && __has_include("drivers/d_time.h")
+        #include "drivers/d_time.h"
+    #else
+        #error "Unable to compile with out a valid millisecond-precision timer implementation."
+        #define time_msec()  (( -1 ))
+        #define time_ticks_u64() (( UINT64_MAX ))
+    #endif
 #elif PLATFORM_IS_WINDOWS
     #include <windows.h>
     #include <process.h>
