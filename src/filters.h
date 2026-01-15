@@ -518,7 +518,7 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 
 
 // Look for error in dual IMU data
-void errorCheckImu3(imuX_t *di);
+void errorCheckImuX(imuX_t *di);
 
 // Condense triple IMUs down to one IMU
 int tripleToSingleImu(imu_t *result, const imuX_t *di);

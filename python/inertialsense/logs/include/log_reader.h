@@ -82,8 +82,8 @@ struct DeviceLog
     std::vector<magnetometer_t> magnetometer;
     std::vector<barometer_t> barometer;
     std::vector<gps_pos_t> gps1RtkPos;
-    std::vector<imuX_t> imu3Uncal;
-    std::vector<imuX_t> imu3Raw;
+    std::vector<imuX_t> imuXUncal;
+    std::vector<imuX_t> imuXRaw;
     std::vector<imu_t> imuRaw;
     std::vector<imu_t> imu;
     std::vector<inl2_mag_obs_info_t> inl2MagObsInfo;

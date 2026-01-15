@@ -172,7 +172,7 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 
 
 #define INVALID_ACCEL 1.0e-6f
-void errorCheckImu3(imuX_t *di)
+void errorCheckImuX(imuX_t *di)
 {
     // Error Checking
     if (di->time != 0.0) 

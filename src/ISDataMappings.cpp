@@ -576,7 +576,7 @@ static void PopulateMapImu(data_set_t data_set[DID_COUNT], uint32_t did, string 
     mapper.AddMember("status", &imu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateMapImu3(data_set_t data_set[DID_COUNT], uint32_t did, string description)
+static void PopulateMapImuX(data_set_t data_set[DID_COUNT], uint32_t did, string description)
 {
     DataMapper<imuX_t> mapper(data_set, did);
     mapper.AddMember("time", &imuX_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1539,8 +1539,8 @@ static void PopulateMapSensorsWTemp(data_set_t data_set[DID_COUNT], uint32_t did
 {
     DataMapper<sensors_w_temp_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2;
-    mapper.AddMember2("imu3.time",   offsetof(sensors_w_temp_t, imu.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember2("imu3.status", offsetof(sensors_w_temp_t, imu.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("imuX.time",   offsetof(sensors_w_temp_t, imu.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember2("imuX.status", offsetof(sensors_w_temp_t, imu.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
@@ -1805,8 +1805,8 @@ cISDataMappings::cISDataMappings()
     PopulateMapPimu(m_data_set, DID_PIMU, "Preintegrated IMU.");
     PopulateMapImu(m_data_set, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
     PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMUX_RAW.");
-    PopulateMapImu3(m_data_set, DID_IMUX_RAW, "Triple IMU data calibrated from DID_IMUX_UNCAL.");
-    PopulateMapImu3(m_data_set, DID_IMUX_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
+    PopulateMapImuX(m_data_set, DID_IMUX_RAW, "5 IMU data calibrated from DID_IMUX_UNCAL.");
+    PopulateMapImuX(m_data_set, DID_IMUX_UNCAL, "5 IMU data directly from sensor (uncalibrated).");
 
     PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
     PopulateMapPimu(m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");
