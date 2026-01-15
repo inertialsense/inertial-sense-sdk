@@ -22,7 +22,7 @@
 
 #include "ISConstants.h"
 
-#if PLATFORM_IS_WINDOWS_WIN32
+#if PLATFORM_IS_WINDOWS
 #include <Winsock2.h>
 #include <Ws2tcpip.h>
 #define strncasecmp _strnicmp

@@ -82,7 +82,7 @@ bool timeWithin(uint32_t timeSec, uint32_t startSec, uint32_t durationSec)
 
 TEST(protocol_nmea, zda_gps_time_skip)
 {
-    GTEST_SKIP() << "This test must be run manually as the statically SDK build does not include the ZDA TOD work around code"
+    GTEST_SKIP() << "This test must be run manually as the statically SDK build does not include the ZDA TOD work around code";
 
     printf("DESCRIPTION: Test that ZDA time skip detect code works correctly for 1-2 second jumps in the ZDA UTC time due to jumps in GPS time of week.\n");
     initGlobals();

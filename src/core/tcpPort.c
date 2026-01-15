@@ -101,7 +101,7 @@ int tcpPortClose(port_handle_t port) {
     }
 
 #ifdef PLATFORM_IS_WINDOWS
-    shutdown(ks.socket, SD_BOTH);
+    shutdown(tcpPort->socket, SD_BOTH);
 #else
     shutdown(tcpPort->socket, SHUT_RDWR);
 #endif

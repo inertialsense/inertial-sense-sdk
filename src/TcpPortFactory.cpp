@@ -20,7 +20,7 @@
 #include <util/uri.hpp>
 #include <util/util.h>
 
-#if PLATFORM_IS_WINDOWS_WIN32
+#if PLATFORM_IS_WINDOWS
 #include <winsock2.h>
 #elif !PLATFORM_IS_EMBEDDED
 #include <arpa/inet.h>
