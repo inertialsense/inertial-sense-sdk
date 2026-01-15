@@ -1762,7 +1762,7 @@ typedef struct PACKED
 // (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
 typedef struct PACKED
 {
-    imuX_t                  imu3;
+    imuX_t                  imu;
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
     float                   temp[MAX_IMU_DEVICES];
@@ -5799,7 +5799,7 @@ typedef union PACKED
     ins_3_t                     ins3;
     ins_4_t                     ins4;
     imu_t                       imu;
-    imuX_t                      imu3;
+    imuX_t                      imuX;
     magnetometer_t              mag;
     mag_cal_t                   magCal;
     barometer_t                 baro;
