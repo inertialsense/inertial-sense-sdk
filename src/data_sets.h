@@ -990,9 +990,9 @@ enum eImuStatus
     IMU_STATUS_GYR_Z_OK                         = (int)0x00000004,
     /** IMU X accelerometer is valid */
     IMU_STATUS_ACC_X_OK                         = (int)0x00000008,
-    /** IMU X accelerometer is valid */
+    /** IMU Y accelerometer is valid */
     IMU_STATUS_ACC_Y_OK                         = (int)0x00000010,
-    /** IMU X accelerometer is valid */
+    /** IMU Z accelerometer is valid */
     IMU_STATUS_ACC_Z_OK                         = (int)0x00000020,
     /** Number of IMU OK bits */
     IMU_STATUS_IMU_OK_BITSIZE                   = 6,
