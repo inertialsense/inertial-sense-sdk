@@ -13,8 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef IS_DISPLAY_H
 #define IS_DISPLAY_H
 
-#include <stdlib.h>
-#include <inttypes.h>
+#include <cstdlib>
+#include <cinttypes>
 #include <vector>
 #include <string>
 
@@ -27,10 +27,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "serialPortPlatform.h"
 
-#if !PLATFORM_IS_WINDOWS
-
+#if !PLATFORM_IS_WINDOWS && !PLATFORM_IS_EMBEDDED
 #include <termios.h>
-
 #endif
 
 
