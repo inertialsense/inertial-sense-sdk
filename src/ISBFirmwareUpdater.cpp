@@ -7,8 +7,6 @@
  */
 
 #include "ISBFirmwareUpdater.h"
-#include "ISBootloaderBase.h"
-#include "ISBootloaderISB.h"
 #include "InertialSense.h"
 
 

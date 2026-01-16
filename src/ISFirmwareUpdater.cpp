@@ -5,7 +5,6 @@
 #include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
 
-#include "ISDFUFirmwareUpdater.h"
 #include "ISBFirmwareUpdater.h"
 
 ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device) : FirmwareUpdateHost(), device(device) {
