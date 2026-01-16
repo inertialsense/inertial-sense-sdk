@@ -1415,13 +1415,13 @@ class logPlot:
                 if r: ax.text(p1, -cnt * 1.5, 'Z Gyr OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000008) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'X Acc1 OK')
+                if r: ax.text(p1, -cnt * 1.5, 'X Acc OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Y Acc2 OK')
+                if r: ax.text(p1, -cnt * 1.5, 'Y Acc OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Z Acc3 OK')
+                if r: ax.text(p1, -cnt * 1.5, 'Z Acc OK')
                 cnt += 1
                 cnt += 1
 
