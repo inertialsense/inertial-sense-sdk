@@ -142,6 +142,14 @@ protected:
     PortManager() = default;
     ~PortManager() {
         std::lock_guard<std::recursive_mutex> lock(mutex);
+        // if the PortManager is destroyed, it should destroy all ports which it knows about
+        for (auto& [entry, port] : knownPorts) {
+            if (portIsValid(port)) {
+                portClose(port);
+                if (entry.factory)
+                    entry.factory->releasePort(port);
+            }
+        }
         factories.clear(); // Note that all factories should be pointers to static instances, so we shouldn't ever delete them
     };
 

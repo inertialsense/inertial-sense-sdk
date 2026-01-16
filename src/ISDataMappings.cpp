@@ -2374,6 +2374,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
     return true;
 }
 
+#if defined(YAML_CPP_API)
 bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output)
 {
     return DataToYaml(did, dataPtr, output, YAML::Node());
@@ -2510,6 +2511,7 @@ bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataP
 
     return success;
 }
+#endif
 
 void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void* newPtr, size_t newSize)
 {

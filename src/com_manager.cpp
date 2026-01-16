@@ -64,7 +64,7 @@ int ISComManager::init(
 
     defaultCbs = {};
     defaultCbs.context = this;
-    defaultCbs.all = comManagerProcessBinaryRxPacket;
+    defaultCbs.all = comManagerProcessRxPacket;
     defaultCbs.isbData = pstRxFncCb;
 
     if (!portSet) portSet = new std::set<port_handle_t>();
@@ -606,7 +606,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
     return 0;
 }
 
-int comManagerProcessBinaryRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
+int comManagerProcessRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
     return s_cm.processBinaryRxPacket(ptype, pkt, port);
 }
@@ -896,8 +896,8 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
         return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
     }
 
-    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA))
-    {   // if port is null, set this as the default handler, and also set it for all available ports
+    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA)) {
+        // if port is null, set this as the default handler, and also set it for all available ports
         defaultCbs.context = this;
         defaultCbs.generic[ptype] = cbHandler;
         defaultCbs.protocolMask = DEFAULT_PORT_PROTO_CFG;

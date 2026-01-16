@@ -13,18 +13,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 #include <vector>
 
-#include "protocol_nmea.h"
-#include "yaml-cpp/yaml.h"
-#include "protocol_nmea.h"
 #include "InertialSense.h"
-#include "ISDevice.h"
-#include "ISDeviceCal.h"
-#include "ISBootloaderThread.h"
-#include "ISBootloaderDFU.h"
 #include "ISmDnsPortFactory.h"
 #include "TcpPortFactory.h"
+#include "protocol_nmea.h"
 #include "protocol/FirmwareUpdate.h"
+
 #include "imx_defaults.h"
+
+#if !PLATFORM_IS_EMBEDDED
+#include "ISBootloaderThread.h"
+#endif
 
 using namespace std;
 
@@ -116,14 +115,13 @@ static int staticProcessRxNmea(void* ctx, const unsigned char* msg, int msgSize,
     return 0;
 }
 
-InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<DeviceFactory*> dFactories) : m_tcpServer(this)
+InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<DeviceFactory*> dFactories)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
     m_logThread = NULLPTR;
     m_lastLogReInit = time(0);
     m_clientBufferBytesToSend = 0;
-    m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;  // For Intel.
 
     // register device factories before we do port factories, so if (for some strange reason) ports get discovered early, there is a device factory to handle it
@@ -189,14 +187,13 @@ InertialSense::InertialSense(
         pfnIsCommGenMsgHandler  handlerUblox,
         pfnIsCommGenMsgHandler  handlerRtcm3,
         pfnIsCommGenMsgHandler  handlerSpartn,
-        pfnOnNewDeviceHandler handlerNewDevice) : m_tcpServer(this)
+        pfnOnNewDeviceHandler handlerNewDevice)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
     m_logThread = NULLPTR;
     m_lastLogReInit = time(0);
     m_clientBufferBytesToSend = 0;
-    m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;  // For Intel.
 
     deviceManager.addDeviceFactory((DeviceFactory*)&ImxDeviceFactory::getInstance());
@@ -236,7 +233,6 @@ InertialSense::InertialSense(
 InertialSense::~InertialSense()
 {
     Close();
-    CloseServerConnection();
     DisableLogging();
     s_is = nullptr;
 }
@@ -407,201 +403,28 @@ bool InertialSense::SetLoggerEnabled(
     return EnableLogger(logEnable, logPath, logOptions, rmcPreset, rmcOptions);
 }
 
-void InertialSense::CloseServerConnection()
-{
-    m_tcpServer.Close();
-    // m_serialServer.Close();
-}
-
-// [type]:[ip/url]:[port]
-bool InertialSense::CreateHost(const string& connectionString)
-{
-    // if no serial connection, fail
-    if (!IsOpen())
-    {
-        return false;
-    }
-
-    CloseServerConnection();
-
-    vector<string> pieces;
-    splitString(connectionString, ':', pieces);
-    if (pieces.size() < 3)
-    {
-        return false;
-    }
-
-    string type     = pieces[0];    // TCP, SERIAL
-    string host     = pieces[1];    // IP / URL
-    string port     = pieces[2];
-
-    if (type != "TCP")
-    {
-        return false;
-    }
-
-    StopBroadcasts();
-
-    return (m_tcpServer.Open(host, atoi(port.c_str())) == 0);
-}
-
-#if 0
-size_t InertialSense::DeviceCount()
-{
-    //return m_comManagerState.devices.size();
-    return size();
-}
-
-/**
- * Returns a vector of available, connected devices
- * @return
- */
-std::list<device_handle_t>& InertialSense::getDevices() {
-    // return m_comManagerState.devices;
-    return *this;
-}
-
-/**
- * Returns a vector of available, connected devices
- * @return
- */
-std::vector<device_handle_t> InertialSense::getDevicesAsVector() {
-    std::vector<device_handle_t> vecOut;
-    for (auto device : m_comManagerState.devices) {
-        vecOut.push_back(device);
-    }
-    return vecOut;
-}
-
-/**
- * Returns the ISDevice instance associated with the specified port, or NULL if there is no associated device
- * @param port
- * @return
- */
-device_handle_t InertialSense::getDevice(port_handle_t port) {
-    for (auto device : m_comManagerState.devices) {
-        if (device->port == port)
-            return device;
-    }
-
-    return NULL;
-}
-
-/**
- * Returns the ISDevice instance associated with the specified port, or NULL if there is no associated device
- * @param port
- * @return
- */
-device_handle_t InertialSense::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
-    for (auto device : m_comManagerState.devices) {
-        if ((device->hdwId == hdwId) && (device->devInfo.serialNumber == serialNum))
-            return device;
-    }
-
-    return NULL;
-}
-
-#endif
 
 
 bool InertialSense::Update()
 {
     m_timeMs = current_timeMs();
 
-    if (m_tcpServer.IsOpen() && DeviceCount() > 0)
-    {
-        UpdateServer();
-    }
-    else
-    {
-        // [C COMM INSTRUCTION]  2.) Update each device at regular interval to send and receive data.
-        // Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
-        // task system with serial port read function that does NOT incorporate a timeout.
-        for (auto device : deviceManager)
-            if (device)
-                device->step();
-    }
+//    m_correctionsServer.step();
+//    if (m_correctionService.step() <= 0) {
+//        // usually an error because the correction service (base) port is closed or invalid.
+//        portOpen(m_correctionService.getSourcePort());
+//    }
 
-    // if all serial ports have closed, shutdown
-    bool anyOpen = false;
-    for (auto device : deviceManager)
-    {
-        if (device->fwUpdateInProgress() || device->isConnected())
-            anyOpen = true;
+    bool anyOpen = false;   // if all serial ports have closed, shutdown
+    for (auto device : deviceManager) {
+        if (device) {
+            device->step();
+            if (device->fwUpdateInProgress() || device->isConnected())
+                anyOpen = true;
+        }
     }
 
     return anyOpen;
-}
-
-/**
- * TCP Server primary handler - parses data received via the first connected device, looking for RTCM3/UBLOX protocol
- * and sends that same data out to the underlying ISTCPServer's connected clients
- * @return always returns true, though should probably return false if the m_tcpServer has no active clients (or something)
- */
-bool InertialSense::UpdateServer()
-{
-    // As I understand it, this function is responsible for reading RTCM3, and other useful data sets from connected IMX,
-    // and publishing it to connected clients (because it is the server).
-
-    // This is a little different, kind-of, because we don't actually let the ISDevice parse any data (but maybe we should).
-    // Rather, we parse data directly from the COMM buffer, so we can determine what type of data it is (though we should
-    // already know this). then, based on the packet type (RTCM3/UBLOX, etc) we'll send that data out to the socket.
-    //
-    // Ideally, the TCP socket would also be a port_handle_t, and we'd essentially plumb up a passthrough:  Let the ISDevice
-    // parse data FROM the device, call a custom callback for the data types we're interested in, and then when those are
-    // received, we'd send them right back out the TCP port_handle_t.  Perhaps one day; not today.
-
-    // as a tcp server, only the first serial port is read from
-    port_handle_t port = deviceManager.front()->port;
-    is_comm_instance_t *comm = &(COMM_PORT(port)->comm);
-    protocol_type_t ptype = _PTYPE_NONE;
-
-    // Get available size of comm buffer
-    int n = is_comm_free(comm);         // TODO:  This is a little janky; as a Serial/COMM port, this should already know how to do these things...
-
-    // Read data directly into comm buffer
-    if ((n = portReadTimeout(port, comm->rxBuf.tail, n, 0)))
-    {
-        // Update comm buffer tail pointer
-        comm->rxBuf.tail += n;
-
-        // Search comm buffer for valid packets
-        while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-        {
-            string str;
-
-            switch (ptype)
-            {
-                case _PTYPE_RTCM3:
-                case _PTYPE_UBLOX:
-                    // forward data on to connected clients
-                    m_clientServerByteCount += comm->rxPkt.data.size;
-                    if (m_tcpServer.Write(comm->rxPkt.data.ptr, comm->rxPkt.data.size) != (int)comm->rxPkt.data.size)
-                    {
-                        cout << endl << "Failed to write bytes to tcp server!" << endl;
-                    }
-                    if (ptype == _PTYPE_RTCM3)
-                    {
-                        if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
-                        {
-                            str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
-                        }
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            if (ptype != _PTYPE_NONE)
-            {   // Record message info
-                messageStatsAppend(str, m_serverMessageStats, ptype, comm->rxPkt.id, comm->rxPkt.size, m_timeMs);
-            }
-        }
-    }
-    m_tcpServer.Update();
-
-    return true;
 }
 
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
@@ -922,7 +745,7 @@ is_operation_result InertialSense::updateFirmware(fwUpdate::target_t targetDevic
     // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
     auto plHandle = portManager.addPortListener(
             [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
-                printf("Detected port change (%s) during Firmware Udpate: %s\n", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
+                log_info(IS_LOG_PORT_MANAGER, "Detected port change (%s) during Firmware Update: %s", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
                 if (event == PortManager::PORT_ADDED) {
                     deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
                 }
@@ -984,6 +807,7 @@ int InertialSense::getFirmwareUpdatePercent() {
     return 100;
 }
 
+#if !PLATFORM_IS_EMBEDDED
 is_operation_result InertialSense::BootloadFile(
         const string& comPort,
         const uint32_t serialNum,
@@ -1080,40 +904,7 @@ is_operation_result InertialSense::BootloadFile(
 
     return IS_OP_OK;
 }
-
-bool InertialSense::OnClientPacketReceived(const uint8_t* data, uint32_t dataLength)
-{
-    for (auto device : deviceManager) { device->SendRaw(data, dataLength); }
-    return false; // do not parse, since we are just forwarding it on
-}
-
-void InertialSense::OnClientConnecting(cISTcpServer* server)
-{
-    (void)server;
-    // cout << endl << "Client connecting..." << endl;
-}
-
-void InertialSense::OnClientConnected(cISTcpServer* server, is_socket_t socket)
-{
-    // cout << endl << "Client connected: " << (int)socket << endl;
-    m_clientConnectionsCurrent++;
-    m_clientConnectionsTotal++;
-}
-
-void InertialSense::OnClientConnectFailed(cISTcpServer* server)
-{
-    // cout << endl << "Client connection failed!" << endl;
-}
-
-void InertialSense::OnClientDisconnected(cISTcpServer* server, is_socket_t socket)
-{
-    // cout << endl << "Client disconnected: " << (int)socket << endl;
-    m_clientConnectionsCurrent--;
-    if (m_clientConnectionsCurrent<0)
-    {
-        m_clientConnectionsCurrent = 0;
-    }
-}
+#endif
 
 int InertialSense::OnPortError(port_handle_t port, int errCode, const char *errMsg) {
     printf("%s\n", errMsg);
@@ -1168,7 +959,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     }
 
     if (m_enableDeviceValidation) {
-        log_info(IS_LOG_FACILITY_NONE, "Starting device validation on %lu registered ports.\n", portManager.size());
+        log_info(IS_LOG_FACILITY_NONE, "Starting device validation on %lu registered ports.", portManager.size());
 
         // we'll make a copy of all the port handles (into a set); as we validate each, we'll remove it from this new set until they are all gone
         for (auto port : portManager.locked_range()) portsToValidate.insert(port);
@@ -1179,7 +970,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // remove all ports from portToValidate if a device has bound to that port
         for ( auto d : deviceManager ) portsToValidate.erase(d->port);
 
-        log_info(IS_LOG_FACILITY_NONE, "Completed device validation for %lu devices, on %lu ports.\n", deviceManager.size(), portManager.size());
+        log_info(IS_LOG_FACILITY_NONE, "Completed device validation for %lu devices, on %lu ports.", deviceManager.size(), portManager.size());
         if (!portsToValidate.empty()) {
             std::string names;
             for (auto port : portsToValidate) {
@@ -1187,7 +978,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                 names += std::string(portName(port));
             }
             // auto names = utils::join_to_string<std::set<std::string>>(portsToValidate, ", ");
-            log_error(IS_LOG_FACILITY_NONE, "Timeout waiting to validate %lu ports: %s.\n", portsToValidate.size(), names.c_str());
+            log_error(IS_LOG_FACILITY_NONE, "Timeout waiting to validate %lu ports: %s.", portsToValidate.size(), names.c_str());
         }
     }
 
@@ -1198,6 +989,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             device->GetData(DID_SYS_PARAMS);
             device->GetData(DID_FLASH_CONFIG);
             device->GetData(DID_GPX_FLASH_CFG);
+            device->GetData(DID_GPX_STATUS);
         }
         device->WaitForImxFlashCfgSynced();
     }
@@ -1540,17 +1332,14 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
 
-    did_event_t event = {
-            .time = 123,
-            .senderSN = 0,
-            .senderHdwId = 0,
-            .length = sizeof(did_event_filter_t),
-    };
+    did_event_t event = {};
+    event.time = 123,
+    event.senderSN = 0,
+    event.senderHdwId = 0,
+    event.length = sizeof(did_event_filter_t);
 
-    did_event_filter_t filter = {
-            .portMask = portMask,
-    };
-
+    did_event_filter_t filter = {};
+    filter.portMask = portMask;
     filter.eventMask.priorityLevel = priorityLevel;
     filter.eventMask.msgTypeIdMask = msgTypeIdMask;
 

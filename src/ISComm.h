@@ -689,6 +689,8 @@ void is_comm_port_init(comm_port_t* port, pfnIsCommHandler pktHandler);
 
 is_comm_instance_t* is_comm_get_port_instance(port_handle_t port);
 
+pfnIsCommHandler is_comm_register_all_handler(is_comm_instance_t* comm, pfnIsCommHandler cbHandler);
+
 pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler);
 
 pfnIsCommIsbDataHandler is_comm_register_port_isb_handler(port_handle_t port, pfnIsCommIsbDataHandler cbHandler);
