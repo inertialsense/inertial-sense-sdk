@@ -36,9 +36,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
+
+#include "uri.hpp"
 #include "protocol_nmea.h"
 #include "util/natsort.h"
 #include "CorrectionService.h"
+#include "NtripCorrectionService.h"
 #include "TcpPortFactory.h"
 
 #include "ISBootloaderThread.h"
@@ -54,8 +57,8 @@ static bool g_cmdSuccessExitAppNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 InertialSense *g_inertialSenseInterface = NULL;
-CorrectionService* g_correctionInput = NULL;
-Rtcm3CorrectionServer* g_correctionOutput = NULL;
+shared_ptr<CorrectionService> g_correctionInput = NULL;
+shared_ptr<Rtcm3CorrectionServer> g_correctionOutput = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
@@ -107,7 +110,7 @@ static void display_server_client_status(bool showMessageSummary=false, bool ref
             outstream << "Corrections Output: " << g_correctionOutput->getListenIpAddress() << ":" << g_correctionOutput->getListenIpPort() << "     Tx: ";
         } else if (g_correctionInput) {
             port_handle_t srcPort = g_correctionInput->getSourcePort();
-            outstream << "Corrections Input: " << portName(srcPort) << (!portIsOpened(srcPort) ? " (Closed)" : "") << ":     Rx: ";
+            outstream << "Corrections Input: [" << portName(srcPort) << (!portIsOpened(srcPort) ? " (Closed)" : "") << "]     Rx: ";
         }
 
         outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)(correctionStats.rxBytes / 1024.0) << " Kbytes    \n";
@@ -261,6 +264,18 @@ int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
     if (!g_enableDataCallback)
     {   // Receive disabled
         return 0;
+    }
+
+    // If correctionInputs are on, and we've received an updated GNSS position, pass it on to the correction service, if needed.
+    if (g_correctionInput && (data->hdr.id == DID_GPS1_POS)) {
+        gps_pos_t gnssPos = *(gps_pos_t*)data->ptr;
+        if (std::shared_ptr<NtripCorrectionService> ntripPtr = std::dynamic_pointer_cast<NtripCorrectionService>(g_correctionInput)) {
+            static uint32_t lastUpdate = current_timeMs();
+            if (lastUpdate + 5000 < current_timeMs()) {     // Let's not flood the NTRIP caster with every position update...
+                ntripPtr->updatePosition(gnssPos);
+                lastUpdate = current_timeMs();
+            }
+        }
     }
 
     if (!g_commandLineOptions.outputOnceDid.empty())
@@ -550,7 +565,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
-        g_correctionInput = new CorrectionService(g_commandLineOptions.roverConnection);
+        FIX8::uri uri(g_commandLineOptions.roverConnection);
+        if (uri.parse() && uri.has_scheme() && (std::string(uri.get_scheme()) == "ntrip")) {
+            g_correctionInput = std::make_shared<NtripCorrectionService>(g_commandLineOptions.roverConnection);
+        } else {
+            g_correctionInput = std::make_shared<CorrectionService>(g_commandLineOptions.roverConnection);
+        }
         g_correctionInput->addDevices(std::vector<device_handle_t>{std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices())});
     }
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
@@ -867,16 +887,15 @@ static int cltool_createHost()
     inertialSenseInterface.StopBroadcasts();
 
     // FIXME: Parse the rest of the "baseConnection" command-line argument for the listen address/port for incoming requests and configure the InertialSense correctionServer
-    Rtcm3CorrectionServer baseOutputServer(srcDevice);
-    g_correctionOutput = &baseOutputServer;
+    g_correctionOutput = std::make_shared<Rtcm3CorrectionServer>(srcDevice);
     MessageStats::mul_stats_t rtcm3Stats;
-    baseOutputServer.setMessageStats(&rtcm3Stats);
+    g_correctionOutput->setMessageStats(&rtcm3Stats);
 
     unsigned int timeSinceClearMs = 0, curTimeMs;
     while (!g_inertialSenseDisplay.ExitProgram())
     {
         curTimeMs = current_timeMs();
-        baseOutputServer.step();
+        g_correctionOutput->step();
         inertialSenseInterface.Update();
         bool refresh = false;
         if (((curTimeMs - timeSinceClearMs) > 2000) || (curTimeMs < timeSinceClearMs))
