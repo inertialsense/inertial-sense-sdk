@@ -37,12 +37,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
-#include "uri.hpp"
 #include "protocol_nmea.h"
-#include "util/natsort.h"
 #include "CorrectionService.h"
 #include "NtripCorrectionService.h"
 #include "TcpPortFactory.h"
+#include "util/natsort.h"
+#include "util/uri.hpp"
 
 #include "ISBootloaderThread.h"
 #include "CorrectionService.h"
