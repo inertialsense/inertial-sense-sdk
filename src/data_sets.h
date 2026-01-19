@@ -880,6 +880,8 @@ typedef struct PACKED
     /** IMU Status (eImuStatus) */
     uint32_t                status;
 
+    uint32_t                imuCnt;    /**< Number of IMU devices present> */
+
     /** Inertial Measurement Units (IMUs) */
     imus_t                  I[MAX_IMU_DEVICES];
 
