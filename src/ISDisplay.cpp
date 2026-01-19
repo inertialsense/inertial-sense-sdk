@@ -1591,12 +1591,12 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
     char* ptrEnd = buf + BUF_SIZE;
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
-    return string(buf) + DataToStringDevInfo(info, m_displayMode!=DMODE_SCROLL) + (m_displayMode!=DMODE_SCROLL ? "\n" : "");
+    return string(buf) + " " + DataToStringDevInfo(info, m_displayMode!=DMODE_SCROLL) + (m_displayMode!=DMODE_SCROLL ? "\n" : "");
 }
 
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, int flags)
 {
-    return "" + ISDevice::getName(info, flags) + ISDevice::getFirmwareInfo(info, flags);
+    return "" + ISDevice::getName(info) + " " + ISDevice::getFirmwareInfo(info);
 }
 
 string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {

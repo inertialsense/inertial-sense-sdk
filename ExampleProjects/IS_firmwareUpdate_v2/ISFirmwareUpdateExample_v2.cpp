@@ -319,7 +319,6 @@ int main(int argc, char* argv[])
         {
             cout << "Failed to setup logger!" << endl;
             inertialSenseInterface.Close();
-            inertialSenseInterface.CloseServerConnection();
             return -1;
         }
         else
@@ -343,7 +342,6 @@ int main(int argc, char* argv[])
                             NULL) != IS_OP_OK)
                     {
                         inertialSenseInterface.Close();
-                        inertialSenseInterface.CloseServerConnection();
                         return -1;
                     }
                     else
@@ -379,7 +377,6 @@ int main(int argc, char* argv[])
     // [C++ COMM INSTRUCTION] STEP 5: Close interface
     // Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
     inertialSenseInterface.Close();
-    inertialSenseInterface.CloseServerConnection();
 
     return 0;
 }

@@ -17,7 +17,7 @@
 static int s_protocol_version = NMEA_PROTOCOL_2P3;  // Default to protocol version 2.3
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
-#define HISTORY_SIZE    3
+#define HISTORY_SIZE    5
 
 static struct  
 {
@@ -281,6 +281,22 @@ char *ASCII_to_u16(uint16_t *val, char *ptr)
 char *ASCII_to_u32(uint32_t *val, char *ptr)
 {
     val[0] = (uint32_t)atoi(ptr);   ptr = ASCII_find_next_field(ptr);
+    return ptr;
+}
+
+char *ASCII_options_to_u32(uint32_t *options, char *ptr)
+{
+    // check if next index is ','
+    if (*ptr != ',')
+    {
+        // Check if string starts with "0x" or "0X" for hexadecimal
+        if ((ptr[0] == '0') && (ptr[1] == 'x' || ptr[1] == 'X'))
+            *options = (uint32_t)strtoul(ptr, NULL, 16);  // Parse as hexadecimal
+        else
+            *options = (uint32_t)atoi(ptr);               // Parse as decimal
+    }
+
+    ptr = ASCII_find_next_field(ptr);
     return ptr;
 }
 
@@ -1016,6 +1032,39 @@ int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
     return nmea_sprint_footer(a, aSize, n);
 }
 
+float median_filter(float newValue, float history[], float sorted[], int historySize, int halfHistorySize)
+{
+    // Update history buffer
+    for (int i = historySize-1; i > 0; i--)
+    {
+        history[i] = history[i-1];
+    }
+    history[0] = newValue;
+
+    // Create temporary array for sorting
+    for (int i = 0; i < historySize; i++)
+    {
+        sorted[i] = history[i];
+    }
+
+    // Simple bubble sort
+    for (int i = 0; i < historySize - 1; i++)
+    {
+        for (int j = 0; j < historySize - i - 1; j++)
+        {
+            if (sorted[j] > sorted[j + 1])
+            {
+                float temp = sorted[j];
+                sorted[j] = sorted[j + 1];
+                sorted[j + 1] = temp;
+            }
+        }
+    }
+
+    // Return median value
+    return sorted[halfHistorySize];
+}
+
 void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
 {
     if (s_dataSpeed.timeOfWeekMs != pos.timeOfWeekMs)
@@ -1032,27 +1081,10 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
             quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
             quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
         }
-        if (s_dataSpeed.enableSpeedFilter)
-        {   // Update history buffer
-            for (int i = HISTORY_SIZE-1; i > 0; i--)
-            {
-                s_dataSpeed.speed2dMpsHistory[i] = s_dataSpeed.speed2dMpsHistory[i-1];
-            }
-        }
-        s_dataSpeed.speed2dMpsHistory[0] = mag_Vec2(s_dataSpeed.velNed);
 
-        if (s_dataSpeed.enableSpeedFilter)
-        {   // Apply median filter
-            // Median filter - find middle value of 3 samples
-            float a = s_dataSpeed.speed2dMpsHistory[0];
-            float b = s_dataSpeed.speed2dMpsHistory[1];
-            float c = s_dataSpeed.speed2dMpsHistory[2];
-            s_dataSpeed.speed2dMps = fmaxf(fminf(a, b), fminf(fmaxf(a, b), c));
-        }
-        else
-        {   // No filtering
-            s_dataSpeed.speed2dMps = s_dataSpeed.speed2dMpsHistory[0];
-        }
+        float speed2dMps = mag_Vec2(s_dataSpeed.velNed);
+        float sorted[HISTORY_SIZE];
+        s_dataSpeed.speed2dMps = s_dataSpeed.enableSpeedFilter ? median_filter(speed2dMps, s_dataSpeed.speed2dMpsHistory, sorted, HISTORY_SIZE, HISTORY_SIZE/2) : speed2dMps;
         s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
     }
 }
@@ -2263,13 +2295,9 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     
     char *ptr = (char*)&a[6];                // $ASCE
     char *end = (char*)&a[aSize];
-    
-    // check if next index is ','
-    if (*ptr != ',')
-        options = (uint32_t)atoi(ptr);
-    
-    // get next uint32_t and assign it to options and move pointer
-    ptr = ASCII_to_u32(&options, ptr);
+
+    // extract options
+    ptr = ASCII_options_to_u32(&options, ptr);
 
     // extract port from options
     ports = options&RMC_OPTIONS_PORT_MASK;

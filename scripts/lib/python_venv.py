@@ -40,6 +40,7 @@ def find_virtualenv() -> str:
     for root in search_roots:
         candidate = os.path.realpath(os.path.join(root, ".venv"))
         if is_virtual_environment(candidate):
+            print(f"Found virtual environment: {candidate}")
             return candidate
 
     # Fallback: create under SDK/.venv

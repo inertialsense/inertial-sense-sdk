@@ -38,6 +38,242 @@ RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
 
+def median_filter(data, history_size=3):
+    """
+    Apply median filter to data array with arbitrary history size.
+    
+    Args:
+        data: numpy array to be filtered (can be 1D or 2D)
+        history_size: size of filter window (default 3)
+    
+    Returns:
+        Filtered numpy array with same shape as input
+    """
+    if len(data) == 0:
+        return data
+    
+    # Handle both 1D and 2D arrays
+    is_1d = len(data.shape) == 1
+    if is_1d:
+        data = data.reshape(-1, 1)
+    
+    filtered = np.copy(data)
+    
+    # For each axis/column
+    for col in range(data.shape[1]):
+        history = [data[0, col]] * history_size  # Initialize history with first value
+        
+        for i in range(len(data)):
+            # Update history buffer (shift right)
+            for j in range(history_size - 1, 0, -1):
+                history[j] = history[j - 1]
+            history[0] = data[i, col]
+            
+            # Sort history to find median
+            sorted_history = sorted(history)
+            # Return median value (middle element)
+            filtered[i, col] = sorted_history[history_size // 2]
+    
+    return filtered.flatten() if is_1d else filtered
+
+def regression_filter(data, history_size=3):
+    """
+    Apply windowed regression filter to data array with arbitrary history size.
+    Uses linear regression on a sliding window to smooth the data.
+    
+    Args:
+        data: numpy array to be filtered (can be 1D or 2D)
+        history_size: size of filter window (default 3)
+    
+    Returns:
+        Filtered numpy array with same shape as input
+    """
+    if len(data) == 0:
+        return data
+    
+    # Handle both 1D and 2D arrays
+    is_1d = len(data.shape) == 1
+    if is_1d:
+        data = data.reshape(-1, 1)
+    
+    filtered = np.copy(data)
+    
+    # For each axis/column
+    for col in range(data.shape[1]):
+        history = [data[0, col]] * history_size  # Initialize history with first value
+        
+        for i in range(len(data)):
+            # Update history buffer (shift right)
+            for j in range(history_size - 1, 0, -1):
+                history[j] = history[j - 1]
+            history[0] = data[i, col]
+            
+            # Perform linear regression on history window
+            # X values are time indices (0, 1, 2, ..., history_size-1)
+            x = np.arange(history_size)
+            y = np.array(history)
+            
+            # Calculate linear regression: y = mx + b
+            # Using least squares: m = (n*sum(xy) - sum(x)*sum(y)) / (n*sum(x^2) - sum(x)^2)
+            n = history_size
+            sum_x = np.sum(x)
+            sum_y = np.sum(y)
+            sum_xy = np.sum(x * y)
+            sum_x2 = np.sum(x * x)
+            
+            denominator = n * sum_x2 - sum_x * sum_x
+            if abs(denominator) > 1e-10:  # Avoid division by zero
+                m = (n * sum_xy - sum_x * sum_y) / denominator
+                b = (sum_y - m * sum_x) / n
+                # Use the most recent point (x=0) from the fitted line
+                filtered[i, col] = m * 0 + b  # This simplifies to just b
+            else:
+                # Fallback to mean if regression fails
+                filtered[i, col] = np.mean(history)
+    
+    return filtered.flatten() if is_1d else filtered
+
+def hampel_filter(data, history_size=9, n_sigmas=3.0, replace_with="median"):
+    """
+    Apply a (causal) Hampel filter to data with arbitrary history size.
+
+    This uses a trailing window (history buffer), like your median filter:
+    window = [x[i], x[i-1], ..., x[i-history_size+1]]
+
+    Args:
+        data: numpy array to be filtered (1D or 2D). Shape (N,) or (N, M)
+        history_size: window size (odd recommended; must be >= 3)
+        n_sigmas: outlier threshold in robust sigmas (typical 3-6)
+        replace_with: "median" (default) or "clip"
+            - "median": replace outliers with the window median
+            - "clip":   clamp x[i] to median +/- n_sigmas * sigma
+
+    Returns:
+        Filtered numpy array with same shape as input
+    """
+    if data is None or len(data) == 0:
+        return data
+
+    if history_size < 3:
+        raise ValueError("history_size must be >= 3")
+    if n_sigmas <= 0:
+        raise ValueError("n_sigmas must be > 0")
+
+    # Handle both 1D and 2D arrays
+    is_1d = (len(data.shape) == 1)
+    if is_1d:
+        data2 = data.reshape(-1, 1)
+    else:
+        data2 = data
+
+    filtered = np.copy(data2)
+
+    # For each axis/column
+    for col in range(data2.shape[1]):
+        # Initialize history with first value
+        history = [float(data2[0, col])] * history_size
+
+        for i in range(len(data2)):
+            x = float(data2[i, col])
+
+            # Update history buffer (shift right)
+            for j in range(history_size - 1, 0, -1):
+                history[j] = history[j - 1]
+            history[0] = x
+
+            # Median of the window
+            sorted_hist = sorted(history)
+            med = sorted_hist[history_size // 2]
+
+            # MAD (median absolute deviation)
+            abs_dev = [abs(v - med) for v in history]
+            mad = sorted(abs_dev)[history_size // 2]
+
+            # Robust sigma estimate; guard against mad==0
+            sigma = 1.4826 * mad
+            if sigma < 1e-12:
+                # Window is (nearly) constant; nothing to flag as an outlier
+                filtered[i, col] = x
+                continue
+
+            # Outlier test
+            if abs(x - med) > n_sigmas * sigma:
+                if replace_with == "median":
+                    filtered[i, col] = med
+                elif replace_with == "clip":
+                    lo = med - n_sigmas * sigma
+                    hi = med + n_sigmas * sigma
+                    filtered[i, col] = min(max(x, lo), hi)
+                else:
+                    raise ValueError('replace_with must be "median" or "clip"')
+            else:
+                filtered[i, col] = x
+
+    return filtered.flatten() if is_1d else filtered
+
+def robust_lowpass(x, dt,
+                   history_size=5,
+                   n_sigmas=3.0,
+                   tau=0.4,
+                   reset=False):
+    """
+    Runtime-friendly filter: median/MAD spike gate + 1st-order IIR low-pass.
+
+    Call once per sample.
+
+    Args:
+        x: scalar or 1D array (current sample)
+        dt: sample period (seconds)
+        history_size: trailing window for spike gate (>=3)
+        n_sigmas: outlier threshold (2.5–4.0 typical)
+        tau: low-pass time constant in seconds (0.3–0.6 works well at 5 Hz)
+        reset: if True, resets internal state
+
+    Returns:
+        y: filtered output (same shape as x)
+        x_gated: sample after spike gating
+        is_outlier: boolean mask (True where x was gated)
+    """
+    x = np.asarray(x, dtype=float).reshape(-1)
+    dim = x.size
+
+    # ---- persistent state ----
+    if reset or not hasattr(robust_lowpass, "hist"):
+        robust_lowpass.hist = np.tile(x, (history_size, 1))
+        robust_lowpass.y = x.copy()
+
+    hist = robust_lowpass.hist
+    y = robust_lowpass.y
+
+    # ---- update history (trailing window) ----
+    hist[1:] = hist[:-1]
+    hist[0] = x
+
+    # ---- robust spike gate ----
+    med = np.median(hist, axis=0)
+    mad = np.median(np.abs(hist - med), axis=0)
+    sigma = 1.4826 * mad
+
+    xg = x.copy()
+    is_outlier = np.zeros(dim, dtype=bool)
+
+    valid = sigma > 1e-12
+    thr = n_sigmas * sigma
+
+    is_outlier[valid] = np.abs(x[valid] - med[valid]) > thr[valid]
+    xg[is_outlier] = med[is_outlier]
+
+    # ---- low-pass IIR ----
+    alpha = dt / (tau + dt)
+    y = y + alpha * (xg - y)
+
+    # store state
+    robust_lowpass.hist = hist
+    robust_lowpass.y = y
+
+    return y.copy(), xg.copy(), is_outlier.copy()
+
+
 class logPlot:
     def __init__(self, show=False, save=False, format='svg', log=None):
         self.show = show
@@ -48,6 +284,7 @@ class logPlot:
         self.timestamp = False
         self.xAxisSample = False
         self.showGps2 = False
+        self.gpsVelFilterMode = 0
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
         if self.enableLegends:
@@ -105,6 +342,9 @@ class logPlot:
 
     def enableGps2(self, enable):
         self.showGps2 = enable
+
+    def setGpsVelFilterMode(self, filterMode):
+        self.gpsVelFilterMode = filterMode
 
     def enableUtcTime(self, enable):
         self.utcTime = enable
@@ -665,6 +905,17 @@ class logPlot:
 
             #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
             #velNed = R.dot(velEcef.T).T
+        
+        if velNed is not None and len(velNed) > 0:
+            if self.gpsVelFilterMode == 1:
+                velNed = median_filter(velNed, 5)
+            elif self.gpsVelFilterMode == 2:
+                velNed = regression_filter(velNed, history_size=5)
+            elif self.gpsVelFilterMode == 3:
+                velNed = hampel_filter(velNed, history_size=9, n_sigmas=3.0)
+            elif self.gpsVelFilterMode == 4:
+                velNed = robust_lowpass(velNed, dt=1.0/5.0, history_size=5, n_sigmas=3.0, tau=0.4)
+        
         return velNed
 
     def velNED(self, fig=None, axs=None):

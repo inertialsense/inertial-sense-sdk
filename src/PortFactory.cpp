@@ -271,7 +271,7 @@ bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& 
         return false;
 
 #ifdef REMOTE_SOCAT_PORTS
-    if (pName.starts_with("/dev/remote"))
+    if (pName.rfind("/dev/remote", 0) == 0)
         return true;
 #endif
 
