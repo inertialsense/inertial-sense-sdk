@@ -114,7 +114,7 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
 }
 
-void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2, uint32_t platformConfig)
+void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig1, uint8_t *ioConfig2, uint32_t platformConfig)
 {
     uint32_t type = platformConfig&PLATFORM_CFG_TYPE_MASK;
 
@@ -122,73 +122,74 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     {
     default:    // No GPS 
     case PLATFORM_CFG_TYPE_NONE:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS1_TYPE(  *ioConfig, IO_CONFIG_GPS_TYPE_UNUSED);
-        SET_IO_CFG_GPS2_TYPE(  *ioConfig, IO_CONFIG_GPS_TYPE_UNUSED);
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_DISABLE);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_DISABLE);
+        SET_IO_CFG_GPS1_TYPE(  *ioConfig1, IO_CONFIG_GPS_TYPE_UNUSED);
+        SET_IO_CFG_GPS2_TYPE(  *ioConfig1, IO_CONFIG_GPS_TYPE_UNUSED);
         break;
     case PLATFORM_CFG_TYPE_EVB2_G2:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER1);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER2);
-        SET_IO_CFG_GPS1_TYPE(  *ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(  *ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER1);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER2);
+        SET_IO_CFG_GPS1_TYPE(  *ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS2_TYPE(  *ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
         break;
     case PLATFORM_CFG_TYPE_RUG3_G1:
     case PLATFORM_CFG_TYPE_RUG3_G2:
-        imxPlatformConfigToRug3FlashCfgIoConfig(ioConfig, platformConfig);
+        imxPlatformConfigToRug3FlashCfgIoConfig(ioConfig1, platformConfig);
         break;
 
     case PLATFORM_CFG_TYPE_IG1_G1:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER0);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_DISABLE);
+        SET_IO_CFG_GPS1_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS2_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
         break;
 
     case PLATFORM_CFG_TYPE_IG1_0_G2:
     case PLATFORM_CFG_TYPE_IG1_G2:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER2);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER0);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER2);
+        SET_IO_CFG_GPS1_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS2_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
         break;
 
     case PLATFORM_CFG_TYPE_IG2:
-    case PLATFORM_CFG_TYPE_TBED3_0:
+    case PLATFORM_CFG_TYPE_IG2_1:
     case PLATFORM_CFG_TYPE_TBED3:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_GPX);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_GPX);
+    case PLATFORM_CFG_TYPE_TBED3_3:
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER0);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER0);
+        SET_IO_CFG_GPS1_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_GPX);
+        SET_IO_CFG_GPS2_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_GPX);
         break;
 
     case PLATFORM_CFG_TYPE_LAMBDA_G1:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER1);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER1);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_DISABLE);
+        SET_IO_CFG_GPS1_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS2_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
         break;
 
     case PLATFORM_CFG_TYPE_LAMBDA_G2:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER1);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER2);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER1);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER2);
+        SET_IO_CFG_GPS1_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS2_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
         break;
 
     case PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA:
     case PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA:
-        SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER2);
-        SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_DISABLE);
-        SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
-        *ioConfig |= IO_CONFIG_GPS1_NO_INIT;
-        *ioConfig |= IO_CONFIG_GPS2_NO_INIT;
+        SET_IO_CFG_GPS1_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_SER2);
+        SET_IO_CFG_GPS2_SOURCE(*ioConfig1, IO_CONFIG_GPS_SOURCE_DISABLE);
+        SET_IO_CFG_GPS1_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        SET_IO_CFG_GPS2_TYPE(*ioConfig1, IO_CONFIG_GPS_TYPE_UBX_F9P);
+        *ioConfig1 |= IO_CONFIG_GPS1_NO_INIT;
+        *ioConfig1 |= IO_CONFIG_GPS2_NO_INIT;
         break;
     }
 
-    // GPS timepulse source
-    *ioConfig &= ~IO_CFG_GNSS1_PPS_SOURCE_BITMASK;
+    // GPS1 PPS timepulse source
+    *ioConfig1 &= ~IO_CFG_GNSS1_PPS_SOURCE_BITMASK;
     switch (type)
     {
         // Disabled
@@ -196,21 +197,36 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     case PLATFORM_CFG_TYPE_NONE:
         break;
         // G5
-    case PLATFORM_CFG_TYPE_TBED3_0:
-        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G5<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+    case PLATFORM_CFG_TYPE_TBED3:
+    case PLATFORM_CFG_TYPE_TBED3_3:
+        *ioConfig1 |= IO_CFG_GNSS1_PPS_SOURCE_G5<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
         // G8
     case PLATFORM_CFG_TYPE_EVB2_G2:
     case PLATFORM_CFG_TYPE_IG1_0_G2:
-        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G8<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+        *ioConfig1 |= IO_CFG_GNSS1_PPS_SOURCE_G8<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
-        // G15 (GPS1 PPS)
+        // G15
     default:
-        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G15<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+        *ioConfig1 |= IO_CFG_GNSS1_PPS_SOURCE_G15<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
     }
-    
+
+    // GPS2 PPS timepulse source
     *ioConfig2 = 0;
+    switch (type)
+    {
+        // G11
+    case PLATFORM_CFG_TYPE_RUG4_G2:
+        *ioConfig2 |= IO_CFG2_GNSS2_PPS_SOURCE_G11<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
+        break;
+        // G13
+    case PLATFORM_CFG_TYPE_IG2_1:
+    case PLATFORM_CFG_TYPE_TBED3_3:
+        *ioConfig2 |= IO_CFG2_GNSS2_PPS_SOURCE_G13<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
+        break;
+    }
+
 }
 
 void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t* ioConfig2, uint32_t platformType)

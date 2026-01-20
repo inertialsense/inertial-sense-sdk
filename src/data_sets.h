@@ -3317,21 +3317,23 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
     PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
     PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,          
-    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3 (excluding TBED-3.0) Timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3 (excluding TBED-3.0) PPS1 on G5 (pin 9)
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  PPS1 on G8
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
     PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 and IS-IMX-GPX-DEV-1 (w/ IMX-5 and GPX-1)
     PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,          // "
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
-    PLATFORM_CFG_TYPE_TBED3_0                   = (int)21,          // Testbed-3.0.  Timepulse on G5 (pin 9)
-    PLATFORM_CFG_TYPE_COUNT                     = (int)22,
+    PLATFORM_CFG_TYPE_TBED3_3                   = (int)21,          // Testbed-3.3 and later.  PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_RUG4_G2                   = (int)22,          // PCB RUG-4.x.  PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later.  PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_COUNT                     = (int)24,
 
     // Presets
     PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
