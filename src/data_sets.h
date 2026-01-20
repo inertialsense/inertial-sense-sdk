@@ -3332,7 +3332,7 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
     PLATFORM_CFG_TYPE_TBED3_3                   = (int)21,          // Testbed-3.3 and later.  PPS1 on G5 (pin 9), PPS2 on G13 (pin 14)
     PLATFORM_CFG_TYPE_RUG4_G2                   = (int)22,          // PCB RUG-4.x.  PPS1 on G15 (default), PPS2 on G11 (pin 16)
-    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later.  PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later.  PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
     PLATFORM_CFG_TYPE_COUNT                     = (int)24,
 
     // Presets
