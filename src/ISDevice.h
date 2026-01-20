@@ -288,7 +288,7 @@ public:
      * @return false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication
      *  of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.
      */
-    bool step();
+    virtual bool step();
     /**
      * An alias function for step(); it literally calls step(), and returns its result.
      */
