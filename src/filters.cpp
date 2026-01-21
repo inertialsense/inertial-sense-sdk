@@ -262,24 +262,43 @@ void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[NU
 
     for (int idev = 0; idev < NUM_IMU_DEVICES; idev++)
     {
-        if (!exclude_gyro[idev])
+        uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (idev*IMU3_STATUS_IMU_OK_BITSIZE));
+        uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (idev*IMU3_STATUS_IMU_OK_BITSIZE));
+
+        if (!exclude_gyro[idev] && (di->status & (gyrMask << iaxis)))
         {
             w += di->I[idev].pqr[iaxis];
             cnt_gyro++;
         }
-        if (!exclude_acc[idev])
+        if (!exclude_acc[idev] && (di->status & (accMask << iaxis)))
         {
             a += di->I[idev].acc[iaxis];
             cnt_acc++;
         }
     }
-    if (cnt_gyro > 0) w = w / (float)cnt_gyro;
-    if (cnt_acc > 0)  a = a / (float)cnt_acc;
+    if (cnt_gyro > 0)
+    { 
+        w *= inv_count_upto10(cnt_gyro);
+        result->status |= (IMU_STATUS_GYR_X_OK << iaxis);
+    }
+    else
+    {   // No valid data
+        result->status &= ~(IMU_STATUS_GYR_X_OK << iaxis);
+    }
+    if (cnt_acc > 0)
+    { 
+        a *= inv_count_upto10(cnt_acc);
+        result->status |= (IMU_STATUS_ACC_X_OK << iaxis);
+    }
+    else
+    {   // No valid data
+        result->status &= ~(IMU_STATUS_ACC_X_OK << iaxis);
+    }
 
     result->I.pqr[iaxis] = w;
     result->I.acc[iaxis] = a;
     result->time = di->time;
-    result->status = di->status;
+    // result->status = di->status & IMU3_STATUS_SATURATION_MASK;
 }
 
 
