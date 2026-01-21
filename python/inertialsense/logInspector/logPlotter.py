@@ -1391,10 +1391,10 @@ class logPlot:
                     time   = self.getData(d, DID_IMU, 'time')
                     status = self.getData(d, DID_IMU, 'status')
                     title  = 'IMU Status - '
-                if not len(time):
-                    time   = self.getData(d, DID_IMUX_RAW, 'time')
-                    status = self.getData(d, DID_IMUX_RAW, 'status')
-                    title  = 'IMUX-RAW Status - '
+                # if not len(time):
+                #     time   = self.getData(d, DID_IMUX_RAW, 'time')
+                #     status = self.getData(d, DID_IMUX_RAW, 'status')
+                #     title  = 'IMUX-RAW Status - '
                 if not len(time):
                     return
 
@@ -1406,22 +1406,22 @@ class logPlot:
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000001) != 0))
                 p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr1 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'X Gyr OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr2 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'Y Gyr OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr3 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'Z Gyr OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000008) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc1 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'X Acc OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc2 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'Y Acc OK')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc3 Saturation')
+                if r: ax.text(p1, -cnt * 1.5, 'Z Acc OK')
                 cnt += 1
                 cnt += 1
 
@@ -1438,30 +1438,19 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00010000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr1 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00020000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr2 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00040000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr3 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00080000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc1 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00100000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc2 OK')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0x00200000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc3 OK')
-                cnt += 1
-                cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x01000000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Gyr Reject')
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x02000000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Acc Reject')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((status & 0x40000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Gyro Saturation')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x80000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Accel Saturation')
                 cnt += 1
                 cnt += 1
 
@@ -2870,21 +2859,21 @@ class logPlot:
                         imu3 = []
                         imu4 = []
                         imu5 = []
-                        if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
-                            for sample in range(0, len(I)):
-                                imu1.append(I[sample][0][accelSensor])
-                        if (imuStatus[0] & (0x00020000<<(accelSensor*3))):     # Gyro or accel 2
-                            for sample in range(0, len(I)):
-                                imu2.append(I[sample][1][accelSensor])
-                        if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 3
-                            for sample in range(0, len(I)):
-                                imu3.append(I[sample][2][accelSensor])
-                        if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 4
-                            for sample in range(0, len(I)):
-                                imu4.append(I[sample][4][accelSensor])
-                        if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 5
-                            for sample in range(0, len(I)):
-                                imu5.append(I[sample][5][accelSensor])
+                        # if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
+                        for sample in range(0, len(I)):
+                            imu1.append(I[sample][0][accelSensor])
+                        # if (imuStatus[0] & (0x00020000<<(accelSensor*3))):     # Gyro or accel 2
+                        for sample in range(0, len(I)):
+                            imu2.append(I[sample][1][accelSensor])
+                        # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 3
+                        for sample in range(0, len(I)):
+                            imu3.append(I[sample][2][accelSensor])
+                        # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 4
+                        for sample in range(0, len(I)):
+                            imu4.append(I[sample][4][accelSensor])
+                        # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 5
+                        for sample in range(0, len(I)):
+                            imu5.append(I[sample][5][accelSensor])
                         imu1 = np.array(imu1)
                         imu2 = np.array(imu2)
                         imu3 = np.array(imu3)
@@ -2956,7 +2945,7 @@ class logPlot:
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                     for n, snr in enumerate([ snr0, snr1, snr2 ]):
                         if n<sensorCnt:
-                            if np.all(snr) is not None:
+                            if snr is not None and snr.size > 0 and snr.ndim == 2 and snr.shape[1] >= 3:
                                 snr = quatRot(self.log.mount_bias_quat[d,:], snr)
                                 mean = np.mean(snr[:, i])
                                 std = np.std(snr[:, i])

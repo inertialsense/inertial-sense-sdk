@@ -581,7 +581,6 @@ static void PopulateMapImuX(data_set_t data_set[DID_COUNT], uint32_t did, string
     DataMapper<imuX_t> mapper(data_set, did);
     mapper.AddMember("time", &imuX_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("status", &imuX_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("imuCnt", &imuX_t::imuCnt, DATA_TYPE_UINT32, "", "Number of IMUs populated in this message", DATA_FLAGS_READ_ONLY);
     mapper.AddArray2("I0.pqr", offsetof(imuX_t, I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 1 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
     mapper.AddArray2("I0.acc", offsetof(imuX_t, I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 1 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddArray2("I1.pqr", offsetof(imuX_t, I[1].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 2 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
