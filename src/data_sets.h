@@ -193,7 +193,7 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE    2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
-// Max number of devices across all hardware types: uINS-3 and IMX-5
+// Max number of devices across all hardware types: IMX-5 and IMX-6
 #define NUM_IMU_DEVICES     3        // g_numImuDevices defines the actual number of hardware specific devices
 #define NUM_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
 
@@ -877,11 +877,11 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
 
-    /** IMU Status (eImuStatus) */
+    /** IMU3 Status (eImu3Status) */
     uint32_t                status;
 
     /** Inertial Measurement Units (IMUs) */
-    imus_t                  I[3];
+    imus_t                  I[NUM_IMU_DEVICES];
 
 } imu3_t;
 
@@ -958,30 +958,52 @@ typedef struct PACKED
     magnetometer_t mag;
 } pimu_mag_t;
 
+/** IMU3 Status */
+enum eImu3Status
+{
+    /** IMU sensor valid status */
+    IMU3_STATUS_GYR_X_OK                        = (int)0x00000001,
+    IMU3_STATUS_GYR_Y_OK                        = (int)0x00000002,
+    IMU3_STATUS_GYR_Z_OK                        = (int)0x00000004,
+    IMU3_STATUS_ACC_X_OK                        = (int)0x00000008,
+    IMU3_STATUS_ACC_Y_OK                        = (int)0x00000010,
+    IMU3_STATUS_ACC_Z_OK                        = (int)0x00000020,    
+    /** Number of IMU OK bits */
+    IMU3_STATUS_IMU_OK_BITSIZE                  = 6,
+    /** IMU valid mask */
+    IMU3_STATUS_IMU_OK_MASK                     = (int)0x0000003F,
+    
+    /** Sensor saturation */
+    IMU3_STATUS_SATURATION_GYR                  = (int)0x40000000,
+    IMU3_STATUS_SATURATION_ACC                  = (int)0x80000000,
+    IMU3_STATUS_SATURATION_MASK                 = (int)0xC0000000,
+};
 
 /** IMU Status */
 enum eImuStatus
 {
-    /** Sensor saturation on IMU1 gyro */
-    IMU_STATUS_SATURATION_IMU1_GYR              = (int)0x00000001,
-    /** Sensor saturation on IMU2 gyro */
-    IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
-    /** Sensor saturation on IMU3 gyro */
-    IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000004,
-    /** Sensor saturation on IMU1 accelerometer */
-    IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000008,
-    /** Sensor saturation on IMU2 accelerometer */
-    IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000010,
-    /** Sensor saturation on IMU3 accelerometer */
-    IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000020,
-    /** Sensor saturation mask */
-    IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
+    /** IMU X gyro is valid */
+    IMU_STATUS_GYR_X_OK                         = (int)0x00000001,
+    /** IMU Y gyro is valid */
+    IMU_STATUS_GYR_Y_OK                         = (int)0x00000002,
+    /** IMU Z gyro is valid */
+    IMU_STATUS_GYR_Z_OK                         = (int)0x00000004,
+    /** IMU X accelerometer is valid */
+    IMU_STATUS_ACC_X_OK                         = (int)0x00000008,
+    /** IMU Y accelerometer is valid */
+    IMU_STATUS_ACC_Y_OK                         = (int)0x00000010,
+    /** IMU Z accelerometer is valid */
+    IMU_STATUS_ACC_Z_OK                         = (int)0x00000020,
+    /** Number of IMU OK bits */
+    IMU_STATUS_IMU_OK_BITSIZE                   = 6,
+    /** IMU valid mask */
+    IMU_STATUS_IMU_OK_MASK                      = (int)0x0000003F,
 
     /** Sensor shock detected */
     IMU_STATUS_SHOCK_PRESENT                    = (int)0x00000040,
 
     /** Magnetometer sample occurred */
-    IMU_STATUS_MAG_UPDATE                        = (int)0x00000100,
+    IMU_STATUS_MAG_UPDATE                       = (int)0x00000100,
     /** Data was received at least once from Reference IMU */
     IMU_STATUS_REFERENCE_IMU_PRESENT            = (int)0x00000200,
     /** Reserved */
@@ -992,31 +1014,15 @@ enum eImuStatus
 //     /** Sample rate fault happened within past 10 seconds */
 //     IMU_STATUS_SAMPLE_RATE_FAULT_HISTORY        = (int)0x00000200,
 
-    /** IMU1 gyros available */
-    IMU_STATUS_GYR1_OK                          = (int)0x00010000,
-    /** IMU2 gyros and accelerometers available */
-    IMU_STATUS_GYR2_OK                          = (int)0x00020000,
-    /** IMU3 gyros available */
-    IMU_STATUS_GYR3_OK                          = (int)0x00040000,
-    /** IMU1 accelerometers available */
-    IMU_STATUS_ACC1_OK                          = (int)0x00080000,
-    /** IMU2 accelerometers available */
-    IMU_STATUS_ACC2_OK                          = (int)0x00100000,
-    /** IMU3 accelerometers available */
-    IMU_STATUS_ACC3_OK                          = (int)0x00200000,
-    /** IMU1 available */
-    IMU_STATUS_IMU1_OK                          = (int)(IMU_STATUS_GYR1_OK | IMU_STATUS_ACC1_OK),
-    /** IMU2 available */
-    IMU_STATUS_IMU2_OK                          = (int)(IMU_STATUS_GYR2_OK | IMU_STATUS_ACC2_OK),
-    /** IMU3 available */
-    IMU_STATUS_IMU3_OK                          = (int)(IMU_STATUS_GYR3_OK | IMU_STATUS_ACC3_OK),
-    /** IMU gyros and accelerometers available */
-    IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
-
     /** IMU fault rejection is excluding one of the gyros from the combined IMU output */
     IMU_STATUS_GYR_FAULT_REJECT                 = (int)0x01000000,
     /** IMU fault rejection is excluding one of the accelerometers from the combined IMU output */
     IMU_STATUS_ACC_FAULT_REJECT                 = (int)0x02000000,
+
+    /** Sensor saturation */
+    IMU_STATUS_SATURATION_GYR                   = (int)0x40000000,
+    IMU_STATUS_SATURATION_ACC                   = (int)0x80000000,
+    IMU_STATUS_SATURATION_MASK                  = (int)0xC0000000,
 };
 
 /** (DID_GPS1_POS, DID_GPS1_RCVR_POS, DID_GPS2_POS) GPS position data */
@@ -1762,10 +1768,10 @@ typedef struct PACKED
 // (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
 typedef struct PACKED
 {
-    imu3_t                    imu3;
+    imu3_t                   imu3;
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    float                        temp[NUM_IMU_DEVICES];
+    float                    temp[NUM_IMU_DEVICES];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
     mag_xyz_t                mag[NUM_MAG_DEVICES];
@@ -2377,6 +2383,8 @@ enum eBitCommand
     BIT_CMD_RESERVED_2                              = (int)5,   
     BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection test 
     BIT_CMD_IMU_REJECT_CONTINUOUS                   = (int)7,       // Continuous IMU fault rejection test without ending
+    BIT_CMD_IMU_INVALID_DATA                        = (int)8,       // IMU invalid data test
+    BIT_CMD_IMU_SATURATED_SENSOR                    = (int)9,       // IMU saturated sensor test
 };
 
 /** Built-in Test: State */
@@ -2398,6 +2406,8 @@ enum eBitTestMode
     BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
     BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
     BIT_TEST_MODE_IMU_FAULT_REJECTION               = (int)104,     // Simulate a fault on each IMU sensor and ensure it is detected and rejected.
+    BIT_TEST_MODE_IMU_INVALID_DATA                  = (int)105,     // Simulate invalid IMU data (NaN) and ensure it is detected and rejected.
+    BIT_TEST_MODE_IMU_SATURATION_DATA               = (int)106,     // Simulate saturated IMU data (out-of-range) and ensure it is detected and rejected.
 };
 
 /** Hardware built-in test (BIT) flags */

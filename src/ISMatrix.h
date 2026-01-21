@@ -66,9 +66,6 @@ extern "C" {
 #define SET_VEC3_X(v,x)                     { (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define SET_VEC4_X(v,x)                     { (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
 
-#define IS_NAN(v)                           ((v) != (v))
-#define IS_INF(v)                           (isinf(v))
-
 // Zero order low-pass filter 
 typedef struct
 {
@@ -731,6 +728,33 @@ static __inline void limit2_Vec3(ixVector3 v, f_t min, f_t max)
     _LIMIT2(v[2], min, max);
 }
 
+static inline int is_nan_vec3_f(float v[3])
+{
+    return  is_nan_f(v[0]) || 
+            is_nan_f(v[1]) || 
+            is_nan_f(v[2]);
+}
+
+static inline int is_nan_vec3(double v[3])
+{
+    return  is_nan(v[0]) || 
+            is_nan(v[1]) || 
+            is_nan(v[2]);
+}
+
+static inline int is_valid_vec3_f(float v[3])
+{
+    return  is_finite_f(v[0]) && 
+            is_finite_f(v[1]) && 
+            is_finite_f(v[2]);
+}
+
+static inline int is_valid_vec3(double v[3])
+{
+    return  is_finite(v[0]) && 
+            is_finite(v[1]) && 
+            is_finite(v[2]);
+}
 
 /* Array contains NAN
  * return 1 if NAN found in array, 0 if not
@@ -741,13 +765,12 @@ static __inline int isNan_array(f_t *a, int size)
 
     for (i=0; i<size; i++)
     {
-        if (IS_NAN(a[i]))
+        if (is_nan_f(a[i]))
             return 1;
     }
 
     return 0;
 }
-
 
 /* Array contains NAN
  * return 1 if NAN found in double array, 0 if not
@@ -758,7 +781,7 @@ static __inline int isNan_array_d(double *a, int size)
 
     for (i=0; i<size; i++)
     {
-        if (IS_NAN(a[i]))
+        if (is_nan(a[i]))
             return 1;
     }
 
@@ -842,6 +865,9 @@ static __inline int isFinite_array_d(double *a, int size)
     return 1;
 }
 
+int isAllLessThanX_array(f_t *a, f_t x, int size);
+int isAllMoreThanX_array(f_t *a, f_t x, int size);
+int isAllAbsLessThanX_array(f_t *a, f_t x, int size);
 
 // Low-Pass Alpha Filter
 void LPFO0_init_Vec3(sLpfO0 *lpf, f_t dt, f_t cornerFreqHz, const ixVector3 initVal);
