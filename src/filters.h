@@ -522,7 +522,7 @@ int multiToSingleImuExc(imu_t *result, const imuX_t *di, const int numDevices, b
 void multiToSingleImuAxis(imu_t* result, const imuX_t* di, const int numDevices, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
 
 // Duplicate one IMU to triple IMUs
-void singleToMultiImu(imuX_t *result, imu_t *imu);
+void singleToMultiImu(imuX_t *result, imu_t *imu, const int numDevices);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
 int preintegratedImuToIMU(imu_t *imu, const pimu_t *imuInt);
