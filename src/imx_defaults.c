@@ -154,8 +154,9 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
         break;
 
     case PLATFORM_CFG_TYPE_IG2:
-    case PLATFORM_CFG_TYPE_TBED3_0:
+    case PLATFORM_CFG_TYPE_IG2_1:
     case PLATFORM_CFG_TYPE_TBED3:
+    case PLATFORM_CFG_TYPE_TBED3_3:
         SET_IO_CFG_GPS1_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
         SET_IO_CFG_GPS2_SOURCE(*ioConfig, IO_CONFIG_GPS_SOURCE_SER0);
         SET_IO_CFG_GPS1_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_GPX);
@@ -187,7 +188,7 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
         break;
     }
 
-    // GPS timepulse source
+    // GPS1 PPS timepulse source
     *ioConfig &= ~IO_CFG_GNSS1_PPS_SOURCE_BITMASK;
     switch (type)
     {
@@ -196,7 +197,8 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     case PLATFORM_CFG_TYPE_NONE:
         break;
         // G5
-    case PLATFORM_CFG_TYPE_TBED3_0:
+    case PLATFORM_CFG_TYPE_TBED3:
+    case PLATFORM_CFG_TYPE_TBED3_3:
         *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G5<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
         // G8
@@ -204,13 +206,27 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     case PLATFORM_CFG_TYPE_IG1_0_G2:
         *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G8<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
-        // G15 (GPS1 PPS)
+        // G15
     default:
         *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G15<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
     }
-    
+
+    // GPS2 PPS timepulse source
     *ioConfig2 = 0;
+    switch (type)
+    {
+        // G11
+    case PLATFORM_CFG_TYPE_RUG4_G2:
+        *ioConfig2 |= IO_CFG2_GNSS2_PPS_SOURCE_G11<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
+        break;
+        // G13
+    case PLATFORM_CFG_TYPE_IG2_1:
+    case PLATFORM_CFG_TYPE_TBED3_3:
+        *ioConfig2 |= IO_CFG2_GNSS2_PPS_SOURCE_G13<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
+        break;
+    }
+
 }
 
 void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t* ioConfig2, uint32_t platformType)

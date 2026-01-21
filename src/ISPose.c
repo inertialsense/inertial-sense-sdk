@@ -725,3 +725,21 @@ float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis)
 
     return asinf(v[pitchAxis] / mag);
 }
+
+/**
+ * Convert Azimuth and Elevation to a 3D vector
+ * @param az Azimuth in radians
+ * @param el Elevation in radians
+ * @param vec Output vector
+ */
+void azelToVec3(double az, double el, ixVector3 vec)
+{
+    // Calculate components based on ENU coordinate system
+    // X: East, Y: North, Z: Up
+    // Azimuth is clockwise from North (Y-axis)
+    // Elevation is from the horizontal plane (XY), positive up
+    double cos_el = cos(el);
+    vec[0] = (float)(cos_el * sin(az));  // East
+    vec[1] = (float)(cos_el * cos(az));  // North
+    vec[2] = (float)sin(el);             // Up
+}
