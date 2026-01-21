@@ -265,11 +265,11 @@ float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis);
 
 /**
  * Convert Azimuth and Elevation to a 3D vector
- * @param az Azimuth in degrees
- * @param el Elevation in degrees
+ * @param az Azimuth in radians
+ * @param el Elevation in radians
  * @param vec Output vector
  */
-void azelToVec3(float az, float el, ixVector3 vec);
+void azelToVec3(double az, double el, ixVector3 vec);
 
 
 #ifdef __cplusplus

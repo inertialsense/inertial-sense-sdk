@@ -728,22 +728,18 @@ float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis)
 
 /**
  * Convert Azimuth and Elevation to a 3D vector
- * @param az Azimuth in degrees
- * @param el Elevation in degrees
+ * @param az Azimuth in radians
+ * @param el Elevation in radians
  * @param vec Output vector
  */
-void azelToVec3(float az, float el, ixVector3 vec)
+void azelToVec3(double az, double el, ixVector3 vec)
 {
-    // Convert degrees to radians
-    float az_rad = az * C_DEG2RAD_F;
-    float el_rad = el * C_DEG2RAD_F;
-
     // Calculate components based on ENU coordinate system
     // X: East, Y: North, Z: Up
     // Azimuth is clockwise from North (Y-axis)
     // Elevation is from the horizontal plane (XY), positive up
-    float cos_el = cosf(el_rad);
-    vec[0] = cos_el * sinf(az_rad);  // East
-    vec[1] = cos_el * cosf(az_rad);  // North
-    vec[2] = sinf(el_rad);           // Up
+    double cos_el = cos(el);
+    vec[0] = (float)(cos_el * sin(az));  // East
+    vec[1] = (float)(cos_el * cos(az));  // North
+    vec[2] = (float)sin(el);             // Up
 }

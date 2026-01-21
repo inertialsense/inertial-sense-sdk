@@ -1539,7 +1539,7 @@ std::string cInertialSenseDisplay::DataToStringGpsSat(const gps_sat_t &sats, boo
             info.first++, info.second += sats.sat[i].cno;
 
             // Calculate a 3D vector from the azimuth/elevation and add it to the cumulative vector
-            azelToVec3(sats.sat[i].azim, sats.sat[i].elev, vec);
+            azelToVec3(sats.sat[i].azim * C_DEG2RAD_F, sats.sat[i].elev * C_DEG2RAD_F, vec);
             add_Vec3_Vec3(cum, cum, vec);
         }
         if (sats.numSats > 0) {
