@@ -2,6 +2,8 @@
 #ifndef GTEST_HELPERS_H
 #define GTEST_HELPERS_H
 
+#include <chrono>
+
 #if defined(GTestColor)
 namespace testing
 {
@@ -58,21 +60,34 @@ namespace testing
 #define ANSI_DEFAULT     ""
 #define ANSI_RESET       ""
 
-#define TEST_PRINTF(...)  do { printf("[          ] "); printf(__VA_ARGS__); fflush(stdout); } while (0);
+#define TEST_PRINTF(...)        do { printf("[%10c] ", ' '); printf(__VA_ARGS__); fflush(stdout); } while (0);
+
+#define TEST_PRINTF_TS(...)     do { auto now = std::chrono::system_clock::now();                                                   \
+                                     auto ms = duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;             \
+                                     std::time_t now_c = std::chrono::system_clock::to_time_t(now);                                 \
+                                     std::tm* local_tm = std::localtime(&now_c);                                                    \
+                                     std::stringstream fs; fs << std::put_time(local_tm, "%H:%M:%S");                               \
+                                     printf("[%s.%03lld]", fs.str().c_str(), static_cast<long long>(ms.count()));                  \
+                                     printf(__VA_ARGS__); fflush(stdout); } while (0);
 #endif
-
-
 
 // C++ stream interface
 class TestCout : public std::stringstream
 {
 public:
-    ~TestCout()
-    {
-        TEST_PRINTF("%s",str().c_str());
-    }
+    ~TestCout() { TEST_PRINTF("%s", str().c_str()); }
 };
 
 #define TEST_COUT  TestCout()
+
+
+// C++ stream interface
+class TestCoutTs : public std::stringstream
+{
+public:
+    ~TestCoutTs() { TEST_PRINTF_TS("%s", str().c_str()); }
+};
+
+#define TEST_COUT_TS  TestCoutTs()
 
 #endif // GTEST_HELPERS_H

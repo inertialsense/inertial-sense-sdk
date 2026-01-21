@@ -26,18 +26,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <vector>
 
 #include "core/msg_logger.h"
+#include "message_stats.h"
 #include "ISConstants.h"
-#include "ISTcpClient.h"
-#include "ISTcpServer.h"
 #include "ISLogger.h"
 #include "ISDisplay.h"
 #include "ISUtilities.h"
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISDevice.h"
-#include "ISClient.h"
 #include "message_stats.h"
-#include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
 
 #include "PortManager.h"
@@ -54,8 +51,8 @@ extern "C"
 
 class InertialSense;
 
-typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
-typedef ISDevice*(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
+typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
+typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)> pfnHandleAckData;
@@ -64,7 +61,7 @@ typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifi
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
 */
-class InertialSense : public iISTcpServerDelegate
+class InertialSense
 {
 public:
     PortManager& portManager = PortManager::getInstance();
@@ -72,9 +69,6 @@ public:
 
     struct com_manager_cpp_state_t
     {
-        // per device vars
-        // std::list<ISDevice*> devices;
-
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
         pfnHandleAckData binaryAckCallback;    // acknowledgment command and set data callback
@@ -156,15 +150,15 @@ public:
      * @return a vector of available ports
      * NOTE that this may return ports which do not have a corresponding ISDevice
      */
-    std::unordered_set<port_handle_t> getPorts() { return portManager; }
+    std::set<port_handle_t> getPorts() { return portManager; }
 
-    int DeviceCount() { return deviceManager.DeviceCount(); }
+    int DeviceCount() { return (int)deviceManager.DeviceCount(); }
 
-    std::list<ISDevice*>& getDevices() { return deviceManager; };
+    std::list<device_handle_t>& getDevices() { return deviceManager; };
 
-    ISDevice* getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
+    device_handle_t getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
 
-    ISDevice* getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
+    device_handle_t getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -237,41 +231,21 @@ public:
      * @param dataSize Number of bytes of raw data.
      * @param data Pointer to raw data.
      */
-    void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
-
-    /**
-    * Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
-    * @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
-    * @return true if connection opened, false if failure
-    */
-    bool OpenConnectionToServer(const std::string& connectionString);
-
-    /**
-    * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
-    * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
-    * @return true if success, false if error
-    */
-    bool CreateHost(const std::string& connectionString);
-
-    /**
-    * Close any open connection to a server
-    */
-    void CloseServerConnection();
-
+    void LogRawData(device_handle_t device, int dataSize, const uint8_t* data);
 
     /**
      * Locates the device associated with the specified port
      * @param port
-     * @return ISDevice* which is connected to port, otherwise NULL
+     * @return device_handle_t which is connected to port, otherwise NULL
      */
-    ISDevice* DeviceByPort(port_handle_t port = 0);
+    device_handle_t DeviceByPort(port_handle_t port = 0);
 
     /**
      * Locates the device associated with the specified port name
      * @param port
-     * @return ISDevice* which is connected to port, otherwise NULL
+     * @return device_handle_t which is connected to port, otherwise NULL
      */
-    ISDevice* DeviceByPortName(const std::string& port_name);
+    device_handle_t DeviceByPortName(const std::string& port_name);
 
     /**
      * @return a list of discovered ports which are not currently associated with a open device
@@ -288,47 +262,14 @@ public:
     void ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize);
 
     /**
-    * Get the number of bytes read or written to/from client or server connections
-    * @return byte count
-    */
-    uint64_t ClientServerByteCount() { return m_clientServerByteCount; }
-
-    /**
-    * Get the current number of client connections
-    * @return int number of current client connected
-    */
-    int ClientConnectionCurrent() { return m_clientConnectionsCurrent; }
-
-    /**
-    * Get the total number of client connections
-    * @return int number of total client that have connected
-    */
-    int ClientConnectionTotal() { return m_clientConnectionsTotal; }
-
-    /**
-    * Get TCP server IP address and port (i.e. "127.0.0.1:7777")
-    * @return string IP address and port
-    */
-    std::string TcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
-
-    /**
-    * Get Client connection info string (i.e. "127.0.0.1:7777")
-    * @return string IP address and port
-    */
-    std::string ClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
-
-    /**
     * Flush all data from receive port
     */
     void FlushRx()
     {
-        uint8_t buf[10];
         for (auto device : deviceManager)
         {
             if (device->isConnected())
-            {
-                while (portReadTimeout(device->port, buf, sizeof(buf), 50));
-            }
+                portFlush(device->port);
         }
     }
 
@@ -350,6 +291,7 @@ public:
     */
     void EnableDeviceValidation(bool enable) { m_enableDeviceValidation = enable; }
 
+#if !PLATFORM_IS_EMBEDDED
     /**
     * Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
     * Please ensure that all other connections to the com port are closed before calling this function.
@@ -367,7 +309,8 @@ public:
             fwUpdate::pfnProgressCb verifyProgress = NULLPTR,
             fwUpdate::pfnStatusCb infoProgress = NULLPTR,
             void (*waitAction)() = NULLPTR
-);
+    );
+#endif
 
     /**
      * V2 firmware update mechanism. Calling this function will attempt to initiate a firmware update with the targeted device(s), with callbacks to provide information about the status
@@ -595,12 +538,17 @@ public:
     bool LoadImxFlashConfigFromFile(std::string path, port_handle_t port = 0);
     bool LoadGpxFlashConfigFromFile(std::string path, port_handle_t port = 0);
 
-    std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
-    std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
+    /**
+     * @brief Uploads IMX Calibration from file to device
+     * @param path File path to calibration JSON file
+     * @param port Port handle to device. If NULL, first device found will be used.
+     * @return true on success
+     * @return false on failure
+     */
+    bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
-    // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
     /**
      * Registers a custom handler to instantiate discovered devices. Default behavior is to
@@ -620,28 +568,26 @@ public:
     template<typename Func>
     bool WithDevice(port_handle_t port, Func&& func)
     {
-        ISDevice* device = (port == NULL) ? deviceManager.front() : DeviceByPort(port);
+        device_handle_t device = (port == NULL) ? deviceManager.front() : DeviceByPort(port);
         return (device ? func(device) : false);
     }
 
 
-    // bool registerDevice(ISDevice* device);
-    // ISDevice* registerNewDevice(const ISDevice& orig);
-    // ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
+    // bool registerDevice(device_handle_t device);
+    // device_handle_t registerNewDevice(const ISDevice& orig);
+    // device_handle_t registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
 
     // bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
-    // bool releaseDevice(ISDevice* device, bool closePort = true);
+    // bool releaseDevice(device_handle_t device, bool closePort = true);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
-protected:
-    bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
-    void OnClientConnecting(cISTcpServer* server) OVERRIDE;
-    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
-    void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
-    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
 
+    // CorrectionService& getCorrectionService() { return m_correctionService; }
+    // Rtcm3CorrectionServer& getCorrectionsServer() { return m_correctionsServer; }
+
+protected:
     static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
 
 private:
@@ -666,22 +612,9 @@ private:
     int m_clientBufferBytesToSend;
     bool m_forwardGpgga;
 
-    cISTcpServer m_tcpServer;
-    cISStream* m_clientStream;                // Our client connection to a server
-    uint64_t m_clientServerByteCount;
-    int m_clientConnectionsCurrent = 0;
-    int m_clientConnectionsTotal = 0;
-    mul_msg_stats_t m_clientMessageStats = {};
-
     int m_baudRate = IS_BAUDRATE_DEFAULT;
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
-
-    mul_msg_stats_t m_serverMessageStats = {};
-
-    // these are used for RTCM3 corrections for RTK/NTRIP streams.
-    is_comm_instance_t m_gpComm;
-    uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 
@@ -690,7 +623,6 @@ private:
 
     // returns false if logger failed to open
     bool UpdateServer();
-    bool UpdateClient();
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
     bool HasReceivedDeviceInfoFromAllDevices();
@@ -699,8 +631,8 @@ private:
     static void LoggerThread(void* info);
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
-    void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port);
-    void deviceManagerHandler(uint8_t event, ISDevice*);
+    void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory);
+    void deviceManagerHandler(uint8_t event, device_handle_t device);
 };
 
 #endif

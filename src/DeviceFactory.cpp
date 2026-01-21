@@ -40,9 +40,9 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
 
     // can we open the port?
     if (!portIsOpened(port)) {
-        debug_message("[DBG] Opening serial port '%s'\n", portName(port));
+        log_debug(IS_LOG_DEVICE_FACTORY, "Opening serial port '%s'", portName(port));
         if (!portValidate(port) || (portOpen(port) != PORT_ERROR__NONE)) {
-            debug_message("[DBG] Error opening serial port '%s'.  Ignoring.  Error was: %s\n", portName(port), SERIAL_PORT(port)->error);
+            log_debug(IS_LOG_DEVICE_FACTORY, "Error opening serial port '%s'.  Ignoring.  Error was: %s", portName(port), SERIAL_PORT(port)->error);
             portClose(port);              // failed to open
             portInvalidate(port);
             return false;
@@ -58,7 +58,7 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
         timeoutMs = deviceTimeout;
 
     // at this point, the port should be opened...
-    ISDevice *dev = DeviceManager::getInstance().getDevice(port);
+    device_handle_t dev = DeviceManager::getInstance().getDevice(port);
     if (!dev) {
         // no previous device exists, so identify the device and then register it with the manager
         int validationResult = 0;
@@ -66,6 +66,7 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
         do {
             is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
             validationResult = localDev.validateAsync(timeoutMs);
+            SLEEP_MS(2);
         } while (!validationResult);
 
         if (localDev.hasDeviceInfo() && localDev.matchesHdwId(hdwId)) {

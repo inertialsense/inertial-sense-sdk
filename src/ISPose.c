@@ -242,14 +242,28 @@ void euler2quat(const ixEuler euler, ixQuat q)
 */
 void qe2b2EulerNedLLA(ixVector3 eul, const ixVector4 qe2b, const ixVector3d lla)
 {
-    ixVector3 eulned;
     ixVector4 qe2n;
     ixVector4 qn2b;
 
-    eulned[0] = 0.0f;
-    eulned[1] = ((float)-lla[0]) - 0.5f * C_PI_F;
-    eulned[2] = (float)lla[1];
-    euler2quat(eulned, qe2n);
+    //eulned[0] = 0.0f;
+    //eulned[1] = ((float)-lla[0]) - 0.5f * C_PI_F;
+    //eulned[2] = (float)lla[1];
+    //euler2quat(eulned, qe2n);
+
+    // Faster:
+    f_t hthe = -((float)lla[0] + 0.5f * C_PI_F) * 0.5f;
+    f_t hpsi = (float)lla[1] * 0.5f;
+
+    f_t shthe = _SIN(hthe);
+    f_t chthe = _COS(hthe);
+    f_t shpsi = _SIN(hpsi);
+    f_t chpsi = _COS(hpsi);
+
+    qe2n[0] =  chthe * chpsi;
+    qe2n[1] = -shthe * shpsi;
+    qe2n[2] =  shthe * chpsi;
+    qe2n[3] =  chthe * shpsi;
+
     mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
     quat2euler(qn2b, eul);
 }
@@ -710,4 +724,22 @@ float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis)
     }
 
     return asinf(v[pitchAxis] / mag);
+}
+
+/**
+ * Convert Azimuth and Elevation to a 3D vector
+ * @param az Azimuth in radians
+ * @param el Elevation in radians
+ * @param vec Output vector
+ */
+void azelToVec3(double az, double el, ixVector3 vec)
+{
+    // Calculate components based on ENU coordinate system
+    // X: East, Y: North, Z: Up
+    // Azimuth is clockwise from North (Y-axis)
+    // Elevation is from the horizontal plane (XY), positive up
+    double cos_el = cos(el);
+    vec[0] = (float)(cos_el * sin(az));  // East
+    vec[1] = (float)(cos_el * cos(az));  // North
+    vec[2] = (float)sin(el);             // Up
 }

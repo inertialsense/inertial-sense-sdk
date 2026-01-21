@@ -358,7 +358,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
 
     // These are a list of Regex patterns that match different components of a firmware string;
     // these MUST be in order of the most restrictive first, and least restrictive last, otherwise the least restrictive will consume everything.
-    static std::vector<std::regex> componentPatterns = {
+    static const std::vector<std::regex> componentPatterns = {
         std::regex(R"(SN(\d+)[:]?)"),                           //!< 0, serial number
         std::regex(R"((fw|v)([\d.]+)(-([\w]+)\.([\d]+))?)"),    //!< 1, firmware version w/ optional release type
         std::regex(R"((\d){4}-(\d){1,2}-(\d){1,2})"),           //!< 2, build date
@@ -387,7 +387,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                 switch (i) {
                     case 0: // parse SN
                         // serial number
-                        devInfo.serialNumber = stoi(match[1].str());
+                        devInfo.serialNumber = stoul(match[1].str());
                         componentsParsed |= DV_BIT_SERIALNO;
                         break;
                     case 1: // firmware version w/ optional release type
@@ -403,7 +403,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                             else if (match[4].str() == "snap") devInfo.buildType = 's';
 
                             if (match[5].matched) {
-                                devInfo.firmwareVer[3] = std::stoi(match[5].str());
+                                devInfo.firmwareVer[3] = static_cast<uint8_t>(std::stoul(match[5].str()));
                             }
                         }
                         componentsParsed |= DV_BIT_FIRMWARE_VER;
@@ -444,14 +444,14 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         break;
                     case 5: // build key and build number
                         {
-                            int build_key = std::stoi(match[1].str(), NULL, 16);
-                            int build_num = std::stoi(match[3].str());
+                            unsigned long long build_key = std::stoull(match[1].str(), NULL, 16);
+                            unsigned long long build_num = std::stoull(match[3].str());
                             devInfo.buildNumber = ((build_key << 12) & 0xFFFFF000) | (build_num & 0xFFF);
                         }
                         componentsParsed |= DV_BIT_BUILD_KEY;
                         break;
                     case 6:  // legacy build number and type
-                        devInfo.buildNumber = std::stol(match[1].str());
+                        devInfo.buildNumber = std::stoul(match[1].str());
                         devInfo.buildType = match[2].str()[0];
                         componentsParsed |= DV_BIT_BUILD_KEY;
                         break;
@@ -461,7 +461,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         componentsParsed |= DV_BIT_ADDITIONAL_INFO;
                         break;
                     case 8:  // repo hash & build status
-                        devInfo.repoRevision = std::stol(match[1].str(), NULL, 16);
+                        devInfo.repoRevision = static_cast<uint32_t>(std::stoull(match[1].str(), NULL, 16));
                         if (match[2].matched && (match[2].str()[0] == '^')) {
                             devInfo.buildType = '^';
                         }
@@ -714,7 +714,7 @@ uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2)
 }
 
 bool utils::validDomainName(const std::string& domainName) {
-    std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
+    static const std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
     std::smatch match;
     return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
 }

@@ -28,7 +28,8 @@ cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::D
 int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
     if (ctx) ((ISDevice*)ctx)->onIsbDataHandler(data, port);
 
-    std::cout << isDisplay.DataToString((const p_data_t*)data);
+    if ((data->hdr.id == DID_SYS_PARAMS) || (data->hdr.id == DID_GPS1_POS) || (data->hdr.id == DID_INS_1))
+        std::cout << isDisplay.DataToString((const p_data_t*)data);
     return 0;
 }
 
@@ -69,6 +70,16 @@ int main_explained(const char* portStr) {
     if (!device->isConnected())
         exit(3); // this is another way we can confirm the connected status of the device
 
+    // In this example, we used port-related functions to open and connect to a device.
+    // However, we could have reduced some lines by passing the port handle from the bindPort() directly to the ISDevice
+    // constructor and then used ISDevice::connect() which would have validated and opened the port (if not already).
+    //
+    // ISDevice::connect() also performs some additional validation on the connected device by validating that speaks an
+    // Inertial Sense protocol, and exchanges device hardware and firmware information as well as configuration data.
+    //
+    // These techniques are demonstrated in the main_minimal() example below.
+
+
     // At this point, we have an unknown device associated with our port.
     // we can view (and confirm) that its 'unknown' by outputting the device description
     std::cout << "Allocated device " << device->getDescription() << std::endl;
@@ -87,7 +98,7 @@ int main_explained(const char* portStr) {
     // Now that we have the device, and all its information has been validated, we can start to do real work with it...
 
     // Before we can get useful data from the device, we need to tell the SDK where to send the data it received from the device...
-    // Let's use the function created at the stop of this source file
+    // Let's use the function created at the top of this source file - isbDataHandler()
     device->registerIsbDataHandler(isbDataHandler);
 
     // Devices can be configured to stream data by default on powerup - lets stop all other messages before enabling ours
@@ -125,16 +136,13 @@ int main_minimal(const char* portStr) {
         exit(1);
     }
 
-    p_data_hdr_t hdr = { .id = DID_SYS_PARAMS };        // just a little hack to make isDisplay.DataToStringSysParams() work nicely for the demo
-
-    //device->validate();
-    // device->StopBroadcasts(true);                       // stop all other messages
-    // device->registerIsbDataHandler(isbDataHandler);     // register our data handler
-    device->BroadcastBinaryData(DID_SYS_PARAMS, 5000);  // request the data of interest at the specified interval
+    device->validate();
+    device->StopBroadcasts(true);                       // stop all other messages
+    device->registerIsbDataHandler(isbDataHandler);     // register our data handler
+    device->BroadcastBinaryData(DID_SYS_PARAMS, 500);   // request the data of interest at the specified interval
     while (portIsOpened(device->port)) {                // and then spin as long as the port is open
         device->step();                                 // this processes all incoming data, and calls out handler, etc
-        std::cout << isDisplay.DataToStringSysParams(device->sysParams, hdr);
-        SLEEP_MS(5000);
+        SLEEP_MS(1);
     }
     return 0;
 }
@@ -158,6 +166,6 @@ int main(int argc, const char** argv) {
 #ifdef EXPLAINED
     return main_explained(portArg);
 #else
-    return main_minimal(portArg);
+    return main_minimal(portArg);   // look at main_explained() to see a more detailed explanation
 #endif
 }

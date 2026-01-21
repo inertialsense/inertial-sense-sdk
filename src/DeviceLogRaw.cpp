@@ -13,11 +13,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <cstdio>
 #include <cstddef>
-#include <functional>
 
 #include "DeviceLogRaw.h"
 #include "ISDataMappings.h"
-#include "ISDisplay.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
 #include "message_stats.h"
@@ -26,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 cDeviceLogRaw::cDeviceLogRaw() : cDeviceLog() { initCommInstance(); }
-cDeviceLogRaw::cDeviceLogRaw(const ISDevice *dev) : cDeviceLog(dev) { initCommInstance(); }
+cDeviceLogRaw::cDeviceLogRaw(device_handle_t dev) : cDeviceLog(dev) { initCommInstance(); }
 cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) { initCommInstance(); };
 
 void cDeviceLogRaw::initCommInstance() {

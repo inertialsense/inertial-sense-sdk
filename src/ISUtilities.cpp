@@ -27,11 +27,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #if PLATFORM_IS_EMBEDDED
-    #include "drivers/d_time.h"
+    #if __cplusplus >= 201703L && __has_include("drivers/d_time.h")
+        #include "drivers/d_time.h"
+    #else
+        #error "Unable to compile with out a valid millisecond-precision timer implementation."
+        #define time_msec()  (( -1 ))
+        #define time_ticks_u64() (( UINT64_MAX ))
+    #endif
 #elif PLATFORM_IS_WINDOWS
     #include <windows.h>
     #include <process.h>
 #elif PLATFORM_IS_LINUX
+    // Nothing to do
+#elif PLATFORM_IS_APPLE
     // Nothing to do
 #else
     #error "Unsupported platform"
@@ -278,11 +286,7 @@ uint64_t current_timeUs() {
  */
 uint32_t current_uptimeMs() {
     uint32_t upTimeMs = UINT32_MAX;
-#if defined(IMX_5)
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
-#elif defined(GPX_1)
+#if (defined(IS_IMX) || defined(GPX_1))
     struct timeval tv;
     gettimeofday(&tv, NULL);
     upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;

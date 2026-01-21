@@ -291,7 +291,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 24: DID_SENSORS_UCAL
         0,                      // 25: DID_SENSORS_TCAL
         0,                      // 26: DID_SENSORS_TC_BIAS
-        0,                      // 27: DID_UNUSED_27
+        offsetsGpsTimepulse,    // 27: DID_GPS2_TIMEPULSE
         offsetsOnlyTimeFirst,   // 28: DID_SENSORS_ADC
         0,                      // 29: DID_SCOMP
         0,                      // 30: DID_GPS1_VEL
@@ -681,7 +681,6 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GPX_RTOS_INFO]         = RMC_BITS_GPX_RTOS_INFO,
     [DID_GPX_DEBUG_ARRAY]       = RMC_BITS_GPX_DEBUG,
     [DID_GPX_DEV_INFO]          = RMC_BITS_GPX_DEV_INFO,
-    [DID_GPX_FLASH_CFG]         = RMC_BITS_GPX_FLASH_CFG,
     [DID_GPX_RMC]               = RMC_BITS_GPX_RMC,
     [DID_GPX_BIT]               = RMC_BITS_GPX_BIT,
     [DID_GPX_PORT_MONITOR]      = RMC_BITS_GPX_PORT_MON,

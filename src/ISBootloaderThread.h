@@ -54,9 +54,9 @@ public:
         thread_serial_t(const std::string& port_name, bool force_isb_update = false) {
             // FIXME: This is pretty jank... and ridiculous.  I can do better!
             port_handle_t port = (port_handle_t)&(serialPort);
-            serialPortInit(port, m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM);
+            serialPortInit(port, (int)m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM, 0);
             serialPortPlatformInit(port);
-            serialPortSetPort(port, port_name.c_str());
+            serialPortSetName(port, port_name.c_str());
 
             ctx = NULL;
             done = false;
@@ -94,7 +94,7 @@ public:
         fwUpdate::pfnProgressCb                 uploadProgress,
         fwUpdate::pfnProgressCb                 verifyProgress,
         fwUpdate::pfnStatusCb                   infoProgress,
-        void						            (*waitAction)() = NULL,
+        void                                    (*waitAction)() = NULL,
         std::vector<confirm_bootload_t>*        updatesPending = NULL
     );
 
@@ -106,7 +106,7 @@ public:
         fwUpdate::pfnProgressCb                 uploadProgress,
         fwUpdate::pfnProgressCb                 verifyProgress,
         fwUpdate::pfnStatusCb                   infoProgress,
-        void						            (*waitAction)()
+        void                                    (*waitAction)()
     );
 
     static void cancel_update();

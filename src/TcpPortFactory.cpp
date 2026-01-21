@@ -6,20 +6,23 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. Licensed under the MIT license
  */
 
-#ifdef _WIN32
-// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
-#define NOMINMAX
+#include "ISConstants.h"
+#if PLATFORM_IS_WINDOWS
+    // Windows.h is included somewhere and this prevents it from defining max as a macro which breaks uri.hpp
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
 #endif
 
 #include "TcpPortFactory.h"
 #include "PortManager.h"
 #include <iostream>
-#include <uri.hpp>
-#include <util.h>
+#include <util/uri.hpp>
+#include <util/util.h>
 
-#ifdef _WIN32
+#if PLATFORM_IS_WINDOWS
 #include <winsock2.h>
-#else
+#elif !PLATFORM_IS_EMBEDDED
 #include <arpa/inet.h>
 #include <netdb.h>
 #endif
@@ -42,7 +45,7 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
         return nullptr;
     }
     std::string uriHost {url.get_host()};
-    if (uriHost.starts_with("[") && uriHost.ends_with("]")) {
+    if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
         uriHost = uriHost.substr(1, uriHost.size() - 2);
     }
     std::string uriPort {url.get_port()};
@@ -89,7 +92,7 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     auto port = (port_handle_t)tcpPort;
     *tcpPort = {};
     auto id = static_cast<uint16_t>(PortManager::getInstance().getPortCount());
-    tcpPortInit(port, id, this->portOptions.defaultBlocking, pName.c_str(), &addr);
+    tcpPortInit(port, id, pName.c_str(), &addr, this->portOptions.defaultBlocking ? PORT_FLAG__BLOCKING : 0);
 
     return port;
 }
@@ -104,7 +107,7 @@ bool TcpPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    debug_message("[DBG] Releasing network port '%s'\n", portName(port));
+    log_debug(IS_LOG_PORT, "Releasing TCP/network port '%s'\n", portName(port));
     tcpPortDelete(port);
     delete static_cast<tcp_port_t*>(port);
 
@@ -114,7 +117,7 @@ bool TcpPortFactory::releasePort(port_handle_t port) {
 /**
  * Validate that a provided pName can create a TCP Port
  * @param pName The URL to validate starting with tcp://
- * @param pType Must be PORT_TYPE__TCP | PORT_TYPE__COMM
+ * @param pType Must be PORT_TYPE__TCP
  * @return True if port can be created, false otherwise
  */
 bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
@@ -123,12 +126,12 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
         return false;
     }
     std::string uriHost {url.get_host()};
-    if (uriHost.starts_with("[") && uriHost.ends_with("]")) {
+    if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
         uriHost = uriHost.substr(1, uriHost.size() - 2);
     }
     std::string uriPort {url.get_port()};
 
-    if (pType != (PORT_TYPE__TCP | PORT_TYPE__COMM)) {
+    if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) {
         return false;
     }
 
@@ -158,7 +161,7 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
  */
 void TcpPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     // The base TCP Port Factory doesn't provide a discovery service, but we must still "locate" any ports we determine are valid
-    if (validatePort(pattern, PORT_TYPE__TCP | PORT_TYPE__COMM)) {
-        portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM, pattern);
+    if (validatePort(pattern, PORT_TYPE__TCP)) {
+        portCallback(this, PORT_TYPE__TCP, pattern);
     }
 }

@@ -14,13 +14,13 @@ extern "C" {
 #include "ISComm.h"
 #include "ISConstants.h"
 
-#ifdef PLATFORM_IS_WINDOWS
-#include <winsock2.h>
-#else
-#include <netinet/in.h>
-#ifdef __unix__ // Unix sockets can do TCP connections via files on Unix systems
-#include <sys/un.h>
-#endif
+#if PLATFORM_IS_WINDOWS
+    #include <winsock2.h>
+#elif !PLATFORM_IS_EMBEDDED
+    #include <netinet/in.h>
+    #ifdef __unix__ // Unix sockets can do TCP connections via files on Unix systems
+    #include <sys/un.h>
+    #endif
 #endif
 
 #define MAX_TCP_PORT_NAME_LENGTH 63
@@ -36,21 +36,17 @@ struct tcp_port_s
 
     port_monitor_set_t stats;
 
-    rmci_t rmci;
-    uint8_t rmciUPMcnt[DID_COUNT];
-    uint8_t rmciNMEAcnt[NMEA_MSG_ID_COUNT];
-
     // the port name (do not modify directly)
-    char* name;
+    char name[MAX_TCP_PORT_NAME_LENGTH + 1];
 
     // Actual socket
     int socket;
 
     // Store an Address type that can connect via TCP
     union {
-#ifdef PLATFORM_IS_WINDOWS
+#if PLATFORM_IS_WINDOWS
         ADDRESS_FAMILY domain;
-#else
+#elif !PLATFORM_IS_EMBEDDED
         sa_family_t domain; // Type of socket to use
 #endif
         struct sockaddr generic;
@@ -69,7 +65,19 @@ struct tcp_port_s
 typedef struct tcp_port_s tcp_port_t;
 #define TCP_PORT(n)  ((tcp_port_t*)n)
 
-void tcpPortInit(port_handle_t port, int id, bool blocking, const char* name, const struct sockaddr_storage* ip);
+void tcpPortInit(port_handle_t port, int id, const char* name, const struct sockaddr_storage* ip, int flags);
+
+/**
+ * Initializes a tcp port with the specified name and socket
+ * @param port The port handle to initialize
+ * @param id The id of the new port handle (a unique id)
+ * @param type The type modifier (OR'd with PORT_TYPE__TCP | PORT_FLAG__VALID)
+ * @param name The name to be associated with the new port
+ * @param socket a socket handle describing an existing and valid tcp socket
+ * @param flags port-specific bit-flags to associated with this port (defaults to PORT_FLAG__COMM)
+ */
+void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* name, const int socket, int flags);
+
 void tcpPortDelete(port_handle_t port);
 int tcpPortSetBlocking(port_handle_t port, bool blocking);
 

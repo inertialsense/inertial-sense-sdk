@@ -10,6 +10,10 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+#define IS_ENABLED_FACILITIES  (IS_LOG_ISCOMM)
+
+#include "core/msg_logger.h"
 #include "ISConstants.h"
 #include "ISComm.h"
 
@@ -20,7 +24,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MAX_MSG_LENGTH_SONY         4090
 #define PKT_PARSER_TIMEOUT_MS       100   // Set to 0 to disable timeout
 
-typedef union 
+#define DEBUG_PARSE_MSG             (!PLATFORM_IS_EMBEDDED)
+
+typedef union
 {
     uint16_t ck;
     struct
@@ -40,7 +46,7 @@ const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
     IS_BAUDRATE_57600,
     IS_BAUDRATE_38400,
     IS_BAUDRATE_19200,
-    IS_BAUDRATE_9600 
+    IS_BAUDRATE_9600
 };
 
 /**
@@ -108,7 +114,7 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
 }
 
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size)
-{    
+{
     checksum16_u cksum;
     cksum.ck = cksum_init;
     for (uint32_t i=0; i<size; i++)
@@ -145,7 +151,7 @@ int validateBaudRate(unsigned int baudRate)
     {   // Valid baud rate
         return 0;
     }
-    
+
 #else
 
     if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
@@ -166,12 +172,12 @@ int validateBaudRate(unsigned int baudRate)
 #endif
 
     // Invalid baud rate
-    return -1;    
+    return -1;
 }
 
 /**
  * @brief Sets buffer to initial state
- * 
+ *
  * @param c is_comm_instance_t*
  * @return returns the size of the buffer
  */
@@ -190,16 +196,16 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsC
 
     // Clear buffer and initialize buffer pointers
     memset(buffer, 0, bufferSize);
-    
+
     c->rxBuf.size = bufferSize;
     c->rxBuf.start = buffer;
     c->rxBuf.end = buffer + bufferSize;
 
     is_comm_reset_buffer(c);
-    
+
     // Set parse enable flags
     c->cb.protocolMask = DEFAULT_PROTO_MASK;
-    
+
     c->rxPkt.data.ptr = c->rxBuf.start;
     c->rxErrorState = 1;
 
@@ -220,10 +226,25 @@ is_comm_instance_t* is_comm_get_port_instance(port_handle_t port) {
 }
 
 /**
- * Registering ISB handler for given comm instance
- * 
+ * Registering all handler for given comm instance
+ *
  * @return handler on success
- * @return NULL if port invalid 
+ * @return NULL if port invalid
+ */
+pfnIsCommHandler is_comm_register_all_handler(is_comm_instance_t* comm, pfnIsCommHandler cbHandler) {
+    if (!comm)
+        return NULL;
+
+    pfnIsCommHandler priorCb = comm->cb.all;
+    comm->cb.all = cbHandler;
+    return priorCb;
+}
+
+/**
+ * Registering ISB handler for given comm instance
+ *
+ * @return handler on success
+ * @return NULL if port invalid
  */
 pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler) {
     if (!comm)
@@ -237,9 +258,9 @@ pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, p
 
 /**
  * Registering ISB handler for given port
- * 
+ *
  * @return handler on success
- * @return NULL if port invalid 
+ * @return NULL if port invalid
  */
 pfnIsCommIsbDataHandler is_comm_register_port_isb_handler(port_handle_t port, pfnIsCommIsbDataHandler cbHandler)
 {
@@ -251,9 +272,9 @@ pfnIsCommIsbDataHandler is_comm_register_port_isb_handler(port_handle_t port, pf
 
 /**
  * Registers msg handler for specific comm instance and protocol type
- * 
+ *
  * @return handler on success
- * @return NULL if port invalid 
+ * @return NULL if port invalid
  */
 pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler) {
     if (!comm || (ptype < _PTYPE_FIRST_DATA) || (ptype > _PTYPE_LAST_DATA))
@@ -267,9 +288,9 @@ pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, in
 
 /**
  * Registers msg handler for specific port and protocol type
- * 
+ *
  * @return handler on success
- * @return NULL if port invalid 
+ * @return NULL if port invalid
  */
 pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int ptype, pfnIsCommGenMsgHandler cbHandler) {
     if (port)
@@ -445,7 +466,7 @@ static protocol_type_t processIsbPkt(void* v)
     // Header
     pkt->hdr.preamble      = isbPkt->hdr.preamble;
     pkt->hdr.flags         = isbPkt->hdr.flags;
-    pkt->hdr.id = pkt->id  = isbPkt->hdr.id;
+    pkt->id = pkt->hdr.id  = isbPkt->hdr.id;
     pkt->hdr.payloadSize   = payloadSize;
 
     // Payload
@@ -991,9 +1012,9 @@ static protocol_type_t processSpartnByte(void* v)
 }
 
 /**
- * Move a buffer of data from src to dest.  This function is used to move data between buffers 
- * that are not aligned to 32-bit boundaries.  Equivalent to memmove() but more efficient on 
- * 32-bit processors.  Requires src and dest do not overlap such that dest will overwrite src 
+ * Move a buffer of data from src to dest.  This function is used to move data between buffers
+ * that are not aligned to 32-bit boundaries.  Equivalent to memmove() but more efficient on
+ * 32-bit processors.  Requires src and dest do not overlap such that dest will overwrite src
  * data not yet copied (i.e. ideal use is dest < src).
  * @param dest the destination buffer
  * @param src the source buffer
@@ -1026,11 +1047,11 @@ void move_buffer_32bit(void* dest, void* src, size_t size)
 /**
  *            *** MAKE SURE YOU UNDERSTAND THIS FUNCTION BEFORE YOU USE IT ***
  *
- * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.  
- * This function should be called before adding data to the is_comm buffer and calling 
- * is_comm_parse_timeout() or related parse functions.  
+ * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.
+ * This function should be called before adding data to the is_comm buffer and calling
+ * is_comm_parse_timeout() or related parse functions.
  * - Reset buffer pointers to the start of the buffer if 1.) parsing is done or 2.) the buffer is full.
- * - Free up buffer space by shifting partial/incomplete packets to the beginning of the buffer. 
+ * - Free up buffer space by shifting partial/incomplete packets to the beginning of the buffer.
  * @param c the comm instance associated with the port
  * @return the number of free bytes available in the buffer
  */
@@ -1092,7 +1113,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 {
     is_comm_buffer_t *buf = &(c->rxBuf);
 
-    #if PKT_PARSER_TIMEOUT_MS 
+    #if PKT_PARSER_TIMEOUT_MS
         if (c->processPkt)
         {   // Parse in progress
             if (timeMs > c->parser.timeMs + PKT_PARSER_TIMEOUT_MS)
@@ -1116,10 +1137,10 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
                 case RTCM3_START_BYTE:          if (c->cb.protocolMask & ENABLE_PROTOCOL_RTCM3)     { setParserStart(c, processRtcm3Pkt); }    break;
                 case SPARTN_START_BYTE:         if (c->cb.protocolMask & ENABLE_PROTOCOL_SPARTN)    { setParserStart(c, processSpartnByte); }  break;
                 case SONY_START_BYTE:           if (c->cb.protocolMask & ENABLE_PROTOCOL_SONY)      { setParserStart(c, processSonyByte); }    break;
-                default:                        
+                default:
                     if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
-                    { 
-                        return _PTYPE_PARSE_ERROR; 
+                    {
+                        return _PTYPE_PARSE_ERROR;
                     }
                     break;
             }
@@ -1137,7 +1158,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         buf->scan++;
     }
 
-#if PKT_PARSER_TIMEOUT_MS 
+#if PKT_PARSER_TIMEOUT_MS
     if (c->processPkt)
     {   // Parsing in progress.  Record current time.
         c->parser.timeMs = timeMs;
@@ -1154,9 +1175,14 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
 
     // Search comm buffer for valid packets
     protocol_type_t ptype;
+
+#if DEBUG_PARSE_MSG
+    static char log_msg[512];
+    int log_msg_pos = sprintf(log_msg, "parse_messages() parsed:");
+#endif
+
     while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
     {
-        int notConsumed = -1;  // if 0, this message was successfully processed by a protocol-specific handler; Do not process it again with the ALL callback
         // Found valid packet
         switch (ptype)
         {
@@ -1165,24 +1191,37 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 {
                     p_data_t data;
                     is_comm_to_isb_p_data(comm, &data);
-                    notConsumed = comm->cb.isbData(comm->cb.context, &data, port);
+#if DEBUG_PARSE_MSG
+                    log_msg_pos += sprintf(log_msg + log_msg_pos, " [ISB.%03d]", data.hdr.id);
+#endif
+                    comm->cb.isbData(comm->cb.context, &data, port);
                 }
+#if DEBUG_PARSE_MSG
+                else { log_msg_pos += sprintf(log_msg + log_msg_pos, " [ISB]"); }
+#endif
                 break;
             case _PTYPE_INERTIAL_SENSE_ACK:
             case _PTYPE_INERTIAL_SENSE_CMD:
                 break;
             default:
+#if DEBUG_PARSE_MSG
+                log_msg_pos += sprintf(log_msg + log_msg_pos, " [PKT.%d]", ptype);
+#endif
                 if (comm->cb.generic[ptype]) {
-                    notConsumed = comm->cb.generic[ptype](comm->cb.context, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
+                    comm->cb.generic[ptype](comm->cb.context, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
                 }
                 break;
         }
 
-        if (comm->cb.all && notConsumed)
+        if (comm->cb.all)
         {
             comm->cb.all(comm->cb.context, ptype, &(comm->rxPkt), port);
         }
     }
+
+#if DEBUG_PARSE_MSG
+    log_more_debug(IS_LOG_ISCOMM, "%s", log_msg);
+#endif
 }
 
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm)
@@ -1300,7 +1339,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
         memcpyIncUpdateChecksum(&buf, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
     MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
-    
+
     // Increment Tx count
     comm->txPktCount++;
 
@@ -1317,7 +1356,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
     {   // can't write if we don't have a valid port, or the port isn't an ISComm
-        return -1;  
+        return -1;
     }
 
     if (pkt->data.size + sizeof(packet_hdr_t) + 4 > PKT_BUF_SIZE)
@@ -1328,9 +1367,9 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-#ifdef GPX_1    // @Tony We want to remove this and use the single write call version for all ports.  We first need the stack usage (high water marks) 
+#ifdef GPX_1    // @Tony We want to remove this and use the single write call version for all ports.  We first need the stack usage (high water marks)
     // implemented in the GPX RTOS status so we know if it is save to allocate a 2048 bytes buffer on the stack as a local variable in this function.
-    
+
     // Write packet to port in multiple write calls (LEGACY).  Interruptable calls to this function that also write to the port could cause severed packets written.
 
     // Write packet to port
@@ -1361,8 +1400,8 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     }
     MEMCPY_INC(ptr, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
 
-    // Write entire packet to port (all at once).  
-    int n = portWrite(port, buf, ptr - buf);
+    // Write entire packet to port (all at once).
+    int n = portWrite(port, buf, (unsigned int)(ptr - buf));
 #endif
 
     // Increment Tx count
@@ -1474,7 +1513,7 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *c, const unsigned int maxsize)
-{   
+{
     const bufPtr_t *data = &(c->rxPkt.data);
     if ((data->size + c->rxPkt.offset) <= maxsize)
     {

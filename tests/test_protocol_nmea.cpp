@@ -82,11 +82,8 @@ bool timeWithin(uint32_t timeSec, uint32_t startSec, uint32_t durationSec)
 
 TEST(protocol_nmea, zda_gps_time_skip)
 {
-    GTEST_SKIP();   // This test must be run manually as the statically SDK build does not include the ZDA TOD work around code
+    GTEST_SKIP() << "This test must be run manually as the statically SDK build does not include the ZDA TOD work around code";
 
-#ifdef _WIN32
-    GTEST_SKIP() << "Skipping test on Windows.";
-#endif
     printf("DESCRIPTION: Test that ZDA time skip detect code works correctly for 1-2 second jumps in the ZDA UTC time due to jumps in GPS time of week.\n");
     initGlobals();
     char buf[1024]; 
@@ -496,8 +493,8 @@ TEST(protocol_nmea, GGA)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
@@ -545,8 +542,8 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
         pos.leapS = LEAP_SEC;
         // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
         ixVector3d lla;
-        lla[0] = DEG2RAD(pos.lla[0]);
-        lla[1] = DEG2RAD(pos.lla[1]);
+        lla[0] = C_DEG2RAD * pos.lla[0];
+        lla[1] = C_DEG2RAD * pos.lla[1];
         lla[2] = pos.lla[2];        // Use ellipsoid altitude
         lla2ecef(lla, pos.ecef);
 
@@ -593,8 +590,8 @@ TEST(protocol_nmea, GGA2)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
@@ -636,8 +633,8 @@ TEST(protocol_nmea, GGA3)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
@@ -679,8 +676,8 @@ TEST(protocol_nmea, GGA4)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 
@@ -943,8 +940,8 @@ TEST(protocol_nmea, RMC)
     pos.leapS = LEAP_SEC;
     // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
     ixVector3d lla;
-    lla[0] = DEG2RAD(pos.lla[0]);
-    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[0] = C_DEG2RAD * pos.lla[0];
+    lla[1] = C_DEG2RAD * pos.lla[1];
     lla[2] = pos.lla[2];        // Use ellipsoid altitude
     lla2ecef(lla, pos.ecef);
 

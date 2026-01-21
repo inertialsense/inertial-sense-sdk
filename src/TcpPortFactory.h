@@ -10,8 +10,15 @@
 #define IS_SDK__TCP_PORT_FACTORY_H
 
 #include <csignal>
-#include "PortFactory.h"
+
+#include "ISConstants.h"
+
+#if PLATFORM_IS_WINDOWS
+#include <winsock2.h>
+#endif
+
 #include "core/tcpPort.h"
+#include "PortFactory.h"
 
 /**
  * Singleton class passed to PortManager to allow a user to connect to a remote serial port over the network using a URL
@@ -46,8 +53,16 @@ private:
 #ifdef PLATFORM_IS_LINUX
         signal(SIGPIPE, SIG_IGN); // ignore broken pipes
 #endif
+#ifdef _WIN32
+        WSADATA wsa_data;
+        WSAStartup(MAKEWORD(2, 2), &wsa_data);
+#endif
     };
-    ~TcpPortFactory() = default;
+    ~TcpPortFactory() {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+    }
 };
 
 #endif //IS_SDK__TCP_PORT_FACTORY_H

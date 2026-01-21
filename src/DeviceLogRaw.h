@@ -10,8 +10,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef DEVICE_LOG_RAW_H
-#define DEVICE_LOG_RAW_H
+#ifndef IS_SDK__DEVICE_LOG_RAW_H
+#define IS_SDK__DEVICE_LOG_RAW_H
 
 #include <stdio.h>
 #include <string>
@@ -28,7 +28,7 @@ class cDeviceLogRaw : public cDeviceLog
 {
 public:
     cDeviceLogRaw();
-    cDeviceLogRaw(const ISDevice* dev);
+    cDeviceLogRaw(device_handle_t dev);
     cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo);
 
     void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
@@ -42,7 +42,7 @@ public:
     void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
     std::string LogFileExtention() OVERRIDE { return std::string(".raw"); }
     void Flush() OVERRIDE;
-    is_comm_instance_t* IsCommInstance() { return &m_comm; }
+    is_comm_instance_t* IsCommInstance() OVERRIDE { return &m_comm; }
 
     cDataChunk m_chunk;
 
@@ -58,4 +58,4 @@ private:
     protocol_type_t m_protocolType;
 };
 
-#endif // DEVICE_LOG_RAW_H
+#endif // IS_SDK__DEVICE_LOG_RAW_H

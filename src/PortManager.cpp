@@ -17,6 +17,7 @@
  *  value of PORT_TYPE__UNKNOWN will match all port types
  */
 bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     portsChanged = false;   // always clear this flag every time we call discoverPorts - the process will set it back, if needed.
 
     // look for ports which are no longer valid and remove them
@@ -29,8 +30,8 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
             erase(port);    // remove the port from our primary set of ports
             lostPorts.push_back(&entry);
             // notify listeners before we actually invalidate the port
-            for (port_listener& listener : listeners) {
-                listener(PORT_REMOVED, portType(port), entry.name, port);
+            for (auto& listener : listeners) {
+                (*listener)(PORT_REMOVED, portType(port), entry.name, port, *entry.factory);
             }
             entry.factory->releasePort(port);
             port = nullptr;
@@ -47,8 +48,8 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
 
     // check to make sure all knownPorts are also representing in the top-level PortManager's set
     for (auto& [entry, port] : knownPorts ) {
-        if (!this->contains(port)) {
-            this->insert(port);
+        if (std::find_if(begin(), end(), [&](port_handle_t p){ return p == port; }) == end()) { // C++17 compliant, since we can't used set::contains()
+            insert(port);
             portsChanged = true;   // note that we added/updated the list of ports
         }
     }
@@ -66,6 +67,7 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
  * @param portName
  */
 void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std::string& portName) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     port_entry_t portEntry(factory, portType, portName);
 
     // check if port is previously known
@@ -77,8 +79,8 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
                 // the port was previously identified, but the port handle is invalid.
                 // we probably should release to port and reallocate a new one
                 // finally, call our handler
-                for (port_listener& l : listeners) {
-                    l(PORT_REMOVED, entry.type, entry.name, port);
+                for (auto& listener : listeners) {
+                    (*listener)(PORT_REMOVED, entry.type, entry.name, port, *entry.factory);
                 }
                 entry.factory->releasePort(port);
                 port = nullptr;
@@ -94,8 +96,8 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
         insert(port);
 
         // finally, call our handler
-        for (port_listener &l: listeners) {
-            l(PORT_ADDED, portType, portName, port);
+        for (auto& listener : listeners) {
+            (*listener)(PORT_ADDED, portType, portName, port, *factory);
         }
 
         portsChanged = true;
@@ -107,6 +109,7 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
  * @return
  */
 std::vector<port_handle_t> PortManager::getPorts() {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     std::vector<port_handle_t> ports;
     for (auto port : *this) {
         ports.push_back((port_handle_t)port);
@@ -121,6 +124,7 @@ std::vector<port_handle_t> PortManager::getPorts() {
  * @return the port handle if found, otherwise returns NULL
  */
 port_handle_t PortManager::getPort(const std::string& name, uint16_t portType) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto& [entry, port] : knownPorts) {
         if (((entry.type & portType) == entry.type) && (entry.name == name))
             return port;
@@ -130,6 +134,7 @@ port_handle_t PortManager::getPort(const std::string& name, uint16_t portType) {
 
 
 port_handle_t PortManager::getPort(uint16_t idx) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto iter = begin(); iter != end(); iter++, idx--  ) {
         if (idx == 0)
             return *iter;

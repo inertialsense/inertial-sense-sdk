@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "serialPort.h"
 
-#ifdef IMX_5
+#ifdef IS_IMX
 #include "globals.h"
 #endif
 
@@ -44,7 +44,7 @@ ISComManager s_cm;
 CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
 int ISComManager::init(
-        std::unordered_set<port_handle_t>* portSet,
+        std::set<port_handle_t>* portSet,
         int stepPeriodMillis,
         pfnComManagerPostRead pstRxFncCb,
         pfnComManagerPostAck pstAckFncCb,
@@ -64,10 +64,10 @@ int ISComManager::init(
 
     defaultCbs = {};
     defaultCbs.context = this;
-    defaultCbs.all = comManagerProcessBinaryRxPacket;
+    defaultCbs.all = comManagerProcessRxPacket;
     defaultCbs.isbData = pstRxFncCb;
 
-    if (!portSet) portSet = new std::unordered_set<port_handle_t>();
+    if (!portSet) portSet = new std::set<port_handle_t>();
     ports = portSet;
 
     return 0;
@@ -75,7 +75,7 @@ int ISComManager::init(
 
 
 int comManagerInit(
-        std::unordered_set<port_handle_t>* portSet,
+        std::set<port_handle_t>* portSet,
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
@@ -114,11 +114,6 @@ bool ISComManager::registerPort(port_handle_t port, is_comm_callbacks_t* cbs) {
 
         is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), portCbs.all);
         is_comm_register_port_callbacks(port, &portCbs);
-
-#if ENABLE_PACKET_CONTINUATION
-        // Packet data continuation
-        memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
-#endif
     }
 
     if (ports)
@@ -135,11 +130,11 @@ bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* cbs) {
     return s_cm.registerPort(port, cbs);
 }
 
-std::unordered_set<port_handle_t>& ISComManager::getPorts() {
+std::set<port_handle_t>& ISComManager::getPorts() {
     return *ports;
 }
 
-std::unordered_set<port_handle_t>& comManagerGetPorts() {
+std::set<port_handle_t>& comManagerGetPorts() {
     return s_cm.getPorts();
 }
 
@@ -350,7 +345,7 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
         // depending on the nature of the error, we may want to close the port.
         // FIXME: we really should be more selective with which errors we actually close the port for.
         if (SERIAL_PORT(port)->errorCode > 0) {
-    #ifndef IMX_5
+    #if !(defined IS_IMX)
             switch (SERIAL_PORT(port)->errorCode) {
                 case ENODEV:        // no such device, so no need to close it
                     break;
@@ -510,50 +505,6 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             data.hdr.size = _MIN(data.hdr.size, (uint8_t)size);
         }
 
-#if ENABLE_PACKET_CONTINUATION
-
-        // Consolidate datasets that were broken-up across multiple packets
-        p_data_t* con = &cmInstance->ports[pHandle].con;
-        if (additionalDataAvailable || (con->hdr.size != 0 && con->hdr.id == dataHdr->id))
-        {
-            // New dataset
-            if (con->hdr.id == 0 || con->hdr.size == 0 || con->hdr.id != dataHdr->id || con->hdr.size > dataHdr->offset)
-            {
-                // Reset data consolidation
-                con->hdr.id = dataHdr->id;
-                con->hdr.offset = dataHdr->offset;
-                con->hdr.size = 0;
-            }
-
-            // Ensure data will fit in buffer
-            if ((con->hdr.size + dataHdr->size) < sizeof(con->buf))
-            {
-                // Add data to buffer
-                memcpy(con->buf + con->hdr.size, data->buf, dataHdr->size);
-                con->hdr.size += dataHdr->size;
-            }
-            else
-            {
-                // buffer overflow
-            }
-
-            // Wait for end of data
-            if (additionalDataAvailable)
-            {
-                return 0;
-            }
-
-            // Use consolidated data
-            data = con;
-        }
-        
-#else
-    
-//         unsigned char additionalDataAvailable // function parameter removed 
-//         (void)additionalDataAvailable;
-
-#endif
-
         if (regData)
         {
             // Write to data structure if it was registered
@@ -573,13 +524,6 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         if (pstRxFnc)
             pstRxFnc(this, &data, port);
 
-#if ENABLE_PACKET_CONTINUATION
-
-        // Clear dataset consolidation
-        con->hdr.id = con->hdr.size = con->hdr.offset = 0;
-
-#endif
-
         // Reply w/ ACK for PKT_TYPE_SET_DATA
         if (isbPktType == PKT_TYPE_SET_DATA)
         {
@@ -589,14 +533,22 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         break;
 
     case PKT_TYPE_GET_DATA:
-#ifdef IMX_5
+#ifdef IS_IMX
         {
             p_data_get_t *gdata = ((p_data_get_t *) (pkt->data.ptr));
             // Forward to gpx
-            if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX &&
-                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || (gdata->id == DID_RTK_DEBUG))) 
+            if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && gdata->id != DID_GPX_FLASH_CFG &&
+                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || gdata->id == DID_RTK_DEBUG))
             {
                 comManagerGetData(COM0_PORT, gdata->id, gdata->size, gdata->offset, gdata->period);
+
+                if (gdata->id == DID_RTK_DEBUG)
+                {
+                    if (gdata->period != 0)
+                        g_GpxRtkDebugReq |= 0x01 << portId(port);
+                    else
+                       g_GpxRtkDebugReq |= 0x01 << (portId(port) + 4); 
+                } 
             }
         }
 #endif
@@ -614,6 +566,10 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             disableBcastFnc(this, NULL);  // all ports
 
         sendAck(port, pkt, PKT_TYPE_ACK);
+
+        #ifdef IMX_5
+            g_GpxRtkDebugReq = 0; 
+        #endif
         break;
 
     case PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT:
@@ -624,10 +580,18 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             disableBcastFnc(this, port);
 
         sendAck(port, pkt, PKT_TYPE_ACK);
+
+        #ifdef IMX_5
+            g_GpxRtkDebugReq &= ~(0x01 << portId(port));
+        #endif
         break;
 
     case PKT_TYPE_STOP_DID_BROADCAST:
         disableDidBroadcast(port, pkt->hdr.id);
+
+        #ifdef IMX_5
+            g_GpxRtkDebugReq &= ~(0x01 << portId(port));
+        #endif
         break;
 
     case PKT_TYPE_NACK:
@@ -642,7 +606,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
     return 0;
 }
 
-int comManagerProcessBinaryRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
+int comManagerProcessRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
     return s_cm.processBinaryRxPacket(ptype, pkt, port);
 }
@@ -932,8 +896,8 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
         return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
     }
 
-    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA))
-    {   // if port is null, set this as the default handler, and also set it for all available ports
+    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA)) {
+        // if port is null, set this as the default handler, and also set it for all available ports
         defaultCbs.context = this;
         defaultCbs.generic[ptype] = cbHandler;
         defaultCbs.protocolMask = DEFAULT_PORT_PROTO_CFG;

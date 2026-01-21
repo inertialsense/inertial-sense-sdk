@@ -41,9 +41,11 @@ extern "C" {
     #define _CRT_SECURE_NO_DEPRECATE
     #endif
 
+    #define NOMINMAX    // Windows.h is included somewhere and this prevents it from defining 'max' as a macro which breaks uri.hpp
+
     // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
-    #define _WINSOCKAPI_
     #include <winsock2.h>
+    #define _WINSOCKAPI_        // THIS shouldn't be necessary - winsock2.h should define it.
     #include <WS2tcpip.h>
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
@@ -80,6 +82,18 @@ extern "C" {
     typedef int is_socket_t;
     #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
     #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
+    // Detect if we're being compiled for ARM
+    #ifdef __ARM_ARCH
+        //#define STR_HELPER(x) #x
+        //#define STR(x) STR_HELPER(x)
+        //#pragma message "Compiling for ARMv" STR(__ARM_ARCH)
+        #define CPU_IS_ARM 1                    // NOTE that is is different than "PLATFORM_IS_ARM" since this still applied is LINUX operating systems running on ARM, like Raspberry Pi, etc
+        #if defined(__ARM_ARCH)                 // GCC compiler for ARM/version
+            #define CPU_ARM_VERSION (__ARM_ARCH)
+        #elif defined(__TARGET_ARCH_ARM)        // ARM compiler for ARM/version
+            #define CPU_ARM_VERSION (__TARGET_ARCH_ARM)
+        #endif
+    #endif
 #elif defined(__INERTIAL_SENSE_EVB_2__)
     #define PLATFORM_IS_EMBEDDED 1
     #define PLATFORM_IS_ARM 1
@@ -137,7 +151,7 @@ extern "C" {
     #define FREE(m) free(m)
 #endif 
 
-#if __ZEPHYR__
+#if defined(__ZEPHYR__)
     // #define SNPRINTF snprintfcb
     #define SNPRINTF snprintf
     #define VSNPRINTF vsnprintf
@@ -183,7 +197,7 @@ extern "C" {
     #endif
 #endif // defined(_MSC_VER)
 
-#if __ZEPHYR__
+#if defined(__ZEPHYR__)
     #include <zephyr/irq.h>
     #define BEGIN_CRITICAL_SECTION  irq_lock();
     #define END_CRITICAL_SECTION    irq_unlock(0);
@@ -199,7 +213,7 @@ extern "C" {
     #define _RMDIR(dir) f_unlink(dir)
     #define _GETCWD(buf, len) f_getcwd(buf, len)
 #elif !PLATFORM_IS_EMBEDDED
-    #if PLATFORM_IS_WINDOWS
+    #if defined(PLATFORM_IS_WINDOWS)
         #include <direct.h>
         #include <sys/utime.h>
         #define _MKDIR(dir) _mkdir(dir)
@@ -334,9 +348,73 @@ extern "C" {
 #define _ROUNDUP(numToRound, multiple) ((((numToRound) + (multiple) - 1) / (multiple)) * (multiple))
 #endif
 
-#ifndef _ISNAN
-#define _ISNAN(a) ((a)!=(a))
+static inline float inv_count_upto10(int n)
+{
+    // n expected 0..10
+    // Table lookup is usually cheaper than float divide on Cortex-M.
+    // If there's any chance n could exceed 10, clamp or fall back.
+    static const float inv[11] = {
+        0.0f,               // 0 -> output 0
+        1.0f,               // 1
+        0.5f,               // 2
+        0.333333343f,       // 3
+        0.25f,              // 4
+        0.2f,               // 5
+        0.166666667f,       // 6
+        0.142857143f,       // 7
+        0.125f,             // 8
+        0.111111111f,       // 9
+        0.1f                // 10
+    };
+
+    return inv[n];
+}
+
+static inline int is_nan_f(float v)
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v != v);
+#else
+    return isnan(v);
 #endif
+}
+
+static inline int is_nan(double v)
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v != v);
+#else
+    return isnan(v);
+#endif
+}
+
+static inline int is_inf_f(float v)
+{
+    return isinf(v);
+}
+
+static inline int is_inf(double v)
+{
+    return isinf(v);
+}
+
+static inline int is_finite_f(float v)  // Not NaN or INF
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
+#else
+    return isfinite(v);
+#endif
+}
+
+static inline int is_finite(double v)   // Not NaN or INF
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
+#else
+    return isfinite(v);
+#endif
+}
 
 #ifndef _ARRAY_BYTE_COUNT
 #define _ARRAY_BYTE_COUNT(a) sizeof(a)
@@ -375,22 +453,6 @@ extern "C" {
 #endif
 #endif
 
-#ifndef M_PI
-#define M_PI (3.14159265358979323846f)
-#endif
-
-#ifndef RAD2DEG
-#define RAD2DEG(rad)    ((rad)*(180.0f/M_PI))
-#endif
-#ifndef DEG2RAD
-#define DEG2RAD(deg)    ((deg)*(M_PI/180.0f))
-#endif
-#ifndef DEG2RADMULT
-#define DEG2RADMULT  (M_PI/180.0f)
-#endif
-#ifndef RAD2DEGMULT
-#define RAD2DEGMULT  (180.0f/M_PI)
-#endif
 #define ATanH(x)        (0.5 * log((1 + (x)) / (1 - (x))))
 
 #if defined(__cplusplus)
@@ -468,22 +530,22 @@ extern "C" {
 //////////////////////////////////////////////////////////////////////////
 // Distance
 
-#define C_IN2M                      0.0254                              // inches to meters 
-#define C_FT2M                      0.3048                              // (C_IN2M*12) feet to meters 
-#define C_M2FT                      3.2808398950131233595800524934383   // (1.0/C_FT2M) 
+#define C_IN2M                      0.0254                              // inches to meters
+#define C_FT2M                      0.3048                              // (C_IN2M*12) feet to meters
+#define C_M2FT                      3.2808398950131233595800524934383   // (1.0/C_FT2M)
 
-#define C_YD2M                      0.9144                              // (C_FT2M*3) yards to meters 
+#define C_YD2M                      0.9144                              // (C_FT2M*3) yards to meters
 
-#define C_IN2M_F                    0.0254f                             // inches to meters 
-#define C_FT2M_F                    0.3048f                             // (C_IN2M*12) feet to meters 
-#define C_M2FT_F                    3.2808398950131233595800524934383f  // (1.0/C_FT2M) 
-#define C_YD2M_F                    0.9144f                             // (C_FT2M*3) yards to meters 
+#define C_IN2M_F                    0.0254f                             // inches to meters
+#define C_FT2M_F                    0.3048f                             // (C_IN2M*12) feet to meters
+#define C_M2FT_F                    3.2808398950131233595800524934383f  // (1.0/C_FT2M)
+#define C_YD2M_F                    0.9144f                             // (C_FT2M*3) yards to meters
 
-#define C_NMI2M                     1852.0                              // nautical miles to meters 
-#define C_MI2M                      1609.344                            // (C_FT2M*5280) miles to meters 
+#define C_NMI2M                     1852.0                              // nautical miles to meters
+#define C_MI2M                      1609.344                            // (C_FT2M*5280) miles to meters
 
-#define C_NMI2M_F                   1852.0f                             // nautical miles to meters 
-#define C_MI2M_F                    1609.344f                           // (C_FT2M*5280) miles to meters 
+#define C_NMI2M_F                   1852.0f                             // nautical miles to meters
+#define C_MI2M_F                    1609.344f                           // (C_FT2M*5280) miles to meters
 
 #define C_METERS_KNOTS              1.943844                            // Meters/sec squared to knots
 #define C_METERS_KNOTS_F            1.943844f                           // Meters/sec squared to knots
@@ -494,16 +556,16 @@ extern "C" {
 // Acceleration / Force
 
 // Local gravity available as = gravity_igf80(lattitude_rad, altitude_m);
-#if 1    
+#if 1
 
 // Standard Gravity (at sea level)
 #define C_G_TO_MPS2     9.80665             // (m/s^2) standard gravity
 #define C_MPS2_TO_G     0.101971621297793
-#define C_G_TO_FTPS2    32.17404856         // (ft/s^2) standard gravity 
+#define C_G_TO_FTPS2    32.17404856         // (ft/s^2) standard gravity
 
 #define C_G_TO_MPS2_F   9.80665f            // (m/s^2) standard gravity
 #define C_MPS2_TO_G_F   0.101971621297793f
-#define C_G_TO_FTPS2_F  32.17404856f        // (ft/s^2) standard gravity 
+#define C_G_TO_FTPS2_F  32.17404856f        // (ft/s^2) standard gravity
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -534,15 +596,15 @@ extern "C" {
 //////////////////////////////////////////////////////////////////////////
 // Mass
 
-#define C_LBM2KG        0.45359237              // lb mass 
-#define C_KG2LBM        2.204622622             // (1.0/C_LBM2KG) 
-#define C_LBF2N         4.448221615             // (C_LBM2KG*C_G0MPERSEC2) lb force 
-#define C_SLUG2KG       14.59390294             // (C_LBM2KG*C_G0) slugs 
+#define C_LBM2KG        0.45359237              // lb mass
+#define C_KG2LBM        2.204622622             // (1.0/C_LBM2KG)
+#define C_LBF2N         4.448221615             // (C_LBM2KG*C_G0MPERSEC2) lb force
+#define C_SLUG2KG       14.59390294             // (C_LBM2KG*C_G0) slugs
 
-#define C_LBM2KG_F      0.45359237f             // lb mass 
-#define C_KG2LBM_F      2.204622622f            // (1.0/C_LBM2KG) 
-#define C_LBF2N_F       4.448221615f            // (C_LBM2KG*C_G0MPERSEC2) lb force 
-#define C_SLUG2KG_F     14.59390294f            // (C_LBM2KG*C_G0) slugs 
+#define C_LBM2KG_F      0.45359237f             // lb mass
+#define C_KG2LBM_F      2.204622622f            // (1.0/C_LBM2KG)
+#define C_LBF2N_F       4.448221615f            // (C_LBM2KG*C_G0MPERSEC2) lb force
+#define C_SLUG2KG_F     14.59390294f            // (C_LBM2KG*C_G0) slugs
 
 // Math constants 
 // from CRC Standard Mathematical Tables, 27th edition, 1984 
@@ -632,40 +694,40 @@ extern "C" {
 #define C_F2R_F             459.69f
 
 #define C_G_CONST           1.068944098e-09     // 6.6732e-11*CUBE(C_M2FT)/C_KG2LBM
-#define C_EARTH_MASS        1.317041554e25      // 5.974e24*C_KG2LBM   
+#define C_EARTH_MASS        1.317041554e25      // 5.974e24*C_KG2LBM
 #define C_N0_AVOGADRO       6.02205e23
 #define C_R_IDEAL_SU        8.31434
 #define C_K_BOLTZMANN       1.380622e-23
 #define C_C_LIGHT           983571194.2         // 2.9979250e+8*C_M2FT
 #define C_ECHARGE           1.6021917e-19
 
-#define C_DOFA              0.080719353         // 1.293*C_KG2LBM/CUBE(C_M2FT)  
+#define C_DOFA              0.080719353         // 1.293*C_KG2LBM/CUBE(C_M2FT)
 #define C_DOFH2O            62.427960576        // 1.000e3*C_KG2LBM/CUBE(C_M2FT)
 #define C_STOFH2O           75.6
 #define C_VOFH2O            1.787e-3
-#define C_SOUND0VEL         1087.598425         // 331.5*C_M2FT 
-#define C_SOUND20VEL        1126.64042          // 343.4*C_M2FT 
+#define C_SOUND0VEL         1087.598425         // 331.5*C_M2FT
+#define C_SOUND20VEL        1126.64042          // 343.4*C_M2FT
 
 #define C_G_CONST_F         1.068944098e-09f    // 6.6732e-11*CUBE(C_M2FT)/C_KG2LBM
-#define C_EARTH_MASS_F      1.317041554e25f     // 5.974e24*C_KG2LBM   
+#define C_EARTH_MASS_F      1.317041554e25f     // 5.974e24*C_KG2LBM
 #define C_N0_AVOGADRO_F     6.02205e23f
 #define C_R_IDEAL_SU_F      8.31434f
 #define C_K_BOLTZMANN_F     1.380622e-23f
 #define C_C_LIGHT_F         983571194.2f        // 2.9979250e+8*C_M2FT
 #define C_ECHARGE_F         1.6021917e-19f
 
-#define C_DOFA_F            0.080719353f        // 1.293*C_KG2LBM/CUBE(C_M2FT)  
+#define C_DOFA_F            0.080719353f        // 1.293*C_KG2LBM/CUBE(C_M2FT)
 #define C_DOFH2O_F          62.427960576f       // 1.000e3*C_KG2LBM/CUBE(C_M2FT)
 #define C_STOFH2O_F         75.6f
 #define C_VOFH2O_F          1.787e-3f
-#define C_SOUND0VEL_F       1087.598425f        // 331.5*C_M2FT 
-#define C_SOUND20VEL_F      1126.64042f         // 343.4*C_M2FT 
+#define C_SOUND0VEL_F       1087.598425f        // 331.5*C_M2FT
+#define C_SOUND20VEL_F      1126.64042f         // 343.4*C_M2FT
 
-#define C_WGS84_a           6378137.0          // WGS-84 semimajor axis (m) 
+#define C_WGS84_a           6378137.0          // WGS-84 semimajor axis (m)
 #define C_WGS84_a_F         6378137.0f
-#define C_WGS84_b           6356752.3142       // WGS-84 semiminor axis (m) 
+#define C_WGS84_b           6356752.3142       // WGS-84 semiminor axis (m)
 #define C_WGS84_b_F         6356752.3142f
-#define C_WIE               7.2321151467e-05   // WGS-84 earth rotation rate (rad/s) 
+#define C_WIE               7.2321151467e-05   // WGS-84 earth rotation rate (rad/s)
 #define C_WIE_F             7.2321151467e-05f
 
 #define C_TESLA2GAUSS_F     10000.0
@@ -777,21 +839,21 @@ extern "C" {
 #define C_75p0_DEG2RAD_F    1.3089969389957500f
 #define C_80p0_DEG2RAD_F    1.3962634015954600f
 #define C_85p0_DEG2RAD_F    1.4835298641951800f
-#define C_90p0_DEG2RAD_F    1.5707963267949000f        
+#define C_90p0_DEG2RAD_F    1.5707963267949000f
 #define C_135p0_DEG2RAD_F   2.3561944901923400f
 #define C_180p0_DEG2RAD_F   3.1415926535897900f
 
 // Angle Unwrap
-#define UNWRAP_DEG_F64(x)           { if ((x) < (-180.0)) { (x) += (360.0);    } if ((x) > (180.0))    { (x) -= (360.0);    } }    // unwrap to +- 180
+#define UNWRAP_DEG_F64(x)           { if ((x) < (-180.0))  { (x) += (360.0);     } if ((x) > (180.0))     { (x) -= (360.0);     } }    // unwrap to +- 180
 #define UNWRAP_DEG_F32(x)           { if ((x) < (-180.0f)) { (x) += (360.0f);    } if ((x) > (180.0f))    { (x) -= (360.0f);    } }    // unwrap to +- 180
-#define UNWRAP_90DEG_F64(x)         { if ((x) < (-90.0))  { (x) += (180.0);    } if ((x) > (90.0))     { (x) -= (180.0);    } }    // unwrap to +- 90
+#define UNWRAP_90DEG_F64(x)         { if ((x) < (-90.0))   { (x) += (180.0);     } if ((x) > (90.0))      { (x) -= (180.0);     } }    // unwrap to +- 90
 #define UNWRAP_90DEG_F32(x)         { if ((x) < (-90.0f))  { (x) += (180.0f);    } if ((x) > (90.0f))     { (x) -= (180.0f);    } }    // unwrap to +- 90
 #define UNWRAP_F64(x)               { if ((x) < (-C_PI))   { (x) += (C_TWOPI);   } if ((x) > (C_PI))      { (x) -= (C_TWOPI);   } }    // unwrap to +- PI
 #define UNWRAP_F32(x)               { if ((x) < (-C_PI_F)) { (x) += (C_TWOPI_F); } if ((x) > (C_PI_F))    { (x) -= (C_TWOPI_F); } }    // unwrap to +- PI
 #define UNWRAP_ZERO_TWOPI_F64(x)    { if ((x) < (0.0))     { (x) += (C_TWOPI);   } if ((x) > (C_TWOPI))   { (x) -= (C_TWOPI);   } }    // unwrap to 0 to TWOPI
 #define UNWRAP_ZERO_TWOPI_F32(x)    { if ((x) < (0.f))     { (x) += (C_TWOPI_F); } if ((x) > (C_TWOPI_F)) { (x) -= (C_TWOPI_F); } }    // unwrap to 0 to TWOPI
 #define UNWRAP_PIDIV4_F32(x)        { while ((x) < (-C_PIDIV4_F)) { (x) += (C_PIDIV2_F); } while ((x) > (C_PIDIV4_F)) { (x) -= (C_PIDIV2_F); } }    // unwrap to +- PI/4 (45 degrees)
-    
+
 #define _SIN        sinf
 #define _COS        cosf
 #define _TAN        tanf
@@ -810,15 +872,23 @@ extern "C" {
 
 #define REF_INS_SERIAL_NUMBER            99999                                        // 10101 was prior value
 
-#define INS_MAX_VELOCITY                500.0f                // (m/s)    INS operation limit - velocity.  Limited by GPS.
-#define INS_MAX_LATITUDE                C_PIDIV2            // (rad)    INS operation limit - latitude
-#define INS_MAX_LONGITUDE                C_PI                // (rad)    INS operation limit - longitude
-#define INS_MAX_ALTITUDE                50000.0                // (m)        INS operation limit - altitude.  Limited by GPS.  50 km = 164,042 ft, 15 km = 49,212 ft
+#define C_EARTH_RADIUS_EQUATORIAL       6378137.0       // (m) Equatorial radius
+#define C_EARTH_RADIUS_POLAR            6356752.0       // (m) Polar radius
+#define C_EARTH_RADIUS_MEAN             6371000.0       // (m) Mean radius (used by the IUGG, WGS-84, etc.)
+
+// IMX Operational Limits
+#define INS_MAX_VELOCITY                500.0f          // (m/s) INS operation limit - velocity.  Limited by GPS.
+#define INS_MAX_LATITUDE                C_PIDIV2        // (rad) INS operation limit - latitude
+#define INS_MAX_LATITUDE_DEG            90.0            // (deg) INS operation limit - latitude
+#define INS_MAX_LONGITUDE               C_PI            // (rad) INS operation limit - longitude
+#define INS_MAX_LONGITUDE_DEG           180.0           // (deg) INS operation limit - longitude
+#define INS_MAX_ALTITUDE                50000.0         // (m)   INS operation limit - altitude.  Limited by GPS.  50 km = 164,042 ft, 15 km = 49,212 ft
+#define INS_MAX_ECEF                    (INS_MAX_ALTITUDE+C_EARTH_RADIUS_EQUATORIAL)     // (m)   INS operation limit - ECEF
 
 #define C_GPS_LEAP_SECONDS              18
 
 typedef float       f_t;
-typedef int            i_t;
+typedef int         i_t;
 typedef double      ixVector2d[2];        // V = | 0 1 |
 typedef f_t         ixVector2[2];         // V = | 0 1 |
 typedef double      ixVector3d[3];        // V = | 0 1 2 |

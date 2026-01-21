@@ -14,12 +14,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define COM_MANAGER_H
 
 #include <array>
+#include <cstdint>
 #include <list>
-#include <unordered_set>
-#include <vector>
 #include <map>
+#include <set>
+#include <vector>
 
-#include <stdint.h>
 #include "ISComm.h"
 #include "linked_list.h"
 
@@ -124,7 +124,7 @@ typedef int(*pfnComManagerParseErrorHandler)(void* ctx, port_handle_t port);
 * @endcode
 */
 int comManagerInit(
-        std::unordered_set<port_handle_t>* portSet,
+        std::set<port_handle_t>* portSet,
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
@@ -152,7 +152,6 @@ int comManagerInit(
 
 pfnIsCommGenMsgHandler comManagerRegisterProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port = NULL);
 
-
 port_handle_t comManagerAllocatePort(int ptype);
 
 
@@ -175,7 +174,7 @@ bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* callbacks);
 /**
  * @return a vector of all registered ports
  */
-std::unordered_set<port_handle_t>& comManagerGetPorts();
+std::set<port_handle_t>& comManagerGetPorts();
 
 
 /**
@@ -387,7 +386,7 @@ void comManagerSetErrorHandler(pfnComManagerParseErrorHandler errorCb);
 */
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 
-int comManagerProcessBinaryRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+int comManagerProcessRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 class ISComManager {
 public:
@@ -418,7 +417,7 @@ public:
     * @endcode
     */
     int init(
-            std::unordered_set<port_handle_t>* portSet,
+            std::set<port_handle_t>* portSet,
             int stepPeriodMilliseconds,
             pfnComManagerPostRead pstRxFnc,
             pfnComManagerPostAck pstAckFnc,
@@ -451,7 +450,7 @@ public:
     /**
      * @return a vector of all registered ports
      */
-    std::unordered_set<port_handle_t>& getPorts();
+    std::set<port_handle_t>& getPorts();
 
 
     /**
@@ -718,7 +717,7 @@ private:
     is_comm_callbacks_t defaultCbs; // local copy of any callbacks passed at init
 
     // Array of ports - that will be managed, but not owned, by the ISComManager instance
-    std::unordered_set<port_handle_t>* ports = NULLPTR;  // this is not a vector of ports, its a pointer to an EXTERNAL set of ports.  This MUST be initialized!!!
+    std::set<port_handle_t>* ports = NULLPTR;  // this is not a vector of ports, its a pointer to an EXTERNAL set of ports.  This MUST be initialized!!!
 
     // reads n bytes into buffer from the source (usually a serial port)
     // pfnIsCommPortRead portRead;

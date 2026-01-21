@@ -30,7 +30,7 @@ PYTHON_VERSION=$(python3 --version 2>&1)
 PYTHON_MAJOR_VERSION=$(echo $PYTHON_VERSION | awk '{print $2}' | cut -d. -f1)
 PYTHON_MINOR_VERSION=$(echo $PYTHON_VERSION | awk '{print $2}' | cut -d. -f2)
 # Define your pip install command
-PIP_INSTALL_COMMAND="pip3 install python/"
+PIP_INSTALL_COMMAND="python -m pip install python/"
 # Check if the Python version is 3.11 or higher
 if [[ $PYTHON_MAJOR_VERSION -eq 3 && $PYTHON_MINOR_VERSION -ge 11 ]] || [[ $PYTHON_MAJOR_VERSION -gt 3 ]]; then
     # If Python version is 3.11 or higher, use --break-system-packages option

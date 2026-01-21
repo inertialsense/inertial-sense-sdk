@@ -26,20 +26,20 @@ typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timeMs);
 class cLogStatMsgId
 {
 public:
-    unsigned int count;         // count for this data id
-    unsigned int errors;        // error count for this data id
-    unsigned int meanDtMs;      // average time delta for the data id
-    unsigned int accumDtMs;     // sum of all time deltas
-    unsigned int lastTimeMs;
-    unsigned int lastDtMs;
-    unsigned int minDtMs;
-    unsigned int maxDtMs;
-    unsigned int dtMsCount;
-    unsigned int timeIrregCount; // count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
+    unsigned int count = 0;         // count for this data id
+    unsigned int errors = 0;        // error count for this data id
+    unsigned int meanDtMs = 0;      // average time delta for the data id
+    unsigned int accumDtMs = 0;     // sum of all time deltas
+    unsigned int lastTimeMs = 0;
+    unsigned int lastDtMs = 0;
+    unsigned int minDtMs = 0;
+    unsigned int maxDtMs = 0;
+    unsigned int dtMsCount = 0;
+    unsigned int timeIrregCount = 0; // count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
 
-    unsigned int bpsBytes;
-    unsigned int bpsStartTimeMs;
-    unsigned int bytesPerSec;
+    unsigned int bpsBytes = 0;
+    unsigned int bpsStartTimeMs = 0;
+    unsigned int bytesPerSec = 0;
 
     cLogStatMsgId();
     void LogTimestamp(unsigned int timeMs);

@@ -13,8 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef IS_DISPLAY_H
 #define IS_DISPLAY_H
 
-#include <stdlib.h>
-#include <inttypes.h>
+#include <cstdlib>
+#include <cinttypes>
 #include <vector>
 #include <string>
 
@@ -27,10 +27,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "serialPortPlatform.h"
 
-#if !PLATFORM_IS_WINDOWS
-
+#if !PLATFORM_IS_WINDOWS && !PLATFORM_IS_EMBEDDED
 #include <termios.h>
-
 #endif
 
 
@@ -120,6 +118,8 @@ public:
     std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
     std::string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
     std::string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
+    std::string DataToStringGpsSat(const gps_sat_t &gps, const p_data_hdr_t& hdr);
+    static std::string DataToStringGpsSat(const gps_sat_t &gps, bool full=false);
     std::string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
     std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
     std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
@@ -153,7 +153,7 @@ public:
     }
     // void SetSerialPort(serial_port_t* port) { m_port = port; }
     // void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
-    void setDevice(ISDevice* activeDevice) { m_device = activeDevice; }
+    void setDevice(device_handle_t activeDevice) { m_device = activeDevice; }
 
 private:
     std::string VectorToString();
@@ -163,7 +163,7 @@ private:
     std::vector<std::string> m_didMsgs;
     eDisplayMode m_displayMode = DMODE_QUIET;
     uint32_t m_startMs = 0;
-    ISDevice* m_device = NULL;
+    device_handle_t m_device = NULL;
     // serial_port_t* m_port = NULL;
     // is_comm_instance_t* m_comm = NULL;
 
@@ -171,7 +171,7 @@ private:
     double m_replaySpeedX = 1.0;
 
     edit_data_t m_editData = {};
-    std::vector<uint32_t> m_outputOnceDid = {};			// Set to DID to display then exit cltool.  0 = disabled
+    std::vector<uint32_t> m_outputOnceDid = {};            // Set to DID to display then exit cltool.  0 = disabled
     bool m_interactiveMode = true;
     bool m_showRawHex = false;
 

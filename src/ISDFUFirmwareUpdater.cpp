@@ -145,7 +145,7 @@ ISDFUFirmwareUpdater::ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_dev
     // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
     libusb_init(NULL);
     std::vector<DFUDevice*> devices;
-    int count = ISDFUFirmwareUpdater::getAvailableDevices(devices);
+    size_t count = ISDFUFirmwareUpdater::getAvailableDevices(devices);
     count = ISDFUFirmwareUpdater::filterDevicesByTargetType(devices, session_target);
     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Found %d DFU devices suitable for update.", count);
 
@@ -204,15 +204,15 @@ bool ISDFUFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool pr
 bool ISDFUFirmwareUpdater::fwUpdate_processMessage(int rxPort, const uint8_t* buffer, int buf_len) {
 
     // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
-    const int tmpBuf_size = toDevice.size();
-    uint8_t* tmpBuf = new uint8_t[tmpBuf_size];
+    const size_t tmpBuf_size = toDevice.size();
+    const auto tmpBuf = new uint8_t[tmpBuf_size];
     uint8_t* p = tmpBuf;
-    while (toDevice.size()) {
+    while (!toDevice.empty()) {
         *p++ = toDevice.front();
         toDevice.pop_front();
     }
 
-    bool result = FirmwareUpdateDevice::fwUpdate_processMessage(p, tmpBuf_size);
+    bool result = FirmwareUpdateDevice::fwUpdate_processMessage(p, static_cast<int>(tmpBuf_size));
     delete [] tmpBuf;
     return result;
 }
@@ -442,10 +442,10 @@ dfu_error DFUDevice::fetchDeviceInfo() {
     // Calculate a fingerprint from the device info/descriptors (Don't use anything that isn't guaranteed unique per device-type!!)
     // TODO: IF YOU CHANGE THE DATA USED IN THE HASHING BELOW, YOU WILL ALSO HAVE TO CHANGE THE RESPECTIVE FINGERPRINTS in ISBootloaderDFU.h
     // DO NOT MODIFY THESE IF YOU DON'T KNOW WHAT YOU'RE DOING AND WHY
-    md5_update(fingerprint, (uint8_t *) &vid, sizeof(vid));
-    md5_update(fingerprint, (uint8_t *) &pid, sizeof(pid));
-    for (auto dfuDesc: dfuDescriptors) {
-        md5_update(fingerprint, (uint8_t *) dfuDesc.c_str(), dfuDesc.size());
+    md5_update(fingerprint, reinterpret_cast<const unsigned char *>(&vid), sizeof(vid));
+    md5_update(fingerprint, reinterpret_cast<const unsigned char *>(&pid), sizeof(pid));
+    for (auto& dfuDesc: dfuDescriptors) {
+        md5_update(fingerprint, reinterpret_cast<const unsigned char *>(dfuDesc.c_str()), (unsigned int)dfuDesc.size());
     }
 
     // TODO: make this work for both GPX-1 and IMX-5.1
@@ -461,8 +461,8 @@ dfu_error DFUDevice::fetchDeviceInfo() {
         sn = -1; // 0xFFFFFFFF
         hardwareId = -1; // 0xFFFF
 
-        uint8_t* rxBuf = new uint8_t[otp.pageSize] {0};
-        int len = readMemory(otp.address, rxBuf, otp.pageSize); // otp.pageSize);
+        auto rxBuf = new uint8_t[otp.pageSize] {0};
+        auto len = readMemory(static_cast<uint32_t>(otp.address), rxBuf, otp.pageSize); // otp.pageSize);
         if (len > 0) {
             otp_info_t *id = decodeOTPData(rxBuf, len);
             if (id != nullptr) {
@@ -599,7 +599,7 @@ dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) 
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
     size_t image_sections;
     int ret_libusb;
-    dfu_error ret_dfu;
+    dfu_error ret_dfu = DFU_ERROR_NONE;
 
     SLEEP_MS(100);
 
@@ -623,7 +623,7 @@ dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) 
         // If baseAddress is not zero, then we will try and align the firmware to the specified base, otherwise we'll take it like it is (for better or for worse).
         if (baseAddress) {
             // If starting address is not the same as the baseAddress, calculate a new offset, and shift all the image sections accordingly
-            uint64_t baseOffset = baseAddress - image[0].address;
+            auto baseOffset = static_cast<uint32_t>(baseAddress - image[0].address);
             if (baseOffset) {
                 for (size_t i = 0; i < image_sections; image[i].address += baseOffset, i++);
             }
@@ -633,10 +633,10 @@ dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) 
         if (!file.is_open())
             return DFU_ERROR_FILE_NOTFOUND;
 
-        image[0].address = (baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
+        image[0].address = static_cast<uint32_t>(baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
         auto fsize = file.tellg();
         file.seekg( 0, std::ios::end );
-        image[0].len = file.tellg() - fsize;
+        image[0].len = static_cast<uint32_t>(file.tellg() - fsize);
         file.seekg( 0, std::ios::beg );
 
         image[0].image = static_cast<uint8_t *>(malloc(image[0].len));
@@ -648,7 +648,7 @@ dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) 
 
     uint32_t offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
     if (statusCb) {
-        int lastSep = filename.find_last_of('/')+1;
+        size_t lastSep = filename.find_last_of('/')+1;
         std::string fname(filename.substr(lastSep, filename.length() - lastSep));
         statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Updating flash with firmware \"%s\" (@ 0x%08X)", getDescription(), fname.c_str(), segments[STM32_DFU_INTERFACE_FLASH].address + offset);
     }
@@ -659,7 +659,7 @@ dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) 
             statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Erasing flash memory...", getDescription());
         }
 
-        offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
+        offset = static_cast<uint32_t>(image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address);
         for (size_t i = 0; i < image_sections; i++) {
             //offset = image[i].address + offset;
             ret_dfu = eraseFlash(segments[STM32_DFU_INTERFACE_FLASH], offset, image[i].len);
@@ -673,7 +673,7 @@ dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) 
             statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Programming flash memory...", getDescription());
         }
 
-        offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
+        offset = static_cast<uint32_t>(image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address);
         for (size_t i = 0; i < image_sections; i++) {
             ret_dfu = writeFlash(segments[STM32_DFU_INTERFACE_FLASH], offset, image[i].len, image[i].image);
             if (ret_dfu != DFU_ERROR_NONE) {
@@ -720,10 +720,10 @@ dfu_error DFUDevice::updateFirmware(std::istream& stream, uint64_t baseAddress) 
             return DFU_ERROR_FILE_NOTFOUND;
 
 
-        image[0].address = (baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
+        image[0].address = static_cast<uint32_t>(baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
         auto fsize = stream.tellg();
         stream.seekg( 0, std::ios::end );
-        image[0].len = stream.tellg() - fsize;
+        image[0].len = static_cast<uint32_t>(stream.tellg() - fsize);
         stream.seekg( 0, std::ios::beg );
 
         image[0].image = static_cast<uint8_t *>(malloc(image[0].len));

@@ -8,8 +8,34 @@
 
 #include "core/types.h"
 #include "core/base_port.h"
+#include "core/msg_logger.h"
 
 #include "ISUtilities.h"
+
+
+/**
+ * Attempts to open the specified port, until a timeout occurs.
+ * @param port the port to open
+ * @param timeoutMs the maximum time to wait for the port to open/connect
+ * @param retryDelayMs the number of milliseconds to wait between failed open attempts
+ * @return PORT_ERROR__NONE if successful, else of PORT_ERROR__* indicating the reason for failure.
+ */
+int portOpenRetry(port_handle_t port, unsigned int timeoutMs, unsigned int retryDelayMs) {
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;
+
+    int lastResult = PORT_ERROR__NONE;
+    uint32_t timeout = current_timeMs() + timeoutMs;
+    do {
+        if (portIsOpened(port)) return PORT_ERROR__NONE;
+
+        lastResult = portOpen(port);
+        if (lastResult == PORT_ERROR__NONE) return lastResult;
+
+        log_more_debug(IS_LOG_PORT, "portOpenRetry(): portOpen() failed with error: %d (%d)", lastResult, portError(port));
+        SLEEP_MS(retryDelayMs);
+    } while (current_timeMs() < timeout);
+    return lastResult;
+}
 
 /**
  * General purpose blocking "read n bytes" with a timeout in the event that n bytes aren't received within the alotted timeout
@@ -35,7 +61,7 @@ int portReadTimeout_internal(port_handle_t port, uint8_t* buffer, unsigned int r
 }
 
 /**
- * Waits timeoutMilliseconds for a sequence of waitForLength bytes matching waitFor to be read from a part.
+ * Waits timeoutMilliseconds for a sequence of waitForLength bytes matching waitFor to be read from a port.
  * No data is retained or buffered while waiting. If the sequence is read within the timeout period, this returns
  * true, otherwise false. NOTE: This is a blocking call, and any data read while looking for a match is discarded.
  * @param port the port monitor for the anticipated bytes
@@ -74,8 +100,9 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
                         return 1;       // success, we match all 'waitForLength' bytes
                     nMatch++;
                 } else {
+                    // failed to match the full sequence, so reset back to looking for the first char
                     nMatch = 0;
-                    mPtr = sPtr;
+                    mPtr = NULL;
                 }
             }
             if (mPtr && nMatch) {
@@ -86,7 +113,7 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
         } else if (bytesWaiting < 0) {
             return 0;   // error while reading
         } else {
-            SLEEP_US(1);
+            SLEEP_US(500);
         }
     }
 

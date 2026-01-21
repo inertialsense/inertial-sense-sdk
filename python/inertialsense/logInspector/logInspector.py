@@ -432,7 +432,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('RTK Cmp BaseVector', 'rtkBaselineVector')
         self.addListItem('RTK Obs GPS1', 'rtkObsGPS1')
         self.addListItem('RTK Obs GPS2', 'rtkObsGPS2')
-        self.addListItem('RTK Obs Rover-Base Single Diff', 'rtkObsSingleDiff')
+        self.addListItem('RTK Obs Rover-Base Double Diff', 'rtkObsDoubleDiff')
         self.addListItem('GPS Position NED Map', 'gpsPosNEDMap')
         self.addListItem('GPS Position NED', 'gpsPosNED')
         self.addListItem('GPS Velocity NED', 'gpsVelNED')
@@ -503,26 +503,47 @@ class LogInspectorWindow(QMainWindow):
         self.saveAllPushButton = QPushButton("Save All Plots")
         self.saveAllPushButton.setToolTip("Save all plots to file")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
+        self.showGps2 = QCheckBox("GPS2", self)
+        self.showGps2.stateChanged.connect(self.changeShowGps2Checkbox)
+        self.GpsVelFilterLabel = QLabel(" GPS Vel Filter", self)
+        self.gpsVelFilter = QSpinBox(self)
+        self.gpsVelFilter.setValue(0)
+        self.gpsVelFilter.setMaximumWidth(35)
+        self.gpsVelFilter.valueChanged.connect(self.changeGpsVelFilterInput)
 
         self.VLayoutOptions1 = QVBoxLayout()
+        self.VLayoutOptions1.setSpacing(0)
         self.VLayoutOptions1.addWidget(self.checkboxResidual)
         self.VLayoutOptions1.addWidget(self.checkboxTime)
         self.VLayoutOptions1.addWidget(self.xAxisSample)
         self.VLayoutOptions1.addWidget(self.checkboxUtc)
-        self.VLayoutOptions1.setSpacing(0)
         self.VLayoutOptions2 = QVBoxLayout()
-        self.VLayoutOptions2.addWidget(self.saveAllPushButton)
         self.VLayoutOptions2.setSpacing(0)
+        self.VLayoutOptions2.addWidget(self.saveAllPushButton)
+        self.VLayoutOptions3 = QVBoxLayout()
+        self.VLayoutOptions3.setSpacing(0)
+        self.VLayoutOptions3.addWidget(self.showGps2)
+        
+        if 0:   # Show GPS Velocity Filter Input in UI
+            self.HLayoutOptions3 = QHBoxLayout()
+            self.HLayoutOptions3.addWidget(self.gpsVelFilter)
+            self.HLayoutOptions3.addWidget(self.GpsVelFilterLabel)
+            self.VLayoutOptions3.addLayout(self.HLayoutOptions3)
 
         group_box = QGroupBox("")
         self.LayoutVTests = QVBoxLayout()
         self.LayoutVTests.setSpacing(0)
         group_box.setLayout(self.LayoutVTests)
 
+        self.VLayoutOptions2x = QVBoxLayout()
+        self.VLayoutOptions2x.setSpacing(0)
+        self.VLayoutOptions2x.addLayout(self.VLayoutOptions2)
+        self.VLayoutOptions2x.addLayout(self.VLayoutOptions3)
+        self.VLayoutOptions2x.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         self.LayoutBelowPlotSelection = QHBoxLayout()
         self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions1)
-        self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2)
+        self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2x)
         self.LayoutBelowPlotSelection.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
         self.LayoutBelowPlotSelection.addWidget(group_box)
 
@@ -654,6 +675,22 @@ class LogInspectorWindow(QMainWindow):
             if mplot.plotter:
                 mplot.plotter.enableXAxisSample(state)
                 self.updatePlot()
+
+    def changeShowGps2Checkbox(self, state):
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableGps2(state)
+                self.updatePlot()
+
+    def changeGpsVelFilterInput(self, text):
+        try:
+            filter_mode = int(text) if text else 0
+            for mplot in self.mplots:
+                if mplot.plotter:
+                    mplot.plotter.setGpsVelFilterMode(filter_mode)
+                    self.updatePlot()
+        except ValueError:
+            pass  # Ignore invalid input
 
     def changeUtcCheckbox(self, state):
         for mplot in self.mplots:

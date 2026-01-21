@@ -207,7 +207,7 @@ TEST(ISFirmwarePackage, package_file_md5) {
     free(buff);
 
     std::istream* fileIn = new std::ifstream(source_filename, std::ios::binary);
-    md5_file_details(fileIn, fileSize, md5);
+    md5_stream_details(*fileIn, fileSize, md5);
     printf("Original MD5 (md5_file_details): %s\n", md5_to_string(md5).c_str());
     delete fileIn;
 
@@ -269,7 +269,7 @@ TEST(ISFirmwarePackage, package_file_md5) {
 
     std::string casted_memory(static_cast<char*>(p), uncomp_size);
     fileIn = (std::istream*)new std::istringstream(casted_memory);
-    md5_file_details(fileIn, fileSize, md5);
+    md5_stream_details(*fileIn, fileSize, md5);
     printf("Archive MD5 (md5_file_details): %s\n", md5_to_string(md5).c_str());
     delete fileIn;
 
@@ -279,7 +279,7 @@ TEST(ISFirmwarePackage, package_file_md5) {
     delete fileIn;
 
     fileIn = new std::ifstream(extracted_filename, std::ios::binary);
-    md5_file_details(fileIn, fileSize, md5);
+    md5_stream_details(*fileIn, fileSize, md5);
     printf("Extracted MD5 (md5_file_details): %s\n", md5_to_string(md5).c_str());
     delete fileIn;
 

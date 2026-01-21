@@ -36,19 +36,21 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
 
     *serialPort = {};
     serialPort->base.pnum = (uint16_t)PortManager::getInstance().getPortCount();
-    serialPort->base.ptype = (pType | PORT_TYPE__UART | PORT_TYPE__COMM | PORT_FLAG__VALID);
+    serialPort->base.ptype = (pType | PORT_TYPE__UART | PORT_TYPE__COMM);
     strncpy(serialPort->portName, pName.c_str(), pName.length());
 
     serialPortPlatformInit(port);
 
-    serialPort->base.portOpen = SerialPortFactory::open_port;
+    // serialPort->base.portOpen = SerialPortFactory::open_port;
     serialPort->base.portValidate = SerialPortFactory::validate_port;
     serialPort->pfnError = SerialPortFactory::onPortError;
 
     serialPort->baudRate = portOptions.defaultBaudRate;
     serialPort->blocking = portOptions.defaultBlocking;
 
-    debug_message("[DBG] Allocated new serial port '%s'\n", portName(port));
+    portValidate(port);
+
+    log_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
     return port;
 }
 
@@ -56,7 +58,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
 
-    debug_message("[DBG] Releasing serial port '%s'\n", ((serial_port_t*)port)->portName);
+    log_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 
@@ -67,7 +69,7 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 #if PLATFORM_IS_WINDOWS
     char targetPath[256];
     return (QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath)) != 0);
-#else   // Linux
+#elif PLATFORM_IS_LINUX
     return validate_port__linux(pType, pName);
 #endif
 }
@@ -83,8 +85,10 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
 }
 
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
+#ifdef DEBUG_LOGGING
     const char* portStr = portName(port);
     const char* safeErrMsg = errMsg ? errMsg : "";
+#endif
 
     static int lastErrorCode = 0;       // the previous error code
     static int repeatCount = 0;         // number of time the same code has repeated
@@ -95,13 +99,10 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
         lastErrorMs = current_timeMs();
 
         // Split the printf into two calls (helps avoid inlining inference)
-        printf("%s :: Error %d : ", portStr, errCode);
-        printf("%s\n", safeErrMsg);
+        log_debug(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
     } else {
-        repeatCount++;
         // Split the printf into two calls (helps avoid inlining inference)
-        printf("%s :: Error %d : ", portStr, errCode);
-        printf("%s (%d count)\n", safeErrMsg, repeatCount);
+        log_debug(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
 
         if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount >= 10)){
             // any error which repeats for more than 30 seconds, and more than 10 times, close & invalidate
@@ -193,7 +194,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
         }
     }
 
-#else   // Linux
+#elif PLATFORM_IS_LINUX
 
     struct dirent **namelist;
     std::vector<std::string> comList8250;
@@ -270,7 +271,7 @@ bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& 
         return false;
 
 #ifdef REMOTE_SOCAT_PORTS
-    if (pName.starts_with("/dev/remote"))
+    if (pName.rfind("/dev/remote", 0) == 0)
         return true;
 #endif
 
