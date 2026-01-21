@@ -196,7 +196,7 @@ TEST(Math_azelToVec3, North)
 TEST(Math_azelToVec3, East)
 {
     ixVector3 vec;
-    azelToVec3(90.0f, 0.0f, vec);
+    azelToVec3(90.0f * C_DEG2RAD_F, 0.0f, vec);
     REQUIRE_SORTA_CLOSE(vec[0], 1.0f);
     REQUIRE_SORTA_CLOSE(vec[1], 0.0f);
     REQUIRE_SORTA_CLOSE(vec[2], 0.0f);
@@ -205,7 +205,7 @@ TEST(Math_azelToVec3, East)
 TEST(Math_azelToVec3, South)
 {
     ixVector3 vec;
-    azelToVec3(180.0f, 0.0f, vec);
+    azelToVec3(180.0f * C_DEG2RAD_F, 0.0f, vec);
     REQUIRE_SORTA_CLOSE(vec[0], 0.0f);
     REQUIRE_SORTA_CLOSE(vec[1], -1.0f);
     REQUIRE_SORTA_CLOSE(vec[2], 0.0f);
@@ -214,7 +214,7 @@ TEST(Math_azelToVec3, South)
 TEST(Math_azelToVec3, West)
 {
     ixVector3 vec;
-    azelToVec3(270.0f, 0.0f, vec);
+    azelToVec3(270.0f * C_DEG2RAD_F, 0.0f, vec);
     REQUIRE_SORTA_CLOSE(vec[0], -1.0f);
     REQUIRE_SORTA_CLOSE(vec[1], 0.0f);
     REQUIRE_SORTA_CLOSE(vec[2], 0.0f);
@@ -223,7 +223,7 @@ TEST(Math_azelToVec3, West)
 TEST(Math_azelToVec3, Up)
 {
     ixVector3 vec;
-    azelToVec3(0.0f, 90.0f, vec);
+    azelToVec3(0.0f, 90.0f * C_DEG2RAD_F, vec);
     REQUIRE_SORTA_CLOSE(vec[0], 0.0f);
     REQUIRE_SORTA_CLOSE(vec[1], 0.0f);
     REQUIRE_SORTA_CLOSE(vec[2], 1.0f);
@@ -232,7 +232,7 @@ TEST(Math_azelToVec3, Up)
 TEST(Math_azelToVec3, Down)
 {
     ixVector3 vec;
-    azelToVec3(0.0f, -90.0f, vec);
+    azelToVec3(0.0f, -90.0f * C_DEG2RAD_F, vec);
     REQUIRE_SORTA_CLOSE(vec[0], 0.0f);
     REQUIRE_SORTA_CLOSE(vec[1], 0.0f);
     REQUIRE_SORTA_CLOSE(vec[2], -1.0f);
@@ -241,7 +241,7 @@ TEST(Math_azelToVec3, Down)
 TEST(Math_azelToVec3, Example)
 {
     ixVector3 vec;
-    azelToVec3(191.0f, 38.0f, vec);
+    azelToVec3(191.0f * C_DEG2RAD_F, 38.0f * C_DEG2RAD_F, vec);
     REQUIRE_SORTA_CLOSE(vec[0], -0.1504f);
     REQUIRE_SORTA_CLOSE(vec[1], -0.7735f);
     REQUIRE_SORTA_CLOSE(vec[2], 0.6157f);
