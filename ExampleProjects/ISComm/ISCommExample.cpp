@@ -14,15 +14,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
-#include "../../src/ISComm.h"
-#include "../../src/serialPort.h"
-#include "../../src/ISPose.h"
-#include "../../src/ISUtilities.h"
-#include "../../src/protocol_nmea.h"
+#include "ISComm.h"
+#include "ISPose.h"
+#include "ISUtilities.h"
+#include "PortFactory.h"
+#include "protocol_nmea.h"
 
-static serial_port_t s_serialPort;
-static int running = 1;
-
+/**
+ * Simple custom handler for the DID_INS_1 message
+ * @param ins the ins_1_t message structure
+ */
 static void handleIns1Message(ins_1_t* ins)
 {
     printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
@@ -31,6 +32,10 @@ static void handleIns1Message(ins_1_t* ins)
         ins->theta[0] * C_RAD2DEG_F, ins->theta[1] * C_RAD2DEG_F, ins->theta[2] * C_RAD2DEG_F);
 }
 
+/**
+ * Simple custom handler for the DID_INS_2 message
+ * @param ins the ins_2_t message structure
+ */
 static void handleIns2Message(ins_2_t* ins)
 {
     ixVector3 theta;
@@ -42,11 +47,19 @@ static void handleIns2Message(ins_2_t* ins)
         theta[0] * C_RAD2DEG_F, theta[1] * C_RAD2DEG_F, theta[2] * C_RAD2DEG_F);
 }
 
+/**
+ * Simple custom handler for the DID_GPS1_POS message
+ * @param ins the gps_pos_t message structure
+ */
 static void handleGpsMessage(gps_pos_t* pos)
 {
     printf("GPS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", pos->timeOfWeekMs, pos->lla[0], pos->lla[1], pos->lla[2]);
 }
 
+/**
+ * Simple custom handler for the DID_IMU message
+ * @param ins the imu_t message structure
+ */
 static void handleImuMessage(imu_t* imu)
 {
     printf("IMU Time: %.3fs, PQR: %5.1f,%5.1f,%5.1f, ACC: %5.1f,%5.1f,%5.1f,\r\n",
@@ -55,46 +68,39 @@ static void handleImuMessage(imu_t* imu)
         imu->I.acc[0], imu->I.acc[1], imu->I.acc[2]);
 }
 
-int set_configuration(port_handle_t port)
-{
-    // Set INS output Euler rotation in radians to 90 degrees roll for mounting
-    float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-    if (is_comm_set_data(port, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation) < 0)
-    {
-        printf("Failed to encode and write set INS rotation\r\n");
-        return -3;
-    }
+/**
+ * This is the callback handler from the ISComm parser; this will be called for each
+ * InertialSense binary message that is successfully parsed.
+ * @param ctx a context pointer that can be associated with the port/ISCOMM instance.
+ *   This is usually used for instance pointers in C++ implementations.
+ * @param data a pointer to the packet/message structure of the parsed message
+ * @param port the port the packet/message was received by
+ * @return
+ */
+int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
+     switch (data->hdr.id)
+     {
+     case DID_INS_1:
+         handleIns1Message((ins_1_t*)data->ptr);
+         break;
 
-    return 0;
+     case DID_INS_2:
+         handleIns2Message((ins_2_t*)data->ptr);
+         break;
+
+     case DID_GPS1_POS:
+         handleGpsMessage((gps_pos_t*)data->ptr);
+         break;
+
+     case DID_IMU:
+         handleImuMessage((imu_t*)data->ptr);
+         break;
+
+         // TODO: add other cases for other data ids that you care about
+     }
+
+     return 0;
 }
-
-
-int save_persistent_messages(port_handle_t port)
-{
-    system_command_t cfg;
-    cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
-    cfg.invCommand = ~cfg.command;
-
-    if (is_comm_set_data(port, DID_SYS_CMD, 0, 0, &cfg) < 0)
-    {
-        printf("Failed to write save persistent message\r\n");
-        return -3;
-    }
-    return 0;
-}
-
-
-int enable_message_broadcasting(port_handle_t port)
-{
-    // Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
-    if (is_comm_get_data(port, DID_INS_1, 0, 0, 10) < 0)
-    {
-        printf("Failed to encode and write get INS message\r\n");
-        return -4;
-    }
-
-}
-
 
 int main(int argc, char* argv[])
 {
@@ -105,100 +111,43 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // // STEP 2: Init comm instance
-    // is_comm_instance_t comm;
-    // uint8_t buffer[2048];
-
-    // // Initialize the comm instance, sets up state tracking, packet parsing, etc.
-    // is_comm_init(&comm, buffer, sizeof(buffer), NULL);
-    
-
-    // STEP 3: Initialize and open serial port
-
+    // STEP 2: Initialize and open serial port
     // Initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
-    //  you will need to handle the serial port creation, open and reads yourself. In this
-    //  case, you do not need to include serialPort.h/.c and serialPortPlatform.h/.c in your project.
+    //  you will need to handle the serial port creation, open and reads yourself.
 
+    SerialPortFactory& spf = SerialPortFactory::getInstance();
+    spf.setBaudRate(921600);
+    port_handle_t port = spf.bindPort(argv[1]);
 
-    port_handle_t serialPort = (port_handle_t)&s_serialPort;
-    serialPortInit(serialPort, 0, 0);
-    serialPortOpen(serialPort, argv[1], 921600, 1);
-    
-
-
-    int error = 0;
-
-    // STEP 4: Stop any message broadcasting
-    is_comm_stop_broadcasts_all_ports(serialPort);
-
-
-#if 0    // STEP 5: Set configuration
-    if ((error = set_configuration(&serialPort, &comm)))
-    {
-        return error;
+    if (port == nullptr) {
+        printf("Failed to allocate port\r\n");
+        return -2;
     }
-#endif
 
-//     // STEP 6: Enable message broadcasting
-//     if ((error = enable_message_broadcasting(&s_serialPort)))
-//     {
-//         return error;
-//     }
+    // Binding a port does not open a port.. so let's open it
+    if (!portIsOpened(port) && (portOpen(port) != PORT_ERROR__NONE)) {
+        printf("Failed to open port\r\n");
+        return -3;
+    }
 
-// #if 0   // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
-//     save_persistent_messages(&serialPort, &comm);
-// #endif
+    // STEP 3: Stop any message broadcasting
+    is_comm_stop_broadcasts_all_ports(port);
 
-//     // STEP 8: Handle received data
-//     uint8_t inByte;
+    // STEP 4: Bind callbacks to the port
+    // Any ISB protocol messages will call into this handler (defined above).
+    is_comm_register_port_isb_handler(port, isbDataHandler);
 
-//     while (running)
-//     {
-//         s_serialPort.portRead(serialPort, &inByte, 1);
-//         // Read one byte with a 20 millisecond timeout
-//     //     while (serialPortReadCharTimeout(&s_serialPort, &inByte, 20) > 0)
-//     //     {
-//     //         // timeMs = current_timeMs();
-//     //         switch (is_comm_parse_byte(&comm, inByte))
-//     //         {
-//     //         case _PTYPE_INERTIAL_SENSE_DATA:
-//     //             switch (comm.rxPkt.hdr.id)
-//     //             {
-//     //             case DID_INS_1:
-//     //                 handleIns1Message((ins_1_t*)comm.rxPkt.data.ptr);
-//     //                 break;
+    // STEP 5: Enable message broadcasting
+    // Request INS1_1 message at 100x startupNavDtd (this should be about 100 x 7ms = 700ms)
+    is_comm_get_data(port, DID_INS_1, 0, 0, 100);
 
-//     //             case DID_INS_2:
-//     //                 handleIns2Message((ins_2_t*)comm.rxPkt.data.ptr);
-//     //                 break;
+    // STEP 6: In a loop, process and parse messages from the port.
+    // This should run a fairly fast rate, (1ms is typical) to avoid data from filling
+    // the COMM buffer, which could lead to data drop.
+    while (portIsOpened(port)) {
+        is_comm_port_parse_messages(port);
+        SLEEP_MS(1);
+    }
 
-//     //             case DID_GPS1_POS:
-//     //                 handleGpsMessage((gps_pos_t*)comm.rxPkt.data.ptr);
-//     //                 break;
-
-//     //             case DID_IMU:
-//     //                 handleImuMessage((imu_t*)comm.rxPkt.data.ptr);
-//     //                 break;
-
-//     //                 // TODO: add other cases for other data ids that you care about
-//     //             }
-//     //             break;
-
-//     //         case _PTYPE_NMEA:
-//     //             switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.dataHdr.size))
-//     //             {
-//     //             case NMEA_MSG_ID_GNGGA:
-//     //                 // Access NMEA message here:
-//     //                 // comm.dataPtr 
-//     //                 // comm.dataHdr.size
-//     //                 break;
-//     //             }
-//     //             break;
-
-//     //         default:
-//     //             break;
-//     //         }
-//     //     }
-    // }
 }
 
