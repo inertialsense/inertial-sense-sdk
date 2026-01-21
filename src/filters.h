@@ -516,12 +516,8 @@ void running_mean_filter_f64(double mean[], float input[], int arraySize, int sa
 */
 void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount);
 
-
-// Look for error in dual IMU data
-void errorCheckImu3(imu3_t *di);
-
 // Condense triple IMUs down to one IMU
-int tripleToSingleImu(imu_t *result, const imu3_t *di);
+void tripleToSingleImu(imu_t *result, const imu3_t *imu3);
 int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude); // for individual IMU exclusion
 void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
 
