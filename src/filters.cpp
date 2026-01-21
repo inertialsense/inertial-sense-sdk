@@ -57,35 +57,47 @@ void init_iir_filter(iif_filter_t *f)
 void iir_filter_u16(iif_filter_t *f, unsigned short input[], float output[])
 {
     unsigned int i,j;
+    const unsigned int n_channels = f->opt.n_channels;
+    const unsigned int input_size = f->opt.input_size;
+    const int beta = f->opt.beta;
+    const int alpha_x = f->opt.alpha_x;
+    const int bit_shift = f->opt.bit_shift;
+    const float iir_to_adc = f->opt.iir_to_adc;
 
-    for (j=0; j<f->opt.input_size; j+=f->opt.n_channels)
+    for (j=0; j<input_size; j+=n_channels)
     {
-        for (i=0; i<f->opt.n_channels; i++)
+        for (i=0; i<n_channels; i++)
         {
-            f->accum[i] = f->opt.beta*f->accum[i] + f->opt.alpha_x*((int)input[j+i]);
-            f->accum[i] >>= f->opt.bit_shift;
+            f->accum[i] = beta*f->accum[i] + alpha_x*((int)input[j+i]);
+            f->accum[i] >>= bit_shift;
         }
     }
 
-    for (i=0; i<f->opt.n_channels; i++)
-        output[i] = f->opt.iir_to_adc*(float)f->accum[i];
+    for (i=0; i<n_channels; i++)
+        output[i] = iir_to_adc*(float)f->accum[i];
 }
 
 void iir_filter_s16(iif_filter_t *f, short input[], float output[])
 {
-    unsigned int i,j;    
+    unsigned int i,j;
+    const unsigned int n_channels = f->opt.n_channels;
+    const unsigned int input_size = f->opt.input_size;
+    const int beta = f->opt.beta;
+    const int alpha_x = f->opt.alpha_x;
+    const int bit_shift = f->opt.bit_shift;
+    const float iir_to_adc = f->opt.iir_to_adc;
     
-    for (j=0; j<f->opt.input_size; j+=f->opt.n_channels)
+    for (j=0; j<input_size; j+=n_channels)
     {
-        for (i=0; i<f->opt.n_channels; i++)
+        for (i=0; i<n_channels; i++)
         {
-            f->accum[i] = f->opt.beta*f->accum[i] + f->opt.alpha_x*((int)input[j+i]);
-            f->accum[i] >>= f->opt.bit_shift;
+            f->accum[i] = beta*f->accum[i] + alpha_x*((int)input[j+i]);
+            f->accum[i] >>= bit_shift;
         }
     }
     
-    for (i=0; i<f->opt.n_channels; i++)
-        output[i] = f->opt.iir_to_adc*(float)f->accum[i];
+    for (i=0; i<n_channels; i++)
+        output[i] = iir_to_adc*(float)f->accum[i];
 }
 
 
@@ -173,25 +185,26 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 
 void tripleToSingleImu(imu_t *result, const imu3_t *imu3)
 {
-    // Triple IMU Averaging - optimized for speed
+    // Triple IMU Averaging - optimized for Cortex M33
     int nPqr[3] = {0};
     int nAcc[3] = {0};
     imus_t mean = {};
+    const uint32_t status = imu3->status;  // Cache status word
 
     for (int d=0; d<NUM_IMU_DEVICES; d++)
     {
         const imus_t *I = &imu3->I[d];
-        uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (d*IMU3_STATUS_IMU_OK_BITSIZE));
-        uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (d*IMU3_STATUS_IMU_OK_BITSIZE));
+        const uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (d*IMU3_STATUS_IMU_OK_BITSIZE));
+        const uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (d*IMU3_STATUS_IMU_OK_BITSIZE));
         
         for (int a=0; a<3; a++)
         {
-            if (imu3->status & (gyrMask << a))
+            if (status & (gyrMask << a))
             {
                 mean.pqr[a] += I->pqr[a];
                 ++nPqr[a];
             }
-            if (imu3->status & (accMask << a))
+            if (status & (accMask << a))
             {
                 mean.acc[a] += I->acc[a];
                 ++nAcc[a];
@@ -438,11 +451,11 @@ float deltaThetaDeltaVelTrapezoidal(pimu_t *output, imu_t *imu, imu_t *imuLast)
 void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, int Nsteps, float dt)
 {
     ixVector3 wb, ab, deltaW, deltaA, thxwb, thxthxwb, thxab, thxthxab;
-    float dti, Kw, mag_theta2, mag_theta4, div;
-    static float Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
-    static float Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
-    static float Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
-    // static float Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
+    float dti, Kw, mag_theta2, mag_theta4;
+    static const float Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
+    static const float Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
+    static const float Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
+    // static const float Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
 
     // for jj = 1: Nint
     //     wb = W0 + (jj - 1) / Nint * (W1 - W0);
@@ -455,7 +468,7 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
     //     dv = dv + (ab + cross(phi, ab)) * dt / Nint;
     // end
 
-    div = 1.0f / (float)Nsteps;
+    const float div = 1.0f / (float)Nsteps;
     sub_Vec3_Vec3(deltaW, imu->pqr, imuLast->pqr);
     sub_Vec3_Vec3(deltaA, imu->acc, imuLast->acc);
     mul_Vec3_X(deltaW, deltaW, div);
@@ -474,9 +487,10 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
         mag_theta2 = DOT_VEC3(theta);
         mag_theta4 = mag_theta2 * mag_theta2;
         Kw = Kw0 + mag_theta2 * Kw1 + mag_theta4 * Kw2; // + mag_theta4 * mag_theta2 * Kw3; <--- the last term is negligibly small
+        const float half = 0.5f;
         for (int i = 0; i < 3; i++) {
-            theta[i] += (wb[i] + 0.5f * thxwb[i] + Kw * thxthxwb[i]) * dti;
-            vel[i] += (ab[i] + thxab[i] + 0.5f * thxthxab[i]) * dti;
+            theta[i] += (wb[i] + half * thxwb[i] + Kw * thxthxwb[i]) * dti;
+            vel[i] += (ab[i] + thxab[i] + half * thxthxab[i]) * dti;
         }
         // Advance wb, ab (minor step)
         add_Vec3_Vec3(wb, wb, deltaW);
