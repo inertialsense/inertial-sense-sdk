@@ -118,6 +118,8 @@ public:
     std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
     std::string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
     std::string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
+    std::string DataToStringGpsSat(const gps_sat_t &gps, const p_data_hdr_t& hdr);
+    static std::string DataToStringGpsSat(const gps_sat_t &gps, bool full=false);
     std::string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
     std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
     std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);

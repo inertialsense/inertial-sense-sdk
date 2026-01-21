@@ -3,6 +3,7 @@
 #include <cmath>
 #include "ISConstants.h"
 #include "ISMatrix.h"
+#include "ISPose.h"
 
 // #include "Eigen/Core"
 // #include "Eigen/Dense"
@@ -36,7 +37,7 @@ ixVector3 random_vectors[25] = {
 
 #define REQUIRE_SUPER_CLOSE(x, y) EXPECT_TRUE(std::fabs(x - y) < 1e-6)
 
-#define REQUIRE_SORTA_CLOSE(x, y) EXPECT_TRUE(std::fabs(x - y) < 1e-3)
+#define REQUIRE_SORTA_CLOSE(x, y) EXPECT_TRUE(std::fabs(x - y) < 1e-4)
 
 #define VEC3_CLOSE(x, y)        REQUIRE_SUPER_CLOSE(x[0], y(0)); \
                                 REQUIRE_SUPER_CLOSE(x[1], y(1)); \
@@ -181,4 +182,67 @@ TEST(Math_Vector3_Operations, math_vector3_oper)
 TEST(Math_ixMatrix3_Operations, math_matrix3_oper)
 {
     testMatrixOperations();
+}
+
+TEST(Math_azelToVec3, North)
+{
+    ixVector3 vec;
+    azelToVec3(0.0f, 0.0f, vec);
+    REQUIRE_SORTA_CLOSE(vec[0], 0.0f);
+    REQUIRE_SORTA_CLOSE(vec[1], 1.0f);
+    REQUIRE_SORTA_CLOSE(vec[2], 0.0f);
+}
+
+TEST(Math_azelToVec3, East)
+{
+    ixVector3 vec;
+    azelToVec3(90.0f, 0.0f, vec);
+    REQUIRE_SORTA_CLOSE(vec[0], 1.0f);
+    REQUIRE_SORTA_CLOSE(vec[1], 0.0f);
+    REQUIRE_SORTA_CLOSE(vec[2], 0.0f);
+}
+
+TEST(Math_azelToVec3, South)
+{
+    ixVector3 vec;
+    azelToVec3(180.0f, 0.0f, vec);
+    REQUIRE_SORTA_CLOSE(vec[0], 0.0f);
+    REQUIRE_SORTA_CLOSE(vec[1], -1.0f);
+    REQUIRE_SORTA_CLOSE(vec[2], 0.0f);
+}
+
+TEST(Math_azelToVec3, West)
+{
+    ixVector3 vec;
+    azelToVec3(270.0f, 0.0f, vec);
+    REQUIRE_SORTA_CLOSE(vec[0], -1.0f);
+    REQUIRE_SORTA_CLOSE(vec[1], 0.0f);
+    REQUIRE_SORTA_CLOSE(vec[2], 0.0f);
+}
+
+TEST(Math_azelToVec3, Up)
+{
+    ixVector3 vec;
+    azelToVec3(0.0f, 90.0f, vec);
+    REQUIRE_SORTA_CLOSE(vec[0], 0.0f);
+    REQUIRE_SORTA_CLOSE(vec[1], 0.0f);
+    REQUIRE_SORTA_CLOSE(vec[2], 1.0f);
+}
+
+TEST(Math_azelToVec3, Down)
+{
+    ixVector3 vec;
+    azelToVec3(0.0f, -90.0f, vec);
+    REQUIRE_SORTA_CLOSE(vec[0], 0.0f);
+    REQUIRE_SORTA_CLOSE(vec[1], 0.0f);
+    REQUIRE_SORTA_CLOSE(vec[2], -1.0f);
+}
+
+TEST(Math_azelToVec3, Example)
+{
+    ixVector3 vec;
+    azelToVec3(191.0f, 38.0f, vec);
+    REQUIRE_SORTA_CLOSE(vec[0], -0.1504f);
+    REQUIRE_SORTA_CLOSE(vec[1], -0.7735f);
+    REQUIRE_SORTA_CLOSE(vec[2], 0.6157f);
 }
