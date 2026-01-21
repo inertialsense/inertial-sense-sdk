@@ -257,25 +257,35 @@ int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
 
 void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[NUM_IMU_DEVICES], bool exclude_acc[NUM_IMU_DEVICES], int iaxis)
 {
+    // Optimized for Cortex M33: precompute masks and reduce branches
     float w = 0.0f, a = 0.0f;
     int cnt_gyro = 0, cnt_acc = 0;
+    const uint32_t status = di->status;
+    
+    // Precompute base masks shifted by axis (done once instead of per-device)
+    const uint32_t gyrBaseMask = IMU3_STATUS_GYR_X_OK << iaxis;
+    const uint32_t accBaseMask = IMU3_STATUS_ACC_X_OK << iaxis;
 
     for (int idev = 0; idev < NUM_IMU_DEVICES; idev++)
     {
-        uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (idev*IMU3_STATUS_IMU_OK_BITSIZE));
-        uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (idev*IMU3_STATUS_IMU_OK_BITSIZE));
+        // Shift the base mask for each device
+        const uint32_t gyrMask = gyrBaseMask << (idev * IMU3_STATUS_IMU_OK_BITSIZE);
+        const uint32_t accMask = accBaseMask << (idev * IMU3_STATUS_IMU_OK_BITSIZE);
 
-        if (!exclude_gyro[idev] && (di->status & (gyrMask << iaxis)))
+        // Combine checks to reduce branching
+        if (!exclude_gyro[idev] && (status & gyrMask))
         {
             w += di->I[idev].pqr[iaxis];
             cnt_gyro++;
         }
-        if (!exclude_acc[idev] && (di->status & (accMask << iaxis)))
+        if (!exclude_acc[idev] && (status & accMask))
         {
             a += di->I[idev].acc[iaxis];
             cnt_acc++;
         }
     }
+    
+    // Update gyro status and value
     if (cnt_gyro > 0)
     { 
         w *= inv_count_upto10(cnt_gyro);
@@ -285,6 +295,8 @@ void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[NU
     {   // No valid data
         result->status &= ~(IMU_STATUS_GYR_X_OK << iaxis);
     }
+    
+    // Update accelerometer status and value
     if (cnt_acc > 0)
     { 
         a *= inv_count_upto10(cnt_acc);
