@@ -517,12 +517,12 @@ void running_mean_filter_f64(double mean[], float input[], int arraySize, int sa
 void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount);
 
 // Condense triple IMUs down to one IMU
-void tripleToSingleImu(imu_t *result, const imuX_t *imuX, const int numDevices);
-int tripleToSingleImuExc(imu_t *result, const imuX_t *di, bool *exclude); // for individual IMU exclusion
-void tripleToSingleImuAxis(imu_t* result, const imuX_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
+void multiToSingleImu(imu_t *result, const imuX_t *imuX, const int numDevices);
+int multiToSingleImuExc(imu_t *result, const imuX_t *di, const int numDevices, bool *exclude); // for individual IMU exclusion
+void multiToSingleImuAxis(imu_t* result, const imuX_t* di, const int numDevices, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
 
 // Duplicate one IMU to triple IMUs
-void singleToTripleImu(imuX_t *result, imu_t *imu);
+void singleToMultiImu(imuX_t *result, imu_t *imu);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
 int preintegratedImuToIMU(imu_t *imu, const pimu_t *imuInt);

@@ -171,7 +171,7 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 }
 
 
-void tripleToSingleImu(imu_t *result, const imuX_t *imuX, const int numDevices)
+void multiToSingleImu(imu_t *result, const imuX_t *imuX, const int numDevices)
 {
     // Triple IMU Averaging - optimized for speed
     int nPqr[3] = {0};
@@ -226,7 +226,7 @@ void tripleToSingleImu(imu_t *result, const imuX_t *imuX, const int numDevices)
 }
 
 
-int tripleToSingleImuExc(imu_t *result, const imuX_t *di, bool *exclude)
+int tripleToSingleImuExc(imu_t *result, const imuX_t *di, const int numDevices, bool *exclude)
 {
     imu_t imu = {};
     imu.time = di->time;
@@ -234,7 +234,7 @@ int tripleToSingleImuExc(imu_t *result, const imuX_t *di, bool *exclude)
 
     int cnt = 0;
 
-    for (int idev = 0; idev < MAX_IMU_DEVICES; idev++)
+    for (int idev = 0; idev < numDevices; idev++)
     {
         if (!exclude[idev])
         {
@@ -255,12 +255,12 @@ int tripleToSingleImuExc(imu_t *result, const imuX_t *di, bool *exclude)
     return cnt;
 }
 
-void tripleToSingleImuAxis(imu_t* result, const imuX_t* di, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
+void multiToSingleImuAxis(imu_t* result, const imuX_t* di, const int numDevices, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
 {
     float w = 0.0f, a = 0.0f;
     int cnt_gyro = 0, cnt_acc = 0;
 
-    for (int idev = 0; idev < MAX_IMU_DEVICES; idev++)
+    for (int idev = 0; idev < numDevices; idev++)
     {
         uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (idev*IMU3_STATUS_IMU_OK_BITSIZE));
         uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (idev*IMU3_STATUS_IMU_OK_BITSIZE));
@@ -302,11 +302,11 @@ void tripleToSingleImuAxis(imu_t* result, const imuX_t* di, bool exclude_gyro[MA
 }
 
 
-void singleToTripleImu(imuX_t *result, imu_t *imu)
+void singleToMultiImu(imuX_t *result, imu_t *imu, const int numDevices)
 {
     result->time = imu->time;
     result->status = imu->status & IMU_STATUS_SATURATION_MASK;
-    for (int d=0; d<MAX_IMU_DEVICES; d++)
+    for (int d=0; d<numDevices; d++)
     {
         cpy_Vec3_Vec3(result->I[d].pqr, imu->I.pqr);
         cpy_Vec3_Vec3(result->I[d].acc, imu->I.acc);
