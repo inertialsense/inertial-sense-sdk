@@ -2781,6 +2781,7 @@ class logPlot:
 
     def loadAccels(self, device, useImus=False):
         return self.loadIMU(device, accelSensor=1, useImus=useImus)
+    
     def loadIMU(self, device, accelSensor, useImus=False):   # 0 = gyro, 1 = accelerometer
         imu1 = None
         imu2 = None
