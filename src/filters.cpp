@@ -226,7 +226,7 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 }
 
 
-int tripleToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude)
+int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude)
 {
     imu_t imu = {};
     imu.time = di->time;
