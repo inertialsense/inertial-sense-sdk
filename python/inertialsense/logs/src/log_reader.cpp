@@ -207,8 +207,8 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
             HANDLE_MSG(DID_MAGNETOMETER, dev_log_->magnetometer);
             HANDLE_MSG(DID_BAROMETER, dev_log_->barometer);
             HANDLE_MSG(DID_GPS1_RTK_POS, dev_log_->gps1RtkPos);
-            HANDLE_MSG(DID_IMUX_UNCAL, dev_log_->imuXUncal);
-            HANDLE_MSG(DID_IMUX_RAW, dev_log_->imuXRaw);
+            HANDLE_MSG(DID_IMUS_UNCAL, dev_log_->imusUncal);
+            HANDLE_MSG(DID_IMUS_RAW, dev_log_->imusRaw);
             HANDLE_MSG(DID_IMU_RAW, dev_log_->imuRaw);
             HANDLE_MSG(DID_PIMU, dev_log_->pimu);
             HANDLE_MSG(DID_IMU, dev_log_->imu);
@@ -304,8 +304,8 @@ void LogReader::forwardData(int device_id)
     forward_message(DID_MAGNETOMETER, dev_log_->magnetometer, device_id);
     forward_message(DID_BAROMETER, dev_log_->barometer, device_id);
     forward_message(DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, device_id);
-    forward_message(DID_IMUX_UNCAL, dev_log_->imuXUncal, device_id);
-    forward_message(DID_IMUX_RAW, dev_log_->imuXRaw, device_id);
+    forward_message(DID_IMUS_UNCAL, dev_log_->imusUncal, device_id);
+    forward_message(DID_IMUS_RAW, dev_log_->imusRaw, device_id);
     forward_message(DID_IMU_RAW, dev_log_->imuRaw, device_id);
     forward_message(DID_PIMU, dev_log_->pimu, device_id);
     forward_message(DID_IMU, dev_log_->imu, device_id);

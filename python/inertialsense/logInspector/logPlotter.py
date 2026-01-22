@@ -1392,9 +1392,9 @@ class logPlot:
                     status = self.getData(d, DID_IMU, 'status')
                     title  = 'IMU Status - '
                 # if not len(time):
-                #     time   = self.getData(d, DID_IMUX_RAW, 'time')
-                #     status = self.getData(d, DID_IMUX_RAW, 'status')
-                #     title  = 'IMUX-RAW Status - '
+                #     time   = self.getData(d, DID_IMUS_RAW, 'time')
+                #     status = self.getData(d, DID_IMUS_RAW, 'status')
+                #     title  = 'IMUS-RAW Status - '
                 if not len(time):
                     return
 
@@ -2776,13 +2776,13 @@ class logPlot:
                 b.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 
-    def loadGyros(self, device, useImuX=False):
-        return self.loadIMU(device, accelSensor=0, useImuX=useImuX)
+    def loadGyros(self, device, useImus=False):
+        return self.loadIMU(device, accelSensor=0, useImus=useImus)
 
-    def loadAccels(self, device, useImuX=False):
-        return self.loadIMU(device, accelSensor=1, useImuX=useImuX)
-
-    def loadIMU(self, device, accelSensor, useImuX=False):   # 0 = gyro, 1 = accelerometer
+    def loadAccels(self, device, useImus=False):
+        return self.loadIMU(device, accelSensor=1, useImus=useImus)
+    
+    def loadIMU(self, device, accelSensor, useImus=False):   # 0 = gyro, 1 = accelerometer
         imu1 = None
         imu2 = None
         imu3 = None
@@ -2799,7 +2799,7 @@ class logPlot:
         else:
             imu1 = np.copy(self.getData(device, DID_PIMU, 'vel'))
 
-        if np.shape(imu1)[0] != 0 and not useImuX:  # DID_PIMU
+        if np.shape(imu1)[0] != 0 and not useImus:  # DID_PIMU
             name = "PIMU"
             # time = self.getData(device, DID_IMU_RAW, 'time')     # to plot raw gyro data
             time = self.getData(device, DID_PIMU, 'time')
@@ -2835,7 +2835,7 @@ class logPlot:
                 time = self.getData(device, DID_IMU, 'time')
                 name = "IMU"
 
-                if len(time) != 0 and not useImuX:  # DID_IMU
+                if len(time) != 0 and not useImus:  # DID_IMU
                     I = self.getData(device, DID_IMU, 'I')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
@@ -2846,12 +2846,12 @@ class logPlot:
                     imuCount = 1
 
                 else:   
-                    time = self.getData(device, DID_IMUX_RAW, 'time')
-                    name = "IMUX"
+                    time = self.getData(device, DID_IMUS_RAW, 'time')
+                    name = "IMUS"
 
-                    if len(time) != 0: # DID_IMUX_RAW 
-                        I = self.getData(device, DID_IMUX_RAW, 'I')
-                        imuStatus = self.getData(device, DID_IMUX_RAW, 'status')
+                    if len(time) != 0: # DID_IMUS_RAW 
+                        I = self.getData(device, DID_IMUS_RAW, 'I')
+                        imuStatus = self.getData(device, DID_IMUS_RAW, 'status')
                         dt = time[1:] - time[:-1]
                         dt = np.append(dt, dt[-1])
                         imu1 = []
@@ -2894,19 +2894,19 @@ class logPlot:
 
         return (name, time, dt, imu1, imu2, imu3, imu4, imu5, imuCount)
 
-    def imuXPQR(self, fig=None, axs=None):
-        self.imuPQR(fig, axs, useImuX=True)
+    def imusPQR(self, fig=None, axs=None):
+        self.imuPQR(fig, axs, useImus=True)
 
-    def imuXAcc(self, fig=None, axs=None):
-        self.imuAcc(fig, axs, useImuX=True)
+    def imusAcc(self, fig=None, axs=None):
+        self.imuAcc(fig, axs, useImus=True)
 
-    def imuXPqrCombined(self, fig=None, axs=None):
-        self.imuPQR(fig, axs, useImuX=True, combineImuX=True)
+    def imusPqrCombined(self, fig=None, axs=None):
+        self.imuPQR(fig, axs, useImus=True, combineImus=True)
 
-    def imuXAccCombined(self, fig=None, axs=None):
-        self.imuAcc(fig, axs, useImuX=True, combineImuX=True)
+    def imusAccCombined(self, fig=None, axs=None):
+        self.imuAcc(fig, axs, useImus=True, combineImus=True)
 
-    def imuPQR(self, fig=None, axs=None, useImuX=False, combineImuX=False):
+    def imuPQR(self, fig=None, axs=None, useImus=False, combineImus=False):
         if fig is None:
             fig = plt.figure()
 
@@ -2921,25 +2921,25 @@ class logPlot:
                 refSnr.append(refTheta / refDt[:,None])
                 refTime.append(refTime_)
 
-        (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(0, useImuX)
+        (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(0, useImus)
         fig.suptitle(name + ' PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-        plotResidual = (sensorCnt==1 or combineImuX) and self.residual 
+        plotResidual = (sensorCnt==1 or combineImus) and self.residual 
         if sensorCnt:
-            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImuX else sensorCnt), sharex=True, squeeze=False)
+            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else sensorCnt), sharex=True, squeeze=False)
         if plotResidual:
             for d in self.active_devs:
-                if self.log.serials[d] == 'Ref INS' or combineImuX:
-                    (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(d, useImuX)
+                if self.log.serials[d] == 'Ref INS' or combineImus:
+                    (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(d, useImus)
                     refTime = time
-                    if combineImuX:
+                    if combineImus:
                         refSnr = (snr0 + snr1 + snr2) / 3
                     else:
                         refSnr = snr0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(d, useImuX)
+            (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(d, useImus)
             if sensorCnt:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
@@ -2950,12 +2950,12 @@ class logPlot:
                                 mean = np.mean(snr[:, i])
                                 std = np.std(snr[:, i])
                                 alable = 'Gyro'
-                                if sensorCnt > 1 and not combineImuX:
+                                if sensorCnt > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                label = str(self.log.serials[d]) + (["-0", "-1", "-2"][n] if combineImuX else "")
-                                if combineImuX:
+                                label = str(self.log.serials[d]) + (["-0", "-1", "-2"][n] if combineImus else "")
+                                if combineImus:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')                                
                                 ax[i, n].plot(time, snr[:, i] * 180.0/np.pi, label=label)
@@ -2979,7 +2979,7 @@ class logPlot:
         if not 'ax' in locals():
             return
 
-        for i in range((1 if combineImuX else sensorCnt)):
+        for i in range((1 if combineImus else sensorCnt)):
             self.legends_add(ax[0][i].legend(ncol=2))
             if plotResidual:
                 self.legends_add(ax[0,1].legend(ncol=2))
@@ -2992,7 +2992,7 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
 
-    def imuAcc(self, fig=None, axs=None, useImuX=False, combineImuX=False):
+    def imuAcc(self, fig=None, axs=None, useImus=False, combineImus=False):
         if fig is None:
             fig = plt.figure()
 
@@ -3006,25 +3006,25 @@ class logPlot:
                 refSnr.append(refVel / refDt[:,None])
                 refTime.append(refTime_)
 
-        (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(0, useImuX)
+        (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(0, useImus)
         fig.suptitle(name + ' Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-        plotResidual = (sensorCnt==1 or combineImuX) and self.residual 
+        plotResidual = (sensorCnt==1 or combineImus) and self.residual 
         if sensorCnt:
-            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImuX else sensorCnt), sharex=True, squeeze=False)
+            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else sensorCnt), sharex=True, squeeze=False)
         if plotResidual:
             for d in self.active_devs:
-                if self.log.serials[d] == 'Ref INS' or combineImuX:
-                    (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(d, useImuX)
+                if self.log.serials[d] == 'Ref INS' or combineImus:
+                    (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(d, useImus)
                     refTime = time
-                    if combineImuX:
+                    if combineImus:
                         refSnr = (snr0 + snr1 + snr2) / 3
                     else:
                         refSnr = snr0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(d, useImuX)
+            (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadAccels(d, useImus)
             if sensorCnt:
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
@@ -3034,12 +3034,12 @@ class logPlot:
                                 mean = np.mean(snr[:, i])
                                 std = np.std(snr[:, i])
                                 alable = 'Accel'
-                                if sensorCnt > 1 and not combineImuX:
+                                if sensorCnt > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                label = str(self.log.serials[d]) + (["-0", "-1", "-2"][n] if combineImuX else "")
-                                if combineImuX:
+                                label = str(self.log.serials[d]) + (["-0", "-1", "-2"][n] if combineImus else "")
+                                if combineImus:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'm/s^2')
                                 ax[i, n].plot(time, snr[:, i], label=label)
@@ -3063,7 +3063,7 @@ class logPlot:
         if not 'ax' in locals():
             return
 
-        for i in range((1 if combineImuX else sensorCnt)):
+        for i in range((1 if combineImus else sensorCnt)):
             self.legends_add(ax[0][i].legend(ncol=2))
             if plotResidual:
                 self.legends_add(ax[0,1].legend(ncol=2))
@@ -3669,7 +3669,7 @@ class logPlot:
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS1 dt', 's')
         self.configureSubplot(ax[2], 'GPS2 dt', 's')
-        self.configureSubplot(ax[3], 'IMUX Delta Timestamp', 's')
+        self.configureSubplot(ax[3], 'IMUS Delta Timestamp', 's')
         self.configureSubplot(ax[4], 'PIMU Delta Timestamp', 's')
         self.configureSubplot(ax[5], 'PIMU Integration Period', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
@@ -3697,7 +3697,7 @@ class logPlot:
             timeImu  = 0
             timePimu = self.getData(d, DID_PIMU, 'time')
             timeIMU  = self.getData(d, DID_IMU, 'time')
-            timeImuX = self.getData(d, DID_IMUX_RAW, 'time')
+            timeImus = self.getData(d, DID_IMUS_RAW, 'time')
             if timePimu.size:
                 deltaTimestamp = timePimu[1:] - timePimu[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
@@ -3707,29 +3707,29 @@ class logPlot:
                 deltaTimestamp = timeIMU[1:] - timeIMU[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromGpsTow(timeIMU[1:] + towOffset)
-            if timeImuX.size:
-                deltaImuXTimestamp = timeImuX[1:] - timeImuX[0:-1]
-                deltaImuXTimestamp = deltaImuXTimestamp / self.d
-                timeImuX = getTimeFromGpsTow(timeImuX[1:] + towOffset)
+            if timeImus.size:
+                deltaImusTimestamp = timeImus[1:] - timeImus[0:-1]
+                deltaImusTimestamp = deltaImusTimestamp / self.d
+                timeImus = getTimeFromGpsTow(timeImus[1:] + towOffset)
 
             if self.xAxisSample:
                 xIns  = np.arange(0, np.shape(dtIns)[0])
                 xGps1 = np.arange(0, np.shape(dtGps1)[0])
                 xGps2 = np.arange(0, np.shape(dtGps2)[0])
-                xImuX = np.arange(0, np.shape(deltaImuXTimestamp)[0])
+                xImus = np.arange(0, np.shape(deltaImusTimestamp)[0])
                 xImu  = np.arange(0, np.shape(deltaTimestamp)[0])
             else:
                 xIns  = timeIns
                 xGps1 = timeGps1
                 xGps2 = timeGps2
-                xImuX = timeImuX
+                xImus = timeImus
                 xImu  = timeImu
 
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
             ax[1].plot(xGps1, dtGps1)
             ax[2].plot(xGps2, dtGps2)
-            if xImuX.size > 0:
-                ax[3].plot(xImuX, deltaImuXTimestamp)
+            if xImus.size > 0:
+                ax[3].plot(xImus, deltaImusTimestamp)
             ax[4].plot(xImu, deltaTimestamp)
             if 'dtPimu' in locals() and dtPimu.size:
                 ax[5].plot(xImu, dtPimu)
@@ -3737,8 +3737,8 @@ class logPlot:
             self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
             self.configureSubplot(ax[1], f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
             self.configureSubplot(ax[2], f'GPS2 dt: {np.mean(dtGps2):.3f}s', 's')
-            if 'deltaImuXTimestamp' in locals() and deltaImuXTimestamp.size > 0:
-                self.configureSubplot(ax[3], f'IMUX Delta Timestamp: {np.mean(deltaImuXTimestamp):.3f}s', 's')
+            if 'deltaImusTimestamp' in locals() and deltaImusTimestamp.size > 0:
+                self.configureSubplot(ax[3], f'IMUS Delta Timestamp: {np.mean(deltaImusTimestamp):.3f}s', 's')
             self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.3f}s', 's')
             if 'dtPimu' in locals() and dtPimu.size:
                 self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.3f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
