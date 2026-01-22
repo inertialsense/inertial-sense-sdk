@@ -173,7 +173,7 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 
 void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 {
-    // Triple IMU Averaging - optimized for speed
+    // Multiple IMU Averaging - optimized for speed
     int nPqr[3] = {0};
     int nAcc[3] = {0};
     imui_t mean = {};
