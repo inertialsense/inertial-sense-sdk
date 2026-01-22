@@ -16,7 +16,7 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
     FIX8::basic_uri uri(connectUrl);
 
     // parse the URL
-    int out = uri.parse();
+    uri.parse();
     std::string host(uri.get_host());
     std::string portStr(uri.get_port());
     int port = std::strtol(portStr.c_str(), NULL, 10);
@@ -81,7 +81,7 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
     msg += "Accept: */*\r\nConnection: close\r\n\r\n";
 
     int bytesSent = portWrite(source, (uint8_t*)msg.data(), (int)msg.length());
-    if (bytesSent != msg.length()) {
+    if ((size_t)bytesSent != msg.length()) {
         log_debug(IS_LOG_PORT, "Error submitting NTRIP connection request to %s", connectUrl.c_str());
         return false;
     }
@@ -119,7 +119,7 @@ bool NtripCorrectionService::updatePosition(const gps_pos_t& gps) {
 }
 
 bool NtripCorrectionService::updatePosition(const std::string nmeaGGA) {
-    return (portWriteAscii(source, nmeaGGA.c_str(), nmeaGGA.size()) == nmeaGGA.size());
+    return ((size_t)portWriteAscii(source, nmeaGGA.c_str(), nmeaGGA.size()) == nmeaGGA.size());
 }
 
 void NtripCorrectionService::setConnectionRequestHeaders(std::map<std::string, std::string> hdrs) {
