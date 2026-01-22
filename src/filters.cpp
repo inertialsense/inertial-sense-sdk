@@ -171,27 +171,27 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 }
 
 
-void multiToSingleImu(imu_t *result, const imuX_t *imuX, const int numDevices)
+void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 {
     // Triple IMU Averaging - optimized for speed
     int nPqr[3] = {0};
     int nAcc[3] = {0};
-    imus_t mean = {};
+    imui_t mean = {};
 
     for (int d=0; d<numDevices; d++)
     {
-        const imus_t *I = &imuX->I[d];
-        uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (d*IMU3_STATUS_IMU_OK_BITSIZE));
-        uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (d*IMU3_STATUS_IMU_OK_BITSIZE));
+        const imui_t *I = &imus->I[d];
+        uint32_t gyrMask = (IMUS_STATUS_GYR_X_OK << (d*IMUS_STATUS_IMU_OK_BITSIZE));
+        uint32_t accMask = (IMUS_STATUS_ACC_X_OK << (d*IMUS_STATUS_IMU_OK_BITSIZE));
         
         for (int a=0; a<3; a++)
         {
-            if (imuX->status & (gyrMask << a))
+            if (imus->status & (gyrMask << a))
             {
                 mean.pqr[a] += I->pqr[a];
                 ++nPqr[a];
             }
-            if (imuX->status & (accMask << a))
+            if (imus->status & (accMask << a))
             {
                 mean.acc[a] += I->acc[a];
                 ++nAcc[a];
@@ -199,7 +199,7 @@ void multiToSingleImu(imu_t *result, const imuX_t *imuX, const int numDevices)
         }
     }
 
-    result->status = imuX->status & IMU3_STATUS_SATURATION_MASK;
+    result->status = imus->status & IMUS_STATUS_SATURATION_MASK;
     for (int a=0; a<3; a++)
     {
         STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
@@ -222,11 +222,11 @@ void multiToSingleImu(imu_t *result, const imuX_t *imuX, const int numDevices)
             result->I.acc[a] = 0.0f;
         }
     }
-    result->time = imuX->time;
+    result->time = imus->time;
 }
 
 
-int tripleToSingleImuExc(imu_t *result, const imuX_t *di, const int numDevices, bool *exclude)
+int tripleToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude)
 {
     imu_t imu = {};
     imu.time = di->time;
@@ -255,15 +255,15 @@ int tripleToSingleImuExc(imu_t *result, const imuX_t *di, const int numDevices, 
     return cnt;
 }
 
-void multiToSingleImuAxis(imu_t* result, const imuX_t* di, const int numDevices, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
+void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
 {
     float w = 0.0f, a = 0.0f;
     int cnt_gyro = 0, cnt_acc = 0;
 
     for (int idev = 0; idev < numDevices; idev++)
     {
-        uint32_t gyrMask = (IMU3_STATUS_GYR_X_OK << (idev*IMU3_STATUS_IMU_OK_BITSIZE));
-        uint32_t accMask = (IMU3_STATUS_ACC_X_OK << (idev*IMU3_STATUS_IMU_OK_BITSIZE));
+        uint32_t gyrMask = (IMUS_STATUS_GYR_X_OK << (idev*IMUS_STATUS_IMU_OK_BITSIZE));
+        uint32_t accMask = (IMUS_STATUS_ACC_X_OK << (idev*IMUS_STATUS_IMU_OK_BITSIZE));
 
         if (!exclude_gyro[idev] && (di->status & (gyrMask << iaxis)))
         {
@@ -298,11 +298,11 @@ void multiToSingleImuAxis(imu_t* result, const imuX_t* di, const int numDevices,
     result->I.pqr[iaxis] = w;
     result->I.acc[iaxis] = a;
     result->time = di->time;
-    // result->status = di->status & IMU3_STATUS_SATURATION_MASK;
+    // result->status = di->status & IMUS_STATUS_SATURATION_MASK;
 }
 
 
-void singleToMultiImu(imuX_t *result, imu_t *imu, const int numDevices)
+void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices)
 {
     result->time = imu->time;
     result->status = imu->status & IMU_STATUS_SATURATION_MASK;
@@ -423,7 +423,7 @@ float deltaThetaDeltaVelTrapezoidal(pimu_t *output, imu_t *imu, imu_t *imuLast)
 }
 
 
-void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, int Nsteps, float dt)
+void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imui_t *imu, imui_t *imuLast, int Nsteps, float dt)
 {
     ixVector3 wb, ab, deltaW, deltaA, thxwb, thxthxwb, thxab, thxthxab;
     float dti, Kw, mag_theta2, mag_theta4, div;

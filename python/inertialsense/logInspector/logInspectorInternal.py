@@ -87,10 +87,10 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('EKF Biases', 'ekfBiases')
 
     def createListSensors(self):
-        self.addListItem('IMUX Gyro', 'imuXPQR')
-        self.addListItem('IMUX Accel', 'imuXAcc')
-        self.addListItem('IMUX Gyro Combined', 'imuXPqrCombined')
-        self.addListItem('IMUX Accel Combined', 'imuXAccCombined')
+        self.addListItem('IMUS Gyro', 'imusPQR')
+        self.addListItem('IMUS Accel', 'imusAcc')
+        self.addListItem('IMUS Gyro Combined', 'imusPqrCombined')
+        self.addListItem('IMUS Accel Combined', 'imusAccCombined')
         super(logInspectorInternal, self).createListSensors()
         self.addListItem('Allan Var. Gyro', 'allanVariancePQR')
         self.addListItem('Allan Var. Accel', 'allanVarianceAcc')

@@ -576,21 +576,21 @@ static void PopulateMapImu(data_set_t data_set[DID_COUNT], uint32_t did, string 
     mapper.AddMember("status", &imu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateMapImuX(data_set_t data_set[DID_COUNT], uint32_t did, string description)
+static void PopulateMapImus(data_set_t data_set[DID_COUNT], uint32_t did, string description)
 {
-    DataMapper<imuX_t> mapper(data_set, did);
-    mapper.AddMember("time", &imuX_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("status", &imuX_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray2("I0.pqr", offsetof(imuX_t, I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 1 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I0.acc", offsetof(imuX_t, I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 1 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("I1.pqr", offsetof(imuX_t, I[1].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 2 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I1.acc", offsetof(imuX_t, I[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 2 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("I2.pqr", offsetof(imuX_t, I[2].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 3 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I2.acc", offsetof(imuX_t, I[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 3 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("I3.pqr", offsetof(imuX_t, I[3].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 4 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I3.acc", offsetof(imuX_t, I[3].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 4 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("I4.pqr", offsetof(imuX_t, I[4].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 5 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I4.acc", offsetof(imuX_t, I[4].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 5 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    DataMapper<imus_t> mapper(data_set, did);
+    mapper.AddMember("time", &imus_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("status", &imus_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddArray2("I0.pqr", offsetof(imus_t, I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 1 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I0.acc", offsetof(imus_t, I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 1 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I1.pqr", offsetof(imus_t, I[1].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 2 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I1.acc", offsetof(imus_t, I[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 2 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I2.pqr", offsetof(imus_t, I[2].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 3 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I2.acc", offsetof(imus_t, I[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 3 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I3.pqr", offsetof(imus_t, I[3].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 4 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I3.acc", offsetof(imus_t, I[3].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 4 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I4.pqr", offsetof(imus_t, I[4].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 5 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I4.acc", offsetof(imus_t, I[4].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 5 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapSysParams(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -850,8 +850,8 @@ static void PopulateMapInfieldCal(data_set_t data_set[DID_COUNT], uint32_t did)
 
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("imu" + std::to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Sampled angular rate.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
-        mapper.AddArray2("imu" + std::to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Sampled linear acceleration.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("imu" + std::to_string(i) + ".pqr", i*sizeof(imui_t) + offsetof(infield_cal_t, imu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Sampled angular rate.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
+        mapper.AddArray2("imu" + std::to_string(i) + ".acc", i*sizeof(imui_t) + offsetof(infield_cal_t, imu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Sampled linear acceleration.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_4);
     }
 
     for (int i=0; i<3; i++)
@@ -1543,12 +1543,12 @@ static void PopulateMapSensorsWTemp(data_set_t data_set[DID_COUNT], uint32_t did
 {
     DataMapper<sensors_w_temp_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2;
-    mapper.AddMember2("imuX.time",   offsetof(sensors_w_temp_t, imu.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember2("imuX.status", offsetof(sensors_w_temp_t, imu.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("imus.time",   offsetof(sensors_w_temp_t, imus.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember2("imus.status", offsetof(sensors_w_temp_t, imus.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
-        mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu.I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Uncalibrated sensor output."}, flags);
+        mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imui_t) + offsetof(sensors_w_temp_t, imus.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
+        mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imui_t) + offsetof(sensors_w_temp_t, imus.I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Uncalibrated sensor output."}, flags);
     }
     mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, 3, {SYM_DEG_C}, {"Uncalibrated sensor output."}, flags);
     for (int i=0; i<MAX_MAG_DEVICES; i++)
@@ -1697,7 +1697,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPS1_RTK_POS",                 // 54
     "DID_ROS_COVARIANCE_POSE_TWIST",    // 55
     "DID_COMMUNICATIONS_LOOPBACK",      // 56
-    "DID_IMUX_UNCAL",                   // 57
+    "DID_IMUS_UNCAL",                   // 57
     "DID_IMU",                          // 58
     "DID_INL2_MAG_OBS_INFO",            // 59
     "DID_GPS_BASE_RAW",                 // 60
@@ -1736,7 +1736,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EVB_DEV_INFO",                 // 93
     "DID_INFIELD_CAL",                  // 94 
     "DID_REFERENCE_IMU",                // 95 
-    "DID_IMUX_RAW",                     // 96 
+    "DID_IMUS_RAW",                     // 96 
     "DID_IMU_RAW",                      // 97 
     "DID_FIRMWARE_UPDATE",              // 98 
     "DID_RUNTIME_PROFILER",             // 99 
@@ -1808,9 +1808,9 @@ cISDataMappings::cISDataMappings()
     // SENSORS
     PopulateMapPimu(m_data_set, DID_PIMU, "Preintegrated IMU.");
     PopulateMapImu(m_data_set, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
-    PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMUX_RAW.");
-    PopulateMapImuX(m_data_set, DID_IMUX_RAW, "5 IMU data calibrated from DID_IMUX_UNCAL.");
-    PopulateMapImuX(m_data_set, DID_IMUX_UNCAL, "5 IMU data directly from sensor (uncalibrated).");
+    PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMUS_RAW.");
+    PopulateMapImus(m_data_set, DID_IMUS_RAW, "5 IMU data calibrated from DID_IMUS_UNCAL.");
+    PopulateMapImus(m_data_set, DID_IMUS_UNCAL, "5 IMU data directly from sensor (uncalibrated).");
 
     PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
     PopulateMapPimu(m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");
