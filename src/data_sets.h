@@ -2680,13 +2680,13 @@ typedef struct PACKED
 {
     /** Vertical axis acceleration (m/s^2) */
     float                   acc[3];
-} imus_acc_t;
+} imu_acc_t;
 
 typedef struct PACKED
 {
-    imus_acc_t              dev[MAX_IMU_DEVICES];
+    imu_acc_t               dev[MAX_IMU_DEVICES];
 
-    float                    yaw;        // (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
+    float                   yaw;        // (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
 } infield_cal_direction_t;
 
 typedef struct PACKED

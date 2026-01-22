@@ -856,14 +856,16 @@ static void PopulateMapInfieldCal(data_set_t data_set[DID_COUNT], uint32_t did)
 
     for (int i=0; i<3; i++)
     {
-        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[0].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[1].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[2].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddMember2("calData" + std::to_string(i) + ".down.yaw",        i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
-        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[0].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[1].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[2].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddMember2("calData" + std::to_string(i) + ".up.yaw",          i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+        for (int d=0; d<MAX_IMU_DEVICES; d++)
+        {
+            mapper.AddArray2( "calData" + std::to_string(i) + ".down.dev[" + std::to_string(d) + "].acc", i*sizeof(infield_cal_vaxis_t) + d*sizeof(imu_acc_t) + offsetof(infield_cal_t, calData[0].down.dev[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        }
+        mapper.AddMember2("calData" + std::to_string(i) + ".down.yaw", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+        for (int d=0; d<MAX_IMU_DEVICES; d++)
+        {
+            mapper.AddArray2( "calData" + std::to_string(i) + ".up.dev[" + std::to_string(d) + "].acc", i*sizeof(infield_cal_vaxis_t) + d*sizeof(imu_acc_t) + offsetof(infield_cal_t, calData[0].up.dev[0].acc),   DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        }
+        mapper.AddMember2("calData" + std::to_string(i) + ".up.yaw", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     }
 }
 
@@ -1550,7 +1552,7 @@ static void PopulateMapSensorsWTemp(data_set_t data_set[DID_COUNT], uint32_t did
         mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imui_t) + offsetof(sensors_w_temp_t, imus.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
         mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imui_t) + offsetof(sensors_w_temp_t, imus.I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Uncalibrated sensor output."}, flags);
     }
-    mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, 3, {SYM_DEG_C}, {"Uncalibrated sensor output."}, flags);
+    mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, MAX_IMU_DEVICES, {SYM_DEG_C}, {"Uncalibrated sensor output."}, flags);
     for (int i=0; i<MAX_MAG_DEVICES; i++)
     {
         mapper.AddArray2("mag" + to_string(i) + ".xyz", i*sizeof(mag_xyz_t) + offsetof(sensors_w_temp_t, mag[0].xyz), DATA_TYPE_F32, 3, {""}, {"Uncalibrated sensor output."}, flags);
