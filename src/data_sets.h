@@ -133,7 +133,7 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
 #define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
-#define DID_IMUS_RAW                    (eDataIDs)96 /** (imus_t) Triple IMU data calibrated from DID_IMUS_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
+#define DID_IMUS_RAW                    (eDataIDs)96 /** (imus_t) Raw multi-IMU data (up to MAX_IMU_DEVICES) calibrated from DID_IMUS_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMUS_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
