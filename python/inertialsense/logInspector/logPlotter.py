@@ -2930,20 +2930,20 @@ class logPlot:
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
-                    (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(d, useImus)
+                    (name, time, dt, snr0, snr1, snr2, snr3, snr4, sensorCnt) = self.loadGyros(d, useImus)
                     refTime = time
                     if combineImus:
-                        refSnr = (snr0 + snr1 + snr2) / 3
+                        refSnr = (snr0 + snr1 + snr2) / sensorCnt
                     else:
                         refSnr = snr0
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (name, time, dt, snr0, snr1, snr2, sensorCnt) = self.loadGyros(d, useImus)
+            (name, time, dt, snr0, snr1, snr2, snr3, snr4, sensorCnt) = self.loadGyros(d, useImus)
             if sensorCnt:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
-                    for n, snr in enumerate([ snr0, snr1, snr2 ]):
+                    for n, snr in enumerate([ snr0, snr1, snr2, snr3, snr4 ]):
                         if n<sensorCnt:
                             if snr is not None and snr.size > 0 and snr.ndim == 2 and snr.shape[1] >= 3:
                                 snr = quatRot(self.log.mount_bias_quat[d,:], snr)
@@ -3081,7 +3081,7 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        (name, time, dt, snr0, snr1, snr2, snrCount) = self.loadGyros(0)
+        (name, time, dt, snr0, snr1, snr2, snr3, snr4, snrCount) = self.loadGyros(0)
         ax = fig.subplots(3, snrCount, sharex=True, squeeze=False)
         fig.suptitle('Allan Variance: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
@@ -3092,17 +3092,17 @@ class logPlot:
         for i in range(3):
             sumARW.append([])
             sumBI.append([])
-            for n, pqr in enumerate([ snr0, snr1, snr2 ]):
+            for n, pqr in enumerate([ snr0, snr1, snr2, snr3, snr4 ]):
                 sumARW[i].append([])
                 sumBI[i].append([])
 
         for d in self.active_devs:
-            (name, time, dt, snr0, snr1, snr2, snrCount) = self.loadGyros(d)
+            (name, time, dt, snr0, snr1, snr2, snr3, snr4, snrCount) = self.loadGyros(d)
 
             if snrCount:
                 dtMean = np.mean(dt)
                 for i in range(3):
-                    for n, pqr in enumerate([ snr0, snr1, snr2 ]):
+                    for n, pqr in enumerate([ snr0, snr1, snr2, snr3, snr4 ]):
                         if np.all(pqr) != None and n<snrCount:
                             # Averaging window tau values from dt to dt*Nsamples/10
                             t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
@@ -3308,12 +3308,12 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        (name, time, dt, snr0, snr1, snr2, snrCount) = self.loadGyros(0)
+        (name, time, dt, snr0, snr1, snr2, snr3, snr4, snrCount) = self.loadGyros(0)
         ax = fig.subplots(3, snrCount, sharex=True, squeeze=False)
         fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
-            (name, time, dt, snr0, snr1, snr2, snrCount) = self.loadGyros(d)
+            (name, time, dt, snr0, snr1, snr2, snr3, snr4, snrCount) = self.loadGyros(d)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if refTime.size > 5:
                 refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
