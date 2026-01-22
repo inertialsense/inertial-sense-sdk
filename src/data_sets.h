@@ -877,7 +877,7 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
 
-    /** IMU3 Status (eImusStatus) */
+    /** IMUs Status (eImusStatus) */
     uint32_t                status;
 
     /** Inertial Measurement Units (IMUs) */
