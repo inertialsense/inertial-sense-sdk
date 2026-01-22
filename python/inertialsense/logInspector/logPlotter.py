@@ -2870,10 +2870,10 @@ class logPlot:
                             imu3.append(I[sample][2][accelSensor])
                         # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 4
                         for sample in range(0, len(I)):
-                            imu4.append(I[sample][4][accelSensor])
+                            imu4.append(I[sample][3][accelSensor])
                         # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 5
                         for sample in range(0, len(I)):
-                            imu5.append(I[sample][5][accelSensor])
+                            imu5.append(I[sample][4][accelSensor])
                         imu1 = np.array(imu1)
                         imu2 = np.array(imu2)
                         imu3 = np.array(imu3)
