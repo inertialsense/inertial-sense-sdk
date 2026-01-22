@@ -43,7 +43,7 @@ using namespace std;
 
 const char s_insStatusDescription[] = "INS Status flags [0,0,MagStatus,SolStatus,     NavMode,GpsMagUsed,Variance,VarianceCoarse]";
 const char s_hdwStatusDescription[] = "Hdw Status flags [Fault,BIT,RxErrCount,ComErr, SenSatHist,SensorSat,GpsSatRx,Motion]";
-const char s_imuStatusDescription[] = "IMU Status flags [Sensor saturation]";
+const char s_imuStatusDescription[] = "IMU Status flags [Sensor valid]";
 
 // Stringify the macro value
 #define STRINGIFY(x) #x
