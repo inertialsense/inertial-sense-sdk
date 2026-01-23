@@ -404,6 +404,13 @@ void LogReader::exitHack(int exit_code)
     exit(exit_code);
 }
 
+void LogReader::cleanup()
+{
+    // Clear the global python parent object to avoid GIL issues during shutdown
+    // This prevents the pybind11 object from trying to call Python methods during finalization
+    g_python_parent = py::object();
+}
+
 // Look at the pybind documentation to understand what is going on here.
 // Don't change anything unless you know what you are doing
 PYBIND11_MODULE(log_reader, m) {
@@ -421,7 +428,8 @@ PYBIND11_MODULE(log_reader, m) {
             .def("getSerialNumbers", &LogReader::getSerialNumbers)
             .def("protocolVersion", &LogReader::protocolVersion)
             .def("ins1ToIns2", &LogReader::ins1ToIns2)
-            .def("exitHack", &LogReader::exitHack);
+            .def("exitHack", &LogReader::exitHack)
+            .def("cleanup", &LogReader::cleanup);
 
 #include "pybindMacros.h"
 }
