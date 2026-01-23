@@ -9,6 +9,7 @@
 using namespace std;
 
 LogReader::LogReader()
+    : python_parent_(py::object())
 {
     dev_log_ = nullptr;
 }
