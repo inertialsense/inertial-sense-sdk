@@ -143,6 +143,7 @@ public:
     pybind11::list protocolVersion();
     void ins1ToIns2(int device_id=0);
     void exitHack(int exit_code=0);
+    void cleanup();
     
     template <typename T>
     void forward_message(eDataIDs did, std::vector<T>& vec, int device_id);
