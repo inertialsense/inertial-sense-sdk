@@ -884,6 +884,8 @@ typedef struct PACKED
     imui_t                  I[MAX_IMU_DEVICES];
 } imus_t;
 
+#define SIZEOF_IMUS_T(numDevices)       (sizeof(double) + sizeof(uint32_t) + (sizeof(imui_t) * (numDevices)))
+#define IMUS_T_NUM_DEVICES(byteSize)    ((byteSize - sizeof(double) - sizeof(uint32_t)) / sizeof(imui_t))
 
 /** (DID_MAGNETOMETER) Magnetometer sensor data */
 typedef struct PACKED

@@ -134,6 +134,8 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
 {
     p_data_buf_t* data = NULL;
+    uint8_t buf[PKT_BUF_SIZE];
+    
     while ((data = logger_.ReadData(devLog)))
     {
         // if (data->hdr.id == DID_DEV_INFO)
@@ -144,7 +146,15 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
 
         switch (data->hdr.id)
         {
+            case DID_IMUS_RAW:
+            case DID_IMUS_UNCAL:
+                numImuDevices_ = IMUS_T_NUM_DEVICES(data->hdr.size);
+                printf("Detected %d IMU devices in log file.\n", numImuDevices_);
+                break;
+        }
 
+        switch (data->hdr.id)
+        {
             // This is a helper macro, simply define the DID you want to forward,
             // as well as the datatype of that DID.  So long as the data type
             // has been defined in the PYBIND11_NUMPY_DTYPE macros below,
@@ -152,7 +162,9 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
             // of the tedium of this type of work
             #define HANDLE_MSG(DID, vec) \
             case DID: \
-                log_message(data->hdr.id, data->buf, vec); \
+                memset(buf, 0, PKT_BUF_SIZE); \
+                memcpy(buf, data->buf, data->hdr.size); \
+                log_message(data->hdr.id, buf, vec); \
                 break;
 
             HANDLE_MSG(DID_DEV_INFO, dev_log_->devInfo);
@@ -365,11 +377,6 @@ bool LogReader::load()
     return true;
 }
 
-pybind11::list LogReader::getSerialNumbers()
-{ 
-    return serialNumbers_; 
-}
-
 pybind11::list LogReader::protocolVersion()
 {
 #pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR0: ", PROTOCOL_VERSION_CHAR0)
@@ -425,11 +432,12 @@ PYBIND11_MODULE(log_reader, m) {
             .def(py::init<>()) // constructor
             .def("init", &LogReader::init)
             .def("load", &LogReader::load)
-            .def("getSerialNumbers", &LogReader::getSerialNumbers)
+            .def("serialNumbers", &LogReader::serialNumbers)
             .def("protocolVersion", &LogReader::protocolVersion)
             .def("ins1ToIns2", &LogReader::ins1ToIns2)
             .def("exitHack", &LogReader::exitHack)
-            .def("cleanup", &LogReader::cleanup);
+            .def("cleanup", &LogReader::cleanup)
+            .def_readonly("numImuDevices", &LogReader::numImuDevices_);
 
 #include "pybindMacros.h"
 }

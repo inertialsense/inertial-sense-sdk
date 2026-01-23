@@ -52,7 +52,7 @@ class Log:
         self.init_vars()
         self.c_log.init(self, directory, serials)
         self.c_log.load()
-        self.serials = self.c_log.getSerialNumbers()
+        self.serials = self.c_log.serialNumbers()
         # self.sanitize()
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
@@ -138,8 +138,8 @@ class Log:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
         return True
 
-    def getSerialNumbers(self):
-        return self.c_log.getSerialNumbers()
+    def serialNumbers(self):
+        return self.c_log.serialNumbers()
 
     def protocolVersion(self):
         return self.c_log.protocolVersion()

@@ -139,7 +139,7 @@ public:
     ~LogReader();
     bool init(py::object python_class, std::string log_directory, pybind11::list serials);
     bool load();
-    pybind11::list getSerialNumbers();
+    pybind11::list serialNumbers(){ return serialNumbers_; }
     pybind11::list protocolVersion();
     void ins1ToIns2(int device_id=0);
     void exitHack(int exit_code=0);
@@ -148,6 +148,8 @@ public:
     // callback-driven operations or further log-processing calls. It is intended
     // to be called once at the end of the LogReader's lifetime.
     void cleanup();
+    
+    int numImuDevices_ = MAX_IMU_DEVICES;
     
     template <typename T>
     void forward_message(eDataIDs did, std::vector<T>& vec, int device_id);
