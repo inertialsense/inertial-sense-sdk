@@ -143,6 +143,10 @@ public:
     pybind11::list protocolVersion();
     void ins1ToIns2(int device_id=0);
     void exitHack(int exit_code=0);
+    // Perform final cleanup of internal resources associated with this LogReader.
+    // After calling this function, the LogReader instance must not be used for any
+    // callback-driven operations or further log-processing calls. It is intended
+    // to be called once at the end of the LogReader's lifetime.
     void cleanup();
     
     template <typename T>
