@@ -2879,7 +2879,7 @@ class logPlot:
                         imu3 = np.array(imu3)
                         imu4 = np.array(imu4)
                         imu5 = np.array(imu5)
-                        imuCount = 5
+                        imuCount = self.log.c_log.numImuDevices
 
         if self.log.serials[device] != 'Ref INS':
             towOffset = self.getGpsTowOffset(device)
@@ -2923,43 +2923,44 @@ class logPlot:
                 refSnr.append(refTheta / refDt[:,None])
                 refTime.append(refTime_)
 
-        (name, time, dt, imus, sensorCnt) = self.loadGyros(0, useImus)
-        snr0, snr1, snr2 = imus[0], imus[1], imus[2]
+        (name, time, dt, sensors) = self.loadGyros(0, useImus)
         fig.suptitle(name + ' PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-        plotResidual = (sensorCnt==1 or combineImus) and self.residual 
-        if sensorCnt:
-            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else sensorCnt), sharex=True, squeeze=False)
+        plotResidual = (len(sensors)==1 or combineImus) and self.residual 
+        if len(sensors):
+            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, squeeze=False)
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
-                    (name, time, dt, imus, sensorCnt) = self.loadGyros(d, useImus)
-                    snr0, snr1, snr2, snr3, snr4 = imus[0], imus[1], imus[2], imus[3], imus[4]
+                    (name, time, dt, sensors) = self.loadGyros(d, useImus)
                     refTime = time
                     if combineImus:
-                        refSnr = (snr0 + snr1 + snr2) / sensorCnt
+                        refSnr = sum(sensors) / len(sensors)
                     else:
-                        refSnr = snr0
+                        refSnr = sensors[0]
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (name, time, dt, imus, sensorCnt) = self.loadGyros(d, useImus)
-            snr0, snr1, snr2, snr3, snr4 = imus[0], imus[1], imus[2], imus[3], imus[4]
-            if sensorCnt:
+            (name, time, dt, sensors) = self.loadGyros(d, useImus)
+            if len(sensors):
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
-                    for n, snr in enumerate([ snr0, snr1, snr2, snr3, snr4 ]):
-                        if n<sensorCnt:
+                    for n, snr in enumerate(sensors):
+                        if n<len(sensors):
                             if snr is not None and snr.size > 0 and snr.ndim == 2 and snr.shape[1] >= 3:
                                 snr = quatRot(self.log.mount_bias_quat[d,:], snr)
                                 mean = np.mean(snr[:, i])
                                 std = np.std(snr[:, i])
                                 alable = 'Gyro'
-                                if sensorCnt > 1 and not combineImus:
+                                if len(sensors) > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                label = str(self.log.serials[d]) + (["-0", "-1", "-2"][n] if combineImus else "")
+                                if combineImus:
+                                    suffix = ["-0", "-1", "-2"] + [f"-{i}" for i in range(3, len(sensors))]
+                                    label = str(self.log.serials[d]) + suffix[n]
+                                else:
+                                    label = str(self.log.serials[d])
                                 if combineImus:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')                                
@@ -2984,7 +2985,7 @@ class logPlot:
         if not 'ax' in locals():
             return
 
-        for i in range((1 if combineImus else sensorCnt)):
+        for i in range((1 if combineImus else len(sensors))):
             self.legends_add(ax[0][i].legend(ncol=2))
             if plotResidual:
                 self.legends_add(ax[0,1].legend(ncol=2))
@@ -3011,41 +3012,43 @@ class logPlot:
                 refSnr.append(refVel / refDt[:,None])
                 refTime.append(refTime_)
 
-        (name, time, dt, sensors, sensorCnt) = self.loadAccels(0, useImus)
+        (name, time, dt, sensors) = self.loadAccels(0, useImus)
         fig.suptitle(name + ' Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-        plotResidual = (sensorCnt==1 or combineImus) and self.residual 
-        if sensorCnt:
-            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else sensorCnt), sharex=True, squeeze=False)
+        plotResidual = (len(sensors)==1 or combineImus) and self.residual 
+        if len(sensors):
+            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, squeeze=False)
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
-                    (name, time, dt, sensors, sensorCnt) = self.loadAccels(d, useImus)
-                    sensors = sensors[:sensorCnt]
+                    (name, time, dt, sensors) = self.loadAccels(d, useImus)
                     refTime = time
                     if combineImus:
-                        refSnr = sum(sensors) / sensorCnt
+                        refSnr = sum(sensors) / len(sensors)
                     else:
                         refSnr = sensors[0]
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (name, time, dt, sensors, sensorCnt) = self.loadAccels(d, useImus)
-            sensors = sensors[:sensorCnt]
-            if sensorCnt:
+            (name, time, dt, sensors) = self.loadAccels(d, useImus)
+            if len(sensors):
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                     for n, sensor in enumerate(sensors):
-                        if n<sensorCnt:
+                        if n<len(sensors):
                             if np.all(sensor) is not None:
                                 mean = np.mean(sensor[:, i])
                                 std = np.std(sensor[:, i])
                                 alable = 'Accel'
-                                if sensorCnt > 1 and not combineImus:
+                                if len(sensors) > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                label = str(self.log.serials[d]) + (["-0", "-1", "-2"][n] if combineImus else "")
+                                if combineImus:
+                                    suffix = ["-0", "-1", "-2"] + [f"-{i}" for i in range(3, len(sensors))]
+                                    label = str(self.log.serials[d]) + suffix[n]
+                                else:
+                                    label = str(self.log.serials[d])
                                 if combineImus:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'm/s^2')
@@ -3070,7 +3073,7 @@ class logPlot:
         if not 'ax' in locals():
             return
 
-        for i in range((1 if combineImus else sensorCnt)):
+        for i in range((1 if combineImus else len(sensors))):
             self.legends_add(ax[0][i].legend(ncol=2))
             if plotResidual:
                 self.legends_add(ax[0,1].legend(ncol=2))
@@ -3088,10 +3091,12 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        (name, time, dt, imus, snrCount) = self.loadGyros(0)
-        snr0, snr1, snr2, snr3, snr4 = imus[0], imus[1], imus[2], imus[3], imus[4]
-        ax = fig.subplots(3, snrCount, sharex=True, squeeze=False)
+        (name, time, dt, sensors) = self.loadGyros(0)
+        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
         fig.suptitle('Allan Variance: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        # Preserve the initial sensors list for later use in subplot configuration and CSV writing
+        initial_sensors = sensors
 
         sumARW = []
         sumBI = []
@@ -3100,19 +3105,18 @@ class logPlot:
         for i in range(3):
             sumARW.append([])
             sumBI.append([])
-            for n, pqr in enumerate([ snr0, snr1, snr2, snr3, snr4 ]):
+            for n, pqr in enumerate(initial_sensors):
                 sumARW[i].append([])
                 sumBI[i].append([])
 
         for d in self.active_devs:
-            (name, time, dt, imus, snrCount) = self.loadGyros(d)
-            snr0, snr1, snr2, snr3, snr4 = imus[0], imus[1], imus[2], imus[3], imus[4]
+            (name, time, dt, sensors) = self.loadGyros(d)
 
-            if snrCount:
+            if len(sensors):
                 dtMean = np.mean(dt)
                 for i in range(3):
-                    for n, pqr in enumerate([ snr0, snr1, snr2, snr3, snr4 ]):
-                        if np.all(pqr) != None and n<snrCount:
+                    for n, pqr in enumerate(sensors):
+                        if np.all(pqr) != None and n<len(sensors):
                             # Averaging window tau values from dt to dt*Nsamples/10
                             t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
                             # Compute the overlapping ADEV
@@ -3147,16 +3151,16 @@ class logPlot:
         # The plots show the mean + 1 std deviation in accordance with IEEE spec (Analog Devices website)
         for i in range(3):
             axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
-            for n, pqr in enumerate([ snr0, snr1, snr2 ]):
-                if np.all(pqr) != None and n<snrCount:
+            for n, pqr in enumerate(initial_sensors):
+                if np.all(pqr) != None and n<len(initial_sensors):
                     alable = 'Gyro'
-                    if snrCount > 1:
+                    if len(initial_sensors) > 1:
                         alable += '%d ' % n
                     else:
                         alable += ' '
                     self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
 
-        for i in range(snrCount):
+        for i in range(len(initial_sensors)):
             for d in range(3):
                 ax[d][i].grid(True, which='both')
                 self.legends_add(ax[d][i].legend(ncol=2))
@@ -3170,8 +3174,8 @@ class logPlot:
             for d in self.active_devs:
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
                 f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
-                for n, pqr in enumerate([ snr0, snr1, snr2 ]):
-                    if np.all(pqr) != None and n<snrCount:
+                for n, pqr in enumerate(initial_sensors):
+                    if np.all(pqr) != None and n<len(initial_sensors):
                         for i in range(3):
                             f.write('%f,' % (sumBI[i][n][d]))
                         for i in range(3):
@@ -3184,8 +3188,8 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        (name, time, dt, sensors, sensorCnt) = self.loadAccels(0)        
-        ax = fig.subplots(3, sensorCnt, sharex=True, squeeze=False)
+        (name, time, dt, sensors) = self.loadAccels(0)        
+        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
         fig.suptitle('Allan Variance: Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         sumRW = []
@@ -3201,11 +3205,11 @@ class logPlot:
 
 
         for d in self.active_devs:
-            (namae, time, dt, sensors, sensorCnt) = self.loadAccels(d)
+            (namae, time, dt, sensors) = self.loadAccels(d)
             dtMean = np.mean(dt)
             for i in range(3):
                 for n, acc in enumerate(sensors):
-                    if np.all(acc) != None and n<sensorCnt:
+                    if np.all(acc) != None and n<len(sensors):
                         if acc.any(None):
                             # Averaging window tau values from dt to dt*Nsamples/10
                             t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
@@ -3228,15 +3232,15 @@ class logPlot:
         for i in range(3):
             axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
             for n, pqr in enumerate(sensors):
-                if np.all(pqr) != None and n<sensorCnt:
+                if np.all(pqr) != None and n<len(sensors):
                     alable = 'Accel'
-                    if sensorCnt > 1:
+                    if len(sensors) > 1:
                         alable += '%d ' % n
                     else:
                         alable += ' '
                     self.configureSubplot(ax[i, n], alable + axislable + r' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'm/s^2')
 
-        for i in range(sensorCnt):
+        for i in range(len(sensors)):
             for d in range(3):
                 ax[d][i].grid(True, which='both')
                 self.legends_add(ax[d][i].legend(ncol=2))
@@ -3251,7 +3255,7 @@ class logPlot:
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
                 f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
                 for n, acc in enumerate(sensors):
-                    if np.all(acc) != None and n<sensorCnt:
+                    if np.all(acc) != None and n<len(sensors):
                         for i in range(3):
                             f.write('%f,' % (sumBI[i][n][d]))
                         for i in range(3):
@@ -3283,7 +3287,7 @@ class logPlot:
             f = np.linspace(0, 0.5*Fs, N // 2)
 
             for n, acc in enumerate(sensors):
-                if np.all(acc) != None and n<sensorCnt:
+                if np.all(acc) != None and n<len(sensors):
                     for i in range(3):
                         sp0 = np.fft.fft(acc[:,i] / 9.8)
                         sp0 = sp0[:N // 2]
@@ -3297,7 +3301,7 @@ class logPlot:
                         axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                         # ax[i].loglog(f, psd[:, i])
                         alable = 'Accel'
-                        if sensorCnt > 1:
+                        if len(sensors) > 1:
                             alable += '%d ' % n
                         else:
                             alable += ' '

@@ -65,8 +65,8 @@ class SuperNPP():
         results_filename =  os.path.normpath(os.path.join(self.params["directory"], self.params["results_directory"] , self.params["name"] + "_results.txt"))
         return results_filename
 
-    def getSerialNumbers(self):
-        return self.log.getSerialNumbers()
+    def serialNumbers(self):
+        return self.log.serialNumbers()
 
     def protocolVersion(self):
         return self.log.protocolVersion()

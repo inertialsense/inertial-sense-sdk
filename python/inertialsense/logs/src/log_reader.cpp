@@ -1,9 +1,10 @@
-#include "convert_ins.h"
 #include "log_reader.h"
 
-#define STRINGIZE(x) #x
-#define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
-#define MESSAGE_VALUE(x) message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " #x " = " STRINGIZE_VALUE_OF(x))
+#include "convert_ins.h"
+
+#define STRINGIZE(x)                #x
+#define STRINGIZE_VALUE_OF(x)       STRINGIZE(x)
+#define MESSAGE_VALUE(x)            message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " #x " = " STRINGIZE_VALUE_OF(x))
 #define CONCAT_MESSAGE(text, value) message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " text " = " STRINGIZE_VALUE_OF(value))
 
 using namespace std;
@@ -14,47 +15,45 @@ LogReader::LogReader()
     dev_log_ = nullptr;
 }
 
-LogReader::~LogReader()
-{
-    if (dev_log_ != nullptr)
-    {
+LogReader::~LogReader() {
+    if (dev_log_ != nullptr) {
         delete dev_log_;
         dev_log_ = nullptr;
     }
 }
 
 template <>
-void LogReader::log_message(int did, uint8_t* msg, std::vector<gps_raw_wrapper_t>& vec)
-{
-  gps_raw_t* raw_msg = (gps_raw_t*)msg;
-  switch (raw_msg->dataType)
-  {
-  case raw_data_type_observation:
-  {
-    std::vector<obsd_t> obs{raw_msg->obsCount};
-    for (int i = 0; i < raw_msg->obsCount; i++)
-      obs.push_back(raw_msg->data.obs[i]);
-    vec[0].obs.push_back(obs);
-    break;
-  }
-  case raw_data_type_ephemeris:
-    vec[0].eph.push_back(raw_msg->data.eph);
-    break;
-  case raw_data_type_glonass_ephemeris:
-    vec[0].gloEph.push_back(raw_msg->data.gloEph);
-    break;
-  case raw_data_type_sbas:
-    vec[0].sbas.push_back(raw_msg->data.sbas);
-    break;
-  case raw_data_type_base_station_antenna_position:
-    vec[0].sta.push_back(raw_msg->data.sta);
-    break;
-  case raw_data_type_ionosphere_model_utc_alm:
-    vec[0].ion.push_back(raw_msg->data.ion);
-    break;
-  default:
-    break;
-  }
+void LogReader::log_message(int did, const uint8_t* msg, uint32_t size, std::vector<gps_raw_wrapper_t>& vec) {
+    gps_raw_t tmp{};
+    memcpy(&tmp, msg, std::min(sizeof(gps_raw_t), (size_t)size));
+
+    switch (tmp.dataType) {
+        case raw_data_type_observation: {
+            int safeCount = std::min((int)tmp.obsCount, (int)MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE);
+            std::vector<obsd_t> obs;
+            obs.reserve(safeCount);
+            for (int i = 0; i < safeCount; i++) obs.push_back(tmp.data.obs[i]);
+            vec[0].obs.push_back(obs);
+            break;
+        }
+        case raw_data_type_ephemeris:
+            vec[0].eph.push_back(tmp.data.eph);
+            break;
+        case raw_data_type_glonass_ephemeris:
+            vec[0].gloEph.push_back(tmp.data.gloEph);
+            break;
+        case raw_data_type_sbas:
+            vec[0].sbas.push_back(tmp.data.sbas);
+            break;
+        case raw_data_type_base_station_antenna_position:
+            vec[0].sta.push_back(tmp.data.sta);
+            break;
+        case raw_data_type_ionosphere_model_utc_alm:
+            vec[0].ion.push_back(tmp.data.ion);
+            break;
+        default:
+            break;
+    }
 }
 
 template <typename T>
@@ -83,18 +82,13 @@ void LogReader::forward_message(eDataIDs did, std::vector<gps_raw_wrapper_t>& ve
     }
 }
 
-bool LogReader::init(py::object python_class, std::string log_directory, py::list serials)
-{
+bool LogReader::init(py::object python_class, std::string log_directory, py::list serials) {
     std::ostringstream oss;
 
     oss << "LogReader Init:\n";
 
     // Print SDK protocol version
-    oss << " - SDK Protocol: "
-        << PROTOCOL_VERSION_CHAR0 << "."
-        << PROTOCOL_VERSION_CHAR1 << "."
-        << PROTOCOL_VERSION_CHAR2 << "."
-        << PROTOCOL_VERSION_CHAR3 << "\n";
+    oss << " - SDK Protocol: " << PROTOCOL_VERSION_CHAR0 << "." << PROTOCOL_VERSION_CHAR1 << "." << PROTOCOL_VERSION_CHAR2 << "." << PROTOCOL_VERSION_CHAR3 << "\n";
 
     std::vector<std::string> stl_serials = serials.cast<std::vector<std::string>>();
     oss << " - Loading from: " << log_directory << "\n";
@@ -109,12 +103,10 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials)) {
         oss << " - Found *.dat log with ";
         loaded = true;
-    } 
-    else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_RAW, stl_serials)) {
+    } else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_RAW, stl_serials)) {
         oss << " - Found *.raw log with ";
         loaded = true;
-    } 
-    else {
+    } else {
         oss << " - Unable to load files\n";
         std::cout << oss.str();
         return false;
@@ -136,29 +128,32 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     return true;
 }
 
-void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
-{
+void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
     p_data_buf_t* data = NULL;
-    while ((data = logger_.ReadData(devLog)))
-    {
+
+    while ((data = logger_.ReadData(devLog))) {
         // if (data->hdr.id == DID_DEV_INFO)
         //     volatile int debug = 0;
 
-        if (data->hdr.size == 0)
-            continue;
+        if (data->hdr.size == 0) continue;
 
-        switch (data->hdr.id)
-        {
-
-            // This is a helper macro, simply define the DID you want to forward,
-            // as well as the datatype of that DID.  So long as the data type
-            // has been defined in the PYBIND11_NUMPY_DTYPE macros below,
-            // then this will work.  It uses templates to abstract a lot
-            // of the tedium of this type of work
-            #define HANDLE_MSG(DID, vec) \
-            case DID: \
-                log_message(data->hdr.id, data->buf, vec); \
+        switch (data->hdr.id) {
+            case DID_IMUS_RAW:
+            case DID_IMUS_UNCAL:
+                numImuDevices_ = IMUS_T_NUM_DEVICES(data->hdr.size);
                 break;
+        }
+
+        switch (data->hdr.id) {
+// This is a helper macro, simply define the DID you want to forward,
+// as well as the datatype of that DID.  So long as the data type
+// has been defined in the PYBIND11_NUMPY_DTYPE macros below,
+// then this will work.  It uses templates to abstract a lot
+// of the tedium of this type of work
+#define HANDLE_MSG(DID, vec)                                       \
+    case DID:                                                      \
+        log_message(data->hdr.id, data->buf, data->hdr.size, vec); \
+        break;
 
             HANDLE_MSG(DID_DEV_INFO, dev_log_->devInfo);
             HANDLE_MSG(DID_SYS_FAULT, dev_log_->sysFault);
@@ -249,15 +244,14 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
             HANDLE_MSG(DID_GPX_BIT, dev_log_->gpxBit);
             HANDLE_MSG(DID_GPX_PORT_MONITOR, dev_log_->gpxPortMonitor);
             default:
-            //            printf("Unhandled IS message DID: %d\n", message_type);
-            break;
+                //            printf("Unhandled IS message DID: %d\n", message_type);
+                break;
         }
     }
 }
 
-void LogReader::forwardData(int device_id)
-{
-    forward_message(DID_DEV_INFO, dev_log_->devInfo , device_id);
+void LogReader::forwardData(int device_id) {
+    forward_message(DID_DEV_INFO, dev_log_->devInfo, device_id);
     forward_message(DID_SYS_FAULT, dev_log_->sysFault, device_id);
     forward_message(DID_INS_1, dev_log_->ins1, device_id);
     forward_message(DID_INS_2, dev_log_->ins2, device_id);
@@ -348,15 +342,12 @@ void LogReader::forwardData(int device_id)
     forward_message(DID_GPX_PORT_MONITOR, dev_log_->gpxPortMonitor, device_id);
 }
 
-bool LogReader::load()
-{
+bool LogReader::load() {
     // printf("LogReader::load() \n");
 
     std::vector<std::shared_ptr<cDeviceLog>> devices = logger_.DeviceLogs();
-    for (int i = 0; i < (int)devices.size(); i++)
-    {
-        if (dev_log_ != nullptr)
-        {
+    for (int i = 0; i < (int)devices.size(); i++) {
+        if (dev_log_ != nullptr) {
             delete dev_log_;
         }
         dev_log_ = new DeviceLog();
@@ -370,13 +361,7 @@ bool LogReader::load()
     return true;
 }
 
-pybind11::list LogReader::getSerialNumbers()
-{ 
-    return serialNumbers_; 
-}
-
-pybind11::list LogReader::protocolVersion()
-{
+pybind11::list LogReader::protocolVersion() {
 #pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR0: ", PROTOCOL_VERSION_CHAR0)
 #pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR1: ", PROTOCOL_VERSION_CHAR1)
 #pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR2: ", PROTOCOL_VERSION_CHAR2)
@@ -390,27 +375,23 @@ pybind11::list LogReader::protocolVersion()
     return py::cast(version);
 }
 
-void LogReader::ins1ToIns2(int device_id)
-{
+void LogReader::ins1ToIns2(int device_id) {
     printf("LogReader::ins1ToIns2() converting ins1 to ins2 for device: %d\n", device_id);
     ins_2_t ins2;
     dev_log_->ins2.clear();
-    for (unsigned int i=0; i<dev_log_->ins1.size(); i++)
-    {
+    for (unsigned int i = 0; i < dev_log_->ins1.size(); i++) {
         convertIns1ToIns2(&(dev_log_->ins1[i]), &ins2);
         dev_log_->ins2.push_back(ins2);
     }
     forward_message(DID_INS_2, dev_log_->ins2, device_id);
 }
 
-void LogReader::exitHack(int exit_code)
-{
+void LogReader::exitHack(int exit_code) {
     // Nasty hack
     exit(exit_code);
 }
 
-void LogReader::cleanup()
-{
+void LogReader::cleanup() {
     // Clear the global python parent object to avoid GIL issues during shutdown
     // This prevents the pybind11 object from trying to call Python methods during finalization
     python_parent_ = py::object();
@@ -426,15 +407,16 @@ PYBIND11_MODULE(log_reader, m) {
     m.doc() = "log_reader";
 
     // Bind the Interface Class
-    py::class_<LogReader>(m, "LogReader") // The object will be named IS_Comm in python
-            .def(py::init<>()) // constructor
-            .def("init", &LogReader::init)
-            .def("load", &LogReader::load)
-            .def("getSerialNumbers", &LogReader::getSerialNumbers)
-            .def("protocolVersion", &LogReader::protocolVersion)
-            .def("ins1ToIns2", &LogReader::ins1ToIns2)
-            .def("exitHack", &LogReader::exitHack)
-            .def("cleanup", &LogReader::cleanup);
+    py::class_<LogReader>(m, "LogReader")  // The object will be named IS_Comm in python
+        .def(py::init<>())                 // constructor
+        .def("init", &LogReader::init)
+        .def("load", &LogReader::load)
+        .def("serialNumbers", &LogReader::serialNumbers)
+        .def("protocolVersion", &LogReader::protocolVersion)
+        .def("ins1ToIns2", &LogReader::ins1ToIns2)
+        .def("exitHack", &LogReader::exitHack)
+        .def("cleanup", &LogReader::cleanup)
+        .def_readonly("numImuDevices", &LogReader::numImuDevices_);
 
 #include "pybindMacros.h"
 }
