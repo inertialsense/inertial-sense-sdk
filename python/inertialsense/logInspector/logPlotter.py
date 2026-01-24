@@ -2956,7 +2956,11 @@ class logPlot:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                label = str(self.log.serials[d]) + (["-0", "-1", "-2"][n] if combineImus else "")
+                                if combineImus:
+                                    suffix = ["-0", "-1", "-2"] + [f"-{i}" for i in range(3, len(sensors))]
+                                    label = str(self.log.serials[d]) + suffix[n]
+                                else:
+                                    label = str(self.log.serials[d])
                                 if combineImus:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')                                
@@ -3040,7 +3044,11 @@ class logPlot:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                label = str(self.log.serials[d]) + (["-0", "-1", "-2"][n] if combineImus else "")
+                                if combineImus:
+                                    suffix = ["-0", "-1", "-2"] + [f"-{i}" for i in range(3, len(sensors))]
+                                    label = str(self.log.serials[d]) + suffix[n]
+                                else:
+                                    label = str(self.log.serials[d])
                                 if combineImus:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'm/s^2')

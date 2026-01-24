@@ -163,6 +163,8 @@ class LogReader {
     cISLogger logger_;
     DeviceLog* dev_log_ = nullptr;
     pybind11::list serialNumbers_;
+    py::object python_parent_;  // Instance-specific python parent reference
+
 };
 
 // Template specialization for gps_raw_wrapper_t (implemented in .cpp)
