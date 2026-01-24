@@ -2925,9 +2925,6 @@ class logPlot:
 
         (name, time, dt, sensors) = self.loadGyros(0, useImus)
         fig.suptitle(name + ' PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        numImuDevices = self.log.c_log.numImuDevices
-        print("Number of IMU devices logged: ", numImuDevices)
-        print("Number of IMU devices: ", len((sensors)))
 
         plotResidual = (len(sensors)==1 or combineImus) and self.residual 
         if len(sensors):
