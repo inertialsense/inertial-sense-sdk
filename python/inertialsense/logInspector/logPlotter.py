@@ -3090,6 +3090,9 @@ class logPlot:
         ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
         fig.suptitle('Allan Variance: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
+        # Preserve the initial sensors list for later use in subplot configuration and CSV writing
+        initial_sensors = sensors
+
         sumARW = []
         sumBI = []
 
@@ -3097,7 +3100,7 @@ class logPlot:
         for i in range(3):
             sumARW.append([])
             sumBI.append([])
-            for n, pqr in enumerate(sensors):
+            for n, pqr in enumerate(initial_sensors):
                 sumARW[i].append([])
                 sumBI[i].append([])
 
@@ -3143,16 +3146,16 @@ class logPlot:
         # The plots show the mean + 1 std deviation in accordance with IEEE spec (Analog Devices website)
         for i in range(3):
             axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
-            for n, pqr in enumerate(sensors):
-                if np.all(pqr) != None and n<len(sensors):
+            for n, pqr in enumerate(initial_sensors):
+                if np.all(pqr) != None and n<len(initial_sensors):
                     alable = 'Gyro'
-                    if len(sensors) > 1:
+                    if len(initial_sensors) > 1:
                         alable += '%d ' % n
                     else:
                         alable += ' '
                     self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
 
-        for i in range(len(sensors)):
+        for i in range(len(initial_sensors)):
             for d in range(3):
                 ax[d][i].grid(True, which='both')
                 self.legends_add(ax[d][i].legend(ncol=2))
@@ -3166,8 +3169,8 @@ class logPlot:
             for d in self.active_devs:
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
                 f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
-                for n, pqr in enumerate(sensors):
-                    if np.all(pqr) != None and n<len(sensors):
+                for n, pqr in enumerate(initial_sensors):
+                    if np.all(pqr) != None and n<len(initial_sensors):
                         for i in range(3):
                             f.write('%f,' % (sumBI[i][n][d]))
                         for i in range(3):
