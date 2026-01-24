@@ -21,6 +21,9 @@ extern "C" {
 
 #include <math.h>
 #include <string.h>
+#ifdef __cplusplus
+#include <type_traits>
+#endif
 
 //_____ M A C R O S ________________________________________________________
 
@@ -49,7 +52,11 @@ extern "C" {
 
 #define UNWRAP_VEC3(v)          {UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
+#ifdef __cplusplus
+#define ZERO_OF(x)                          static_cast<std::remove_reference_t<decltype(x)>>(0)
+#else
 #define ZERO_OF(x)                          _Generic((x), float: 0.0f, default: 0.0)
+#endif
 #define VEC3_ANY_LESS_THAN_X(v,x)           ( ((v[0])<(x)) || ((v[1])<(x)) || ((v[2])<(x)) )
 #define VEC3_ANY_GRTR_THAN_X(v,x)           ( ((v[0])>(x)) || ((v[1])>(x)) || ((v[2])>(x)) )
 #define VEC3_ALL_LESS_THAN_X(v,x)           ( ((v[0])<(x)) && ((v[1])<(x)) && ((v[2])<(x)) )
