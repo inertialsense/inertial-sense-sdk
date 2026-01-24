@@ -11,7 +11,7 @@
 #include "luna_data_sets.h"
 
 // #include "Eigen/Core"
-// #include "Eigen/St    dVector"
+// #include "Eigen/StdVector"
 
 #ifdef WIN32
 #pragma comment(lib, "SHELL32.LIB")
@@ -125,7 +125,7 @@ struct DataLog {
     int id;
     std::vector<T> data;
 
-    DataLog(int _id) { _id = id; }
+    DataLog(int _id) { id = _id; }
 };
 
 class LogReader {
