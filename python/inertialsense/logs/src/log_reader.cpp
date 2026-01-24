@@ -134,7 +134,6 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
             case DID_IMUS_RAW:
             case DID_IMUS_UNCAL:
                 numImuDevices_ = IMUS_T_NUM_DEVICES(data->hdr.size);
-                printf("Detected %d IMU devices in log file.\n", numImuDevices_);
                 break;
         }
 
