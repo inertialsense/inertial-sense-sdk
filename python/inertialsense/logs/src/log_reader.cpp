@@ -413,7 +413,7 @@ void LogReader::cleanup()
 {
     // Clear the global python parent object to avoid GIL issues during shutdown
     // This prevents the pybind11 object from trying to call Python methods during finalization
-    g_python_parent = py::object();
+    python_parent_ = py::object();
 }
 
 // Look at the pybind documentation to understand what is going on here.
