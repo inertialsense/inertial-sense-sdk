@@ -8,9 +8,8 @@
 
 using namespace std;
 
-static py::object g_python_parent;  // Including this inside LogReader class causes problems w/ garbage collection.
-
 LogReader::LogReader()
+    : python_parent_(py::object())
 {
     dev_log_ = nullptr;
 }
@@ -61,21 +60,27 @@ void LogReader::log_message(int did, uint8_t* msg, std::vector<gps_raw_wrapper_t
 template <typename T>
 void LogReader::forward_message(eDataIDs did, std::vector<T>& vec, int device_id)
 {
-    g_python_parent.attr("did_callback")(did, py::array_t<T>(std::vector<ptrdiff_t>{(py::ssize_t)vec.size()}, vec.data()), device_id);
+    if (!python_parent_.is_none())
+    {
+        python_parent_.attr("did_callback")(did, py::array_t<T>(std::vector<ptrdiff_t>{(py::ssize_t)vec.size()}, vec.data()), device_id);
+    }
 }
 
 template <>
 void LogReader::forward_message(eDataIDs did, std::vector<gps_raw_wrapper_t>& vec, int device_id)
 {
-    for (int i = 0; i < (int)vec[0].obs.size(); i++)
+    if (!python_parent_.is_none())
     {
-        g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<obsd_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].obs[i].size()}, vec[0].obs[i].data()), device_id, (int)raw_data_type_observation);
+        for (int i = 0; i < (int)vec[0].obs.size(); i++)
+        {
+            python_parent_.attr("gps_raw_data_callback")(did, py::array_t<obsd_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].obs[i].size()}, vec[0].obs[i].data()), device_id, (int)raw_data_type_observation);
+        }
+        python_parent_.attr("gps_raw_data_callback")(did, py::array_t<eph_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].eph.size()}, vec[0].eph.data()), device_id, (int)raw_data_type_ephemeris);
+        python_parent_.attr("gps_raw_data_callback")(did, py::array_t<geph_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].gloEph.size()}, vec[0].gloEph.data()), device_id, (int)raw_data_type_glonass_ephemeris);
+        python_parent_.attr("gps_raw_data_callback")(did, py::array_t<sbsmsg_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sbas.size()}, vec[0].sbas.data()), device_id, (int)raw_data_type_sbas);
+        python_parent_.attr("gps_raw_data_callback")(did, py::array_t<ion_model_utc_alm_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].ion.size()}, vec[0].ion.data()), device_id, (int)raw_data_type_ionosphere_model_utc_alm);
+        python_parent_.attr("gps_raw_data_callback")(did, py::array_t<sta_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sta.size()}, vec[0].sta.data()), device_id, (int)raw_data_type_base_station_antenna_position);
     }
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<eph_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].eph.size()}, vec[0].eph.data()), device_id, (int)raw_data_type_ephemeris);
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<geph_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].gloEph.size()}, vec[0].gloEph.data()), device_id, (int)raw_data_type_glonass_ephemeris);
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<sbsmsg_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sbas.size()}, vec[0].sbas.data()), device_id, (int)raw_data_type_sbas);
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<ion_model_utc_alm_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].ion.size()}, vec[0].ion.data()), device_id, (int)raw_data_type_ionosphere_model_utc_alm);
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<sta_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sta.size()}, vec[0].sta.data()), device_id, (int)raw_data_type_base_station_antenna_position);
 }
 
 bool LogReader::init(py::object python_class, std::string log_directory, py::list serials)
@@ -125,7 +130,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     oss << "\n";
 
     serialNumbers_ = py::cast(serialNumbers);
-    g_python_parent = python_class;
+    python_parent_ = python_class;
 
     std::cout << oss.str();
     return true;
