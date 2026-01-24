@@ -164,6 +164,7 @@ private:
 
     cISLogger logger_;
     DeviceLog* dev_log_ = nullptr;
-    pybind11::list serialNumbers_; 
+    pybind11::list serialNumbers_;
+    py::object python_parent_;  // Instance-specific python parent reference
 
 };
