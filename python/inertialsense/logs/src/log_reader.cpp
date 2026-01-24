@@ -411,9 +411,9 @@ void LogReader::exitHack(int exit_code)
 
 void LogReader::cleanup()
 {
-    // Clear the instance-specific python parent object to avoid GIL issues during shutdown
+    // Clear the global python parent object to avoid GIL issues during shutdown
     // This prevents the pybind11 object from trying to call Python methods during finalization
-    python_parent_ = py::object();
+    g_python_parent = py::object();
 }
 
 // Look at the pybind documentation to understand what is going on here.
