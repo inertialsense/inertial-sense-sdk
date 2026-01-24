@@ -27,9 +27,10 @@ void LogReader::log_message(int did, const uint8_t* msg, uint32_t size, std::vec
 
     switch (tmp.dataType) {
         case raw_data_type_observation: {
+            int safeCount = std::min((int)tmp.obsCount, MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE);
             std::vector<obsd_t> obs;
-            obs.reserve(std::min((int)tmp.obsCount, MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE));
-            for (int i = 0; i < tmp.obsCount && i < MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE; i++) obs.push_back(tmp.data.obs[i]);
+            obs.reserve(safeCount);
+            for (int i = 0; i < safeCount; i++) obs.push_back(tmp.data.obs[i]);
             vec[0].obs.push_back(obs);
             break;
         }
