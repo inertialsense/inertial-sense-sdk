@@ -156,6 +156,10 @@ class LogReader {
         vec.push_back(tmp);
     }
 
+    // Template specialization for gps_raw_wrapper_t (implemented in .cpp)
+    template <>
+    void log_message(int did, const uint8_t* msg, uint32_t size, std::vector<gps_raw_wrapper_t>& vec);
+
    private:
     void organizeData(std::shared_ptr<cDeviceLog>);
     void forwardData(int device_id);
