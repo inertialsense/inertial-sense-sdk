@@ -13,10 +13,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef MATRIX_H_
 #define MATRIX_H_
 
-#ifdef __cplusplus
-#include <type_traits>
-#endif
-
 #include "ISConstants.h"
 
 #include <math.h>
@@ -919,6 +915,7 @@ static __inline void O1_LPF_Vec3(ixVector3 result, const ixVector3 input, ixVect
 
 #ifdef __cplusplus
 }
+#include <type_traits>
 #endif
 
 #endif /* MATRIX_H_ */
