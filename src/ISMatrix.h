@@ -14,15 +14,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MATRIX_H_
 
 #ifdef __cplusplus
-extern "C" {
+#include <type_traits>
 #endif
 
 #include "ISConstants.h"
 
 #include <math.h>
 #include <string.h>
+
 #ifdef __cplusplus
-#include <type_traits>
+extern "C" {
 #endif
 
 //_____ M A C R O S ________________________________________________________
