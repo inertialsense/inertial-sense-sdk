@@ -21,6 +21,9 @@ extern "C" {
 
 #include <math.h>
 #include <string.h>
+#ifdef __cplusplus
+#include <type_traits>
+#endif
 
 //_____ M A C R O S ________________________________________________________
 
@@ -49,17 +52,22 @@ extern "C" {
 
 #define UNWRAP_VEC3(v)          {UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
-#define VEC3_ANY_LESS_THAN_X(v,x)           ( ((v[0])<(x)) || ((v[1])<(x)) || ((v[2])<(x)) )
-#define VEC3_ANY_GRTR_THAN_X(v,x)           ( ((v[0])>(x)) || ((v[1])>(x)) || ((v[2])>(x)) )
-#define VEC3_ALL_LESS_THAN_X(v,x)           ( ((v[0])<(x)) && ((v[1])<(x)) && ((v[2])<(x)) )
-#define VEC3_ALL_GRTR_THAN_X(v,x)           ( ((v[0])>(x)) && ((v[1])>(x)) && ((v[2])>(x)) )
-#define VEC3_ABS_ALL_LESS_THAN_X(v,x)       ( (fabs(v[0])<(x)) && (fabs(v[1])<(x)) && (fabs(v[2])<(x)) )
-#define VEC3_ABS_ALL_GRTR_THAN_X(v,x)       ( (fabs(v[0])>(x)) && (fabs(v[1])>(x)) && (fabs(v[2])>(x)) )
-#define VEC3_ABSF_ALL_LESS_THAN_X(v,x)      ( (fabsf(v[0])<(x)) && (fabsf(v[1])<(x)) && (fabsf(v[2])<(x)) )
-#define VEC3_ABSF_ALL_GRTR_THAN_X(v,x)      ( (fabsf(v[0])>(x)) && (fabsf(v[1])>(x)) && (fabsf(v[2])>(x)) )
-#define VEC3_ALL_ZERO(v)                    ( ((v[0])==(0.0f)) && ((v[1])==(0.0f)) && ((v[2])==(0.0f)) )
-#define VEC3_ANY_ZERO(v)                    ( ((v[0])==(0.0f)) || ((v[1])==(0.0f)) || ((v[2])==(0.0f)) )
-#define VEC3_ANY_NOT_ZERO(v)                ( ((v[0])!=(0.0f)) || ((v[1])!=(0.0f)) || ((v[2])!=(0.0f)) )
+#ifdef __cplusplus
+#define ZERO_OF(x)                          static_cast<std::remove_reference_t<decltype(x)>>(0)
+#else
+#define ZERO_OF(x)                          _Generic((x), float: 0.0f, double: 0.0, long double: 0.0l, default: 0)
+#endif
+#define VEC3_ANY_LESS_THAN_X(v,x)           ( (((v)[0])<(x)) || (((v)[1])<(x)) || (((v)[2])<(x)) )
+#define VEC3_ANY_GRTR_THAN_X(v,x)           ( (((v)[0])>(x)) || (((v)[1])>(x)) || (((v)[2])>(x)) )
+#define VEC3_ALL_LESS_THAN_X(v,x)           ( (((v)[0])<(x)) && (((v)[1])<(x)) && (((v)[2])<(x)) )
+#define VEC3_ALL_GRTR_THAN_X(v,x)           ( (((v)[0])>(x)) && (((v)[1])>(x)) && (((v)[2])>(x)) )
+#define VEC3_ABS_ALL_LESS_THAN_X(v,x)       ( (fabs((v)[0])<(x)) && (fabs((v)[1])<(x)) && (fabs((v)[2])<(x)) )
+#define VEC3_ABS_ALL_GRTR_THAN_X(v,x)       ( (fabs((v)[0])>(x)) && (fabs((v)[1])>(x)) && (fabs((v)[2])>(x)) )
+#define VEC3_ABSF_ALL_LESS_THAN_X(v,x)      ( (fabsf((v)[0])<(x)) && (fabsf((v)[1])<(x)) && (fabsf((v)[2])<(x)) )
+#define VEC3_ABSF_ALL_GRTR_THAN_X(v,x)      ( (fabsf((v)[0])>(x)) && (fabsf((v)[1])>(x)) && (fabsf((v)[2])>(x)) )
+#define VEC3_ALL_ZERO(v)                    ( (((v)[0]) == ZERO_OF((v)[0])) && (((v)[1]) == ZERO_OF((v)[1])) && (((v)[2]) == ZERO_OF((v)[2])) )
+#define VEC3_ANY_ZERO(v)                    ( (((v)[0]) == ZERO_OF((v)[0])) || (((v)[1]) == ZERO_OF((v)[1])) || (((v)[2]) == ZERO_OF((v)[2])) )
+#define VEC3_ANY_NOT_ZERO(v)                ( (((v)[0]) != ZERO_OF((v)[0])) || (((v)[1]) != ZERO_OF((v)[1])) || (((v)[2]) != ZERO_OF((v)[2])) )
 
 #define INT3_ANY_NOT_ZERO(v)                ( ((v[0])!=(0)) || ((v[1])!=(0)) || ((v[2])!=(0)) )
 
