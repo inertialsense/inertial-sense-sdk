@@ -917,6 +917,8 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
 
     CloseSerialPorts();
 
+    SerialPortFactory::getInstance().setBaudRate(m_baudRate);
+
     if (portPattern == NULLPTR || validateBaudRate(baudRate) != 0)
     {
         return false;
