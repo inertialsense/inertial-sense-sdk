@@ -13,9 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// Removed top-level extern "C" to avoid putting C++ headers into C linkage
 
 #undef _MATH_DEFINES_DEFINED
 #define _MATH_DEFINES_DEFINED
@@ -140,8 +138,14 @@ extern "C" {
 
 
 #if PLATFORM_IS_EMBEDDED
+    #ifdef __cplusplus
+    extern "C" {
+    #endif
     extern void* pvPortMalloc(size_t xWantedSize);
     extern void vPortFree(void* pv);
+    #ifdef __cplusplus
+    }
+    #endif
     #define MALLOC(m) pvPortMalloc(m)
     #define REALLOC(m, size) 0 // not supported
     #define FREE(m) vPortFree(m)
@@ -927,8 +931,6 @@ typedef struct
 
 POP_PACK
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+// Removed closing extern "C" block to match removal of opening block at top
 
-#endif // CONSTANTS_H_ 
+#endif // CONSTANTS_H_
