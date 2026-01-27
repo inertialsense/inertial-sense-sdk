@@ -903,7 +903,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                     p++;
                 }
             }
-            IS_SET_LOG_LEVEL(g_commandLineOptions.verboseLevel);
+            IS_SET_LOG_LEVEL((eLogLevel)g_commandLineOptions.verboseLevel);
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
