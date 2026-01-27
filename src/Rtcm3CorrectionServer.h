@@ -84,11 +84,6 @@ public:
 
     int getActiveClients() { return ports.size(); }
 
-    int getListenPort() { return factoryOptions.listenerPort; }
-    std::string getListenAddress() { return std::string( inet_ntoa(factoryOptions.listeningAddr.sin_addr) ); }
-
-    int getActiveClients() { return ports.size(); }
-
 private:
     uint64_t        srcDeviceId = 0;             // selected device UID (derived from hdwId + SN)
     device_handle_t sourceDevice = nullptr;
