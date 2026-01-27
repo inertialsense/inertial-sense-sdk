@@ -259,6 +259,9 @@ class LogInspectorWindow(QMainWindow):
         self.log = None
 
     def closeEvent(self, event):
+        # Clean up the C++ LogReader's Python parent reference to avoid GIL issues
+        if self.log is not None:
+            self.log.c_log.cleanup()
         self.updateRootPathHist()
         self.saveConfigToFile()
         super().closeEvent(event)  
@@ -349,9 +352,10 @@ class LogInspectorWindow(QMainWindow):
         self.config['directory'] = directory
         print("\nLoading files from " + directory)
         self.setStatus("Loading...")
-        # if self.log is None:
         self.log = Log()
         self.log.load(directory)
+        # Clean up the C++ LogReader's Python parent reference to avoid GIL issues
+        self.log.c_log.cleanup()
         print("done loading")
         for mplot in self.mplots:
             mplot.plotter.setLog(self.log)

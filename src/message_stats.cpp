@@ -60,6 +60,7 @@ string MessageStats::descriptionRtcm3(int id)
         case 1002:    return string("Extended L1-Only GPS RTK Observables");
         case 1004:    return string("Extended L1&L2 GPS RTK Observables");
         case 1005:    return string("Stationary RTK reference station ARP");
+        case 1006:    return string("Reference RTK Station Antenna Position (ECEF)");
         case 1007:    return string("Antenna Descriptor");
         case 1010:    return string("Extended L1-Only GLONASS RTK Observables");
         case 1012:    return string("Extended L1&L2 GLONASS RTK Observables");

@@ -11,19 +11,28 @@
 #define IS_SDK_TCP_SERVER_PORT_FACTORY_H
 
 #include <csignal>
+#include <cerrno>
+#include <iostream>
 #include <set>
 
-#ifdef _WIN32
-#include <winsock2.h>
+#include "ISConstants.h"
+
+#if PLATFORM_IS_WINDOWS
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
     #pragma comment(lib, "ws2_32.lib") // Link with ws2_32.lib
-#else
+#elif !PLATFORM_IS_EMBEDDED
+    #include <unistd.h>
+    #include <fcntl.h>
+    #include <netdb.h>
+
     #include <arpa/inet.h>
     #include <sys/socket.h> // For AF_INET
 #endif
 
 #include "core/msg_logger.h"
-#include "PortFactory.h"
 #include "core/tcpPort.h"
+#include "PortFactory.h"
 
 /**
  * Unlike other PortFactories, TcpServerPortFactory is NOT a singleton - since there may be multiple instances which listen an unique ports, etc.
@@ -54,7 +63,19 @@ public:
 
         configure(listenPort, listenAddr, maxConnections, portDefaultBlocking, backgroundListener);
     };
+
+    /**
+     * NOTE that TcpServerPortFactory is an outlier in PortFactory, because it retains knowledge of AT LEAST its own listening port
+     * But generally it also knows about all client sockets which are connected to it.  If the factory is destroyed, to be good stewards
+     * of the heap, we should clean up and destroy all the associated ports.
+     */
     ~TcpServerPortFactory() {
+        stopListening();
+        shutdownAllClients();
+        for (auto& se : knownSockets) {
+            releasePort(se.port);
+        }
+        knownSockets.clear();
 #ifdef PLATFORM_IS_WINDOWS
         WSACleanup();
 #endif
@@ -110,6 +131,10 @@ protected:
     bool startListening();
 
     void stopListening();
+
+    int getClientConnectionCount() {
+        return knownSockets.size();
+    }
 
     std::vector<socket_entry_t> getClientSockets() {
         std::vector<socket_entry_t> out;

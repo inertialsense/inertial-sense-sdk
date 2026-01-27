@@ -22,7 +22,9 @@
 #define IS_LOG_DEVICE_FACTORY      ((IS_LOG_PORT_MANAGER << 1))
 #define IS_LOG_DEVICE_MANAGER      ((IS_LOG_DEVICE_FACTORY << 1))
 #define IS_LOG_CHRONO_STATS        ((IS_LOG_DEVICE_MANAGER << 1))
-#define IS_LOG_FACILITY_MDNS       ((IS_LOG_CHRONO_STATS << 1))
+#define IS_LOG_FN_PROFILER         ((IS_LOG_CHRONO_STATS << 1))
+#define IS_LOG_FACILITY_MDNS       ((IS_LOG_FN_PROFILER << 1))
+#define IS_LOG_CORRECTIONS         ((IS_LOG_FACILITY_MDNS << 1))
 #define IS_LOG_FACILITY_ALL        0xFFFF
 
 typedef enum {

@@ -13,9 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// Removed top-level extern "C" to avoid putting C++ headers into C linkage
 
 #undef _MATH_DEFINES_DEFINED
 #define _MATH_DEFINES_DEFINED
@@ -40,6 +38,8 @@ extern "C" {
     #ifndef _CRT_SECURE_NO_DEPRECATE
     #define _CRT_SECURE_NO_DEPRECATE
     #endif
+
+    #define NOMINMAX    // Windows.h is included somewhere and this prevents it from defining 'max' as a macro which breaks uri.hpp
 
     // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
     #include <winsock2.h>
@@ -138,8 +138,14 @@ extern "C" {
 
 
 #if PLATFORM_IS_EMBEDDED
+    #ifdef __cplusplus
+    extern "C" {
+    #endif
     extern void* pvPortMalloc(size_t xWantedSize);
     extern void vPortFree(void* pv);
+    #ifdef __cplusplus
+    }
+    #endif
     #define MALLOC(m) pvPortMalloc(m)
     #define REALLOC(m, size) 0 // not supported
     #define FREE(m) vPortFree(m)
@@ -346,9 +352,73 @@ extern "C" {
 #define _ROUNDUP(numToRound, multiple) ((((numToRound) + (multiple) - 1) / (multiple)) * (multiple))
 #endif
 
-#ifndef _ISNAN
-#define _ISNAN(a) ((a)!=(a))
+static inline float inv_count_upto10(int n)
+{
+    // n expected 0..10
+    // Table lookup is usually cheaper than float divide on Cortex-M.
+    // If there's any chance n could exceed 10, clamp or fall back.
+    static const float inv[11] = {
+        0.0f,               // 0 -> output 0
+        1.0f,               // 1
+        0.5f,               // 2
+        0.333333343f,       // 3
+        0.25f,              // 4
+        0.2f,               // 5
+        0.166666667f,       // 6
+        0.142857143f,       // 7
+        0.125f,             // 8
+        0.111111111f,       // 9
+        0.1f                // 10
+    };
+
+    return inv[n];
+}
+
+static inline int is_nan_f(float v)
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v != v);
+#else
+    return isnan(v);
 #endif
+}
+
+static inline int is_nan(double v)
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v != v);
+#else
+    return isnan(v);
+#endif
+}
+
+static inline int is_inf_f(float v)
+{
+    return isinf(v);
+}
+
+static inline int is_inf(double v)
+{
+    return isinf(v);
+}
+
+static inline int is_finite_f(float v)  // Not NaN or INF
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
+#else
+    return isfinite(v);
+#endif
+}
+
+static inline int is_finite(double v)   // Not NaN or INF
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
+#else
+    return isfinite(v);
+#endif
+}
 
 #ifndef _ARRAY_BYTE_COUNT
 #define _ARRAY_BYTE_COUNT(a) sizeof(a)
@@ -822,7 +892,7 @@ extern "C" {
 #define C_GPS_LEAP_SECONDS              18
 
 typedef float       f_t;
-typedef int            i_t;
+typedef int         i_t;
 typedef double      ixVector2d[2];        // V = | 0 1 |
 typedef f_t         ixVector2[2];         // V = | 0 1 |
 typedef double      ixVector3d[3];        // V = | 0 1 2 |
@@ -861,8 +931,6 @@ typedef struct
 
 POP_PACK
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+// Removed closing extern "C" block to match removal of opening block at top
 
-#endif // CONSTANTS_H_ 
+#endif // CONSTANTS_H_

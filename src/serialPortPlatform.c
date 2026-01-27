@@ -154,7 +154,7 @@ static int configure_serial_port(int fd, int baudRate)
 
     if (tcgetattr(fd, &tty) != 0) 
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: tcgetattr() : error getting tty settings: %s (%d)\n", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "config_serial_port():: tcgetattr() : error getting tty settings: %s (%d)", strerror(errno), errno);
         return -1;
     }
 
@@ -162,7 +162,7 @@ static int configure_serial_port(int fd, int baudRate)
     baudRate = validate_baud_rate(baudRate);    
     if (baudRate == 0)
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: error invalid baudrate: %s (%d)\n", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "config_serial_port():: error invalid baudrate: %s (%d)", strerror(errno), errno);
         return -1;
     }
 
@@ -175,7 +175,7 @@ static int configure_serial_port(int fd, int baudRate)
     // Now baud rate can be set higher than 230400
     if (ioctl(fd, IOSSIOSPEED, &baudRate) == -1)
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: error %d from ioctl IOSSIOSPEED\n", errno);
+        log_error(IS_LOG_PORT, "config_serial_port():: error %d from ioctl IOSSIOSPEED", errno);
     }
 
 #else
@@ -223,7 +223,7 @@ static int configure_serial_port(int fd, int baudRate)
     // Save tty settings, also checking for error
     if (tcsetattr(fd, TCSANOW, &tty) != 0) 
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: tcsetattr() : error setting tty settings: %s (%d)\n", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "config_serial_port():: tcsetattr() : error setting tty settings: %s (%d)", strerror(errno), errno);
         return -1;
     } else {
         // TODO: Note that tcsetattr() returns success if any of the requested changes could be successfully carried out.
@@ -234,22 +234,22 @@ static int configure_serial_port(int fd, int baudRate)
         struct termios new_tty = {};
         if (tcgetattr(fd, &new_tty) != 0)
         {
-            log_error(IS_LOG_PORT, "config_serial_port():: tcgetattr() : error confirming successful setting of tty settings: %s (%d)\n", strerror(errno), errno);
+            log_error(IS_LOG_PORT, "config_serial_port():: tcgetattr() : error confirming successful setting of tty settings: %s (%d)", strerror(errno), errno);
             return -1;
         }
         if (memcmp(&new_tty, &tty, sizeof(struct termios)) != 0) {
             // what was set didn't match what was just read back (confirmation failed);
             // Let's figure out what didn't get set correctly...
-            log_error(IS_LOG_PORT, "config_serial_port():: termios confirmation failed to match expected values:\n");
-            if (new_tty.c_iflag != tty.c_iflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_iflag mismatch: expected: %x, actual: %x\n", tty.c_iflag, new_tty.c_iflag); }
-            if (new_tty.c_oflag != tty.c_oflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_oflag mismatch: expected: %x, actual: %x\n", tty.c_oflag, new_tty.c_oflag); }
-            if (new_tty.c_cflag != tty.c_cflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_cflag mismatch: expected: %x, actual: %x\n", tty.c_cflag, new_tty.c_cflag); }
-            if (new_tty.c_lflag != tty.c_lflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_lflag mismatch: expected: %x, actual: %x\n", tty.c_lflag, new_tty.c_lflag); }
+            log_error(IS_LOG_PORT, "config_serial_port():: termios confirmation failed to match expected values:");
+            if (new_tty.c_iflag != tty.c_iflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_iflag mismatch: expected: %x, actual: %x", tty.c_iflag, new_tty.c_iflag); }
+            if (new_tty.c_oflag != tty.c_oflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_oflag mismatch: expected: %x, actual: %x", tty.c_oflag, new_tty.c_oflag); }
+            if (new_tty.c_cflag != tty.c_cflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_cflag mismatch: expected: %x, actual: %x", tty.c_cflag, new_tty.c_cflag); }
+            if (new_tty.c_lflag != tty.c_lflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_lflag mismatch: expected: %x, actual: %x", tty.c_lflag, new_tty.c_lflag); }
             for (int i = 0; i < 32; i++)
-                if (new_tty.c_cc[i] != tty.c_cc[i]) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d\n", i, tty.c_cc[i], new_tty.c_cc[i]); }
+                if (new_tty.c_cc[i] != tty.c_cc[i]) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d", i, tty.c_cc[i], new_tty.c_cc[i]); }
 
             #if PLATFORM_IS_LINUX
-            if (new_tty.c_line != tty.c_line) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_line mismatch: expected: %d, actual: %d\n", tty.c_line, new_tty.c_line); }
+            if (new_tty.c_line != tty.c_line) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_line mismatch: expected: %d, actual: %d", tty.c_line, new_tty.c_line); }
             #endif
 
             return -1;
@@ -266,14 +266,14 @@ int set_nonblocking(int fd)
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) 
     {
-        log_error(IS_LOG_PORT, "set_nonblocking():: error fcntl F_GETFL : %s (%d)\n", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "set_nonblocking():: error fcntl F_GETFL : %s (%d)", strerror(errno), errno);
         return -1;
     }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) == -1) 
     {
-        log_error(IS_LOG_PORT, "set_nonblocking():: error setting O_NONBLOCK : %s (%d)\n", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "set_nonblocking():: error setting O_NONBLOCK : %s (%d)", strerror(errno), errno);
         return -1;
     }
 
@@ -417,7 +417,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     int fd = open(portName, O_RDWR | O_NOCTTY | O_NONBLOCK);     // enable read/write and disable flow control
     if (fd < 0)
     {
-        log_error(IS_LOG_PORT, "[%s]serialPortOpenPlatform():: Error opening port: %s (%d)\n", portName, strerror(errno), errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error opening port: %s (%d)", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
         return 0;
@@ -425,7 +425,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
     if (configure_serial_port(fd, baudRate) != 0)
     {
-        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)\n", port, strerror(errno), errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)", port, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
         return 0;
@@ -879,7 +879,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // Other errors
             serialPort->errorCode = errno;
             serialPort->error = strerror(serialPort->errorCode);
-            log_error(IS_LOG_PORT, "[%s] serialPortWritePlatform():: Error writing: %s (%d)\n", serialPort->portName, strerror(errno), errno);
+            log_error(IS_LOG_PORT, "[%s] serialPortWritePlatform():: Error writing: %s (%d)", serialPort->portName, strerror(errno), errno);
             return -1;
         }
         bytes_written += result;

@@ -34,7 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISDevice.h"
-#include "ISBootloaderThread.h"
+#include "message_stats.h"
 #include "ISFirmwareUpdater.h"
 
 #include "PortManager.h"
@@ -272,9 +272,7 @@ public:
         for (auto device : deviceManager)
         {
             if (device->isConnected())
-            {
                 portFlush(device->port);
-            }
         }
     }
 
@@ -296,6 +294,7 @@ public:
     */
     void EnableDeviceValidation(bool enable) { m_enableDeviceValidation = enable; }
 
+#if !PLATFORM_IS_EMBEDDED
     /**
     * Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
     * Please ensure that all other connections to the com port are closed before calling this function.
@@ -313,7 +312,8 @@ public:
             fwUpdate::pfnProgressCb verifyProgress = NULLPTR,
             fwUpdate::pfnStatusCb infoProgress = NULLPTR,
             void (*waitAction)() = NULLPTR
-);
+    );
+#endif
 
     /**
      * V2 firmware update mechanism. Calling this function will attempt to initiate a firmware update with the targeted device(s), with callbacks to provide information about the status
@@ -550,9 +550,6 @@ public:
      */
     bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
 
-    std::string ServerMessageStatsSummary() { return MessageStats::summary(m_serverMessageStats); }
-    std::string ClientMessageStatsSummary() { return MessageStats::summary(m_clientMessageStats); }
-
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
 
@@ -589,17 +586,7 @@ public:
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
-
-    CorrectionService& getCorrectionService() { return m_correctionService; }
-    Rtcm3CorrectionServer& getCorrectionsServer() { return m_correctionsServer; }
-
 protected:
-//    bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
-//    void OnClientConnecting(cISTcpServer* server) OVERRIDE;
-//    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
-//    void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
-//    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
-
     static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
 
 private:
@@ -624,20 +611,9 @@ private:
     int m_clientBufferBytesToSend;
     bool m_forwardGpgga;
 
-    CorrectionService m_correctionService;
-    Rtcm3CorrectionServer m_correctionsServer;
-
-    // cISTcpServer m_tcpServer;
-    // uint64_t m_clientServerByteCount;
-    // int m_clientConnectionsCurrent = 0;
-    // int m_clientConnectionsTotal = 0;
-    MessageStats::mul_stats_t m_clientMessageStats = {};
-
     int m_baudRate = IS_BAUDRATE_DEFAULT;
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
-
-    MessageStats::mul_stats_t m_serverMessageStats = {};
 
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 

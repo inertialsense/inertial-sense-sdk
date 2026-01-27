@@ -122,7 +122,6 @@ public:
      */
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
 
-
 private:
     typedef enum {
         IS_DEV_TYPE_NONE = 0,
@@ -209,7 +208,7 @@ private:
     is_operation_result begin_program_for_current_page(int startOffset, int endOffset);
     int is_isb_read_line(ByteBufferStream& byteStream, char line[HEX_BUFFER_SIZE]);
     is_operation_result upload_hex_page(unsigned char* hexData, uint8_t byteCount);
-    is_operation_result upload_hex(unsigned char* hexData, uint16_t charCount);
+    is_operation_result upload_hex(unsigned char* hexData, uint16_t charCount, bool& dataSent);
     is_operation_result fill_current_page();
     is_operation_result process_hex_stream(ByteBufferStream& byteStream);
 

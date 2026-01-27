@@ -13,12 +13,13 @@
     #endif
 #endif
 
-#include <util.h>
 #include <chrono>
 #include <regex>
+
+#include "protocol/mdns.hpp"
+#include "util/uri.hpp"
+#include "util/util.h"
 #include "PortManager.h"
-#include "mdns.hpp"
-#include "uri.hpp"
 #include "ISmDnsPortFactory.h"
 
 /**
@@ -127,7 +128,7 @@ bool ISmDnsPortFactory::releasePort(port_handle_t port) {
  */
 bool ISmDnsPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     tick(); // Tick everything to ensure we have the latest data
-    if (pType != PORT_TYPE__TCP) return false;
+    if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) return false;
     if (!validatePortName(pName)) return false;
 
     std::pair<std::string, ISmDnsPortFactory::port_t> portPair = parsePortName(pName);
@@ -190,10 +191,14 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
     std::string uriPort {uri.get_port()};
     std::string uriPath {uri.get_path()};
 
-    if (!utils::validDomainName(uriHost)) throw std::invalid_argument("Address of URI is not a valid DNS Domain Name");
-    if (!(uriHost.ends_with(".local") || uriHost.ends_with(".local."))) throw std::invalid_argument("Address of URI doesn't end in .local");
+    if (!utils::validDomainName(uriHost))
+        throw std::invalid_argument("Address of URI is not a valid DNS Domain Name");
 
-    if (!uriHost.ends_with(".")) {
+    if (!(  ((uriHost.size() > 6) && (uriHost.substr(uriHost.size() - 6) == ".local")) ||
+            ((uriHost.size() > 7) && (uriHost.substr(uriHost.size() - 7) == ".local.")) ))
+        throw std::invalid_argument("Address of URI doesn't end in .local");
+
+    if (!(uriHost.size() > 1 && uriHost[uriHost.size() - 1] == '.')) {
         uriHost.append(".");
     }
 
@@ -239,7 +244,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
             devid = makedev(major, minor);
         } else if (std::regex_match(uriPath, match, regexp2)) {
             for (std::pair<uint16_t, std::string> majorPair: majorAtlas) {
-                if (match[1].str().starts_with( majorPair.second)) {
+                if (match[1].str().rfind(majorPair.second, 0) == 0) {
                     major = majorPair.first;
                     try {
                         minor = std::stoi(match[1].str().substr(majorPair.second.size()));
@@ -290,7 +295,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::getCanonica
     port_t returnPort = {};
 
     std::unordered_map<std::string, std::vector<port_t>> portsMap = getPorts();
-    if (!portsMap.contains(hostname)) throw std::domain_error("Hostname not found");
+    if (portsMap.find(hostname) == portsMap.end()) throw std::domain_error("Hostname not found");
     std::vector<port_t> ports = portsMap[hostname];
     if (partialPort.port != 0 && partialPort.devid != 0) {
         for (port_t fullPort : ports) {
@@ -327,7 +332,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::getCanonica
  */
 std::string ISmDnsPortFactory::getPortURL(const std::pair<std::string, ISmDnsPortFactory::port_t>& port) {
     std::string returnValue = "is-mdns://";
-    if (port.first.ends_with(".")) {
+    if (port.first.size() > 1 && port.first[port.first.size() - 1] == '.') {
         returnValue = returnValue.append(port.first.substr(0, port.first.length()-1));
     } else {
         returnValue = returnValue.append(port.first);
@@ -341,7 +346,7 @@ std::string ISmDnsPortFactory::getPortURL(const std::pair<std::string, ISmDnsPor
     if (port.second.devid != 0) {
         returnValue = returnValue.append("/");
         const uint16_t majorVal = major(port.second.devid);
-        if (majorAtlas.contains(majorVal)) {
+        if (majorAtlas.find(majorVal) != majorAtlas.end()) {
             returnValue = returnValue.append("dev/");
             returnValue = returnValue.append(majorAtlas.at(majorVal));
         } else {
@@ -373,7 +378,7 @@ std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPo
         if (SRVrecords.empty()) {continue;}
         std::string hostname = SRVrecords[0].data.srv.name;
         std::vector<mdns::mdns_record_cpp_t> TXTrecords = mdns::getRecords([PTRrecord](const mdns::mdns_record_cpp_t& record) -> bool {
-            if (record.type == MDNS_RECORDTYPE_TXT && record.name == PTRrecord.data.ptr.name && record.data.txt.key.length() > 5 && record.data.txt.key.starts_with("ports")) {
+            if (record.type == MDNS_RECORDTYPE_TXT && record.name == PTRrecord.data.ptr.name && record.data.txt.key.length() > 5 && record.data.txt.key.rfind("ports", 0) == 0) {
                 std::string txtPortsIndex = record.data.txt.key.substr(5);
                 if (std::find_if(txtPortsIndex.begin(), txtPortsIndex.end(), [](unsigned char c) { return !std::isdigit(c); }) == txtPortsIndex.end()) {
                     return record.data.txt.value.size() % 6 == 0 && record.data.txt.value.size() > 0; // Length of value must be divide by 6 with no remainder and be greater then 0
