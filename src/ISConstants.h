@@ -138,8 +138,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 #if PLATFORM_IS_EMBEDDED
+    #ifdef __cplusplus
+    extern "C" {
+    #endif
     extern void* pvPortMalloc(size_t xWantedSize);
     extern void vPortFree(void* pv);
+    #ifdef __cplusplus
+    }
+    #endif
     #define MALLOC(m) pvPortMalloc(m)
     #define REALLOC(m, size) 0 // not supported
     #define FREE(m) vPortFree(m)
