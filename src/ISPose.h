@@ -13,12 +13,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef POSE_H_
 #define POSE_H_
 
+#include "ISMatrix.h"
+#include "ISConstants.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "ISMatrix.h"
-#include "ISConstants.h"
 
 #if (!defined (__cplusplus) && (!defined (inline)))
 #       define inline __inline          // allow "inline" keyword to work in windows w/ c program
