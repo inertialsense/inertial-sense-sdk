@@ -3425,7 +3425,7 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENCODER_SOURCE           = (int)0x00000400,  // 0 = uINS, 1 = EVB
 };
 
-typedef enum
+enum eGroundVehicleMode
 {
     GV_MODE_STANDBY                         = 0,
     GV_MODE_LEARNING                        = 1,
@@ -3434,7 +3434,7 @@ typedef enum
     GV_CMD_LEARNING_CLEAR_AND_START         = 4,    // Zero transform and reset sigma values
     GV_CMD_LEARNING_STOP_AND_SAVE           = 5,
     GV_CMD_LEARNING_CANCEL                  = 6,
- } eGroundVehicleMode;
+};
 
 typedef struct PACKED
 {
@@ -3468,7 +3468,7 @@ typedef struct PACKED
 
 } wheel_config_t;
 
-typedef enum
+enum eGroundVehicleStatus
 {
     /** Kinematic learing is solving for the translation from IMU to wheel (wheel_config). */ 
     GV_STATUS_LEARNING_ENABLED      = 0x00000001,
@@ -3485,7 +3485,7 @@ typedef enum
     /** Vehicle kinematic learning data (wheel_config_t) is missing. */ 
     GV_STATUS_LEARNING_NEEDED       = 0x08000000,
 
-} eGroundVehicleStatus;
+};
 
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
 typedef struct PACKED
@@ -3504,7 +3504,7 @@ typedef struct PACKED
 
 } ground_vehicle_t;
 
-typedef enum
+enum eDynamicModel
 {
     DYNAMIC_MODEL_PORTABLE          = 0,
     DYNAMIC_MODEL_FIXED_POSITION    = 1,
@@ -3518,13 +3518,13 @@ typedef enum
     DYNAMIC_MODEL_WRIST             = 9,
     DYNAMIC_MODEL_INDOOR            = 10,
     DYNAMIC_MODEL_COUNT    // Must be last
-} eDynamicModel;
+};
 
-typedef enum
+enum eImuShockOptions
 {
     IMU_SHOCK_OPTIONS_ENABLE            = 0x01,
-    IMU_SHOCK_OPTIONS_FAST_RECOVERY     = 0x02
-} eImuShockOptions;
+    IMU_SHOCK_OPTIONS_FAST_RECOVERY     = 0x02      // Useful when shocks occur during rotation, as it minimizes post-shock error and reduces the time required for attitude convergence. However, this option increases the amount of attitude error induced by shock events and is therefore discouraged when the platform is stationary and not rotating during shocks.
+};
 
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
@@ -4319,7 +4319,7 @@ typedef struct
 } ion_model_utc_alm_t;
 
 /** RTK solution status */
-typedef enum
+enum eRtkSolStatus
 {
     /** No status */
     rtk_solution_status_none = 0,
@@ -4338,7 +4338,7 @@ typedef enum
 
     /** RTK SINGLE */
     rtk_solution_status_single = 5
-} eRtkSolStatus;
+};
 
 /** (DID_GPS1_RTK_POS_REL, DID_GPS2_RTK_CMP_REL) - RTK and Dual GNSS heading base to rover relative info. */
 typedef struct PACKED
@@ -4488,7 +4488,7 @@ typedef struct PACKED
 } gps_rtk_misc_t;
 
 /** RAW data types for DID_GPS_BASE_RAW and DID_GPS2_RAW */
-typedef enum
+enum eRawDataType
 {
     /** obsd_t */
     raw_data_type_observation = 1,
@@ -4510,7 +4510,7 @@ typedef enum
     
     /** gps_rtk_misc_t */
     raw_data_type_rtk_solution = 123
-} eRawDataType;
+};
 
 
 
@@ -4611,7 +4611,7 @@ typedef struct
     char message[256];
 } diag_msg_t;
 
-typedef enum
+enum eSurveyInStatus
 {
     // default state
     SURVEY_IN_STATE_OFF                     = 0,
@@ -4628,7 +4628,7 @@ typedef enum
     SURVEY_IN_STATE_RUNNING_FIX             = 10,
     SURVEY_IN_STATE_SAVE_POS                = 19,
     SURVEY_IN_STATE_DONE                    = 20
-} eSurveyInStatus;
+};
 
 /**
 * Survey in status
@@ -4889,7 +4889,7 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
 
-typedef enum {
+enum eGNSSDriverRstCause {
     cxdRst_PowerOn          = 0,
     cxdRst_Watchdog         = 1,
     cxdRst_ErrOpCode        = 2,
@@ -4904,9 +4904,9 @@ typedef enum {
     cxdRst_flashUpdate      = 11,
     cxdRst_RTKEphMissing    = 12,
     cxdRst_Max
-} eGNSSDriverRstCause;
+};
 
-typedef enum {
+enum eGPXGnssRunState {
     kReset = 0,
     kInit,
     kRun,
@@ -4917,7 +4917,7 @@ typedef enum {
     kShutdown,
     kReinit,
     kHardReset,
-} eGPXGnssRunState;
+};
 
 #define GNSS_RECEIVER_COUNT 2
 
@@ -4981,7 +4981,7 @@ typedef struct
 //  EVB
 //////////////////////////////////////////////////////////////////////////
 
-typedef enum
+enum eEvbStatus
 {
     /** SD card logger: card ready */
     EVB_STATUS_SD_CARD_READY                = 0x00000001,
@@ -5022,7 +5022,7 @@ typedef enum
     /** Manufacturing unlocked */
     EVB_STATUS_MANF_UNLOCKED                = 0x02000000,
 
-} eEvbStatus;
+};
 
 /** EVB-2 communications ports. */
 enum eEvb2CommPorts
@@ -5118,7 +5118,7 @@ typedef struct
 
 } evb_server_t;
 
-typedef enum
+enum eEvbFlashCfgBits
 {
     EVB_CFG_BITS_WIFI_SELECT_MASK               = 0x00000003,
     EVB_CFG_BITS_WIFI_SELECT_OFFSET             = 0,
@@ -5127,7 +5127,7 @@ typedef enum
     EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,   // Don't enable PPD stream when log button is pressed
     EVB_CFG_BITS_ENABLE_ADC4                    = 0x00000200,
     EVB_CFG_BITS_ENABLE_ADC10                   = 0x00000400,
-} eEvbFlashCfgBits;
+};
 
 #define NUM_WIFI_PRESETS     3
 #define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {(bits)&=EVB_CFG_BITS_WIFI_SELECT_MASK; (bits)|=(((idx)<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
@@ -5488,7 +5488,7 @@ typedef struct
 } system_fault_t;
 
 /** RTOS tasks */
-typedef enum
+enum eImxRtosTask
 {
     /** Task 0: Sample    */
     IMX_TASK_SAMPLE = 0,
@@ -5510,10 +5510,10 @@ typedef enum
 
     /** Number of RTOS tasks */
     IMX_RTOS_NUM_TASKS                 // Keep last
-} eImxRtosTask;
+};
 
 /** RTOS tasks */
-typedef enum
+enum eGpxRtosTask
 {
     /** Task 0: Communication */
     GPX_TASK_COMM = 0,
@@ -5529,10 +5529,10 @@ typedef enum
 
     /** Number of RTOS tasks */
     GPX_RTOS_NUM_TASKS,                 // Keep last
-} eGpxRtosTask;
+};
 
 /** EVB RTOS tasks */
-typedef enum
+enum eEvbRtosTask
 {
     /** Task 0: Communications */
     EVB_TASK_COMMUNICATIONS,
@@ -5557,10 +5557,10 @@ typedef enum
 
     /** Number of RTOS tasks */
     EVB_RTOS_NUM_TASKS                  // Keep last
-} eEvbRtosTask;
+};
 
 /** RTOS tasks */
-typedef enum
+enum eRtosTask
 {
 #if defined(GPX_1)
     TASK_IDLE           = GPX_TASK_IDLE,
@@ -5571,7 +5571,7 @@ typedef enum
     TASK_TIMER          = IMX_TASK_TIMER,
     RTOS_NUM_TASKS      = IMX_RTOS_NUM_TASKS
 #endif
-} eRtosTask;
+};
 
 /** Max task name length - do not change */
 #define MAX_TASK_NAME_LEN 12
@@ -5764,7 +5764,7 @@ enum
 };
 
 /** Valid baud rates for Inertial Sense hardware */
-typedef enum
+enum can_baudrate_t
 {
     CAN_BAUDRATE_20_KBPS   =   20,
     CAN_BAUDRATE_33_KBPS   =   33,
@@ -5778,7 +5778,7 @@ typedef enum
     CAN_BAUDRATE_1000_KBPS = 1000,
 
     CAN_BAUDRATE_COUNT = 10
-} can_baudrate_t;
+};
 
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED
