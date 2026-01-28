@@ -73,7 +73,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     // serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
     bool handshake = (hasHandshake || (handshake_sync(m_port) == IS_OP_OK));
 
-    logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Checking for ISB compatibility.");
+    logStatus(IS_LOG_LEVEL_MORE_INFO, "(ISB) Checking for ISB compatibility.");
 
     SLEEP_MS(100);
 
@@ -95,7 +95,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
         if (retry*READ_DELAY_MS > 5000)
         {   // No response
-            logStatus(IS_LOG_LEVEL_MORE_DEBUG, "(ISB) Error: check_is_compatible response missing.");    // FIXME: This is an error (kind of), but it actually happens all the time; let's hide it for now
+            logStatus(IS_LOG_LEVEL_WARN, "(ISB) Error: check_is_compatible response missing.");    // FIXME: This is an error (kind of), but it actually happens all the time; let's hide it for now
             // TODO? m_info_callback(this, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", portName(m_port));
             return IS_IMAGE_SIGN_NONE;
         }
@@ -110,7 +110,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     m_isb_props.is_evb = false;
     m_sn = 0;
 
-    logStatus(IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
+    logStatus(IS_LOG_LEVEL_MORE_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {   // Valid packet found
