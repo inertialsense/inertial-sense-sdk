@@ -133,7 +133,7 @@ protected:
     void stopListening();
 
     int getClientConnectionCount() {
-        return knownSockets.size();
+        return (int)knownSockets.size();
     }
 
     std::vector<socket_entry_t> getClientSockets() {
