@@ -179,7 +179,7 @@ public:
     /**
      * @return the number of opened "downstream" ports to which RTCM3 messages will be forwarded
      */
-    int getActiveConnections() { return ports.size(); }
+    int getActiveConnections() { return (int)ports.size(); }
 
     /**
      * If a pointer to a MessageStats object is provided that object will be updated as correction messages are parsed.
