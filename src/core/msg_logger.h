@@ -141,7 +141,7 @@ static inline void static_log_buffer(const char* prefix, const unsigned char* bu
             for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
                 fprintf(log_file, " %02x", buff_ofs[i]);
 
-            int pad = (strlen(prefix) + (bytes_per_line * 3) + 3) - (i * 3);    // note that 'i' is carried from the above for-loop
+            int pad = ((int)strlen(prefix) + (bytes_per_line * 3) + 3) - (i * 3);    // note that 'i' is carried from the above for-loop
             fprintf(log_file, "%*c", pad, ' ');
 
             for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
