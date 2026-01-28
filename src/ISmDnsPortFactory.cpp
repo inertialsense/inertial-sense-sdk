@@ -128,7 +128,7 @@ bool ISmDnsPortFactory::releasePort(port_handle_t port) {
  */
 bool ISmDnsPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     tick(); // Tick everything to ensure we have the latest data
-    if (pType != PORT_TYPE__TCP) return false;
+    if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) return false;
     if (!validatePortName(pName)) return false;
 
     std::pair<std::string, ISmDnsPortFactory::port_t> portPair = parsePortName(pName);
