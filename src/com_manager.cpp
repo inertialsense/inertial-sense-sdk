@@ -65,7 +65,12 @@ int ISComManager::init(
     defaultCbs = {};
     defaultCbs.context = this;
     defaultCbs.all = comManagerProcessRxPacket;
-    defaultCbs.isbData = pstRxFncCb;
+    /**
+     * Disable ISComm's ISB data handler to prevent duplicate processing.
+     * ISB data is handled in comManagerProcessRxPacket() instead, allowing
+     * comManager to populate registered data structures before invoking user callbacks.
+     */
+    defaultCbs.isbData = NULL;
 
     if (!portSet) portSet = new std::set<port_handle_t>();
     ports = portSet;
