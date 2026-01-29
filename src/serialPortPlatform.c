@@ -417,7 +417,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     int fd = open(portName, O_RDWR | O_NOCTTY | O_NONBLOCK);     // enable read/write and disable flow control
     if (fd < 0)
     {
-        log_error(IS_LOG_PORT, "[%s]serialPortOpenPlatform():: Error opening port: %s (%d)", portName, strerror(errno), errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error opening port: %s (%d)", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
         return 0;
