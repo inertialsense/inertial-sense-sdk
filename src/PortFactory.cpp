@@ -12,7 +12,7 @@
 #include <vector>
 #include <regex>
 
-#define REMOTE_SOCAT_PORTS      // only does anything on linux
+// #define REMOTE_SOCAT_PORTS      // only does anything on linux
 
 #ifdef REMOTE_SOCAT_PORTS
     #include <filesystem>
@@ -194,7 +194,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
 
 #elif PLATFORM_IS_LINUX
 
-    struct dirent **namelist;
+    struct dirent **namelist = NULL;
     std::vector<std::string> comList8250;
     const char* sysdir = "/sys/class/tty/";
 
@@ -215,7 +215,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
 
     // Scan through /sys/class/tty - it contains all tty-devices in the system
     int n = scandir(sysdir, &namelist, NULL, NULL);
-    if (n < 0)
+    if ((n < 0) || (namelist == NULL))
     {
         perror("scandir");
     }
