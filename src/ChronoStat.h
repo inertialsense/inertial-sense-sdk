@@ -224,7 +224,11 @@ public:
      * @return a string summarizing the values managed by this stat.
      */
     std::string toString(bool multiline = false) {
-        std::string out = getLabel() + " ::";
+        std::string label = getLabel();
+        if (label.size() > 10) {
+            label.resize(10);
+        }
+        std::string out = utils::string_format("%-10s ::", label.c_str());
         if (!hasData()) {
             out += "  !! Insufficient number of samples to determine statistics.";
         } else {
