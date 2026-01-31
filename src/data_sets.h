@@ -3043,6 +3043,7 @@ enum eSensorConfig
     SENSOR_CFG_GYR_FS_1000              = (int)0x00000002,
     SENSOR_CFG_GYR_FS_2000              = (int)0x00000003,
     SENSOR_CFG_GYR_FS_4000              = (int)0x00000004,
+    SENSOR_CFG_GYR_FS_MAX               = (int)0x00000007, // Uses individual sensors max range 
     SENSOR_CFG_GYR_FS_MASK              = (int)0x00000007,
     SENSOR_CFG_GYR_FS_OFFSET            = (int)0,
     
@@ -3051,7 +3052,10 @@ enum eSensorConfig
     SENSOR_CFG_ACC_FS_4G                = (int)0x00000001,
     SENSOR_CFG_ACC_FS_8G                = (int)0x00000002,
     SENSOR_CFG_ACC_FS_16G               = (int)0x00000003,
-    SENSOR_CFG_ACC_FS_MASK              = (int)0x00000030,
+    SENSOR_CFG_ACC_FS_32G               = (int)0x00000004,
+    // SENSOR_CFG_ACC_FS_80G              = (int)0x00000005, Unsupported at this time (available in future; contact sales for more information)
+    SENSOR_CFG_ACC_FS_MAX               = (int)0x00000007, // Uses individual sensors max range 
+    SENSOR_CFG_ACC_FS_MASK              = (int)0x00000070,
     SENSOR_CFG_ACC_FS_OFFSET            = (int)4,
     
     /** Gyro digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The following 
