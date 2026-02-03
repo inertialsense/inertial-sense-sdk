@@ -192,7 +192,7 @@ class RepositoryInfo:
         self.tag = get_env_or_default("0.0.0" if self.repo is None else self.git_cmd.describe(["--tags", "--abbrev=0"]), "REPO_TAG")
 
         try:
-            self.distance_from_tag = min(int(get_env_or_default(None if self.repo is None else self.git_cmd.rev_list(["--count", self.tag + "..HEAD"]), "REPO_DISTANCE")), 255)
+            self.distance_from_tag = int(get_env_or_default(None if self.repo is None else self.git_cmd.rev_list(["--count", self.tag + "..HEAD"]), "REPO_DISTANCE")) % 256     # Wrap to uint8 range (0-255) to match size of dev_info_t.firmwareVer[3]
         except TypeError:
             self.distance_from_tag = None
 
@@ -448,13 +448,13 @@ class RepositoryInfo:
 
     def get_prerelease_number(self, version=None):
         """Returns the numerical value (as an int) of the prerelease field of a semantic version
-        or 0, if its undefined, or unparsable. Clamped to uint8 range (0-255) due to limited size in dev_info_t struct."""
+        or 0, if its undefined, or unparsable. Wraps to uint8 (0-255) to match value in dev_info_t struct. """
         version = version if version is not None else self.version
         if version is not None and version.prerelease is not None:
             parts = version.prerelease.split('.')
             if len(parts) > 0:
                 try:
-                    return min(int(parts[-1]), 255)
+                    return int(parts[-1]) % 256     # Wrap to uint8 range (0-255) to match size of dev_info_t.firmwareVer[3]
                 except ValueError:
                     return 0
 
