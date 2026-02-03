@@ -192,7 +192,7 @@ class RepositoryInfo:
         self.tag = get_env_or_default("0.0.0" if self.repo is None else self.git_cmd.describe(["--tags", "--abbrev=0"]), "REPO_TAG")
 
         try:
-            self.distance_from_tag = int(get_env_or_default(None if self.repo is None else self.git_cmd.rev_list(["--count", self.tag + "..HEAD"]), "REPO_DISTANCE")) % 256     # Wrap to uint8 range (0-255)
+            self.distance_from_tag = int(get_env_or_default(None if self.repo is None else self.git_cmd.rev_list(["--count", self.tag + "..HEAD"]), "REPO_DISTANCE")) % 256     # Wrap to uint8 range (0-255) to match size of dev_info_t.version[3]
         except TypeError:
             self.distance_from_tag = None
 
@@ -454,7 +454,7 @@ class RepositoryInfo:
             parts = version.prerelease.split('.')
             if len(parts) > 0:
                 try:
-                    return int(parts[-1]) % 256     # Wrap to uint8 range (0-255)
+                    return int(parts[-1]) % 256     # Wrap to uint8 range (0-255) to match size of dev_info_t.version[3]
                 except ValueError:
                     return 0
 
