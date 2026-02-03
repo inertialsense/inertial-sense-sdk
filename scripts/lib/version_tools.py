@@ -454,7 +454,7 @@ class RepositoryInfo:
             parts = version.prerelease.split('.')
             if len(parts) > 0:
                 try:
-                    return int(parts[-1]) % 256     # Wrap to uint8 range (0-255) to match size of dev_info_t.version[3]
+                    return int(parts[-1]) % 256     # Wrap to uint8 range (0-255) to match size of dev_info_t.firmwareVer[3]
                 except ValueError:
                     return 0
 
