@@ -448,7 +448,7 @@ class RepositoryInfo:
 
     def get_prerelease_number(self, version=None):
         """Returns the numerical value (as an int) of the prerelease field of a semantic version
-        or 0, if its undefined, or unparsable.  Wraps to uint8 (0-255) to match value in dev_info_t struct. """
+        or 0, if its undefined, or unparsable. Wraps to uint8 (0-255) to match value in dev_info_t struct. """
         version = version if version is not None else self.version
         if version is not None and version.prerelease is not None:
             parts = version.prerelease.split('.')
