@@ -444,7 +444,11 @@ static protocol_type_t processIsbPkt(void* v)
     packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
     if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)
         return parseErrorResetState(c, EPARSE_INVALID_SIZE);
-    if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) && (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB))
+    if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) &&
+        (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB) &&
+        (isbPkt->hdr.id != DID_CAL_SC) &&           // Allow large dataset offsets / (offset+chunk) ranges for calibration data DIDs
+        (isbPkt->hdr.id != DID_CAL_TEMP_COMP) &&
+        (isbPkt->hdr.id != DID_CAL_MOTION) )
         return parseErrorResetState(c, EPARSE_INVALID_HEADER);
 
     uint16_t payloadSize = isbPkt->hdr.payloadSize;
