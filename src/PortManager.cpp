@@ -6,6 +6,7 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
+#include <util.h>
 #include "PortManager.h"
 
 /**
@@ -17,35 +18,39 @@
  *  value of PORT_TYPE__UNKNOWN will match all port types
  */
 bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
+    FnProfiler fn("PortManager::discoverPorts", 30000);
+
     std::lock_guard<std::recursive_mutex> lock(mutex);
+    fn.mark("Got mutex.");
     portsChanged = false;   // always clear this flag every time we call discoverPorts - the process will set it back, if needed.
 
-    // look for ports which are no longer valid and remove them
-    std::vector<const port_entry_t*> lostPorts; // a vector of ports which no longer are available and need to be cleaned up
-    for (auto& [entry, port] : knownPorts) {
-        bool invalid = !(portIsValid(port) && entry.factory->validatePort(entry.name, entry.type));
+    // Use the erase-remove idiom to clean up lost ports
+    for (auto it = knownPorts.begin(); it != knownPorts.end(); ) {
+        auto& entry = it->first;
+        auto& port = it->second;
 
-        // check if port still exists...
-        if (invalid) {
-            erase(port);    // remove the port from our primary set of ports
-            lostPorts.push_back(&entry);
-            // notify listeners before we actually invalidate the port
+        if (!portIsValid(port) || !entry.factory->validatePort(entry.name, entry.type)) {
+            erase(port);
             for (auto& listener : listeners) {
                 (*listener)(PORT_REMOVED, portType(port), entry.name, port, *entry.factory);
             }
             entry.factory->releasePort(port);
-            port = nullptr;
-            portsChanged = true;   // note that we removed/update the list of ports
+            it = knownPorts.erase(it);
+            portsChanged = true;
+        } else {
+            ++it;
         }
     }
-    for (auto entry : lostPorts) knownPorts.erase(*entry);
+    fn.mark("Removed stale ports.");
 
     // now look for new ports
     for (auto factory : factories) {
         auto cb = std::bind(&PortManager::portHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
         factory->locatePorts(cb, pattern, pType);
     }
+    fn.mark("Added new ports.");
 
+/*
     // check to make sure all knownPorts are also representing in the top-level PortManager's set
     for (auto& [entry, port] : knownPorts ) {
         if (std::find_if(begin(), end(), [&](port_handle_t p){ return p == port; }) == end()) { // C++17 compliant, since we can't used set::contains()
@@ -53,6 +58,7 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
             portsChanged = true;   // note that we added/updated the list of ports
         }
     }
+*/
     return portsChanged;
 }
 

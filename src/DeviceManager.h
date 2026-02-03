@@ -18,7 +18,9 @@
 #define IS_SDK__DEVICE_MANAGER_H
 
 #include <list>
+#include <map>
 #include <mutex>
+#include <functional>
 
 #include "core/msg_logger.h"
 
@@ -249,15 +251,7 @@ public:
     /**
      * Remove and release/free all known/discovered devices.
      */
-    void clear(bool closePorts = true) {
-        std::lock_guard<std::recursive_mutex> lock(mutex);
-        auto tmpSet = getDevicesAsVector();
-        for (auto d : tmpSet) releaseDevice(d, closePorts, true);
-
-        // just to make sure we didn't miss anything (though this could cause memory leaks)
-        std::list<device_handle_t>::clear();
-        knownDevices.clear();
-    }
+    void clear(bool closePorts = true);
 
     /**
     * Get the number of open devices
@@ -285,6 +279,11 @@ public:
      * @returns an device_handle_t instance associated with the specified port, or NULL if not found
      */
     device_handle_t getDevice(port_handle_t port);
+
+    /**
+     * @returns an device_handle_t instance at the specified index, or NULL if not found
+     */
+    device_handle_t getDeviceByIndex(int index);
 
     /**
      * @returns an device_handle_t instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
@@ -368,6 +367,7 @@ private:
     std::vector<DeviceFactory*> factories;                              //!< list of device factories responsible for detecting, allocating and freeing ports of different types. -- Note that DeviceFactories should always be static singletons, DO NOT FREE/DELETE the factory!
     std::vector<device_listener> listeners;                             //!< list of listeners who should be notified when new devices are discovered, lost, opened, closed, etc
     std::vector<device_entry_t> knownDevices;                           //!< vector of previously discovered devices, by factory & hdwid (bits 47-63) + serial (bits 0-31) - different than actual, allocated devices
+    std::map<port_handle_t, device_handle_t> portToDeviceMap;            //!< map of port handles to device handles for fast lookups
 
     int managementOptions = DISCOVERY__DEFAULTS;                        //!< a bit mask of various options used to modify the behavior of the device manager during various operations
     std::recursive_mutex mutex;
