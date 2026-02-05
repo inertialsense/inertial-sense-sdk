@@ -119,7 +119,8 @@ std::vector<mdns::mdns_record_cpp_t> mdns::getRecords() {
  */
 sockaddr_storage mdns::resolveName(const std::string& name) {
     std::vector<mdns_record_cpp_t> records = getRecords();
-    sockaddr_storage result = {.ss_family = AF_UNSPEC};
+    sockaddr_storage result = {};
+    result.ss_family = AF_UNSPEC;
     for (mdns_record_cpp_t& record : records) {
         if (record.name != name) {
             continue;
