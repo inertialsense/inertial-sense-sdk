@@ -264,12 +264,10 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
             log_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_REMOVED '%s'.", pName.c_str());
             device_handle_t device = getDevice(port);
             if (device) {
-                device->assignPort(nullptr); // revoke the removed port from the device...
-                if (device->port) {
-                    portToDeviceMap.erase(device->port);
-                }
                 notifyListeners(device, DEVICE_PORT_LOST);
+                device->assignPort(nullptr); // revoke the removed port from the device...
             }
+            portToDeviceMap.erase(port);
             break;
     }
 }
@@ -319,7 +317,6 @@ device_handle_t DeviceManager::getDevice(uint64_t uid) {
  * @returns an device_handle_t instance associated with the specified port, or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(port_handle_t port) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
     auto it = portToDeviceMap.find(port);
     if (it != portToDeviceMap.end()) {
         return it->second;
@@ -331,7 +328,6 @@ device_handle_t DeviceManager::getDevice(port_handle_t port) {
  * @returns an device_handle_t instance at the specified index, or NULL if not found
  */
 device_handle_t DeviceManager::getDeviceByIndex(int index) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
     if (index < 0 || index >= size()) {
         return NULL;
     }

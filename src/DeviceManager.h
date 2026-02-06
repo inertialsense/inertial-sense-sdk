@@ -367,7 +367,7 @@ private:
     std::vector<DeviceFactory*> factories;                              //!< list of device factories responsible for detecting, allocating and freeing ports of different types. -- Note that DeviceFactories should always be static singletons, DO NOT FREE/DELETE the factory!
     std::vector<device_listener> listeners;                             //!< list of listeners who should be notified when new devices are discovered, lost, opened, closed, etc
     std::vector<device_entry_t> knownDevices;                           //!< vector of previously discovered devices, by factory & hdwid (bits 47-63) + serial (bits 0-31) - different than actual, allocated devices
-    std::map<port_handle_t, device_handle_t> portToDeviceMap;            //!< map of port handles to device handles for fast lookups
+    std::map<port_handle_t, device_handle_t> portToDeviceMap;           //!< map of port handles to device handles for fast lookups
 
     int managementOptions = DISCOVERY__DEFAULTS;                        //!< a bit mask of various options used to modify the behavior of the device manager during various operations
     std::recursive_mutex mutex;

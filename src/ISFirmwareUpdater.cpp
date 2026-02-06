@@ -368,11 +368,13 @@ bool ISFirmwareUpdater::step() {
 
     if (!port && (nextPortCheck < current_timeMs())) {
         nextPortCheck = current_timeMs() + 1000;    // check every second.
+        PortManager& portManager = PortManager::getInstance();
         DeviceManager& deviceManager = DeviceManager::getInstance();
         std::stringstream ss;
 
         // we are specifically only interested on doing a device discovery on ports which do not have an associated device
-        for ( auto p : PortManager::getInstance().locked_range()) {
+        portManager.discoverPorts();
+        for ( auto p : portManager.locked_range()) {
             if (deviceManager.getDevice(p) == nullptr) {
                 if (deviceManager.discoverDevice(p))
                     if (device->port)
