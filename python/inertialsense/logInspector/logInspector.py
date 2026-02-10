@@ -650,6 +650,8 @@ class LogInspectorWindow(QMainWindow):
         self.downSampleInput.setToolTip("Adjust downsample rate, reducing the number of the displayed data samples to increase plotting speed.")
         self.downSampleInput.setMinimum(1)
         self.downSampleInput.setValue(self.downsample)
+        # Only apply value after Enter pressed or focus lost (don't change while typing)
+        self.downSampleInput.setKeyboardTracking(False)
         self.toolLayout.addWidget(downsampleLabel)
         self.toolLayout.addWidget(self.downSampleInput)
         self.downSampleToOne = QPushButton()
