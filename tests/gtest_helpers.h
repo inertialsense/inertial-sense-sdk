@@ -64,16 +64,24 @@ namespace testing
 
 #define TEST_PRINTF(...)        do { printf("[%10c] ", ' '); printf(__VA_ARGS__); fflush(stdout); } while (0);
 
+#if defined(_WIN32)
 #define TEST_PRINTF_TS(...)     do {                                                                                                \
                                     auto now = std::chrono::system_clock::now();                                                    \
                                     auto time_t_now = std::chrono::system_clock::to_time_t(now);                                    \
                                     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000; \
                                     std::tm tm_buf;                                                                                 \
-                                    #if defined(_WIN32) || defined(_MSC_VER)                                                        \
                                     localtime_s(&tm_buf, &time_t_now);                                                              \
-                                    #else                                                                                           \
+                                    printf("[%02d:%02d:%02d.%03lld] ", tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec, ms.count());   \
+                                    printf(__VA_ARGS__);                                                                            \
+                                    fflush(stdout);                                                                                 \
+                                } while (0);
+#else
+#define TEST_PRINTF_TS(...)     do {                                                                                                \
+                                    auto now = std::chrono::system_clock::now();                                                    \
+                                    auto time_t_now = std::chrono::system_clock::to_time_t(now);                                    \
+                                    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000; \
+                                    std::tm tm_buf;                                                                                 \
                                     localtime_r(&time_t_now, &tm_buf);                                                              \
-                                    #endif                                                                                          \
                                     printf("[%02d:%02d:%02d.%03lld] ", tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec, ms.count());   \
                                     printf(__VA_ARGS__);                                                                            \
                                     fflush(stdout);                                                                                 \
