@@ -328,7 +328,7 @@ device_handle_t DeviceManager::getDevice(port_handle_t port) {
  * @returns an device_handle_t instance at the specified index, or NULL if not found
  */
 device_handle_t DeviceManager::getDeviceByIndex(int index) {
-    if (index < 0 || index >= size()) {
+    if ((index < 0) || (index >= (int)size())) {
         return NULL;
     }
     auto it = begin();
