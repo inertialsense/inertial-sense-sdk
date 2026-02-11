@@ -88,18 +88,35 @@ uint64_t getJsonHexParam(JsonDocument& doc, const String& key, uint64_t def = 0)
   return def;
 }
 
+
+/**
+ * This will write a default config.json file - call this function if the config file isn't found.
+ */
+void writeDefaultConfig() {
+    JsonDocument jsonConfig;
+
+    jsonConfig["rmc_bits"] = "0xc000009001353ce2";
+    jsonConfig["rmc_options"] = "0x0";
+    jsonConfig["max_file_size"] = 512000;
+    jsonConfig["log_on_startup"] = true;
+
+    File configFile = SD.open(log_config, FILE_WRITE);
+    serializeJson(jsonConfig, configFile);
+    configFile.close();
+}
+
 /**
  * Reads and parses the _logger.cfg JSON file from the SD card, or loads default values
  * if the SD card isn't available, the file doesn't exist, or doesn't contain those parameters.
  */
 void readConfig() {
-  config.rmc.bits = RMC_PRESET_IMX_PPD;
-  config.rmc.options = 0x0;
-  config.max_file_size = 4096000;
-  config.log_on_startup = false;
+    config.rmc.bits = RMC_PRESET_IMX_PPD;
+    config.rmc.options = 0x0;
+    config.max_file_size = 4096000;
+    config.log_on_startup = false;
 
-  if (!SD.exists(log_config))
-    return;
+    if (!SD.exists(log_config))
+        writeDefaultConfig();
 
   JsonDocument jsonConfig;
   File cfgFile = SD.open(log_config, FILE_READ);

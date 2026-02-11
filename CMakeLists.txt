@@ -107,15 +107,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         external
 )
 
-if(NOT WIN32)
-	# Build using C11 and CXX17 -- Except for Windows, which required CXX20
-	set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
-	set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+# Build using C11 and CXX17 for all platforms
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
+if(NOT WIN32)
 	target_compile_options(${PROJECT_NAME} INTERFACE -Wno-deprecated-declarations)
-else()
-	set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
-	set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)

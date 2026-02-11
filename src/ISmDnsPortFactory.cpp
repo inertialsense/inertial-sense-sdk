@@ -108,7 +108,7 @@ port_handle_t ISmDnsPortFactory::bindPort(const std::string& pName, uint16_t pTy
  * @return True if successful, false otherwise
  */
 bool ISmDnsPortFactory::releasePort(port_handle_t port) {
-    tick(); // Tick everything to ensure we have the latest data
+    // tick(); // Tick everything to ensure we have the latest data
     if (!port) {
         return false;
     }
