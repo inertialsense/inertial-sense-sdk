@@ -82,7 +82,7 @@ public:
 
     std::string getListenIpAddress() { return std::string( inet_ntoa(factoryOptions.listeningAddr.sin_addr) ); }
 
-    int getActiveClients() { return ports.size(); }
+    int getActiveClients() { return (int)ports.size(); }
 
 private:
     uint64_t        srcDeviceId = 0;             // selected device UID (derived from hdwId + SN)

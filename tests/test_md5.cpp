@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
-#include "../ISConstants.h"
+#include "ISConstants.h"
 #include "../util/md5.h"
 
 #ifdef _WIN32
