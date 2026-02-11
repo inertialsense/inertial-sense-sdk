@@ -283,7 +283,6 @@ void DeviceManager::clear(bool closePorts) {
     portToDeviceMap.clear();
 }
 
-
 /**
  * @returns a vector of available devices
  */

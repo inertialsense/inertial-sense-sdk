@@ -124,11 +124,22 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // advance to ready. The ISFirmwareUpdater should handle most of this for us, we just need to tell it
         // to look for new ISDevices.
 
-        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
-        if (device && !device->isConnected() && portIsValid(device->port))
-            device->connect(true);
+        // NOTE: Because fwUpdate_step() can be called very frequently, this can bog-down the OS if we try
+        // and open ports too quickly, before they are ready.  If attempt to connect() fails, we should throttle
+        // back this and return
 
-        if (device && device->isConnected() && device->hasDeviceInfo()) {
+        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+        if (device && !device->isConnected() && portIsValid(device->port)) {
+            if (!device->connect(true)) {
+                SLEEP_MS(500);
+            }
+        }
+
+        if (device && device->isConnected()) {
+            if (!device->hasDeviceInfo()) {
+                device->validateAsync();
+                return true;    // we'll keep in our current state until we can validate the device
+            }
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 

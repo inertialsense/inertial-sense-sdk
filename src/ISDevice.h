@@ -198,7 +198,12 @@ public:
         if (portIsOpened(port))
             return true;    // port is already opened, so nothing to do (but we didn't fail)
 
+        if (nextConnectMs > current_timeMs())
+            return false;   // don't attempt to reconnect until nextConnectMs has expired
+
         bool result = (portOpen(port) == PORT_ERROR__NONE);
+        if (!result)
+            nextConnectMs = current_timeMs() + 500; // if the connect fails, delay 500ms before trying again.
         portStatsReset(port);
 
         if (!revalidate && result) {
@@ -523,6 +528,7 @@ public:
 
     std::recursive_mutex  portMutex;                                 //!< used to guard against concurrent use of the port in multi-threaded environments - only one read/write at a time
     port_handle_t port = 0;
+    uint32_t                    nextConnectMs = 0;                   //!< time in millis when the connect connection attempt will be made (0 = don't wait)
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
     is_hardware_t               hdwId = IS_HARDWARE_TYPE_UNKNOWN;    //!< hardware type and version (ie, IMX-5.0)

@@ -362,6 +362,7 @@ void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
 
 bool ISFirmwareUpdater::step() {
     std::lock_guard<std::recursive_mutex> lock(mutex);
+    FnProfiler fnStep("ISFirmwareUpdater::step()", 5000);
 
     if (device && (device->port != port))
         port = device->port;
@@ -381,7 +382,8 @@ bool ISFirmwareUpdater::step() {
                         break;
             }
         }
-    }
+        fnStep.mark("Finished Port check.");
+   }
 
     if (deviceUpdater) {
         deviceUpdater->fwUpdate_step();
@@ -418,6 +420,7 @@ bool ISFirmwareUpdater::step() {
 
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
     // std::lock_guard<std::recursive_mutex> lock(mutex);
+    FnProfiler fnStep("ISFirmwareUpdater::fwUpdate_step()", 5000);
 
     switch(session_status) {
         case fwUpdate::READY:

@@ -396,7 +396,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
     if (!isConnected())
         return -1;
 
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validateAsync() called.", getIdAsString().c_str());
+    log_bombastic(IS_LOG_ISDEVICE, "[%s] ISDevice::validateAsync() called.", getIdAsString().c_str());
     if (hasDeviceInfo()) {
         // we got out Device Info, so reset our timer (stop trying) and return true
         validationStartMs = 0;
@@ -409,6 +409,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
         GetData(DID_SYS_PARAMS);
         GetData(DID_FLASH_CONFIG);
 
+        log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getIdAsString().c_str(), current_timeMs() - validationStartMs);
         return 1;
     }
 
@@ -425,6 +426,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
         // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
         if (!queryDeviceInfoISbl(250) && !hasDeviceInfo()) {
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+            log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getIdAsString().c_str(), current_timeMs() - validationStartMs);
             return 1;
         }
 
