@@ -400,8 +400,8 @@ void lla2ecef(const double *LLA, double *Pe)
     // Radius of curvature at a surface point:
     Rn = REQ / sqrt(1.0 - E_SQ * Smu * Smu);
 
-    Pe[0] = (Rn + LLA[2]) * Cmu * Cl;
-    Pe[1] = (Rn + LLA[2]) * Cmu * Sl;
+    Pe[0] = (Rn + LLA[2]) * (Cmu * Cl); // Minor computational tuning: Cmu and Cl are small,
+    Pe[1] = (Rn + LLA[2]) * (Cmu * Sl); // while Rn is huge, causing minor accuracy loss if multiply it from left to right.
     Pe[2] = (ONE_MINUS_E_SQ * Rn + LLA[2]) * Smu; // Same as (Rn*POWB2/POWA2+LLA[2])*Smu but without division
 }
 
