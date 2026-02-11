@@ -19,12 +19,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <vector>
 #include <functional>
-#include <yaml-cpp/yaml.h>
-#include "com_manager.h"
-
 #include <type_traits>
 #include <cstdint>
 #include <cstddef>
+
+#include "com_manager.h"
+
+#if PLATFORM_IS_EMBEDDED == 0
+    #include <yaml-cpp/yaml.h>
+#endif
 
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
@@ -690,6 +693,7 @@ public:
     */
     static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
 
+#if defined(YAML_CPP_API)
     /*** Convert a did data set buffer to a YAML node
     * @param did the data ID
     * @param dataPtr pointer to the did buffer
@@ -708,7 +712,7 @@ public:
     * @return true if successful, false if error
     */
     static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec = nullptr);
-
+#endif
     /**
      * @brief Convert a did data set buffer to a string representation
      *
@@ -811,4 +815,3 @@ private:
 };
 
 #endif // __ISDATAMAPPINGS_H_
-

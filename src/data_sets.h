@@ -193,7 +193,7 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE    2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
-// Max number of devices across all hardware types: uINS-3 and IMX-5
+// Max number of devices across all hardware types: IMX-5 and IMX-6
 #define NUM_IMU_DEVICES     3        // g_numImuDevices defines the actual number of hardware specific devices
 #define NUM_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
 
@@ -669,9 +669,6 @@ typedef struct PACKED
     /** Additional info */
     char            addInfo[DEVINFO_ADDINFO_STRLEN];
 
-    /** Firmware MD5 hash */
-    // uint32_t        firmwareMD5Hash[4];
-
 } dev_info_t;
 
 /** Add missing hardware descriptor to dev_info_t. */
@@ -877,11 +874,11 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
 
-    /** IMU Status (eImuStatus) */
+    /** IMU3 Status (eImu3Status) */
     uint32_t                status;
 
     /** Inertial Measurement Units (IMUs) */
-    imus_t                  I[3];
+    imus_t                  I[NUM_IMU_DEVICES];
 
 } imu3_t;
 
@@ -958,30 +955,52 @@ typedef struct PACKED
     magnetometer_t mag;
 } pimu_mag_t;
 
+/** IMU3 Status */
+enum eImu3Status
+{
+    /** IMU sensor valid status */
+    IMU3_STATUS_GYR_X_OK                        = (int)0x00000001,
+    IMU3_STATUS_GYR_Y_OK                        = (int)0x00000002,
+    IMU3_STATUS_GYR_Z_OK                        = (int)0x00000004,
+    IMU3_STATUS_ACC_X_OK                        = (int)0x00000008,
+    IMU3_STATUS_ACC_Y_OK                        = (int)0x00000010,
+    IMU3_STATUS_ACC_Z_OK                        = (int)0x00000020,    
+    /** Number of IMU OK bits */
+    IMU3_STATUS_IMU_OK_BITSIZE                  = 6,
+    /** IMU valid mask */
+    IMU3_STATUS_IMU_OK_MASK                     = (int)0x0000003F,
+    
+    /** Sensor saturation */
+    IMU3_STATUS_SATURATION_GYR                  = (int)0x40000000,
+    IMU3_STATUS_SATURATION_ACC                  = (int)0x80000000,
+    IMU3_STATUS_SATURATION_MASK                 = (int)0xC0000000,
+};
 
 /** IMU Status */
 enum eImuStatus
 {
-    /** Sensor saturation on IMU1 gyro */
-    IMU_STATUS_SATURATION_IMU1_GYR              = (int)0x00000001,
-    /** Sensor saturation on IMU2 gyro */
-    IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
-    /** Sensor saturation on IMU3 gyro */
-    IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000004,
-    /** Sensor saturation on IMU1 accelerometer */
-    IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000008,
-    /** Sensor saturation on IMU2 accelerometer */
-    IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000010,
-    /** Sensor saturation on IMU3 accelerometer */
-    IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000020,
-    /** Sensor saturation mask */
-    IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
+    /** IMU X gyro is valid */
+    IMU_STATUS_GYR_X_OK                         = (int)0x00000001,
+    /** IMU Y gyro is valid */
+    IMU_STATUS_GYR_Y_OK                         = (int)0x00000002,
+    /** IMU Z gyro is valid */
+    IMU_STATUS_GYR_Z_OK                         = (int)0x00000004,
+    /** IMU X accelerometer is valid */
+    IMU_STATUS_ACC_X_OK                         = (int)0x00000008,
+    /** IMU Y accelerometer is valid */
+    IMU_STATUS_ACC_Y_OK                         = (int)0x00000010,
+    /** IMU Z accelerometer is valid */
+    IMU_STATUS_ACC_Z_OK                         = (int)0x00000020,
+    /** Number of IMU OK bits */
+    IMU_STATUS_IMU_OK_BITSIZE                   = 6,
+    /** IMU valid mask */
+    IMU_STATUS_IMU_OK_MASK                      = (int)0x0000003F,
 
     /** Sensor shock detected */
     IMU_STATUS_SHOCK_PRESENT                    = (int)0x00000040,
 
     /** Magnetometer sample occurred */
-    IMU_STATUS_MAG_UPDATE                        = (int)0x00000100,
+    IMU_STATUS_MAG_UPDATE                       = (int)0x00000100,
     /** Data was received at least once from Reference IMU */
     IMU_STATUS_REFERENCE_IMU_PRESENT            = (int)0x00000200,
     /** Reserved */
@@ -992,31 +1011,15 @@ enum eImuStatus
 //     /** Sample rate fault happened within past 10 seconds */
 //     IMU_STATUS_SAMPLE_RATE_FAULT_HISTORY        = (int)0x00000200,
 
-    /** IMU1 gyros available */
-    IMU_STATUS_GYR1_OK                          = (int)0x00010000,
-    /** IMU2 gyros and accelerometers available */
-    IMU_STATUS_GYR2_OK                          = (int)0x00020000,
-    /** IMU3 gyros available */
-    IMU_STATUS_GYR3_OK                          = (int)0x00040000,
-    /** IMU1 accelerometers available */
-    IMU_STATUS_ACC1_OK                          = (int)0x00080000,
-    /** IMU2 accelerometers available */
-    IMU_STATUS_ACC2_OK                          = (int)0x00100000,
-    /** IMU3 accelerometers available */
-    IMU_STATUS_ACC3_OK                          = (int)0x00200000,
-    /** IMU1 available */
-    IMU_STATUS_IMU1_OK                          = (int)(IMU_STATUS_GYR1_OK | IMU_STATUS_ACC1_OK),
-    /** IMU2 available */
-    IMU_STATUS_IMU2_OK                          = (int)(IMU_STATUS_GYR2_OK | IMU_STATUS_ACC2_OK),
-    /** IMU3 available */
-    IMU_STATUS_IMU3_OK                          = (int)(IMU_STATUS_GYR3_OK | IMU_STATUS_ACC3_OK),
-    /** IMU gyros and accelerometers available */
-    IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
-
     /** IMU fault rejection is excluding one of the gyros from the combined IMU output */
     IMU_STATUS_GYR_FAULT_REJECT                 = (int)0x01000000,
     /** IMU fault rejection is excluding one of the accelerometers from the combined IMU output */
     IMU_STATUS_ACC_FAULT_REJECT                 = (int)0x02000000,
+
+    /** Sensor saturation */
+    IMU_STATUS_SATURATION_GYR                   = (int)0x40000000,
+    IMU_STATUS_SATURATION_ACC                   = (int)0x80000000,
+    IMU_STATUS_SATURATION_MASK                  = (int)0xC0000000,
 };
 
 /** (DID_GPS1_POS, DID_GPS1_RCVR_POS, DID_GPS2_POS) GPS position data */
@@ -1762,10 +1765,10 @@ typedef struct PACKED
 // (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
 typedef struct PACKED
 {
-    imu3_t                    imu3;
+    imu3_t                   imu3;
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    float                        temp[NUM_IMU_DEVICES];
+    float                    temp[NUM_IMU_DEVICES];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
     mag_xyz_t                mag[NUM_MAG_DEVICES];
@@ -2377,6 +2380,8 @@ enum eBitCommand
     BIT_CMD_RESERVED_2                              = (int)5,   
     BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection test 
     BIT_CMD_IMU_REJECT_CONTINUOUS                   = (int)7,       // Continuous IMU fault rejection test without ending
+    BIT_CMD_IMU_INVALID_DATA                        = (int)8,       // IMU invalid data test
+    BIT_CMD_IMU_SATURATED_SENSOR                    = (int)9,       // IMU saturated sensor test
 };
 
 /** Built-in Test: State */
@@ -2398,6 +2403,8 @@ enum eBitTestMode
     BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
     BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
     BIT_TEST_MODE_IMU_FAULT_REJECTION               = (int)104,     // Simulate a fault on each IMU sensor and ensure it is detected and rejected.
+    BIT_TEST_MODE_IMU_INVALID_DATA                  = (int)105,     // Simulate invalid IMU data (NaN) and ensure it is detected and rejected.
+    BIT_TEST_MODE_IMU_SATURATION_DATA               = (int)106,     // Simulate saturated IMU data (out-of-range) and ensure it is detected and rejected.
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -3317,21 +3324,23 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
     PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  PPS disabled (no GPS1 PPS timepulse configured)
     PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
     PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,          
-    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3 (excluding TBED-3.0) Timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on G15/GNSS_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3 (excluding TBED-3.0) PPS1 on G5 (pin 9)
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  PPS1 on G8
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
     PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 and IS-IMX-GPX-DEV-1 (w/ IMX-5 and GPX-1)
     PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,          // "
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
-    PLATFORM_CFG_TYPE_TBED3_0                   = (int)21,          // Testbed-3.0.  Timepulse on G5 (pin 9)
-    PLATFORM_CFG_TYPE_COUNT                     = (int)22,
+    PLATFORM_CFG_TYPE_TBED3_3                   = (int)21,          // Testbed-3.3 and later.  PPS1 on G5 (pin 9), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_RUG4_G2                   = (int)22,          // PCB RUG-4.x.  PPS1 on G15 (default), PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later.  PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_COUNT                     = (int)24,
 
     // Presets
     PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
@@ -3413,7 +3422,7 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENCODER_SOURCE           = (int)0x00000400,  // 0 = uINS, 1 = EVB
 };
 
-typedef enum
+enum eGroundVehicleMode
 {
     GV_MODE_STANDBY                         = 0,
     GV_MODE_LEARNING                        = 1,
@@ -3422,7 +3431,7 @@ typedef enum
     GV_CMD_LEARNING_CLEAR_AND_START         = 4,    // Zero transform and reset sigma values
     GV_CMD_LEARNING_STOP_AND_SAVE           = 5,
     GV_CMD_LEARNING_CANCEL                  = 6,
- } eGroundVehicleMode;
+};
 
 typedef struct PACKED
 {
@@ -3456,7 +3465,7 @@ typedef struct PACKED
 
 } wheel_config_t;
 
-typedef enum
+enum eGroundVehicleStatus
 {
     /** Kinematic learing is solving for the translation from IMU to wheel (wheel_config). */ 
     GV_STATUS_LEARNING_ENABLED      = 0x00000001,
@@ -3473,7 +3482,7 @@ typedef enum
     /** Vehicle kinematic learning data (wheel_config_t) is missing. */ 
     GV_STATUS_LEARNING_NEEDED       = 0x08000000,
 
-} eGroundVehicleStatus;
+};
 
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
 typedef struct PACKED
@@ -3492,7 +3501,7 @@ typedef struct PACKED
 
 } ground_vehicle_t;
 
-typedef enum
+enum eDynamicModel
 {
     DYNAMIC_MODEL_PORTABLE          = 0,
     DYNAMIC_MODEL_FIXED_POSITION    = 1,
@@ -3506,13 +3515,13 @@ typedef enum
     DYNAMIC_MODEL_WRIST             = 9,
     DYNAMIC_MODEL_INDOOR            = 10,
     DYNAMIC_MODEL_COUNT    // Must be last
-} eDynamicModel;
+};
 
-typedef enum
+enum eImuShockOptions
 {
     IMU_SHOCK_OPTIONS_ENABLE            = 0x01,
-    IMU_SHOCK_OPTIONS_FAST_RECOVERY     = 0x02
-} eImuShockOptions;
+    IMU_SHOCK_OPTIONS_FAST_RECOVERY     = 0x02      // Useful when shocks occur during rotation, as it minimizes post-shock error and reduces the time required for attitude convergence. However, this option increases the amount of attitude error induced by shock events and is therefore discouraged when the platform is stationary and not rotating during shocks.
+};
 
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
@@ -4307,7 +4316,7 @@ typedef struct
 } ion_model_utc_alm_t;
 
 /** RTK solution status */
-typedef enum
+enum eRtkSolStatus
 {
     /** No status */
     rtk_solution_status_none = 0,
@@ -4326,7 +4335,7 @@ typedef enum
 
     /** RTK SINGLE */
     rtk_solution_status_single = 5
-} eRtkSolStatus;
+};
 
 /** (DID_GPS1_RTK_POS_REL, DID_GPS2_RTK_CMP_REL) - RTK and Dual GNSS heading base to rover relative info. */
 typedef struct PACKED
@@ -4476,7 +4485,7 @@ typedef struct PACKED
 } gps_rtk_misc_t;
 
 /** RAW data types for DID_GPS_BASE_RAW and DID_GPS2_RAW */
-typedef enum
+enum eRawDataType
 {
     /** obsd_t */
     raw_data_type_observation = 1,
@@ -4498,7 +4507,7 @@ typedef enum
     
     /** gps_rtk_misc_t */
     raw_data_type_rtk_solution = 123
-} eRawDataType;
+};
 
 
 
@@ -4599,7 +4608,7 @@ typedef struct
     char message[256];
 } diag_msg_t;
 
-typedef enum
+enum eSurveyInStatus
 {
     // default state
     SURVEY_IN_STATE_OFF                     = 0,
@@ -4616,7 +4625,7 @@ typedef enum
     SURVEY_IN_STATE_RUNNING_FIX             = 10,
     SURVEY_IN_STATE_SAVE_POS                = 19,
     SURVEY_IN_STATE_DONE                    = 20
-} eSurveyInStatus;
+};
 
 /**
 * Survey in status
@@ -4877,7 +4886,7 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
 
-typedef enum {
+enum eGNSSDriverRstCause {
     cxdRst_PowerOn          = 0,
     cxdRst_Watchdog         = 1,
     cxdRst_ErrOpCode        = 2,
@@ -4892,9 +4901,9 @@ typedef enum {
     cxdRst_flashUpdate      = 11,
     cxdRst_RTKEphMissing    = 12,
     cxdRst_Max
-} eGNSSDriverRstCause;
+};
 
-typedef enum {
+enum eGPXGnssRunState {
     kReset = 0,
     kInit,
     kRun,
@@ -4905,7 +4914,7 @@ typedef enum {
     kShutdown,
     kReinit,
     kHardReset,
-} eGPXGnssRunState;
+};
 
 #define GNSS_RECEIVER_COUNT 2
 
@@ -4969,7 +4978,7 @@ typedef struct
 //  EVB
 //////////////////////////////////////////////////////////////////////////
 
-typedef enum
+enum eEvbStatus
 {
     /** SD card logger: card ready */
     EVB_STATUS_SD_CARD_READY                = 0x00000001,
@@ -5010,7 +5019,7 @@ typedef enum
     /** Manufacturing unlocked */
     EVB_STATUS_MANF_UNLOCKED                = 0x02000000,
 
-} eEvbStatus;
+};
 
 /** EVB-2 communications ports. */
 enum eEvb2CommPorts
@@ -5106,7 +5115,7 @@ typedef struct
 
 } evb_server_t;
 
-typedef enum
+enum eEvbFlashCfgBits
 {
     EVB_CFG_BITS_WIFI_SELECT_MASK               = 0x00000003,
     EVB_CFG_BITS_WIFI_SELECT_OFFSET             = 0,
@@ -5115,7 +5124,7 @@ typedef enum
     EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,   // Don't enable PPD stream when log button is pressed
     EVB_CFG_BITS_ENABLE_ADC4                    = 0x00000200,
     EVB_CFG_BITS_ENABLE_ADC10                   = 0x00000400,
-} eEvbFlashCfgBits;
+};
 
 #define NUM_WIFI_PRESETS     3
 #define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {(bits)&=EVB_CFG_BITS_WIFI_SELECT_MASK; (bits)|=(((idx)<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
@@ -5476,7 +5485,7 @@ typedef struct
 } system_fault_t;
 
 /** RTOS tasks */
-typedef enum
+enum eImxRtosTask
 {
     /** Task 0: Sample    */
     IMX_TASK_SAMPLE = 0,
@@ -5498,10 +5507,10 @@ typedef enum
 
     /** Number of RTOS tasks */
     IMX_RTOS_NUM_TASKS                 // Keep last
-} eImxRtosTask;
+};
 
 /** RTOS tasks */
-typedef enum
+enum eGpxRtosTask
 {
     /** Task 0: Communication */
     GPX_TASK_COMM = 0,
@@ -5517,10 +5526,10 @@ typedef enum
 
     /** Number of RTOS tasks */
     GPX_RTOS_NUM_TASKS,                 // Keep last
-} eGpxRtosTask;
+};
 
 /** EVB RTOS tasks */
-typedef enum
+enum eEvbRtosTask
 {
     /** Task 0: Communications */
     EVB_TASK_COMMUNICATIONS,
@@ -5545,10 +5554,10 @@ typedef enum
 
     /** Number of RTOS tasks */
     EVB_RTOS_NUM_TASKS                  // Keep last
-} eEvbRtosTask;
+};
 
 /** RTOS tasks */
-typedef enum
+enum eRtosTask
 {
 #if defined(GPX_1)
     TASK_IDLE           = GPX_TASK_IDLE,
@@ -5559,7 +5568,7 @@ typedef enum
     TASK_TIMER          = IMX_TASK_TIMER,
     RTOS_NUM_TASKS      = IMX_RTOS_NUM_TASKS
 #endif
-} eRtosTask;
+};
 
 /** Max task name length - do not change */
 #define MAX_TASK_NAME_LEN 12
@@ -5752,7 +5761,7 @@ enum
 };
 
 /** Valid baud rates for Inertial Sense hardware */
-typedef enum
+enum can_baudrate_t
 {
     CAN_BAUDRATE_20_KBPS   =   20,
     CAN_BAUDRATE_33_KBPS   =   33,
@@ -5766,7 +5775,7 @@ typedef enum
     CAN_BAUDRATE_1000_KBPS = 1000,
 
     CAN_BAUDRATE_COUNT = 10
-} can_baudrate_t;
+};
 
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED

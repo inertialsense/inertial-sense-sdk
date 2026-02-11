@@ -137,7 +137,7 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    sensor_cal_info_t       info;                       // Hardawre IMX-5 and later have info before data to support various versions of calibration without hardware detection
+    sensor_cal_info_t       info;                       // Hardware IMX-5 and later have info before data to support various versions of calibration without hardware detection
     sensor_cal_v1p3_data_t  data;
 } sensor_cal_v1p3_t;
 

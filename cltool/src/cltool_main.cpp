@@ -36,9 +36,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
+
 #include "protocol_nmea.h"
-#include "util/natsort.h"
 #include "CorrectionService.h"
+#include "NtripCorrectionService.h"
+#include "TcpPortFactory.h"
+#include "util/natsort.h"
+#include "util/uri.hpp"
+
+#include "ISBootloaderThread.h"
+#include "CorrectionService.h"
+#include "Rtcm3CorrectionServer.h"
 
 using namespace std;
 
@@ -49,11 +57,12 @@ static bool g_cmdSuccessExitAppNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 InertialSense *g_inertialSenseInterface = NULL;
-CorrectionService *g_roverConnection = NULL;
+shared_ptr<CorrectionService> g_correctionInput = NULL;
+shared_ptr<Rtcm3CorrectionServer> g_correctionOutput = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
-static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
+static void display_server_client_status(bool showMessageSummary=false, bool refreshDisplay=false)
 {
     if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
         g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
@@ -67,7 +76,16 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
     static uint64_t serverByteCountLast = 0;
     static stringstream outstream;
 
-    uint64_t newServerByteCount = i->ClientServerByteCount();
+    port_stats_t correctionStats = {};
+    if (g_correctionOutput && g_correctionOutput->getSourcePort()) {
+        // remember, if we're a "BASE", we're ARE a Correction SERVER
+        correctionStats = *portStats(g_correctionOutput->getSourcePort());
+    } else if (g_correctionInput && g_correctionInput->getSourcePort()) {
+        // but, if we are a "ROVER", we're USING a Correction SERVICE
+        correctionStats = *portStats(g_correctionInput->getSourcePort());
+    }
+
+    uint64_t newServerByteCount = correctionStats.rxBytes;  // this is the bytes RECEIVED FROM the source device (which should be SENT TO all connected clients
     if (serverByteCount != newServerByteCount)
     {
         serverByteCount = newServerByteCount;
@@ -87,18 +105,23 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 
         outstream.str("");    // clear
         outstream << "\n";
-        if (server)
+        if (g_correctionOutput)
         {
-            outstream << "Server: " << i->TcpServerIpAddressPort()   << "     Tx: ";
+            outstream << "Corrections Output: " << g_correctionOutput->getListenIpAddress() << ":" << g_correctionOutput->getListenIpPort() << "     Tx: ";
+        } else if (g_correctionInput) {
+            port_handle_t srcPort = g_correctionInput->getSourcePort();
+            outstream << "Corrections Input: [" << portName(srcPort) << (!portIsOpened(srcPort) ? " (Closed)" : "") << "]     Rx: ";
         }
-        outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->ClientServerByteCount() << " bytes    \n";
 
-        if (server)
+        outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)(correctionStats.rxBytes / 1024.0) << " Kbytes    \n";
+
+        if (g_correctionOutput)
         {   // Server
-            outstream << "Connections: " << i->ClientConnectionCurrent() << " current, " << i->ClientConnectionTotal() << " total    \n";
+            int numClients = g_correctionOutput->getActiveClients();
+            outstream << "Active Connections: " << numClients << "    \n";
             if (showMessageSummary)
             {
-                outstream << i->ServerMessageStatsSummary();
+                outstream << MessageStats::summary(*g_correctionOutput->getMessageStats());
             }
             refreshDisplay = true;
         }
@@ -111,7 +134,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
             }
             if (showMessageSummary)
             {
-                outstream << i->ClientMessageStatsSummary();
+                outstream << MessageStats::summary(*g_correctionInput->getMessageStats());
             }
         }
     }
@@ -241,6 +264,18 @@ int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
     if (!g_enableDataCallback)
     {   // Receive disabled
         return 0;
+    }
+
+    // If correctionInputs are on, and we've received an updated GNSS position, pass it on to the correction service, if needed.
+    if (g_correctionInput && (data->hdr.id == DID_GPS1_POS)) {
+        gps_pos_t gnssPos = *(gps_pos_t*)data->ptr;
+        if (std::shared_ptr<NtripCorrectionService> ntripPtr = std::dynamic_pointer_cast<NtripCorrectionService>(g_correctionInput)) {
+            static uint32_t lastUpdate = current_timeMs();
+            if (lastUpdate + 5000 < current_timeMs()) {     // Let's not flood the NTRIP caster with every position update...
+                ntripPtr->updatePosition(gnssPos);
+                lastUpdate = current_timeMs();
+            }
+        }
     }
 
     if (!g_commandLineOptions.outputOnceDid.empty())
@@ -530,8 +565,13 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
-        g_roverConnection = new CorrectionService(g_commandLineOptions.roverConnection);
-        g_roverConnection->addDevices(std::vector<device_handle_t> { std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices()) });
+        FIX8::uri uri(g_commandLineOptions.roverConnection);
+        if (uri.parse() && uri.has_scheme() && (std::string(uri.get_scheme()) == "ntrip")) {
+            g_correctionInput = std::make_shared<NtripCorrectionService>(g_commandLineOptions.roverConnection);
+        } else {
+            g_correctionInput = std::make_shared<CorrectionService>(g_commandLineOptions.roverConnection);
+        }
+        g_correctionInput->addDevices(std::vector<device_handle_t>{std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices())});
     }
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
@@ -822,7 +862,11 @@ void cltool_firmwareUpdateWaiter()
 
 static int cltool_createHost()
 {
-    InertialSense inertialSenseInterface;
+    InertialSense inertialSenseInterface({}, {&CltoolDeviceFactory::getInstance()});
+    g_inertialSenseInterface = &inertialSenseInterface;
+    inertialSenseInterface.setErrorHandler(cltool_errorCallback);
+    inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
+
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
     {
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
@@ -838,21 +882,23 @@ static int cltool_createHost()
         cout << "Failed to update GPX flash config" << endl;
         return -1;
     }
-    else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.baseConnection))
-    {
-        cout << "Failed to create host at " << g_commandLineOptions.baseConnection << endl;
-        return -1;
-    }
 
+    device_handle_t srcDevice = DeviceManager::getInstance().front();
     inertialSenseInterface.StopBroadcasts();
+
+    // FIXME: Parse the rest of the "baseConnection" command-line argument for the listen address/port for incoming requests and configure the InertialSense correctionServer
+    g_correctionOutput = std::make_shared<Rtcm3CorrectionServer>(srcDevice);
+    MessageStats::mul_stats_t rtcm3Stats;
+    g_correctionOutput->setMessageStats(&rtcm3Stats);
 
     unsigned int timeSinceClearMs = 0, curTimeMs;
     while (!g_inertialSenseDisplay.ExitProgram())
     {
-        inertialSenseInterface.Update();
         curTimeMs = current_timeMs();
+        g_correctionOutput->step();
+        inertialSenseInterface.Update();
         bool refresh = false;
-        if (curTimeMs - timeSinceClearMs > 2000 || curTimeMs < timeSinceClearMs)
+        if (((curTimeMs - timeSinceClearMs) > 2000) || (curTimeMs < timeSinceClearMs))
         {   // Clear terminal
             g_inertialSenseDisplay.Clear();
             timeSinceClearMs = curTimeMs;
@@ -861,11 +907,11 @@ static int cltool_createHost()
         g_inertialSenseDisplay.Home();
         cout << g_inertialSenseDisplay.Hello();
         display_logger_status(&inertialSenseInterface, refresh);
-        display_server_client_status(&inertialSenseInterface, true, true, refresh);
+        display_server_client_status(true, refresh);
     }
     cout << "Shutting down..." << endl;
 
-    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
+    g_correctionOutput = nullptr;
     return 0;
 }
 
@@ -1012,7 +1058,7 @@ static int cltool_dataStreaming()
                     break;
                 }
 
-                if (g_roverConnection && (g_roverConnection->step() < 0)) {
+                if (g_correctionInput && (g_correctionInput->step() < 0)) {
                     exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
                     break;
                 }
@@ -1036,7 +1082,7 @@ static int cltool_dataStreaming()
 
                     // Collect and print summary list of client messages received
                     display_logger_status(&inertialSenseInterface, refreshDisplay);
-                    display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
+                    display_server_client_status(false, refreshDisplay);
                 }
 
                 if ((current_timeMs() - requestDataSetsTimeMs) > 1000) {

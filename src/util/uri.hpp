@@ -96,7 +96,7 @@ public:
 
     enum class error : uri_len_t { no_error, too_long, illegal_chars, empty_src, countof };
 
-    enum class scheme_t { ftp, http, https, imap, ldap, smtp, telnet, countof };
+    enum class scheme_t { ftp, http, https, imap, ldap, smtp, telnet, ntrip, countof };
 
     static constexpr auto uri_max_len{std::numeric_limits<uri_len_t>::max()};
     using comp_pair = std::pair<component, std::string_view>;
@@ -112,7 +112,7 @@ private:
     static constexpr std::string_view _hexds{"0123456789ABCDEF"};
     static constexpr std::string_view _reserved{":/?#[]@!$&'()*+,;="};
     static constexpr auto _default_ports{detail::to_array<port_pair>
-        ({{"ftp", "21"}, {"http", "80"}, {"https", "443"}, {"imap", "143"}, {"ldap", "389"}, {"smtp", "25"}, {"telnet", "23"},})};
+        ({{"ftp", "21"}, {"http", "80"}, {"https", "443"}, {"imap", "143"}, {"ldap", "389"}, {"smtp", "25"}, {"telnet", "23"}, {"ntrip", "2101"} })};
 
 public:
     inline basic_uri(std::string_view src) noexcept : _source(src) { parse(); }
@@ -297,7 +297,7 @@ public:
             if (auto prt{_source.find_first_of(':', pos)}; prt != std::string_view::npos && prt < pth) {
                 auto autstr{get_component<authority>()};
                 if (autstr.front() != '[' || autstr.back() != ']') {
-                    prt = autstr.find_last_of(':') + pos;
+                    prt = autstr.find_last_of(':') + _ranges[authority].first;
                     ++prt;
                     if (_source.size() - prt > 0) {
                         _ranges[port] = {static_cast<uri_len_t>(prt), static_cast<uri_len_t>(pth - prt)};
@@ -312,7 +312,7 @@ public:
                     clear<port>();
                 else
                     _ranges[port].second = static_cast<uri_len_t>(pth - _ranges[port].first);
-                _ranges[host] = {static_cast<uri_len_t>(hst), static_cast<uri_len_t>((has_port() ? _ranges[port].first - 1 : pth) - hst)};
+                _ranges[host] = {static_cast<uri_len_t>(hst), static_cast<uri_len_t>(_ranges[port].first - 1 - hst)};
             } else
                 _ranges[host] = {static_cast<uri_len_t>(hst), static_cast<uri_len_t>(pth - hst)};
             if (_ranges[host].second)

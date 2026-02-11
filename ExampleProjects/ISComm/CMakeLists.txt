@@ -15,7 +15,10 @@ include_directories(
 link_directories(${IS_SDK_DIR})
 
 # Define the executable
-add_executable(${PROJECT_NAME} ISCommExample.cpp)
+add_executable(${PROJECT_NAME}
+    ISCommExample.cpp
+    ${IS_SDK_DIR}/src/serialPort.c
+)
 
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)

@@ -10,20 +10,21 @@
 #include <deque>
 #include <map>
 
-#include "util/md5.h"
-#include <protocol/FirmwareUpdate.h>
+#include "ISConstants.h"
 
 #include "ISDevice.h"
 #include "ISFileManager.h"
 #include "ISUtilities.h"
-#include "ISDFUFirmwareUpdater.h"
-#include "ISBootloaderBase.h"
 #include "PortManager.h"
+#include "util/md5.h"
+#include "protocol/FirmwareUpdate.h"
 
 #include "miniz.h"
 
-#ifndef __EMBEDDED__
+#if PLATFORM_IS_EMBEDDED == 0
     #include "yaml-cpp/yaml.h"
+    #include "ISDFUFirmwareUpdater.h"
+    #include "ISBootloaderBase.h"
 #endif
 
 
@@ -338,7 +339,7 @@ private:
     ISFwUpdaterCmd& getNextQueuedCmd(ISFwUpdaterCmd* curCmd = nullptr);
     ISFwUpdaterCmd& jumpToStep(const std::string& stepLabel);
     ISFwUpdaterCmd& runCommand(ISFwUpdaterCmd& cmd);
-    void cmd_ExtractPackage(ISFwUpdaterCmd& cmd);
+    void cmd_ExtractPackage(ISFwUpdaterCmd cmd);
     void cmd_SetTarget(ISFwUpdaterCmd& cmd);
     void cmd_WaitFor(ISFwUpdaterCmd& cmd);
     void cmd_Delay(ISFwUpdaterCmd& cmd);
