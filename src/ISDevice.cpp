@@ -58,15 +58,32 @@ int ISDevice::processPacket(void *ctx, protocol_type_t ptype, packet_t *pkt, por
     return (device && device->port == port) ? device->onPacketHandler(ptype, pkt, port) : -1;
 }
 
-bool ISDevice::Update() {
-    return step();
+/**
+ * @param ptype the type (_PTYPE_*) of the packet query. Default to _PTYPE_NONE (any packet type)
+ * @return returns the number of milliseconds since a message of this type was received. If ptype == _PTYPE_NONE
+ *   this will return the minimum age of all packet types.
+ */
+uint32_t ISDevice::millisSinceLastRx(int ptype) {
+    std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+    if (ptype != _PTYPE_NONE)
+        return std::chrono::duration_cast<std::chrono::milliseconds>(now - lastRxTs[ptype]).count();
+
+    uint32_t min = UINT32_MAX;
+    for (auto ts : lastRxTs) {
+        if (ts == std::chrono::high_resolution_clock::time_point())
+            continue;
+        min = std::min(min, (uint32_t)std::chrono::duration_cast<std::chrono::milliseconds>(now - ts).count());
+    }
+    return min;
 }
+
 
 /**
  * Steps the communications for this device, sending any scheduled requests and parsing any received data on the device's associated port (if connected).
  * @return false if the device is inactionable, either through configuration or port status; otherwise true indicates a sufficient state to perform work, even if there was nothing to do.
  */
 bool ISDevice::step() {
+    FnProfiler fn("ISDevice::step()");
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
@@ -76,10 +93,13 @@ bool ISDevice::step() {
     if (isConnected()) {
         if (portType(port) & PORT_TYPE__COMM) {
             is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+            fn.mark("Parsed messages.");
             if (!hasDeviceInfo()) {
                 validateAsync();
+                fn.mark("Validating device.");
             } else {
                 SyncFlashConfig();
+                fn.mark("Synchronizing flash.");
             }
         }
         didStuff = true;
@@ -87,6 +107,7 @@ bool ISDevice::step() {
 
     if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
         fwUpdate();
+        fn.mark("Handling firmware updated.");
         didStuff = true;
     }
 
@@ -1243,17 +1264,16 @@ bool ISDevice::softwareReset() {
 
 int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 {
-    std::lock_guard<std::recursive_mutex> lock(portMutex);
-
-    if (data->hdr.size==0 || data->ptr==NULL) {
+    if ((data->hdr.size==0) || (data->ptr==NULL))
         return 0;   // this message is invalid, so don't let anything else try and handle it...
-    }
 
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
     if (devLogger) {
         // FIXME:  devLogger->SaveData(data, 0);
         // stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
     }
 
+    markRxTs();
     sampleIsbMsgStats(*data);
     // printf("DID: %d\n", data->hdr.id);
     switch (data->hdr.id) {
@@ -1323,6 +1343,7 @@ int ISDevice::onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port
 int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t port) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
+    markRxTs(_PTYPE_NMEA);
     switch (getNmeaMsgId(msg, msgSize))
     {
         case NMEA_MSG_ID_INFO:
@@ -1353,9 +1374,9 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
 
 int ISDevice::onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
+    markRxTs(ptype);
 
     if (ptype == _PTYPE_INERTIAL_SENSE_ACK) {
-
         eISBPacketFlags pktType = is_comm_to_isb_pkt_type(&COMM_PORT(port)->comm);
         return onIsbAckHandler((p_ack_t*)pkt->data.ptr, pktType, port);
     }
@@ -1509,7 +1530,7 @@ bool ISDevice::waitForImxFlashWrite(uint32_t timeoutMs)
 
 double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
 
-    auto& stat = stats[data.hdr.id];
+    auto& stat = didStats[data.hdr.id];
     stat.accrual += (data.hdr.size + ISB_MIN_PACKET_SIZE + (data.hdr.offset ? 2 : 0));
     switch (data.hdr.id)
     {
