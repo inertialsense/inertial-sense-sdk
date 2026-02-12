@@ -74,6 +74,11 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
             return deviceCallback(this, localDev.devInfo, port);
         }
     } else if (dev->matchesHdwId(hdwId)) {
+        if (!dev->port)
+            dev->assignPort(port);
+        else if (dev->port != port) {
+            // FIXME: this isn't good - it shouldn't happen, but it might... we should deal with it.
+        }
         // a device exists associated with this port already, there isn't anything to do.
         return dev->validate(timeoutMs);
     }
