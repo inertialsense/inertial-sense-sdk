@@ -547,6 +547,23 @@ public:
      */
     bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
 
+    /**
+     * @brief Enable or disable automatic discovery on network ports.
+     *
+     * When enabled, network port discovery (including mDNS-based discovery) is performed
+     * on all supported network ports. When disabled, network ports are not automatically
+     * discovered.
+     *
+     * Calling this function will clear existing network port factories and close any
+     * associated ports managed by them, effectively resetting network discovery state.
+     * It is safe to call while ports are open, but any open network ports may be closed
+     * and will need to be re-established if still required.
+     *
+     * @param enable Set to true to enable discovery on all network ports, or false to
+     *               disable discovery and clear existing network discovery state.
+     */
+    void SetNetworkPortDiscovery(bool enable = false);
+
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
 
