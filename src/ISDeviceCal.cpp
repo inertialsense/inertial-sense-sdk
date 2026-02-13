@@ -132,7 +132,7 @@ std::string MatrixToString(const float* mat, int rows, int cols) {
 
 void StringToMatrix(const std::string& str, float* mat, int rows, int cols) {
     std::string normalized = str;
-    for (char& ch : normalized) {   // Use ether '\n' or ';' as the end of row character
+    for (char& ch : normalized) {   // Use either '\n' or ';' as the end of row character
         if (ch == '\n') {
             ch = ';';
         }
