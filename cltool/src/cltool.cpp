@@ -743,6 +743,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.platformType = platformType;
             }
         }
+        else if (startsWith(a, "-presetGPS"))
+        {
+            g_commandLineOptions.rmcPreset = RMC_PRESET_GPS;
+            enable_display_mode();
+        }
         else if (startsWith(a, "-presetGPXPPD"))
         {
             g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
@@ -1232,6 +1237,7 @@ void cltool_outputUsage()
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
 	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
 	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
+	cout << "    -presetGPS     " << boldOff << " Send RMC preset to enable GPS data stream" << endlbOn;
 	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
