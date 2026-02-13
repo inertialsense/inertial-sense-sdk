@@ -1959,20 +1959,22 @@ typedef struct PACKED
                                             | RMC_BITS_GROUND_VEHICLE)
 #define RMC_PRESET_ALLAN_VARIANCE           (RMC_BITS_PRESET \
                                             | RMC_BITS_IMU)
-#define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
+#define RMC_PRESET_GPS                      (RMC_BITS_PRESET \
                                             | RMC_BITS_GPS1_POS \
                                             | RMC_BITS_GPS2_POS \
                                             | RMC_BITS_GPS1_VEL \
                                             | RMC_BITS_GPS2_VEL \
-                                            | RMC_BITS_GPS1_RAW \
-                                            | RMC_BITS_GPS2_RAW \
-                                            | RMC_BITS_GPS_BASE_RAW \
                                             | RMC_BITS_GPS1_RTK_POS_REL \
                                             | RMC_BITS_GPS1_RTK_HDG_REL \
                                             | RMC_BITS_GPX_DEBUG \
                                             | RMC_BITS_GPX_PORT_MON \
                                             | RMC_BITS_EVENT \
                                             | RMC_BITS_GPX_STATUS)
+#define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
+                                            | RMC_PRESET_GPS \
+                                            | RMC_BITS_GPS1_RAW \
+                                            | RMC_BITS_GPS2_RAW \
+                                            | RMC_BITS_GPS_BASE_RAW)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED

@@ -27,6 +27,9 @@ bool DeviceManager::registerDevice(device_handle_t device) {
     }
 
     push_back(device);
+    if (device->port) {
+        portToDeviceMap[device->port] = device;
+    }
     return true;
 }
 
@@ -58,6 +61,9 @@ device_handle_t DeviceManager::registerNewDevice(const ISDevice& device) {
         if (newDevice) {
             if (portIsValid(device.port)) {
                 newDevice->assignPort(device.port);
+                if (newDevice->port) {
+                    portToDeviceMap[newDevice->port] = newDevice;
+                }
                 // device.assignPort(nullptr);
             }
             push_back(newDevice);
@@ -86,6 +92,9 @@ device_handle_t DeviceManager::registerNewDevice(port_handle_t port, dev_info_t 
         if (newDevice) {
             push_back(newDevice);
             newDevice->assignPort(port);
+            if (newDevice->port) {
+                portToDeviceMap[newDevice->port] = newDevice;
+            }
             return newDevice;
         }
     }
@@ -118,6 +127,9 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
         portClose(device->port);
     }
 
+    if (device->port) {
+        portToDeviceMap.erase(device->port);
+    }
     erase(deviceIter); // erase only remove the device_handle_t from the list, but doesn't release/free the instance itself
     device->port = NULL;
 
@@ -190,6 +202,9 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                     break;  // we'll drop out of the 'for' loop, and still update known_devices and call the listeners, etc.
                 } else {
                     device->assignPort(port);
+                    if (device->port) {
+                        portToDeviceMap[device->port] = device;
+                    }
                     notifyListeners(device, DEVICE_PORT_BOUND);    // notify that this device's port has been updated
                 }
 
@@ -219,6 +234,9 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     // log_debug(IS_LOG_DEVICE_MANAGER, "Allocated new device: %s.", device->getDescription().c_str());
     knownDevices.push_back(deviceEntry);
     push_back(deviceEntry.device);
+    if (deviceEntry.device->port) {
+        portToDeviceMap[deviceEntry.device->port] = deviceEntry.device;
+    }
 
     notifyListeners(deviceEntry.device, DEVICE_ADDED);  // notify
 
@@ -246,11 +264,23 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
             log_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_REMOVED '%s'.", pName.c_str());
             device_handle_t device = getDevice(port);
             if (device) {
-                device->assignPort(nullptr); // revoke the removed port from the device...
                 notifyListeners(device, DEVICE_PORT_LOST);
+                device->assignPort(nullptr); // revoke the removed port from the device...
             }
+            portToDeviceMap.erase(port);
             break;
     }
+}
+
+void DeviceManager::clear(bool closePorts) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    auto tmpSet = getDevicesAsVector();
+    for (auto d : tmpSet) releaseDevice(d, closePorts, true);
+
+    // just to make sure we didn't miss anything (though this could cause memory leaks)
+    std::list<device_handle_t>::clear();
+    knownDevices.clear();
+    portToDeviceMap.clear();
 }
 
 
@@ -287,12 +317,23 @@ device_handle_t DeviceManager::getDevice(uint64_t uid) {
  * @returns an device_handle_t instance associated with the specified port, or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(port_handle_t port) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
-    for (auto device : *this) {
-        if (device->port == port)
-            return device;
+    auto it = portToDeviceMap.find(port);
+    if (it != portToDeviceMap.end()) {
+        return it->second;
     }
     return NULL;
+}
+
+/**
+ * @returns an device_handle_t instance at the specified index, or NULL if not found
+ */
+device_handle_t DeviceManager::getDeviceByIndex(int index) {
+    if ((index < 0) || (index >= (int)size())) {
+        return NULL;
+    }
+    auto it = begin();
+    std::advance(it, index);
+    return *it;
 }
 
 /**
