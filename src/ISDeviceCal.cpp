@@ -114,8 +114,10 @@ void StringToVector(const std::string& str, float* vec, int len) {
     }
 }
 
+// Default row terminator for matrix string representations. Use '\n' to keep
+// each row on its own line; some tools may prefer ';' as a row separator,
+// in which case this value can be updated accordingly.
 #define MATRIX_ROW_END_CHAR     '\n'
-// #define MATRIX_ROW_END_CHAR     ';'
 
 // Matrix/Vector string conversion stubs (these would need full implementation if sOrthoCal is used)
 std::string MatrixToString(const float* mat, int rows, int cols) {
