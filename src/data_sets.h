@@ -1899,7 +1899,7 @@ typedef struct PACKED
 
 // GPX messages could go into a local grmc if imx memory we expanded. (TM)
 #define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000
-#define RMC_BITS_GPX_DEBUG              0x0000200000000000
+#define RMC_BITS_GPX_DEBUG_ARRAY        0x0000200000000000
 #define RMC_BITS_GPX_STATUS             0x0000400000000000
 #define RMC_BITS_GPX_DEV_INFO           0x0000800000000000
 #define RMC_BITS_GPX_RMC                0x0001000000000000
@@ -1932,7 +1932,7 @@ typedef struct PACKED
                                             | RMC_BITS_GPS1_RTK_POS_REL \
                                             | RMC_BITS_GPS1_RTK_HDG_REL \
                                             | RMC_BITS_GPX_STATUS \
-                                            | RMC_BITS_GPX_DEBUG \
+                                            | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_INTERNAL_PPD \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
@@ -1951,7 +1951,7 @@ typedef struct PACKED
                                             | RMC_BITS_RTK_STATE \
                                             | RMC_BITS_RTK_CODE_RESIDUAL \
                                             | RMC_BITS_RTK_PHASE_RESIDUAL \
-                                            | RMC_BITS_GPX_DEBUG \
+                                            | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_GPS1_SAT \
                                             | RMC_BITS_GPS2_SAT \
                                             | RMC_BITS_EVENT \
@@ -1968,7 +1968,7 @@ typedef struct PACKED
                                             | RMC_BITS_GPS2_VEL \
                                             | RMC_BITS_GPS1_RTK_POS_REL \
                                             | RMC_BITS_GPS1_RTK_HDG_REL \
-                                            | RMC_BITS_GPX_DEBUG \
+                                            | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_GPX_PORT_MON \
                                             | RMC_BITS_EVENT \
                                             | RMC_BITS_GPX_STATUS)
