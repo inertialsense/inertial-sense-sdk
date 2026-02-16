@@ -5610,10 +5610,13 @@ typedef struct PACKED
     uint32_t                startTimeUs;
 
     /** Counter of times task took too long to run */
-    uint16_t                gapCount;
+    uint8_t                 gapCount;
 
-    /** Counter of times task took too long to run twice in a row */
+    /** Counter of times task took too long to run two times in a row */
     uint8_t                 doubleGapCount;
+
+    /** Counter of times task took too long to run three times in a row */
+    uint8_t                 tripleGapCount;
 
     /** Reserved */
     uint8_t                 reserved;
@@ -5651,13 +5654,16 @@ typedef struct PACKED
     uint32_t                startTimeTicks;
 
     /** Counter of times task took too long to run */
-    uint16_t                gapCount;
+    uint8_t                 gapCount;
 
     /** Counter of times task took too long to run back-to-back */
     uint8_t                 doubleGapCount;
 
-    /** Indicates whether gap occurd on last update */
-    uint8_t                 gapOnLast;
+    /** Counter of times task took too long to run back-to-back-to-back */
+    uint8_t                 tripleGapCount;
+
+    /** Count of back-to-back gaps */
+    uint8_t                 successiveGapCount;
 
     /** Task period ms */
     uint32_t                periodTicks;
