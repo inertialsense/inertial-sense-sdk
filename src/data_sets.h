@@ -5491,6 +5491,29 @@ typedef struct
         
 } system_fault_t;
 
+enum eBackupOffset
+{
+    IS_BACKUP_UPTIME = 0,
+    IS_BACKUP_HALT_REASON = 1,
+    IS_BACKUP_PC = 2,
+    IS_BACKUP_TASK_A_LAST_FEED = 3,
+    IS_BACKUP_TASK_B_LAST_FEED = 4,
+    IS_BACKUP_WDT_LAST_FEED = 5,
+    IS_BACKUP_COUNT
+}
+
+/**
+ * @brief v3 Backup information.
+ */
+typedef struct
+{
+    uint32_t        upTime;         /** Time (uptime in seconds) */
+    uint32_t        haltReason;     /** Halt reason */
+    uint32_t        pc;             /** Program Counter value at time of halt */
+    uint32_t        taskACurRun;    /** Miliseconds since task A last ran */
+    uint32_t        taskBCurRun;    /** Miliseconds since task B last ran */
+} backup_info_t;
+
 /** RTOS tasks */
 enum eImxRtosTask
 {
