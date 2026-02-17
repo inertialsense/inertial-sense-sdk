@@ -5512,6 +5512,7 @@ typedef struct
     uint32_t        pc;             /** Program Counter value at time of halt */
     uint32_t        taskACurRun;    /** Miliseconds since task A last ran */
     uint32_t        taskBCurRun;    /** Miliseconds since task B last ran */
+    uint32_t        wdtCurRun;      /** Miliseconds since WDT last fed */
 } backup_info_t;
 
 /** RTOS tasks */
