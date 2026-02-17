@@ -5612,11 +5612,11 @@ typedef struct PACKED
     /** Counter of times task took too long to run */
     uint8_t                 gapCount;
 
-    /** Counter of times task took too long to run two times in a row */
+    /** Counter of times task took too long to run x2 in a row */
     uint8_t                 doubleGapCount;
 
-    /** Counter of times task took too long to run three times in a row */
-    uint8_t                 tripleGapCount;
+    /** Counter of times task took too long to run x4 in a row */
+    uint8_t                 quadGapCount;
 
     /** Reserved */
     uint8_t                 reserved;
@@ -5656,11 +5656,11 @@ typedef struct PACKED
     /** Counter of times task took too long to run */
     uint8_t                 gapCount;
 
-    /** Counter of times task took too long to run back-to-back */
+    /** Counter of times task took too long to run x2 in a row */
     uint8_t                 doubleGapCount;
 
-    /** Counter of times task took too long to run back-to-back-to-back */
-    uint8_t                 tripleGapCount;
+    /** Counter of times task took too long to run x4 in a row */
+    uint8_t                 quadGapCount;
 
     /** Count of back-to-back gaps */
     uint8_t                 successiveGapCount;

@@ -1416,7 +1416,7 @@ static void PopulateMapRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long 2x in a row"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".tripleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].tripleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long 3x in a row"); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".quadGapCount",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].quadGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long 4x in a row"); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8, "", "", DATA_FLAGS_HIDDEN); }
     for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32); }
 }
@@ -1442,7 +1442,7 @@ static void PopulateMapGpxRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long 2x in a row"); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".tripleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].tripleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long 3x in a row"); }
+    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".quadGapCount",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].quadGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long 4x in a row"); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8, "", "", DATA_FLAGS_HIDDEN); }
     for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32); }
 }
