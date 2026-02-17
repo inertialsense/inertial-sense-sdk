@@ -557,7 +557,7 @@ static int serialPortFlushPlatform(port_handle_t port)
     if (!PurgeComm(handle->platformHandle, PURGE_RXCLEAR))
     {
         DWORD dwRes = GetLastError();
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)\n", portName(port), strerror(errno), errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), strerror(errno), errno);
         serialPort->errorCode = dwRes;
         serialPort->error = strerror(serialPort->errorCode);
         return 0;
@@ -593,7 +593,7 @@ static int serialPortDrainPlatform(port_handle_t port)
     if (!PurgeComm(handle->platformHandle, PURGE_TXCLEAR))
     {
         DWORD dwRes = GetLastError();
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)\n", portName(port), strerror(errno), errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), strerror(errno), errno);
         serialPort->errorCode = dwRes;
         serialPort->error = strerror(serialPort->errorCode);
         return 0;
@@ -703,7 +703,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         if (n <= -1)
         {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-                // log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)\n", port, handle->fd, strerror(errno), errno);
+                // log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", port, handle->fd, strerror(errno), errno);
             }
             return -1;
         }
@@ -759,7 +759,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)\n", portName(port), strerror(errno), errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)", portName(port), strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
         serialPort->error = strerror(serialPort->errorCode);
     } else {
@@ -837,7 +837,16 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         DWORD result = GetLastError();
         if (result != ERROR_IO_PENDING)
         {
+            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error writing: %s (%d)", portName(port), strerror(errno), errno);
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
             CancelIo(handle->platformHandle);
+            if (result == ERROR_NOT_SAME_DEVICE) {
+                // this should probably be expanded to include other likely errors, but...
+                // this indicates the handle is invalid. The port should be closed and invalidated.
+                portClose(port);
+                portInvalidate(port);
+            }
             return 0;
         }
     }
@@ -846,7 +855,17 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
     {
         if (!GetOverlappedResult(handle->platformHandle, &handle->ovWrite, &dwWritten, 1))
         {
+            DWORD result = GetLastError();
+            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error fetching 'overlapped result': %s (%d)", portName(port), strerror(errno), errno);
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
             CancelIo(handle->platformHandle);
+            if (result == 433) {    // 433 is an undocumented "STATUS_NO_SUCH_DEVICE"
+                // this should probably be expanded to include other likely errors, but...
+                // this indicates the handle is invalid. The port should be closed and invalidated.
+                portClose(port);
+                portInvalidate(port);
+            }
             return 0;
         }
     }

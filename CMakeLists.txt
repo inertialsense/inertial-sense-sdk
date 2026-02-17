@@ -122,10 +122,16 @@ if (WIN32)
     # yamlcpp needs to know it's a static lib.
     add_definitions(-DYAML_CPP_STATIC_DEFINE)
 
-    # Windows specific include dir
-    target_include_directories(${PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
-    )
+    # Windows specific include dir for libusb config.h
+    if (MSVC)
+        target_include_directories(${PROJECT_NAME} PUBLIC
+            ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
+        )
+    elseif (MINGW)
+        target_include_directories(${PROJECT_NAME} PUBLIC
+            ${CMAKE_CURRENT_LIST_DIR}/src/libusb_mingw
+        )
+    endif()
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"

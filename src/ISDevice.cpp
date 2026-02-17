@@ -83,31 +83,29 @@ uint32_t ISDevice::millisSinceLastRx(int ptype) {
  * @return false if the device is inactionable, either through configuration or port status; otherwise true indicates a sufficient state to perform work, even if there was nothing to do.
  */
 bool ISDevice::step() {
-    FnProfiler fn("ISDevice::step()");
+    FnProfiler fn("ISDevice::step() [" + getIdAsString() + "]", 50000);    // this shouldn't really ever take longer than 50ms to execute
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
         return false;
 
     bool didStuff = false;
-    if (isConnected()) {
-        if (portType(port) & PORT_TYPE__COMM) {
-            is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-            fn.mark("Parsed messages.");
-            if (!hasDeviceInfo()) {
-                validateAsync();
-                fn.mark("Validating device.");
-            } else {
-                SyncFlashConfig();
-                fn.mark("Synchronizing flash.");
-            }
+    if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
+        is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+        fn.mark("Parsed messages.");
+        if (!hasDeviceInfo()) {
+            validateAsync(250);
+            fn.mark("Validating device.");
+        } else {
+            SyncFlashConfig();
+            fn.mark("Synchronizing flash.");
         }
         didStuff = true;
     }
 
     if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
         fwUpdate();
-        fn.mark("Handling firmware updated.");
+        fn.mark("Handling fwUpdate().");
         didStuff = true;
     }
 
@@ -240,7 +238,9 @@ bool ISDevice::handshakeISbl() {
     static const uint8_t handshakerChar = 'U';
     uint8_t readCh = 0;
 
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::handshakeISbl() called.", getIdAsString().c_str());
+    // this call shouldn't really ever take longer than 120ms to execute - Sending 10x 'U' every 10ms + 20%
+    FnProfiler fn("ISDevice::handshakeISbl() [" + getIdAsString() + "]", 120000);
+    // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::handshakeISbl() called.", getIdAsString().c_str());
 
     // first, flush all incoming data and ensure we have a clean buffer...
     for (int i = 0; i < 5; i++) {
@@ -252,6 +252,7 @@ bool ISDevice::handshakeISbl() {
             return false;   // unable to clear buffer, so we can't handshake
         }
     }
+    fn.mark("RX Buffer cleared. Starting handshake.");
 
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
@@ -268,15 +269,19 @@ bool ISDevice::handshakeISbl() {
         SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
     }
 
-    return false;
+    // if we got here without an error, and still haven't seen a valid handshake character
+    // then we probably never will (likely because its already seen a handshake before)
+    return true;    // go ahead and return true, so we don't keep trying
 }
 
 bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     uint8_t buf[64] = {};
+    FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getIdAsString() + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
 
     log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getIdAsString().c_str());
     if (!hasHandshake) {
         hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
+        fn.mark("Handshake == " + std::to_string(hasHandshake));
     }
 
     // clear any partial commands and flush the rx buffer
@@ -287,9 +292,13 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                 portFlush(port);
         }
     }
+    fn.mark("Flushed Tx buffer.");
 
     // Query device
-    portWrite(port, (uint8_t*)":020000041000EA", 15);
+    if (portWrite(port, (uint8_t*)":020000041000EA", 15) != 15)
+        return false;       // we couldn't send the entire string - so don't even bother waiting for a response. We'll have to try again later.
+
+    fn.mark("Query sent.");
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
     uint32_t timeoutExpires = current_timeMs() + timeout;
@@ -330,6 +339,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                 devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
                 devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
                 memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
+                fn.mark("Got a response.");
                 return true;
             }
         }
@@ -338,6 +348,8 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
 
     // hdwId = IS_HARDWARE_TYPE_UNKNOWN;
     // devInfo = {};
+    fn.mark("Timed-out waiting.");
+    log_more_info(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getIdAsString().c_str());
     return false;
 }
 
@@ -346,14 +358,14 @@ bool ISDevice::validate(uint32_t timeout) {
     if (!isConnected())
         return false;
 
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate() called.", getIdAsString().c_str());
+    // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate() called.", getIdAsString().c_str());
 
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
     is_hardware_t oldHdwId = hdwId;
     dev_info_t oldDevInfo = devInfo;
     hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
 
-    queryTypes nextQueryType = QUERYTYPE_NMEA;
+    queryType nextQueryType = QUERYTYPE_NMEA;
     unsigned int startTime = current_timeMs();
     do {
         if ((current_timeMs() - startTime) > timeout) {
@@ -388,10 +400,13 @@ bool ISDevice::validate(uint32_t timeout) {
 
         }
 
-        SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
-        step();
+        if (isConnected() && (portType(port) & PORT_TYPE__COMM)) {
+            is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+        }
 
-        nextQueryType = static_cast<queryTypes>((int)nextQueryType + 1 % (int)QUERYTYPE_MAX);
+        SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
+
+        nextQueryType = static_cast<queryType>((int)nextQueryType + 1 % (int)QUERYTYPE_MAX);
     } while (!hasDeviceInfo());
 
     if (hasDeviceInfo()) {
@@ -404,7 +419,7 @@ bool ISDevice::validate(uint32_t timeout) {
         GetData(DID_GPX_STATUS);
     }
 
-    previousQueryType = QUERYTYPE_NMEA;
+    nextValidationType = QUERYTYPE_NMEA;
     return true;
 }
 
@@ -417,66 +432,70 @@ int ISDevice::validateAsync(uint32_t timeout) {
     if (!isConnected())
         return -1;
 
-    log_bombastic(IS_LOG_ISDEVICE, "[%s] ISDevice::validateAsync() called.", getIdAsString().c_str());
+    uint32_t now = current_timeMs();
+    FnProfiler fn("ISDevice::validateAsync() [" + getIdAsString() + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
     if (hasDeviceInfo()) {
         // we got out Device Info, so reset our timer (stop trying) and return true
+        // log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getIdAsString().c_str(), current_timeMs() - validationStartMs);
         validationStartMs = 0;
-        previousQueryType = QUERYTYPE_NMEA;
+        nextValidationType = QUERYTYPE_NMEA;
         hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-
 
         // once we have device info, turn off these other messages
         GetData(DID_DEV_INFO);
         GetData(DID_SYS_PARAMS);
         GetData(DID_FLASH_CONFIG);
 
-        log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getIdAsString().c_str(), current_timeMs() - validationStartMs);
         return 1;
     }
 
     // if this is non-zero, it means we're actively validating; this helps us know when to give up/timeout
     if (!validationStartMs) {
-        validationStartMs = current_timeMs();
+        validationStartMs = now;
     }
 
     // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
-    if (((current_timeMs() - validationStartMs) > timeout)) {
-        validationStartMs = 0;
-        previousQueryType = QUERYTYPE_NMEA;
+    if ((now - validationStartMs) > timeout) {
+        /*
+        // Do this when we leave scope...
+        Finalizer cleanup([&] { nextValidationType = QUERYTYPE_NMEA,  validationStartMs = 0; });
 
         // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
-        if (!queryDeviceInfoISbl(250) && !hasDeviceInfo()) {
-            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+        if (hasDeviceInfo() || queryDeviceInfoISbl(250)) {
             log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getIdAsString().c_str(), current_timeMs() - validationStartMs);
+            hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             return 1;
         }
 
+        */
         // We failed to get a response before the timeout occurred, so reset the timer (stop trying) and return false
-        log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() timed out after %dms.", getIdAsString().c_str(), current_timeMs() - validationStartMs);
+        log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() timed out after %dms [[ %d, %d, %d ]]", getIdAsString().c_str(), current_timeMs() - validationStartMs, devInfo.hdwRunState, devInfo.hardwareType, devInfo.serialNumber);
+        nextValidationType = QUERYTYPE_NMEA;
+        validationStartMs = 0;
         return -1;
     }
 
-    if (nextValidationQueryMs < current_timeMs()) {
-        switch (previousQueryType) {
-            case ISDevice::queryTypes::QUERYTYPE_NMEA :
+    if (nextValidationMs < now) {
+        switch (nextValidationType) {
+            case QUERYTYPE_NMEA :
                 // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using NMEA protocol.", SERIAL_PORT(port)->portName);
                 SendNmea(NMEA_CMD_QUERY_DEVICE_INFO);
                 break;
-            case ISDevice::queryTypes::QUERYTYPE_ISB :
+            case QUERYTYPE_ISB :
                 // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' using ISB protocol.", SERIAL_PORT(port)->portName);
                 GetData(DID_DEV_INFO);
                 break;
-            case ISDevice::queryTypes::QUERYTYPE_ISbootloader :
+            case QUERYTYPE_ISbootloader :
                 queryDeviceInfoISbl(250);
                 break;
-            case ISDevice::queryTypes::QUERYTYPE_mcuBoot :
+            case QUERYTYPE_mcuBoot :
                 // log_debug(IS_LOG_ISDEVICE, "Querying serial port '%s' mcuBoot/SMP protocol.", SERIAL_PORT(port)->portName);
                 break;
         }
 
         // SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
-        previousQueryType = static_cast<queryTypes>(((int)previousQueryType + 1) % (int)QUERYTYPE_MAX);
-        nextValidationQueryMs = current_timeMs() + 10;  // 10 millis to respond before we try the next query method
+        nextValidationType = static_cast<queryType>(((int)nextValidationType + 1) % (int)QUERYTYPE_MAX);
+        nextValidationMs = now + 10;  // 10 millis to respond before we try the next query method
     }
     return 0;
 }
@@ -670,7 +689,7 @@ int ISDevice::SetSysCmd(const uint32_t command) {
     sysCmd.invCommand = ~command;
     // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
     log_debug(IS_LOG_ISDEVICE, "[%s] Issuing SYS_CMD %d to %s (%s)", getIdAsString().c_str(), command, getIdAsString().c_str(), getPortName().c_str());
-    return comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
+    return SendData(DID_SYS_CMD, &sysCmd, sizeof(system_command_t), 0);
 }
 
 /**
@@ -689,7 +708,7 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
     memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
     n += static_cast<int>(nmeaMsg.size());
     nmea_sprint_footer(reinterpret_cast<char *>(buf), sizeof(buf), n);
-    return SendRaw(buf, n);
+    return (SendRaw(buf, n) >= PORT_ERROR__NONE ? 0 : -1);
 }
 
 
@@ -1434,6 +1453,43 @@ bool ISDevice::assignPort(port_handle_t newPort) {
         is_comm_register_port_callbacks(port, &portCbs);
     }
     return true;
+}
+
+/**
+ * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
+ * Can be overridden to provide custom configuration, etc on connection - just remember
+ *  to call back into ISDevice::connect() in your new method.
+ * @param revalidate if true causes the device to validate after connecting (default = false)
+ * @return true if the connection is made/port opened, otherwise false
+ */
+bool ISDevice::connect(bool revalidate) {
+
+    if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
+        return false;   // port is invalid or incorrect type, so we can't connect it
+
+    if (!portIsOpened(port)) {
+        if (nextConnectMs > current_timeMs()) {
+            SLEEP_MS(15);
+            log_debug(IS_LOG_ISDEVICE, "Connection throttled. You can retry this device again in %dms.", nextConnectMs - current_timeMs());
+            return false;   // don't attempt to reconnect until nextConnectMs has expired
+        }
+
+        if (portOpen(port) != PORT_ERROR__NONE) {
+            SLEEP_MS(15);
+            nextConnectMs = current_timeMs() + 500; // if the connect fails, delay 500ms before trying again.
+            log_debug(IS_LOG_ISDEVICE, "Device failed to connect... You can retry this device again in %dms.", nextConnectMs - current_timeMs());
+            return false;
+        }
+    }
+
+    bool success = false;
+    portStatsReset(port);           // always reset port stats with a reconnect (even if we were already connected)
+    if (revalidate) {
+        SLEEP_MS(15);
+        success = validate();          // if validating, only return true if we successfully validated
+    }
+    log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getIdAsString().c_str(), (success ? " (revalidated)" : ""));
+    return success;
 }
 
 pfnIsCommHandler ISDevice::registerAllHandler(pfnIsCommHandler cbHandler) {

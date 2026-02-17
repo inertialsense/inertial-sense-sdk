@@ -50,7 +50,7 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
 
     portValidate(port);
 
-    log_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
+    log_more_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
     return port;
 }
 
@@ -58,7 +58,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
 
-    log_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
+    log_more_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 

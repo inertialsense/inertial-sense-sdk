@@ -370,8 +370,10 @@ private:
 };
 
 
+// #define FN_PROFILER_ENABLED
 class FnProfiler {
 public:
+#ifdef FN_PROFILER_ENABLED
     // Constructor records the start time and function name
     FnProfiler(const std::string& functionName, uint32_t threshold = 100) : m_functionName(functionName), m_threshold(threshold), m_startTime(std::chrono::high_resolution_clock::now()) { }
 
@@ -401,6 +403,25 @@ private:
     uint32_t m_threshold;
     std::chrono::high_resolution_clock::time_point m_startTime;
     std::vector<std::pair<std::chrono::high_resolution_clock::time_point, std::string>> markers;
+#else
+    FnProfiler(const std::string& functionName, uint32_t threshold = 100) { (void) functionName; (void) threshold; }
+
+    // Destructor calculates and prints the duration
+    ~FnProfiler() { }
+
+    void mark(const std::string& msg) { (void) msg; }
+#endif
 };
 
+template <typename F>
+class Finalizer {
+    F f;
+public:
+    explicit Finalizer(F f) : f(std::move(f)) {}
+    ~Finalizer() { f(); }
+
+    // Delete copy/move to prevent accidental double-execution
+    Finalizer(const Finalizer&) = delete;
+    Finalizer& operator=(const Finalizer&) = delete;
+};
 #endif //IS_SDK__UTIL_H

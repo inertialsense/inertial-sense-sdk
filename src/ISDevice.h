@@ -192,27 +192,7 @@ public:
      * @param revalidate if true causes the device to validate after connecting (default = false)
      * @return true if the connection is made/port opened, otherwise false
      */
-    virtual bool connect(bool revalidate = false) {
-        if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
-            return false;   // port is invalid or incorrect type, so we can't connect it
-
-        if (portIsOpened(port))
-            return true;    // port is already opened, so nothing to do (but we didn't fail)
-
-        if (nextConnectMs > current_timeMs())
-            return false;   // don't attempt to reconnect until nextConnectMs has expired
-
-        bool result = (portOpen(port) == PORT_ERROR__NONE);
-        if (!result)
-            nextConnectMs = current_timeMs() + 500; // if the connect fails, delay 500ms before trying again.
-        portStatsReset(port);
-
-        if (!revalidate && result) {
-            SLEEP_MS(15);
-            result = validate();
-        }
-        return result;
-    }
+    virtual bool connect(bool revalidate = false);
 
     /**
      * Disconnects/closes the bound port to the device, if the port is VALID
@@ -366,13 +346,48 @@ public:
     // Core Interface Functions - these should be the only calls which call into the ComManager functions directly,
     //     these are essentially the basis of all comms to the device, with few exceptions.
 
-    int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSend(port, pktInfo, data, did, size, offset) : -1; }
-    int SendRaw(const void* data, uint32_t length) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendRaw(port, data, length) : -1; }
-    int SendData(eDataIDs dataId, const void* data, uint32_t length, uint32_t offset = 0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendData(port, data, dataId, length, offset) : -1; }
-    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetData(port, dataId, length, offset, period); }
+    int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) {
+        std::lock_guard<std::recursive_mutex> lock(portMutex);
+        if (!isConnected()) return PORT_ERROR__NOT_CONNECTED;
+        if (devInfo.hdwRunState != HDW_STATE_BOOTLOADER) return PORT_ERROR__NOT_SUPPORTED;
+        return comManagerSend(port, pktInfo, data, did, size, offset)  < 0 ? -1 : 0;
+    }
 
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
-    void DisableData(eDataIDs dataId) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerDisableData(port, dataId); }
+    /**
+     * Send a raw binary buffer, byte-for-byte, to this device
+     * @param data a pointer to a block of memory to be sent
+     * @param length the number of bytes to be sent
+     * @return >=0 indicates the number of bytes actually sent, <0 is one of PORT_ERROR__*. Note that PORT_ERROR__NONE == 0 is not an error, but indicates no bytes where sent
+     */
+    int SendRaw(const void* data, uint32_t length) {
+        std::lock_guard<std::recursive_mutex> lock(portMutex);
+        if (!isConnected()) return PORT_ERROR__NOT_CONNECTED;
+        return portWrite(port, static_cast<const uint8_t *>(data), length);
+    }
+
+    int SendData(eDataIDs dataId, const void* data, uint32_t length, uint32_t offset = 0) {
+        std::lock_guard<std::recursive_mutex> lock(portMutex);
+        if (!isConnected()) return PORT_ERROR__NOT_CONNECTED;
+        if (devInfo.hdwRunState == HDW_STATE_BOOTLOADER) return PORT_ERROR__NOT_SUPPORTED;
+        return is_comm_write(port, PKT_TYPE_SET_DATA, dataId, length, offset, data) < 0 ? -1 : 0;
+    }
+
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) {
+        std::lock_guard<std::recursive_mutex> lock(portMutex);
+        if (isConnected() && (devInfo.hdwRunState != HDW_STATE_BOOTLOADER))
+            comManagerGetData(port, dataId, length, offset, period);
+    }
+
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) {
+        std::lock_guard<std::recursive_mutex> lock(portMutex);
+        if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER))
+            comManagerGetDataRmc(port, rmcPreset, rmcOptions);
+    }
+    void DisableData(eDataIDs dataId) {
+        std::lock_guard<std::recursive_mutex> lock(portMutex);
+        if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER))
+            comManagerDisableData(port, dataId);
+    }
 
     // Convenience Functions
 
@@ -587,24 +602,23 @@ public:
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     virtual int onIsbDataHandler(p_data_t* data, port_handle_t port);
     virtual int onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port);
-
     virtual int onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t port);
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
-    enum queryTypes : uint8_t {
+    enum queryType : uint8_t {
         QUERYTYPE_NMEA = 0,
         QUERYTYPE_ISB,
         QUERYTYPE_ISbootloader,
         QUERYTYPE_mcuBoot,
         QUERYTYPE_MAX = QUERYTYPE_mcuBoot,
     };
-    queryTypes previousQueryType = QUERYTYPE_NMEA;                   //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
 
 private:
     uint32_t                    validationStartMs = 0;               //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
-    uint32_t                    nextValidationQueryMs = 0;           //!< if current_timeMs() > than this time, we'll perform the next validation query, otherwise we wait to see if the previous responds.
+    uint32_t                    nextValidationMs = 0;                //!< if current_timeMs() > than this time, we'll perform the next validation query, otherwise we wait to see if the previous responds.
+    queryType                   nextValidationType = QUERYTYPE_NMEA; //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
     unsigned int                syncCheckTimeMs = 0;
 
     bool                        hasHandshake = false;                //!< indicator that this device has already negotiated a handshake, and shouldn't keep trying
