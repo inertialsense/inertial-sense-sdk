@@ -136,9 +136,9 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
         if (device && !device->isConnected() && portIsValid(device->port)) {
             log_debug(IS_LOG_FWUPDATE, "Device %s is disconnected... Attempting to reconnect.", device->getIdAsString().c_str());
-            if (!device->connect(true)) {
+            if (!device->connect(false)) {
                 log_warn(IS_LOG_FWUPDATE,"Device %s failed to reconnect.", device->getIdAsString().c_str());
-                SLEEP_MS(500);
+                // SLEEP_MS(100);
             }
         }
 

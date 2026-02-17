@@ -907,6 +907,11 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             serialPort->errorCode = errno;
             serialPort->error = strerror(serialPort->errorCode);
             log_error(IS_LOG_PORT, "[%s] serialPortWritePlatform():: Error writing: %s (%d)", serialPort->portName, strerror(errno), errno);
+            if ((errno == ENOENT) || (errno == ENODEV) || (errno ==  EIO)) {
+                // these errors indicate the underlying OS port is bad, and needs to be closed/invalidated - there is usually no other recovery from here.
+                portClose(port);
+                portInvalidate(port);
+            }
             return -1;
         }
         bytes_written += result;

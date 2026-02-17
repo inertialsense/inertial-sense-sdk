@@ -276,6 +276,9 @@ bool ISDevice::handshakeISbl() {
 
 bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     uint8_t buf[64] = {};
+    if (!portIsOpened(port))
+        return false;
+
     FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getIdAsString() + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
 
     log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getIdAsString().c_str());
