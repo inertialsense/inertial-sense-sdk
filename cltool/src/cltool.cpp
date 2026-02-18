@@ -856,13 +856,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-ub") && (i + 1) < argc)
         {
-            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO;
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO;
             g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
             g_commandLineOptions.updateBootloaderFilename = argv[++i];              // use next argument
         }
         else if (startsWith(a, "-uf") && (i + 1) < argc)
         {
-            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO;
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO;
             if ((strcmp(a, "-ufpkg") == 0) && (i + 1) < argc)
             {
                 g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
