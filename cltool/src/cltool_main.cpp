@@ -1105,13 +1105,17 @@ static int cltool_dataStreaming()
                 SLEEP_MS(1);
             }
  
-            if (exitCode == EXIT_CODE_SUCCESS)
+            // Only report firmware update status if a firmware update was actually initiated.
+            if (updateFirmwareTarget != TARGET_HOST && !fwUpdateCmds.empty())
             {
-                printf("Firmware update successful!\n");
-            }
-            else
-            {
-                printf("Firmware update failed w/ exit code %d: %s\n", exitCode, getExitCodeDescription(exitCode));
+                if (exitCode == EXIT_CODE_SUCCESS)
+                {
+                    printf("Firmware update successful!\n");
+                }
+                else
+                {
+                    printf("Firmware update failed w/ exit code %d: %s\n", exitCode, getExitCodeDescription(exitCode));
+                }
             }
        }
         catch (...)
