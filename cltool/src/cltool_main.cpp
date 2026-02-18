@@ -1019,7 +1019,6 @@ static int cltool_dataStreaming()
                         cltool_firmwareUpdateWaiter
               ) != IS_OP_OK) {
                     // No need to Close() the InertialSense class interface; It will be closed when destroyed.
-                    printf("Firmware update failed!\n");
                     return -1;
                 };
             }
