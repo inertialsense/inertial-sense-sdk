@@ -199,9 +199,7 @@ InertialSense::InertialSense(
     deviceManager.addDeviceFactory((DeviceFactory*)&ImxDeviceFactory::getInstance());
     deviceManager.addDeviceListener([this](auto && PH1, auto && PH2) { deviceManagerHandler(PH1, PH2); });
 
-    portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
-    portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
-    portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
+    SetNetworkPortDiscovery();
     portManager.addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4, auto && PH5) { portManagerHandler(PH1, PH2, PH3, PH4, PH5); });
 
     for (int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
@@ -653,6 +651,18 @@ bool InertialSense::UploadImxCalibrationFromFile(std::string path, port_handle_t
     return WithDevice(port, [&](device_handle_t dev) { return dev->UploadImxCalibrationFromFile(path); });
 }
 
+void InertialSense::SetNetworkPortDiscovery(bool enable)
+{
+    portManager.clearPortFactories();
+    portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
+    portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
+    if (enable) {
+        portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
+    }
+
+    // Removes all ports from the PortManager
+    portManager.clear();
+}
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
 {
