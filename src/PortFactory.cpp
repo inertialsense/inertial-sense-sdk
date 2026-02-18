@@ -96,8 +96,8 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
         repeatCount = 0;
         lastErrorMs = current_timeMs();
 
-        // Split the printf into two calls (helps avoid inlining inference)
-        log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
+        // General errors should already be reported by the underlying port implementation (if IS_LOG_PORT is configured)
+        // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
     } else {
         // Split the printf into two calls (helps avoid inlining inference)
         log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
