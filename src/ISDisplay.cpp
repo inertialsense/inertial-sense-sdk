@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sstream>
 #include <iomanip>
 #include <math.h>
+#include <cstdlib>
 
 #include "DataCSV.h"
 #include "ISConstants.h"
@@ -58,6 +59,9 @@ static bool s_exitProgram;
 
 #if PLATFORM_IS_WINDOWS
 
+// Forward declaration for cleanup function
+static void restoreCursorOnExit();
+
 static bool ctrlHandler(DWORD fdwCtrlType)
 {
     switch (fdwCtrlType)
@@ -67,11 +71,49 @@ static bool ctrlHandler(DWORD fdwCtrlType)
     case CTRL_BREAK_EVENT:
     case CTRL_LOGOFF_EVENT:
     case CTRL_SHUTDOWN_EVENT:
+    {
+        // Restore cursor before exit using both Windows API and ANSI codes
+        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (hOut != INVALID_HANDLE_VALUE)
+        {
+            CONSOLE_CURSOR_INFO cursorInfo;
+            if (GetConsoleCursorInfo(hOut, &cursorInfo))
+            {
+                cursorInfo.bVisible = TRUE;
+                SetConsoleCursorInfo(hOut, &cursorInfo);
+            }
+        }
+        // Also send ANSI escape code as fallback
+        fputs("\x1b[?25h", stdout);
+        fflush(stdout);
+        fflush(stderr);
+        
         s_exitProgram = true;
         return true;
+    }
     default:
         return false;
     }
+}
+
+static void restoreCursorOnExit()
+{
+    // Use both Windows API and ANSI escape codes for maximum compatibility
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut != INVALID_HANDLE_VALUE)
+    {
+        CONSOLE_CURSOR_INFO cursorInfo;
+        if (GetConsoleCursorInfo(hOut, &cursorInfo))
+        {
+            cursorInfo.bVisible = TRUE;
+            SetConsoleCursorInfo(hOut, &cursorInfo);
+        }
+    }
+    
+    // Also send ANSI escape code to show cursor (as a fallback/supplement)
+    fputs("\x1b[?25h", stdout);
+    fflush(stdout);
+    fflush(stderr);
 }
 
 #else
@@ -104,6 +146,9 @@ cInertialSenseDisplay::cInertialSenseDisplay(eDisplayMode displayMode)
         std::cout << "Failed to set console ctrl handler!" << endl;
     }
 
+    // Register cleanup function to restore cursor on exit (handles unexpected termination)
+    atexit(restoreCursorOnExit);
+
 #else
 
     signal(SIGINT, signalFunction);
@@ -118,7 +163,12 @@ cInertialSenseDisplay::cInertialSenseDisplay(eDisplayMode displayMode)
 cInertialSenseDisplay::~cInertialSenseDisplay()
 {
 
-#if !PLATFORM_IS_WINDOWS
+#if PLATFORM_IS_WINDOWS
+
+    // Restore cursor visibility on Windows
+    ShowCursor(true);
+
+#else
 
     if (m_nonblockingkeyboard)
     {   // Revert terminal changes from KeyboardNonBlock();
@@ -138,12 +188,24 @@ void cInertialSenseDisplay::ShowCursor(bool visible)
 
 #if PLATFORM_IS_WINDOWS
 
-//     m_windowsConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
     m_windowsConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
-    GetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
-    cursorInfo.bVisible = visible;
-    SetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+    if (GetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo))
+    {
+        cursorInfo.bVisible = visible ? TRUE : FALSE;
+        SetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+    }
+    
+    // Also use ANSI escape codes for extra reliability
+    if (visible)
+    {
+        fputs("\x1b[?25h", stdout);  // Show cursor
+    }
+    else
+    {
+        fputs("\x1b[?25l", stdout);  // Hide cursor
+    }
+    fflush(stdout);
 
 #endif
 
