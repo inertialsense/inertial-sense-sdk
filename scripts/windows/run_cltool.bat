@@ -26,4 +26,5 @@ if not exist "cltool.exe" (
 
 :: Run cltool with all provided arguments
 cltool.exe %*
-
+set "EXITCODE=%ERRORLEVEL%"
+endlocal & exit /b %EXITCODE%
