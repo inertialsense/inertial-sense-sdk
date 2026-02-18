@@ -1019,6 +1019,7 @@ static int cltool_dataStreaming()
                         cltool_firmwareUpdateWaiter
               ) != IS_OP_OK) {
                     // No need to Close() the InertialSense class interface; It will be closed when destroyed.
+                    printf("Firmware update failed!\n");
                     return -1;
                 };
             }
@@ -1103,7 +1104,16 @@ static int cltool_dataStreaming()
                 // Prevent processor overload
                 SLEEP_MS(1);
             }
-        }
+ 
+            if (exitCode == EXIT_CODE_SUCCESS)
+            {
+                printf("Firmware update successful!\n");
+            }
+            else
+            {
+                printf("Firmware update failed w/ exit code %d: %s\n", exitCode, getExitCodeDescription(exitCode));
+            }
+       }
         catch (...)
         {
             cout << "Unknown exception..." << endl;
@@ -1249,6 +1259,12 @@ int main(int argc, char* argv[])
     }
 
     g_inertialSenseDisplay.ShutDown();
+
+    // Display exit status
+    if (exitCode != EXIT_CODE_SUCCESS)
+    {
+        fprintf(stderr, "Exit Status: %d - %s\n", exitCode, getExitCodeDescription(exitCode));
+    }
 
     return exitCode;
 }
