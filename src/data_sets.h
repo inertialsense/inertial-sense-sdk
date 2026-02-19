@@ -4027,6 +4027,9 @@ typedef struct PACKED
 
     /** reserved, for alignment */
     uint8_t reserved;
+#if NFREQ == 2
+    uint8_t reserved1;
+#endif
 
     /** Observation data carrier-phase (cycle). The carrier phase initial ambiguity is initialized using an approximate value to make the magnitude of the phase close to the pseudorange measurement. Clock resets are applied to both phase and code measurements in accordance with the RINEX specification. */
     double L[NFREQ+NEXOBS];
