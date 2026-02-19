@@ -1105,7 +1105,7 @@ static int cltool_dataStreaming()
             }
  
             // Only report firmware update status if a firmware update was actually initiated.
-            if (updateFirmwareTarget != TARGET_HOST && !fwUpdateCmds.empty())
+            if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST && !g_commandLineOptions.fwUpdateCmds.empty())
             {
                 if (exitCode == EXIT_CODE_SUCCESS)
                 {
