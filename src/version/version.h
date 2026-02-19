@@ -12,7 +12,7 @@
     #include "../../cpp/EvalTool/version/buildInfo.h"
 #else
     #define REPO_VERSION_MAJOR      2
-    #define REPO_VERSION_MINOR      2
+    #define REPO_VERSION_MINOR      7
     #define REPO_VERSION_REVIS      0
     #define REPO_VERSION_PRERELEASE 0
 
@@ -23,7 +23,7 @@
     #define REPO_VERSION            "<no-git-info>"
     #define REPO_VERSION_NO_META    "<no-git-info>"
     #define REPO_VERSION_MAJOR      2
-    #define REPO_VERSION_MINOR      2
+    #define REPO_VERSION_MINOR      7
     #define REPO_VERSION_REVIS      0
     #define REPO_VERSION_PRERELEASE 0
 
