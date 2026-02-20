@@ -527,14 +527,42 @@ static void PopulateMapSystemFault(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<system_fault_t> mapper(data_set, did);
     int flags = DATA_FLAGS_DISPLAY_HEX;
+    mapper.AddMember("upTime", &system_fault_t::upTime, DATA_TYPE_UINT32, "", "System uptime in milliseconds");
     mapper.AddMember("status", &system_fault_t::status, DATA_TYPE_UINT32, "", "Bits: 23:20[flashMigMrk, code, stkOverflow, malloc] 19:16[busFlt, memMng, usageFlt, hardFlt] 7:4[flashMig, softRst] 3:0[bootldrRst, userRst]", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("g1Task", &system_fault_t::g1Task, DATA_TYPE_UINT32, "", "Active task at fault");
-    mapper.AddMember("g2FileNum", &system_fault_t::g2FileNum, DATA_TYPE_UINT32, "", "File number at fault");
-    mapper.AddMember("g3LineNum", &system_fault_t::g3LineNum, DATA_TYPE_UINT32, "", "Line number at fault");
-    mapper.AddMember("g4", &system_fault_t::g4, DATA_TYPE_UINT32, "", "value at fault", flags);
-    mapper.AddMember("g5Lr", &system_fault_t::g5Lr, DATA_TYPE_UINT32, "", "Load register at fault", flags);
+    mapper.AddMember("fileNum", &system_fault_t::fileNum, DATA_TYPE_UINT32, "", "File number at fault");
+    mapper.AddMember("lineNum", &system_fault_t::lineNum, DATA_TYPE_UINT32, "", "Line number at fault");
+    mapper.AddMember("haltReason", &system_fault_t::haltReason, DATA_TYPE_UINT32, "", "Zephyr halt reason");
+    mapper.AddMember("lr", &system_fault_t::lr, DATA_TYPE_UINT32, "", "Load register at fault", flags);
     mapper.AddMember("pc", &system_fault_t::pc, DATA_TYPE_UINT32, "", "program counter at fault", flags);
-    mapper.AddMember("psr", &system_fault_t::psr, DATA_TYPE_UINT32, "", "program status register at fault", flags);
+    mapper.AddMember("psr", &system_fault_t::psr, DATA_TYPE_UINT32, "", "program status register at fault", flags);    
+    mapper.AddMember("taskALastFeed", &system_fault_t::taskALastFeed, DATA_TYPE_UINT32, "", "Milliseconds since task A last ran");
+    mapper.AddMember("taskBLastFeed", &system_fault_t::taskBLastFeed, DATA_TYPE_UINT32, "", "Milliseconds since task B last ran");
+    mapper.AddMember("wdtLastFeed", &system_fault_t::wdtLastFeed, DATA_TYPE_UINT32, "", "Milliseconds since WDT last fed");
+    mapper.AddMember("var0", &system_fault_t::var0, DATA_TYPE_UINT32, "", "var0 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var1", &system_fault_t::var1, DATA_TYPE_UINT32, "", "var1 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var2", &system_fault_t::var2, DATA_TYPE_UINT32, "", "var2 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
+} 
+
+static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<system_fault_t> mapper(data_set, did);
+    int flags = DATA_FLAGS_DISPLAY_HEX;
+    mapper.AddMember("upTime", &system_fault_t::upTime, DATA_TYPE_UINT32, "", "System uptime in milliseconds");
+    mapper.AddMember("status", &system_fault_t::status, DATA_TYPE_UINT32, "", "Bits: 23:20[flashMigMrk, code, stkOverflow, malloc] 19:16[busFlt, memMng, usageFlt, hardFlt] 7:4[flashMig, softRst] 3:0[bootldrRst, userRst]", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("fileNum", &system_fault_t::fileNum, DATA_TYPE_UINT32, "", "File number at fault");
+    mapper.AddMember("lineNum", &system_fault_t::lineNum, DATA_TYPE_UINT32, "", "Line number at fault");
+    mapper.AddMember("haltReason", &system_fault_t::haltReason, DATA_TYPE_UINT32, "", "Zephyr halt reason");
+    mapper.AddMember("lr", &system_fault_t::lr, DATA_TYPE_UINT32, "", "Load register at fault", flags);
+    mapper.AddMember("pc", &system_fault_t::pc, DATA_TYPE_UINT32, "", "program counter at fault", flags);
+    mapper.AddMember("psr", &system_fault_t::psr, DATA_TYPE_UINT32, "", "program status register at fault", flags);    
+    mapper.AddMember("taskALastFeed", &system_fault_t::taskALastFeed, DATA_TYPE_UINT32, "", "Milliseconds since task A last ran");
+    mapper.AddMember("taskBLastFeed", &system_fault_t::taskBLastFeed, DATA_TYPE_UINT32, "", "Milliseconds since task B last ran");
+    mapper.AddMember("wdtLastFeed", &system_fault_t::wdtLastFeed, DATA_TYPE_UINT32, "", "Milliseconds since WDT last fed");
+    mapper.AddMember("var0", &system_fault_t::var0, DATA_TYPE_UINT32, "", "var0 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var1", &system_fault_t::var1, DATA_TYPE_UINT32, "", "var1 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var2", &system_fault_t::var2, DATA_TYPE_UINT32, "", "var2 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
 }
 
 void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1764,7 +1792,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_BIT",                      // 125
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
-    "",                                 // 128
+    "DID_GPX_SYS_FAULT",                // 128
     "",                                 // 129
     "",                                 // 130
     ""                                  // 131
@@ -1869,6 +1897,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapRtosInfo(            m_data_set, DID_RTOS_INFO);
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
+    PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);

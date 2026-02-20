@@ -149,7 +149,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_BIT                     (eDataIDs)125 /** (gpx_bit_t) GPX BIT test */
 #define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
 #define DID_GPX_PORT_MONITOR            (eDataIDs)127 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
-#define DID_GPX_LAST                              127 /** Last of GPX DIDs */
+#define DID_GPX_SYS_FAULT               (eDataIDs)128 /** (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
+#define DID_GPX_LAST                              128 /** Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -1902,7 +1903,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_STATUS             0x0000400000000000
 #define RMC_BITS_GPX_DEV_INFO           0x0000800000000000
 #define RMC_BITS_GPX_RMC                0x0001000000000000
-// #define RMC_BITS_UNUSED                 0x0002000000000000
+#define RMC_BITS_GPX_SYS_FAULT          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 #define RMC_BITS_GPX_RTK_DBG            0x0010000000000000
@@ -1933,7 +1934,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_STATUS \
                                             | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_INTERNAL_PPD \
-                                            | RMC_BITS_DIAGNOSTIC_MESSAGE)
+                                            | RMC_BITS_DIAGNOSTIC_MESSAGE\
+                                            | RMC_BITS_GPX_SYS_FAULT)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
@@ -1970,7 +1972,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_GPX_PORT_MON \
                                             | RMC_BITS_EVENT \
-                                            | RMC_BITS_GPX_STATUS)
+                                            | RMC_BITS_GPX_STATUS\
+                                            | RMC_BITS_GPX_SYS_FAULT)
 #define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
                                             | RMC_PRESET_GPS \
                                             | RMC_BITS_GPS1_RAW \
@@ -2202,6 +2205,7 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_DID_PORT_MON =         23,
     GRMC_BIT_POS_DID_GPX_PORT_MON =     24,
     GRMC_BIT_POS_DID_GPS_BASE_RAW =     25,
+    GRMC_BIT_POS_DID_GPX_SYS_FAULT =    26,
     GRMC_BIT_POS_COUNT,
 };
 
@@ -2231,6 +2235,7 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_PORT_MON              (0x0000000000000001 << GRMC_BIT_POS_DID_PORT_MON)
 #define GRMC_BITS_GPX_PORT_MON          (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_PORT_MON)
 #define GRMC_BITS_GPS_BASE_RAW          (0x0000000000000001 << GRMC_BIT_POS_DID_GPS_BASE_RAW)
+#define GRMC_BITS_GPX_SYS_FAULT         (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_SYS_FAULT)
 #define GRMC_BITS_PRESET                (0x8000000000000000)    // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -2241,12 +2246,14 @@ enum GRMC_BIT_POS{
 #define GRMC_PRESET_GPX_STATUS_PERIOD_MS        500
 #define GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS   500
 #define GRMC_PRESET_GPX_PORT_MON_PERIOD_MS      500
+#define GRMC_PRESET_GPX_SYS_FAULT_PERIOD_MS     30000
 
 #define GRMC_PRESET_GPX_BASE            (GRMC_BITS_PRESET \
                                         /*| GRMC_BITS_DEV_INFO*/ \
                                         /*| GRMC_BITS_RTOS_INFO*/ \
                                         | GRMC_BITS_STATUS \
-                                        /*| GRMC_BITS_DEBUG_ARRAY*/)
+                                        /*| GRMC_BITS_DEBUG_ARRAY*/ \
+                                        | GRMC_BITS_GPX_SYS_FAULT)
 
 #define GRMC_PRESET_GPX_GPS1            (GRMC_BITS_GPS1_POS \
                                         | GRMC_BITS_GPS1_VEL \
@@ -5463,58 +5470,75 @@ enum eSysFaultStatus
     SYS_FAULT_STATUS_MASK_CRITICAL_ERROR            = 0xFFFF0000,
 };
 
+enum eBackupOffset
+{
+    IS_BACKUP_UPTIME = 0,
+    IS_BACKUP_STATUS = 1,
+    IS_BACKUP_FILE_NUM = 2,
+    IS_BACKUP_LINE_NUM = 3,
+    IS_BACKUP_HALT_REASON = 4,
+    IS_BACKUP_LR = 5,
+    IS_BACKUP_PC = 6,
+    IS_BACKUP_PSR = 7,
+    IS_BACKUP_TASK_A_LAST_FEED = 8,
+    IS_BACKUP_TASK_B_LAST_FEED = 9,
+    IS_BACKUP_WDT_LAST_FEED = 10,
+    IS_BACKUP_VAR0 = 11,
+    IS_BACKUP_VAR1 = 12,
+    IS_BACKUP_VAR2 = 13,
+    IS_BACKUP_VAR3 = 14,
+    IS_BACKUP_COUNT
+};
+
 /** (DID_SYS_FAULT) System Fault Information */ 
 typedef struct 
 {
+    /** Time (uptime in milli-seconds) */
+    uint32_t upTime;   
+
     /** System fault status (see eSysFaultStatus) */
     uint32_t status;
 
-    /** Fault Type at HardFault */
-    uint32_t g1Task;
-
-    /** Multipurpose register - Line number of fault */
-    uint32_t g2FileNum;
+    /** Line number of fault */
+    uint32_t fileNum;
     
-    /** Multipurpose register - File number at fault */
-    uint32_t g3LineNum;
-        
-    /** Multipurpose register - at time of fault.  */
-    uint32_t g4;
+    /** File number at fault */
+    uint32_t lineNum;
+    
+    /** Zephyr halt reason */
+    uint32_t haltReason;     
 
-    /** Multipurpose register - link register value at time of fault.  */
-    uint32_t g5Lr;
+    /** link register value at time of fault.  */
+    uint32_t lr;
     
     /** Program Counter value at time of fault */
     uint32_t pc;
     
     /** Program Status Register value at time of fault */
     uint32_t psr;
+
+    /** Miliseconds since task A last ran */
+    uint32_t taskALastFeed;
+    
+    /** Miliseconds since task B last ran */
+    uint32_t taskBLastFeed;
+    
+    /** Miliseconds since WDT last fed */
+    uint32_t wdtLastFeed;    
+
+    /** Multi purpose register 0 */
+    uint32_t var0;
+        
+    /** Multi purpose register 1  */
+    uint32_t var1;    
+
+    /** Multi purpose register 2 */
+    uint32_t var2;
+        
+    /** Multi purpose register 3 */
+    uint32_t var3;
         
 } system_fault_t;
-
-enum eBackupOffset
-{
-    IS_BACKUP_UPTIME = 0,
-    IS_BACKUP_HALT_REASON = 1,
-    IS_BACKUP_PC = 2,
-    IS_BACKUP_TASK_A_LAST_FEED = 3,
-    IS_BACKUP_TASK_B_LAST_FEED = 4,
-    IS_BACKUP_WDT_LAST_FEED = 5,
-    IS_BACKUP_COUNT
-};
-
-/**
- * @brief v3 Backup information.
- */
-typedef struct
-{
-    uint32_t        upTime;         /** Time (uptime in seconds) */
-    uint32_t        haltReason;     /** Halt reason */
-    uint32_t        pc;             /** Program Counter value at time of halt */
-    uint32_t        taskALastFeed;  /** Miliseconds since task A last ran */
-    uint32_t        taskBLastFeed;  /** Miliseconds since task B last ran */
-    uint32_t        wdtLastFeed;    /** Miliseconds since WDT last fed */
-} backup_info_t;
 
 /** RTOS tasks */
 enum eImxRtosTask

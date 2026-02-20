@@ -31,6 +31,7 @@ typedef struct {
 struct DeviceLog {
     std::vector<dev_info_t> devInfo;
     std::vector<system_fault_t> sysFault;
+    std::vector<system_fault_t> gpxSysFault;
     std::vector<pimu_t> pimu;
     std::vector<ins_1_t> ins1;
     std::vector<ins_2_t> ins2;
