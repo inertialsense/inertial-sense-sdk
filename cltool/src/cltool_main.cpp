@@ -1103,7 +1103,20 @@ static int cltool_dataStreaming()
                 // Prevent processor overload
                 SLEEP_MS(1);
             }
-        }
+ 
+            // Only report firmware update status if a firmware update was actually initiated.
+            if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST && !g_commandLineOptions.fwUpdateCmds.empty())
+            {
+                if (exitCode == EXIT_CODE_SUCCESS)
+                {
+                    printf("Firmware update successful!\n");
+                }
+                else
+                {
+                    printf("Firmware update failed w/ exit code %d: %s\n", exitCode, getExitCodeDescription(exitCode));
+                }
+            }
+       }
         catch (...)
         {
             cout << "Unknown exception..." << endl;
@@ -1249,6 +1262,12 @@ int main(int argc, char* argv[])
     }
 
     g_inertialSenseDisplay.ShutDown();
+
+    // Display exit status
+    if (exitCode != EXIT_CODE_SUCCESS)
+    {
+        fprintf(stderr, "Exit Status: %d - %s\n", exitCode, getExitCodeDescription(exitCode));
+    }
 
     return exitCode;
 }

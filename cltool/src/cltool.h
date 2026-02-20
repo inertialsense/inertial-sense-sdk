@@ -59,6 +59,33 @@ enum eExitCodes
     EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS        = -6,
 };
 
+// Exit code descriptions
+static const struct {
+    eExitCodes code;
+    const char* description;
+} g_exitCodeStrings[] = {
+    { EXIT_CODE_SUCCESS,                        "Success" },
+    { EXIT_CODE_INVALID_COMMAND_LINE,           "Invalid command line arguments" },
+    { EXIT_CODE_PARSE_COMMAND_LINE_FAILED,      "Failed to parse command line" },
+    { EXIT_CODE_NO_DEVICES_FOUND,               "No devices found" },
+    { EXIT_CODE_DEVICE_DISCONNECTED,            "Device disconnected" },
+    { EXIT_CODE_FIRMWARE_UPDATE_FAILED,         "Firmware update failed" },
+    { EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS, "Failed to setup communications" },
+};
+
+// Get human-readable description for exit code
+static inline const char* getExitCodeDescription(int exitCode)
+{
+    for (size_t i = 0; i < sizeof(g_exitCodeStrings) / sizeof(g_exitCodeStrings[0]); ++i)
+    {
+        if (g_exitCodeStrings[i].code == exitCode)
+        {
+            return g_exitCodeStrings[i].description;
+        }
+    }
+    return "Unknown exit code";
+}
+
 typedef struct
 {
     eDataIDs    did;
