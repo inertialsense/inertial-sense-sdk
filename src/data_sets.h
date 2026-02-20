@@ -4026,8 +4026,9 @@ typedef struct PACKED
     uint8_t qualP[NFREQ+NEXOBS];
 
     /** reserved, for alignment */
+//if NFREQ == 1
     uint8_t reserved;
-//#if NFREQ == 3
+//#elif NFREQ == 3
 //    uint8_t reserved[3];
 //#endif
 
