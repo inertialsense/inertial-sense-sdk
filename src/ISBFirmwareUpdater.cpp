@@ -107,6 +107,12 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     if (session_status == fwUpdate::NOT_STARTED)
         return false;
 
+    // This allows suspending the fwUpdate for until a set time - usually during instances such as
+    // device reboots, where we don't want to try and spin while devices
+    if (nextStepMs > current_timeMs())  // suspending the fwUpdate execution until this time
+        return false;
+    nextStepMs = 0; // always reset back to 0 when elapsed so we don't get held up if the clock rolls over
+
     if (!device)    // nothing to do without a valid device
         return false;
 
@@ -514,12 +520,11 @@ bool ISBFirmwareUpdater::rebootToISB()
             if (device->SetSysCmd(SYS_CMD_ENABLE_BOOTLOADER_AND_RESET))
                 break;
         }
-        last_reboot = current_timeMs();
-        device->disconnect();  // If we haven't already disconnected, let's disconnect and we'll attempt to open again
-        SLEEP_MS(150);   // give a minute for the device to reboot into ISB
 
-        // if we are a USB connection, and do a force a quick discoverPorts() to discover if our USB port was lost. -- If this is a pesistent connection port (UART/SPI, etc) this shouldn't matter.
-        portManager.discoverPorts();
+        last_reboot = current_timeMs();
+        nextStepMs = last_reboot + 2000;   // Give a chance to reboot - don't attempt to process this device again for another 2 seconds.
+        device->disconnect();  // If we haven't already disconnected, let's disconnect and we'll attempt to open again
+        portInvalidate(device->port);
     } else {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN, "(ISB) Unable to reset device to ISbl because the current device state is unknown (%d).", device->devInfo.hdwRunState);
         return false;
