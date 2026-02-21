@@ -329,15 +329,17 @@ class RepositoryInfo:
         """
 
         self.version = self.get_latest_version()
-        if self.branch == "develop":                                      # Develop
+        if self.branch == "develop":                                    # Develop
             self.release_type = "'d'"
-        elif re.match(r"\d.\d.\d-rc", self.branch) is not None:  # Release Candidate
+        elif re.match(r"\d.\d.\d-rc", self.branch) is not None:         # Release Candidate
             self.release_type = "'c'"
-        elif re.match(r"\d.\d.\d-b", self.branch) is not None:   # Beta
+        elif re.match(r"\d.\d.\d-b", self.branch) is not None:          # Beta
             self.release_type = "'b'"
-        elif re.match(r"\d.\d.\d-a", self.branch) is not None:   # Alpha
+        elif re.match(r"\d.\d.\d-a", self.branch) is not None:          # Alpha
             self.release_type = "'a'"
-        else:                                                          # Snapshot
+        elif self.version.prerelease is None:                           # Production Release
+            self.release_type = "0"
+        else:                                                           # Snapshot
             self.release_type = "'s'"
 
 
