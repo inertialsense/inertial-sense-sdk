@@ -672,19 +672,18 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
 
 #else
 
-static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
+static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
     int totalRead = 0;
     int dtMs;
     int n;
     struct timeval start, curr;
-    if (timeoutMilliseconds > 0)
-    {
-        gettimeofday(&start, NULL);
-    }
 
-    if (!handle || !buffer)
+    if (!serialPort || !serialPort->handle || !buffer)
         return -1;
+
+    serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+    gettimeofday(&start, NULL);
 
     while (1)
     {
@@ -760,7 +759,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #if PLATFORM_IS_WINDOWS
     int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMilliseconds);
 #else
-    int result = serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
+    int result = serialPortReadTimeoutPlatformLinux(serialPort, buffer, readCount, timeoutMilliseconds);
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {

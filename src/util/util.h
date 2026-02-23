@@ -102,7 +102,7 @@ namespace utils {
             return format;  // If no arguments, return the format string as is
         }
 
-        int size_s = std::snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+        int size_s = std::snprintf((char*)nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
         if (size_s <= 0) {
             throw std::runtime_error("Error during formatting.");
         }
