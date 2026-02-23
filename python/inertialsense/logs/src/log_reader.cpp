@@ -157,6 +157,7 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
 
             HANDLE_MSG(DID_DEV_INFO, dev_log_->devInfo);
             HANDLE_MSG(DID_SYS_FAULT, dev_log_->sysFault);
+            HANDLE_MSG(DID_GPX_SYS_FAULT, dev_log_->gpxSysFault);
             HANDLE_MSG(DID_INS_1, dev_log_->ins1);
             HANDLE_MSG(DID_INS_2, dev_log_->ins2);
             HANDLE_MSG(DID_GPS1_RCVR_POS, dev_log_->gps1UbxPos);

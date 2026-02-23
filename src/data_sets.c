@@ -685,6 +685,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GPX_BIT]               = RMC_BITS_GPX_BIT,
     [DID_GPX_PORT_MONITOR]      = RMC_BITS_GPX_PORT_MON,
     [DID_RTK_DEBUG]             = RMC_BITS_GPX_RTK_DBG,
+    [DID_GPX_SYS_FAULT]         = RMC_BITS_GPX_SYS_FAULT,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -759,6 +760,7 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_PORT_MONITOR]          = GRMC_BITS_PORT_MON,
     [DID_GPX_PORT_MONITOR]      = GRMC_BITS_GPX_PORT_MON,
     [DID_GPS_BASE_RAW]          = GRMC_BITS_GPS_BASE_RAW,
+    [DID_GPX_SYS_FAULT]         = GRMC_BITS_GPX_SYS_FAULT,
 };
 
 const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
@@ -787,6 +789,7 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_GPS2_RTK_CMP_REL]     = 1, 
     [GRMC_BIT_POS_DID_RTK_DEBUG]        = GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,  
     [GRMC_BIT_POS_DID_PORT_MON]         = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
+    [GRMC_BIT_POS_DID_GPX_SYS_FAULT]    = GRMC_PRESET_GPX_SYS_FAULT_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPX_PORT_MON]     = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPS_BASE_RAW]     = 1,
 };
