@@ -107,6 +107,17 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     if (session_status == fwUpdate::NOT_STARTED)
         return false;
 
+    // This allows suspending the fwUpdate for until a set time - usually during instances such as
+    // device reboots, where we don't want to try and spin while devices
+    if ((int32_t)(current_timeMs() - nextStepMs) < 0)  // suspending the fwUpdate execution until this time
+        return false;
+    nextStepMs = 0; // always reset back to 0 when elapsed so we don't get held up if the clock rolls over
+
+    if (!device)    // nothing to do without a valid device
+        return false;
+
+    FnProfiler fn("ISBFirmwareUpdater::fwUpdate_step() [" + device->getIdAsString() + "]", 30000);
+
     // if we're running ISBootloader, so we need to make sure that we have EXPLICIT_READ access to the port - so that the ISComm parser doesn't try and pull data...
     if (device && portIsValid(device->port) && (portType(device->port) & PORT_TYPE__COMM)) {
         if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
@@ -124,11 +135,24 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // advance to ready. The ISFirmwareUpdater should handle most of this for us, we just need to tell it
         // to look for new ISDevices.
 
-        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
-        if (device && !device->isConnected() && portIsValid(device->port))
-            device->connect(true);
+        // NOTE: Because fwUpdate_step() can be called very frequently, this can bog-down the OS if we try
+        // and open ports too quickly, before they are ready.  If attempt to connect() fails, we should throttle
+        // back this and return
 
-        if (device && device->isConnected() && device->hasDeviceInfo()) {
+        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+        if (device && !device->isConnected() && portIsValid(device->port)) {
+            log_debug(IS_LOG_FWUPDATE, "Device %s is disconnected... Attempting to reconnect.", device->getIdAsString().c_str());
+            if (!device->connect(false)) {
+                log_warn(IS_LOG_FWUPDATE,"Device %s failed to reconnect.", device->getIdAsString().c_str());
+                // SLEEP_MS(100);
+            }
+        }
+
+        if (device && device->isConnected()) {
+            if (!device->hasDeviceInfo()) {
+                device->validateAsync();
+                return true;    // we'll keep in our current state until we can validate the device
+            }
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 
@@ -152,6 +176,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 }
             }
         }
+        fn.mark("Finished INITIALIZING step.");
     }
 
     if ((session_status >= fwUpdate::READY) && (session_status <= fwUpdate::FINALIZING)) {
@@ -165,11 +190,13 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 eraseState = eraseFlash_step();
                 if (eraseState >= ERASE_DONE)
                     updateState = WRITING;
+                fn.mark("Finished ERASING step.");
                 break;
             case WRITING: // prepare for write
                 writeState = writeFlash_step(writeTimeout);
                 if (writeState >= WRITE_DONE)
                     updateState = VERIFYING;
+                fn.mark("Finished WRITING step.");
                 break;
             case VERIFYING: // waiting for write to finish
                 if (doVerify) {
@@ -189,8 +216,10 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 if (imgStream) { delete imgStream; imgStream = nullptr; }
                 if (imgBuffer) { delete imgBuffer; imgBuffer = nullptr; }
                 session_status = fwUpdate::FINISHED;
+                fn.mark("Finished UPDATE_DONE step.");
                 break;
         }
+        fn.mark("Finished non-initializing steps.");
     }
 
 #ifdef DEBUG_INFO
@@ -267,6 +296,8 @@ fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdat
     if (msg.hdr.target_device != fwUpdate::TARGET_ISB_IMX5)
         return fwUpdate::ERR_INVALID_TARGET;
 
+    FnProfiler fn("ISBFirmwareUpdater::fwUpdate_startUpdate() [" + ( device ? device->getIdAsString() : "") + "]");
+
     if ((session_status < fwUpdate::NOT_STARTED) || (session_status >= fwUpdate::READY))
         return session_status;  // the session has already been started; we probably shouldn't allow it to be interrupted
         // TODO: the above it tricky, because if the session gets stuck, it can't be restarted again.
@@ -282,13 +313,16 @@ fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdat
 
     if (device->devInfo.hdwRunState == HDW_STATE_APP) {
         rebootToISB();
+        fn.mark("Booting to ISBootloader.");
         SLEEP_MS(100);
         return fwUpdate::INITIALIZING;
     }
 
     if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-        if (fetch_device_info_and_signature() == IS_OP_OK)   // this call will validate the ISbootloader version and populate m_isb_props necessary for a successful update.
+        if (fetch_device_info_and_signature() == IS_OP_OK) { // this call will validate the ISbootloader version and populate m_isb_props necessary for a successful update.
+            fn.mark("Booted to ISBootloader & validated.");
             return fwUpdate::READY;
+        }
     }
 
     return fwUpdate::ERR_INVALID_TARGET;
@@ -471,7 +505,6 @@ bool ISBFirmwareUpdater::rebootToRomDfu()
 bool ISBFirmwareUpdater::rebootToISB()
 {
     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Resetting %s into Bootloader (ISbl)...", device->getIdAsString().c_str());
-    // fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to Bootloader (ISbl)...  %d", device->devInfo.hdwRunState);
 
     if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
         // we're already in the bootloader, so just issue a reset to the bootloader (we should stay in bootloader)  TODO - Should we issue a reset, if we're already where we want to be??
@@ -479,20 +512,19 @@ bool ISBFirmwareUpdater::rebootToISB()
             return true;
     } else if (device->devInfo.hdwRunState == HDW_STATE_APP) {
         // In case we are in program mode, try and send the commands to go into bootloader mode
-        for (size_t loop = 0; loop < 10; loop++) {
+        for (size_t loop = 0; loop < 3; loop++) {
             if (device->SendNmea("STPB") && device->SendNmea("BLEN"))
-                break;        // If the write fails, assume the device is now in bootloader mode.
+                break;        // If the write fails, assume the device got our command and rebooted
 
             SLEEP_MS(10);
             if (device->SetSysCmd(SYS_CMD_ENABLE_BOOTLOADER_AND_RESET))
                 break;
-
         }
+
         last_reboot = current_timeMs();
+        nextStepMs = last_reboot + 2000;   // Give a chance to reboot - don't attempt to process this device again for another 2 seconds.
         device->disconnect();  // If we haven't already disconnected, let's disconnect and we'll attempt to open again
-        // portManager.releasePort(device->port);  //
-        // SLEEP_MS(50);
-        portManager.discoverPorts(); // if we are a USB connection, and do a force a quick discoverPorts() to discover if our USB port was lost.
+        portInvalidate(device->port);
     } else {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN, "(ISB) Unable to reset device to ISbl because the current device state is unknown (%d).", device->devInfo.hdwRunState);
         return false;
@@ -512,40 +544,40 @@ bool ISBFirmwareUpdater::rebootToISB()
  * @return true if successful, otherwise false
  */
 bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
-    if (!device || !portIsOpened(device->port))
+    if (!device || !portIsOpened(device->port) || device->devInfo.hdwRunState != HDW_STATE_BOOTLOADER)
         return false;
 
     fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
-    // send the "reboot to program mode" command and the device should start in program mode
-    int retry = 5;
-    while (retry-- && portIsOpened(device->port) && !portError(device->port)) {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Sending 'BOOT UP' command.");
-        int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7", 15);
-        if (writeCnt == 15) {
-            for (int i = 0; (portWrite(device->port, (unsigned char *) "\r\n", 2) >= 0) && (i < 3); i++) {
-                SLEEP_MS(25);
-            }
-        } else if (writeCnt < 0) {
-            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Failed to send 'JUMP-TO-APP' command to serial port: %s [%d]", portName(device->port), writeCnt);
+    // Send the "reboot to program mode" command and the device should start in program mode - while technically not a "reo
+    // However, depending on the port type, this may or may not result in the port/device connection being lost
+    // We'll just send the "Boot Up" command a time or 3 - if the portWrite() fails, we'll assume we succeeded,
+    // otherwise, send a few extra times for good measure, and then assume we succeeded -- either way, success!
+    int retry = 0;
+    do {
+        int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7\r\n", 17);
+        if (writeCnt == 17) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Sent 'BOOT UP' command.");
+        } else {
+            // if we didn't send the entire string, we probably lost the connection - probably because it rebooted.
+            if (!retry)     // if retry == 0 the we failed on the first attempt - this isn't so good, so let's notify someone.
+                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN, "(ISB) Failed to send 'JUMP-TO-APP' command to port: %s [%d]", portName(device->port), writeCnt);
             break;
         }
         SLEEP_MS(10);
+    } while (++retry < 3);
+
+    if (portIsOpened(device->port) && !keepPortOpen) {
+        // At this point, there isn't much to do but disconnect and invalidate the port - make the system locate the port again.
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
+        device->disconnect();
+        portInvalidate(device->port);
+    } else if (portIsOpened(device->port)) {
         portFlush(device->port);
     }
 
-    // invalidate, because we don't know until we rediscover the device
-    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
-    if ((portType(device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM) {
-        // ISbl can put a port in EXPLICIT READ mode; we need to clear that flag
-        COMM_PORT(device->port)->flags &= ~COMM_PORT_FLAG__EXPLICIT_READ;
-    }
-
-    if (!keepPortOpen) {
-        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
-        device->disconnect();
-    }
-    return (retry > 0);
+    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device -- this will usually force a revalidation
+    return true;    // since with a UART port, we won't actually know if the device boots to APP, so we just return true
 }
 
 

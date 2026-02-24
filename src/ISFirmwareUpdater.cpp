@@ -362,6 +362,7 @@ void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
 
 bool ISFirmwareUpdater::step() {
     std::lock_guard<std::recursive_mutex> lock(mutex);
+    FnProfiler fnStep("ISFirmwareUpdater::step() [" + ( device ? device->getIdAsString() : "") + "]", 30000);   // this can typically take around 25ms in Windows
 
     if (device && (device->port != port))
         port = device->port;
@@ -381,18 +382,21 @@ bool ISFirmwareUpdater::step() {
                         break;
             }
         }
-    }
+        fnStep.mark("Finished Port check.");
+   }
 
     if (deviceUpdater) {
         deviceUpdater->fwUpdate_step();
         // we need to handle local data exchange through our byte stream to the device
         if (!toHost.empty())
             fwUpdate_handleLocalDevice();
+        fnStep.mark("Finished deviceUpdater->fwUpdate_step().");
     }
 
     if ((pfnStatus_cb != nullptr) && (lastStatus != session_status)) {
         pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
         lastStatus = session_status;
+        fnStep.mark("Finished progress callbacks.");
     }
 
     if (!commands.empty()) {
@@ -404,6 +408,7 @@ bool ISFirmwareUpdater::step() {
     }
 
     bool result = fwUpdate_step();
+    fnStep.mark("Finished fwUpdate_step().");
 
     if (fwUpdate_isDone()) {
         // be sure to release/cleanup the source file after we are finished with it.
@@ -418,6 +423,7 @@ bool ISFirmwareUpdater::step() {
 
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
     // std::lock_guard<std::recursive_mutex> lock(mutex);
+    FnProfiler fnStep("ISFirmwareUpdater::fwUpdate_step() [" + ( device ? device->getIdAsString() : "") + "]", 5000);
 
     switch(session_status) {
         case fwUpdate::READY:

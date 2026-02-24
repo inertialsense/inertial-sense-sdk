@@ -288,14 +288,17 @@ int set_nonblocking(int fd)
 // Return 1 on success, 0 on failure
 static int serialPortOpenPlatform(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortOpenPlatform(%s:B%d, %sblocking) called.", portName, baudRate, blocking ? "" : "non-");
+    log_debug(IS_LOG_PORT, "serialPortOpenPlatform(%s:B%d, %sblocking) called.", portName, baudRate, blocking ? "" : "non-");
 
     serial_port_t* serialPort = (serial_port_t*)port;
     if (serialPort->handle != 0)
     {
         // already open --  FIXME: Should we be closing the port and then reopen??
-        // serialPortClose(serialPort);
-        return 1;
+        #if PLATFORM_IS_WINDOWS
+            serialPortClose(serialPort);
+        #else
+            return 1;
+        #endif
     }
 
     serialPortSetName(port, portName);
@@ -305,6 +308,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
     void* platformHandle = 0;
     platformHandle = CreateFileA(portName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, !blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
+    serialPort->errorCode = (int)GetLastError();
     if (platformHandle == INVALID_HANDLE_VALUE)
     {
         // don't modify the originally requested port value, just create a new value that Windows needs for COM10 and above
@@ -313,7 +317,9 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         platformHandle = CreateFileA(tmpPort, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, !blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
         if (platformHandle == INVALID_HANDLE_VALUE)
         {
-            log_error(IS_LOG_PORT, "serialPortOpenPlatform(%s) failed to open port: %d", portName, GetLastError());
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(errno);
+            log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to open port: %s (%d)", portName, serialPort->error, serialPort->errorCode);
             return 0;
         }
     }
@@ -353,14 +359,18 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialParams.fRtsControl = RTS_CONTROL_ENABLE;
         if (!SetCommState(platformHandle, &serialParams))
         {
-            log_error(IS_LOG_PORT, "serialPortOpenPlatform(%s) failed to set COMM port parameters: %d", portName, GetLastError());
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(errno);
+            log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to set COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
             serialPortClose(port);
             return 0;
         }
     }
     else
     {
-        log_error(IS_LOG_PORT, "serialPortOpenPlatform(%s) failed to retreive COMM port parameters: %d", portName, GetLastError());
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to retreive COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         serialPortClose(port);
         return 0;
     }
@@ -397,7 +407,9 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
-        log_error(IS_LOG_PORT, "serialPortOpenPlatform(%s) failed to configure COMM port timeouts: %d", portName, GetLastError());
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to configure COMM port timeouts: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         serialPortClose(port);
         return 0;
     }
@@ -417,17 +429,17 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     int fd = open(portName, O_RDWR | O_NOCTTY | O_NONBLOCK);     // enable read/write and disable flow control
     if (fd < 0)
     {
-        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error opening port: %s (%d)", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error opening port: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         return 0;
     }
 
     if (configure_serial_port(fd, baudRate) != 0)
     {
-        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)", port, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)", port, serialPort->error, serialPort->errorCode);
         return 0;
     }
 
@@ -462,11 +474,11 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
 static int serialPortIsOpenPlatform(port_handle_t port)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortIsOpenPlatform() called.");
-
     serial_port_t* serialPort = (serial_port_t*)port;
     if (!serialPort->handle)
         return 0;
+
+    log_more_debug(IS_LOG_PORT, "[%s] serialPortIsOpenPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
 
@@ -490,7 +502,6 @@ static int serialPortIsOpenPlatform(port_handle_t port)
 
 static int serialPortClosePlatform(port_handle_t port)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortClosePlatform() called.");
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -499,7 +510,9 @@ static int serialPortClosePlatform(port_handle_t port)
         return 0;
     }
 
-#if PLATFORM_IS_WINDOWS
+    log_debug(IS_LOG_PORT, "[%s] serialPortClosePlatform() called.", portName(port));
+
+    #if PLATFORM_IS_WINDOWS
 
     //DWORD dwRead = 0;
     //DWORD error = 0;
@@ -533,8 +546,6 @@ static int serialPortClosePlatform(port_handle_t port)
 
 static int serialPortFlushPlatform(port_handle_t port)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortFlushPlatform() called.");
-
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -543,16 +554,16 @@ static int serialPortFlushPlatform(port_handle_t port)
         return 0;
     }
 
+    log_more_debug(IS_LOG_PORT, "[%s] serialPortFlushPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
 
     // Use PurgeComm to clear receive (RX) buffer.
     if (!PurgeComm(handle->platformHandle, PURGE_RXCLEAR))
     {
-        DWORD dwRes = GetLastError();
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)\n", portName, strerror(errno), errno);
-        serialPort->errorCode = dwRes;
-        serialPort->error = strerror(serialPort->errorCode);
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
         return 0;
     }
 
@@ -570,8 +581,6 @@ static int serialPortFlushPlatform(port_handle_t port)
 
 static int serialPortDrainPlatform(port_handle_t port)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortDrainPlatform() called.");
-
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -580,15 +589,16 @@ static int serialPortDrainPlatform(port_handle_t port)
         return 0;
     }
 
+    log_more_debug(IS_LOG_PORT, "[%s] serialPortDrainPlatform() called.", portName(port));
+
 #if PLATFORM_IS_WINDOWS
 
     // Use PurgeComm to clear transmit (TX) buffer.
     if (!PurgeComm(handle->platformHandle, PURGE_TXCLEAR))
     {
-        DWORD dwRes = GetLastError();
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)\n", portName, strerror(errno), errno);
-        serialPort->errorCode = dwRes;
-        serialPort->error = strerror(serialPort->errorCode);
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
         return 0;
     }
 
@@ -662,19 +672,18 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
 
 #else
 
-static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
+static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
     int totalRead = 0;
     int dtMs;
     int n;
     struct timeval start, curr;
-    if (timeoutMilliseconds > 0)
-    {
-        gettimeofday(&start, NULL);
-    }
 
-    if (!handle || !buffer)
+    if (!serialPort || !serialPort->handle || !buffer)
         return -1;
+
+    serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+    gettimeofday(&start, NULL);
 
     while (1)
     {
@@ -696,7 +705,9 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         if (n <= -1)
         {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-                // log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)\n", port, handle->fd, strerror(errno), errno);
+                serialPort->errorCode = errno;
+                serialPort->error = strerror(errno);
+                // log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", port, handle->fd, serialPort->error, serialPort->errorCode);
             }
             return -1;
         }
@@ -730,8 +741,6 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
 
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds)
 {
-    log_bombastic(IS_LOG_PORT, "serialPortReadTimeoutPlatform() called.");
-
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
@@ -739,6 +748,8 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         serialPort->error = "Internal port handle is NULL; Port is closed.";
         return -1;
     }
+
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() called.", portName(port));
 
     if (timeoutMilliseconds < 0)
     {
@@ -748,19 +759,19 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #if PLATFORM_IS_WINDOWS
     int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMilliseconds);
 #else
-    int result = serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
+    int result = serialPortReadTimeoutPlatformLinux(serialPort, buffer, readCount, timeoutMilliseconds);
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
         serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
     } else {
         serialPort->errorCode = 0; // clear any previous errorcode
         serialPort->error = NULL;
     }
 
-    log_bombastic(IS_LOG_PORT, "serialPortReadTimeoutPlatform() received %d bytes", result);
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() received %d bytes", portName(port), result);
     debugDumpBuffer("<< ", buffer, result);
     return result;
 }
@@ -812,7 +823,6 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
 
 static int serialPortWritePlatform(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
-    log_bombastic(IS_LOG_PORT, "serialPortWritePlatform() called.");
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
@@ -820,6 +830,8 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
+
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortWritePlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
 
@@ -829,7 +841,16 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         DWORD result = GetLastError();
         if (result != ERROR_IO_PENDING)
         {
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
+            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error writing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
             CancelIo(handle->platformHandle);
+            if (result == ERROR_NOT_SAME_DEVICE) {
+                // this should probably be expanded to include other likely errors, but...
+                // this indicates the handle is invalid. The port should be closed and invalidated.
+                portClose(port);
+                portInvalidate(port);
+            }
             return 0;
         }
     }
@@ -838,13 +859,23 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
     {
         if (!GetOverlappedResult(handle->platformHandle, &handle->ovWrite, &dwWritten, 1))
         {
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
+            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error fetching 'overlapped result': %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+            DWORD result = GetLastError();  // read this before we call CancelIo
             CancelIo(handle->platformHandle);
+            if (result == 433) {    // 433 is an undocumented "STATUS_NO_SUCH_DEVICE"
+                // this should probably be expanded to include other likely errors, but...
+                // this indicates the handle is invalid. The port should be closed and invalidated.
+                portClose(port);
+                portInvalidate(port);
+            }
             return 0;
         }
     }
 
     if (dwWritten != writeCount)
-        log_bombastic(IS_LOG_PORT, "serialPortWritePlatform() wrote %d bytes (%d requested)", dwWritten, writeCount);
+        log_bombastic(IS_LOG_PORT, "[%s] serialPortWritePlatform() wrote %d bytes (%d requested)", portName(port), dwWritten, writeCount);
 
     debugDumpBuffer(">> ", buffer, dwWritten);
     return dwWritten;
@@ -879,7 +910,12 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // Other errors
             serialPort->errorCode = errno;
             serialPort->error = strerror(serialPort->errorCode);
-            log_error(IS_LOG_PORT, "[%s] serialPortWritePlatform():: Error writing: %s (%d)", serialPort->portName, strerror(errno), errno);
+            log_error(IS_LOG_PORT, "[%s] serialPortWritePlatform():: Error writing: %s (%d)", serialPort->portName, serialPort->error, serialPort->errorCode);
+            if ((errno == ENOENT) || (errno == ENODEV) || (errno ==  EIO)) {
+                // these errors indicate the underlying OS port is bad, and needs to be closed/invalidated - there is usually no other recovery from here.
+                portClose(port);
+                portInvalidate(port);
+            }
             return -1;
         }
         bytes_written += result;
@@ -903,10 +939,13 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
 
 static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 {
-    log_bombastic(IS_LOG_PORT, "serialPortGetByteCountAvailableToReadPlatform() called.");
+    if (!port || !portIsValid(port))
+        return PORT_ERROR__INVALID;
+
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortGetByteCountAvailableToReadPlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
-
 
 #if PLATFORM_IS_WINDOWS
 
@@ -951,7 +990,11 @@ again:
 
 static int serialPortGetByteCountAvailableToWritePlatform(port_handle_t port)
 {
-    log_bombastic(IS_LOG_PORT, "serialPortGetByteCountAvailableToWritePlatform() called.");
+    if (!port || !portIsValid(port))
+        return PORT_ERROR__INVALID;
+
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortGetByteCountAvailableToWritePlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     // serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     (void)serialPort;
