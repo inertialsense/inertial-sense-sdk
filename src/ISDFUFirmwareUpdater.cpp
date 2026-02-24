@@ -9,6 +9,7 @@
 #include "ISDFUFirmwareUpdater.h"
 #include <fstream>
 #include <algorithm>
+#include <chrono>
 
 //    static const char* state_names[] = {
 //        "APP_IDLE",
@@ -66,7 +67,10 @@ size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devic
         }
 
         libusb_free_device_list(device_list, 1);
-        libusb_exit(NULL);
+        // NOTE: Do NOT call libusb_exit() here. The returned DFUDevice objects
+        // hold open USB handles from fetchDeviceInfo(). Tearing down the libusb
+        // context invalidates those handles and causes a segfault when the caller
+        // later uses the devices. The caller owns the libusb lifecycle.
         dfuMutex.unlock();
     }
     return devices.size();
@@ -501,6 +505,8 @@ dfu_error DFUDevice::fetchDeviceInfo() {
     }
 
     libusb_release_interface(usbHandle, 0);
+    libusb_close(usbHandle);
+    usbHandle = nullptr;
     return DFU_ERROR_NONE;
 }
 
@@ -741,6 +747,9 @@ dfu_error DFUDevice::updateFirmware(std::istream& stream, uint64_t baseAddress) 
     ret_libusb = abort();
     if (ret_libusb == LIBUSB_SUCCESS) {
         if (statusCb) {
+            dfu_memory_t& flash = segments[STM32_DFU_INTERFACE_FLASH];
+            statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Flash segment: addr=0x%08X, pageSize=%u, pages=%u",
+                     getDescription(), flash.address, flash.pageSize, flash.pages);
             statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Erasing flash memory...", getDescription());
         }
 
@@ -806,12 +815,16 @@ dfu_error DFUDevice::eraseFlash(const dfu_memory_t& mem, uint32_t& offset, uint3
 
         dlBlockNum = 0; // Erase Flash commands are ALWAYS sent with a 0 wValue/wBlockNum
         ret_libusb = download(dlBlockNum, eraseCommand, 5);
-        if (ret_libusb < LIBUSB_SUCCESS)
+        if (ret_libusb < LIBUSB_SUCCESS) {
+            if (statusCb) statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Erase download failed at 0x%08X: libusb=%d", getDescription(), pageAddress, ret_libusb);
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        }
 
         ret_libusb = waitForState(DFU_STATE_DNLOAD_IDLE, &state);
-        if (ret_libusb < LIBUSB_SUCCESS)
+        if (ret_libusb < LIBUSB_SUCCESS) {
+            if (statusCb) statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Erase waitForState failed at 0x%08X: libusb=%d, state=%d", getDescription(), pageAddress, ret_libusb, state);
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        }
 
         byteInSection += mem.pageSize;
         bytes_erased += mem.pageSize;
@@ -1276,25 +1289,30 @@ int DFUDevice::readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen) {
  * @param actual_state if not null, the final state will be returned (useful in the event of a timeout).
  * @return DFU_ERROR_NONE if state watches the required_state, otherwise will return DFU_ERROR_TIMEOUT if the timeout condition occurs first.
  */
-int DFUDevice::waitForState(dfu_state required_state, dfu_state* actual_state) {
+int DFUDevice::waitForState(dfu_state required_state, dfu_state* actual_state, uint32_t timeout_ms) {
     dfu_status status = DFU_STATUS_ERR_UNKNOWN;
     uint32_t waitTime = 0;
     dfu_state state;
     uint8_t stringIndex;
     int ret_libusb = 0;
-    uint8_t tryCounter = 0;
 
     if (actual_state == nullptr)
         actual_state = &state;
 
+    auto start = std::chrono::steady_clock::now();
+
     do {
         ret_libusb = getStatus(&status, &waitTime, actual_state, &stringIndex);
+        if (ret_libusb < LIBUSB_SUCCESS)
+            return ret_libusb;
+
         if (status != DFU_STATUS_OK) {
             clearStatus();
         }
         if (*actual_state != required_state) {
-            if (tryCounter++ > 5)
-                return ret_libusb;
+            auto elapsed = std::chrono::steady_clock::now() - start;
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms)
+                return LIBUSB_ERROR_TIMEOUT;
 
             SLEEP_MS(_MAX(waitTime, 25));
         }

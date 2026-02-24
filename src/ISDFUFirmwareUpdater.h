@@ -275,7 +275,7 @@ private:
 
     int abort();
 
-    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr);
+    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr, uint32_t timeout_ms = 5000);
 
     int setAddress(uint16_t& wValue, uint32_t address);
 
