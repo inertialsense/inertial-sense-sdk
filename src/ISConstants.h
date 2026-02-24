@@ -39,7 +39,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     #define _CRT_SECURE_NO_DEPRECATE
     #endif
 
+    #ifndef NOMINMAX
     #define NOMINMAX    // Windows.h is included somewhere and this prevents it from defining 'max' as a macro which breaks uri.hpp
+    #endif
 
     // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
     #include <winsock2.h>

@@ -50,7 +50,7 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
 
     portValidate(port);
 
-    log_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
+    log_more_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
     return port;
 }
 
@@ -58,7 +58,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
 
-    log_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
+    log_more_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 
@@ -85,8 +85,8 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
 }
 
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
-    const char* portStr = portName(port);
-    const char* safeErrMsg = errMsg ? errMsg : "";
+    // const char* portStr = portName(port);
+    // const char* safeErrMsg = errMsg ? errMsg : "";
 
     static int lastErrorCode = 0;       // the previous error code
     static int repeatCount = 0;         // number of time the same code has repeated
@@ -95,14 +95,15 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
     if (errCode != lastErrorCode) {
         repeatCount = 0;
         lastErrorMs = current_timeMs();
+        lastErrorCode = errCode;
 
-        // Split the printf into two calls (helps avoid inlining inference)
-        log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
+        // General errors should already be reported by the underlying port implementation (if IS_LOG_PORT is configured)
+        // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
     } else {
         // Split the printf into two calls (helps avoid inlining inference)
-        log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
+        // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
 
-        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount >= 10)){
+        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount++ >= 10)){
             // any error which repeats for more than 30 seconds, and more than 10 times, close & invalidate
             portClose(port);
             portInvalidate(port);

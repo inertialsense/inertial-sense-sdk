@@ -39,10 +39,11 @@
 #define PORT_ERROR__NONE                 0      //!< No error and/or successful execution
 #define PORT_ERROR__NOT_SUPPORTED       -1      //!< The operation requested/called was not support by the specified port
 #define PORT_ERROR__INVALID             -2      //!< The port specified in the operation was invalid; The port_handle_t should probably be abandoned, or revalidated.
-#define PORT_ERROR__OPEN_FAILURE        -3      //!< Attempt to open the port failed.
-#define PORT_ERROR__WRITE_FAILURE       -4      //!< Attempt to write to the port failed.
-#define PORT_ERROR__READ_FAILURE        -5      //!< Attempt to read from the port failed.
-#define PORT_ERROR__TIMEOUT             -6      //!< The port operation reported a timeout (could be read, write, open, etc)
+#define PORT_ERROR__NOT_CONNECTED       -3      //!< attempt to read/write/access a port failed because the port has not been opened
+#define PORT_ERROR__OPEN_FAILURE        -4      //!< Attempt to open the port failed.
+#define PORT_ERROR__WRITE_FAILURE       -5      //!< Attempt to write to the port failed.
+#define PORT_ERROR__READ_FAILURE        -6      //!< Attempt to read from the port failed.
+#define PORT_ERROR__TIMEOUT             -7      //!< The port operation reported a timeout (could be read, write, open, etc)
 
 #define PORT_OP__READ               0x00        //!< A portLogger operation flag indicating a READ/RX was performed
 #define PORT_OP__WRITE              0x01        //!< A portLogger operation flag indicating a WRITE/TX was performed
