@@ -18,7 +18,7 @@
  *  value of PORT_TYPE__UNKNOWN will match all port types
  */
 bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
-    FnProfiler fn("PortManager::discoverPorts", 30000);
+    FnProfiler fn("PortManager::discoverPorts", 10000); // this can take a long time, but it generally should be fast
 
     std::lock_guard<std::recursive_mutex> lock(mutex);
     fn.mark("Got mutex.");

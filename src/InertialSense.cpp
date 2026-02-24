@@ -746,9 +746,9 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 is_operation_result InertialSense::updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb fwUpdateStatus, void (*waitAction)())
 {
     // At some point during an upgrade, we'll likely reset the device and will need to watch for the device to come back. But the cltool normally doesn't discovery
-    // new devices (only new ports). So, let's use the PortManagers::port_listener mechanism to detect when new ports are discover, only during the Firmware Update
-    // operation.  When new ports are found, we'll attempt to discover a device on only those specific ports. We MUST keep the handle to the listener, so we can
-    // release it when we're done, otherwise this could get called even after the function is out of scope, which would be BAD. Don't forget to release it at the bottom!
+    // new devices (only new ports). So, let's use the PortManagers::port_listener mechanism, during Firmware Updates, to detect when new ports are discovered. When
+    // new ports are found, we'll attempt to discover a device on only those specific ports. We MUST keep the handle to the listener, so we can release it when we're
+    // done, otherwise this could get called even after the function is out of scope, which would be BAD. Don't forget to release it at the bottom!
 
     // NOTE: its possible that the device may enumerate its port in the OS before the device is ready to respond to queries (though not likely). As a result, it's
     // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.

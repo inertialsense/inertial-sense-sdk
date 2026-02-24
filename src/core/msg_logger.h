@@ -26,11 +26,21 @@ extern "C" {
 #include "ISConstants.h"
 #include "types.h"
 
+// MinGW compatibility: timespec_get/TIME_UTC may not be available
+#if defined(__MINGW32__) && !defined(TIME_UTC)
+    #define TIME_UTC 1
+    static inline int _mingw_timespec_get(struct timespec *ts, int base) {
+        (void)base;
+        return clock_gettime(CLOCK_REALTIME, ts) == 0 ? base : 0;
+    }
+    #define timespec_get _mingw_timespec_get
+#endif
+
 
 // --- Compile-time configuration ---
 // Define the default log level to show messages at or above this level.
 #ifndef IS_LOG_LEVEL
-#define IS_LOG_LEVEL  IS_LOG_LEVEL_INFO // Default to WARNING
+#define IS_LOG_LEVEL  IS_LOG_LEVEL_WARN // Default to WARNING
 #endif
 
 // Define the highest (most verbose) level that will be compiled into the binary
@@ -38,7 +48,7 @@ extern "C" {
 // without changing this and recompiling the SDK/binaries.  This is useful to
 // reduce executable size, if necessary, but generally should be left alone.
 #ifndef IS_LOG_LEVEL_COMPILER
-#define IS_LOG_LEVEL_COMPILER  IS_LOG_LEVEL_DEBUG // Default to MORE_DEBUG
+#define IS_LOG_LEVEL_COMPILER  IS_LOG_LEVEL_MORE_DEBUG // Default to MORE_DEBUG
 #endif
 
 // Define the facilities you want to enable.

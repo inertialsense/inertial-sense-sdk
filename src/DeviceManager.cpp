@@ -258,12 +258,12 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
             // TODO: If "automatic device validation" is true, we should use this event to automatically open the port and validate the device.
-            log_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_ADDED '%s'", pName.c_str());
+            // log_more_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager::portHandler( PORT_ADDED, '%s' )", pName.c_str());
             break;
         case PortManager::PORT_REMOVED:
-            log_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_REMOVED '%s'.", pName.c_str());
             device_handle_t device = getDevice(port);
             if (device) {
+                log_more_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager::portHandler( PORT_REMOVED, '%s' ) - releasing port from %s.", pName.c_str(), device->getIdAsString().c_str());
                 notifyListeners(device, DEVICE_PORT_LOST);
                 device->assignPort(nullptr); // revoke the removed port from the device...
             }
@@ -282,7 +282,6 @@ void DeviceManager::clear(bool closePorts) {
     knownDevices.clear();
     portToDeviceMap.clear();
 }
-
 
 /**
  * @returns a vector of available devices

@@ -1181,6 +1181,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
     protocol_type_t ptype;
 
 #if DEBUG_PARSE_MSG
+    static const char* ptype_names[_PTYPE_SIZE] = { "NONE", "ERROR", "ISB_ACK", "ISB_CMD", "ISB_DATA", "NMEA", "UBLOX", "RTCM3", "SPARTN", "SONY" };
     static char log_msg[512];
     int log_msg_pos = sprintf(log_msg, "parse_messages() parsed:");
 #endif
@@ -1209,7 +1210,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
                 break;
             default:
 #if DEBUG_PARSE_MSG
-                log_msg_pos += sprintf(log_msg + log_msg_pos, " [PKT.%d]", ptype);
+                log_msg_pos += sprintf(log_msg + log_msg_pos, " [%s]", ptype_names[ptype]);
 #endif
                 if (comm->cb.generic[ptype]) {
                     comm->cb.generic[ptype](comm->cb.context, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
