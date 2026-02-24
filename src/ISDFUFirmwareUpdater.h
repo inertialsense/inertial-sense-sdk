@@ -207,6 +207,10 @@ public:
     uint16_t getHardwareId() { return hardwareId; }
     uint32_t getSerialNo() { return sn; }
 
+    eProcessorType getProcessorType() const { return processorType; }
+    uint32_t getTotalFlashSize() const;
+    static const char* getDeviceTypeName(eProcessorType procType, uint32_t totalFlashSize);
+
     void setProgressCb(fwUpdate::pfnProgressCb cbProgress){ progressCb = cbProgress;}
     void setStatusCb(fwUpdate::pfnStatusCb cbStatus) { statusCb = cbStatus;}
 

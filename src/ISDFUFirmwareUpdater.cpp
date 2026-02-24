@@ -319,6 +319,28 @@ bool ISDFUFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8
 }
 
 /**
+ * Returns the total flash size in bytes, calculated from the flash segment geometry.
+ */
+uint32_t DFUDevice::getTotalFlashSize() const {
+    return (uint32_t)segments[STM32_DFU_INTERFACE_FLASH].pages * segments[STM32_DFU_INTERFACE_FLASH].pageSize;
+}
+
+/**
+ * Returns a human-readable device type name based on processor type and flash size.
+ * STM32L4 -> "IMX-5", STM32U5 <=1MB -> "GPX-1", STM32U5 >1MB -> "IMX-6", else -> "Unknown"
+ */
+const char* DFUDevice::getDeviceTypeName(eProcessorType procType, uint32_t totalFlashSize) {
+    if (procType == IS_PROCESSOR_STM32L4)
+        return "IMX-5";
+    if (procType == IS_PROCESSOR_STM32U5) {
+        if (totalFlashSize > 1024 * 1024)
+            return "IMX-6";
+        return "GPX-1";
+    }
+    return "Unknown";
+}
+
+/**
  * Returns a fwUpdate-compatible target type (fwUpdate::target_t) appropriate for this DFU device,
  * given the parsed hardware id, where available.
  * @return determined fwUpdate::target_t is detectable, otherwise TARGET_UNKNOWN
@@ -328,6 +350,7 @@ fwUpdate::target_t DFUDevice::getTargetType() {
         case IS_HARDWARE_TYPE_IMX:
             if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_IMX5;
             // else if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 1)) return fwUpdate::TARGET_IMX51;
+            if (DECODE_HDW_MAJOR(hardwareId) == 6) return fwUpdate::TARGET_IMX6;
             break;
         case IS_HARDWARE_TYPE_GPX:
             if ((DECODE_HDW_MAJOR(hardwareId) == 1) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_GPX1;
@@ -482,7 +505,10 @@ dfu_error DFUDevice::fetchDeviceInfo() {
 
     if ((hardwareId == 0xFFFF) && (processorType != IS_PROCESSOR_UNKNOWN)) {
         if (processorType == IS_PROCESSOR_STM32L4) hardwareType = IS_HARDWARE_TYPE_IMX; // only the IMX-5 uses the STM32L4
-        else if (processorType == IS_PROCESSOR_STM32U5) hardwareType = IS_HARDWARE_TYPE_GPX; // TODO: Both the GPX-1 and IMX-5.1 will use the STM32U5 (at the moment)
+        else if (processorType == IS_PROCESSOR_STM32U5) {
+            uint32_t totalFlash = getTotalFlashSize();
+            hardwareType = (totalFlash > 1024 * 1024) ? IS_HARDWARE_TYPE_IMX : IS_HARDWARE_TYPE_GPX;
+        }
     }
 
     // based on what we know so far, let's try and figure out a hardware type
@@ -496,7 +522,10 @@ dfu_error DFUDevice::fetchDeviceInfo() {
                 hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_EVB, 2, 0);
                 break;
             case IS_HARDWARE_TYPE_IMX:
-                hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
+                if (processorType == IS_PROCESSOR_STM32L4)
+                    hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
+                else if (processorType == IS_PROCESSOR_STM32U5)
+                    hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 6, 0);
                 break;
             case IS_HARDWARE_TYPE_GPX:
                 hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, 1, 0);
