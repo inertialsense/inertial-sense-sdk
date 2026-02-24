@@ -95,6 +95,7 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
     if (errCode != lastErrorCode) {
         repeatCount = 0;
         lastErrorMs = current_timeMs();
+        lastErrorCode = errCode;
 
         // General errors should already be reported by the underlying port implementation (if IS_LOG_PORT is configured)
         // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
@@ -102,7 +103,7 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
         // Split the printf into two calls (helps avoid inlining inference)
         // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
 
-        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount >= 10)){
+        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount++ >= 10)){
             // any error which repeats for more than 30 seconds, and more than 10 times, close & invalidate
             portClose(port);
             portInvalidate(port);

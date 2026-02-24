@@ -349,7 +349,7 @@ public:
     int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) {
         std::lock_guard<std::recursive_mutex> lock(portMutex);
         if (!isConnected()) return PORT_ERROR__NOT_CONNECTED;
-        if (devInfo.hdwRunState != HDW_STATE_BOOTLOADER) return PORT_ERROR__NOT_SUPPORTED;
+        if (devInfo.hdwRunState == HDW_STATE_BOOTLOADER) return PORT_ERROR__NOT_SUPPORTED;
         return comManagerSend(port, pktInfo, data, did, size, offset)  < 0 ? -1 : 0;
     }
 

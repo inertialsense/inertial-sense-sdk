@@ -409,7 +409,7 @@ bool ISDevice::validate(uint32_t timeout) {
 
         SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
 
-        nextQueryType = static_cast<queryType>((int)nextQueryType + 1 % (int)QUERYTYPE_MAX);
+        nextQueryType = static_cast<queryType>(((int)nextQueryType + 1) % (int)QUERYTYPE_MAX);
     } while (!hasDeviceInfo());
 
     if (hasDeviceInfo()) {
@@ -1485,7 +1485,7 @@ bool ISDevice::connect(bool revalidate) {
         }
     }
 
-    bool success = false;
+    bool success = true;            // if we've connected, we're successful -- until we try and validate - if we try and validate
     portStatsReset(port);           // always reset port stats with a reconnect (even if we were already connected)
     if (revalidate) {
         SLEEP_MS(15);

@@ -319,7 +319,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         {
             serialPort->errorCode = errno;
             serialPort->error = strerror(errno);
-            log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to open port: %d %s)", portName, serialPort->errorCode, serialPort->error);
+            log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to open port: %s (%d)", portName, serialPort->error, serialPort->errorCode);
             return 0;
         }
     }
