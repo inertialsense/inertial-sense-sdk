@@ -66,8 +66,23 @@ int ISDevice::processPacket(void *ctx, protocol_type_t ptype, packet_t *pkt, por
 uint32_t ISDevice::millisSinceLastRx(int ptype) {
     std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
     if (ptype != _PTYPE_NONE)
-        return std::chrono::duration_cast<std::chrono::milliseconds>(now - lastRxTs[ptype]).count();
+    {
+        // Validate ptype is within the valid range before indexing lastRxTs.
+        if (ptype < 0 || ptype >= _PTYPE_SIZE)
+        {
+            // Unknown or invalid packet type; define as "no packets received" by returning the max age.
+            return UINT32_MAX;
+        }
 
+        auto ts = lastRxTs[ptype];
+        if (ts == std::chrono::high_resolution_clock::time_point())
+        {
+            // No packets of this type have been received yet.
+            return UINT32_MAX;
+        }
+
+        return (uint32_t)std::chrono::duration_cast<std::chrono::milliseconds>(now - ts).count();
+    }
     uint32_t min = UINT32_MAX;
     for (auto ts : lastRxTs) {
         if (ts == std::chrono::high_resolution_clock::time_point())
