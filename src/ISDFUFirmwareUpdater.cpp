@@ -77,6 +77,27 @@ size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devic
 }
 
 /**
+ * Returns the number of DFU devices currently connected, without opening or classifying them.
+ * Uses the same mutex as getAvailableDevices() for consistent access.
+ */
+int ISDFUFirmwareUpdater::getNumDevices(uint16_t vid, uint16_t pid) {
+    int count = 0;
+    if (dfuMutex.try_lock()) {
+        libusb_device **device_list;
+        libusb_init(NULL);
+        size_t device_count = libusb_get_device_list(NULL, &device_list);
+        for (size_t i = 0; i < device_count; ++i) {
+            if (isDFUDevice(device_list[i], vid, pid))
+                count++;
+        }
+        libusb_free_device_list(device_list, 1);
+        libusb_exit(NULL);
+        dfuMutex.unlock();
+    }
+    return count;
+}
+
+/**
  * Removes any DFUDevice from devices which does not match the specified md5 fingerprint
  * @param devices vector of known devices
  * @param fingerprint the md5 digest "fingerprint" to match against (matches will be retained, all others will be removed)

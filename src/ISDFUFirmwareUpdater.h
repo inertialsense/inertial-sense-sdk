@@ -307,6 +307,8 @@ public:
 
     static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
 
+    static int getNumDevices(uint16_t vid = 0x0000, uint16_t pid = 0x0000);
+
     static size_t filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint);
 
     static size_t filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target);
