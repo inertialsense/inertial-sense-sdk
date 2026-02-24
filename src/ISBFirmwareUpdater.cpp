@@ -570,10 +570,11 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
     if (portIsOpened(device->port) && !keepPortOpen) {
         // At this point, there isn't much to do but disconnect and invalidate the port - make the system locate the port again.
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
-        device->disconnect();;
+        device->disconnect();
         portInvalidate(device->port);
-    } else
+    } else if (portIsOpened(device->port)) {
         portFlush(device->port);
+    }
 
     device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device -- this will usually force a revalidation
     return true;    // since with a UART port, we won't actually know if the device boots to APP, so we just return true
