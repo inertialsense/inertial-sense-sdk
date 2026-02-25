@@ -3886,6 +3886,9 @@ typedef struct
     /** GLONASS AR mode (0:off,1:on,2:auto cal,3:ext cal) */
     int32_t glomodear;
 
+    /** GPS AR mode (0:off,1:on) */
+    int32_t gpsmodear;
+
     /** SBAS AR mode (0:off,1:on) */
     int32_t sbsmodear;
 
