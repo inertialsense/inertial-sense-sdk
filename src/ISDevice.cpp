@@ -1060,10 +1060,11 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
         step();
         SLEEP_MS(10);
 
-        if (current_timeMs() - startMs > timeout)
+        int elasped = (int)(current_timeMs() - startMs);
+        if (elasped > timeout)
         {   // Timeout waiting for IMX flash config
-            log_info(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync!", getIdAsString().c_str());
-            return false;
+            log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync! (%d ms elapsed)", getIdAsString().c_str(), elasped);
+            break;
         }
         else
         {   // Query DID_SYS_PARAMS
