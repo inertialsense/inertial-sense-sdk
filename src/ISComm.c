@@ -386,6 +386,7 @@ static inline void validPacketFound(is_comm_instance_t* c, int pktSize, int data
     validPacketReset(c, pktSize);
 }
 
+__attribute__((optimize("O0")))
 static protocol_type_t processIsbPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -442,6 +443,11 @@ static protocol_type_t processIsbPkt(void* v)
 
     // Validate checksum
     packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
+    if (isbPkt->hdr.id == DID_CAL_TEMP_COMP)
+    {
+        static int j = 0;
+        j++;
+    }
     if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)
         return parseErrorResetState(c, EPARSE_INVALID_SIZE);
     if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) &&
@@ -500,7 +506,10 @@ static protocol_type_t processIsbPkt(void* v)
     case PKT_TYPE_SET_DATA:
     case PKT_TYPE_DATA:
         // Validate data size
-        if (pkt->data.size <= MAX_DATASET_SIZE)
+        if (pkt->data.size <= MAX_DATASET_SIZE || 
+            pkt->hdr.id == DID_CAL_SC || 
+            pkt->hdr.id == DID_CAL_TEMP_COMP ||
+            pkt->hdr.id == DID_CAL_MOTION)
         {
             if (ptype==PKT_TYPE_SET_DATA)
             {   // acknowledge valid data received
@@ -519,7 +528,10 @@ static protocol_type_t processIsbPkt(void* v)
         {
             p_data_get_t *get = (p_data_get_t*)&(isbPkt->payload.data);
             // Validate data size
-            if (get->size <= MAX_DATASET_SIZE)
+            if (get->size <= MAX_DATASET_SIZE ||
+                get->id == DID_CAL_SC || 
+                get->id == DID_CAL_TEMP_COMP ||
+                get->id == DID_CAL_MOTION)
             {   // Update data pointer
                 return _PTYPE_INERTIAL_SENSE_CMD;
             }

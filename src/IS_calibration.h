@@ -19,6 +19,50 @@ extern "C" {
 #define SENSOR_CAL_VER1     3
 #define SENSOR_CAL_VER2     0
 
+
+enum eScompCalState
+{
+    SC_RUNTIME                      = 0,   // Calibration off
+    SC_TCAL_MONITOR_TEMP            = 1,
+    SC_TCAL_INIT                    = 2,
+    SC_TCAL_STARTUP_MEAN_LSB        = 3,
+    SC_TCAL_STARTUP_DELAY           = 4,
+    SC_TCAL_READY_TO_RUN            = 5,
+    SC_TCAL_RUNNING                 = 6,
+    SC_TCAL_STOP                    = 7,
+    SC_TCAL_DONE                    = 8,
+    SC_ACCEL_ALIGN_CHECK            = 9,
+    SC_MCAL_SAMPLE_INIT             = 10,
+    SC_MCAL_SAMPLE_MEAN_UCAL        = 11,    // Uncalibrated sensor
+    SC_MCAL_SAMPLE_MEAN_TCAL        = 12,    // Temperature compensated sensor 
+    SC_MCAL_SAMPLE_MEAN_MCAL        = 13,    // Motion calibrated + compensated sensor 
+    SC_MCAL_SAMPLE_STOP             = 14,
+    SC_LPF_SAMPLE                   = 15,
+    SC_LPF_SAMPLE_FAST              = 16,
+    SC_DONE                         = 17,
+    SC_LINEARITY_MEAN_TCAL          = 18,    // Like SC_MCAL_SAMPLE_MEAN_TCAL, but goes back to SC_RUNTIME after some samples
+};
+
+enum eScompStatus
+{
+    SC_STATUS_ALIGNMENT_MASK        = 0x0000000F,
+    SC_STATUS_ALIGNMENT_OFF         = 0x00000000,
+    SC_STATUS_ALIGNMENT_GOOD        = 0x00000001,
+    SC_STATUS_ALIGNMENT_BAD         = 0x00000002,
+    SC_STATUS_SAMPLE_VALID_MASK     = 0x00000F00,
+    SC_STATUS_SAMPLE_VALID_GYR      = 0x00000100,
+    SC_STATUS_SAMPLE_VALID_ACC      = 0x00000200,
+    SC_STATUS_SAMPLE_VALID_MAG      = 0x00000400,
+    SC_STATUS_REFERENCE_IMU_VALID   = 0x00010000,
+    SC_STATUS_REFERENCE_MAG_VALID   = 0x00020000,
+    SC_STATUS_USING_INFERRED_IMU    = 0x00040000,
+    SC_STATUS_USING_INFERRED_MAG    = 0x00080000,
+    SC_STATUS_TEMPERATURE_CAL_VALID = 0x00100000,
+    SC_STATUS_MOTION_CAL_VALID_MASK = 0x00600000,
+    SC_STATUS_MOTION_CAL_VALID_OFFSET = 21,
+    SC_STATUS_MOTION_CAL_VALID_IMU  = 0x00200000,
+    SC_STATUS_MOTION_CAL_VALID_MAG  = 0x00400000,
+};
 typedef struct PACKED
 {
     uint32_t                size;                               // Size of this struct
@@ -142,6 +186,8 @@ typedef struct PACKED
 } sensor_cal_v1p3_t;
 
 typedef sensor_cal_v1p3_t   sensor_cal_t;               // Current version
+
+
 
 #ifdef __cplusplus
 }
