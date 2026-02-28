@@ -156,13 +156,6 @@ namespace fwUpdate {
      * @return returns the total number of bytes in the packet, including aux data if any
      */
     int FirmwareUpdateBase::fwUpdate_mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data) {
-        // TODO: Remove after 2.1.0 release
-        // >=2.0.0.11  versions, the type was changes from a uint16_t to a uint32_t (but had the same packing)
-        // this would result in later version not interpreting the msg_type correctly (having non-zero high-order bits).
-        uint32_t msg_type = (int)(((payload_t*)buffer)->hdr.msg_type) & 0xFFFF;
-        ((payload_t*)buffer)->hdr.msg_type =  (msg_types_e)msg_type;
-        // TODO: End
-
         int payload_size = fwUpdate_getPayloadSize((payload_t *) buffer);
         int aux_len = 0;
 
@@ -741,7 +734,6 @@ namespace fwUpdate {
         void *aux_data = nullptr;
 
         int msg_len = fwUpdate_mapBufferToPayload(buffer, &msg, &aux_data);
-        // printf("fwUpdate_processMessage: target: %s, type: %s, len: %d\n", fwUpdate_getTargetName(msg->hdr.target_device), msg_type_names[msg->hdr.msg_type], msg_len);
         if (msg_len <= 0)
             return false;
 

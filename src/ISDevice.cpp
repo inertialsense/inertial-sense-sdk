@@ -98,22 +98,24 @@ uint32_t ISDevice::millisSinceLastRx(int ptype) {
  * @return false if the device is inactionable, either through configuration or port status; otherwise true indicates a sufficient state to perform work, even if there was nothing to do.
  */
 bool ISDevice::step() {
-    FnProfiler fn("ISDevice::step() [" + getIdAsString() + "]", 50000);    // this shouldn't really ever take longer than 50ms to execute
+    FnProfiler fn("ISDevice::step() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", 50000);    // this shouldn't really ever take longer than 50ms to execute
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
         return false;
 
     bool didStuff = false;
-    if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
-        is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-        fn.mark("Parsed messages.");
-        if (!hasDeviceInfo()) {
-            validateAsync(250);
-            fn.mark("Validating device.");
-        } else {
-            SyncFlashConfig();
-            fn.mark("Synchronizing flash.");
+    if (isConnected()) {
+        if (portType(port) & PORT_TYPE__COMM) {
+            is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+            fn.mark("Parsed messages.");
+            if (!hasDeviceInfo()) {
+                validateAsync();
+                fn.mark("Validating device.");
+            } else {
+                SyncFlashConfig();
+                fn.mark("Synchronizing flash.");
+            }
         }
         didStuff = true;
     }
@@ -179,6 +181,11 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
             connect(true);  // especially if we're updated - this port should never really be closed (right??)
 
         if (msg) fwUpdater->processMessage(msg);
+
+        // FIXME: fwUpdate->device almost isn't necessary, and its circular since device->fwUpdater->device - We should eliminate this if possible
+        if (fwUpdater->device != shared_from_this())
+            fwUpdater->device = shared_from_this();
+
         fwUpdater->step();
 
         auto activeCmd = fwUpdater->getActiveCommand();
@@ -254,7 +261,7 @@ bool ISDevice::handshakeISbl() {
     uint8_t readCh = 0;
 
     // this call shouldn't really ever take longer than 120ms to execute - Sending 10x 'U' every 10ms + 20%
-    FnProfiler fn("ISDevice::handshakeISbl() [" + getIdAsString() + "]", 120000);
+    FnProfiler fn("ISDevice::handshakeISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", 120000);
     // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::handshakeISbl() called.", getIdAsString().c_str());
 
     // first, flush all incoming data and ensure we have a clean buffer...
@@ -263,7 +270,7 @@ bool ISDevice::handshakeISbl() {
             portFlush(port);
 
         if ((i == 4) && portAvailable(port)) {
-            log_warn(IS_LOG_ISDEVICE, "[%s, %s] ISDevice::handshakeISbl() is unable to clear the port RX buffer. Handshaking is not possible.", getIdAsString().c_str(), getPortName().c_str());
+            log_warn(IS_LOG_ISDEVICE, "[%s] ISDevice::handshakeISbl() is unable to clear the port RX buffer. Handshaking is not possible.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             return false;   // unable to clear buffer, so we can't handshake
         }
     }
@@ -294,9 +301,8 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     if (!portIsOpened(port))
         return false;
 
-    FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getIdAsString() + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
-
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getIdAsString().c_str());
+    FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
+    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
     if (!hasHandshake) {
         hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
         fn.mark("Handshake == " + std::to_string(hasHandshake));
@@ -367,7 +373,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     // hdwId = IS_HARDWARE_TYPE_UNKNOWN;
     // devInfo = {};
     fn.mark("Timed-out waiting.");
-    log_more_info(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getIdAsString().c_str());
+    log_more_info(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
     return false;
 }
 
@@ -376,7 +382,7 @@ bool ISDevice::validate(uint32_t timeout) {
     if (!isConnected())
         return false;
 
-    // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate() called.", getIdAsString().c_str());
+    // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
 
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
     is_hardware_t oldHdwId = hdwId;
@@ -392,13 +398,7 @@ bool ISDevice::validate(uint32_t timeout) {
             return (queryDeviceInfoISbl(250) && hasDeviceInfo());
         }
 
-        // FIXME - Don't tolerate SERIAL_PORT specific conditions in ISDevice
-        if (port && (SERIAL_PORT(port)->errorCode == ENOENT)) {
-            hdwId = oldHdwId, devInfo = oldDevInfo;
-            return false;
-        }
-
-        if (!portIsOpened(port)) {
+        if (!port || !portIsValid(port) || !portIsOpened(port)) {
             hdwId = oldHdwId, devInfo = oldDevInfo;
             return false;
         }
@@ -418,11 +418,11 @@ bool ISDevice::validate(uint32_t timeout) {
 
         }
 
-        if (isConnected() && (portType(port) & PORT_TYPE__COMM)) {
-            is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-        }
-
         SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
+        // step();   Instead of doing this...
+        if (isConnected() && (portType(port) & PORT_TYPE__COMM)) {
+            is_comm_port_parse_messages(port); // ...read data directly into comm buffer and call callback functions
+        }
 
         nextQueryType = static_cast<queryType>(((int)nextQueryType + 1) % (int)QUERYTYPE_MAX);
     } while (!hasDeviceInfo());
@@ -451,10 +451,10 @@ int ISDevice::validateAsync(uint32_t timeout) {
         return -1;
 
     uint32_t now = current_timeMs();
-    FnProfiler fn("ISDevice::validateAsync() [" + getIdAsString() + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
+    FnProfiler fn("ISDevice::validateAsync() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
     if (hasDeviceInfo()) {
         // we got out Device Info, so reset our timer (stop trying) and return true
-        // log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getIdAsString().c_str(), current_timeMs() - validationStartMs);
+        // log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), current_timeMs() - validationStartMs);
         validationStartMs = 0;
         nextValidationType = QUERYTYPE_NMEA;
         hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
@@ -480,14 +480,14 @@ int ISDevice::validateAsync(uint32_t timeout) {
 
         // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
         if (hasDeviceInfo() || queryDeviceInfoISbl(250)) {
-            log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getIdAsString().c_str(), current_timeMs() - validationStartMs);
+            log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), current_timeMs() - validationStartMs);
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             return 1;
         }
 
         */
         // We failed to get a response before the timeout occurred, so reset the timer (stop trying) and return false
-        log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() timed out after %dms [[ %d, %d, %d ]]", getIdAsString().c_str(), current_timeMs() - validationStartMs, devInfo.hdwRunState, devInfo.hardwareType, devInfo.serialNumber);
+        log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() timed out after %dms [[ %d, %d, %d ]]", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), current_timeMs() - validationStartMs, devInfo.hdwRunState, devInfo.hardwareType, devInfo.serialNumber);
         nextValidationType = QUERYTYPE_NMEA;
         validationStartMs = 0;
         return -1;
@@ -726,7 +726,7 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
     memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
     n += static_cast<int>(nmeaMsg.size());
     nmea_sprint_footer(reinterpret_cast<char *>(buf), sizeof(buf), n);
-    return (SendRaw(buf, n) >= PORT_ERROR__NONE ? 0 : -1);
+    return SendRaw(buf, n);  // TODO instead?? (SendRaw(buf, n) >= PORT_ERROR__NONE ? 0 : -1);
 }
 
 
@@ -826,20 +826,20 @@ int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint
             if (uploadTimeMs)
             {   // Upload complete.  Allow sync.
                 bool success = (uploadChecksum == syncChecksum);
-                log_debug(IS_LOG_ISDEVICE, "[%s] %s upload %s.", getIdAsString().c_str(), cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
+                log_debug(IS_LOG_ISDEVICE, "[%s] %s upload %s.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
                 uploadTimeMs = 0;
                 return (success ? 1 : 0);
             }
         }
         else
         {   // Out of sync.  Request flash config.
-            log_debug(IS_LOG_ISDEVICE, "[%s] Out of sync.  Requesting %s...", getIdAsString().c_str(), cISDataMappings::DataName(flashCfgDid));
+            log_debug(IS_LOG_ISDEVICE, "[%s] Out of sync.  Requesting %s...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid));
             BroadcastBinaryData(flashCfgDid);
         }
     }
     else
     {   // Out of sync.  Request sysParams or gpxStatus.
-        log_debug(IS_LOG_ISDEVICE, "[%s] Out of sync.  Requesting %s...", getIdAsString().c_str(), cISDataMappings::DataName(syncDid));
+        log_debug(IS_LOG_ISDEVICE, "[%s] Out of sync.  Requesting %s...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(syncDid));
         BroadcastBinaryData(syncDid);
     }
     return 0;
@@ -996,7 +996,7 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
     for (const cISDataMappings::MemoryUsage& usage : usageVec)
     {
         int offset = static_cast<int>(usage.ptr - newData);
-        log_debug(IS_LOG_ISDEVICE, "[%s] Sending %s: size %lu, offset %d", getIdAsString().c_str(), cISDataMappings::DataName(flashCfgDid), usage.size, offset);
+        log_debug(IS_LOG_ISDEVICE, "[%s] Sending %s: size %lu, offset %d", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid), usage.size, offset);
         failure |= (SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset) != 0);   // SendData() returns 0 on success
 
         if (!failure)
@@ -1043,7 +1043,7 @@ bool ISDevice::GpxFlashConfigUploadFailure() {
  * @param timeout the maximum time to wait for the synchronization to occur, before returning false
  * @return true if both the flashCfg.checksum and sysParams.flashCfgChecksum match (and neither are zero)
  */
-bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
+bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
 {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
@@ -1060,16 +1060,16 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeout)
         step();
         SLEEP_MS(10);
 
-        int elasped = (int)(current_timeMs() - startMs);
-        if (elasped > timeout)
+        int elaspedMs = (int)(current_timeMs() - startMs);
+        if (elaspedMs > (int)timeoutMs)
         {   // Timeout waiting for IMX flash config
-            log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync! (%d ms elapsed)", getIdAsString().c_str(), elasped);
-            break;
+            log_info(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync! (%d ms elapsed, 0x%08x (FlashCfg) != 0x%08x (SysParams)", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs, imxFlashCfg.checksum, sysParams.flashCfgChecksum);
+            return false;
         }
         else
         {   // Query DID_SYS_PARAMS
             GetData(DID_SYS_PARAMS);
-            log_debug(IS_LOG_ISDEVICE, "[%s] Waiting for IMX flash sync...", getIdAsString().c_str());
+            log_bombastic(IS_LOG_ISDEVICE, "[%s] Waiting for IMX flash sync...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
         }
     }
 
@@ -1095,13 +1095,13 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
         if (current_timeMs() - startMs > timeout)
         {   // Timeout waiting for GPX flash config
-            log_info(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_GPX_FLASH_CONFIG to sync!", getIdAsString().c_str());
+            log_info(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_GPX_FLASH_CONFIG to sync!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             return false;
         }
         else
         {   // Query DID_GPX_STATUS
             GetData(DID_GPX_STATUS);
-            log_debug(IS_LOG_ISDEVICE, "[%s] Waiting for GPX flash sync...", getIdAsString().c_str());
+            log_bombastic(IS_LOG_ISDEVICE, "[%s] Waiting for GPX flash sync...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
         }
     }
 
@@ -1274,12 +1274,12 @@ bool ISDevice::UploadImxCalibrationFromFile(std::string path)
     
     if (result == 1)
     {
-        log_info(IS_LOG_ISDEVICE, "[%s] Calibration upload complete.", getIdAsString().c_str());
+        log_info(IS_LOG_ISDEVICE, "[%s] Calibration upload complete.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
         return true;
     }
     else
     {
-        log_error(IS_LOG_ISDEVICE, "[%s] Calibration upload failed!", getIdAsString().c_str());
+        log_error(IS_LOG_ISDEVICE, "[%s] Calibration upload failed!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
         return false;
     }       
 }
@@ -1326,18 +1326,18 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             break;
         case DID_SYS_PARAMS:
             copyDataPToStructP(&sysParams, data, sizeof(sys_params_t));
-            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_SYS_PARAMS", getIdAsString().c_str());
+            log_bombastic(IS_LOG_ISDEVICE, "[%s] Received DID_SYS_PARAMS", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());    // this ones bombastic, because it can come every millisecond.
             break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data)) {
                 sysParams.flashCfgChecksum = imxFlashCfg.checksum;
             }
-            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_FLASH_CONFIG", getIdAsString().c_str());
+            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_FLASH_CONFIG", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             break;
         case DID_GPX_STATUS:
             copyDataPToStructP(&gpxStatus, data, sizeof(gpx_status_t));
-            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_STATUS", getIdAsString().c_str());
+            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_STATUS", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             break;
         case DID_GPX_FLASH_CFG:
             copyDataPToStructP(&gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
@@ -1345,7 +1345,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             {	// Checksum received
                 gpxStatus.flashCfgChecksum = gpxFlashCfg.checksum;
             }
-            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_FLASH_CFG", getIdAsString().c_str());
+            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_FLASH_CFG", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             break;
         case DID_FIRMWARE_UPDATE:
             if (fwUpdater)
@@ -1483,7 +1483,7 @@ bool ISDevice::assignPort(port_handle_t newPort) {
  */
 bool ISDevice::connect(bool revalidate) {
 
-    if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))
+    if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))      // TODO?? Generally, device MUST use a COMM port, but ISbl is NOT a COMM protocol
         return false;   // port is invalid or incorrect type, so we can't connect it
 
     if (!portIsOpened(port)) {
@@ -1566,7 +1566,7 @@ pfnIsCommGenMsgHandler ISDevice::registerProtocolHandler(int ptype, pfnIsCommGen
 /**
  * blocks until the pending flashConfig changes have been successfully written to the device.
  * @return true if a pending write was detected and cleared, otherwise false.  NOTE that this
- * may return false if previous pending writes were successfull written prior to calling this
+ * may return false if previous pending writes were successfully written prior to calling this
  * function. To be truly effective, this call should be made immediately after a call to
  * SetImxFlashConfig()
  */

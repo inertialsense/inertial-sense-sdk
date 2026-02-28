@@ -294,11 +294,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     if (serialPort->handle != 0)
     {
         // already open --  FIXME: Should we be closing the port and then reopen??
-        #if PLATFORM_IS_WINDOWS
-            serialPortClose(serialPort);
-        #else
-            return 1;
-        #endif
+        serialPortClose(serialPort);
     }
 
     serialPortSetName(port, portName);
@@ -707,7 +703,7 @@ static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigne
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
                 serialPort->errorCode = errno;
                 serialPort->error = strerror(errno);
-                // log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", port, handle->fd, serialPort->error, serialPort->errorCode);
+                log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", serialPort->portName, handle->fd, serialPort->error, serialPort->errorCode);
             }
             return -1;
         }
@@ -741,6 +737,8 @@ static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigne
 
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds)
 {
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
@@ -748,8 +746,6 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         serialPort->error = "Internal port handle is NULL; Port is closed.";
         return -1;
     }
-
-    log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() called.", portName(port));
 
     if (timeoutMilliseconds < 0)
     {
@@ -823,6 +819,8 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
 
 static int serialPortWritePlatform(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortWritePlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
@@ -830,8 +828,6 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
-
-    log_bombastic(IS_LOG_PORT, "[%s] serialPortWritePlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
 

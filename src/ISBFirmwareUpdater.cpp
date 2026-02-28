@@ -119,7 +119,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     FnProfiler fn("ISBFirmwareUpdater::fwUpdate_step() [" + device->getIdAsString() + "]", 30000);
 
     // if we're running ISBootloader, so we need to make sure that we have EXPLICIT_READ access to the port - so that the ISComm parser doesn't try and pull data...
-    if (device && portIsValid(device->port) && (portType(device->port) & PORT_TYPE__COMM)) {
+    if (portIsValid(device->port) && (portType(device->port) & PORT_TYPE__COMM)) {
         if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
             COMM_PORT(device->port)->flags |= COMM_PORT_FLAG__EXPLICIT_READ;
         else
@@ -140,18 +140,21 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // back this and return
 
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
-        if (device && !device->isConnected() && portIsValid(device->port)) {
+        if (!device)    // nothing to do without a valid device
+            return false;
+
+        if (portIsValid(device->port) && !device->isConnected()) {
             log_debug(IS_LOG_FWUPDATE, "Device %s is disconnected... Attempting to reconnect.", device->getIdAsString().c_str());
-            if (!device->connect(false)) {
+            if (!device->connect(false)) {   // we will revalidate below, asynchronously
                 log_warn(IS_LOG_FWUPDATE,"Device %s failed to reconnect.", device->getIdAsString().c_str());
                 // SLEEP_MS(100);
             }
         }
 
-        if (device && device->isConnected()) {
+        if (device->isConnected()) {
             if (!device->hasDeviceInfo()) {
-                device->validateAsync();
-                return true;    // we'll keep in our current state until we can validate the device
+                (device->validateAsync() != 1)
+                    return true;    // we'll keep in our current state until we can validate the device
             }
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
@@ -523,8 +526,10 @@ bool ISBFirmwareUpdater::rebootToISB()
 
         last_reboot = current_timeMs();
         nextStepMs = last_reboot + 2000;   // Give a chance to reboot - don't attempt to process this device again for another 2 seconds.
-        device->disconnect();  // If we haven't already disconnected, let's disconnect and we'll attempt to open again
-        portInvalidate(device->port);
+        device->disconnect(true);  // close AND invalidate the port; this port will have to be rediscovered to be used again.
+        // portManager.releasePort(device->port);  //
+        // SLEEP_MS(50);
+        // portManager.discoverPorts(); // if we are a USB connection, and do a force a quick discoverPorts() to discover if our USB port was lost.
     } else {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN, "(ISB) Unable to reset device to ISbl because the current device state is unknown (%d).", device->devInfo.hdwRunState);
         return false;
@@ -549,7 +554,7 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
 
     fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
-    // Send the "reboot to program mode" command and the device should start in program mode - while technically not a "reo
+    // Send the "reboot to program mode" command and the device should restart in program mode
     // However, depending on the port type, this may or may not result in the port/device connection being lost
     // We'll just send the "Boot Up" command a time or 3 - if the portWrite() fails, we'll assume we succeeded,
     // otherwise, send a few extra times for good measure, and then assume we succeeded -- either way, success!
@@ -567,16 +572,21 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
         SLEEP_MS(10);
     } while (++retry < 3);
 
-    if (portIsOpened(device->port) && !keepPortOpen) {
-        // At this point, there isn't much to do but disconnect and invalidate the port - make the system locate the port again.
-        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
-        device->disconnect();
-        portInvalidate(device->port);
-    } else if (portIsOpened(device->port)) {
-        portFlush(device->port);
+    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
+    if ((portType(device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM) {
+        // ISbl can put a port in EXPLICIT READ mode; we need to clear that flag
+        COMM_PORT(device->port)->flags &= ~COMM_PORT_FLAG__EXPLICIT_READ;
     }
 
-    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device -- this will usually force a revalidation
+    if (portIsOpened(device->port)) {
+        if (!keepPortOpen) {
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
+            device->disconnect(true);
+        } else {
+            portFlush(device->port);
+        }
+    }
+
     return true;    // since with a UART port, we won't actually know if the device boots to APP, so we just return true
 }
 

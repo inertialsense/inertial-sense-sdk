@@ -198,11 +198,20 @@ public:
      * Disconnects/closes the bound port to the device, if the port is VALID
      * Can be overridden to provide custom tear-down, etc on disconnect - just remember
      *  to call back into ISDevice::connect() in your new method.
+     * @param invalidatePort if true, the associated port will be invalidated after closing.
+     *   Invalidating the port will require rediscovering/revalidating the port again before
+     *   it can be used to communicate with the device again. This is most often done when
+     *   issuing a device reset on a transient port type, such as a TCP or USB port type.
+     *   In most circumstances in which a port is closed, you DO NOT want to invalidate it,
+     *   thus false is the default and likely correct option.
      * @return true if successful, otherwise false
      */
-    virtual bool disconnect() {
+    virtual bool disconnect(bool invalidate = false) {
         devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // once we disconnect, we don't actually know the status of the hardware anymore
-        return (portClose(port) == PORT_ERROR__NONE);
+        bool closed = (portClose(port) == PORT_ERROR__NONE);
+        if (invalidate)
+            portInvalidate(port);
+        return closed;
     }
 
     /**
@@ -346,6 +355,16 @@ public:
     // Core Interface Functions - these should be the only calls which call into the ComManager functions directly,
     //     these are essentially the basis of all comms to the device, with few exceptions.
 
+    int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSend(port, pktInfo, data, did, size, offset) : -1; }
+    int SendRaw(const void* data, uint32_t length) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendRaw(port, data, length) : -1; }
+    int SendData(eDataIDs dataId, const void* data, uint32_t length, uint32_t offset = 0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendData(port, data, dataId, length, offset) : -1; }
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetData(port, dataId, length, offset, period); }
+
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
+    void DisableData(eDataIDs dataId) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerDisableData(port, dataId); }
+
+    // TODO?? Replace the above with these? (and probably move to ISDevice.cpp)  -- these attempt to reduce dependency on comManager*() functions.
+    /**
     int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) {
         std::lock_guard<std::recursive_mutex> lock(portMutex);
         if (!isConnected()) return PORT_ERROR__NOT_CONNECTED;
@@ -353,12 +372,12 @@ public:
         return comManagerSend(port, pktInfo, data, did, size, offset)  < 0 ? -1 : 0;
     }
 
-    /**
+    **
      * Send a raw binary buffer, byte-for-byte, to this device
      * @param data a pointer to a block of memory to be sent
      * @param length the number of bytes to be sent
      * @return >=0 indicates the number of bytes actually sent, <0 is one of PORT_ERROR__*. Note that PORT_ERROR__NONE == 0 is not an error, but indicates no bytes where sent
-     */
+     *
     int SendRaw(const void* data, uint32_t length) {
         std::lock_guard<std::recursive_mutex> lock(portMutex);
         if (!isConnected()) return PORT_ERROR__NOT_CONNECTED;
@@ -388,7 +407,7 @@ public:
         if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER))
             comManagerDisableData(port, dataId);
     }
-
+    */
     // Convenience Functions
 
     /**

@@ -383,7 +383,7 @@ bool ISFirmwareUpdater::step() {
             }
         }
         fnStep.mark("Finished Port check.");
-   }
+    }
 
     if (deviceUpdater) {
         deviceUpdater->fwUpdate_step();
@@ -552,7 +552,8 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
         cmd.timeStarted = std::chrono::system_clock::now();
         if (!cmd.cmd.empty() && pfnStatus_cb)
             pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command '%s\\%s'", cmd.step.c_str(), cmd.cmd.c_str());
-    }
+    } else
+        updateState = UPDATER_IN_PROGRESS;
 
     if (cmd.step != activeStep) {
         // new step section/target - we should reset certain states here if needed
@@ -1040,7 +1041,8 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
             if (!cmds.IsSequence())
                 return PKG_ERR_NO_ACTIONS; // actions must be a sequence (of maps)
 
-            commands.emplace_back(label.as<std::string>(), "");
+            auto labelName = label.as<std::string>();
+            commands.emplace_back(labelName, "");
 
             for (auto cmds_iv : cmds) {
                 for (auto cmd : cmds_iv) {
@@ -1108,10 +1110,10 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
                             args += ",slot="+image["slot"].as<std::string>();
 
                         //commands.emplace_back("slot",);
-                        commands.emplace_back(label.as<std::string>(), "upload", args);
+                        commands.emplace_back(labelName, "upload", args);
                     } else {
                         // anything that isn't "image" is treated like a normal command
-                        commands.emplace_back(label.as<std::string>(), cmd_name, cmd_arg);
+                        commands.emplace_back(labelName, cmd_name, cmd_arg);
                     }
                 }
             }
