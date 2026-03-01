@@ -9,11 +9,6 @@
 #ifndef IS_CORE__MSG_LOGGER_H
 #define IS_CORE__MSG_LOGGER_H
 
-
-//#ifdef __ZEPHYR__
-//    #include <zephyr/logging/log.h>
-//#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

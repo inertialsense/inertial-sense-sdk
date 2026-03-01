@@ -109,7 +109,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
 
     // This allows suspending the fwUpdate for until a set time - usually during instances such as
     // device reboots, where we don't want to try and spin while devices
-    if ((int32_t)(current_timeMs() - nextStepMs) < 0)  // suspending the fwUpdate execution until this time
+    if (nextStepMs && ((int32_t)(current_timeMs() - nextStepMs) < 0))  // suspending the fwUpdate execution until this time
         return false;
     nextStepMs = 0; // always reset back to 0 when elapsed so we don't get held up if the clock rolls over
 
@@ -140,8 +140,10 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // back this and return
 
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
-        if (!device)    // nothing to do without a valid device
+        if (!device) {   // nothing to do without a valid device -- This is a bigger error and we should probably log the error
+            log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater references a target device ID cannot be located, but which is also not the parent device?", device->getIdAsString().c_str());
             return false;
+        }
 
         if (portIsValid(device->port) && !device->isConnected()) {
             log_debug(IS_LOG_FWUPDATE, "Device %s is disconnected... Attempting to reconnect.", device->getIdAsString().c_str());
@@ -152,10 +154,9 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         }
 
         if (device->isConnected()) {
-            if (!device->hasDeviceInfo()) {
-                (device->validateAsync() != 1)
-                    return true;    // we'll keep in our current state until we can validate the device
-            }
+            if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
+                return true;    // we'll keep in our current state until we can validate the device
+
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 
