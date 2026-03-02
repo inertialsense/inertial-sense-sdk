@@ -916,6 +916,10 @@ dfu_error DFUDevice::writeFlash(const dfu_memory_t& mem, uint32_t& offset, uint3
     if (data_len == 0)
         return DFU_ERROR_NONE; // nothing to do
 
+    log_info(IS_LOG_FWUPDATE, "DFU writeFlash: data_len=%u, pageSize=%u, wTransferSize=%u, chunksPerPage=%u",
+             data_len, mem.pageSize, funcDescriptor.wTransferSize,
+             funcDescriptor.wTransferSize ? (mem.pageSize + funcDescriptor.wTransferSize - 1) / funcDescriptor.wTransferSize : 0);
+
     // Write memory
     uint32_t bytes_written = 0;
     uint32_t byteInSection = 0;
@@ -1359,10 +1363,14 @@ int DFUDevice::waitForState(dfu_state required_state, dfu_state* actual_state, u
 
     auto start = std::chrono::steady_clock::now();
 
+    int polls = 0;
+
     do {
         ret_libusb = getStatus(&status, &waitTime, actual_state, &stringIndex);
         if (ret_libusb < LIBUSB_SUCCESS)
             return ret_libusb;
+
+        polls++;
 
         if (status != DFU_STATUS_OK) {
             clearStatus();
@@ -1372,9 +1380,11 @@ int DFUDevice::waitForState(dfu_state required_state, dfu_state* actual_state, u
             if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms)
                 return LIBUSB_ERROR_TIMEOUT;
 
-            SLEEP_MS(_MAX(waitTime, 25));
+            SLEEP_MS(1);  // Poll aggressively; device bwPollTimeout is overly conservative
         }
     } while ((status != DFU_STATUS_OK) || (*actual_state != required_state));
+
+    log_more_debug(IS_LOG_FWUPDATE, "DFU waitForState: polls=%d, bwPollTimeout=%ums, state=%d", polls, waitTime, required_state);
 
     return LIBUSB_SUCCESS;
 }
