@@ -171,10 +171,10 @@ private:
     inline static PortManager& portManager = PortManager::getInstance();
     inline static DeviceManager& deviceManager = DeviceManager::getInstance();
 
-
-    device_handle_t device;       //!< an ISDevice instance to which are are communicating/updating
+    device_handle_t device;                 //!< an ISDevice instance to which are are communicating/updating
     dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
     uint32_t last_reboot = 0;               //!< time when the last reboot to the device was issued
+    uint32_t nextStepMs = 0;                //!< if this time exceeds the current clock (current_timeMs()) fwUpdate_step() will return immediately until this elapses
 
     struct {
         bool isValid = false;               //!< true if the data in this struct is valid

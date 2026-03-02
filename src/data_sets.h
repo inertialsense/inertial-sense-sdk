@@ -3886,9 +3886,6 @@ typedef struct
     /** GLONASS AR mode (0:off,1:on,2:auto cal,3:ext cal) */
     int32_t glomodear;
 
-    /** GPS AR mode (0:off,1:on) */
-    int32_t gpsmodear;
-
     /** SBAS AR mode (0:off,1:on) */
     int32_t sbsmodear;
 
@@ -4041,7 +4038,11 @@ typedef struct PACKED
     uint8_t qualP[NFREQ+NEXOBS];
 
     /** reserved, for alignment */
+//if NFREQ == 1
     uint8_t reserved;
+//#elif NFREQ == 3
+//    uint8_t reserved[3];
+//#endif
 
     /** Observation data carrier-phase (cycle). The carrier phase initial ambiguity is initialized using an approximate value to make the magnitude of the phase close to the pseudorange measurement. Clock resets are applied to both phase and code measurements in accordance with the RINEX specification. */
     double L[NFREQ+NEXOBS];
