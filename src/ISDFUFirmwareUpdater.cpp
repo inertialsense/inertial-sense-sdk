@@ -500,8 +500,16 @@ dfu_error DFUDevice::fetchDeviceInfo() {
     uint16_t hardwareType = 0;
     processorType = IS_PROCESSOR_UNKNOWN;
 
-    if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32L4)) processorType = IS_PROCESSOR_STM32L4; // possible IMX
-    else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5)) processorType = IS_PROCESSOR_STM32U5; // possible GPX
+    if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32L4)) processorType = IS_PROCESSOR_STM32L4;
+    else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5_1M)) processorType = IS_PROCESSOR_STM32U5;
+    else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5_2M)) processorType = IS_PROCESSOR_STM32U5;
+
+    if (processorType == IS_PROCESSOR_UNKNOWN) {
+        log_info(IS_LOG_FWUPDATE, "DFU unknown fingerprint: %s  descriptors(%zu):",
+                 md5_to_string(fingerprint.state).c_str(), dfuDescriptors.size());
+        for (size_t i = 0; i < dfuDescriptors.size(); i++)
+            log_info(IS_LOG_FWUPDATE, "  [%zu] \"%s\"", i, dfuDescriptors[i].c_str());
+    }
 
     // try and read the OTP memory
     dfu_memory_t otp = segments[STM32_DFU_INTERFACE_OTP];
