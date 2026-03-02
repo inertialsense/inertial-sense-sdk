@@ -7,6 +7,7 @@
  */
 
 #include "core/msg_logger.h"
+#include "DeviceManager.h"
 #include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
 #include "ISDeviceCal.h"
@@ -1299,6 +1300,27 @@ bool ISDevice::softwareReset() {
     return false;
 }
 
+/**
+ * local temporary function to return a "unique" temporary serial number from a pool of 4094 possible.
+ * This call queries known devices and returns the first "temp serial no" that is not in use.
+ * @return a uint32_t suitable for use in devInfo.serialNumber, or returns UINT32_MAX if the
+ * pool is exhausted.
+ */
+uint32_t getTempSerialNo() {
+    // start by enumerating all other potential "temporary" serial numbers
+    std::set<uint32_t> serials;
+    for (const auto& d : DeviceManager::getInstance()) {
+        if ((d->devInfo.serialNumber & 0xFFFFF000) == 0xFFFFF000)
+            serials.insert(d->devInfo.serialNumber & 0xFFF);
+    }
+    for (uint32_t sn = 0; sn < 0xFFF; sn++) {
+        if (serials.find(sn) == serials.end()) {
+            return 0xFFFFF000 | sn;
+        }
+    }
+    return UINT32_MAX;
+}
+
 int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 {
     if ((data->hdr.size==0) || (data->ptr==NULL))
@@ -1317,8 +1339,11 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
         case DID_DEV_INFO:
             devInfo = *(dev_info_t*)data->ptr;
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-            if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
-                devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
+            // TODO: Remove after IMX-5 is no longer manufactured
+            //   this is purely to support IMX-5 during manufacturing when no serial number has been assigned -
+            if ( ((devInfo.hardwareType & 0x0F) == IS_HARDWARE_TYPE_IMX) && (devInfo.serialNumber == UINT32_MAX)) {
+                devInfo.serialNumber = getTempSerialNo();
+            }
             break;
         case DID_SYS_CMD:
             sysCmd = *(system_command_t*)data->ptr;
@@ -1401,6 +1426,11 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
                 }
                 gpxDevInfo = info;
                 break;
+            }
+            // TODO: Remove after IMX-5 is no longer manufactured
+            //   this is purely to support IMX-5 during manufacturing when no serial number has been assigned -
+            if ( ((devInfo.hardwareType & 0x0F) == IS_HARDWARE_TYPE_IMX) && (devInfo.serialNumber == UINT32_MAX)) {
+                devInfo.serialNumber = getTempSerialNo();
             }
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
         }
