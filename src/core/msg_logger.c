@@ -37,7 +37,7 @@ static pthread_mutex_t log_mutex;
 static pthread_once_t log_init_once = PTHREAD_ONCE_INIT;
 #endif
 
-static void static_log_end() {
+static void static_log_end(void) {
 #if defined(PLATFORM_IS_WINDOWS)
     DeleteCriticalSection(&log_mutex);
 #else
@@ -95,7 +95,7 @@ static inline void static_log_timestamp(FILE* log_file, const char* prefix) {
 
     struct tm tm_buf;
     #ifdef _WIN32
-    localtime_s(&tm_buf, &ts.tv_set);
+    localtime_s(&tm_buf, &ts.tv_sec);
     #else
     localtime_r(&ts.tv_sec, &tm_buf);
     #endif
