@@ -105,17 +105,15 @@ bool ISDevice::step() {
         return false;
 
     bool didStuff = false;
-    if (isConnected()) {
-        if (portType(port) & PORT_TYPE__COMM) {
-            is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-            fn.mark("Parsed messages.");
-            if (!hasDeviceInfo()) {
-                validateAsync();
-                fn.mark("Validating device.");
-            } else {
-                SyncFlashConfig();
-                fn.mark("Synchronizing flash.");
-            }
+    if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
+        is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
+        fn.mark("Parsed messages.");
+        if (!hasDeviceInfo()) {
+            validateAsync(250);
+            fn.mark("Validating device.");
+        } else {
+            SyncFlashConfig();
+            fn.mark("Synchronizing flash.");
         }
         didStuff = true;
     }
@@ -1009,10 +1007,15 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
 }
 
 bool ISDevice::ImxFlashConfigSynced() {
-    return  ValidFlashCfgCksum(imxFlashCfg.checksum) &&
-            (imxFlashCfg.checksum == sysParams.flashCfgChecksum) &&
-            (imxFlashCfgUploadTimeMs == 0) &&
-            !ImxFlashConfigUploadFailure();
+    bool checksumValid = ValidFlashCfgCksum(imxFlashCfg.checksum);
+    bool checksumsMatch = (imxFlashCfg.checksum == sysParams.flashCfgChecksum);
+    bool uploadCompleted = (imxFlashCfgUploadTimeMs == 0);
+
+    bool uploadChecksumValid = ValidFlashCfgCksum(imxFlashCfgUpload.checksum) && imxFlashCfgUpload.checksum;
+    bool uploadChecksumsMatch = (imxFlashCfgUpload.checksum == sysParams.flashCfgChecksum);
+    bool uploadSuccess = (!uploadChecksumValid || uploadChecksumsMatch); // bool uploadSuccess = !ImxFlashConfigUploadFailure();
+
+    return  checksumValid && checksumsMatch && uploadCompleted && uploadSuccess;
 }
 
 bool ISDevice::GpxFlashConfigSynced() {
@@ -1063,7 +1066,7 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
         int elaspedMs = (int)(current_timeMs() - startMs);
         if (elaspedMs > (int)timeoutMs)
         {   // Timeout waiting for IMX flash config
-            log_info(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync! (%d ms elapsed, 0x%08x (FlashCfg) != 0x%08x (SysParams)", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs, imxFlashCfg.checksum, sysParams.flashCfgChecksum);
+            log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync! (%d ms elapsed, 0x%08x (FlashCfg) != 0x%08x (SysParams)", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs, imxFlashCfg.checksum, sysParams.flashCfgChecksum);
             return false;
         }
         else
@@ -1124,9 +1127,18 @@ bool ISDevice::hasPendingImxFlashWrites(uint32_t& ageSinceLastPendingWrite) {
  * Sets the provided FlashCfg and then blocks for timeout, waiting for the uploaded FlashCfg to be
  * then downloaded, before finally confirming that the new values have been set.
  * @param flashCfg the flash config to upload
- * @return
+ * @param timeout the maximum amount of time to wait fo the sync before returning false
+ * @param waitForWrite if true, will also wait for the PENDING_WRITE flag to clear, indicating
+ *   that the configuration is saves to flash (not just RAM). Note that writing to NVM Flash
+ *   will occur automatically after some period of time, even if this is false. A common pattern
+ *   is to change config, and then reset but if the caller resets before the config is written to
+ *   NVM, even if it reports as synchronized, the subsequent reset may prevent the configuration
+ *   was being persisted, and the reset will lose that change. This parameter is a convenience for
+ *   operations in which the caller needs confirmation that the config is written to NVM, and
+ *   safely persisted across resets.
+ * @return true if Cfg was successfully sent and sync, and (optionally) written to device flash
  */
-bool ISDevice::SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout) {
+bool ISDevice::SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout, bool waitForWrite) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     if (!SetImxFlashConfig(flashCfg))  // Upload and verify upload
@@ -1143,6 +1155,9 @@ bool ISDevice::SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
 
     if ((imxFlashCfgUploadTimeMs != 0) && (imxFlashSyncCheckTimeMs != 0))
         return false;   // timed-out,
+
+    if (waitForWrite && !waitForImxFlashWrite(timeout))
+        return false;
 
     return (memcmp(&flashCfg, &tmpFlash, sizeof(nvm_flash_cfg_t)) == 0);
 }
@@ -1507,7 +1522,7 @@ bool ISDevice::connect(bool revalidate) {
         SLEEP_MS(15);
         success = validate();          // if validating, only return true if we successfully validated
     }
-    log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getIdAsString().c_str(), (success ? " (revalidated)" : ""));
+    log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), (success ? " (revalidated)" : ""));
     return success;
 }
 

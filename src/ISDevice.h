@@ -525,9 +525,10 @@ public:
      * may return a rtkConfig of 0x00400008 because the 0x4 reflects that it was persisted (or something like that).
      * @param flashCfg the config to upload (and later match against the downloaded firmware)
      * @param timeout a timeout value for how long to wait for the new flash to sync/download before failing
+     * @poram waitForWrite if true (default is false) will wait for confirmation that the flash was written to flash before returning.
      * @return true if the new config was uploaded, synced, downloaded and matched with the original flashCfg, otherwise false
      */
-    bool SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+    bool SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS, bool waitForWrite = false);
     bool SetGpxFlashCfgAndConfirm(gpx_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
 
     /**
