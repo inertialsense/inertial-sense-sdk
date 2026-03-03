@@ -25,7 +25,7 @@ extern "C" {
 // --- Compile-time configuration ---
 // Define the default log level to show messages at or above this level.
 #ifndef IS_LOG_LEVEL
-#define IS_LOG_LEVEL  IS_LOG_LEVEL_MORE_DEBUG // Default to WARNING
+#define IS_LOG_LEVEL  IS_LOG_LEVEL_WARN // Default to WARNING
 #endif
 
 // Define the highest (most verbose) level that will be compiled into the binary
