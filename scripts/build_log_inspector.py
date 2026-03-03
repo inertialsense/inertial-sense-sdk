@@ -139,7 +139,14 @@ def run_build(args: list[str] = []) -> int:
             build_type = "Debug"
 
     # Use current interpreter for pip
-    pip_install_cmd = [PY, "-m", "pip", "install", str(PYTHON_DIR)]
+    # Build Python wheel in-tree so the C++ headers and static libs in SDK_DIR are visible
+    # Avoid build isolation (offline-safe) and skip dependency downloads (already in venv)
+    pip_install_cmd = [
+        PY, "-m", "pip", "install",
+        "--no-build-isolation",
+        "--no-deps",
+        str(PYTHON_DIR),
+    ]
     if not in_venv() and sys.version_info >= (3, 11):
         pip_install_cmd.append("--break-system-packages")
 
