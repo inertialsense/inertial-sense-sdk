@@ -343,6 +343,7 @@ int portOpenRetry(port_handle_t port, unsigned int timeoutMs, unsigned int retry
  */
 static inline int portClose(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
     return (BASE_PORT(port)->portClose) ? BASE_PORT(port)->portClose(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -356,6 +357,7 @@ static inline int portClose(port_handle_t port) {
  */
 static inline int portFree(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
     return (BASE_PORT(port)->portFree) ? BASE_PORT(port)->portFree(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -366,6 +368,7 @@ static inline int portFree(port_handle_t port) {
  */
 static inline int portAvailable(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
     return (BASE_PORT(port)->portAvailable) ? BASE_PORT(port)->portAvailable(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -379,6 +382,7 @@ static inline int portAvailable(port_handle_t port) {
  */
 static inline int portDrain(port_handle_t port, uint32_t timeoutMs) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
     return (BASE_PORT(port)->portDrain) ? BASE_PORT(port)->portDrain(port, timeoutMs) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -389,6 +393,7 @@ static inline int portDrain(port_handle_t port, uint32_t timeoutMs) {
  */
 static inline int portFlush(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
     return (BASE_PORT(port)->portFlush) ? BASE_PORT(port)->portFlush(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -427,6 +432,7 @@ static inline void portSetLogger(port_handle_t port, pfnPortLogger portLogger, v
  */
 static inline int portLog(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void *userData) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
     return (BASE_PORT(port)->portLogger) ? BASE_PORT(port)->portLogger(port, op, buf, len, userData) : PORT_ERROR__NOT_SUPPORTED;
 }
 
@@ -445,7 +451,8 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len)
 
     // If the port is not valid, return an error
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
+
     // If the port does not support reading, return an error
     if (!BASE_PORT(port)->portRead) return PORT_ERROR__NOT_SUPPORTED;
 
@@ -479,6 +486,7 @@ static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int
 
     // If the port is not valid, return an error
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
 
     // If the port does not support reading, return an error
     if (!BASE_PORT(port)->portReadTimeout) return portReadTimeout_internal(port, buf, len, timeout); // PORT_ERROR__NOT_SUPPORTED;
@@ -507,6 +515,7 @@ static inline int portReadTimeout(port_handle_t port, uint8_t* buf, unsigned int
  */
 static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    if (!portIsOpened(port)) return PORT_ERROR__NOT_CONNECTED;
     if (BASE_PORT(port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, BASE_PORT(port)->portLoggerData);
     int bytesWritten = (BASE_PORT(port)->portWrite) ? BASE_PORT(port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
     if (BASE_PORT(port)->stats) 
