@@ -141,7 +141,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
 
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
         if (!device) {   // nothing to do without a valid device -- This is a bigger error and we should probably log the error
-            log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater references a target device ID cannot be located, but which is also not the parent device?", device->getIdAsString().c_str());
+            log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater references a target device ID cannot be located, but which is also not the parent device?", ISDevice::getIdAsString(target_devInfo).c_str());
             return false;
         }
 
