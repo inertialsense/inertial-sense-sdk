@@ -3129,7 +3129,7 @@ class logPlot:
                             rw_idx = (np.abs(t2 - 1.0)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
                             
-                            ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], rw * RAD2DEG * 1000, bi * RAD2DEG * 3600))
+                            ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], rw * RAD2DEG * 3600/RTHR2RTS, bi * RAD2DEG * 3600))
 
                             # (t2, ad, ade, adn) = allantools.ohdev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
                             # # Compute random walk and bias instability
@@ -3141,7 +3141,7 @@ class logPlot:
 
                             # ax[i, n].loglog(t2, ad * RAD2DEG * 3600, '--', label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG * 3600/RTHR2RTS, bi * RAD2DEG * 3600))
 
-                            sumARW[i][n].append(rw * RAD2DEG * 1000)
+                            sumARW[i][n].append(rw * RAD2DEG * 3600/RTHR2RTS)
                             sumBI[i][n].append(bi * RAD2DEG * 3600)
 
                             # Error bounds debug plots
@@ -3149,7 +3149,6 @@ class logPlot:
                             # ax[i, n].loglog(t2, (ad - ade) * RAD2DEG*3600, '--')
 
         # Calculate the stats for ARW and bias instability over all units
-        # The plots show the mean + 1 std deviation in accordance with IEEE spec (Analog Devices website)
         for i in range(3):
             axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
             for n, pqr in enumerate(initial_sensors):
@@ -3159,7 +3158,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $mdeg\sqrt{Hz}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n])), 'deg/hr')
 
         for i in range(len(initial_sensors)):
             for d in range(3):
@@ -3184,7 +3183,7 @@ class logPlot:
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
-
+    
     def allanVarianceAcc(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
@@ -3223,13 +3222,12 @@ class logPlot:
                             rw_idx = (np.abs(t2 - 0.1)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
 
-                            ax[i, n].loglog(t2, ad, label='%s: %.2g, %.2g' % (self.log.serials[d], rw, bi * MPS2UG))
+                            ax[i, n].loglog(t2, ad * MPS2UG, label='%s: %.2g, %.2g' % (self.log.serials[d], rw * RTHR2RTS, bi * MPS2UG))
 
-                            sumRW[i][n].append(rw) 
+                            sumRW[i][n].append(rw * RTHR2RTS) 
                             sumBI[i][n].append(bi * MPS2UG)
 
         # Calculate the stats for ARW and bias instability over all units
-        # The plots show the mean + 1 std deviation in accordance with IEEE spec (Analog Devices website)
         for i in range(3):
             axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
             for n, pqr in enumerate(sensors):
@@ -3239,7 +3237,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r' ($uG$), RW: %.3g $m/s\sqrt{Hz}$, BI: %.3g $uG$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'uG')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($µG$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $µG$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n])), 'µG')
 
         for i in range(len(sensors)):
             for d in range(3):
