@@ -380,7 +380,8 @@ bool ISDevice::validate(uint32_t timeout) {
     if (!isConnected())
         return false;
 
-    // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+    FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
+    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
 
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
     is_hardware_t oldHdwId = hdwId;
@@ -393,10 +394,12 @@ bool ISDevice::validate(uint32_t timeout) {
         if ((current_timeMs() - startTime) > timeout) {
             // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
             hdwId = oldHdwId, devInfo = oldDevInfo;
+            fn.mark("Device failed to validate in time.");
             return (queryDeviceInfoISbl(250) && hasDeviceInfo());
         }
 
         if (!port || !portIsValid(port) || !portIsOpened(port)) {
+            fn.mark("Port invalidated or closed while validating");
             hdwId = oldHdwId, devInfo = oldDevInfo;
             return false;
         }
@@ -424,6 +427,8 @@ bool ISDevice::validate(uint32_t timeout) {
 
         nextQueryType = static_cast<queryType>(((int)nextQueryType + 1) % (int)QUERYTYPE_MAX);
     } while (!hasDeviceInfo());
+
+    fn.mark("Finished validating.");
 
     if (hasDeviceInfo()) {
         // once we have device info, turn off these other messages
@@ -876,13 +881,13 @@ bool ISDevice::ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout)
 {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected() || (devInfo.hdwRunState != HDW_STATE_APP)) {
+    if (!isConnected()) {
         return false;   // No device, no flash config
     }
 
     // attempt to synchronize, if requested
     if (timeout > 0) {
-        WaitForImxFlashCfgSynced(false, timeout);
+        WaitForImxFlashCfgSynced(true, timeout);
     }
 
     // Copy flash config
@@ -1061,7 +1066,7 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
     while(!ImxFlashConfigSynced())
     {   // Request and wait for IMX flash config
         step();
-        SLEEP_MS(10);
+        SLEEP_MS(5);
 
         int elaspedMs = (int)(current_timeMs() - startMs);
         if (elaspedMs > (int)timeoutMs)
@@ -1157,7 +1162,7 @@ bool ISDevice::SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t time
         return false;   // timed-out,
 
     if (waitForWrite && !waitForImxFlashWrite(timeout))
-        return false;
+        return false;   // tricky - if no FLash Write was required, this will return false, even though we successfully updated the config.
 
     return (memcmp(&flashCfg, &tmpFlash, sizeof(nvm_flash_cfg_t)) == 0);
 }
@@ -1304,7 +1309,8 @@ bool ISDevice::softwareReset() {
 
     if (!portIsValid(port) || (current_timeMs() > nextResetTime)) {
         for (int i = 0; i < 3; i++) {
-            SetSysCmd(SYS_CMD_SOFTWARE_RESET);
+            if (SetSysCmd(SYS_CMD_SOFTWARE_RESET))
+                break;
             SLEEP_MS(20)
         }
         disconnect();
@@ -1312,6 +1318,28 @@ bool ISDevice::softwareReset() {
         nextResetTime = current_timeMs() + resetRequestThreshold;
         return true;
     }
+    return false;
+}
+
+bool ISDevice::manufacturingInfo(manufacturing_info_t& info, uint32_t timeoutMs) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+
+    if (!isConnected()) {
+        return false;   // No device, no flash config
+    }
+
+    int startTime = current_timeMs();
+    while (current_timeMs() - startTime < (int)timeoutMs) {
+        if (manfInfo.hardwareId) {
+            info = manfInfo;
+            return true;
+        }
+
+        GetData(DID_MANUFACTURING_INFO);
+        SLEEP_MS(5);
+        step();
+    }
+
     return false;
 }
 
@@ -1362,6 +1390,10 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             }
             log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_FLASH_CFG", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             break;
+        case DID_MANUFACTURING_INFO:
+            copyDataPToStructP(&manfInfo, data, sizeof(manufacturing_info_t));
+            break;
+
         case DID_FIRMWARE_UPDATE:
             if (fwUpdater)
                 fwUpdater->processMessage(data);
@@ -1500,6 +1532,18 @@ bool ISDevice::connect(bool revalidate) {
 
     if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))      // TODO?? Generally, device MUST use a COMM port, but ISbl is NOT a COMM protocol
         return false;   // port is invalid or incorrect type, so we can't connect it
+
+    imxFlashCfgUpload = {};
+    gpxFlashCfgUpload = {};
+    imxFlashCfgUploadTimeMs = 0;
+    gpxFlashCfgUploadTimeMs = 0;
+    imxFlashSyncCheckTimeMs = 0;
+    gpxFlashSyncCheckTimeMs = 0;
+    imxFlashCfgUploadChecksum = 0;
+    gpxFlashCfgUploadChecksum = 0;
+
+    if (revalidate)
+        devInfo.hdwRunState = HDW_STATE_UNKNOWN; // this will further reinforce a validation
 
     if (!portIsOpened(port)) {
         if (nextConnectMs > current_timeMs()) {

@@ -207,7 +207,6 @@ public:
      * @return true if successful, otherwise false
      */
     virtual bool disconnect(bool invalidate = false) {
-        devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // once we disconnect, we don't actually know the status of the hardware anymore
         bool closed = (portClose(port) == PORT_ERROR__NONE);
         if (invalidate)
             portInvalidate(port);
@@ -352,6 +351,14 @@ public:
      */
     bool isResetPending() { return current_timeMs() < nextResetTime; }
 
+    /**
+     * Fetches (if not previously fetched), the devices manufacturing info and populates it into the passed reference.
+     * @param manfInfo a reference to the manufacturing_info_t struct to be populated
+     * @param timeoutMs the maximum amount of time to wait for the manufacturing info response from the device
+     * @return true if the manfInfo was successfully populated, otherwise false (ie, port invalid, invalid device, timeout, etc);
+     */
+    bool manufacturingInfo(manufacturing_info_t& manfInfo, uint32_t timeoutMs = 100);
+
     // Core Interface Functions - these should be the only calls which call into the ComManager functions directly,
     //     these are essentially the basis of all comms to the device, with few exceptions.
 
@@ -477,8 +484,8 @@ public:
      * @param flashCfg_ a reference to a nvm_flash_cfg_t struct to be populated
      * @returns true if the flashCfg has been synchronized with the device (and can thus be trusted), otherwise false.
      */
-    bool ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
-    bool GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
+    bool ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 500);
+    bool GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout = 500);
 
     /**
      * Uploads the provided flashCfg to the remove device, but makes NO checks that it was successfully synchronized.
