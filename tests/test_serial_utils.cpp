@@ -170,14 +170,6 @@ static test_port_t* boundPorts[NUM_COM_PORTS] {
         #endif
 };
 
-static int testPortOpen(port_handle_t port)
-{
-}
-
-static int testPortClose(port_handle_t port)
-{
-}
-
 static int testPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
     return ringBufRead(&((test_port_t*)port)->portRingBuf, buf, len);
@@ -218,8 +210,6 @@ void initTestPorts() {
         if (portNum <= 1)
             port.base.ptype |= PORT_TYPE__LOOPBACK;  // only PORT0 and PORT1 are Loopbacks
 
-        port.base.portOpen = testPortOpen;
-        port.base.portClose = testPortClose;
         port.base.portRead = testPortRead;
         port.base.portWrite = testPortWrite;
         port.base.portFree = testPortFree;
