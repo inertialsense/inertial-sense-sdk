@@ -1245,7 +1245,7 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
 
 void is_comm_port_parse_messages(port_handle_t port)
 {
-    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
         return;
 
     if (COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)
@@ -1359,7 +1359,7 @@ int portWriteUpdateChecksum(port_handle_t port, const uint8_t* buf, int len, uin
 
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
-    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
     {   // can't write if we don't have a valid port, or the port isn't an ISComm
         return -1;
     }
@@ -1437,7 +1437,7 @@ int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data
 
 int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
-    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
     {
         return -1;
     }
