@@ -321,7 +321,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 54: DID_GPS1_RTK_POS
         offsetsOnlyTimeFirst,   // 55: DID_ROS_COVARIANCE_POSE_TWIST
         0,                      // 56: DID_COMMUNICATIONS_LOOPBACK
-        offsetsOnlyTimeFirst,   // 57: DID_IMU3_UNCAL
+        offsetsOnlyTimeFirst,   // 57: DID_IMUS_UNCAL
         offsetsOnlyTimeFirst,   // 58: DID_IMU
         0,                      // 59: DID_INL2_MAG_OBS_INFO
         0,                      // 60: DID_GPS_BASE_RAW
@@ -360,7 +360,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 93: DID_EVB_DEV_INFO
         0,                      // 94: DID_INFIELD_CAL
         offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
-        offsetsOnlyTimeFirst,   // 96: DID_IMU3_RAW
+        offsetsOnlyTimeFirst,   // 96: DID_IMUS_RAW
         offsetsOnlyTimeFirst,   // 97: DID_IMU_RAW
         0,                      // 98:
         0,                      // 99:
@@ -511,7 +511,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 54: DID_GPS1_RTK_POS
         0,                      // 55: DID_ROS_COVARIANCE_POSE_TWIST
         0,                      // 56: DID_COMMUNICATIONS_LOOPBACK
-        0,                      // 57: DID_IMU3_UNCAL
+        0,                      // 57: DID_IMUS_UNCAL
         0,                      // 58: DID_IMU
         0,                      // 59: DID_INL2_MAG_OBS_INFO
         0,                      // 60: DID_GPS_BASE_RAW
@@ -550,7 +550,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 93: DID_EVB_DEV_INFO
         0,                      // 94: DID_INFIELD_CAL
         0,                      // 95: DID_REFERENCE_IMU
-        0,                      // 96: DID_IMU3_RAW
+        0,                      // 96: DID_IMUS_RAW
         0,                      // 97: DID_IMU_RAW
         0,                      // 98:
         0,                      // 99:
@@ -640,8 +640,8 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_INS_2]                 = RMC_BITS_INS2,
     [DID_INS_3]                 = RMC_BITS_INS3,
     [DID_INS_4]                 = RMC_BITS_INS4,
-    [DID_IMU3_UNCAL]            = RMC_BITS_IMU3_UNCAL,
-    [DID_IMU3_RAW]              = RMC_BITS_IMU3_RAW,
+    [DID_IMUS_UNCAL]            = RMC_BITS_IMUS_UNCAL,
+    [DID_IMUS_RAW]              = RMC_BITS_IMUS_RAW,
     [DID_IMU_RAW]               = RMC_BITS_IMU_RAW,
     [DID_IMU]                   = RMC_BITS_IMU,
     [DID_PIMU]                  = RMC_BITS_PIMU,
@@ -685,6 +685,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GPX_BIT]               = RMC_BITS_GPX_BIT,
     [DID_GPX_PORT_MONITOR]      = RMC_BITS_GPX_PORT_MON,
     [DID_RTK_DEBUG]             = RMC_BITS_GPX_RTK_DBG,
+    [DID_GPX_SYS_FAULT]         = RMC_BITS_GPX_SYS_FAULT,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -759,6 +760,7 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_PORT_MONITOR]          = GRMC_BITS_PORT_MON,
     [DID_GPX_PORT_MONITOR]      = GRMC_BITS_GPX_PORT_MON,
     [DID_GPS_BASE_RAW]          = GRMC_BITS_GPS_BASE_RAW,
+    [DID_GPX_SYS_FAULT]         = GRMC_BITS_GPX_SYS_FAULT,
 };
 
 const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
@@ -787,6 +789,7 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_GPS2_RTK_CMP_REL]     = 1, 
     [GRMC_BIT_POS_DID_RTK_DEBUG]        = GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,  
     [GRMC_BIT_POS_DID_PORT_MON]         = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
+    [GRMC_BIT_POS_DID_GPX_SYS_FAULT]    = GRMC_PRESET_GPX_SYS_FAULT_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPX_PORT_MON]     = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPS_BASE_RAW]     = 1,
 };

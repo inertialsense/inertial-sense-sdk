@@ -716,6 +716,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
     {
         dataPtr = NULL;
     }
+    
     is_comm_encode_hdr(pkt, PKT_TYPE_DATA, req->id, req->size, req->offset, dataPtr);
 
     // Prep data if callback exists

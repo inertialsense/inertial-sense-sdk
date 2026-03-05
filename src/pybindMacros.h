@@ -6,8 +6,8 @@ PYBIND11_NUMPY_DTYPE(gps_sig_sv_t, gnssId, svId, sigId, cno, quality, status);
 PYBIND11_NUMPY_DTYPE(sensors_imu_w_temp_t, pqr, acc, temp);
 PYBIND11_NUMPY_DTYPE(sensors_mag_t, mag);
 PYBIND11_NUMPY_DTYPE(rtos_task_t, name, priority, stackUnused, periodMs, runtimeUs, avgRuntimeUs, lowerRuntimeUs, upperRuntimeUs, maxRuntimeUs, startTimeUs, gapCount, quadGapCount, doubleGapCount, reserved, cpuUsage, handle);
-PYBIND11_NUMPY_DTYPE(imus_t, pqr, acc);
-PYBIND11_NUMPY_DTYPE(imu3_t, time, status, I);
+PYBIND11_NUMPY_DTYPE(imui_t, pqr, acc);
+PYBIND11_NUMPY_DTYPE(imus_t, time, status, I);
 PYBIND11_NUMPY_DTYPE(mag_xyz_t, xyz);
 PYBIND11_NUMPY_DTYPE(sensors_mpu_t, pqr, acc, mag);
 PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omega_l, omega_r, wrap_count_l, wrap_count_r, var_wheel_omega, var_wheel_theta);
@@ -21,7 +21,7 @@ PYBIND11_NUMPY_DTYPE(nmeaBroadcastMsgPair_t, msgID, msgPeriod);
 
 // Public Types
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildType, buildYear, buildMonth, buildDay, buildHour, buildMinute, buildSecond, buildMillisecond, addInfo);
-PYBIND11_NUMPY_DTYPE(system_fault_t, status, g1Task, g2FileNum, g3LineNum, g4, g5Lr, pc, psr);
+PYBIND11_NUMPY_DTYPE(system_fault_t, upTime, status, fileNum, lineNum, haltReason, lr, pc, psr, taskALastFeed, taskBLastFeed, wdtLastFeed, var0, var1, var2, var3);
 PYBIND11_NUMPY_DTYPE(pimu_t, time, dt, status, theta, vel);
 PYBIND11_NUMPY_DTYPE(ins_1_t, week, timeOfWeek, insStatus, hdwStatus, theta, uvw, lla, ned);
 PYBIND11_NUMPY_DTYPE(ins_2_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw, lla);
@@ -46,7 +46,7 @@ PYBIND11_NUMPY_DTYPE(gps_rtk_misc_t, timeOfWeekMs, accuracyPos, accuracyCov, arT
 PYBIND11_NUMPY_DTYPE(sensors_t, time, mpu);
 PYBIND11_NUMPY_DTYPE(sensor_comp_unit_t, lpfLsb, lpfTemp, k, temp, tempRampRate, tci, numTcPts, dtTemp);
 PYBIND11_NUMPY_DTYPE(sensor_compensation_t, timeMs, pqr, acc, mag, referenceImu, referenceMag, sampleCount, calState, status, alignAccel);
-PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, imu3, temp, mag);
+PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, imus, temp, mag);
 
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, imu, mag, bar, barTemp, humidity, ana);
 PYBIND11_NUMPY_DTYPE(rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
