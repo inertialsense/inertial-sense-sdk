@@ -33,7 +33,8 @@ RESET = r"\u001b[0m"
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
 
-RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
+RTHR2RTS = 60       # sqrt(hr) to sqrt(sec)
+MPS2UG   = 1E6/9.81 # m/s^2 to micro g
 
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
@@ -3148,7 +3149,6 @@ class logPlot:
                             # ax[i, n].loglog(t2, (ad - ade) * RAD2DEG*3600, '--')
 
         # Calculate the stats for ARW and bias instability over all units
-        # The plots show the mean + 1 std deviation in accordance with IEEE spec (Analog Devices website)
         for i in range(3):
             axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
             for n, pqr in enumerate(initial_sensors):
@@ -3158,7 +3158,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n])), 'deg/hr')
 
         for i in range(len(initial_sensors)):
             for d in range(3):
@@ -3183,7 +3183,7 @@ class logPlot:
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
-
+    
     def allanVarianceAcc(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
@@ -3222,13 +3222,12 @@ class logPlot:
                             rw_idx = (np.abs(t2 - 0.1)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
 
-                            ax[i, n].loglog(t2, ad, label='%s: %.2g, %.2g' % (self.log.serials[d], rw * RTHR2RTS, bi))
+                            ax[i, n].loglog(t2, ad * MPS2UG, label='%s: %.2g, %.2g' % (self.log.serials[d], rw * RTHR2RTS, bi * MPS2UG))
 
                             sumRW[i][n].append(rw * RTHR2RTS) 
-                            sumBI[i][n].append(bi)
+                            sumBI[i][n].append(bi * MPS2UG)
 
         # Calculate the stats for ARW and bias instability over all units
-        # The plots show the mean + 1 std deviation in accordance with IEEE spec (Analog Devices website)
         for i in range(3):
             axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
             for n, pqr in enumerate(sensors):
@@ -3238,7 +3237,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'm/s^2')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($µG$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $µG$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n])), 'µG')
 
         for i in range(len(sensors)):
             for d in range(3):
@@ -4482,12 +4481,15 @@ class logPlot:
 
     def sensorCompGen(self, fig, name, useTemp=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(4, 3, sharex=True)
+        numSensors = 5
+        if name=='mag':
+            numSensors = 2
+        ax = fig.subplots(4, numSensors, sharex=True)
 
         useSampleNumber = 1
         noData = True
 
-        for i in range(3):
+        for i in range(numSensors):
             ax[0, i].set_title('X %s %d' % (name, i))
             ax[1, i].set_title('Y %s %d' % (name, i))
             ax[2, i].set_title('Z %s %d' % (name, i))
@@ -4495,37 +4497,37 @@ class logPlot:
                 ax[3, i].set_title('Temperature %s %d' % (name, i))
             else:
                 ax[3, i].set_title('Magnitude %s %d' % (name, i))            
-            for d in range(3):
+            for a in range(3):
                 if useTemp:
-                    ax[d,i].set_xlabel("Temperature (C)")
+                    ax[a,i].set_xlabel("Temperature (C)")
                 else:
                     if useSampleNumber:
-                        ax[d,i].set_xlabel("Sample")
+                        ax[a,i].set_xlabel("Sample")
                     else:
-                        ax[d,i].set_xlabel("Time (s)")
+                        ax[a,i].set_xlabel("Time (s)")
                 if name=='pqr':
-                    ax[d,i].set_ylabel("Gyro (deg/s)")
+                    ax[a,i].set_ylabel("Gyro (deg/s)")
                 elif name=='acc':
-                    ax[d,i].set_ylabel("Accel (m/s^2)")
+                    ax[a,i].set_ylabel("Accel (m/s^2)")
                 elif name=='mag':
-                    ax[d,i].set_ylabel("Mag")
+                    ax[a,i].set_ylabel("Mag")
 
-        for d in self.active_devs:
-            time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
+        for a in self.active_devs:
+            time = 0.001 * self.getData(a, DID_SCOMP, 'timeMs')
             if np.any(time):
                 noData = False
-                imu = self.getData(d, DID_SCOMP, name)
-                status = self.getData(d, DID_SCOMP, 'status')
+                imu = self.getData(a, DID_SCOMP, name)
+                status = self.getData(a, DID_SCOMP, 'status')
 
                 if name=='mag':
-                    refVal = self.getData(d, DID_SCOMP, 'referenceMag')
+                    refVal = self.getData(a, DID_SCOMP, 'referenceMag')
                 else:
-                    refImu = self.getData(d, DID_SCOMP, 'referenceImu')
+                    refImu = self.getData(a, DID_SCOMP, 'referenceImu')
                     refImu = refImu
                     refVal = refImu[name]
 
-                print("Serial#: SN" + str(self.log.serials[d]) + " " + name + ": ")
-                for i in range(3):
+                print("Serial#: SN" + str(self.log.serials[a]) + " " + name + ": ")
+                for i in range(numSensors):
                     temp = imu[:,i]['lpfTemp']
                     sensor = imu[:,i]['lpfLsb']
 
@@ -4545,7 +4547,7 @@ class logPlot:
                             x = time
 
                     # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None)
-                    ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d])
+                    ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[a])
                     ax[1,i].plot(x, sensor[:,1]*scalar)
                     ax[2,i].plot(x, sensor[:,2]*scalar)
                     if not useTemp:
@@ -4600,15 +4602,16 @@ class logPlot:
 
     def linearityAcc(self, fig=None, axs=None):
         fig.suptitle('Accelerometer Linearity - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(3, 3)
+        numImus = 5
+        ax = fig.subplots(3, numImus)
 
-        for i in range(3):
-            ax[0, i].set_title('Accel%d X' % (i))
-            ax[1, i].set_title('Accel%d Y' % (i))
-            ax[2, i].set_title('Accel%d Z ' % (i))
+        for a in range(numImus):
+            ax[0, a].set_title('Acc%d X' % (a))
+            ax[1, a].set_title('Acc%d Y' % (a))
+            ax[2, a].set_title('Acc%d Z ' % (a))
             for d in range(3):
-                ax[d,i].set_xlabel("ref m/s^2")
-                ax[d,i].set_ylabel("residual m/s^2")
+                ax[d,a].set_xlabel("ref m/s^2")
+                ax[d,a].set_ylabel("residual m/s^2")
 
         for d in self.active_devs:
             sampleCount = self.getData(d, DID_SCOMP, 'sampleCount')
@@ -4616,35 +4619,15 @@ class logPlot:
             imu = self.getData(d, DID_SCOMP, 'acc')
             reference = self.getData(d, DID_SCOMP, 'referenceImu')
 
-            for i in range(3): # range through axes
-                data0 = imu[:,0]['lpfLsb'][:,i]
-                data1 = imu[:,1]['lpfLsb'][:,i]
-                data2 = imu[:,2]['lpfLsb'][:,i]
-
-                refdata = reference['acc'][:,i]
-
-                # refdata0 = reference['pqr'][sampleCount > 10000,i]
-                # refdata1 = reference['pqr'][sampleCount > 10000,i]
-                # refdata2 = reference['pqr'][sampleCount > 10000,i]
-
-                # ax[i,0].plot(refdata0, data0)
-                # ax[i,1].plot(refdata0, data1)
-                # ax[i,2].plot(refdata0, data2)
-
-                residual0 = [a - b for a, b in zip(refdata, data0)]
-                residual1 = [a - b for a, b in zip(refdata, data1)]
-                residual2 = [a - b for a, b in zip(refdata, data2)]
-
-                # ax[i,0].plot(range(0,np.size(residual0)), residual0)
-                # ax[i,1].plot(range(0,np.size(residual1)), residual1)
-                # ax[i,2].plot(range(0,np.size(residual2)), residual2)
-
-                if i == 0:
-                    ax[i,0].plot(refdata, residual0, label=self.log.serials[d])
-                else:
-                    ax[i,0].plot(refdata, residual0)
-                ax[i,1].plot(refdata, residual1)
-                ax[i,2].plot(refdata, residual2)
+            for i in range(numImus):
+                for a in range(3): # range through axes
+                    data = imu[:,i]['lpfLsb'][:,a]
+                    refdata = reference['acc'][:,a]
+                    residual = [a - b for a, b in zip(refdata, data)]
+                    if a == 0:
+                        ax[a,i].plot(refdata, residual, label=self.log.serials[d])
+                    else:
+                        ax[a,i].plot(refdata, residual)
 
 
         # Show serial numbers
@@ -4663,15 +4646,16 @@ class logPlot:
 
     def linearityGyr(self, fig=None, axs=None):
         fig.suptitle('Gyro Linearity - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(3, 3)
+        numImus = 5
+        ax = fig.subplots(3, numImus)
 
-        for i in range(3):
-            ax[0, i].set_title('Gyro%d P' % (i))
-            ax[1, i].set_title('Gyro%d Q' % (i))
-            ax[2, i].set_title('Gyro%d R ' % (i))
+        for a in range(numImus):
+            ax[0, a].set_title('Gyr%d P' % (a))
+            ax[1, a].set_title('Gyr%d Q' % (a))
+            ax[2, a].set_title('Gyr%d R ' % (a))
             for d in range(3):
-                ax[d,i].set_xlabel("ref rad/s")
-                ax[d,i].set_ylabel("residual rad/s")
+                ax[d,a].set_xlabel("ref rad/s")
+                ax[d,a].set_ylabel("residual rad/s")
 
         for d in self.active_devs:
             sampleCount = self.getData(d, DID_SCOMP, 'sampleCount')
@@ -4679,35 +4663,15 @@ class logPlot:
             # imu = self.getData(d, DID_SCOMP, 'acc')
             reference = self.getData(d, DID_SCOMP, 'referenceImu')
 
-            for i in range(3): # range through axes
-                data0 = imu[:,0]['lpfLsb'][:,i]
-                data1 = imu[:,1]['lpfLsb'][:,i]
-                data2 = imu[:,2]['lpfLsb'][:,i]
-
-                refdata = reference['pqr'][:,i]
-
-                # refdata0 = reference['pqr'][sampleCount > 10000,i]
-                # refdata1 = reference['pqr'][sampleCount > 10000,i]
-                # refdata2 = reference['pqr'][sampleCount > 10000,i]
-
-                # ax[i,0].plot(refdata0, data0)
-                # ax[i,1].plot(refdata0, data1)
-                # ax[i,2].plot(refdata0, data2)
-
-                residual0 = [a - b for a, b in zip(refdata, data0)]
-                residual1 = [a - b for a, b in zip(refdata, data1)]
-                residual2 = [a - b for a, b in zip(refdata, data2)]
-
-                # ax[i,0].plot(range(0,np.size(residual0)), residual0)
-                # ax[i,1].plot(range(0,np.size(residual1)), residual1)
-                # ax[i,2].plot(range(0,np.size(residual2)), residual2)
-
-                if i == 0:
-                    ax[i,0].plot(refdata, residual0, label=self.log.serials[d])
-                else:
-                    ax[i,0].plot(refdata, residual0)
-                ax[i,1].plot(refdata, residual1)
-                ax[i,2].plot(refdata, residual2)
+            for i in range(numImus):
+                for a in range(3): # range through axes
+                    data = imu[:,0]['lpfLsb'][:,a]
+                    refdata = reference['pqr'][:,a]
+                    residual = [a - b for a, b in zip(refdata, data)]
+                    if a == 0:
+                        ax[a,i].plot(refdata, residual, label=self.log.serials[d])
+                    else:
+                        ax[a,i].plot(refdata, residual)
 
 
         # Show serial numbers
