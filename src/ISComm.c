@@ -386,7 +386,6 @@ static inline void validPacketFound(is_comm_instance_t* c, int pktSize, int data
     validPacketReset(c, pktSize);
 }
 
-__attribute__((optimize("O0")))
 static protocol_type_t processIsbPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -443,11 +442,6 @@ static protocol_type_t processIsbPkt(void* v)
 
     // Validate checksum
     packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
-    if (isbPkt->hdr.id == DID_CAL_TEMP_COMP)
-    {
-        static int j = 0;
-        j++;
-    }
     if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)
         return parseErrorResetState(c, EPARSE_INVALID_SIZE);
     if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) &&
