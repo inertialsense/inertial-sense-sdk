@@ -28,6 +28,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISConstants.h"
 #include "ISDevice.h"
+#include "IS_calibration.h"
 #include "data_sets.h"
 #include "util/util.h"
 
@@ -1594,6 +1595,153 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
     }
 }
 
+static void PopulateMapSensorTCalGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_tcal_group_t> mapper(data_set, did);
+
+    // Gyros
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddMember2("gyr" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_group_t, gyr[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("gyr" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, gyr[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("gyr" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, gyr[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+
+    // Accels
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddMember2("acc" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_group_t, acc[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("acc" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, acc[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("acc" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, acc[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+
+    // Magnetometers
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    {
+        mapper.AddMember2("mag" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_group_t, mag[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("mag" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, mag[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("mag" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, mag[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+}
+
+static void PopulateMapSensorTCalSubsetGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_tcal_group_subset_t> mapper(data_set, did);
+
+    // Can be Gyros, Accel, or Magnetometer 
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddMember2("sensor" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_group_subset_t, sensor[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_subset_t, sensor[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_subset_t, sensor[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+}
+
+static void PopulateMapSensorMCalGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_mcal_group_t> mapper(data_set, did);
+
+    // Gyros
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("pqr" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, pqr[0].orth), DATA_TYPE_F32, 9, {""}, {"Gyr ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("pqr" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, pqr[0].bias), DATA_TYPE_F32, 3, {""}, {"Gyr biases (additive to temp comp)"});
+    }
+
+    // Accels
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("acc" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, acc[0].orth), DATA_TYPE_F32, 9, {""}, {"Acc ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("acc" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, acc[0].bias), DATA_TYPE_F32, 3, {""}, {"Acc biases (additive to temp comp)"});
+    }
+
+    // Magnetometers
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    {
+        mapper.AddArray2("mag" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, mag[0].orth), DATA_TYPE_F32, 9, {""}, {"Mag ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("mag" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, mag[0].bias), DATA_TYPE_F32, 3, {""}, {"Mag biases (additive to temp comp)"});
+    }
+}
+
+static void PopulateMapSensorCompensation(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_compensation_t> mapper(data_set, did);
+    int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4;
+    std::string str = 
+        std::to_string(SC_RUNTIME) + "=Runtime, Tcal[" +
+        std::to_string(SC_TCAL_INIT) + "=Init, " +
+        std::to_string(SC_TCAL_RUNNING) + "=Running, " +
+        std::to_string(SC_TCAL_STOP) + "=Stop, " +
+        std::to_string(SC_TCAL_DONE) + "=Done], MCAL[" +
+        std::to_string(SC_MCAL_SAMPLE_INIT) + "=Init, " +
+        std::to_string(SC_MCAL_SAMPLE_MEAN_UCAL) + "=UCAL, " +
+        std::to_string(SC_MCAL_SAMPLE_MEAN_TCAL) + "=TCAL, " +
+        std::to_string(SC_MCAL_SAMPLE_MEAN_MCAL) + "=MCAL, " +
+        std::to_string(SC_LPF_SAMPLE) + "=LPF 0.01Hz, " +
+        std::to_string(SC_LPF_SAMPLE_FAST) + "=LPF 1Hz ";
+
+    mapper.AddMember("timeMs", &sensor_compensation_t::timeMs, DATA_TYPE_UINT32, "ms", "Time since boot up", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("calState", &sensor_compensation_t::calState, DATA_TYPE_UINT32, "", str);
+    mapper.AddMember("status", &sensor_compensation_t::status, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("sampleCount", &sensor_compensation_t::sampleCount, DATA_TYPE_UINT32, "", "Used in averaging");
+    mapper.AddArray("alignAccel", &sensor_compensation_t::alignAccel, DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Alignment acceleration"}, flags);
+    // Gyros
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("pqr" + std::to_string(i) + ".lpfLsb",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].lpfLsb), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Low-pass filtered LSB"}, flags, C_RAD2DEG);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".lpfTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
+        mapper.AddArray2("pqr" + std::to_string(i) + ".k",              i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].k), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Slope"}, flags, C_RAD2DEG);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".temp",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".tempRampRate",   i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].tempRampRate), DATA_TYPE_F32, SYM_DEG_C_PER_S, "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".tci",            i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".numTcPts",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".dtTemp",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    }
+    // Accels
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("acc" + std::to_string(i) + ".lpfLsb",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].lpfLsb), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Low-pass filtered LSB"}, flags);
+        mapper.AddMember2("acc" + std::to_string(i) + ".lpfTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
+        mapper.AddArray2("acc" + std::to_string(i) + ".k",              i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].k), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Slope"}, flags);
+        mapper.AddMember2("acc" + std::to_string(i) + ".temp",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddMember2("acc" + std::to_string(i) + ".tempRampRate",   i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].tempRampRate), DATA_TYPE_F32, SYM_M_PER_S_2, "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+        mapper.AddMember2("acc" + std::to_string(i) + ".tci",            i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("acc" + std::to_string(i) + ".numTcPts",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("acc" + std::to_string(i) + ".dtTemp",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    }
+
+    // Magnetometers
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    {
+        mapper.AddArray2("mag" + std::to_string(i) + ".lpfLsb",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].lpfLsb), DATA_TYPE_F32, 3, {""}, {"Low-pass filtered LSB"}, flags);
+        mapper.AddMember2("mag" + std::to_string(i) + ".lpfTemp",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
+        mapper.AddArray2("mag" + std::to_string(i) + ".k",             i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].k), DATA_TYPE_F32, 3, {""}, {"Slope"}, flags);
+        mapper.AddMember2("mag" + std::to_string(i) + ".temp",          i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddMember2("mag" + std::to_string(i) + ".tempRampRate",  i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].tempRampRate), DATA_TYPE_F32, "", "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+        mapper.AddMember2("mag" + std::to_string(i) + ".tci",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("mag" + std::to_string(i) + ".numTcPts",      i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("mag" + std::to_string(i) + ".dtTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    }
+
+    // Reference IMU
+    mapper.AddArray2("referenceImu.pqr", offsetof(sensor_compensation_t, referenceImu.pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Reference IMU angular rate"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
+    mapper.AddArray2("referenceImu.acc", offsetof(sensor_compensation_t, referenceImu.acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Reference IMU linear acceleration"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    // Reference Mag
+    mapper.AddArray("referenceMag", &sensor_compensation_t::referenceMag, DATA_TYPE_F32, 3, {""}, {"Reference magnetometer"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+}
+
 static void PopulateMapInl2MagObsInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<inl2_mag_obs_info_t> mapper(data_set, did);
@@ -1921,6 +2069,10 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_TCAL);
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
+    // PopulateMapSensorTCalGroup(m_data_set, DID_CAL_TEMP_COMP);
+    PopulateMapSensorTCalSubsetGroup(m_data_set, DID_CAL_TEMP_COMP);
+    PopulateMapSensorMCalGroup(      m_data_set, DID_CAL_MOTION);
+    PopulateMapSensorCompensation(   m_data_set, DID_SCOMP);
 
     // This must come last
     for (uint32_t did = 0; did < DID_COUNT; did++)
