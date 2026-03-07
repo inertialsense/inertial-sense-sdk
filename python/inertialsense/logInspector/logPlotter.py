@@ -2370,9 +2370,9 @@ class logPlot:
             L   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
             D   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
             LLI = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
-            P[:]   = np.nan # NaNs are convenient because they are not plotted
-            L[:]   = np.nan
-            D[:]   = np.nan
+            P[:] = np.nan # NaNs are convenient because they are not plotted
+            L[:] = np.nan
+            D[:] = np.nan
 
             i = Nt = Nsat = 0
             while i < len(gps_data) - 1:
