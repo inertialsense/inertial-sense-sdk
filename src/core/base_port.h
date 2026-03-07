@@ -44,6 +44,7 @@
 #define PORT_ERROR__WRITE_FAILURE       -5      //!< Attempt to write to the port failed.
 #define PORT_ERROR__READ_FAILURE        -6      //!< Attempt to read from the port failed.
 #define PORT_ERROR__TIMEOUT             -7      //!< The port operation reported a timeout (could be read, write, open, etc)
+#define PORT_ERROR__INVALID_PARAMETER   -8      //!< The port was called with an invalid parameter
 
 #define PORT_OP__READ               0x00        //!< A portLogger operation flag indicating a READ/RX was performed
 #define PORT_OP__WRITE              0x01        //!< A portLogger operation flag indicating a WRITE/TX was performed
@@ -445,7 +446,7 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len)
 
     // If the port is not valid, return an error
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    
+
     // If the port does not support reading, return an error
     if (!BASE_PORT(port)->portRead) return PORT_ERROR__NOT_SUPPORTED;
 
