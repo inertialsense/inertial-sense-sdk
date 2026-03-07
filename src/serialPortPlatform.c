@@ -905,7 +905,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     }
 
 #if PLATFORM_IS_WINDOWS
-    int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMilliseconds);
+    int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMs);
 #else
     int result = serialPortReadTimeoutPlatformLinux(serialPort, buffer, readCount, timeoutMs);
 #endif

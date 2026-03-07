@@ -190,7 +190,7 @@ int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned in
     return SERIAL_PORT(port)->pfnReadTimeout(port, buffer, readCount, timeoutMs);
 }
 
-[[ deprecated("Use portReadTimeoutAsync() instead.") ]]
+// [[deprecated("Use portReadTimeoutAsync() instead.")]]
 int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, unsigned int readCount, pfnSerialPortAsyncReadCompletion completionFn)
 {
     IS_PORT_FUNCTION_SUPPORTED(port, pfnAsyncRead, "serialPortReadTimeoutAsync() is not supported for this port.");
@@ -202,13 +202,13 @@ int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, unsign
     return SERIAL_PORT(port)->pfnAsyncRead(port, buffer, readCount, completionFn);
 }
 
-[[ deprecated("Use portReadLine() instead.") ]]
+// [[deprecated("Use portReadLine() instead.")]]
 int serialPortReadLine(port_handle_t port, unsigned char* buffer, unsigned int bufferLength)
 {
     return serialPortReadLineTimeout(port, buffer, bufferLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
-[[ deprecated("Use portReadLineTimeout() instead.") ]]
+// [[deprecated("Use portReadLineTimeout() instead.")]]
 int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMilliseconds)
 {
     IS_PORT_FUNCTION_SUPPORTED(port, pfnAsyncRead, "serialPortReadTimeoutAsync() is not supported for this port.");
@@ -234,13 +234,13 @@ int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigne
     return -1;
 }
 
-[[ deprecated("Use portReadAscii() instead.") ]]
+// [[deprecated("Use portReadAscii() instead.")]]
 int serialPortReadAscii(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned char** asciiData)
 {
     return serialPortReadAsciiTimeout(port, buffer, bufferLength, SERIAL_PORT_DEFAULT_TIMEOUT, asciiData);
 }
 
-[[ deprecated("Use portReadAsciiTimeout() instead.") ]]
+// [[deprecated("Use portReadAsciiTimeout() instead.")]]
 int serialPortReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMilliseconds, unsigned char** asciiData)
 {
     int count = serialPortReadLineTimeout(port, buffer, bufferLength, timeoutMilliseconds);
@@ -303,7 +303,7 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned in
     return SERIAL_PORT(port)->pfnWrite(port, buffer, writeCount);
 }
 
-[[ deprecated("Use portWriteLine() instead.") ]]
+// [[deprecated("Use portWriteLine() instead.")]]
 int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
     int count = serialPortWrite(port, buffer, writeCount);
@@ -312,7 +312,7 @@ int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, unsigne
     return count;
 }
 
-[[ deprecated("Use portWriteAscii() instead.") ]]
+// [[deprecated("Use portWriteAscii() instead.")]]
 int serialPortWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLength)
 {
     if (!buffer || (bufferLength < 2)) {
@@ -364,13 +364,13 @@ int serialPortWriteAscii(port_handle_t port, const char* buffer, unsigned int bu
     return count;
 }
 
-[[ deprecated("Use portWriteAndWaitFor() instead.") ]]
+// [[deprecated("Use portWriteAndWaitFor() instead.")]]
 int serialPortWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength)
 {
     return serialPortWriteAndWaitForTimeout(port, buffer, writeCount, waitFor, waitForLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
-[[ deprecated("Use portWriteAndWaitForTimeout() instead.") ]]
+// [[deprecated("Use portWriteAndWaitForTimeout() instead.")]]
 int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const int timeoutMilliseconds)
 {
     if (serialPortWrite(port, buffer, writeCount) != (int)writeCount)
@@ -381,13 +381,13 @@ int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* bu
     return serialPortWaitForTimeout(port, waitFor, waitForLength, timeoutMilliseconds);
 }
 
-[[ deprecated("Use portWaitFor() instead.") ]]
+// [[deprecated("Use portWaitFor() instead.")]]
 int serialPortWaitFor(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength)
 {
     return serialPortWaitForTimeout(port, waitFor, waitForLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
-[[ deprecated("Use portWaitForTimeout() instead.") ]]
+// [[deprecated("Use portWaitForTimeout() instead.")]]
 int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength, int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
