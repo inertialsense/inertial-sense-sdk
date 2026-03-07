@@ -371,7 +371,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     // hdwId = IS_HARDWARE_TYPE_UNKNOWN;
     // devInfo = {};
     fn.mark("Timed-out waiting.");
-    log_more_info(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
     return false;
 }
 
@@ -1329,7 +1329,7 @@ bool ISDevice::manufacturingInfo(manufacturing_info_t& info, uint32_t timeoutMs)
     }
 
     int startTime = current_timeMs();
-    while (current_timeMs() - startTime < (int)timeoutMs) {
+    while ((int)current_timeMs() - startTime < (int)timeoutMs) {
         if (manfInfo.hardwareId) {
             info = manfInfo;
             return true;

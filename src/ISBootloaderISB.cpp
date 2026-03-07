@@ -72,9 +72,10 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::check_is_compatible()");
     uint8_t buf[14] = { 0 };
     int count = 0;
+    int portResult = PORT_ERROR__NONE;
 
-    // serialPortFlush(m_port);
-    // serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
+    // portFlush(m_port);
+    // portRead(m_port, buf, sizeof(buf));    // empty Rx buffer
     bool handshake = (hasHandshake || (handshake_sync(m_port) == IS_OP_OK));
 
     logStatus(IS_LOG_LEVEL_MORE_INFO, "(ISB) Checking for ISB compatibility.");
@@ -83,14 +84,19 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     for (int retry=0;; retry++)
     {
-        // Send command
-        serialPortFlush(m_port);
-        serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-        serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
+        if (!portIsOpened(m_port)) {
+            portResult = portOpen(m_port);
+            if (portResult < PORT_ERROR__NONE)
+                return (eImageSignature)IS_IMAGE_SIGN_NONE;
+        }
+
+        if ((count = portWrite(m_port, (uint8_t*)":020000041000EA", 15)) < PORT_ERROR__NONE)
+            portResult = count;
 
         // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
 #define READ_DELAY_MS   500
-        count = serialPortReadTimeout(m_port, buf, 14, READ_DELAY_MS);
+        if ((count = portReadTimeout(m_port, buf, 14, READ_DELAY_MS)) < PORT_ERROR__NONE)
+            portResult = count;
 
         if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
         {
@@ -215,9 +221,8 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
     // In some cases, the device may become unrecoverable because of interference on its ports.
 
     // restart bootloader assist command
-    serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15);
-
-    serialPortSleep(m_port, 500);
+    portWrite(m_port, (unsigned char*)":020000040700F3", 15);
+    SLEEP_MS(500);
 
     return IS_OP_OK;
 }
@@ -227,7 +232,7 @@ is_operation_result cISBootloaderISB::reboot_force()
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::reboot_force()");
 
     // restart bootloader command
-    if (serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) != 15)
+    if (portWrite(m_port, (unsigned char*)":020000040500F5", 15) != 15)
     {
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error in reboot force");
         return IS_OP_ERROR;
@@ -271,15 +276,15 @@ uint32_t cISBootloaderISB::get_device_info()
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::get_device_info()");
 
     bool handshake = handshake_sync(m_port) == IS_OP_OK;
-    serialPortFlush(m_port);
+    portFlush(m_port);
 
     // Send command
-    serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
+    portWrite(m_port, (uint8_t*)":020000041000EA", 15);
 
     uint8_t buf[14] = { 0 };
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-    int count = serialPortReadTimeout(m_port, buf, 14, 1000);
+    int count = portReadTimeout(m_port, buf, 14, 1000);
 
     if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
     {   // Bad read
@@ -399,12 +404,12 @@ is_operation_result cISBootloaderISB::erase_flash()
     // Write location to erase at
     memcpy(selectFlash, ":03000006030000F4CC\0\0\0\0\0", 24);
     checksum(0, selectFlash, 1, 17, 17, 1);
-    if (serialPortWriteAndWaitForTimeout(m_port, selectFlash, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) return IS_OP_ERROR;
+    if (portWriteAndWaitForTimeout(m_port, selectFlash, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) return IS_OP_ERROR;
 
     // Erase
     memcpy(selectFlash, ":0200000400FFFBCC\0", 18);
     checksum(0, selectFlash, 1, 15, 15, 1);
-    serialPortWrite(m_port, selectFlash, 17);
+    portWrite(m_port, selectFlash, 17);
     
     // Check for response and allow quit (up to 60 seconds)
     uint8_t buf[128];
@@ -412,7 +417,7 @@ is_operation_result cISBootloaderISB::erase_flash()
     int count = 0;
     for (size_t i = 0; i < 600; i++)
     {   
-        count += serialPortReadTimeout(m_port, bufPtr, 3, 100);
+        count += portReadTimeout(m_port, bufPtr, 3, 100);
         bufPtr = buf + count;
 
         float factor = powf(static_cast<float>(i) / 600.f, 3);
@@ -451,7 +456,7 @@ is_operation_result cISBootloaderISB::select_page(int page)
     // Change page
     SNPRINTF((char*)changePage, 24, ":040000060301%.4XCC", page);
     checksum(0, changePage, 1, 17, 17, 1);
-    if (serialPortWriteAndWaitForTimeout(m_port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
+    if (portWriteAndWaitForTimeout(m_port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
         if (page == 7) 
         {   // IMX-5 bootloader prior to v6i does not support writing to 8th page of flash memory
@@ -478,7 +483,7 @@ is_operation_result cISBootloaderISB::begin_program_for_current_page(int startOf
     // Select offset
     SNPRINTF((char*)programPage, 24, ":0500000100%.4X%.4XCC", startOffset, endOffset);
     checksum(0, programPage, 1, 19, 19, 1);
-    if (serialPortWriteAndWaitForTimeout(m_port, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
+    if (portWriteAndWaitForTimeout(m_port, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to start programming page");
         return IS_OP_ERROR;
@@ -522,7 +527,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
     // create a program request with just the hex characters that will fit on this page
     unsigned char programLine[12];
     SNPRINTF((char*)programLine, 12, ":%.2X%.4X00", byteCount, *currentOffset);
-    if (serialPortWrite(m_port, programLine, 9) != 9)
+    if (portWrite(m_port, programLine, 9) != 9)
     {
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to write start page");
         return IS_OP_ERROR;
@@ -533,7 +538,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
 
     // write all of the hex chars
     int charsForThisPage = byteCount * 2;
-    if (serialPortWrite(m_port, hexData, charsForThisPage) != charsForThisPage)
+    if (portWrite(m_port, hexData, charsForThisPage) != charsForThisPage)
     {
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to write data to device");
         return IS_OP_ERROR;
@@ -552,17 +557,17 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
     SNPRINTF((char*)checkSumHex, 3, "%.2X", checkSum);
 
     // For some reason, the checksum doesn't always make it through to the IMX-5. Re-send until we get a response or timeout.
-    // Update 8/25/22: Increasing the serialPortReadTimeout from 10 to 100 seems to have fixed this. Still needs to be proven.
+    // Update 8/25/22: Increasing the portReadTimeout from 10 to 100 seems to have fixed this. Still needs to be proven.
     for (int i = 0; i < 10; i++)
     {
-        if (serialPortWrite(m_port, checkSumHex, 2) != 2)
+        if (portWrite(m_port, checkSumHex, 2) != 2)
         {
             logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to write checksum to device");
             return IS_OP_ERROR;
         }
 
         unsigned char buf[5] = { 0 };
-        int count = serialPortReadTimeout(m_port, buf, 3, 1000);
+        int count = portReadTimeout(m_port, buf, 3, 1000);
 
         if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
         {
@@ -670,7 +675,7 @@ is_operation_result cISBootloaderISB::download_data(int startOffset, int endOffs
     n = SNPRINTF((char*)programLine, 24, ":0500000300%.4X%.4XCC", startOffset, endOffset);
     programLine[n] = 0;
     checksum(0, programLine, 1, 19, 19, 1);
-    if (serialPortWrite(m_port, programLine, 21) != 21)
+    if (portWrite(m_port, programLine, 21) != 21)
     {
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Failed to attempt download");
         return IS_OP_ERROR;
@@ -721,7 +726,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
 
             // each line has 7 overhead bytes, plus two bytes (hex) for each byte on the page and max 255 bytes per line
             lines = (int)ceilf((float)readCount / 255.0f);
-            readCount = serialPortReadTimeout(m_port, chunkBuffer, (7 * lines) + (readCount * 2), BOOTLOADER_TIMEOUT_DEFAULT);
+            readCount = portReadTimeout(m_port, chunkBuffer, (7 * lines) + (readCount * 2), BOOTLOADER_TIMEOUT_DEFAULT);
             chunkIndex = 0;
 
             while (chunkIndex < readCount)

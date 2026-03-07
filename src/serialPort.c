@@ -10,6 +10,14 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ *
+ *  NOTE - March 6, 2026 - All functions are changed to report PORT_ERROR__* rather than legacy 0 on success on non-zero on failure
+ *  Since all PORT_ERROR__* are negative numbers, some functions (read/write, etc) can return positive numbers when successful.
+ *  ONLY negative numbers should be considered an error, >=0 is considered a success.
+ *
+ */
+
 #include "serialPort.h"
 
 #include <stdlib.h>
@@ -21,242 +29,192 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 int SERIAL_PORT_DEFAULT_TIMEOUT = 500;
 
-void serialPortInit(port_handle_t port, int id, int type, int flags) {
-    serial_port_t* serialPort = (serial_port_t*)port;
+#define IS_PORT_FUNCTION_SUPPORTED(port, functionPtr, message)   { do {                                                 \
+    if (!portIsValid(port)) return PORT_ERROR__INVALID;                                                                 \
+    if (SERIAL_PORT(port)->functionPtr == 0) {                                                                          \
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__NOT_SUPPORTED, ((message)));     \
+        return PORT_ERROR__NOT_SUPPORTED;                                                                               \
+    }                                                                                                                   \
+} while(0); }
 
-    serialPort->base.pnum = id;
-    serialPort->base.ptype = type;
-    serialPort->base.pflags = flags;
+
+int serialPortInit(port_handle_t port, int id, int type, int flags) {
+    if (!port) return PORT_ERROR__INVALID;
+
+    SERIAL_PORT(port)->base.pnum = id;
+    SERIAL_PORT(port)->base.ptype = type;
+    SERIAL_PORT(port)->base.pflags = flags;
     serialPortPlatformInit(port);
 
     portFlagsSet(port, PORT_FLAG__VALID);
+    return PORT_ERROR__NONE;
 }
 
-void serialPortSetOptions(port_handle_t port, uint32_t options)
+int serialPortSetOptions(port_handle_t port, uint32_t options)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort != NULL) && ((options & SERIAL_PORT_OPTIONS_MASK) == 0))
+    if (!port) return PORT_ERROR__INVALID;
+    if ((options & SERIAL_PORT_OPTIONS_MASK) == 0)
     {
-        serialPort->options = options;
+        SERIAL_PORT(port)->options = options;
     }
+    return PORT_ERROR__NONE;
 }
 
-void serialPortSetBaud(port_handle_t port, int baudRate) {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (serialPort != NULL)
-    {
-        serialPort->baudRate = baudRate;
-    }
+int serialPortSetBaud(port_handle_t port, int baudRate) {
+    if (!port) return PORT_ERROR__INVALID;
+    // TODO: this should perform the baud rate validation and return PORT_ERROR__INVALID_ARGUMENT if invalid
+    SERIAL_PORT(port)->baudRate = baudRate;
+    return PORT_ERROR__NONE;
 }
 
-void serialPortSetName(port_handle_t port, const char* portName)
+int serialPortSetName(port_handle_t port, const char* portName)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort != NULL) && (portName != NULL))
-    {
-        int portLength = (int)strnlen(portName, MAX_SERIAL_PORT_NAME_LENGTH);
-        memcpy(serialPort->portName, portName, portLength);
-        serialPort->portName[portLength] = '\0';
-    }
+    if (!port) return PORT_ERROR__INVALID;
+    if (!portName) return PORT_ERROR__INVALID_PARAMETER;
+
+    int portLength = (int)strnlen(portName, MAX_SERIAL_PORT_NAME_LENGTH);
+    memcpy(SERIAL_PORT(port)->portName, portName, portLength);
+    SERIAL_PORT(port)->portName[portLength] = '\0';
+    return PORT_ERROR__NONE;
 }
 
-const char *serialPortName(port_handle_t port) {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (serialPort != NULL) {
-        return serialPort->portName;
-    }
-    return NULL;
+const char *serialPortName(port_handle_t port)
+{
+    return (port ? SERIAL_PORT(port)->portName : NULL);
 }
 
 int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (port == 0) || (serialPort->pfnOpen == 0))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnOpen, "serialPortOpen() is not supported for this port.");
+    if (!portName) {
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__INVALID_PARAMETER, "The port name is invalid.");
+        return PORT_ERROR__INVALID_PARAMETER;
     }
-    if (serialPort->pfnOpen(port, portName, baudRate, blocking) != 1) {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
+    if (SERIAL_PORT(port)->pfnOpen(port, portName, baudRate, blocking) != 1) {
+        // the errorCode/error should be populated by the pfnOpen() call.
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, SERIAL_PORT(port)->errorCode, SERIAL_PORT(port)->error);
+        return PORT_ERROR__OPEN_FAILURE;
     }
     portFlagsSet(port, PORT_FLAG__OPENED);
-    return 1;
+    return PORT_ERROR__NONE;
 }
 
 int serialPortOpen_internal(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
-    serial_port_t* serialPort = (serial_port_t*)port;
-    int result = serialPortOpen(port, serialPort->portName, serialPort->baudRate, (portFlagsIsSet(port, PORT_FLAG__BLOCKING) ? 1 : 0));
-    return (result ? PORT_ERROR__NONE : PORT_ERROR__OPEN_FAILURE);
+    return serialPortOpen(port, SERIAL_PORT(port)->portName, SERIAL_PORT(port)->baudRate, (portFlagsIsSet(port, PORT_FLAG__BLOCKING) ? 1 : 0));
 }
 
 int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->pfnOpen == 0))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
-    }
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnOpen, "serialPortOpen() is not supported for this port.");
 
     if (serialPortIsOpen(port))
-        return 1;
+        return PORT_ERROR__NONE;
 
+    int resultCode = PORT_ERROR__NONE;
     for (int retry = 0; retry < 5; retry++)
     {
-        if (serialPortOpen(port, portName, baudRate, blocking))
-        {
-            return 1;
-        }
-        if (serialPort->errorCode == ENOENT)
-            break;  // don't retry if the port doesn't even exist
-        serialPortSleep(port, 250);
+        int resultCode = serialPortOpen(port, portName, baudRate, blocking);
+        if (resultCode == PORT_ERROR__NONE)
+            return PORT_ERROR__NONE;
+
+        if (SERIAL_PORT(port)->errorCode == ENOENT)
+            return PORT_ERROR__INVALID;  // don't retry if the port doesn't even exist
+
+        serialPortSleep(port, 250); // wait a quarter second and try again
     }
-    if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-    if (serialPortIsOpen(port)) serialPortClose(port);
-    return 0;
+    if (SERIAL_PORT(port)->pfnError)
+        SERIAL_PORT(port)->pfnError(port, SERIAL_PORT(port)->errorCode, SERIAL_PORT(port)->error);
+    if (serialPortIsOpen(port))
+        serialPortClose(port);  // If, for what ever reason, the port is determined to be opened, close it.
+
+    return resultCode;
 }
 
 int serialPortIsOpen(port_handle_t port)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->pfnIsOpen == 0))
-    {
-        if (serialPort && serialPort->pfnError) {
-            serialPort->pfnError(port, -1, "port::IsOpen is not supported on this port.");
-        }
-        return 0;
-    }
-    return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnIsOpen, "serialPortIsOpen() is not supported for this port.");
+    return SERIAL_PORT(port)->pfnIsOpen(port);      // returns 1 = open, 0 = not open
 }
 
 int serialPortIsOpenQuick(port_handle_t port)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->pfnIsOpen == 0))
-    {
-        if (serialPort && serialPort->pfnError) {
-            serialPort->pfnError(port, -1, "port::IsOpen is not supported on this port.");
-        }
-        return 0;
-    }
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnIsOpen, "serialPortIsOpen() is not supported for this port.");
 
-    if ((serialPort->handle != NULL) && (serialPort->errorCode == 0))
-        return 1;
+    if ((SERIAL_PORT(port)->handle != NULL) && (SERIAL_PORT(port)->errorCode == 0) && portFlagsIsSet(port, PORT_FLAG__OPENED))
+        return PORT_ERROR__NONE;
 
-    return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
+    return SERIAL_PORT(port)->pfnIsOpen(port);      // returns 1 = open, 0 = not open
 }
 
 int serialPortClose(port_handle_t port)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->pfnClose == 0))
-    {
-        if (serialPort && serialPort->pfnError)
-            serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
-    }
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnClose, "serialPortClose() is not supported for this port.");
     portFlagsClear(port, PORT_FLAG__OPENED);       // safe to do before closing - because if the close fails, its fair the say the port is still invalid
-    return serialPort->pfnClose(port);
+    return SERIAL_PORT(port)->pfnClose(port);
 }
 
 int serialPortFlush(port_handle_t port)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->pfnFlush == 0))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
-    }
-    return serialPort->pfnFlush(port);
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnFlush, "serialPortFlush() is not supported for this port.");
+    return SERIAL_PORT(port)->pfnFlush(port);
 }
 
 int serialPortDrain(port_handle_t port, uint32_t timeoutMs)
 {
     (void) timeoutMs;
-
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (serialPort->pfnDrain == 0))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
-    }
-    return serialPort->pfnDrain(serialPort); // currently, our implementation ignores timeoutMs
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnDrain, "serialPortDrain() is not supported for this port.");
+    return SERIAL_PORT(port)->pfnDrain(port); // currently, our implementation ignores timeoutMs
 }
 
 
 int serialPortRead(port_handle_t port, unsigned char* buffer, unsigned int readCount)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (!serialPort || !buffer || (readCount <= 0))
-    {
-        // don't report an error if readCount == 0; just return 0
-        if (serialPort && serialPort->pfnError && (readCount > 0)) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnRead, "serialPortRead() is not supported for this port.");
+    if (!buffer || (readCount <= 0)) {
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__INVALID_PARAMETER, "serialPortRead() called with an invalid parameter.");
+        return PORT_ERROR__INVALID_PARAMETER;
     }
 
-    int count = serialPort->pfnRead(port, buffer, readCount);
-
-    if (count < 0)
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
-    }
-
-    return count;
+    return SERIAL_PORT(port)->pfnRead(port, buffer, readCount);
 }
 
-int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds)
+int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, uint32_t timeoutMs)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (buffer == 0) || (readCount < 1))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnReadTimeout, "serialPortReadTimeout() is not supported for this port.");
+    if (!buffer || (readCount <= 0)) {
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__INVALID_PARAMETER, "serialPortRead() called with an invalid parameter.");
+        return PORT_ERROR__INVALID_PARAMETER;
     }
 
-    int count = serialPort->pfnReadTimeout(port, buffer, readCount, timeoutMilliseconds);
-    if (count < 0)
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
-    }
-
-    return count;
+    return SERIAL_PORT(port)->pfnReadTimeout(port, buffer, readCount, timeoutMs);
 }
 
-int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, unsigned int readCount, pfnSerialPortAsyncReadCompletion completion)
+[[ deprecated("Use portReadTimeoutAsync() instead.") ]]
+int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, unsigned int readCount, pfnSerialPortAsyncReadCompletion completionFn)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort == 0) || (buffer == 0) || (readCount < 1) || (serialPort->pfnAsyncRead == 0) || (completion == 0))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnAsyncRead, "serialPortReadTimeoutAsync() is not supported for this port.");
+    if ((buffer == 0) || (readCount < 1) || (SERIAL_PORT(port)->pfnAsyncRead == 0) || (completionFn == 0)) {
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__INVALID_PARAMETER, "serialPortRead() called with an invalid parameter.");
+        return PORT_ERROR__INVALID_PARAMETER;
     }
 
-    int count = serialPort->pfnAsyncRead(port, buffer, readCount, completion);
-    if (count < 0)
-    {
-        return 0;
-    }
-
-    return count;
+    return SERIAL_PORT(port)->pfnAsyncRead(port, buffer, readCount, completionFn);
 }
 
+[[ deprecated("Use portReadLine() instead.") ]]
 int serialPortReadLine(port_handle_t port, unsigned char* buffer, unsigned int bufferLength)
 {
-    // serial_port_t* serialPort = (serial_port_t*)port;
     return serialPortReadLineTimeout(port, buffer, bufferLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
+[[ deprecated("Use portReadLineTimeout() instead.") ]]
 int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMilliseconds)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if ((port == 0) || (buffer == 0) || (bufferLength < 8))
-    {
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnAsyncRead, "serialPortReadTimeoutAsync() is not supported for this port.");
+    if ((buffer == 0) || (bufferLength < 8)) {
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__INVALID_PARAMETER, "serialPortReadLineTimeout() called with an invalid parameter.");
+        return PORT_ERROR__INVALID_PARAMETER;
     }
 
     int prevCR = 0;
@@ -276,11 +234,13 @@ int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigne
     return -1;
 }
 
+[[ deprecated("Use portReadAscii() instead.") ]]
 int serialPortReadAscii(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned char** asciiData)
 {
     return serialPortReadAsciiTimeout(port, buffer, bufferLength, SERIAL_PORT_DEFAULT_TIMEOUT, asciiData);
 }
 
+[[ deprecated("Use portReadAsciiTimeout() instead.") ]]
 int serialPortReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, int timeoutMilliseconds, unsigned char** asciiData)
 {
     int count = serialPortReadLineTimeout(port, buffer, bufferLength, timeoutMilliseconds);
@@ -334,42 +294,30 @@ int serialPortReadCharTimeout(port_handle_t port, unsigned char* c, int timeoutM
 
 int serialPortWrite(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (!serialPort || !serialPort->handle || !buffer || (writeCount < 1))
-    {
-        if (serialPort && serialPort->pfnError) {
-            if (!serialPort->handle) serialPort->pfnError(port, ENOENT, strerror(ENOENT));
-            else serialPort->pfnError(port, EINVAL, strerror(EINVAL));
-        }
-        return 0;
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnWrite, "serialPortWrite() is not supported for this port.");
+    if (!buffer || (writeCount <= 0)) {
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__INVALID_PARAMETER, "serialPortWrite() called with an invalid parameter.");
+        return PORT_ERROR__INVALID_PARAMETER;
     }
 
-    int count = serialPort->pfnWrite(port, buffer, writeCount);
-    if (count < 0)
-    {
-        if (serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-        return 0;
-    }
-
-    return count;
+    return SERIAL_PORT(port)->pfnWrite(port, buffer, writeCount);
 }
 
+[[ deprecated("Use portWriteLine() instead.") ]]
 int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
     int count = serialPortWrite(port, buffer, writeCount);
     if (count == (int)writeCount)
-        count += serialPortWrite(port, (unsigned char*)"\r\n", 2);
+        count += serialPortWrite(port, (unsigned char*)"\r\n", 2);  // FIXME: handle if this returns an error
     return count;
 }
 
+[[ deprecated("Use portWriteAscii() instead.") ]]
 int serialPortWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLength)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (!serialPort || !serialPort->handle || !buffer || (bufferLength < 2))
-    {
-        if (!serialPort || !serialPort->handle) serialPort->pfnError(port, ENOENT, strerror(ENOENT));
-        else serialPort->pfnError(port, EINVAL, strerror(EINVAL));
-        return 0;
+    if (!buffer || (bufferLength < 2)) {
+        if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__INVALID_PARAMETER, "serialPortWriteAscii() called with an invalid parameter.");
+        return PORT_ERROR__INVALID_PARAMETER;
     }
 
     int checkSum = 0;
@@ -416,11 +364,13 @@ int serialPortWriteAscii(port_handle_t port, const char* buffer, unsigned int bu
     return count;
 }
 
+[[ deprecated("Use portWriteAndWaitFor() instead.") ]]
 int serialPortWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength)
 {
     return serialPortWriteAndWaitForTimeout(port, buffer, writeCount, waitFor, waitForLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
+[[ deprecated("Use portWriteAndWaitForTimeout() instead.") ]]
 int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const int timeoutMilliseconds)
 {
     if (serialPortWrite(port, buffer, writeCount) != (int)writeCount)
@@ -431,11 +381,13 @@ int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* bu
     return serialPortWaitForTimeout(port, waitFor, waitForLength, timeoutMilliseconds);
 }
 
+[[ deprecated("Use portWaitFor() instead.") ]]
 int serialPortWaitFor(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength)
 {
     return serialPortWaitForTimeout(port, waitFor, waitForLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
+[[ deprecated("Use portWaitForTimeout() instead.") ]]
 int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigned int waitForLength, int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
@@ -466,46 +418,26 @@ int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, u
 
 int serialPortGetByteCountAvailableToRead(port_handle_t port)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (serialPort == 0 || serialPort->handle == 0 || serialPort->pfnGetByteCountAvailableToRead == 0)
-    {
-        return 0;
-    }
-
-    return serialPort->pfnGetByteCountAvailableToRead(port);
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnGetByteCountAvailableToRead, "serialPortGetByteCountAvailableToRead() is not supported for this port.");
+    return SERIAL_PORT(port)->pfnGetByteCountAvailableToRead(port);
 }
 
 int serialPortGetByteCountAvailableToWrite(port_handle_t port)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (serialPort == 0 || serialPort->handle == 0 || serialPort->pfnGetByteCountAvailableToWrite == 0)
-    {
-        return 0;
-    }
-
-    return serialPort->pfnGetByteCountAvailableToWrite(port);
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnGetByteCountAvailableToWrite, "serialPortGetByteCountAvailableToWrite() is not supported for this port.");
+    return SERIAL_PORT(port)->pfnGetByteCountAvailableToWrite(port);
 }
 
 int serialPortSleep(port_handle_t port, int sleepMilliseconds)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (serialPort == 0 || serialPort->pfnSleep == 0)
-    {
-        return 0;
-    }
-
-    return serialPort->pfnSleep(sleepMilliseconds);
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnSleep, "serialPortSleep() is not supported for this port.");
+    return SERIAL_PORT(port)->pfnSleep(sleepMilliseconds);
 }
 
 int setSerialPortOnErrorCB(port_handle_t port, pfnSerialPortOnErrorCB onErrorCb)
 {
-    serial_port_t* serialPort = (serial_port_t*)port;
-    if (serialPort == 0)
-    {
-        return -1;
-    }
-
-    serialPort->pfnError = onErrorCb;
-    return 0;
+    IS_PORT_FUNCTION_SUPPORTED(port, pfnError, "setSerialPortOnErrorCB() is not supported for this port.");
+    SERIAL_PORT(port)->pfnError = onErrorCb;
+    return PORT_ERROR__NONE;
 }
 
