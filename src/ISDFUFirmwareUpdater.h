@@ -68,8 +68,9 @@ static constexpr uint32_t STM32_PAGE_ERROR_MASK = 0x7FF;
 static constexpr uint16_t STM32_DESCRIPTOR_VENDOR_ID = 0x0483;
 static constexpr uint16_t STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11;
 
-const md5hash_t DFU_FINGERPRINT_STM32L4 = { { 0xFA, 0x45, 0x85, 0x0B, 0xE6, 0x92, 0x56, 0x3A, 0xD6, 0x5C, 0x40, 0x05, 0xDE, 0xBC, 0xB3, 0xF9 } };
-const md5hash_t DFU_FINGERPRINT_STM32U5 = { { 0x82, 0x03, 0x64, 0x70, 0x21, 0x65, 0x55, 0x2A, 0xA2, 0x8B, 0xE7, 0x9D, 0x69, 0xBB, 0xA6, 0x2F } };
+const md5hash_t DFU_FINGERPRINT_STM32L4    = { { 0xFA, 0x45, 0x85, 0x0B, 0xE6, 0x92, 0x56, 0x3A, 0xD6, 0x5C, 0x40, 0x05, 0xDE, 0xBC, 0xB3, 0xF9 } };
+const md5hash_t DFU_FINGERPRINT_STM32U5_1M = { { 0x82, 0x03, 0x64, 0x70, 0x21, 0x65, 0x55, 0x2A, 0xA2, 0x8B, 0xE7, 0x9D, 0x69, 0xBB, 0xA6, 0x2F } };
+const md5hash_t DFU_FINGERPRINT_STM32U5_2M = { { 0xB5, 0xCE, 0xEA, 0xEB, 0xEE, 0xA7, 0x53, 0x3C, 0x4D, 0xCC, 0xBF, 0x30, 0x71, 0x9B, 0xE2, 0xAB } };
 
 typedef enum    // From DFU manual, do not change
 {
@@ -207,6 +208,10 @@ public:
     uint16_t getHardwareId() { return hardwareId; }
     uint32_t getSerialNo() { return sn; }
 
+    eProcessorType getProcessorType() const { return processorType; }
+    uint32_t getTotalFlashSize() const;
+    static const char* getDeviceTypeName(eProcessorType procType, uint32_t totalFlashSize);
+
     void setProgressCb(fwUpdate::pfnProgressCb cbProgress){ progressCb = cbProgress;}
     void setStatusCb(fwUpdate::pfnStatusCb cbStatus) { statusCb = cbStatus;}
 
@@ -275,7 +280,7 @@ private:
 
     int abort();
 
-    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr);
+    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr, uint32_t timeout_ms = 5000);
 
     int setAddress(uint16_t& wValue, uint32_t address);
 
@@ -302,6 +307,8 @@ public:
     ~ISDFUFirmwareUpdater() { };
 
     static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
+
+    static int getNumDevices(uint16_t vid = 0x0000, uint16_t pid = 0x0000);
 
     static size_t filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint);
 
