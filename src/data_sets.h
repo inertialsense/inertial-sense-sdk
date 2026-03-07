@@ -353,6 +353,8 @@ enum eHdwStatusFlags
     HDW_STATUS_SATURATION_BARO                  = (int)0x00000800,
 
     /** Sensor saturation mask */
+    HDW_STATUS_IMU_SATURATION_MASK              = (int)(HDW_STATUS_SATURATION_GYR | HDW_STATUS_SATURATION_ACC),
+    /** Sensor saturation mask */
     HDW_STATUS_SATURATION_MASK                  = (int)0x00000F00,
     /** Sensor saturation offset */
     HDW_STATUS_SATURATION_OFFSET                = 8,

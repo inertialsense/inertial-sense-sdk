@@ -2,12 +2,16 @@
 
 #include "convert_ins.h"
 
+#include <array>
+#include <cstdlib>
+
 #define STRINGIZE(x)                #x
 #define STRINGIZE_VALUE_OF(x)       STRINGIZE(x)
 #define MESSAGE_VALUE(x)            message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " #x " = " STRINGIZE_VALUE_OF(x))
 #define CONCAT_MESSAGE(text, value) message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " text " = " STRINGIZE_VALUE_OF(value))
 
 using namespace std;
+
 
 LogReader::LogReader()
     : python_parent_(py::object())
@@ -91,6 +95,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     oss << " - SDK Protocol: " << PROTOCOL_VERSION_CHAR0 << "." << PROTOCOL_VERSION_CHAR1 << "." << PROTOCOL_VERSION_CHAR2 << "." << PROTOCOL_VERSION_CHAR3 << "\n";
 
     std::vector<std::string> stl_serials = serials.cast<std::vector<std::string>>();
+    logReaderDebugPrint("init() log_directory=" + log_directory + ", requested_serial_count=" + std::to_string(stl_serials.size()));
     oss << " - Loading from: " << log_directory << "\n";
 
     oss << " - Serials: ";
@@ -103,11 +108,14 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials)) {
         oss << " - Found *.dat log with ";
         loaded = true;
+        logReaderDebugPrint("LoadFromDirectory DAT succeeded");
     } else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_RAW, stl_serials)) {
         oss << " - Found *.raw log with ";
         loaded = true;
+        logReaderDebugPrint("LoadFromDirectory RAW succeeded");
     } else {
         oss << " - Unable to load files\n";
+        logReaderDebugPrint("LoadFromDirectory failed for DAT and RAW");
         std::cout << oss.str();
         return false;
     }
@@ -118,6 +126,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     for (auto dev : logger_.DeviceLogs()) {
         oss << (serialNumbers.empty() ? " " : ", ") << dev->SerialNumber();
         serialNumbers.push_back(dev->SerialNumber());
+        logReaderDebugPrint("Discovered device serial=" + std::to_string(dev->SerialNumber()));
     }
     oss << "\n";
 
@@ -130,12 +139,25 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 
 void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
     p_data_buf_t* data = NULL;
+    std::array<uint32_t, DID_COUNT> didCounts{};
+    uint64_t totalMessages = 0;
+    uint64_t zeroSizeMessages = 0;
+    uint64_t unknownDidMessages = 0;
+
+    logReaderDebugPrint("organizeData() begin serial=" + std::to_string(devLog->SerialNumber()));
 
     while ((data = logger_.ReadData(devLog))) {
         // if (data->hdr.id == DID_DEV_INFO)
         //     volatile int debug = 0;
 
-        if (data->hdr.size == 0) continue;
+        totalMessages++;
+        if (data->hdr.id < DID_COUNT) {
+            didCounts[data->hdr.id]++;
+        }
+        if (data->hdr.size == 0) {
+            zeroSizeMessages++;
+            continue;
+        }
 
         switch (data->hdr.id) {
             case DID_IMUS_RAW:
@@ -245,10 +267,32 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
             HANDLE_MSG(DID_GPX_BIT, dev_log_->gpxBit);
             HANDLE_MSG(DID_GPX_PORT_MONITOR, dev_log_->gpxPortMonitor);
             default:
+                unknownDidMessages++;
                 //            printf("Unhandled IS message DID: %d\n", message_type);
                 break;
         }
     }
+
+#if LOG_READER_DEBUG_ENABLED
+        std::ostringstream summary;
+        summary << "organizeData() end serial=" << devLog->SerialNumber()
+                << " total=" << totalMessages
+                << " zero_size=" << zeroSizeMessages
+                << " unknown_did=" << unknownDidMessages
+                << " DID_SCOMP=" << didCounts[DID_SCOMP]
+                << " DID_SENSORS_TCAL=" << didCounts[DID_SENSORS_TCAL]
+                << " DID_SENSORS_UCAL=" << didCounts[DID_SENSORS_UCAL]
+                << " DID_SENSORS_MCAL=" << didCounts[DID_SENSORS_MCAL];
+        logReaderDebugPrint(summary.str());
+
+        std::ostringstream vectorSummary;
+        vectorSummary << "organized vectors serial=" << devLog->SerialNumber()
+                      << " scomp=" << dev_log_->scomp.size()
+                      << " sensorsTcal=" << dev_log_->sensorsTcal.size()
+                      << " sensorsUcal=" << dev_log_->sensorsUcal.size()
+                      << " sensorsMcal=" << dev_log_->sensorsMcal.size();
+        logReaderDebugPrint(vectorSummary.str());
+#endif
 }
 
 void LogReader::forwardData(int device_id) {
@@ -347,13 +391,23 @@ bool LogReader::load() {
     // printf("LogReader::load() \n");
 
     std::vector<std::shared_ptr<cDeviceLog>> devices = logger_.DeviceLogs();
+    logReaderDebugPrint("load() device_count=" + std::to_string(devices.size()));
     for (int i = 0; i < (int)devices.size(); i++) {
         if (dev_log_ != nullptr) {
             delete dev_log_;
         }
         dev_log_ = new DeviceLog();
 
+        logReaderDebugPrint("load() processing device_index=" + std::to_string(i) + ", serial=" + std::to_string(devices[i]->SerialNumber()));
         organizeData(devices[i]);
+#if LOG_READER_DEBUG_ENABLED
+        std::ostringstream msg;
+        msg << "load() forwarding device_index=" << i
+            << " serial=" << devices[i]->SerialNumber()
+            << " scomp=" << dev_log_->scomp.size()
+            << " sensorsTcal=" << dev_log_->sensorsTcal.size();
+        logReaderDebugPrint(msg.str());
+#endif
         forwardData(i);
     }
 
@@ -396,6 +450,12 @@ void LogReader::cleanup() {
     // Clear the global python parent object to avoid GIL issues during shutdown
     // This prevents the pybind11 object from trying to call Python methods during finalization
     python_parent_ = py::object();
+}
+
+void LogReader::logReaderDebugPrint(const std::string& message) {
+#if LOG_READER_DEBUG_ENABLED
+    std::cout << "[log_reader_debug] " << message << "\n";
+#endif
 }
 
 // Look at the pybind documentation to understand what is going on here.
