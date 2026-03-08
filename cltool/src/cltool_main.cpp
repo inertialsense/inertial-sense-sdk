@@ -1136,7 +1136,7 @@ static int cltool_dataStreaming()
     //If Firmware Update is specified return an error code based on the Status of the Firmware Update
     if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
         for (auto device : inertialSenseInterface.getDevices()) {
-            if (device->fwHasError) {
+            if (device->fwUpdateState.hasErrors) {
                 exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
                 break;
             }
