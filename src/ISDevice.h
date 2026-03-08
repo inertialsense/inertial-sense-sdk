@@ -569,7 +569,7 @@ public:
     * Gets current update status for selected device index
     * @param deviceIndex
     */
-    fwUpdate::update_status_e getUpdateStatus() { return fwLastStatus; };
+    fwUpdate::update_status_e getUpdateStatus() { return fwUpdateState.status; };
 
     std::recursive_mutex        portMutex;                           //!< used to guard against concurrent use of the port in multi-threaded environments - only one read/write at a time
     port_handle_t               port = 0;                            //!< the current port (if any) through which we communicate with the physical device
@@ -603,14 +603,8 @@ public:
 
     // TODO: make these private or protected
     std::mutex                  fwUpdateMutex;                       //!< used to guard against re-entrant calls into fwUpdate functions
-    ISFirmwareUpdater*          fwUpdater = NULLPTR;
-    bool                        fwHasError = false;
-    std::vector<ISFirmwareUpdater::update_msgs> fwErrors;
-    uint16_t                    fwLastSlot = 0;
-    fwUpdate::target_t          fwLastTarget = fwUpdate::TARGET_UNKNOWN;
-    fwUpdate::update_status_e   fwLastStatus = fwUpdate::NOT_STARTED;
-    std::string                 fwLastMessage;
-    float                       fwLastProgress = 0.f;
+    ISFirmwareUpdater*          fwUpdater = NULLPTR;                 //!< a pointer to the active updater
+    ISFwUpdateState             fwUpdateState;                       //!< stores the state of the fwUpdater (current or previous)
 
     uint32_t                    lastResetRequest = 0;                //!< system time when the last reset requests was sent
     uint32_t                    resetRequestThreshold = 5000;        //!< Don't allow to send reset requests more frequently than this...
@@ -619,6 +613,7 @@ public:
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)());
     bool fwUpdateInProgress();
     float fwUpdatePercentCompleted();
+    std::vector<ISFwUpdateState::message> fwUpdateMessages(eLogLevel level = IS_LOG_LEVEL_ERROR);
     bool fwUpdate(p_data_t* msg = nullptr);
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };

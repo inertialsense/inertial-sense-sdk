@@ -13,10 +13,11 @@
 } while (0); }                                                                                              \
 
 
-ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device) : FirmwareUpdateHost(), device(device) {
+ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& state) : FirmwareUpdateHost(), device(device), updateState(state) {
     if (device) {
         port = device->port;
         devInfo = &device->devInfo;
+        uint16_t targetHdwId = ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo);
 
         // At some point during the upgrade, we'll likely reset the device and we need to watch for the device to come back. But the EvalTool normally doesn't discovery
         // new devices (only new ports). So, let's use the PortManagers::port_listener mechanism to detect when new ports are discover, only during the Firmware Update
@@ -29,7 +30,7 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device) : FirmwareUpdateHos
         portListenerHdl = PortManager::getInstance().addPortListener(
                 [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
                     if (event == PortManager::PORT_ADDED) {
-                        if ( DeviceManager::getInstance().discoverDevice(port, IS_HARDWARE_ANY, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION) ) {
+                        if ( DeviceManager::getInstance().discoverDevice(port, targetHdwId, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION) ) {
                             log_info(IS_LOG_FWUPDATE, "Discovered device [%s] while performing Firmware Updates.", DeviceManager::getInstance().getDevice(port)->getDescription().c_str())
                         } else {
                             log_info(IS_LOG_FWUPDATE, "Discovered new port [%s] while performing Firmware Updates, but couldn't associate an ISDevice.", portName.c_str())
@@ -89,7 +90,7 @@ bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
 
         commands.emplace_back("", cmdName, cmdArgs);
     }
-    updateState = UPDATER_CMDS_QUEUED;
+    updateState.state = ISFwUpdateState::UPDATER_CMDS_QUEUED;
     return true;
 }
 
@@ -183,17 +184,42 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t
  *   update will immediately stop all operations, which could leave devices in an inoperable or unrecoverable state.
  * @return the current operating status of the update
  */
-
 fwUpdate::update_status_e ISFirmwareUpdater::cancel(bool immediately) {
     if (fwUpdate_getSessionStatus()) {
-        updateState = UPDATER_WAITING_TO_CANCEL;
+        updateState.state = ISFwUpdateState::UPDATER_WAITING_TO_CANCEL;
+    }
+
+    // Since updates can be critical in nature, making hardware inoperable if managed incorrectly, we need to make sure
+    // its safe to cancel.  All steps which have NOT already been executed are deemed safe to cancel (though, we may
+    // need to revisit this in the future.
+
+    // For now, first, we'll cancel all pending commands
+    if (hasPendingCommands()) {
+        for (auto& cmd : commands) {
+            if (cmd.status == ISFwUpdaterCmd::CMD_QUEUED)
+                cmd.status = ISFwUpdaterCmd::CMD_CANCELLED;
+        }
+    }
+
+    // Second, if the current command is cancelable, then mark it as canceled, otherwise, keep its state and let it finish
+    if (activeCmd && (activeCmd->flags & ISFwUpdaterCmd::CMD_FLAGS__CANCELABLE))
+        activeCmd->status = ISFwUpdaterCmd::CMD_CANCELLED;
+
+    // finally, if the user has requested an IMMEDIATE cancel, then we take the nuclear option
+    // WARNING - THIS interrupts all tasks IMMEDIATELY in whatever state they were in. There is no
+    // attempt to allow actions/commands to "save face" and the device maybe left in an inoperable
+    // (and possibly IRRECOVERABLE) state!
+    if (immediately) {
+        commands.clear();
+        activeCmd = &nullCmd;
+        target = fwUpdate::TARGET_HOST;
     }
 
     return fwUpdate_getSessionStatus();
 }
 
 bool ISFirmwareUpdater::isCancelable() {
-    return true;
+    return (activeCmd && (activeCmd->flags & ISFwUpdaterCmd::CMD_FLAGS__CANCELABLE));
 }
 
 bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t& msg) {
@@ -366,6 +392,71 @@ void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
     delete [] toHostBuf;
 }
 
+void ISFirmwareUpdater::refreshUpdateState() {
+    auto activeCmd = getActiveCommand();
+    if (&activeCmd != &nullCmd)
+        updateState.lastMessage = activeCmd.resultMsg;
+
+    // let's always recheck our error state for any commands (past, present, or future) which have failed
+    updateState.hasErrors = false;
+    for (auto& c :commands) {
+        if (c.status == ISFwUpdaterCmd::CMD_ERROR)
+            updateState.hasErrors = true;
+    }
+
+    if (activeCmd.cmd == "upload") {
+        updateState.status = fwUpdate_getSessionStatus();
+        updateState.slot = fwUpdate_getSessionImageSlot();
+        // TODO?? updateState.state should keep the state of the entire update, not just the last upload... right??
+
+        if (fwUpdate_getSessionTarget() != updateState.target) {
+            updateState.target = fwUpdate_getSessionTarget();
+            updateState.status = fwUpdate::NOT_STARTED;
+            updateState.messages.clear();
+        }
+
+        if ((getUploadStatus() == fwUpdate::NOT_STARTED) && (activeCmd.status == ISFwUpdaterCmd::CMD_QUEUED)) {
+            updateState.status = fwUpdate::INITIALIZING;    // We're just starting (no error yet, but no response either)
+        }
+        updateState.lastMessage = fwUpdate_getNiceStatusName(updateState.status);
+    } else if (activeCmd.cmd == "waitfor") {
+        updateState.lastMessage = "Waiting for response from device.";
+    } else if (activeCmd.cmd == "reset") {
+        updateState.lastMessage = "Resetting device.";
+    } else if (activeCmd.cmd == "delay") {
+        updateState.lastMessage = "Waiting...";
+    }
+    switch (updateState.state) {
+        case ISFwUpdateState::UPDATER_CANCELED:
+            updateState.lastMessage = "Cancelled by User.";
+            break;
+        case ISFwUpdateState::UPDATER_DONE_WITH_ERRORS:
+            updateState.lastMessage = "Error: One or more step errors occurred.";
+            break;
+        case ISFwUpdateState::UPDATER_WAITING_TO_CANCEL:
+            updateState.lastMessage = "Cancelling (waiting for non-cancelable step to complete).";
+            break;
+        case ISFwUpdateState::UPDATER_IDLE:
+            break;
+        case ISFwUpdateState::UPDATER_CMDS_QUEUED:
+            updateState.lastMessage = "Starting update...";
+            break;
+        case ISFwUpdateState::UPDATER_IN_PROGRESS:
+            updateState.lastMessage = "Updating...";
+            if (updateState.hasErrors) {
+                updateState.lastMessage = "Error: ";
+                updateState.lastMessage += getUploadStatusName();
+            }
+            break;
+        case ISFwUpdateState::UPDATER_SUCCESSFUL:
+        case ISFwUpdateState::SUCCESS_WITH_NOTIFICATIONS:
+            updateState.lastMessage = "Completed successfully.";
+            break;
+    }
+
+    updateState.progress = (!fwUpdate_isDone() ? getProgress() : 0.0f);
+}
+
 bool ISFirmwareUpdater::step() {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     FnProfiler fnStep("ISFirmwareUpdater::step() [" + ( device ? device->getIdAsString() : "") + "]", 30000);   // this can typically take around 25ms in Windows
@@ -417,7 +508,7 @@ bool ISFirmwareUpdater::step() {
     fnStep.mark("Finished fwUpdate_step().");
 
     if (fwUpdate_isDone()) {
-        updateState = hasErrors() ? UPDATER_DONE_WITH_ERRORS : UPDATER_SUCCESSFUL;
+        updateState.state = hasErrors() ? ISFwUpdateState::UPDATER_DONE_WITH_ERRORS : ISFwUpdateState::UPDATER_SUCCESSFUL;
 
         // be sure to release/cleanup the source file after we are finished with it.
         if (srcFile) {
@@ -426,6 +517,7 @@ bool ISFirmwareUpdater::step() {
         }
     }
 
+    refreshUpdateState();
     return result;
 }
 
@@ -528,7 +620,7 @@ void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, con
     va_end(args);
 
     cmd.status = ISFwUpdaterCmd::CMD_ERROR;
-    stepErrors.emplace_back(activeStep, cmd, IS_LOG_LEVEL_ERROR, buffer);
+    updateState.messages.emplace_back(activeStep, cmd, IS_LOG_LEVEL_ERROR, buffer);
 
     LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR, buffer);
 
@@ -560,7 +652,7 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
             LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command '%s\\%s'", cmd.step.c_str(), cmd.cmd.c_str());
         }
     } else
-        updateState = UPDATER_IN_PROGRESS;
+        updateState.state = ISFwUpdateState::UPDATER_IN_PROGRESS;
 
     if (cmd.step != activeStep) {
         // new step section/target - we should reset certain states here if needed
@@ -979,7 +1071,7 @@ void ISFirmwareUpdater::initialize() {
     remoteDevInfo = {};
     logLevel = IS_LOG_LEVEL_INFO;                           //!< default log level to show
 
-    stepErrors.clear();
+    updateState.resetState();
 }
 
 /**
