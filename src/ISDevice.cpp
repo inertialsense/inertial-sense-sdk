@@ -132,15 +132,10 @@ is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, st
     if (!lock.owns_lock())
         return IS_OP_ERROR;
 
-    fwHasError = false;
-    fwErrors.clear();
-    fwLastMessage.clear();
-    fwLastTarget = fwUpdate::TARGET_HOST;
-    fwLastStatus = fwUpdate::NOT_STARTED;
-    fwLastSlot = 0;
+    fwUpdateState.resetState();
 
     if (!fwUpdater) {
-        fwUpdater = new ISFirmwareUpdater(shared_from_this());
+        fwUpdater = new ISFirmwareUpdater(shared_from_this(), fwUpdateState);
     }
 
     fwUpdater->setInfoProgressCb(infoProgress);
@@ -160,6 +155,20 @@ bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_
  */
 float ISDevice::fwUpdatePercentCompleted() {
     return (fwUpdater && !fwUpdater->fwUpdate_isDone()) ? fwUpdater->getProgress() : 0.0f;
+}
+
+/**
+ * Returns a set of messages generated during a firmware update
+ * @param level the IS_LOG_LEVEL_* of messages to return from the update (defaults to IS_LOG_LEVEL_ERROR)
+ * @return
+ */
+std::vector<ISFwUpdateState::message> ISDevice::fwUpdateMessages(eLogLevel level) {
+    std::vector<ISFwUpdateState::message> out;
+    for (auto msg : fwUpdateState.messages) {
+        if (msg.severity < level)
+            out.push_back(msg);
+    }
+    return out;
 }
 
 /**
@@ -186,68 +195,11 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
 
         fwUpdater->step();
 
-        auto activeCmd = fwUpdater->getActiveCommand();
-        if (&activeCmd != &nullCmd)
-            fwLastMessage = activeCmd.resultMsg;
-
-        if (activeCmd.cmd == "upload") {
-            if (fwUpdater->getActiveTarget() != fwLastTarget) {
-                fwHasError = false;
-                fwLastStatus = fwUpdate::NOT_STARTED;
-                fwLastMessage.clear();
-                fwLastTarget = fwUpdater->getActiveTarget();
-            }
-            fwLastSlot = fwUpdater->getActiveSlot();
-            auto curStatus = fwUpdater->getUploadStatus();
-
-            if ((fwUpdater->getUploadStatus() == fwUpdate::NOT_STARTED) && (activeCmd.status == ISFwUpdaterCmd::CMD_QUEUED)) {
-                // We're just starting (no error yet, but no response either)
-                fwLastStatus = fwUpdate::INITIALIZING;
-                fwLastMessage = fwUpdater->getUploadStatusName();
-            } else if ((curStatus != fwUpdate::NOT_STARTED) && (curStatus != fwLastStatus)) {
-                // We're got a valid status update (error or otherwise)
-                fwLastStatus = curStatus;
-                fwLastMessage = fwUpdater->getUploadStatusName();
-
-                // check for error
-                if (!fwHasError && fwUpdater && ((curStatus < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors())) {
-                    fwHasError = true;
-                }
-            }
-        } else if (activeCmd.cmd == "waitfor") {
-            fwLastMessage = "Waiting for response from device.";
-        } else if (activeCmd.cmd == "reset") {
-            fwLastMessage = "Resetting device.";
-        } else if (activeCmd.cmd == "delay") {
-            fwLastMessage = "Waiting...";
-        }
-
-        if (!fwUpdater->hasPendingCommands()) {
-            if (fwUpdater->hasErrors()) {
-                fwHasError = fwUpdater->hasErrors();
-                fwLastMessage = "Error: ";
-                fwLastMessage += "One or more step errors occurred.";
-            } else if (fwHasError) {
-                fwLastMessage = "Error: ";
-                fwLastMessage += fwUpdater->getUploadStatusName();
-            } else {
-                fwLastMessage = "Completed successfully.";
-            }
-        }
-
         // cleanup if we're done.
-        bool is_done = fwUpdater->fwUpdate_isDone();
-        if (is_done) {
+        if (fwUpdater->fwUpdate_isDone()) {
             // collect errors before we close out the updater
-            fwErrors = fwUpdater->getStepErrors();
-            fwHasError |= !fwErrors.empty();
-            fwLastMessage = "";
-            fwLastProgress = 1.0f;
-
             delete fwUpdater;
             fwUpdater = nullptr;
-        } else {
-            fwLastProgress = fwUpdatePercentCompleted();
         }
     }
 
