@@ -198,11 +198,19 @@ public:
      * Disconnects/closes the bound port to the device, if the port is VALID
      * Can be overridden to provide custom tear-down, etc on disconnect - just remember
      *  to call back into ISDevice::connect() in your new method.
+     * @param invalidatePort if true, the associated port will be invalidated after closing.
+     *   Invalidating the port will require rediscovering/revalidating the port again before
+     *   it can be used to communicate with the device again. This is most often done when
+     *   issuing a device reset on a transient port type, such as a TCP or USB port type.
+     *   In most circumstances in which a port is closed, you DO NOT want to invalidate it,
+     *   thus false is the default and likely correct option.
      * @return true if successful, otherwise false
      */
-    virtual bool disconnect() {
-        devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // once we disconnect, we don't actually know the status of the hardware anymore
-        return (portClose(port) == PORT_ERROR__NONE);
+    virtual bool disconnect(bool invalidate = false) {
+        bool closed = (portClose(port) == PORT_ERROR__NONE);
+        if (invalidate)
+            portInvalidate(port);
+        return closed;
     }
 
     /**
@@ -343,9 +351,27 @@ public:
      */
     bool isResetPending() { return current_timeMs() < nextResetTime; }
 
+    /**
+     * Fetches (if not previously fetched), the devices manufacturing info and populates it into the passed reference.
+     * @param manfInfo a reference to the manufacturing_info_t struct to be populated
+     * @param timeoutMs the maximum amount of time to wait for the manufacturing info response from the device
+     * @return true if the manfInfo was successfully populated, otherwise false (ie, port invalid, invalid device, timeout, etc);
+     */
+    bool manufacturingInfo(manufacturing_info_t& manfInfo, uint32_t timeoutMs = 100);
+
     // Core Interface Functions - these should be the only calls which call into the ComManager functions directly,
     //     these are essentially the basis of all comms to the device, with few exceptions.
 
+    int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSend(port, pktInfo, data, did, size, offset) : -1; }
+    int SendRaw(const void* data, uint32_t length) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendRaw(port, data, length) : -1; }
+    int SendData(eDataIDs dataId, const void* data, uint32_t length, uint32_t offset = 0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendData(port, data, dataId, length, offset) : -1; }
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetData(port, dataId, length, offset, period); }
+
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
+    void DisableData(eDataIDs dataId) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerDisableData(port, dataId); }
+
+    // TODO?? Replace the above with these? (and probably move to ISDevice.cpp)  -- these attempt to reduce dependency on comManager*() functions.
+    /**
     int Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0) {
         std::lock_guard<std::recursive_mutex> lock(portMutex);
         if (!isConnected()) return PORT_ERROR__NOT_CONNECTED;
@@ -353,12 +379,12 @@ public:
         return comManagerSend(port, pktInfo, data, did, size, offset)  < 0 ? -1 : 0;
     }
 
-    /**
+    **
      * Send a raw binary buffer, byte-for-byte, to this device
      * @param data a pointer to a block of memory to be sent
      * @param length the number of bytes to be sent
      * @return >=0 indicates the number of bytes actually sent, <0 is one of PORT_ERROR__*. Note that PORT_ERROR__NONE == 0 is not an error, but indicates no bytes where sent
-     */
+     *
     int SendRaw(const void* data, uint32_t length) {
         std::lock_guard<std::recursive_mutex> lock(portMutex);
         if (!isConnected()) return PORT_ERROR__NOT_CONNECTED;
@@ -388,7 +414,7 @@ public:
         if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER))
             comManagerDisableData(port, dataId);
     }
-
+    */
     // Convenience Functions
 
     /**
@@ -458,8 +484,8 @@ public:
      * @param flashCfg_ a reference to a nvm_flash_cfg_t struct to be populated
      * @returns true if the flashCfg has been synchronized with the device (and can thus be trusted), otherwise false.
      */
-    bool ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
-    bool GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout = 100);
+    bool ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 500);
+    bool GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout = 500);
 
     /**
      * Uploads the provided flashCfg to the remove device, but makes NO checks that it was successfully synchronized.
@@ -506,9 +532,10 @@ public:
      * may return a rtkConfig of 0x00400008 because the 0x4 reflects that it was persisted (or something like that).
      * @param flashCfg the config to upload (and later match against the downloaded firmware)
      * @param timeout a timeout value for how long to wait for the new flash to sync/download before failing
+     * @poram waitForWrite if true (default is false) will wait for confirmation that the flash was written to flash before returning.
      * @return true if the new config was uploaded, synced, downloaded and matched with the original flashCfg, otherwise false
      */
-    bool SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
+    bool SetImxFlashCfgAndConfirm(nvm_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS, bool waitForWrite = false);
     bool SetGpxFlashCfgAndConfirm(gpx_flash_cfg_t& flashCfg, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS);
 
     /**
@@ -542,7 +569,7 @@ public:
     * Gets current update status for selected device index
     * @param deviceIndex
     */
-    fwUpdate::update_status_e getUpdateStatus() { return fwLastStatus; };
+    fwUpdate::update_status_e getUpdateStatus() { return fwUpdateState.status; };
 
     std::recursive_mutex        portMutex;                           //!< used to guard against concurrent use of the port in multi-threaded environments - only one read/write at a time
     port_handle_t               port = 0;                            //!< the current port (if any) through which we communicate with the physical device
@@ -576,14 +603,8 @@ public:
 
     // TODO: make these private or protected
     std::mutex                  fwUpdateMutex;                       //!< used to guard against re-entrant calls into fwUpdate functions
-    ISFirmwareUpdater*          fwUpdater = NULLPTR;
-    bool                        fwHasError = false;
-    std::vector<ISFirmwareUpdater::update_msgs> fwErrors;
-    uint16_t                    fwLastSlot = 0;
-    fwUpdate::target_t          fwLastTarget = fwUpdate::TARGET_UNKNOWN;
-    fwUpdate::update_status_e   fwLastStatus = fwUpdate::NOT_STARTED;
-    std::string                 fwLastMessage;
-    float                       fwLastProgress = 0.f;
+    ISFirmwareUpdater*          fwUpdater = NULLPTR;                 //!< a pointer to the active updater
+    ISFwUpdateState             fwUpdateState;                       //!< stores the state of the fwUpdater (current or previous)
 
     uint32_t                    lastResetRequest = 0;                //!< system time when the last reset requests was sent
     uint32_t                    resetRequestThreshold = 5000;        //!< Don't allow to send reset requests more frequently than this...
@@ -592,6 +613,7 @@ public:
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)());
     bool fwUpdateInProgress();
     float fwUpdatePercentCompleted();
+    std::vector<ISFwUpdateState::message> fwUpdateMessages(eLogLevel level = IS_LOG_LEVEL_ERROR);
     bool fwUpdate(p_data_t* msg = nullptr);
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };

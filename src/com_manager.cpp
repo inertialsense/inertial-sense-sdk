@@ -407,7 +407,7 @@ int comManagerSendRaw(port_handle_t port, const void *dataPtr, int dataSize)
 int ISComManager::sendRaw(port_handle_t port, const void* dataPtr, int dataSize)
 {
     // Return 0 on success, -1 on failure.
-    return (portWrite(port, static_cast<const uint8_t *>(dataPtr), dataSize) >= 0 ? 0 : -1);
+    return (portWrite(port, static_cast<const uint8_t *>(dataPtr), dataSize) >= PORT_ERROR__NONE ? 0 : -1);  // FIXME: Technically portWrite returning 0 IS VALID - but this may break existing functionality
 }
 
 int comManagerDisableData(port_handle_t port, uint16_t did)

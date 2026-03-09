@@ -244,7 +244,7 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
                 fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
             }
         }
-        if (md5_matches(device->getFingerprint(), DFU_FINGERPRINT_STM32U5)) {
+        if (md5_matches(device->getFingerprint(), DFU_FINGERPRINT_STM32U5_1M)) {
             // NOTE THAT GPX BOOTLOADER/FIRMWARE .hex files are ALWAYS configured to write to the correct memory location
             int fw_result = DFU_ERROR_NONE;
             int bl_result = DFU_ERROR_NONE;

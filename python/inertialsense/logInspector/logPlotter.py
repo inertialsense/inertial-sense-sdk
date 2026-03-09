@@ -274,6 +274,22 @@ def robust_lowpass(x, dt,
 
     return y.copy(), xg.copy(), is_outlier.copy()
 
+def getValidTimeInd(time, tol=100):
+
+    dt = np.diff(time)
+    n = len(time)
+    ind = np.ones(n, dtype=bool)
+    jump_idx = np.where((dt < 0) | (dt > tol))[0]
+
+    for k in range(0, len(jump_idx), 2):
+        start = jump_idx[k] + 1
+        if k + 1 < len(jump_idx):
+            end = jump_idx[k + 1]
+        else:
+            end = n - 1
+        ind[start: end+1] = False
+
+    return ind
 
 class logPlot:
     def __init__(self, show=False, save=False, format='svg', log=None):
@@ -327,7 +343,6 @@ class logPlot:
 
         if not np.allclose(rlla, 0, atol=1e-12):
             self.refLla = rlla
-
 
     def setDownSample(self, dwns):
         self.d = dwns
@@ -479,7 +494,9 @@ class logPlot:
                         continue
                     refLla = lla[0]
                     refTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
-                    refNed = lla2ned(refLla, lla)
+                    ind = getValidTimeInd(refTime) & (lla[:,0] != 0)
+                    refNed = lla2ned(refLla, lla[ind])
+                    refTime = refTime[ind]
                     continue
 
         for d in self.active_devs:
@@ -489,10 +506,12 @@ class logPlot:
                 continue
             if refLla is None:
                 refLla = lla[0]
-            ned = lla2ned(refLla, lla)
             tow = self.getData(d, DID_INS_2, 'timeOfWeek', True)
-
             time = getTimeFromGpsTow(tow, True)
+            ind = getValidTimeInd(time) & (lla[:,0] != 0)
+            ned = lla2ned(refLla, lla[ind,:])
+            time = time[ind]
+
             ax[0,0].plot(time, ned[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, ned[:,1])
             ax[2,0].plot(time, ned[:,2])
@@ -500,8 +519,11 @@ class logPlot:
             if (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
                 gps1Lla = self.getData(d, DID_GPS1_POS, 'lla', True)
+
                 if not self.isEmpty(timeGPS) and not self.isEmpty(gps1Lla):
-                    nedGps1 = lla2ned(refLla, gps1Lla)
+                    ind = getValidTimeInd(timeGPS) & (gps1Lla[:,0] != 0)
+                    timeGPS = timeGPS[ind]
+                    nedGps1 = lla2ned(refLla, gps1Lla[ind])
                     ax[0,0].plot(timeGPS, nedGps1[:, 0], label=("%s GPS1" % (self.log.serials[d])))
                     ax[1,0].plot(timeGPS, nedGps1[:, 1])
                     ax[2,0].plot(timeGPS, nedGps1[:, 2])
@@ -510,7 +532,9 @@ class logPlot:
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs', True))
                 gps2Lla = self.getData(d, DID_GPS2_POS, 'lla', True)
                 if not self.isEmpty(timeGPS) and not self.isEmpty(gps2Lla):
-                    nedGps2 = lla2ned(refLla, gps2Lla)
+                    ind = getValidTimeInd(timeGPS) & (gps2Lla[:,0] != 0)
+                    timeGPS = timeGPS[ind]
+                    nedGps2 = lla2ned(refLla, gps2Lla[ind])
                     ax[0,0].plot(timeGPS, nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
                     ax[1,0].plot(timeGPS, nedGps2[:, 1])
                     ax[2,0].plot(timeGPS, nedGps2[:, 2])
@@ -572,7 +596,6 @@ class logPlot:
                 continue
             if refLla is None:
                 refLla = lla[0]
-            time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
             ins2Lla = self.getData(d, DID_INS_2, 'lla', True)
             if self.isEmpty(ins2Lla):
                 continue
@@ -582,17 +605,22 @@ class logPlot:
 
             if (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 if (np.shape(self.active_devs)[0]==1):
+                    time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
                     self.drawNEDMapArrow(ax, time, ned, euler[:, 2])
 
                 lla1 = self.getData(d, DID_GPS1_POS, 'lla', True)
                 if len(lla1):
-                    nedGps1 = lla2ned(refLla, lla1)
+                    time = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+                    ind = getValidTimeInd(time) & (lla1[:,0] != 0)
+                    nedGps1 = lla2ned(refLla, lla1[ind])
                     ax.plot(nedGps1[:, 1], nedGps1[:, 0], label=("%s GPS1" % (self.log.serials[d])))
 
                 if self.showGps2 or len(lla1) == 0:
                     lla2 = self.getData(d, DID_GPS2_POS, 'lla', True)
                     if len(lla2):
-                        nedGps2 = lla2ned(refLla, lla2)
+                        time = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+                        ind = getValidTimeInd(time) & (lla2[:,0] != 0)
+                        nedGps2 = lla2ned(refLla, lla2[ind])
                         ax.plot(nedGps2[:, 1], nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
@@ -620,7 +648,8 @@ class logPlot:
             time = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             lla1 = self.getData(d, DID_GPS1_POS, 'lla')
             if len(lla1):
-                nedGps1 = lla2ned(refLla, lla1)
+                ind = getValidTimeInd(time) & (lla1[:,0] != 0)
+                nedGps1 = lla2ned(refLla, lla1[ind])
                 ax.plot(nedGps1[:, 1], nedGps1[:, 0], label=("%s" % (self.log.serials[d])))
 
             if self.timestamp:
@@ -635,7 +664,9 @@ class logPlot:
             if self.showGps2:
                 gps2Lla = self.getData(d, DID_GPS2_POS, 'lla')
                 if not self.isEmpty(gps2Lla):
-                    nedGps2 = lla2ned(refLla, gps2Lla)
+                    time = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+                    ind = getValidTimeInd(time) & (lla1[:,0] != 0)
+                    nedGps2 = lla2ned(refLla, gps2Lla[ind])
                     ax.plot(nedGps2[:, 1], nedGps2[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
@@ -667,17 +698,21 @@ class logPlot:
                 timeGPS1 = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 if len(timeGPS1):
                     towOffset = self.getGpsTowOffset(d)[-1]
-                    ax[0].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS1')
-                    ax[1].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 1])
-                    ax[2].plot(timeGPS1, self.getData(d, DID_GPS1_POS, 'lla')[:, 2], label='GPS1')
+                    lla1 = self.getData(d, DID_GPS1_POS, 'lla')
+                    ind = getValidTimeInd(timeGPS1) & (lla1[:,0] != 0)
+                    ax[0].plot(timeGPS1[ind], lla1[ind, 0], label='GPS1')
+                    ax[1].plot(timeGPS1[ind], lla1[ind, 1])
+                    ax[2].plot(timeGPS1[ind], lla1[ind, 2], label='GPS1')
 
                 timeGPS2 = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
                 if len(timeGPS2):
+                    lla2 = self.getData(d, DID_GPS2_POS, 'lla')
+                    ind = getValidTimeInd(timeGPS2) & (lla2[:,0] != 0)
                     if towOffset == 0:
                         towOffset = self.getData(d, DID_GPS2_POS, 'towOffset')[-1]
-                    ax[0].plot(timeGPS2, self.getData(d, DID_GPS2_POS, 'lla')[:, 0], label='GPS2')
-                    ax[1].plot(timeGPS2, self.getData(d, DID_GPS2_POS, 'lla')[:, 1])
-                    ax[2].plot(timeGPS2, self.getData(d, DID_GPS2_POS, 'lla')[:, 2], label='GPS2')
+                    ax[0].plot(timeGPS2[ind], lla2[ind, 0], label='GPS2')
+                    ax[1].plot(timeGPS2[ind], lla2[ind, 1])
+                    ax[2].plot(timeGPS2[ind], lla2[ind, 2], label='GPS2')
 
                 timeBaro = getTimeFromGpsTow(self.getData(d, DID_BAROMETER, 'time')+ towOffset)
                 ax[2].plot(timeBaro, self.getData(d, DID_BAROMETER, 'mslBar'), label='Baro')
@@ -702,16 +737,18 @@ class logPlot:
             time1 = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             if len(time1):
                 lla1 = self.getData(d, DID_GPS1_POS, 'lla')
-                ax[0].plot(time1, lla1[:,0], label=('%s GPS1' % self.log.serials[d]))
-                ax[1].plot(time1, lla1[:,1])
-                ax[2].plot(time1, lla1[:,2])
+                ind = getValidTimeInd(time1) & (lla1[:,0] != 0)
+                ax[0].plot(time1[ind], lla1[ind,0], label=('%s GPS1' % self.log.serials[d]))
+                ax[1].plot(time1[ind], lla1[ind,1])
+                ax[2].plot(time1[ind], lla1[ind,2])
 
             time2 = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
             if (len(time2) and (self.showGps2 or len(time1) == 0)):
                 lla2 = self.getData(d, DID_GPS2_POS, 'lla')
-                ax[0].plot(time2, lla2[:,0], label=('%s GPS2' % self.log.serials[d]))
-                ax[1].plot(time2, lla2[:,1])
-                ax[2].plot(time2, lla2[:,2])
+                ind = getValidTimeInd(time2) & (lla2[:,0] != 0)
+                ax[0].plot(time2[ind], lla2[ind,0], label=('%s GPS2' % self.log.serials[d]))
+                ax[1].plot(time2[ind], lla2[ind,1])
+                ax[2].plot(time2[ind], lla2[ind,2])
 
         self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
@@ -723,10 +760,11 @@ class logPlot:
     def getGpsPosNED(self, device, did, refLla):
         gpsTime = getTimeFromGpsTowMs(self.getData(device, did, 'timeOfWeekMs'))
         gpsLla = self.getData(device, did, 'lla')
+        ind = getValidTimeInd(gpsTime) & (gpsLla[:,0] != 0)
         if self.isEmpty(gpsLla):
             return [[], []]
         gpsNed = lla2ned(refLla, gpsLla)
-        return [gpsTime, gpsNed]
+        return [gpsTime[ind], gpsNed[ind]]
 
     def gpsPosNED(self, fig=None, axs=None):
         if fig is None:
@@ -773,6 +811,7 @@ class logPlot:
         gpsTime = getTimeFromGpsTowMs(self.getData(device, did, 'timeOfWeekMs'))
         if len(gpsTime) == 0:
             return [[], []]
+        ind = getValidTimeInd(gpsTime)
         status = self.getData(device, did, 'status')[0]
         gpsVelNed = None
         if (status & 0x00008000):
@@ -783,6 +822,20 @@ class logPlot:
                 qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
                 gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
                 # gpsVelNed = np.copy(gpsVelEcef)   # Override to ECEF
+
+        gpsTime = gpsTime[ind]
+        gpsVelNed = gpsVelNed[ind,:]
+
+        if gpsVelNed is not None and len(gpsVelNed) > 0:
+            if self.gpsVelFilterMode == 1:
+                gpsVelNed = median_filter(gpsVelNed, 5)
+            elif self.gpsVelFilterMode == 2:
+                gpsVelNed = regression_filter(gpsVelNed, history_size=5)
+            elif self.gpsVelFilterMode == 3:
+                gpsVelNed = hampel_filter(gpsVelNed, history_size=9, n_sigmas=3.0)
+            elif self.gpsVelFilterMode == 4:
+                gpsVelNed = robust_lowpass(gpsVelNed, dt=1.0/5.0, history_size=5, n_sigmas=3.0, tau=0.4)
+
         return [gpsTime, gpsVelNed]
 
     def gpsVelNED(self, fig=None, axs=None):
@@ -817,8 +870,12 @@ class logPlot:
                     lla1 = self.getData(d, DID_GPS1_POS, 'lla')
                     lla2 = self.getData(d, DID_GPS2_POS, 'lla')
                     if len(lla1):
+                        ind = lla1[:,0] != 0
+                        lla1 = lla1[ind,:]
                         refLla = lla1[-1]
                     elif len(lla2):
+                        ind = lla2[:,0] != 0
+                        lla2 = lla2[ind,:]
                         refLla = lla2[-1]
 
                 for d in self.active_devs:
@@ -847,11 +904,16 @@ class logPlot:
                 lla1 = self.getData(d, DID_GPS1_POS, 'lla')
                 lla2 = self.getData(d, DID_GPS2_POS, 'lla')
                 if len(lla1):
+                    ind = lla1[:,0] != 0
+                    lla1 = lla1[ind,:]
                     refLla = lla1[-1]
                 elif len(lla2):
+                    ind = lla2[:,0] != 0
+                    lla2 = lla2[ind,:]
                     refLla = lla2[-1]
             [gps1Time, gps1VelNed] = self.getGpsVelNed(d, DID_GPS1_VEL, refLla)
             [gps2Time, gps2VelNed] = self.getGpsVelNed(d, DID_GPS2_VEL, refLla)
+            
             if len(gps1Time):
                 gps1VelNorm = np.linalg.norm(gps1VelNed, axis=1)
                 ax[0,0].plot(gps1Time, gps1VelNed[:, 0])
@@ -888,37 +950,6 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'gpsVelNED')
         
-    def getGpsNedVel(self, d):
-        velNed = None
-        velDid = DID_GPS2_VEL if ((self.getData(d, DID_GPS1_VEL, 'status').size == 0) or self.showGps2) else DID_GPS1_VEL
-        status = self.getData(d, velDid, 'status')
-        if len(status) == 0:
-            return []
-        status = status[0]
-        if (status & 0x00008000):
-            velNed = self.getData(d, velDid, 'vel')    # NED velocity
-        else:
-            velEcef = self.getData(d, velDid, 'vel')   # ECEF velocity
-            qe2n = quat_ecef2ned(self.refLla[0:2]*np.pi/180.0)
-            if len(velEcef) > 0:
-                velNed = quatConjRot(qe2n, velEcef)
-            # velNed = np.copy(velEcef)     # Override to ECEF velocity
-
-            #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
-            #velNed = R.dot(velEcef.T).T
-        
-        if velNed is not None and len(velNed) > 0:
-            if self.gpsVelFilterMode == 1:
-                velNed = median_filter(velNed, 5)
-            elif self.gpsVelFilterMode == 2:
-                velNed = regression_filter(velNed, history_size=5)
-            elif self.gpsVelFilterMode == 3:
-                velNed = hampel_filter(velNed, history_size=9, n_sigmas=3.0)
-            elif self.gpsVelFilterMode == 4:
-                velNed = robust_lowpass(velNed, dt=1.0/5.0, history_size=5, n_sigmas=3.0, tau=0.4)
-        
-        return velNed
-
     def velNED(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
@@ -940,17 +971,21 @@ class logPlot:
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
                     refTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-                    # TODO: does the ref INS store velNED in lla or is it a copy/paste bug?
-                    refVelNed = self.getData(d, DID_INS_2, 'lla')[0]
+                    refLla = self.getData(d, DID_INS_2, 'lla')[0]
+                    refTime = self.getData(d, DID_INS_2, 'timeOfWeek')
+                    uvw = self.getData(d, DID_INS_2, 'uvw')
+                    qn2b = self.getData(d, DID_INS_2, 'qn2b')
+                    refVelNed = quatRot(qn2b, uvw)
                     continue
             # If 'Ref INS' is not available, use GPS as reference
             if refTime is None:
                 for d in self.active_devs:
-                    refTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
                     lla1 = self.getData(d, DID_GPS1_POS, 'lla')
-                    if len(refTime) and len(lla1): 
+                    if len(lla1): 
+                        ind = lla1[:,0] != 0
+                        lla1 = lla1[ind,:]
                         refLla = lla1[-1]
-                        refVelNed = self.getGpsNedVel(d)                    
+                        [refTime, refVelNed] = self.getGpsVelNed(d, DID_GPS1_VEL, refLla)
                     continue
 
         for d in self.active_devs:
@@ -969,10 +1004,9 @@ class logPlot:
             ax[3,0].plot(time, insVelNorm, label=self.log.serials[d])
 
             if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
-                timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_VEL if self.showGps2 else DID_GPS1_VEL, 'timeOfWeekMs'))
+                [timeGPS, gpsVelNed] = self.getGpsVelNed(d, DID_GPS2_VEL if self.showGps2 else DID_GPS1_VEL, refLla)
                 if len(timeGPS) == 0:
                     continue
-                gpsVelNed = self.getGpsNedVel(d)
                 gpsVelNorm = np.linalg.norm(gpsVelNed, axis=1)
                 ax[0,0].plot(timeGPS, gpsVelNed[:, 0])
                 ax[1,0].plot(timeGPS, gpsVelNed[:, 1])
@@ -1915,27 +1949,28 @@ class logPlot:
                 # gnssStatus2_run = np.array(list(zip(*gnssStatus[:,1]))[3])
 
                 if time.size and status.size and gnssStatus.size:
+                    ind = getValidTimeInd(time)
                     # CXD-1 Init State
-                    ax.plot(time, -cnt * 1.5 + (gnssStatus1_init / 20))                 # / 20 because CXD5610::InitSteps::kDone
+                    ax.plot(time[ind], -cnt * 1.5 + (gnssStatus1_init[ind] / 20))                 # / 20 because CXD5610::InitSteps::kDone
                     p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Init State')
                     cnt += 1
 
                     # CXD-1 fwUpdate
                     # gnssStatus1_fwUpdate[gnssStatus1_fwUpdate == 255] = -1
-                    ax.plot(time, -cnt * 1.5 + ((gnssStatus1_fwUpdate + 1) / 17))       # / 17 because CXD5610::FirmwareUpdateState::kDone
+                    ax.plot(time[ind], -cnt * 1.5 + ((gnssStatus1_fwUpdate[ind] + 1) / 17))       # / 17 because CXD5610::FirmwareUpdateState::kDone
                     p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 fwUpdate')
                     cnt += 1
 
                     # CXD-1 Run State
-                    ax.plot(time, -cnt * 1.5 + (gnssStatus1_run / 9))                   # / 9 because CXD5610::RunState::kHardReset
+                    ax.plot(time[ind], -cnt * 1.5 + (gnssStatus1_run[ind] / 9))                   # / 9 because CXD5610::RunState::kHardReset
                     p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Run State')
                     cnt += 1
 
                     # CXD-1 Reset Cause
-                    ax.plot(time, -cnt * 1.5 + (gnssStatus1_rstCause / 13))             # /13 because eGNSSDriverRstCause::cxdRst_Max
+                    ax.plot(time[ind], -cnt * 1.5 + (gnssStatus1_rstCause[ind] / 13))             # /13 because eGNSSDriverRstCause::cxdRst_Max
                     p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Reset Cause')
                     cnt += 1
@@ -1944,42 +1979,42 @@ class logPlot:
                     errCnt = (status & 0x0000000F)
                     faultCode = ((status & 0xFF000000) >> 24)
 
-                    ax.plot(time, -cnt * 1.5 + (errCnt / 16))
+                    ax.plot(time[ind], -cnt * 1.5 + (errCnt[ind] / 16))
                     p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
                     if r: ax.text(p1, -cnt * 1.5, 'Com parse err count')
                     cnt += 1
 
                     ### No Comms flags
-                    ax.plot(time, -cnt * 1.5 + ((status & 0x00000010) >> 8))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000010) >> 8))
                     if r: ax.text(p1, -cnt * 1.5, 'No Ser0 Comms')
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((status & 0x00000020) >> 9))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000020) >> 9))
                     if r: ax.text(p1, -cnt * 1.5, 'No Ser1 Comms')
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((status & 0x00000040) >> 10))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000040) >> 10))
                     if r: ax.text(p1, -cnt * 1.5, 'No Ser2 Comms')
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((status & 0x00000080) >> 11))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000080) >> 11))
                     if r: ax.text(p1, -cnt * 1.5, 'No USB Comms')
                     cnt += 1
 
                     ### General Faults
-                    ax.plot(time, -cnt * 1.5 + ((status & 0x00010000) >> 16))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00010000) >> 16))
                     if r: ax.text(p1, -cnt * 1.5, 'RTK Queue Limited')
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((status & 0x00100000) >> 20))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00100000) >> 20))
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS Rcvr Time Fault')
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((status & 0x00800000) >> 23))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00800000) >> 23))
                     if r: ax.text(p1, -cnt * 1.5, 'DMA Fault')
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + (faultCode / 15))
+                    ax.plot(time[ind], -cnt * 1.5 + (faultCode[ind] / 15))
                     if r: ax.text(p1, -cnt * 1.5, 'Fatal Fault Code')
                     cnt += 1
                     cnt += 1
@@ -2005,98 +2040,99 @@ class logPlot:
                 hStatus = self.getData(d, DID_GPX_STATUS, 'hdwStatus')
 
                 if time.size and hStatus.size:
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000001) != 0))
+                    ind = getValidTimeInd(time)
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000001) != 0))
                     p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Sat RX')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000002) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000002) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Sat RX')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000004) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000004) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS1 TOW Valid')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000005) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000005) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS2 TOW Valid')
                     cnt += 1
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 4))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000070) >> 4))
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Reset Count')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 8))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000070) >> 8))
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Reset Count')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000080) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000080) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Fault')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000800) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Fault')
                     cnt += 1
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00001000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00001000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'FW Update Required')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00004000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00004000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Sys Reset Required')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00008000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00008000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Flash Write Pending')
                     cnt += 1
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00010000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00010000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err Com Tx Limited')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00020000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00020000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00040000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00040000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 PPS')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00080000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00080000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 PPS')
                     cnt += 1
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00100000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00100000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 low CN0')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00200000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00200000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 low CN0')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00400000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00400000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 CN0 IR')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00800000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00800000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 CN0 IR')
                     cnt += 1
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x0300000) >> 24))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x0300000) >> 24))
                     if r: ax.text(p1, -cnt * 1.5, 'BIT: Off, Running, Passed, Fault')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x04000000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x04000000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Err Temperature')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x08000000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x08000000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'GPS PPS Timesync')
                     cnt += 1
                     cnt += 1
 
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x10000000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x10000000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x20000000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x20000000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x30000000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x30000000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x40000000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x40000000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
                     cnt += 1
-                    ax.plot(time, -cnt * 1.5 + ((hStatus & 0x80000000) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x80000000) != 0))
                     if r: ax.text(p1, -cnt * 1.5, 'Critical Sys Fault')
                     cnt += 1
                     cnt += 1
@@ -2131,35 +2167,39 @@ class logPlot:
         for d in self.active_devs:
             r = d == self.active_devs[0]  # plot text w/ first device
             time = getTimeFromGpsTowMs(self.getData(d, did_gps_pos, 'timeOfWeekMs'))
+            indp = getValidTimeInd(time)
             velTime = getTimeFromGpsTowMs(self.getData(d, did_gps_vel, 'timeOfWeekMs'))
+            indv = getValidTimeInd(velTime)
             gStatus = self.getData(d, did_gps_pos, 'status')
 
-            ax[0].plot(time, gStatus & 0xFF, label=self.log.serials[d])
-            ax[1].plot(time, self.getData(d, did_gps_pos, 'cnoMean'), label=self.log.serials[d])
-            ax[2].plot(time, self.getData(d, did_gps_pos, 'hAcc'), 'r', label="hAcc")
-            ax[2].plot(time, self.getData(d, did_gps_pos, 'vAcc'), 'b', label="vAcc")
-            ax[2].plot(time, self.getData(d, did_gps_pos, 'pDop'), 'm', label="pDop")
+            ax[0].plot(time[indp], gStatus[indp] & 0xFF, label=self.log.serials[d])
+            ax[1].plot(time[indp], self.getData(d, did_gps_pos, 'cnoMean')[indp], label=self.log.serials[d])
+            ax[2].plot(time[indp], self.getData(d, did_gps_pos, 'hAcc')[indp], 'r', label="hAcc")
+            ax[2].plot(time[indp], self.getData(d, did_gps_pos, 'vAcc')[indp], 'b', label="vAcc")
+            ax[2].plot(time[indp], self.getData(d, did_gps_pos, 'pDop')[indp], 'm', label="pDop")
             if self.log.data[d, DID_GPS1_RTK_POS] is not []:
                 rtktime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_RTK_POS, 'timeOfWeekMs'))
-                ax[2].plot(rtktime, self.getData(d, DID_GPS1_RTK_POS, 'vAcc'), 'g', label="rtkHor")
-            ax[3].plot(velTime, self.getData(d, did_gps_vel, 'sAcc'), label="sAcc")
+                if len(rtktime) > 0:
+                    ind = getValidTimeInd(rtktime)
+                    ax[2].plot(rtktime, self.getData(d, DID_GPS1_RTK_POS, 'vAcc'), 'g', label="rtkHor")
+            ax[3].plot(velTime[indv], self.getData(d, did_gps_vel, 'sAcc')[indv], label="sAcc")
 
             if plot_legend:
                 plot_legend = 0
                 self.legends_add(ax[2].legend(ncol=2))
 
             cnt = 0
-            ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x04000000) != 0))
+            ax[4].plot(time[indp], -cnt * 1.5 + ((gStatus[indp] & 0x04000000) != 0))
             p1 = ax[4].get_xlim()[0] + 0.02 * (ax[4].get_xlim()[1] - ax[4].get_xlim()[0])
             if r: ax[4].text(p1, -cnt * 1.5, 'RTK Positioning Valid')
             cnt += 1
-            ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x08000000) != 0))
+            ax[4].plot(time[indp], -cnt * 1.5 + ((gStatus[indp] & 0x08000000) != 0))
             if r: ax[4].text(p1, -cnt * 1.5, 'RTK Compassing Valid (fix & hold)')
             cnt += 1
-            ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x00002000) != 0))
+            ax[4].plot(time[indp], -cnt * 1.5 + ((gStatus[indp] & 0x00002000) != 0))
             if r: ax[4].text(p1, -cnt * 1.5, 'GPS Compass Baseline BAD')
             cnt += 1
-            ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x00004000) != 0))
+            ax[4].plot(time[indp], -cnt * 1.5 + ((gStatus[indp] & 0x00004000) != 0))
             if r: ax[4].text(p1, -cnt * 1.5, 'GPS Compass Baseline UNSET')
             cnt += 1
 
@@ -2201,30 +2241,33 @@ class logPlot:
             if len(rtkRelTime) == 0:
                 continue
             # rtkMiscTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_MISC, 'timeOfWeekMs'))
+            ind = getValidTimeInd(rtkRelTime)
             if not self.log.compassing:
                 gps1PosTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'), 1)
                 gps2PosTime = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'), 1)
                 if len(gps1PosTime):
+                    indgps = getValidTimeInd(gps1PosTime)
                     fixType = self.getData(d, DID_GPS1_POS, 'status') >> 8 & 0x1F
-                    ax[0].plot(gps1PosTime, fixType, label=self.log.serials[d])
+                    ax[0].plot(gps1PosTime[indgps], fixType[indgps], label=self.log.serials[d])
                 elif len(gps2PosTime):
+                    indgps = getValidTimeInd(gps2PosTime)
                     fixType = self.getData(d, DID_GPS2_POS, 'status') >> 8 & 0x1F
-                    ax[0].plot(gps2PosTime, fixType, label=self.log.serials[d])
+                    ax[0].plot(gps2PosTime[indgps], fixType[indgps], label=self.log.serials[d])
             else:
                 fixType = self.getData(d, relDid, 'arRatio').copy()
                 fixType[(fixType > 3)] = 12
                 fixType[(fixType > 0) & (fixType < 3)] = 11
                 fixType[fixType == 0] = 10
-                ax[0].plot(rtkRelTime, fixType, label=self.log.serials[d])
-            ax[1].plot(rtkRelTime, self.getData(d, relDid, 'differentialAge'))
+                ax[0].plot(rtkRelTime[ind], fixType[ind], label=self.log.serials[d])
+            ax[1].plot(rtkRelTime[ind], self.getData(d, relDid, 'differentialAge')[ind])
             if i == 0:
-                ax[2].semilogy(rtkRelTime, np.ones_like(rtkRelTime)*3.0, 'k--')
-            ax[2].semilogy(rtkRelTime, self.getData(d, relDid, 'arRatio'))
+                ax[2].semilogy(rtkRelTime[ind], np.ones_like(rtkRelTime[ind])*3.0, 'k--')
+            ax[2].semilogy(rtkRelTime[ind], self.getData(d, relDid, 'arRatio')[ind])
             dist2base = self.getData(d, relDid, 'baseToRoverDistance')
             dist2base[dist2base > 1e5] = np.nan
-            ax[3].plot(rtkRelTime, dist2base)
-            ax[4].plot(rtkRelTime, self.getData(d, relDid, 'baseToRoverHeading')*180.0/np.pi)
-            ax[5].plot(rtkRelTime, self.getData(d, relDid, 'baseToRoverHeadingAcc')*180.0/np.pi)
+            ax[3].plot(rtkRelTime[ind], dist2base[ind])
+            ax[4].plot(rtkRelTime[ind], self.getData(d, relDid, 'baseToRoverHeading')[ind]*180.0/np.pi)
+            ax[5].plot(rtkRelTime[ind], self.getData(d, relDid, 'baseToRoverHeadingAcc')[ind]*180.0/np.pi)
             self.legends_add(ax[0].legend(ncol=2))
 
         self.setPlotYSpanMin(ax[1], 0.5)    # Differential age
@@ -2328,9 +2371,9 @@ class logPlot:
             L   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
             D   = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
             LLI = np.empty((Nf, Nsat, Nt), dtype=float) # (freq, sat, time)
-            P[:]   = np.nan # NaNs are convenient because they are not plotted
-            L[:]   = np.nan
-            D[:]   = np.nan
+            P[:] = np.nan # NaNs are convenient because they are not plotted
+            L[:] = np.nan
+            D[:] = np.nan
 
             i = Nt = Nsat = 0
             while i < len(gps_data) - 1:
@@ -3172,6 +3215,8 @@ class logPlot:
             f.write(',,,(deg/hr),(deg/hr),(deg/hr),(deg / rt hr),(deg / rt hr),(deg / rt hr)\n')
             today = date.today()
             for d in self.active_devs:
+                if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
+                    continue 
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
                 f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
                 for n, pqr in enumerate(initial_sensors):
@@ -3251,6 +3296,8 @@ class logPlot:
             f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
             today = date.today()
             for d in self.active_devs:
+                if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
+                    continue 
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
                 f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
                 for n, acc in enumerate(sensors):
@@ -3385,7 +3432,9 @@ class logPlot:
             timeGps = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             llaGps = self.getData(d, DID_GPS1_POS, 'lla')
             if len(llaGps) > 0:
-                altGps = llaGps[:, 2]
+                ind = getValidTimeInd(timeGps)
+                timeGps = timeGps[ind]
+                altGps = llaGps[ind, 2]
             else:
                 altGps = []
             timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
@@ -3399,7 +3448,7 @@ class logPlot:
             mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
 
             ax[0].plot(timeBar, mslBar, label=self.log.serials[d])
-            if len(timeGps) == len(altGps) and len(altGps) > 0:
+            if len(altGps) > 0:
                 ax[1].plot(timeGps, altGps)
             if len(timeIns) == len(altIns) and len(altIns) > 0:
                 ax[2].plot(timeIns, altIns)
@@ -3449,8 +3498,9 @@ class logPlot:
                 climbBar = np.gradient(mslBar, timeBar)
                 ax[0].plot(timeBar, climbBar, label=self.log.serials[d])
             if len(timeGps) > 2 and len(altGps) == len(timeGps):
-                climbGps = np.gradient(altGps, timeGps)
-                ax[1].plot(timeGps, climbGps)
+                ind = getValidTimeInd(timeGps)
+                climbGps = np.gradient(altGps[ind], timeGps[ind])
+                ax[1].plot(timeGps[ind], climbGps)
             if len(timeIns) > 2 and len(altIns) == len(timeIns):
                 climbIns = np.gradient(altIns, timeIns)
                 ax[2].plot(timeIns, climbIns)
@@ -3685,18 +3735,18 @@ class logPlot:
         self.configureSubplot(ax[5], 'PIMU Integration Period', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         for d in self.active_devs_no_ref:
-            dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
-            dtIns = dtIns / self.d
-            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek')[1:], True)
+            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            dtIns = np.diff(timeIns) / self.d
 
-            towMsGps1 = self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:]
-            towMsGps2 = self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[1:]
-            dtGps1 = 0.001*(towMsGps1 - self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[0:-1])
-            dtGps2 = 0.001*(towMsGps2 - self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[0:-1])
-            dtGps1 = dtGps1 / self.d
-            dtGps2 = dtGps2 / self.d
-            timeGps1 = getTimeFromGpsTowMs(towMsGps1)
-            timeGps2 = getTimeFromGpsTowMs(towMsGps2)
+            timeGps1 = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+            ind = getValidTimeInd(timeGps1)
+            timeGps1 = timeGps1[ind]
+            dtGps1 = np.diff(timeGps1) / self.d
+
+            timeGps2 = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+            ind = getValidTimeInd(timeGps2)
+            timeGps2 = timeGps2[ind]
+            dtGps2 = np.diff(timeGps2) / self.d
 
             towOffset = self.getGpsTowOffset(d)
             if np.size(towOffset) > 0:
@@ -3710,18 +3760,15 @@ class logPlot:
             timeIMU  = self.getData(d, DID_IMU, 'time')
             timeImus = self.getData(d, DID_IMUS_RAW, 'time')
             if timePimu.size:
-                deltaTimestamp = timePimu[1:] - timePimu[0:-1]
-                deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromGpsTow(timePimu[1:] + towOffset)            
-                dtPimu = self.getData(d, DID_PIMU, 'dt')[1:]
+                timeImu = getTimeFromGpsTow(timePimu + towOffset)            
+                deltaTimestamp = np.diff(timePimu) / self.d
+                dtPimu = self.getData(d, DID_PIMU, 'dt')
             elif timeIMU.size:
-                deltaTimestamp = timeIMU[1:] - timeIMU[0:-1]
-                deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromGpsTow(timeIMU[1:] + towOffset)
+                timeImu = getTimeFromGpsTow(timeIMU + towOffset)
+                deltaTimestamp = np.diff(timeIMU) / self.d
             if timeImus.size:
-                deltaImusTimestamp = timeImus[1:] - timeImus[0:-1]
-                deltaImusTimestamp = deltaImusTimestamp / self.d
-                timeImus = getTimeFromGpsTow(timeImus[1:] + towOffset)
+                timeImus = getTimeFromGpsTow(timeImus + towOffset)
+                deltaImusTimestamp = np.diff(timeImus) / self.d
 
             if self.xAxisSample:
                 xIns  = np.arange(0, np.shape(dtIns)[0])
@@ -3730,11 +3777,11 @@ class logPlot:
                 xImus = np.arange(0, np.shape(deltaImusTimestamp)[0])
                 xImu  = np.arange(0, np.shape(deltaTimestamp)[0])
             else:
-                xIns  = timeIns
-                xGps1 = timeGps1
-                xGps2 = timeGps2
-                xImus = timeImus
-                xImu  = timeImu
+                xIns  = timeIns[1:]
+                xGps1 = timeGps1[1:]
+                xGps2 = timeGps2[1:]
+                xImus = timeImus[1:]
+                xImu  = timeImu[1:]
 
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
             ax[1].plot(xGps1, dtGps1)
@@ -3743,7 +3790,7 @@ class logPlot:
                 ax[3].plot(xImus, deltaImusTimestamp)
             ax[4].plot(xImu, deltaTimestamp)
             if 'dtPimu' in locals() and dtPimu.size:
-                ax[5].plot(xImu, dtPimu)
+                ax[5].plot(xImu, dtPimu[1:])
 
             self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
             self.configureSubplot(ax[1], f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
@@ -3801,36 +3848,38 @@ class logPlot:
         self.configureSubplot(ax[4], 'GPS2 TOW Offset', 's')
 
         for d in self.active_devs_no_ref:
-            towMsGps1 = self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:]
-            towMsGps2 = self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[1:]
-            towMsRtk2 = self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs')[1:]
-            dtGps1 = 0.001*(towMsGps1 - self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[0:-1])
-            dtGps2 = 0.001*(towMsGps2 - self.getData(d, DID_GPS2_POS, 'timeOfWeekMs')[0:-1])
-            dtRtk2 = 0.001*(towMsRtk2 - self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs')[0:-1])
-            dtGps1 = dtGps1 / self.d
-            dtGps2 = dtGps2 / self.d
-            dtRtk2 = dtRtk2 / self.d
-            timeGps1 = getTimeFromGpsTowMs(towMsGps1)
-            timeGps2 = getTimeFromGpsTowMs(towMsGps2)
-            timeRtk2 = getTimeFromGpsTowMs(towMsRtk2)
+            timeGps1 = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+            timeGps2 = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+            timeRtk2 = getTimeFromGpsTowMs(self.getData(d, DID_GPS2_RTK_CMP_REL, 'timeOfWeekMs'))
+            towOffsetGps1 = self.getData(d, DID_GPS1_POS, 'towOffset')
+            towOffsetGps2 = self.getData(d, DID_GPS2_POS, 'towOffset')
+            ind1 = getValidTimeInd(timeGps1)
+            timeGps1 = timeGps1[ind1]
+            towOffsetGps1 = towOffsetGps1[ind1]
+            ind2 = getValidTimeInd(timeGps2)
+            timeGps2 = timeGps2[ind2]
+            towOffsetGps2 = towOffsetGps2[ind2]
+            indr = getValidTimeInd(timeRtk2)
+            timeRtk2 = timeRtk2[indr]
 
-            towOffsetGps1 = self.getData(d, DID_GPS1_POS, 'towOffset')[1:]
-            towOffsetGps2 = self.getData(d, DID_GPS2_POS, 'towOffset')[1:]
+            dtGps1 = np.diff(timeGps1) / self.d
+            dtGps2 = np.diff(timeGps2) / self.d
+            dtRtk2 = np.diff(timeRtk2) / self.d
 
             if self.xAxisSample:
                 xGps1 = np.arange(0, np.shape(dtGps1)[0])
                 xGps2 = np.arange(0, np.shape(dtGps2)[0])
                 xRtk2 = np.arange(0, np.shape(dtRtk2)[0])
             else:
-                xGps1 = timeGps1
-                xGps2 = timeGps2
-                xRtk2 = timeRtk2
+                xGps1 = timeGps1[1:]
+                xGps2 = timeGps2[1:]
+                xRtk2 = timeRtk2[1:]
 
             ax[0].plot(xGps1, dtGps1)
             ax[1].plot(xGps2, dtGps2)
             ax[2].plot(xRtk2, dtRtk2)
-            ax[3].plot(xGps1, towOffsetGps1)
-            ax[4].plot(xGps2, towOffsetGps2)
+            ax[3].plot(xGps1, towOffsetGps1[1:])
+            ax[4].plot(xGps2, towOffsetGps2[1:])
 
             self.configureSubplot(ax[0],  f'GPS1 dt: {np.mean(dtGps1):.3f}s', 's')
             self.configureSubplot(ax[1],  f'GPS2 dt: {np.mean(dtGps2):.3f}s', 's')
@@ -3872,10 +3921,15 @@ class logPlot:
             tgpsB = np.zeros(NB)
             nsatB = np.zeros(NB)
             cnt = 0
+            t0_prev = 0
             for iobs in range(N1):
                 ns = round(len(self.log.data[d, DID_GPS1_RAW][0][iobs]) * 0.5) # 0.5 because there is a bug that pads half of the data with zeros
                 t0 = self.log.data[d, DID_GPS1_RAW][0][iobs]['time']['time'][-1] + \
                      self.log.data[d, DID_GPS1_RAW][0][iobs]['time']['sec'][-1]
+                if t0 < t0_prev:
+                    # bad time stamp due to receiver reset (?)
+                    continue
+                t0_prev = t0
                 nsat1[cnt] = nsat1[cnt] + ns
                 tgps1[cnt] = t0
                 if iobs < N1 - 1:
@@ -3886,10 +3940,15 @@ class logPlot:
             tgps1 = tgps1[0: cnt + 1]
             nsat1 = nsat1[0: cnt + 1]
             cnt = 0
+            t0_prev = 0
             for iobs in range(N2):
                 ns = round(len(self.log.data[d, DID_GPS2_RAW][0][iobs]) * 0.5) # 0.5 because there is a bug that pads half of the data with zeros
                 t0 = self.log.data[d, DID_GPS2_RAW][0][iobs]['time']['time'][-1] + \
                      self.log.data[d, DID_GPS2_RAW][0][iobs]['time']['sec'][-1]
+                if t0 < t0_prev:
+                    # bad time stamp due to receiver reset (?)
+                    continue
+                t0_prev = t0
                 nsat2[cnt] = nsat2[cnt] + ns
                 tgps2[cnt] = t0
                 if iobs < N2 - 1:
@@ -3900,10 +3959,15 @@ class logPlot:
             tgps2 = tgps2[0: cnt + 1]
             nsat2 = nsat2[0: cnt + 1]
             cnt = 0
+            t0_prev = 0
             for iobs in range(NB):
                 ns = round(len(self.log.data[d, DID_GPS_BASE_RAW][0][iobs]) * 0.5) # 0.5 because there is a bug that pads half of the data with zeros
                 t0 = self.log.data[d, DID_GPS_BASE_RAW][0][iobs]['time']['time'][-1] + \
                      self.log.data[d, DID_GPS_BASE_RAW][0][iobs]['time']['sec'][-1]
+                if t0 < t0_prev:
+                    # bad time stamp due to receiver reset (?)
+                    continue
+                t0_prev = t0
                 nsatB[cnt] = nsatB[cnt] + ns
                 tgpsB[cnt] = t0
                 if iobs < NB - 1:
@@ -3913,18 +3977,24 @@ class logPlot:
                         cnt = cnt + 1
             tgpsB = tgpsB[0: cnt + 1]
             nsatB = nsatB[0: cnt + 1]
-            dtGps1 = tgps1[1:] - tgps1[0:-1]
-#            dtGps1 = dtGps1 / self.d
-            dtGps2 = tgps2[1:] - tgps2[0:-1]
-#            dtGps2 = dtGps2 / self.d
-            dtGpsB = tgpsB[1:] - tgpsB[0:-1]
+
+            ind1 = getValidTimeInd(tgps1)
+            ind2 = getValidTimeInd(tgps2)
+            indB = getValidTimeInd(tgpsB)
+            tgps1 = tgps1[ind1]
+            tgps2 = tgps2[ind2]
+            tgpsB = tgps1[indB]
+
+            dtGps1 = np.diff(tgps1)
+            dtGps2 = np.diff(tgps2)
+            dtGpsB = np.diff(tgpsB)
 
             ax[0].plot(tgps1[1:], dtGps1, label=self.log.serials[d])
             ax[1].plot(tgps2[1:], dtGps2)
             ax[2].plot(tgpsB[1:], dtGpsB)
-            ax[3].plot(tgps1, nsat1, label=self.log.serials[d])
-            ax[4].plot(tgps2, nsat2)
-            ax[5].plot(tgpsB, nsatB)
+            ax[3].plot(tgps1, nsat1[ind1], label=self.log.serials[d])
+            ax[4].plot(tgps2, nsat2[ind2])
+            ax[5].plot(tgpsB, nsatB[indB])
 
         self.setPlotYSpanMin(ax[0], 2.0)
         self.setPlotYSpanMin(ax[1], 2.0)
@@ -3972,7 +4042,7 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'ekfBiases')
 
-    def rtkResiduals(self, type, page, fig=None):
+    def rtkResiduals(self, type, page, fig=None,  axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3999,6 +4069,7 @@ class logPlot:
                 residuals[np.abs(residuals) > 1e6] = np.nan
                 ax[i].plot(time, residuals, label=self.log.serials[d])
         self.legends_add(ax[0].legend(ncol=2))
+        return self.saveFigJoinAxes(ax, axs, fig, 'rtkResiduals')
 
     def rtkDebugP1(self, fig=None, axs=None):
         if fig is None:
@@ -4283,14 +4354,15 @@ class logPlot:
             if len(time) == 0:
                 # No sensor data in the log
                 continue
+            ind = getValidTimeInd(time)
             wheelConfig = self.getData(d, DID_GROUND_VEHICLE, 'wheelConfig')
             iStatus = self.getData(d, DID_GROUND_VEHICLE, 'status')
-            ax[0,0].plot(time, (iStatus & 0x00000001) != 0) # Kinematic learing is solving for the translation from IMU to wheel (wheel_config)
-            ax[0,1].plot(time, (iStatus & 0x01000000) != 0) # Navigation is running without GPS input
-            ax[1,0].plot(time, (iStatus & 0x02000000) != 0) # Vehicle kinematic parameters agree with GPS
-            ax[1,1].plot(time, (iStatus & 0x04000000) != 0) # Vehicle kinematic learning has converged and is complete
-            ax[2,0].plot(time, (iStatus & 0x08000000) != 0) # Vehicle kinematic learning data (wheel_config_t) is missing
-            ax[2,1].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'mode'))
+            ax[0,0].plot(time[ind], (iStatus[ind] & 0x00000001) != 0) # Kinematic learing is solving for the translation from IMU to wheel (wheel_config)
+            ax[0,1].plot(time[ind], (iStatus[ind] & 0x01000000) != 0) # Navigation is running without GPS input
+            ax[1,0].plot(time[ind], (iStatus[ind] & 0x02000000) != 0) # Vehicle kinematic parameters agree with GPS
+            ax[1,1].plot(time[ind], (iStatus[ind] & 0x04000000) != 0) # Vehicle kinematic learning has converged and is complete
+            ax[2,0].plot(time[ind], (iStatus[ind] & 0x08000000) != 0) # Vehicle kinematic learning data (wheel_config_t) is missing
+            ax[2,1].plot(time[ind], self.getData(d, DID_GROUND_VEHICLE, 'mode')[ind])
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
