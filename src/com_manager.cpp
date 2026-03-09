@@ -252,7 +252,6 @@ void stepSendMessages(void)
     s_cm.stepSendMessages();
 }
 
-// __attribute__((optimize("O0")))
 void ISComManager::stepSendMessages()
 {
     if (broadcastMessages == NULL)
@@ -637,7 +636,6 @@ int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req)
     return s_cm.getDataRequest(port, req);
 }
 
-//__attribute__((optimize("O0")))
 int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
 {
     broadcast_msg_t* msg = NULL;
