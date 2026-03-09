@@ -155,10 +155,10 @@ typedef struct serial_port_s serial_port_t;
 #define SERIAL_PORT(n)  ((serial_port_t*)n)
 
 
-void serialPortInit(port_handle_t, int id, int type, int flags);
+int serialPortInit(port_handle_t, int id, int type, int flags);
 
 // set the port name for a serial port, in case you are opening it later
-void serialPortSetName(port_handle_t port, const char* portName);
+int serialPortSetName(port_handle_t port, const char* portName);
 
 /**
  * returns the name associated with this port (this is usually the OS's identifier)
@@ -262,7 +262,7 @@ int serialPortRead(port_handle_t port, unsigned char* buffer, unsigned int readC
  * @param timeoutMilliseconds
  * @return number of bytes read which is less than or equal to readCount
  */
-int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
+int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, uint32_t timeoutMs);
 
 /**
  * start an async read - not all platforms will support an async read and may call the callback function immediately
@@ -355,10 +355,10 @@ int serialPortGetByteCountAvailableToWrite(port_handle_t port);
 int serialPortSleep(port_handle_t port, int sleepMilliseconds);
 
 // Set the port options
-void serialPortSetOptions(port_handle_t port, uint32_t options);
+int serialPortSetOptions(port_handle_t port, uint32_t options);
 
 // Set the port baud rate
-void serialPortSetBaud(port_handle_t port, int baudRate);
+int serialPortSetBaud(port_handle_t port, int baudRate);
 
 // Set callback for error events
 int serialPortSetErrorCB(port_handle_t port, pfnSerialPortOnErrorCB onErrorCb);

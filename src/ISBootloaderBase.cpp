@@ -538,7 +538,7 @@ is_operation_result cISBootloaderBase::update_device
     }
 
     serialPortClose(port);
-    if (!serialPortOpenRetry(port, portName(port), baud, 1))
+    if (serialPortOpenRetry(port, portName(port), baud, 1) != PORT_ERROR__NONE)
     {
         statusfn(std::any(), IS_LOG_LEVEL_ERROR, "Unable to open port at %d baud", baud);
         return IS_OP_ERROR;

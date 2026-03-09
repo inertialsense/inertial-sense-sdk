@@ -125,9 +125,8 @@ public:
         }
 
         // open the port, if needed - if we can't open it, fail.
-        if (!portIsOpened(port)
-            && ( (options & DISCOVERY__IGNORE_CLOSED_PORTS)
-                 || (portOpen(port) != PORT_ERROR__NONE)) )
+        if ( (!portIsOpened(port) && (options & DISCOVERY__IGNORE_CLOSED_PORTS)) ||
+             (portOpen(port) != PORT_ERROR__NONE) )
             return false;
 
 

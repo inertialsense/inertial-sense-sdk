@@ -34,7 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // cygwin defines FIONREAD in socket.h instead of ioctl.h
 #ifndef FIONREAD
-#include <sys/socket.h>
+#include <sys/socket.hh>
 #endif
 
 #if PLATFORM_IS_LINUX
@@ -88,9 +88,47 @@ typedef struct
 
 } serialPortHandle;
 
+/**
+ * @brief Sleep for a specified number of milliseconds.
+ * This function is a simple wrapper around the platform-specific sleep function.
+ * On Windows, it uses `Sleep()`, and on other platforms, it uses `usleep()`.
+ *
+ * @param sleepMilliseconds The number of milliseconds to sleep.
+ * @return int 1 on success.
+ */
 static int serialPortSleepPlatform(int sleepMilliseconds);
+/**
+ * @brief Flush the serial port.
+ * This function clears the serial port's receive buffer.
+ * On Windows, it uses `PurgeComm` with `PURGE_RXCLEAR`.
+ * On other platforms, it uses `tcflush` with `TCIOFLUSH`.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortFlushPlatform(port_handle_t port);
+/**
+ * @brief Drain the serial port.
+ * This function waits for all written data to be transmitted.
+ * On Windows, it uses `PurgeComm` with `PURGE_TXCLEAR`.
+ * On other platforms, it uses `tcdrain`.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortDrainPlatform(port_handle_t port);
+/**
+ * @brief Read from the serial port with a timeout.
+ * This function reads a specified number of bytes from the serial port, with a timeout.
+ * It is a wrapper around the platform-specific read functions.
+ * If the timeout is negative, a default timeout is used.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @param timeoutMilliseconds The timeout in milliseconds.
+ * @return int The number of bytes read, or -1 on error.
+ */
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
@@ -114,6 +152,15 @@ typedef struct {
     unsigned char* buffer;
 } readFileExCompletionStruct;
 
+/**
+ * @brief Completion routine for ReadFileEx.
+ * This function is called when an asynchronous read operation completes.
+ * It calls the external completion function and frees the completion structure.
+ *
+ * @param errorCode The error code.
+ * @param bytesTransferred The number of bytes transferred.
+ * @param ov The overlapped structure.
+ */
 static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED ov)
 {
     readFileExCompletionStruct* c = (readFileExCompletionStruct*)ov;
@@ -123,6 +170,15 @@ static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferre
 
 #else
 
+/**
+ * @brief Validate the baud rate.
+ * This function checks if the given baud rate is a standard, supported value.
+ * It returns the corresponding termios speed flag for the given baud rate.
+ * If the baud rate is not supported, it returns 0.
+ *
+ * @param baudRate The baud rate to validate.
+ * @return int The validated baud rate, or 0 if invalid.
+ */
 static int validate_baud_rate(int baudRate)
 {
     switch (baudRate)
@@ -148,6 +204,16 @@ static int validate_baud_rate(int baudRate)
     }
 }
 
+/**
+ * @brief Configure the serial port.
+ * This function configures the serial port with the specified baud rate and other settings.
+ * It sets the port to 8N1, disables flow control, and sets the port to raw mode.
+ * On Apple platforms, there is a special hack to set high baud rates.
+ *
+ * @param fd The file descriptor.
+ * @param baudRate The baud rate.
+ * @return int 0 on success, -1 on failure.
+ */
 static int configure_serial_port(int fd, int baudRate)
 {
     struct termios tty = {};
@@ -259,8 +325,15 @@ static int configure_serial_port(int fd, int baudRate)
     return 0;
 }
 
-// Set the serial port to non-blocking mode so read() and write() return immediately not waiting for hardware. Use modern O_NONBLOCK instead of legacy O_NDELAY.
-// Because of non-blocking mode, we have to retry serial write() to handle partial writes until all data received by the OS.
+/**
+ * @brief Set the serial port to non-blocking mode.
+ * @brief Use modern O_NONBLOCK instead of legacy O_NDELAY. Because of non-blocking mode, we have to retry serial write() to handle partial writes until all data received by the OS.
+ * This is done by getting the current flags, adding O_NONBLOCK, and then setting the new flags.
+ * It also uses `flock` to get an exclusive, non-blocking lock on the file descriptor.
+ *
+ * @param fd The file descriptor.
+ * @return int 0 on success, -1 on failure.
+ */
 int set_nonblocking(int fd) 
 {
     int flags = fcntl(fd, F_GETFL, 0);
@@ -285,7 +358,19 @@ int set_nonblocking(int fd)
 
 #endif
 
-// Return 1 on success, 0 on failure
+/**
+ * @brief Open the serial port.
+ * This function opens and configures the serial port with the specified parameters.
+ * On Windows, it handles the `\\\\.\\` prefix for COM ports above 9.
+ * It also sets up the port for overlapped I/O if non-blocking.
+ * On other platforms, it opens the port and then configures it using `configure_serial_port`.
+ *
+ * @param port The port handle.
+ * @param portName The name of the port to open.
+ * @param baudRate The baud rate.
+ * @param blocking 1 for blocking, 0 for non-blocking.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortOpenPlatform(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
     log_debug(IS_LOG_PORT, "serialPortOpenPlatform(%s:B%d, %sblocking) called.", portName, baudRate, blocking ? "" : "non-");
@@ -294,11 +379,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     if (serialPort->handle != 0)
     {
         // already open --  FIXME: Should we be closing the port and then reopen??
-        #if PLATFORM_IS_WINDOWS
-            serialPortClose(serialPort);
-        #else
-            return 1;
-        #endif
+        serialPortClose(serialPort);
     }
 
     serialPortSetName(port, portName);
@@ -459,7 +540,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     serialPort->handle = handle;
 
     // we're doing a quick and dirty check to make sure we can even attempt to read data successfully.  Some bad devices will fail here if they aren't initialized correctly
-    uint8_t tmp;
+    uint8_t tmp = 0;
     if (serialPortReadTimeoutPlatform(port, &tmp, 1, 10) < 0) {
         if (serialPort->errorCode == ENOENT) {
             serialPortClose(port);
@@ -472,6 +553,15 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     return 1;    // success
 }
 
+/**
+ * @brief Check if the serial port is open.
+ * This function checks if the serial port is open and valid.
+ * On Windows, it uses `GetCommState`.
+ * On other platforms, it uses `fstat`.
+ *
+ * @param port The port handle.
+ * @return int 1 if open, 0 if not.
+ */
 static int serialPortIsOpenPlatform(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
@@ -500,6 +590,15 @@ static int serialPortIsOpenPlatform(port_handle_t port)
 
 }
 
+/**
+ * @brief Close the serial port.
+ * This function closes the serial port and frees the associated handle.
+ * On Windows, it cancels any pending I/O and closes the handle.
+ * On other platforms, it simply closes the file descriptor.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortClosePlatform(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
@@ -544,6 +643,15 @@ static int serialPortClosePlatform(port_handle_t port)
     return 1;
 }
 
+/**
+ * @brief Flush the serial port.
+ * This function clears the serial port's receive buffer.
+ * On Windows, it uses `PurgeComm` with `PURGE_RXCLEAR`.
+ * On other platforms, it uses `tcflush` with `TCIOFLUSH`.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortFlushPlatform(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
@@ -579,6 +687,15 @@ static int serialPortFlushPlatform(port_handle_t port)
     return 1;
 }
 
+/**
+ * @brief Drain the serial port.
+ * This function waits for all written data to be transmitted.
+ * On Windows, it uses `PurgeComm` with `PURGE_TXCLEAR`.
+ * On other platforms, it uses `tcdrain`.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortDrainPlatform(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
@@ -616,13 +733,16 @@ static int serialPortDrainPlatform(port_handle_t port)
 #if PLATFORM_IS_WINDOWS
 
 /**
- * Reads a specified number of bytes from the serial port with a timeout.
+ * @brief Reads a specified number of bytes from the serial port with a timeout.
+ * This function reads from the serial port, handling both blocking and non-blocking (overlapped) I/O.
+ * For non-blocking I/O, it uses `WaitForSingleObject` to wait for the read to complete.
+ * If the read times out, it cancels the I/O and returns the bytes read so far.
  *
- * @param hSerial   Handle to the COM port (must be opened with FILE_FLAG_OVERLAPPED).
+ * @param handle   Handle to the COM port (must be opened with FILE_FLAG_OVERLAPPED).
  * @param buffer    Pointer to the destination buffer.
- * @param bufSize   The number of bytes requested to read.
- * @param timeoutMs Maximum time to wait in milliseconds.
- * @return          The actual number of bytes read (may be less than bufSize on timeout).
+ * @param readCount   The number of bytes requested to read.
+ * @param timeoutMilliseconds Maximum time to wait in milliseconds.
+ * @return          The actual number of bytes read (may be less than readCount on timeout).
  */
 static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
@@ -672,61 +792,77 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
 
 #else
 
-static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
+/**
+ * @brief Read from the serial port with a timeout on Linux.
+ * This function reads from the serial port using `poll` to wait for data to become available.
+ * It loops until the requested number of bytes are read or the timeout is reached.
+ * It handles `EAGAIN` and `EWOULDBLOCK` errors by continuing to try and read.
+ *
+ * When a timeout occurs, this function will return the number of bytes received so far -
+ * this may mean that the function returns 0 or a positive number less than readCount. This
+ * is NOT an error condition, since zero or more bytes, had they been available, could have
+ * been read.
+ *
+ * @param serialPort The serial port.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @param timeoutMilliseconds The timeout in milliseconds.
+ * @return int The number of bytes read, or a PORT_ERROR__* code if an error occurred.
+ */
+static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMs)
 {
     int totalRead = 0;
-    int dtMs;
-    int n;
+    int dtMs = 0;
+    int n = 0;
     struct timeval start, curr;
 
     if (!serialPort || !serialPort->handle || !buffer)
-        return -1;
+        return PORT_ERROR__INVALID_PARAMETER;
 
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     gettimeofday(&start, NULL);
 
-    while (1)
-    {
-        if (timeoutMilliseconds > 0)
-        {
+    while (1) {
+        if (timeoutMs > 0) {
             struct pollfd fds[1];
             fds[0].fd = handle->fd;
             fds[0].events = POLLIN;
-            int pollrc = poll(fds, 1, timeoutMilliseconds);
-            if (pollrc <= 0 || !(fds[0].revents & POLLIN))
-            {
-                if (fds[0].revents & POLLERR) {
-                    return -1; // more than a timeout occurred.
+
+            // we will poll, for upto timeoutMs for any number of bytes.
+            int pollrc = poll(fds, 1, timeoutMs);
+            if (pollrc <= 0 || !(fds[0].revents & POLLIN)) {
+                if (fds[0].revents & POLLIN) {
+                    // do nothing - we'll fall thru to the read() below...
+                } else if (fds[0].revents & POLLERR) {
+                    return PORT_ERROR__READ_FAILURE; // more than a timeout occurred.
+                } else {
+                    break;  // no data before timeout expired
                 }
-                break;
             }
         }
-        n = read(handle->fd, buffer + totalRead, readCount - totalRead);
-        if (n <= -1)
-        {
+
+        if ((n = read(handle->fd, buffer + totalRead, readCount - totalRead)) < 0) {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
                 serialPort->errorCode = errno;
                 serialPort->error = strerror(errno);
-                // log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", port, handle->fd, serialPort->error, serialPort->errorCode);
+                log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", serialPort->portName, handle->fd, serialPort->error, serialPort->errorCode);
             }
-            return -1;
-        }
-        else if (n != -1)
-        {
+            return PORT_ERROR__TIMEOUT;
+        } else if (n > 0) {
             totalRead += n;
         }
 
-        if (timeoutMilliseconds > 0 && totalRead < readCount)
+        if ((timeoutMs > 0) && (totalRead < readCount))
         {
             gettimeofday(&curr, NULL);
             dtMs = ((curr.tv_sec - start.tv_sec) * 1000) + ((curr.tv_usec - start.tv_usec) / 1000);
-            if (dtMs >= timeoutMilliseconds)
+            if (dtMs >= timeoutMs)
             {
                 break;
             }
 
             // try for another loop around with a lower timeout
-            timeoutMilliseconds = _MAX(0, timeoutMilliseconds - dtMs);
+            timeoutMs = _MAX(0, timeoutMs - dtMs);
         }
         else
         {
@@ -739,27 +875,39 @@ static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigne
 
 #endif
 
-static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds)
+/**
+ * @brief Read from the serial port with a timeout.
+ * This function reads a specified number of bytes from the serial port, with a timeout.
+ * It is a wrapper around the platform-specific read functions.
+ * If the timeout is negative, a default timeout is used.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @param timeoutMilliseconds The timeout in milliseconds.
+ * @return int The number of bytes read, or -1 on error.
+ */
+static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMs)
 {
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENOENT;
         serialPort->error = "Internal port handle is NULL; Port is closed.";
-        return -1;
+        return PORT_ERROR__NOT_CONNECTED;
     }
 
-    log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() called.", portName(port));
-
-    if (timeoutMilliseconds < 0)
+    if (timeoutMs < 0)
     {
-        timeoutMilliseconds = (handle->blocking ? SERIAL_PORT_DEFAULT_TIMEOUT : 0);
+        timeoutMs = (handle->blocking ? SERIAL_PORT_DEFAULT_TIMEOUT : 0);
     }
 
 #if PLATFORM_IS_WINDOWS
-    int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMilliseconds);
+    int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMs);
 #else
-    int result = serialPortReadTimeoutPlatformLinux(serialPort, buffer, readCount, timeoutMilliseconds);
+    int result = serialPortReadTimeoutPlatformLinux(serialPort, buffer, readCount, timeoutMs);
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
@@ -776,11 +924,32 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     return result;
 }
 
+/**
+ * @brief Read from the serial port.
+ * This function is a convenience wrapper around `serialPortReadTimeoutPlatform` with a timeout of 0.
+ * This means it will return immediately with any available data.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @return int The number of bytes read, or -1 on error.
+ */
 static int serialPortReadPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount) {
     return serialPortReadTimeoutPlatform(port, buffer, readCount, 0);
 }
 
-
+/**
+ * @brief Asynchronously read from the serial port.
+ * This function initiates an asynchronous read from the serial port.
+ * On Windows, it uses `ReadFileEx` and a completion routine.
+ * On other platforms, it performs a simple blocking read and calls the completion routine directly.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @param completion The completion routine.
+ * @return int 1 on success, -1 on failure.
+ */
 static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, pfnSerialPortAsyncReadCompletion completion)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
@@ -820,9 +989,21 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
     return 1;
 }
 
-
+/**
+ * @brief Write to the serial port.
+ * This function writes a buffer of data to the serial port.
+ * On Windows, it handles overlapped I/O for non-blocking writes.
+ * On other platforms, it retries on partial writes and handles `EINTR`, `EAGAIN`, and `EWOULDBLOCK` errors.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to write from.
+ * @param writeCount The number of bytes to write.
+ * @return int The number of bytes written, or -1 on error.
+ */
 static int serialPortWritePlatform(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortWritePlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
@@ -830,8 +1011,6 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
-
-    log_bombastic(IS_LOG_PORT, "[%s] serialPortWritePlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
 
@@ -937,6 +1116,15 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
 
 }
 
+/**
+ * @brief Get the number of bytes available to read from the serial port.
+ * This function returns the number of bytes available to be read from the serial port.
+ * On Windows, it uses `ClearCommError` and the `COMSTAT` structure.
+ * On other platforms, it uses `poll` and `ioctl` with `FIONREAD`.
+ *
+ * @param port The port handle.
+ * @return int The number of bytes available to read, or PORT_ERROR__INVALID on error.
+ */
 static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 {
     if (!port || !portIsValid(port))
@@ -988,6 +1176,15 @@ again:
 
 }
 
+/**
+ * @brief Get the number of bytes available to write to the serial port.
+ * This function returns the number of bytes that can be written to the serial port without blocking.
+ * Currently, it returns a fixed value of 65536.
+ * The commented-out code shows how it could be implemented on Linux using `ioctl`.
+ *
+ * @param port The port handle.
+ * @return int The number of bytes available to write, or PORT_ERROR__INVALID on error.
+ */
 static int serialPortGetByteCountAvailableToWritePlatform(port_handle_t port)
 {
     if (!port || !portIsValid(port))
@@ -1011,6 +1208,14 @@ static int serialPortGetByteCountAvailableToWritePlatform(port_handle_t port)
     */
 }
 
+/**
+ * @brief Sleep for a specified number of milliseconds.
+ * This function is a simple wrapper around the platform-specific sleep function.
+ * On Windows, it uses `Sleep()`, and on other platforms, it uses `usleep()`.
+ *
+ * @param sleepMilliseconds The number of milliseconds to sleep.
+ * @return int 1 on success.
+ */
 static int serialPortSleepPlatform(int sleepMilliseconds)
 {
 #if PLATFORM_IS_WINDOWS
@@ -1026,6 +1231,15 @@ static int serialPortSleepPlatform(int sleepMilliseconds)
     return 1;
 }
 
+/**
+ * @brief Initialize the serial port platform.
+ * This function initializes the serial port structure with platform-specific function pointers.
+ * It also sets the default baud rate and initializes the base port structure.
+ * It is important that the serial port structure is zeroed out before calling this function.
+ *
+ * @param port The port handle.
+ * @return int 0 on success.
+ */
 int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
 {
     serial_port_t* serialPort = (serial_port_t*)port;

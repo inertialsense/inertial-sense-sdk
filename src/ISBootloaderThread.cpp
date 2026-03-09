@@ -129,7 +129,7 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
     SLEEP_MS(100);
 
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
+    if (serialPortOpenRetry(port, portName(port), m_baudRate, 1) != PORT_ERROR__NONE)
     {
         m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);
         serialPortClose(port);
@@ -142,8 +142,8 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
 
     is_operation_result result = cISBootloaderBase::mode_device_app(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
-    serialPortFlush(port);
-    serialPortClose(port);
+    portFlush(port);
+    portClose(port);
 
     m_serial_thread_mutex.lock();
     thread_info->opResult = result;
@@ -188,7 +188,7 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
     SLEEP_MS(100);
 
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
+    if (serialPortOpenRetry(port, portName(port), m_baudRate, 1) != PORT_ERROR__NONE)
     {
         m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);
         serialPortClose(port);
@@ -224,7 +224,7 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
 
     // attempt to open the target port; if unable to open, terminate this thread
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    if (!serialPortOpenRetry(port, portName(port), m_baudRate, 1))
+    if (serialPortOpenRetry(port, portName(port), m_baudRate, 1) != PORT_ERROR__NONE)
     {
         m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);
         serialPortClose(port);
@@ -267,7 +267,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
 
     // Start at 115200 always, we will switch to user specified rate after we check for SAM-BA devices
     serialPortSetName(port, serial_name);
-    if (!serialPortOpenRetry(port, serial_name, BAUDRATE_115200, 1))
+    if (serialPortOpenRetry(port, portName(port), BAUDRATE_115200, 1) != PORT_ERROR__NONE)
     {
         m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening serial port '%s': %s", portName(port), SERIAL_PORT(port)->error);
         serialPortClose(port);
