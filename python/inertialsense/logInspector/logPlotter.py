@@ -3193,7 +3193,7 @@ class logPlot:
                             # Compute random walk and bias instability
                             t_bi_max = 1000
                             idx_max = (np.abs(t2 - t_bi_max)).argmin()
-                            bi = np.amin(ad[0:idx_max])
+                            bi = np.amin(ad[:idx_max + 1]) / 0.664
                             rw_idx = (np.abs(t2 - 1.0)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
                             
@@ -3299,7 +3299,7 @@ class logPlot:
                             # Compute random walk and bias instability
                             t_bi_max = 1000
                             idx_max = (np.abs(t2 - t_bi_max)).argmin()
-                            bi = np.amin(ad[0:idx_max])
+                            bi = np.amin(ad[:idx_max + 1]) / 0.664
                             rw_idx = (np.abs(t2 - 0.1)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
 
