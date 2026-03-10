@@ -41,6 +41,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "CorrectionService.h"
 #include "NtripCorrectionService.h"
 #include "TcpPortFactory.h"
+#include "ISmDnsPortFactory.h"
 #include "util/natsort.h"
 #include "util/uri.hpp"
 
@@ -956,12 +957,38 @@ void getMemoryEvent(InertialSense& inertialSenseInterface, uint32_t addrs, const
 
 static int cltool_dataStreaming()
 {
+    IS_LOG_OUTPUT(stdout);
+
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface({}, {&CltoolDeviceFactory::getInstance()});
+    // Build explicit port factory list — only include ISmDnsPortFactory when -use-mdns is specified
+    SerialPortFactory& spf = SerialPortFactory::getInstance();
+    spf.portOptions.defaultBaudRate = g_commandLineOptions.baudRate;
+    spf.portOptions.defaultBlocking = false;
+    TcpPortFactory& tpf = TcpPortFactory::getInstance();
+    tpf.portOptions.defaultBlocking = false;
+
+    std::vector<PortFactory*> portFactories = {&spf, &tpf};
+    if (g_commandLineOptions.useMdns) {
+        ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
+        mdpf.portOptions.defaultBlocking = false;
+        portFactories.push_back(&mdpf);
+    }
+
+    InertialSense inertialSenseInterface(portFactories, {&CltoolDeviceFactory::getInstance()});
     g_inertialSenseInterface = &inertialSenseInterface;
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
+
+    // Pre-warm mDNS cache so network devices are discoverable when Open() calls discoverPorts()
+    if (g_commandLineOptions.useMdns) {
+        printf("Discovering mDNS devices...\n");
+        uint32_t deadline = current_timeMs() + 3000;
+        while (current_timeMs() < deadline) {
+            ISmDnsPortFactory::tick();
+            SLEEP_MS(50);
+        }
+    }
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))

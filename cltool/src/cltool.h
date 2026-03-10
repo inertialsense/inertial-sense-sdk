@@ -176,6 +176,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t updateFirmwareSlot = 0;
     uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
     bool list_devices = false;              // if true, dumps results of findDevices() including port name.
+    bool useMdns = false;                   // if true, registers ISmDnsPortFactory for mDNS network device discovery
     EVFContainer_t evFCont = {0};
     EVMContainer_t evMCont = {0};
     EVOContainer_t evOCont;

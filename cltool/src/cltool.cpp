@@ -658,6 +658,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
+        else if (startsWith(a, "-use-mdns"))
+        {
+            g_commandLineOptions.useMdns = true;
+        }
         else if (startsWith(a, "-lmf="))
         {
             g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
@@ -927,6 +931,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
     }
 
+    // Always apply the verboseLevel to the SDK log system
+    IS_SET_LOG_LEVEL((eLogLevel)g_commandLineOptions.verboseLevel);
+
     // We are either using a serial port or replaying data
     if ((g_commandLineOptions.comPort.length() == 0) && !g_commandLineOptions.replayDataLog)
     {
@@ -1175,6 +1182,7 @@ void cltool_outputUsage()
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
+    cout << "    -use-mdns" << boldOff << "       Enable mDNS network discovery of remote devices (e.g., socat TCP-forwarded serial ports)." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;

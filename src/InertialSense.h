@@ -79,7 +79,7 @@ public:
         char* clientBuffer = nullptr;
         int clientBufferSize = 0;
         int* clientBytesToSend = 0;
-        int16_t discoveryTimeout = 5000;
+        int16_t discoveryTimeout = DeviceManager::DISCOVERY__DEFAULT_TIMEOUT;
     };
 
     typedef struct
