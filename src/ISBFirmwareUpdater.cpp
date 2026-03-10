@@ -207,21 +207,83 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                     // do some verify step??
                 } else {
                     updateState = REBOOT_TO_APP;
-                    session_status = fwUpdate::FINALIZING;
                 }
                 break;
             case REBOOT_TO_APP:
                 if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
-                    rebootToAPP(false);  // we should be able to keep the port open
+                    rebootToAPP(false);
+                session_status = fwUpdate::FINALIZING;
+                last_reboot = current_timeMs();
+                nextStepMs = last_reboot + 2000;  // give device 2s to start rebooting
                 updateState = UPDATE_DONE;
                 break;
-            case UPDATE_DONE:
-                // at this point, we should have rebooted, and we're waiting for the device to reboot back up, so we can confirm the update succeeded.
+            case UPDATE_DONE: {
+                // Async wait: device is rebooting from bootloader to APP mode.
+                // Keep session_status == FINALIZING until device is rediscovered in APP mode.
+
+                // Periodically trigger port rediscovery
+                if (current_timeMs() > nextPortCheck) {
+                    portManager.discoverPorts();
+                    nextPortCheck = current_timeMs() + 1000;
+                }
+
+                // Re-fetch device (port may have changed after USB re-enumeration)
+                device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+                if (!device) {
+                    // Device not yet rediscovered — report progress and return
+                    if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
+                        nextProgressReport = current_timeMs() + progress_interval;
+                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
+                            "Waiting for device [%s] to reboot into APP mode.",
+                            ISDevice::getIdAsString(target_devInfo).c_str());
+                    }
+                    // Timeout check
+                    if ((current_timeMs() - last_reboot) > 20000) {
+                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
+                            "Timed out waiting for device [%s] to reboot into APP mode. Upload was successful.",
+                            ISDevice::getIdAsString(target_devInfo).c_str());
+                        // Fall through to finish — the upload itself succeeded
+                    } else {
+                        break;  // keep waiting
+                    }
+                } else {
+                    // Device found — try to connect and validate
+                    if (portIsValid(device->port) && !device->isConnected()) {
+                        if (!device->connect(false))
+                            break;  // retry next cycle
+                    }
+
+                    if (device->isConnected()) {
+                        if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
+                            break;  // keep waiting for validation
+
+                        if (device->devInfo.hdwRunState != HDW_STATE_APP) {
+                            // Still in bootloader or unknown — keep waiting
+                            if ((current_timeMs() - last_reboot) > 20000) {
+                                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
+                                    "Device [%s] rebooted but not in APP mode (state=%d). Upload was successful.",
+                                    device->getIdAsString().c_str(), device->devInfo.hdwRunState);
+                                // Fall through to finish
+                            } else {
+                                break;
+                            }
+                        } else {
+                            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
+                                "Device [%s] confirmed running in APP mode.",
+                                device->getIdAsString().c_str());
+                        }
+                    } else {
+                        break;  // not yet connected
+                    }
+                }
+
+                // Finalize — either confirmed APP mode or timed out (upload was successful either way)
                 if (imgStream) { delete imgStream; imgStream = nullptr; }
                 if (imgBuffer) { delete imgBuffer; imgBuffer = nullptr; }
                 session_status = fwUpdate::FINISHED;
                 fn.mark("Finished UPDATE_DONE step.");
                 break;
+            }
         }
         fn.mark("Finished non-initializing steps.");
     }

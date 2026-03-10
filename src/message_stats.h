@@ -26,10 +26,10 @@ public:
     struct stats_t
     {
         int count;
-        int timeMs;
-        int prevTimeMs;
-        int bytes;
-        unsigned int startTimeMs;
+        uint64_t timeMs;
+        uint64_t prevTimeMs;
+        uint64_t bytes;
+        uint64_t startTimeMs;
         int bytesPerSec;
         std::string description;
     };

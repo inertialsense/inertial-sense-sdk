@@ -59,6 +59,8 @@ public:
 
     static const uint16_t DISCOVERY__DEFAULTS                     = DISCOVERY__CLOSE_PORT_ON_FAILURE; // (DISCOVERY__IGNORE_CLOSED_PORTS | DISCOVERY__CLOSE_PORT_ON_FAILURE);
 
+    static const uint32_t DISCOVERY__DEFAULT_TIMEOUT               = 3000;         //!< default timeout (ms) for device discovery; matches DeviceFactory::deviceTimeout
+
     DeviceManager(DeviceManager const &) = delete;
     DeviceManager& operator=(DeviceManager const&) = delete;
 
@@ -78,18 +80,7 @@ public:
      * @param options a bitmask of misc options that will can affect the discovery behavior.
      * @return true if one more more devices were discovered, otherwise false
      */
-    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
-        std::lock_guard<std::recursive_mutex> lock(mutex);
-        bool result = false;
-        // options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
-        for (auto port : portManager.locked_range()) {
-            // FIXME: sometimes this segfaults - I think the portManager's set gets updated while iterating here.
-            //  we may need to put a mutex on the PortManager so we can't add/remove ports while iterating on the base set.
-            //  probably s smart thing to do for the DeviceManager too
-            result |= discoverDevice(port, hdwId, timeoutMs, options);
-        }
-        return result;
-    }
+    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS);
 
     /**
      * Iterates through all registered factories attempting to identify a discoverable device on the specified port.
