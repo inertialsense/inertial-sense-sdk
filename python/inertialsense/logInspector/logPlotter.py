@@ -383,6 +383,14 @@ class logPlot:
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
 
+    def _aggregate_allan_metric(self, values_by_axis_sensor, include_std=False):
+        values = np.asarray([v for values in values_by_axis_sensor for v in values], dtype=float)
+        if not values.size:
+            return float('nan')
+        if include_std:
+            return np.mean(values) + np.std(values)
+        return np.mean(values)
+
     def saveFigJoinAxes(self, ax, axs, fig, name, sizeInches=[]):
         self.saveFig(fig, name, sizeInches)
         self.joinFigXAxes(ax,axs)
@@ -3172,7 +3180,6 @@ class logPlot:
 
         (name, time, dt, sensors) = self.loadGyros(0, did=did)
         ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
-        fig.suptitle('Allan Variance: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         # Preserve the initial sensors list for later use in subplot configuration and CSV writing
         initial_sensors = sensors
@@ -3226,6 +3233,9 @@ class logPlot:
                             # ax[i, n].loglog(t2, (ad + ade) * RAD2DEG*3600, '--')
                             # ax[i, n].loglog(t2, (ad - ade) * RAD2DEG*3600, '--')
 
+        totalARW = []
+        totalBI = []
+
         # Calculate the stats for ARW and bias instability over all units
         for i in range(3):
             axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
@@ -3236,7 +3246,13 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n])), 'deg/hr')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]), np.mean(sumBI[i][n])), 'deg/hr')
+                    totalARW.append(sumARW[i][n])
+                    totalBI.append(sumBI[i][n])
+
+        arw = self._aggregate_allan_metric(totalARW)
+        bi = self._aggregate_allan_metric(totalBI)
+        fig.suptitle('Allan Var.: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)) + ', ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (arw, bi))
 
         for i in range(len(initial_sensors)):
             for d in range(3):
@@ -3268,9 +3284,11 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        (name, time, dt, sensors) = self.loadAccels(0, did=did)        
+        (name, time, dt, sensors) = self.loadAccels(0, did=did)
         ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
-        fig.suptitle('Allan Variance: Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        # Preserve initial sensors for subplot configuration and CSV writing.
+        initial_sensors = sensors
 
         sumRW = []
         sumBI = []
@@ -3279,7 +3297,7 @@ class logPlot:
         for i in range(3):
             sumRW.append([])
             sumBI.append([])
-            for n, pqr in enumerate(sensors):
+            for n, pqr in enumerate(initial_sensors):
                 sumRW[i].append([])
                 sumBI[i].append([])
 
@@ -3307,19 +3325,28 @@ class logPlot:
                             sumRW[i][n].append(rw * RTHR2RTS) 
                             sumBI[i][n].append(bi * MPS2UG)
 
-        # Calculate the stats for ARW and bias instability over all units
+        totalVRW = []
+        totalBI = []
+
+        # Calculate the stats for VRW and bias instability over all units
         for i in range(3):
             axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
-            for n, pqr in enumerate(sensors):
-                if np.all(pqr) != None and n<len(sensors):
+            for n, pqr in enumerate(initial_sensors):
+                if np.all(pqr) != None and n<len(initial_sensors):
                     alable = 'Accel'
-                    if len(sensors) > 1:
+                    if len(initial_sensors) > 1:
                         alable += '%d ' % n
                     else:
                         alable += ' '
                     self.configureSubplot(ax[i, n], alable + axislable + r' ($µG$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $µG$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n])), 'µG')
+                    totalVRW.append(sumRW[i][n])
+                    totalBI.append(sumBI[i][n])
 
-        for i in range(len(sensors)):
+        vrw = self._aggregate_allan_metric(totalVRW, include_std=True)
+        bi = self._aggregate_allan_metric(totalBI)
+        fig.suptitle('Allan Var.: Accel - ' + os.path.basename(os.path.normpath(self.log.directory)) + ', VRW: %.3g $m/s/\sqrt{hr}$,  BI: %.3g $µG$' % (vrw, bi))
+
+        for i in range(len(initial_sensors)):
             for d in range(3):
                 ax[d][i].grid(True, which='both')
                 self.legends_add(ax[d][i].legend(ncol=2))
@@ -3335,8 +3362,8 @@ class logPlot:
                     continue 
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
                 f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
-                for n, acc in enumerate(sensors):
-                    if np.all(acc) != None and n<len(sensors):
+                for n, acc in enumerate(initial_sensors):
+                    if np.all(acc) != None and n<len(initial_sensors):
                         for i in range(3):
                             f.write('%f,' % (sumBI[i][n][d]))
                         for i in range(3):
