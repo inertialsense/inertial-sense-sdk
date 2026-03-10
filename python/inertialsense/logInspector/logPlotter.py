@@ -2960,6 +2960,23 @@ class logPlot:
     def imusAccCombined(self, fig=None, axs=None):
         self.imuAcc(fig=fig, axs=axs, useImus=True, combineImus=True)
 
+    def avtImu1PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
+        self.imuPQR(DID_IMU_AV_TEST_1, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+    def avtImu2PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
+        self.imuPQR(DID_IMU_AV_TEST_2, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+    def avtImu3PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
+        self.imuPQR(DID_IMU_AV_TEST_3, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+    def avtImu4PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
+        self.imuPQR(DID_IMU_AV_TEST_4, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+    def avtImu1Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
+        self.imuAcc(DID_IMU_AV_TEST_1, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+    def avtImu2Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
+        self.imuAcc(DID_IMU_AV_TEST_2, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+    def avtImu3Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
+        self.imuAcc(DID_IMU_AV_TEST_3, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+    def avtImu4Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
+        self.imuAcc(DID_IMU_AV_TEST_4, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+
     def imuPQR(self, did=DID_IMU, fig=None, axs=None, useImus=False, combineImus=False):
         if fig is None:
             fig = plt.figure()
