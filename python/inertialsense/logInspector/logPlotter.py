@@ -2960,23 +2960,6 @@ class logPlot:
     def imusAccCombined(self, fig=None, axs=None):
         self.imuAcc(fig=fig, axs=axs, useImus=True, combineImus=True)
 
-    def avtImu1PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMU_AV_TEST_1, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu2PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMU_AV_TEST_2, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu3PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMU_AV_TEST_3, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu4PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMU_AV_TEST_4, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu1Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMU_AV_TEST_1, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu2Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMU_AV_TEST_2, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu3Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMU_AV_TEST_3, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu4Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMU_AV_TEST_4, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-
     def imuPQR(self, did=DID_IMU, fig=None, axs=None, useImus=False, combineImus=False):
         if fig is None:
             fig = plt.figure()
@@ -3214,7 +3197,7 @@ class logPlot:
                             rw_idx = (np.abs(t2 - 1.0)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
                             
-                            ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], rw * RAD2DEG * 3600/RTHR2RTS, bi * RAD2DEG * 3600))
+                            ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * RAD2DEG * 3600, rw * RAD2DEG * 3600/RTHR2RTS))
 
                             # (t2, ad, ade, adn) = allantools.ohdev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
                             # # Compute random walk and bias instability
@@ -3320,7 +3303,7 @@ class logPlot:
                             rw_idx = (np.abs(t2 - 0.1)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
 
-                            ax[i, n].loglog(t2, ad * MPS2UG, label='%s: %.2g, %.2g' % (self.log.serials[d], rw * RTHR2RTS, bi * MPS2UG))
+                            ax[i, n].loglog(t2, ad * MPS2UG, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * MPS2UG, rw * RTHR2RTS))
 
                             sumRW[i][n].append(rw * RTHR2RTS) 
                             sumBI[i][n].append(bi * MPS2UG)
