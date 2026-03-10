@@ -18,6 +18,8 @@ include_directories(
 # Link the InertialSenseSDK static library 
 link_directories(${IS_SDK_DIR})
 
+add_definitions(-DIS_LOG_LEVEL=IS_LOG_LEVEL_MORE_INFO)
+
 if(WIN32)
     # yamlcpp needs to know it's a static lib
     add_definitions(-DYAML_CPP_STATIC_DEFINE)

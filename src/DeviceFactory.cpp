@@ -1,5 +1,5 @@
 /**
- * @file DeviceFactory.cpp 
+ * @file DeviceFactory.cpp
  * @brief ${BRIEF_DESC}
  *
  * @author Kyle Mallory on 3/10/25.
@@ -24,63 +24,120 @@ void DeviceFactory::locateDevices(std::function<bool(DeviceFactory*, const dev_i
 }
 
 /**
- * Attempts to identify a specific type of device on the specified port, within the timeout period.
- * @param deviceCallback a function to be called if this Factory identified a possible/viable Inertial Sense device on the specified port
- * @param port the port to check for an Inertial Sense device. In most uses, the port specified should already be opened, however if the
- *   port is not opened, this function will attempt to open it in order for ensure discovery.
- * @param hdwId a hardware Id qualifier that can be used to narrow the type of device.  There is no direct indication that a hardware type
- *   failed to match.
- * @param timeout the maximum time to attempt to identify a device before giving up. There is no direct indication that a timeout occurred.
- * @return true if a device was detected, otherwise false. Note that a false can result for any number of reasons, including invalid port,
- *   hdwId mismatch, or a timeout.
+ * Blocking single-port discovery. Implemented as a wrapper around the three-phase validation protocol.
  */
 bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, port_handle_t port, uint16_t hdwId, uint16_t timeoutMs) {
-    if (!portIsValid(port))
-        return false;     // TODO: Should we do anything special if the port is invalid?  Really, we should never get here with an invalid port...
+    // Check for existing device on this port
+    device_handle_t dev = DeviceManager::getInstance().getDevice(port);
+    if (dev) {
+        if (dev->matchesHdwId(hdwId)) {
+            if (!dev->port)
+                dev->assignPort(port);
+            return dev->validate(timeoutMs);
+        }
+        return false;
+    }
 
-    // can we open the port?
-    if (!portIsOpened(port)) {
-        log_debug(IS_LOG_DEVICE_FACTORY, "Opening serial port '%s'", portName(port));
+    // Phase 1: begin validation
+    auto ctx = beginValidation(port, hdwId, timeoutMs);
+    if (!ctx)
+        return false;
+
+    // Phase 2: blocking loop
+    while (!ctx->complete) {
+        stepValidation(*ctx);
+        if (!ctx->complete)
+            SLEEP_MS(2);
+    }
+
+    // Phase 3: complete validation
+    dev_info_t devInfo;
+    if (completeValidation(*ctx, devInfo)) {
+        return deviceCallback(this, devInfo, port);
+    }
+    return false;
+}
+
+/**
+ * Phase 1: Opens the port, validates it, creates a base ISDevice for probing, and calls the
+ * onBeginValidation() hook to allow the factory to decline or do custom setup.
+ */
+std::unique_ptr<DeviceFactory::ValidationContext> DeviceFactory::beginValidation(port_handle_t port, uint16_t hdwId, uint32_t timeoutMs, std::shared_ptr<ISDevice> sharedDevice) {
+    if (!portIsValid(port)) {
+        log_more_debug(IS_LOG_DEVICE_FACTORY, "beginValidation: port '%s' is invalid, skipping.", portName(port));
+        return nullptr;
+    }
+
+    // Open port if needed (only when no shared device provided, i.e. standalone/blocking path)
+    if (!sharedDevice && !portIsOpened(port)) {
         if (!portValidate(port) || (portOpen(port) != PORT_ERROR__NONE)) {
-            log_debug(IS_LOG_DEVICE_FACTORY, "Error opening serial port '%s'.  Ignoring.  Error was: %s", portName(port), SERIAL_PORT(port)->error);
-            portClose(port);              // failed to open
+            portClose(port);
             portInvalidate(port);
-            return false;
-            // m_ignoredPorts.push_back(curPortName);     // record this port name as bad, so we don't try and reopen it again
+            return nullptr;
         }
     }
 
-    // We can only validate devices connected on COMM ports, since ISComm is needed to parse/communicate with the device
-    if (!(portType(port) & PORT_TYPE__COMM))
-        return false;
+    // Only COMM ports can be validated via ISComm protocol
+    if (!(portType(port) & PORT_TYPE__COMM)) {
+        log_more_debug(IS_LOG_DEVICE_FACTORY, "beginValidation: port '%s' is not a COMM port (type=0x%04X), skipping.", portName(port), portType(port));
+        return nullptr;
+    }
 
     if (timeoutMs <= 0)
         timeoutMs = deviceTimeout;
 
-    // at this point, the port should be opened...
-    device_handle_t dev = DeviceManager::getInstance().getDevice(port);
-    if (!dev) {
-        // no previous device exists, so identify the device and then register it with the manager
-        int validationResult = 0;
-        ISDevice localDev(hdwId, port);
-        do {
-            is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
-            validationResult = localDev.validateAsync(timeoutMs);
-            SLEEP_MS(2);
-        } while (!validationResult);
-
-        if (localDev.hasDeviceInfo() && localDev.matchesHdwId(hdwId)) {
-            // note that the deviceHandler callback can still reject the device for reasons
-            return deviceCallback(this, localDev.devInfo, port);
-        }
-    } else if (dev->matchesHdwId(hdwId)) {
-        if (!dev->port)
-            dev->assignPort(port);
-        else if (dev->port != port) {
-            // FIXME: this isn't good - it shouldn't happen, but it might... we should deal with it.
-        }
-        // a device exists associated with this port already, there isn't anything to do.
-        return dev->validate(timeoutMs);
+    // Let the factory decline this port
+    if (!onBeginValidation(port, hdwId)) {
+        log_more_debug(IS_LOG_DEVICE_FACTORY, "beginValidation: factory declined port '%s'.", portName(port));
+        return nullptr;
     }
-    return false;
+
+    log_more_debug(IS_LOG_DEVICE_FACTORY, "beginValidation: created validation context for port '%s' (hdwId=0x%04X, timeout=%dms)", portName(port), hdwId, timeoutMs);
+    auto ctx = std::make_unique<ValidationContext>();
+    ctx->port = port;
+    ctx->device = sharedDevice ? sharedDevice : std::make_shared<ISDevice>(hdwId, port);
+    ctx->hdwId = hdwId;
+    ctx->timeoutMs = timeoutMs;
+    return ctx;
+}
+
+/**
+ * Phase 2: Reads pending data from the port, then calls the onStepValidation() hook to
+ * advance validation state.
+ */
+int DeviceFactory::stepValidation(ValidationContext& ctx) {
+    if (ctx.complete)
+        return ctx.result;
+
+    is_comm_port_parse_messages(ctx.port);
+    ctx.result = onStepValidation(*ctx.device, ctx.timeoutMs);
+    ctx.complete = (ctx.result != 0);
+    if (ctx.result == 1) {
+        log_debug(IS_LOG_DEVICE_FACTORY, "stepValidation: port '%s' validated successfully.", portName(ctx.port));
+    } else if (ctx.result == -1) {
+        log_debug(IS_LOG_DEVICE_FACTORY, "stepValidation: port '%s' timed out.", portName(ctx.port));
+    }
+    return ctx.result;
+}
+
+/**
+ * Phase 3: Checks that validation succeeded and the device has info, then calls the
+ * onCompleteValidation() hook to let the factory accept or reject.
+ */
+bool DeviceFactory::completeValidation(ValidationContext& ctx, dev_info_t& devInfoOut) {
+    if (ctx.result <= 0)
+        return false;
+    if (!ctx.device || !ctx.device->hasDeviceInfo()) {
+        log_debug(IS_LOG_DEVICE_FACTORY, "completeValidation: port '%s' validated but has no device info.", portName(ctx.port));
+        return false;
+    }
+    if (!onCompleteValidation(ctx.device->devInfo, ctx.hdwId)) {
+        log_debug(IS_LOG_DEVICE_FACTORY, "completeValidation: factory rejected device on port '%s' (hdwId=0x%04X).", portName(ctx.port), ctx.hdwId);
+        return false;
+    }
+
+    devInfoOut = ctx.device->devInfo;
+    log_debug(IS_LOG_DEVICE_FACTORY, "completeValidation: factory accepted device %s on port '%s'.",
+        ISDevice::getIdAsString(devInfoOut).c_str(), portName(ctx.port));
+    return true;
 }
