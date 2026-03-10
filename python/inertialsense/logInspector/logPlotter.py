@@ -3252,7 +3252,7 @@ class logPlot:
 
         arw = self._aggregate_allan_metric(totalARW)
         bi = self._aggregate_allan_metric(totalBI)
-        fig.suptitle('PQR Allan Var.: ' + os.path.basename(os.path.normpath(self.log.directory)) + ', BI: %.3g $\degree/hr$, ARW: %.3g $\degree/\sqrt{hr}$' % (bi, arw))
+        fig.suptitle(r'$\bf{PQR\ Allan\ Var.:}$ ' + os.path.basename(os.path.normpath(self.log.directory)) + r', $\bf{BI:}$ %.3g $\degree/hr$, $\bf{ARW:}$ %.3g $\degree/\sqrt{hr}$' % (bi, arw))
 
         for i in range(len(initial_sensors)):
             for d in range(3):
@@ -3344,7 +3344,7 @@ class logPlot:
 
         vrw = self._aggregate_allan_metric(totalVRW, include_std=True)
         bi = self._aggregate_allan_metric(totalBI)
-        fig.suptitle('Accel Allan Var.: ' + os.path.basename(os.path.normpath(self.log.directory)) + ', BI: %.3g $µg$, VRW: %.3g $m/s/\sqrt{hr}$' % (bi, vrw))
+        fig.suptitle(r'$\bf{Accel\ Allan\ Var.:}$ ' + os.path.basename(os.path.normpath(self.log.directory)) + r', $\bf{BI:}$ %.3g $µg$, $\bf{VRW:}$ %.3g $m/s/\sqrt{hr}$' % (bi, vrw))
 
         for i in range(len(initial_sensors)):
             for d in range(3):
