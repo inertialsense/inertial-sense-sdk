@@ -90,6 +90,7 @@ struct DeviceLog {
     std::vector<imus_t> imusRaw;
     std::vector<imu_t> imuRaw;
     std::vector<imu_t> imu;
+    std::vector<imu_t> avtImu[4];
     std::vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     std::vector<gps_raw_wrapper_t> gpsBaseRaw{1};
     //    std::vector<gps_rtk_opt_t> gpsRtkOpt;

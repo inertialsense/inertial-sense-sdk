@@ -100,6 +100,12 @@ DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
 DID_IMUS_RAW                    = 96
 DID_IMU_RAW                     = 97
+
+DID_IMU_AV_TEST_1               = 101
+DID_IMU_AV_TEST_2               = 102
+DID_IMU_AV_TEST_3               = 103
+DID_IMU_AV_TEST_4               = 104
+
 DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
 DID_GPX_DEV_INFO                = 120

@@ -1006,7 +1006,7 @@ class LogInspectorWindow(QMainWindow):
                 if args is not None:
                     ax = getattr(mplot.plotter, mplot.func)(*args, mplot.figure, axs=ax)
                 else:
-                    ax = getattr(mplot.plotter, mplot.func)(mplot.figure, axs=ax)
+                    ax = getattr(mplot.plotter, mplot.func)(fig=mplot.figure, axs=ax)
             mplot.canvas.draw()
 
         print("done plotting")

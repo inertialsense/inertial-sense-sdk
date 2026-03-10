@@ -588,6 +588,12 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
         case DID_SYS_SENSORS:
         case DID_PIMU:
         case DID_IMU:
+#ifdef AV_TEST_IMU_SIZE
+        case DID_IMU_AV_TEST_1:
+        case DID_IMU_AV_TEST_2:
+        case DID_IMU_AV_TEST_3:
+        case DID_IMU_AV_TEST_4:
+#endif
         case DID_INL2_STATES:
         case DID_GPS_BASE_RAW:
             if (isTowMode)
@@ -892,6 +898,12 @@ std::string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_EVB_DEV_INFO:      // FALL THROUGH
         case DID_GPX_DEV_INFO:      // FALL THROUGH
         case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);            break;
+#ifdef AV_TEST_IMU_SIZE
+        case DID_IMU_AV_TEST_1:
+        case DID_IMU_AV_TEST_2:
+        case DID_IMU_AV_TEST_3:
+        case DID_IMU_AV_TEST_4:
+#endif
         case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                    break;
         case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);      break;
         case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);                  break;

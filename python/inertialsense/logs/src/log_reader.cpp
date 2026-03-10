@@ -235,6 +235,12 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
             HANDLE_MSG(DID_IMU_RAW, dev_log_->imuRaw);
             HANDLE_MSG(DID_PIMU, dev_log_->pimu);
             HANDLE_MSG(DID_IMU, dev_log_->imu);
+#ifdef AV_TEST_IMU_SIZE
+            HANDLE_MSG(DID_IMU_AV_TEST_1, dev_log_->avtImu[0]);
+            HANDLE_MSG(DID_IMU_AV_TEST_2, dev_log_->avtImu[1]);
+            HANDLE_MSG(DID_IMU_AV_TEST_3, dev_log_->avtImu[2]);
+            HANDLE_MSG(DID_IMU_AV_TEST_4, dev_log_->avtImu[3]);
+#endif
             HANDLE_MSG(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo);
             HANDLE_MSG(DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw);
             // HANDLE_MSG(DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt);
@@ -353,6 +359,12 @@ void LogReader::forwardData(int device_id) {
     forward_message(DID_IMU_RAW, dev_log_->imuRaw, device_id);
     forward_message(DID_PIMU, dev_log_->pimu, device_id);
     forward_message(DID_IMU, dev_log_->imu, device_id);
+#ifdef AV_TEST_IMU_SIZE
+    forward_message(DID_IMU_AV_TEST_1, dev_log_->avtImu[0], device_id);
+    forward_message(DID_IMU_AV_TEST_2, dev_log_->avtImu[1], device_id);
+    forward_message(DID_IMU_AV_TEST_3, dev_log_->avtImu[2], device_id);
+    forward_message(DID_IMU_AV_TEST_4, dev_log_->avtImu[3], device_id);
+#endif
     forward_message(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, device_id);
     forward_message(DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, device_id);
     // forward_message(DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt, device_id);
