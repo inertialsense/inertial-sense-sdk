@@ -3246,13 +3246,13 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]), np.mean(sumBI[i][n])), 'deg/hr')
+                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $\degree/hr$, ARW: %.3g $\degree/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumARW[i][n])), '°/hr')
                     totalARW.append(sumARW[i][n])
                     totalBI.append(sumBI[i][n])
 
         arw = self._aggregate_allan_metric(totalARW)
         bi = self._aggregate_allan_metric(totalBI)
-        fig.suptitle('Allan Var.: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)) + ', ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (arw, bi))
+        fig.suptitle('PQR Allan Var.: ' + os.path.basename(os.path.normpath(self.log.directory)) + ', BI: %.3g $\degree/hr$, ARW: %.3g $\degree/\sqrt{hr}$' % (bi, arw))
 
         for i in range(len(initial_sensors)):
             for d in range(3):
@@ -3338,13 +3338,13 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r' ($µG$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $µG$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n])), 'µG')
+                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $µg$, RW: %.3g $m/s/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumRW[i][n]) + np.std(sumRW[i][n])), 'µG')
                     totalVRW.append(sumRW[i][n])
                     totalBI.append(sumBI[i][n])
 
         vrw = self._aggregate_allan_metric(totalVRW, include_std=True)
         bi = self._aggregate_allan_metric(totalBI)
-        fig.suptitle('Allan Var.: Accel - ' + os.path.basename(os.path.normpath(self.log.directory)) + ', VRW: %.3g $m/s/\sqrt{hr}$,  BI: %.3g $µG$' % (vrw, bi))
+        fig.suptitle('Accel Allan Var.: ' + os.path.basename(os.path.normpath(self.log.directory)) + ', BI: %.3g $µg$, VRW: %.3g $m/s/\sqrt{hr}$' % (bi, vrw))
 
         for i in range(len(initial_sensors)):
             for d in range(3):
