@@ -995,6 +995,7 @@ class LogInspectorWindow(QMainWindow):
     def plot(self, func, args=None):
         if func is None:
             return
+        self.setStatus("Plotting " + func + "...")
         print("plotting " + func)
         self.selectedPlotFunc = func
         self.plotargs = args
@@ -1014,6 +1015,7 @@ class LogInspectorWindow(QMainWindow):
                     ax = getattr(mplot.plotter, mplot.func)(fig=mplot.figure, axs=ax)
             mplot.canvas.draw()
 
+        self.setStatus("")
         print("done plotting")
 
 def kill_handler(*args):
