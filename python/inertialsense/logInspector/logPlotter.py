@@ -470,10 +470,11 @@ class logPlot:
     def posNED(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
+        ax = fig.subplots(4, (2 if self.residual else 1), sharex=True, squeeze=False)
         self.configureSubplot(ax[0,0], 'North', 'm')
         self.configureSubplot(ax[1,0], 'East', 'm')
         self.configureSubplot(ax[2,0], 'Down', 'm')
+        self.configureSubplot(ax[3,0], 'Distance from start',  'm')
         fig.suptitle('INS NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         refTime = None
@@ -484,6 +485,7 @@ class logPlot:
             self.configureSubplot(ax[0,1], 'North Residual', 'm')
             self.configureSubplot(ax[1,1], 'East Residual',  'm')
             self.configureSubplot(ax[2,1], 'Down Residual',  'm')
+            self.configureSubplot(ax[3,1], 'Distance Residual',  'm')
             # Use 'Ref INS' if available
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
@@ -515,6 +517,8 @@ class logPlot:
                 continue
             if refLla is None:
                 refLla = lla[0]
+            ned = lla2ned(refLla, lla)
+            dist = np.sqrt(np.sum((ned - ned[0,:])**2, axis = 1))
             tow = self.getData(d, DID_INS_2, 'timeOfWeek', True)
             time = getTimeFromGpsTow(tow, True)
             ind = getValidTimeInd(time) & (lla[:,0] != 0)
@@ -524,6 +528,7 @@ class logPlot:
             ax[0,0].plot(time, ned[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, ned[:,1])
             ax[2,0].plot(time, ned[:,2])
+            ax[3,0].plot(time, dist)
 
             if (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 timeGPS = getTimeFromGpsTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
@@ -553,9 +558,11 @@ class logPlot:
                 for i in range(3):
                     intNed[:,i] = np.interp(refTime, time, ned[:,i], right=np.nan, left=np.nan)
                 resNed = intNed - refNed
+                resDist = np.sqrt(np.sum(resNed**2, axis = 1))
                 ax[0,1].plot(refTime, resNed[:,0], label=self.log.serials[d])
                 ax[1,1].plot(refTime, resNed[:,1])
                 ax[2,1].plot(refTime, resNed[:,2])
+                ax[3,1].plot(refTime, resDist)
 
         self.legends_add(ax[0,0].legend(ncol=2))
         if self.residual: 
