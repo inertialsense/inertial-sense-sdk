@@ -509,11 +509,6 @@ class LogInspectorWindow(QMainWindow):
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
         self.showGps2 = QCheckBox("GPS2", self)
         self.showGps2.stateChanged.connect(self.changeShowGps2Checkbox)
-        self.GpsVelFilterLabel = QLabel(" GPS Vel Filter", self)
-        self.gpsVelFilter = QSpinBox(self)
-        self.gpsVelFilter.setValue(0)
-        self.gpsVelFilter.setMaximumWidth(35)
-        self.gpsVelFilter.valueChanged.connect(self.changeGpsVelFilterInput)
 
         self.VLayoutOptions1 = QVBoxLayout()
         self.VLayoutOptions1.setSpacing(0)
@@ -529,6 +524,11 @@ class LogInspectorWindow(QMainWindow):
         self.VLayoutOptions3.addWidget(self.showGps2)
         
         if 0:   # Show GPS Velocity Filter Input in UI
+            self.GpsVelFilterLabel = QLabel(" GPS Vel Filter", self)
+            self.gpsVelFilter = QSpinBox(self)
+            self.gpsVelFilter.setValue(0)
+            self.gpsVelFilter.setMaximumWidth(35)
+            self.gpsVelFilter.valueChanged.connect(self.changeGpsVelFilterInput)
             self.HLayoutOptions3 = QHBoxLayout()
             self.HLayoutOptions3.addWidget(self.gpsVelFilter)
             self.HLayoutOptions3.addWidget(self.GpsVelFilterLabel)
@@ -689,13 +689,18 @@ class LogInspectorWindow(QMainWindow):
                 self.updatePlot()
 
     def changeGpsVelFilterInput(self, text):
+        # Ignore input until a log is loaded
+        if getattr(self, 'log', None) is None:
+            return
         try:
-            filter_mode = int(text) if text else 0
+            # valueChanged may pass an int or a string depending on signal
+            filter_mode = int(text) if text is not None else 0
             for mplot in self.mplots:
                 if mplot.plotter:
                     mplot.plotter.setGpsVelFilterMode(filter_mode)
-                    self.updatePlot()
-        except ValueError:
+            # update once after applying to all plotters
+            self.updatePlot()
+        except (ValueError, TypeError):
             pass  # Ignore invalid input
 
     def changeUtcCheckbox(self, state):
