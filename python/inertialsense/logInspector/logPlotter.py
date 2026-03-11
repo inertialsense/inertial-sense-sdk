@@ -6,6 +6,7 @@ from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from datetime import date, datetime
 import pandas as pd
+from scipy.signal import detrend
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -3205,8 +3206,13 @@ class logPlot:
                         if np.all(pqr) != None and n<len(sensors):
                             # Averaging window tau values from dt to dt*Nsamples/10
                             t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
+
+                            # remove linear drift
+                            w_detrended = detrend(pqr[:,i], type='linear')
+
                             # Compute the overlapping ADEV
-                            (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
+                            # (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
+                            (t2, ad, ade, adn) = allantools.oadev(w_detrended, rate=1/(dtMean/self.d), data_type="freq", taus=t)
                             # Compute random walk and bias instability
                             t_bi_max = 1000
                             idx_max = (np.abs(t2 - t_bi_max)).argmin()
