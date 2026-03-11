@@ -107,7 +107,7 @@ bool TcpPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    log_debug(IS_LOG_PORT, "Releasing TCP/network port '%s'\n", portName(port));
+    log_debug(IS_LOG_PORT, "Releasing TCP/network port '%s'", portName(port));
     tcpPortDelete(port);
     delete static_cast<tcp_port_t*>(port);
 

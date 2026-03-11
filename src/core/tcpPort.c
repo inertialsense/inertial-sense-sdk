@@ -82,8 +82,10 @@ int tcpPortOpen(port_handle_t port) {
     }
     int retval = connect(tcpPort->socket, &tcpPort->addr.generic, addrlen);
     if (retval != 0) {
-        portFlagsClear(port, PORT_FLAG__OPENED);
-        HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?
+        if (errno != EISCONN) {
+            portFlagsClear(port, PORT_FLAG__OPENED);
+            HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?
+        }
     }
 
     // Set socket mode

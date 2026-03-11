@@ -99,7 +99,7 @@ static inline void static_log_timestamp(FILE* log_file, const char* prefix) {
     #else
     localtime_r(&ts.tv_sec, &tm_buf);
     #endif
-    fprintf(log_file, "[%02d:%02d:%02d.%03ld] %s", tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec, (long)(ts.tv_nsec / 1000), (prefix ? prefix : ""));
+    fprintf(log_file, "[%02d:%02d:%02d.%06ld] %s", tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec, (long)(ts.tv_nsec / 1000), (prefix ? prefix : ""));
 }
 
 void static_log_msg(int facility_code, int msg_log_level, const char *facility_name, const char *format, ...) {
@@ -114,14 +114,13 @@ void static_log_msg(int facility_code, int msg_log_level, const char *facility_n
         }
     }
 
-    static_log_timestamp(log_file, ":: ");
+    static const char* log_level_names[] = { "NONE", "ERROR", "WARN", "INFO", "INFO+", "DEBUG", "DEBUG+", "CRAZY" };
+    static_log_timestamp(log_file, NULL);
 
-    if (facility_code) {
-        fprintf(log_file, "%s ", facility_name);
-    }
-
-    static const char* log_level_names[] = { "[NONE]", "[ERROR]", "[WARN]", "[INFO]", "[INFO+]", "[DEBUG]", "[DEBUG+]", "[CRAZY]" };
-    fprintf(log_file, "%s : ", log_level_names[msg_log_level]);
+    if (facility_code)
+        fprintf(log_file, "%-6s (%s) :: ", log_level_names[msg_log_level],  facility_name);
+    else
+        fprintf(log_file, "%-6s :: ", log_level_names[msg_log_level]);
 
     char logMsg[512];
     va_list args;

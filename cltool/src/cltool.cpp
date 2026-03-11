@@ -869,6 +869,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:        g_commandLineOptions.disableDeviceValidation = true;    break;
             }
         }
+        else if (matches(a, "-sn") && (i + 1) < argc)
+        {
+            g_commandLineOptions.targetDeviceId = ISDevice::parseDeviceIdString(argv[++i]);
+            if (g_commandLineOptions.targetDeviceId == 0) {
+                cout << "Invalid device identifier: " << argv[i] << ". Expected: 129495, SN129495, or IMX-5.0:SN129495" << endl;
+                return false;
+            }
+        }
         else if (startsWith(a, "-s"))
         {
             enable_display_mode(cInertialSenseDisplay::DMODE_SCROLL);
@@ -949,20 +957,22 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     // Always apply the verboseLevel to the SDK log system
     IS_SET_LOG_LEVEL((eLogLevel)g_commandLineOptions.verboseLevel);
 
-    // We are either using a serial port or replaying data
-    if ((g_commandLineOptions.comPort.length() == 0) && !g_commandLineOptions.replayDataLog)
+    // We are either using a serial port, targeting a device by serial number, or replaying data
+    bool hasPort = (g_commandLineOptions.comPort.length() != 0);
+    bool hasTarget = (g_commandLineOptions.targetDeviceId != 0);
+    if (!hasPort && !hasTarget && !g_commandLineOptions.replayDataLog)
     {
         cltool_outputUsage();
         return false;
     }
-    else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+    else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && !hasPort && !hasTarget)
     {
-        cout << "Use DEVICE_PORT option \"-c \" with bootloader" << endl;
+        cout << "Use DEVICE_PORT option \"-c \" or \"-sn \" with bootloader" << endl;
         return false;
     }
-    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && !hasPort && !hasTarget)
     {
-        cout << "Use DEVICE_PORT option \"-c \" with bootloader" << endl;
+        cout << "Use DEVICE_PORT option \"-c \" or \"-sn \" with bootloader" << endl;
         return false;
     }
 
@@ -1194,6 +1204,7 @@ void cltool_outputUsage()
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port(s). Options: single port (e.g., COM5 or /dev/ttyUSB0), multiple ports separated by ',' (e.g., COM2,COM4,COM5), \"*\" for all ports, or \"*4\" for first four ports." << endlbOn;
+	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;

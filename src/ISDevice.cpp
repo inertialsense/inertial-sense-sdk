@@ -221,7 +221,7 @@ bool ISDevice::handshakeISbl() {
 
         if ((i == 4) && portAvailable(port)) {
             log_warn(IS_LOG_ISDEVICE, "[%s] ISDevice::handshakeISbl() is unable to clear the port RX buffer. Handshaking is not possible.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-            return false;   // unable to clear buffer, so we can't handshake
+            return true;   // unable to clear buffer, so we can't handshake, but return true anyway so we don't keep trying
         }
     }
     fn.mark("RX Buffer cleared. Starting handshake.");
@@ -252,7 +252,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
         return false;
 
     FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+    //log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
     if (!hasHandshake) {
         hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
         fn.mark("Handshake == " + std::to_string(hasHandshake));
@@ -323,7 +323,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     // hdwId = IS_HARDWARE_TYPE_UNKNOWN;
     // devInfo = {};
     fn.mark("Timed-out waiting.");
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+    // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
     return false;
 }
 
@@ -493,6 +493,62 @@ std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
 
 std::string ISDevice::getIdAsString() const {
     return getIdAsString(devInfo);
+}
+
+uint64_t ISDevice::parseDeviceIdString(const std::string& str) {
+    uint32_t serialNo = 0;
+    is_hardware_t hdwId = IS_HARDWARE_ANY;
+
+    // Find separator — accept both "::" (canonical) and ":" (shorthand)
+    std::string snPart;
+    size_t sepPos = str.find("::");
+    size_t sepLen = 2;
+    if (sepPos == std::string::npos) {
+        sepPos = str.find(':');
+        sepLen = 1;
+    }
+
+    if (sepPos != std::string::npos) {
+        // Has hardware type prefix, e.g. "IMX-5.0::SN129495" or "IMX-5.0:129495"
+        std::string hdwStr = str.substr(0, sepPos);
+        snPart = str.substr(sepPos + sepLen);
+
+        // Parse hardware type: "IMX-5.0", "GPX-1.0", "uINS-3.2", etc.
+        size_t dashPos = hdwStr.find('-');
+        if (dashPos != std::string::npos) {
+            std::string typeName = hdwStr.substr(0, dashPos);
+            std::string verStr = hdwStr.substr(dashPos + 1);
+            uint8_t hdwType = 0;
+            if (strcasecmp(typeName.c_str(), "IMX") == 0)       hdwType = IS_HARDWARE_TYPE_IMX;
+            else if (strcasecmp(typeName.c_str(), "GPX") == 0)   hdwType = IS_HARDWARE_TYPE_GPX;
+            else if (strcasecmp(typeName.c_str(), "uINS") == 0)  hdwType = IS_HARDWARE_TYPE_UINS;
+            else if (strcasecmp(typeName.c_str(), "EVB") == 0)   hdwType = IS_HARDWARE_TYPE_EVB;
+            if (hdwType) {
+                uint8_t major = 0, minor = 0;
+                size_t dotPos = verStr.find('.');
+                if (dotPos != std::string::npos) {
+                    major = (uint8_t)strtoul(verStr.c_str(), nullptr, 10);
+                    minor = (uint8_t)strtoul(verStr.c_str() + dotPos + 1, nullptr, 10);
+                } else {
+                    major = (uint8_t)strtoul(verStr.c_str(), nullptr, 10);
+                }
+                hdwId = ENCODE_HDW_ID(hdwType, major, minor);
+            }
+        }
+    } else {
+        // No separator — could be "SN129495" or just "129495"
+        snPart = str;
+    }
+
+    // Strip optional "SN" prefix from serial number part
+    if (snPart.size() > 2 && strncasecmp(snPart.c_str(), "SN", 2) == 0)
+        snPart = snPart.substr(2);
+    serialNo = strtoul(snPart.c_str(), nullptr, 10);
+
+    if (serialNo == 0)
+        return 0;
+
+    return ((uint64_t)hdwId << 48) | serialNo;
 }
 
 /**
