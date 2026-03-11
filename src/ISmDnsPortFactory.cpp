@@ -162,22 +162,33 @@ void ISmDnsPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
         std::string hostname = hostPorts.first;
         std::vector<port_t> ports = hostPorts.second;
 
-        // Resolve hostname to a tcp:// URL host using configured preference (IPv4 > IPv6 > hostname)
-        sockaddr_storage addr = mdns::resolveName(hostname);
+        // Resolve hostname to a tcp:// URL host using configured preference (IPv4 > IPv6 > hostname).
+        // resolveName() returns whichever record it finds first, which may not match the
+        // requested preference. Search the cache directly for the specific record type needed.
         uint8_t resolveFlags = portOptions.resolvePreference;
         std::string tcpHost;
 
         // Try IPv4 first (highest precedence)
-        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_IPV4) && addr.ss_family == AF_INET) {
-            char ipBuf[INET_ADDRSTRLEN] = {};
-            inet_ntop(AF_INET, &reinterpret_cast<sockaddr_in*>(&addr)->sin_addr, ipBuf, sizeof(ipBuf));
-            tcpHost = ipBuf;
+        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_IPV4)) {
+            auto records = mdns::getRecords([&hostname](const mdns::mdns_record_cpp_t& r) {
+                return r.type == MDNS_RECORDTYPE_A && r.name == hostname;
+            });
+            if (!records.empty()) {
+                char ipBuf[INET_ADDRSTRLEN] = {};
+                inet_ntop(AF_INET, &records[0].data.a.addr.sin_addr, ipBuf, sizeof(ipBuf));
+                tcpHost = ipBuf;
+            }
         }
         // Try IPv6 second
-        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_IPV6) && addr.ss_family == AF_INET6) {
-            char ipBuf[INET6_ADDRSTRLEN] = {};
-            inet_ntop(AF_INET6, &reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr, ipBuf, sizeof(ipBuf));
-            tcpHost = std::string("[") + ipBuf + "]";
+        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_IPV6)) {
+            auto records = mdns::getRecords([&hostname](const mdns::mdns_record_cpp_t& r) {
+                return r.type == MDNS_RECORDTYPE_AAAA && r.name == hostname;
+            });
+            if (!records.empty()) {
+                char ipBuf[INET6_ADDRSTRLEN] = {};
+                inet_ntop(AF_INET6, &records[0].data.aaaa.addr.sin6_addr, ipBuf, sizeof(ipBuf));
+                tcpHost = std::string("[") + ipBuf + "]";
+            }
         }
         // Fall back to hostname (TcpPortFactory resolves via getaddrinfo)
         if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_HOSTNAME)) {
