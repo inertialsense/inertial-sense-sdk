@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <chrono>
 #include <ctime>
 #include "ISDataMappings.h"
+#include "ISmDnsPortFactory.h"
 
 using namespace std;
 
@@ -661,6 +662,20 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-use-mdns"))
         {
             g_commandLineOptions.useMdns = true;
+        }
+        else if (startsWith(a, "-mdns-resolve="))
+        {
+            std::string val = &a[14];
+            uint8_t flags = 0;
+            if (val.find("v4") != std::string::npos || val.find("ipv4") != std::string::npos)
+                flags |= MDNS_RESOLVE_IPV4;
+            if (val.find("v6") != std::string::npos || val.find("ipv6") != std::string::npos)
+                flags |= MDNS_RESOLVE_IPV6;
+            if (val.find("hostname") != std::string::npos || val.find("host") != std::string::npos)
+                flags |= MDNS_RESOLVE_HOSTNAME;
+            if (flags == 0)
+                flags = MDNS_RESOLVE_DEFAULT;
+            g_commandLineOptions.mdnsResolvePreference = flags;
         }
         else if (startsWith(a, "-lmf="))
         {

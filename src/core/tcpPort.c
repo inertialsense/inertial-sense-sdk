@@ -73,8 +73,14 @@ int tcpPortOpen(port_handle_t port) {
         }
     }
 
-    // Connect socket to remote
-    int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.storage));
+    // Connect socket to remote (use family-specific address length)
+    socklen_t addrlen;
+    switch (tcpPort->addr.domain) {
+        case AF_INET:  addrlen = sizeof(struct sockaddr_in);  break;
+        case AF_INET6: addrlen = sizeof(struct sockaddr_in6); break;
+        default:       addrlen = sizeof(tcpPort->addr.storage); break;
+    }
+    int retval = connect(tcpPort->socket, &tcpPort->addr.generic, addrlen);
     if (retval != 0) {
         portFlagsClear(port, PORT_FLAG__OPENED);
         HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?

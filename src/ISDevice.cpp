@@ -1010,6 +1010,9 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
     if (!port)
         return false;   // No device, no flash-sync
 
+    if (devInfo.hdwRunState != HDW_STATE_APP)
+        return false;   // Device not running application firmware
+
     if (forceSync)
         sysParams.flashCfgChecksum = 0xFFFFFFFF;    // Invalidate to force re-sync
 
@@ -1042,6 +1045,9 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
     if (!port)
         return false;   // No device, no flash-sync
+
+    if (devInfo.hdwRunState != HDW_STATE_APP)
+        return false;   // Device not running application firmware
 
     if (forceSync)
         gpxStatus.flashCfgChecksum = 0xFFFFFFFF;    // Invalidate to force re-sync

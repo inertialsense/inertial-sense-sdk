@@ -21,6 +21,13 @@
 #include "util/util.h"
 #include "PortManager.h"
 #include "ISmDnsPortFactory.h"
+#include "TcpPortFactory.h"
+
+#if PLATFORM_IS_WINDOWS
+#include <ws2tcpip.h>
+#elif !PLATFORM_IS_EMBEDDED
+#include <arpa/inet.h>
+#endif
 
 /**
  * Major function from glibc reimplemented as a normal C function instead of as a define
@@ -154,12 +161,40 @@ void ISmDnsPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
     for (std::pair<std::string, std::vector<port_t>> hostPorts : portsAndHosts) {
         std::string hostname = hostPorts.first;
         std::vector<port_t> ports = hostPorts.second;
+
+        // Resolve hostname to a tcp:// URL host using configured preference (IPv4 > IPv6 > hostname)
+        sockaddr_storage addr = mdns::resolveName(hostname);
+        uint8_t resolveFlags = portOptions.resolvePreference;
+        std::string tcpHost;
+
+        // Try IPv4 first (highest precedence)
+        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_IPV4) && addr.ss_family == AF_INET) {
+            char ipBuf[INET_ADDRSTRLEN] = {};
+            inet_ntop(AF_INET, &reinterpret_cast<sockaddr_in*>(&addr)->sin_addr, ipBuf, sizeof(ipBuf));
+            tcpHost = ipBuf;
+        }
+        // Try IPv6 second
+        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_IPV6) && addr.ss_family == AF_INET6) {
+            char ipBuf[INET6_ADDRSTRLEN] = {};
+            inet_ntop(AF_INET6, &reinterpret_cast<sockaddr_in6*>(&addr)->sin6_addr, ipBuf, sizeof(ipBuf));
+            tcpHost = std::string("[") + ipBuf + "]";
+        }
+        // Fall back to hostname (TcpPortFactory resolves via getaddrinfo)
+        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_HOSTNAME)) {
+            tcpHost = hostname;
+            if (!tcpHost.empty() && tcpHost.back() == '.') {
+                tcpHost.pop_back();
+            }
+        }
+        if (tcpHost.empty()) continue;
+
         for (port_t port : ports) {
             std::pair<std::string, port_t> portPair = {hostname, port};
             portPair = getCanonicalPortData(portPair);
-            std::string portURL = getPortURL(portPair);
-            if (std::regex_match(portURL, regexPattern)) {
-                portCallback(this, PORT_TYPE__TCP | pType, portURL);
+            std::string mdnsURL = getPortURL(portPair);
+            std::string tcpURL = "tcp://" + tcpHost + ":" + std::to_string(portPair.second.port);
+            if (std::regex_match(mdnsURL, regexPattern) || std::regex_match(tcpURL, regexPattern)) {
+                portCallback(&TcpPortFactory::getInstance(), PORT_TYPE__TCP | PORT_TYPE__COMM | pType, tcpURL);
             }
         }
     }
@@ -313,7 +348,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::getCanonica
         }
     } else if (partialPort.port != 0) {
         for (port_t fullPort: ports) {
-            if (partialPort.port == fullPort.devid) {
+            if (partialPort.port == fullPort.port) {
                 returnPort = fullPort;
                 break;
             }

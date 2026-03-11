@@ -972,6 +972,7 @@ static int cltool_dataStreaming()
     if (g_commandLineOptions.useMdns) {
         ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
         mdpf.portOptions.defaultBlocking = false;
+        mdpf.portOptions.resolvePreference = g_commandLineOptions.mdnsResolvePreference;
         portFactories.push_back(&mdpf);
     }
 
