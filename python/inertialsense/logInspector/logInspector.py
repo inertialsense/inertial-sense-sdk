@@ -361,8 +361,8 @@ class LogInspectorWindow(QMainWindow):
             mplot.plotter.setLog(self.log)
             mplot.plotter.setDownSample(self.downsample)
         self.updatePlot()
-        self.setStatus("")
         self.expandAndSelectDirectory(directory)
+        self.setStatus("")
 
     def setupUi(self):
         self.setObjectName("LogInspector")
@@ -919,7 +919,7 @@ class LogInspectorWindow(QMainWindow):
                 self.handleTreeViewClick()
                 continue
             
-        self.setStatus("NPP done.")
+        self.setStatus("")
 
     def selectedDirectory(self):
         directory = os.path.normpath(self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0]))
@@ -1016,7 +1016,6 @@ class LogInspectorWindow(QMainWindow):
             mplot.canvas.draw()
 
         self.setStatus("")
-        print("done plotting")
 
 def kill_handler(*args):
     instance = QApplication.instance()
