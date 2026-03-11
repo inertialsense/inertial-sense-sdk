@@ -2898,6 +2898,10 @@ class logPlot:
                     imu1 = np.array(imu1)
                     imuCount = 1
 
+                    # remove linear drift
+                    # for i in range(imu1.shape[1]):
+                    #     imu1[:,i] = detrend(imu1[:,i], type='linear')
+
                 else:   
                     time = self.getData(device, DID_IMUS_RAW, 'time')
                     name = "IMUS"
@@ -3033,7 +3037,7 @@ class logPlot:
                                     label = str(self.log.serials[d])
                                 if combineImus:
                                     n = 0
-                                self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')                                
+                                self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')
                                 ax[i, n].plot(time, snr[:, i] * 180.0/np.pi, label=label)
                                 if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
@@ -3207,12 +3211,8 @@ class logPlot:
                             # Averaging window tau values from dt to dt*Nsamples/10
                             t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
 
-                            # remove linear drift
-                            w_detrended = detrend(pqr[:,i], type='linear')
-
                             # Compute the overlapping ADEV
-                            # (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
-                            (t2, ad, ade, adn) = allantools.oadev(w_detrended, rate=1/(dtMean/self.d), data_type="freq", taus=t)
+                            (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
                             # Compute random walk and bias instability
                             t_bi_max = 1000
                             idx_max = (np.abs(t2 - t_bi_max)).argmin()
