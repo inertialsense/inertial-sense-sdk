@@ -995,8 +995,8 @@ class LogInspectorWindow(QMainWindow):
     def plot(self, func, args=None):
         if func is None:
             return
-        self.setStatus("Plotting " + func + "...")
-        print("plotting " + func)
+        self.setStatus("Plotting...")
+        print("Plotting " + func)
         self.selectedPlotFunc = func
         self.plotargs = args
         ax = None
