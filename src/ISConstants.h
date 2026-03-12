@@ -188,7 +188,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define STRNCPY(dst, src, maxlen) strncpy_s(dst, maxlen, src, maxlen);
 #endif
 
-#define strncasecmp _strnicmp 
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 #else
     #ifndef INLINE
         #define INLINE inline

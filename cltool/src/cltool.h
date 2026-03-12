@@ -177,10 +177,12 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
     bool list_devices = false;              // if true, dumps results of findDevices() including port name.
     bool useMdns = false;                   // if true, registers ISmDnsPortFactory for mDNS network device discovery
+    uint8_t mdnsResolvePreference = 0x07;  // bitmask of MdnsResolveFlags for address resolution preference (default: IPv4|IPv6|hostname)
     EVFContainer_t evFCont = {0};
     EVMContainer_t evMCont = {0};
     EVOContainer_t evOCont;
 
+    uint64_t targetDeviceId = 0;            // -sn: encoded device identifier (hdwId << 48 | serialNumber). Parsed from "IMX-5.0:SN129495" or just "129495"
     bool disableDeviceValidation = false;   // Keep port(s) open even if no devices response is received.
     bool listenMode = false;                // Disable device verification and don't send stop-broadcast command on start.
 } cmd_options_t;

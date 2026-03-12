@@ -319,10 +319,11 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
                         size_t size, size_t name_offset, size_t name_length, size_t record_offset,
                         size_t record_length, void* user_data) {
 
-    // Do not process ANSWER messages
-    if (entry != MDNS_ENTRYTYPE_ANSWER) {
-        log_more_debug(IS_LOG_FACILITY_MDNS, "Unable to process non ANSWER responses: Not Supported.");
-        return -ENOTSUP;
+    // Process ANSWER and ADDITIONAL records (additional carries A/AAAA/SRV/TXT
+    // alongside PTR responses per RFC 6762). Skip AUTHORITY and QUESTION entries.
+    if (entry != MDNS_ENTRYTYPE_ANSWER && entry != MDNS_ENTRYTYPE_ADDITIONAL) {
+        log_more_debug(IS_LOG_FACILITY_MDNS, "Ignoring AUTHORITY/QUESTION record entry type: %d", entry);
+        return 0;
     }
 
     // Create buffers for strings

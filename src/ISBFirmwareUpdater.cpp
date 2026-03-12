@@ -719,17 +719,14 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
         return false;
 
     int count = portRead(device->port, rxWorkBufPtr, ackStr.length());
-    if (count < 0) {
-        return false; // FIXME: handle read errors more appropriately
+    if (count > 0) {
+        rxWorkBufPtr += count;
     }
 
-    rxWorkBufPtr += count;
-
-    // we want to have a calculated progress which seems reasonable.
-    // Since erasing flash is a non-deterministic operation (from our standpoint)
-    // let's use a log algorithm that will elapse approx 75% of the progress in
-    // the average time that a device takes to complete this operation (about 10 seconds)
-    // the remaining 25% will slowly elapse as we get closer to the timeout period.
+    // Update progress and send periodic reports regardless of whether data was received.
+    // portRead() returns -1 (EAGAIN/EWOULDBLOCK) on non-blocking TCP sockets when no data
+    // is available — this is expected during long operations like flash erase, and should
+    // not prevent progress reporting.
     progress = (float)(1.0 - std::pow((double)(maxTimeout - elapsedTime) / (double)maxTimeout, 4));
     if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
         nextProgressReport = current_timeMs() + progress_interval;

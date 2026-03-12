@@ -85,7 +85,7 @@ bool TcpServerPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    log_debug(IS_LOG_PORT_FACTORY, "Releasing TCP/network port '%s'\n", portName(port));
+    log_debug(IS_LOG_PORT_FACTORY, "Releasing TCP/network port '%s'", portName(port));
 
     for (auto it = knownSockets.begin(); it != knownSockets.end(); it++) {
         if (it->port == port) {

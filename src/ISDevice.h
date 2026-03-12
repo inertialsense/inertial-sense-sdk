@@ -167,6 +167,14 @@ public:
     uint64_t getUniqueId() { return getUniqueId(this->devInfo); }
 
     /**
+     * Parses a device identifier string into a unique ID (hdwId << 48 | serialNumber).
+     * Accepted formats: "IMX-5.0::SN129495", "IMX-5.0:129495", "GPX-1.0:SN42", "SN129495", "129495"
+     * If no hardware type is specified, IS_HARDWARE_ANY is used.
+     * @return unique ID, or 0 on parse failure
+     */
+    static uint64_t parseDeviceIdString(const std::string& str);
+
+    /**
      * Binds the specified port to this device. Reconfigures the port handler to call back
      * into this device instance, and reinitializes the underlying ISComm instance and
      * buffers.

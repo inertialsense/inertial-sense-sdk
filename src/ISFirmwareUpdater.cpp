@@ -393,6 +393,7 @@ void ISFirmwareUpdater::fwUpdate_handleLocalDevice() {
 }
 
 void ISFirmwareUpdater::refreshUpdateState() {
+    auto lk = updateState.lock();
     auto activeCmd = getActiveCommand();
     if (&activeCmd != &nullCmd)
         updateState.lastMessage = activeCmd.resultMsg;
@@ -620,7 +621,10 @@ void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, con
     va_end(args);
 
     cmd.status = ISFwUpdaterCmd::CMD_ERROR;
-    updateState.messages.emplace_back(activeStep, cmd, IS_LOG_LEVEL_ERROR, buffer);
+    {
+        auto lk = updateState.lock();
+        updateState.messages.emplace_back(activeStep, cmd, IS_LOG_LEVEL_ERROR, buffer);
+    }
 
     LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR, buffer);
 

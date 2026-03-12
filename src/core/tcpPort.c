@@ -20,6 +20,7 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#include <poll.h>
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
 #define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->socket = -errno; tcpPort->base.perror = errno; return -errno; } while(0)
 #endif
@@ -72,11 +73,19 @@ int tcpPortOpen(port_handle_t port) {
         }
     }
 
-    // Connect socket to remote
-    int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.storage));
+    // Connect socket to remote (use family-specific address length)
+    socklen_t addrlen;
+    switch (tcpPort->addr.domain) {
+        case AF_INET:  addrlen = sizeof(struct sockaddr_in);  break;
+        case AF_INET6: addrlen = sizeof(struct sockaddr_in6); break;
+        default:       addrlen = sizeof(tcpPort->addr.storage); break;
+    }
+    int retval = connect(tcpPort->socket, &tcpPort->addr.generic, addrlen);
     if (retval != 0) {
-        portFlagsClear(port, PORT_FLAG__OPENED);
-        HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?
+        if (errno != EISCONN) {
+            portFlagsClear(port, PORT_FLAG__OPENED);
+            HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?
+        }
     }
 
     // Set socket mode
@@ -285,32 +294,33 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
         return tcpPort->socket;
     }
 
+    // Use poll() to wait for data with timeout — works correctly regardless of
+    // blocking mode (SO_RCVTIMEO is ignored on non-blocking sockets on Linux).
+#ifdef PLATFORM_IS_WINDOWS
     tcpPortSetBlocking(port, false);
-    // Set a timeout on the socket
-#ifdef PLATFORM_IS_WINDOWS
     DWORD tv = timeout;
-#else
-    struct timeval tv;
-    tv.tv_sec = timeout/1000;
-    tv.tv_usec = (timeout % 1000) * 1000;
-#endif
     if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
         HANDLE_SOCKET_ERROR(tcpPort);
     }
-
-    // Receive data from the socket
     ssize_t retval = recv(tcpPort->socket, buf, len, 0);
-
-    // Reset socket timeout
-#ifdef PLATFORM_IS_WINDOWS
     tv = 0;
-#else
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-#endif
     if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
         HANDLE_SOCKET_ERROR(tcpPort);
     }
+#else
+    tcpPortSetBlocking(port, false);
+    struct pollfd pfd = { .fd = tcpPort->socket, .events = POLLIN };
+    int pollrc = poll(&pfd, 1, (int)timeout);
+    ssize_t retval;
+    if (pollrc > 0 && (pfd.revents & POLLIN)) {
+        retval = recv(tcpPort->socket, buf, len, 0);
+    } else if (pollrc == 0) {
+        return 0;  // Timeout — no data available
+    } else {
+        HANDLE_SOCKET_ERROR(tcpPort);
+        return -1;
+    }
+#endif
 
     // Return
     if (retval < 0) {
