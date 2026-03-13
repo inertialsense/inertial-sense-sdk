@@ -109,7 +109,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
 
     // This allows suspending the fwUpdate for until a set time - usually during instances such as
     // device reboots, where we don't want to try and spin while devices
-    if ((int32_t)(current_timeMs() - nextStepMs) < 0)  // suspending the fwUpdate execution until this time
+    if (nextStepMs && ((int32_t)(current_timeMs() - nextStepMs) < 0))  // suspending the fwUpdate execution until this time
         return false;
     nextStepMs = 0; // always reset back to 0 when elapsed so we don't get held up if the clock rolls over
 
