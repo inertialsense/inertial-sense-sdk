@@ -10,8 +10,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
-#define IS_ENABLED_FACILITIES  (IS_LOG_ISCOMM)
+// #define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+// #define IS_ENABLED_FACILITIES  (IS_LOG_ISCOMM)
 
 #include "core/msg_logger.h"
 #include "ISConstants.h"
@@ -24,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MAX_MSG_LENGTH_SONY         4090
 #define PKT_PARSER_TIMEOUT_MS       100   // Set to 0 to disable timeout
 
-#define DEBUG_PARSE_MSG             (!PLATFORM_IS_EMBEDDED)
+// #define DEBUG_PARSE_MSG             (!PLATFORM_IS_EMBEDDED)
 
 typedef union
 {
@@ -500,7 +500,10 @@ static protocol_type_t processIsbPkt(void* v)
     case PKT_TYPE_SET_DATA:
     case PKT_TYPE_DATA:
         // Validate data size
-        if (pkt->data.size <= MAX_DATASET_SIZE)
+        if (pkt->data.size <= MAX_DATASET_SIZE || 
+            pkt->hdr.id == DID_CAL_SC || 
+            pkt->hdr.id == DID_CAL_TEMP_COMP ||
+            pkt->hdr.id == DID_CAL_MOTION)
         {
             if (ptype==PKT_TYPE_SET_DATA)
             {   // acknowledge valid data received
@@ -519,7 +522,10 @@ static protocol_type_t processIsbPkt(void* v)
         {
             p_data_get_t *get = (p_data_get_t*)&(isbPkt->payload.data);
             // Validate data size
-            if (get->size <= MAX_DATASET_SIZE)
+            if (get->size <= MAX_DATASET_SIZE ||
+                get->id == DID_CAL_SC || 
+                get->id == DID_CAL_TEMP_COMP ||
+                get->id == DID_CAL_MOTION)
             {   // Update data pointer
                 return _PTYPE_INERTIAL_SENSE_CMD;
             }
@@ -1245,7 +1251,7 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
 
 void is_comm_port_parse_messages(port_handle_t port)
 {
-    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
         return;
 
     if (COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)
@@ -1359,7 +1365,7 @@ int portWriteUpdateChecksum(port_handle_t port, const uint8_t* buf, int len, uin
 
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
-    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
     {   // can't write if we don't have a valid port, or the port isn't an ISComm
         return -1;
     }
@@ -1437,7 +1443,7 @@ int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data
 
 int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
-    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
     {
         return -1;
     }

@@ -1,5 +1,5 @@
 /**
- * @file msg_logger.h 
+ * @file msg_logger.h
  * @brief ${BRIEF_DESC}
  *
  * @author Kyle Mallory on 4/7/25.
@@ -8,11 +8,6 @@
 
 #ifndef IS_CORE__MSG_LOGGER_H
 #define IS_CORE__MSG_LOGGER_H
-
-
-//#ifdef __ZEPHYR__
-//    #include <zephyr/logging/log.h>
-//#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,21 +21,11 @@ extern "C" {
 #include "ISConstants.h"
 #include "types.h"
 
-// MinGW compatibility: timespec_get/TIME_UTC may not be available
-#if defined(__MINGW32__) && !defined(TIME_UTC)
-    #define TIME_UTC 1
-    static inline int _mingw_timespec_get(struct timespec *ts, int base) {
-        (void)base;
-        return clock_gettime(CLOCK_REALTIME, ts) == 0 ? base : 0;
-    }
-    #define timespec_get _mingw_timespec_get
-#endif
-
 
 // --- Compile-time configuration ---
 // Define the default log level to show messages at or above this level.
 #ifndef IS_LOG_LEVEL
-#define IS_LOG_LEVEL  IS_LOG_LEVEL_WARN // Default to WARNING
+#define IS_LOG_LEVEL  IS_LOG_LEVEL_INFO // Default to INFO
 #endif
 
 // Define the highest (most verbose) level that will be compiled into the binary
@@ -54,7 +39,7 @@ extern "C" {
 // Define the facilities you want to enable.
 // Combine multiple facilities using the bitwise OR operator.
 #ifndef IS_ENABLED_FACILITIES
-#define IS_ENABLED_FACILITIES (IS_LOG_FACILITY_ALL)
+#define IS_ENABLED_FACILITIES (IS_LOG_PORT | IS_LOG_PORT_FACTORY | IS_LOG_PORT_MANAGER | IS_LOG_DEVICE_FACTORY | IS_LOG_DEVICE_MANAGER | IS_LOG_ISDEVICE | IS_LOG_FN_PROFILER | IS_LOG_FWUPDATE)
 #endif
 
 // Macro to check if a facility is enabled
@@ -90,84 +75,10 @@ static inline void static_set_log_level(eLogLevel new_level) { log_level = new_l
     static inline void static_log_output(FILE* out) { log_file = out; }
 #endif
 
-static inline void static_log_msg(int facility_code, int msg_log_level, const char *facility_name, const char *format, ...) {
-#if defined(__ZEPHYR__) // defined(PLATFORM_IS_EMBEDDED) ||
-    (void) msg_log_level;
-    static char logMsg[512];
-    va_list args;
-    va_start(args, format);
-    memset(logMsg, 0, 512);
-    vsnprintf(logMsg, sizeof(logMsg) - 1, format, args);
-    va_end(args);
-
-    // LOG_DBG(logMsg);
-#elif defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
-    static const char* log_level_names[] = { "[NONE]", "[ERROR]", "[WARN]", "[INFO]", "[INFO+]", "[DEBUG]", "[DEBUG+]", "[CRAZY]" };
-    if (msg_log_level > (int)log_level) return;
-
-    static char logMsg[512];
-    va_list args;
-    va_start(args, format);
-    memset(logMsg, 0, 512);
-    vsnprintf(logMsg, sizeof(logMsg) - 1, format, args);
-    va_end(args);
-
-    if (log_file == NULL)
-        log_file = fopen("inertial_sense.log", "a+"); // stdout;
-    if (log_file == NULL)
-        log_file = stdout;
-
-    struct timespec ts;
-    timespec_get(&ts, TIME_UTC);
-    fprintf(log_file, "%ld.%06ld: ", (long)ts.tv_sec, (long)ts.tv_nsec / 1000);
-
-    if (facility_code)
-        fprintf(log_file, "%s ", facility_name);
-    fprintf(log_file, "%s : %s\n", log_level_names[msg_log_level], logMsg);
-    fflush(log_file);
-#endif
-}
+void static_log_msg(int facility_code, int msg_log_level, const char *facility_name, const char *format, ...);
+void static_log_buffer(const char* prefix, const unsigned char* buffer, int len);
 
 #define IS_PRINTABLE(n) (((n >= 0x20) && (n <= 0x7E)) ) //  || ((n >= 0xA1) && (n <= 0xDF)))
-
-static inline void static_log_buffer(const char* prefix, const unsigned char* buffer, int len) {
-#if defined(__ZEPHYR__) // defined(PLATFORM_IS_EMBEDDED) ||
-#elif defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
-    if (len > 0) {
-        const int bytes_per_line = 32;
-
-        if (log_file == NULL)
-            log_file = fopen("inertial_sense.log", "a+"); // stdout;
-        if (log_file == NULL)
-            log_file = stdout;
-
-        struct timespec ts;
-        timespec_get(&ts, TIME_UTC);
-        fprintf(log_file, "%ld.%06ld: %s", (long)ts.tv_sec, (long)ts.tv_nsec / 1000, prefix);
-
-        const unsigned char* buff_ofs = buffer;
-        int remaining = len, i = 0;
-        do {
-            for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
-                fprintf(log_file, " %02x", buff_ofs[i]);
-
-            int pad = ((int)strlen(prefix) + (bytes_per_line * 3) + 3) - (i * 3);    // note that 'i' is carried from the above for-loop
-            fprintf(log_file, "%*c", pad, ' ');
-
-            for (i = 0; (i < remaining) && (i < bytes_per_line); i++)
-                fprintf(log_file, "%c", IS_PRINTABLE(buff_ofs[i]) ? buff_ofs[i] : 0xB7);
-
-            buff_ofs += i;
-            remaining -= i;
-
-            fprintf(log_file, "\n");
-            if (remaining > 0)
-                fprintf(log_file, "                      ");
-        } while (remaining > 0);
-        // fprintf(log_file, "\n");
-    }
-#endif
-}
 
 #ifdef __cplusplus
 } // END extern 'C'

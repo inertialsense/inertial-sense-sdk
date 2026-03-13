@@ -252,7 +252,6 @@ void stepSendMessages(void)
     s_cm.stepSendMessages();
 }
 
-// __attribute__((optimize("O0")))
 void ISComManager::stepSendMessages()
 {
     if (broadcastMessages == NULL)
@@ -408,7 +407,7 @@ int comManagerSendRaw(port_handle_t port, const void *dataPtr, int dataSize)
 int ISComManager::sendRaw(port_handle_t port, const void* dataPtr, int dataSize)
 {
     // Return 0 on success, -1 on failure.
-    return (portWrite(port, static_cast<const uint8_t *>(dataPtr), dataSize) >= 0 ? 0 : -1);
+    return (portWrite(port, static_cast<const uint8_t *>(dataPtr), dataSize) >= PORT_ERROR__NONE ? 0 : -1);  // FIXME: Technically portWrite returning 0 IS VALID - but this may break existing functionality
 }
 
 int comManagerDisableData(port_handle_t port, uint16_t did)
@@ -637,7 +636,6 @@ int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req)
     return s_cm.getDataRequest(port, req);
 }
 
-//__attribute__((optimize("O0")))
 int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
 {
     broadcast_msg_t* msg = NULL;

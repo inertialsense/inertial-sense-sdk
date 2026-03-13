@@ -6,7 +6,6 @@
 #include "device_runtime_tests.h"
 #include "ISFileManager.h"
 #include "ISDataMappings.h"
-#include "util.h"
 
 
 #define LOG_DIRECTORY       "realtime_logs"
@@ -24,12 +23,18 @@ DeviceRuntimeTests::DeviceRuntimeTests()
 std::string DeviceRuntimeTests::CreateLogFilename(const std::string path, int serialNumber)
 {
     // Get current time
-    std::time_t t = std::time(nullptr);
-    std::string datetime(32,0);
-    datetime.resize(std::strftime(&datetime[0], datetime.size(),"%Y%m%d_%H%M%S", std::localtime(&t)));
+    auto now = SYS_TIME_NOW;
+    auto in_time = std::chrono::system_clock::to_time_t(now);
+
+    // Convert to local time
+    std::tm bt = *localtime(&in_time);
+
+    // Create a stringstream filename
+    std::stringstream ss;
+    ss << "SN" << serialNumber << "_" << std::put_time(&bt, "%Y%m%d_%H%M%S") << ".txt"; // YYYYMMDD_HHMMSS format
 
     // Construct filename
-    std::string filename = path + "/" + utils::string_format("SN%d_%s.txt", serialNumber, datetime.c_str()); // YYYYMMDD_HHMMSS format
+    std::string filename = path + "/" + ss.str();
 
     return filename;
 }

@@ -109,7 +109,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
 
     // This allows suspending the fwUpdate for until a set time - usually during instances such as
     // device reboots, where we don't want to try and spin while devices
-    if ((int32_t)(current_timeMs() - nextStepMs) < 0)  // suspending the fwUpdate execution until this time
+    if (nextStepMs && ((int32_t)(current_timeMs() - nextStepMs) < 0))  // suspending the fwUpdate execution until this time
         return false;
     nextStepMs = 0; // always reset back to 0 when elapsed so we don't get held up if the clock rolls over
 
@@ -119,7 +119,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     FnProfiler fn("ISBFirmwareUpdater::fwUpdate_step() [" + device->getIdAsString() + "]", 30000);
 
     // if we're running ISBootloader, so we need to make sure that we have EXPLICIT_READ access to the port - so that the ISComm parser doesn't try and pull data...
-    if (device && portIsValid(device->port) && (portType(device->port) & PORT_TYPE__COMM)) {
+    if (portIsValid(device->port) && (portType(device->port) & PORT_TYPE__COMM)) {
         if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
             COMM_PORT(device->port)->flags |= COMM_PORT_FLAG__EXPLICIT_READ;
         else
@@ -140,19 +140,23 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // back this and return
 
         device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
-        if (device && !device->isConnected() && portIsValid(device->port)) {
+        if (!device) {   // nothing to do without a valid device -- This is a bigger error and we should probably log the error
+            log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater references a target device ID cannot be located, but which is also not the parent device?", ISDevice::getIdAsString(target_devInfo).c_str());
+            return false;
+        }
+
+        if (portIsValid(device->port) && !device->isConnected()) {
             log_debug(IS_LOG_FWUPDATE, "Device %s is disconnected... Attempting to reconnect.", device->getIdAsString().c_str());
-            if (!device->connect(false)) {
+            if (!device->connect(false)) {   // we will revalidate below, asynchronously
                 log_warn(IS_LOG_FWUPDATE,"Device %s failed to reconnect.", device->getIdAsString().c_str());
                 // SLEEP_MS(100);
             }
         }
 
-        if (device && device->isConnected()) {
-            if (!device->hasDeviceInfo()) {
-                device->validateAsync();
+        if (device->isConnected()) {
+            if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
                 return true;    // we'll keep in our current state until we can validate the device
-            }
+
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 
@@ -203,21 +207,83 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                     // do some verify step??
                 } else {
                     updateState = REBOOT_TO_APP;
-                    session_status = fwUpdate::FINALIZING;
                 }
                 break;
             case REBOOT_TO_APP:
                 if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
-                    rebootToAPP(false);  // we should be able to keep the port open
+                    rebootToAPP(false);
+                session_status = fwUpdate::FINALIZING;
+                last_reboot = current_timeMs();
+                nextStepMs = last_reboot + 2000;  // give device 2s to start rebooting
                 updateState = UPDATE_DONE;
                 break;
-            case UPDATE_DONE:
-                // at this point, we should have rebooted, and we're waiting for the device to reboot back up, so we can confirm the update succeeded.
+            case UPDATE_DONE: {
+                // Async wait: device is rebooting from bootloader to APP mode.
+                // Keep session_status == FINALIZING until device is rediscovered in APP mode.
+
+                // Periodically trigger port rediscovery
+                if (current_timeMs() > nextPortCheck) {
+                    portManager.discoverPorts();
+                    nextPortCheck = current_timeMs() + 1000;
+                }
+
+                // Re-fetch device (port may have changed after USB re-enumeration)
+                device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+                if (!device) {
+                    // Device not yet rediscovered — report progress and return
+                    if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
+                        nextProgressReport = current_timeMs() + progress_interval;
+                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
+                            "Waiting for device [%s] to reboot into APP mode.",
+                            ISDevice::getIdAsString(target_devInfo).c_str());
+                    }
+                    // Timeout check
+                    if ((current_timeMs() - last_reboot) > 20000) {
+                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
+                            "Timed out waiting for device [%s] to reboot into APP mode. Upload was successful.",
+                            ISDevice::getIdAsString(target_devInfo).c_str());
+                        // Fall through to finish — the upload itself succeeded
+                    } else {
+                        break;  // keep waiting
+                    }
+                } else {
+                    // Device found — try to connect and validate
+                    if (portIsValid(device->port) && !device->isConnected()) {
+                        if (!device->connect(false))
+                            break;  // retry next cycle
+                    }
+
+                    if (device->isConnected()) {
+                        if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
+                            break;  // keep waiting for validation
+
+                        if (device->devInfo.hdwRunState != HDW_STATE_APP) {
+                            // Still in bootloader or unknown — keep waiting
+                            if ((current_timeMs() - last_reboot) > 20000) {
+                                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
+                                    "Device [%s] rebooted but not in APP mode (state=%d). Upload was successful.",
+                                    device->getIdAsString().c_str(), device->devInfo.hdwRunState);
+                                // Fall through to finish
+                            } else {
+                                break;
+                            }
+                        } else {
+                            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
+                                "Device [%s] confirmed running in APP mode.",
+                                device->getIdAsString().c_str());
+                        }
+                    } else {
+                        break;  // not yet connected
+                    }
+                }
+
+                // Finalize — either confirmed APP mode or timed out (upload was successful either way)
                 if (imgStream) { delete imgStream; imgStream = nullptr; }
                 if (imgBuffer) { delete imgBuffer; imgBuffer = nullptr; }
                 session_status = fwUpdate::FINISHED;
                 fn.mark("Finished UPDATE_DONE step.");
                 break;
+            }
         }
         fn.mark("Finished non-initializing steps.");
     }
@@ -523,8 +589,10 @@ bool ISBFirmwareUpdater::rebootToISB()
 
         last_reboot = current_timeMs();
         nextStepMs = last_reboot + 2000;   // Give a chance to reboot - don't attempt to process this device again for another 2 seconds.
-        device->disconnect();  // If we haven't already disconnected, let's disconnect and we'll attempt to open again
-        portInvalidate(device->port);
+        device->disconnect(true);  // close AND invalidate the port; this port will have to be rediscovered to be used again.
+        // portManager.releasePort(device->port);  //
+        // SLEEP_MS(50);
+        // portManager.discoverPorts(); // if we are a USB connection, and do a force a quick discoverPorts() to discover if our USB port was lost.
     } else {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN, "(ISB) Unable to reset device to ISbl because the current device state is unknown (%d).", device->devInfo.hdwRunState);
         return false;
@@ -549,7 +617,7 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
 
     fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
-    // Send the "reboot to program mode" command and the device should start in program mode - while technically not a "reo
+    // Send the "reboot to program mode" command and the device should restart in program mode
     // However, depending on the port type, this may or may not result in the port/device connection being lost
     // We'll just send the "Boot Up" command a time or 3 - if the portWrite() fails, we'll assume we succeeded,
     // otherwise, send a few extra times for good measure, and then assume we succeeded -- either way, success!
@@ -567,16 +635,21 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
         SLEEP_MS(10);
     } while (++retry < 3);
 
-    if (portIsOpened(device->port) && !keepPortOpen) {
-        // At this point, there isn't much to do but disconnect and invalidate the port - make the system locate the port again.
-        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
-        device->disconnect();
-        portInvalidate(device->port);
-    } else if (portIsOpened(device->port)) {
-        portFlush(device->port);
+    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
+    if ((portType(device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM) {
+        // ISbl can put a port in EXPLICIT READ mode; we need to clear that flag
+        COMM_PORT(device->port)->flags &= ~COMM_PORT_FLAG__EXPLICIT_READ;
     }
 
-    device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device -- this will usually force a revalidation
+    if (portIsOpened(device->port)) {
+        if (!keepPortOpen) {
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
+            device->disconnect(true);
+        } else {
+            portFlush(device->port);
+        }
+    }
+
     return true;    // since with a UART port, we won't actually know if the device boots to APP, so we just return true
 }
 
@@ -646,17 +719,14 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
         return false;
 
     int count = portRead(device->port, rxWorkBufPtr, ackStr.length());
-    if (count < 0) {
-        return false; // FIXME: handle read errors more appropriately
+    if (count > 0) {
+        rxWorkBufPtr += count;
     }
 
-    rxWorkBufPtr += count;
-
-    // we want to have a calculated progress which seems reasonable.
-    // Since erasing flash is a non-deterministic operation (from our standpoint)
-    // let's use a log algorithm that will elapse approx 75% of the progress in
-    // the average time that a device takes to complete this operation (about 10 seconds)
-    // the remaining 25% will slowly elapse as we get closer to the timeout period.
+    // Update progress and send periodic reports regardless of whether data was received.
+    // portRead() returns -1 (EAGAIN/EWOULDBLOCK) on non-blocking TCP sockets when no data
+    // is available — this is expected during long operations like flash erase, and should
+    // not prevent progress reporting.
     progress = (float)(1.0 - std::pow((double)(maxTimeout - elapsedTime) / (double)maxTimeout, 4));
     if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
         nextProgressReport = current_timeMs() + progress_interval;

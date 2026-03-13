@@ -15,6 +15,13 @@
 #include "core/tcpPort.h"
 #include "PortFactory.h"
 
+enum MdnsResolveFlags : uint8_t {
+    MDNS_RESOLVE_IPV4     = 0x01,   //!< Prefer resolved IPv4 address (e.g. tcp://192.168.1.5:port)
+    MDNS_RESOLVE_IPV6     = 0x02,   //!< Prefer resolved IPv6 address (e.g. tcp://[fdc2::1]:port)
+    MDNS_RESOLVE_HOSTNAME = 0x04,   //!< Use mDNS hostname (e.g. tcp://hostname.local:port)
+    MDNS_RESOLVE_DEFAULT  = MDNS_RESOLVE_IPV4 | MDNS_RESOLVE_IPV6 | MDNS_RESOLVE_HOSTNAME,
+};
+
 /**
  * Singleton class passed to PortManager to autodiscover and connect to remote serial ports over the network
  *
@@ -25,6 +32,7 @@ class ISmDnsPortFactory : public PortFactory {
 public:
     struct {
         bool defaultBlocking = false;
+        uint8_t resolvePreference = MDNS_RESOLVE_DEFAULT;   //!< Bitmask of MdnsResolveFlags; precedence: IPv4 > IPv6 > hostname
     } portOptions = {};
 
     static ISmDnsPortFactory& getInstance() {

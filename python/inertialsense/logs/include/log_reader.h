@@ -17,6 +17,8 @@
 #pragma comment(lib, "SHELL32.LIB")
 #endif
 
+#define LOG_READER_DEBUG_ENABLED    0       // Set to 1 to enable debug print statements in LogReader, or 0 to disable them. These statements can be helpful for development and troubleshooting, but may produce a large amount of output for long logs.
+
 namespace py = pybind11;
 
 typedef struct {
@@ -155,11 +157,15 @@ class LogReader {
         T tmp{};
         memcpy(&tmp, msg, std::min(sizeof(T), (size_t)size));
         vec.push_back(tmp);
+#if LOG_READER_DEBUG_ENABLED
+        printf("Logged message with DID %d, size %d, vector now has %zu entries\n", did, size, vec.size());
+#endif
     }
 
    private:
     void organizeData(std::shared_ptr<cDeviceLog>);
     void forwardData(int device_id);
+    void logReaderDebugPrint(const std::string& message);
 
     cISLogger logger_;
     DeviceLog* dev_log_ = nullptr;

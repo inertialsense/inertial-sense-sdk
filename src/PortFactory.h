@@ -131,11 +131,7 @@ private:
     // THESE ARE LOCALIZED HELPER FUNCTIONS to provide basic functionality that is not normally provided by the original SerialPort/SerialPortPlatform implementation
     // TODO: at some point, these should be moved into the implementation directly, and removed from the factory
     static int validate_port(port_handle_t port) { return SerialPortFactory::getInstance().validatePort(portName(port), portType(port)); }
-    static int open_port(port_handle_t port) {
-        if (!portIsValid(port)) return PORT_ERROR__INVALID;
-        serial_port_t* serialPort = (serial_port_t*)port;
-        return serialPortOpen(port, serialPort->portName, serialPort->baudRate, serialPort->blocking) == 1 ? PORT_ERROR__NONE : PORT_ERROR__OPEN_FAILURE;
-    }
+    static int open_port(port_handle_t port) { return serialPortOpen(port, SERIAL_PORT(port)->portName, SERIAL_PORT(port)->baudRate, SERIAL_PORT(port)->blocking); }
 
 };
 

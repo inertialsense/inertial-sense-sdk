@@ -41,6 +41,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "CorrectionService.h"
 #include "NtripCorrectionService.h"
 #include "TcpPortFactory.h"
+#include "ISmDnsPortFactory.h"
 #include "util/natsort.h"
 #include "util/uri.hpp"
 
@@ -956,12 +957,39 @@ void getMemoryEvent(InertialSense& inertialSenseInterface, uint32_t addrs, const
 
 static int cltool_dataStreaming()
 {
+    IS_LOG_OUTPUT(stdout);
+
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface({}, {&CltoolDeviceFactory::getInstance()});
+    // Build explicit port factory list — only include ISmDnsPortFactory when -use-mdns is specified
+    SerialPortFactory& spf = SerialPortFactory::getInstance();
+    spf.portOptions.defaultBaudRate = g_commandLineOptions.baudRate;
+    spf.portOptions.defaultBlocking = false;
+    TcpPortFactory& tpf = TcpPortFactory::getInstance();
+    tpf.portOptions.defaultBlocking = false;
+
+    std::vector<PortFactory*> portFactories = {&spf, &tpf};
+    if (g_commandLineOptions.useMdns) {
+        ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
+        mdpf.portOptions.defaultBlocking = false;
+        mdpf.portOptions.resolvePreference = g_commandLineOptions.mdnsResolvePreference;
+        portFactories.push_back(&mdpf);
+    }
+
+    InertialSense inertialSenseInterface(portFactories, {&CltoolDeviceFactory::getInstance()});
     g_inertialSenseInterface = &inertialSenseInterface;
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
+
+    // Pre-warm mDNS cache so network devices are discoverable when Open() calls discoverPorts()
+    if (g_commandLineOptions.useMdns) {
+        printf("Discovering mDNS devices...\n");
+        uint32_t deadline = current_timeMs() + 3000;
+        while (current_timeMs() < deadline) {
+            ISmDnsPortFactory::tick();
+            SLEEP_MS(50);
+        }
+    }
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
@@ -1136,7 +1164,7 @@ static int cltool_dataStreaming()
     //If Firmware Update is specified return an error code based on the Status of the Firmware Update
     if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
         for (auto device : inertialSenseInterface.getDevices()) {
-            if (device->fwHasError) {
+            if (device->fwUpdateState.hasErrors) {
                 exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
                 break;
             }
@@ -1170,11 +1198,88 @@ static void sendNmea(port_handle_t port, string nmeaMsg)
     portWrite(port, (unsigned char*)buf, n);
 }
 
+/**
+ * Discovers all available devices and resolves the target device ID to a port name.
+ * On success, sets g_commandLineOptions.comPort to the resolved port and returns true.
+ */
+static bool cltool_resolveDeviceTarget()
+{
+    uint64_t targetId = g_commandLineOptions.targetDeviceId;
+    uint32_t serialNo = (uint32_t)(targetId & 0xFFFFFFFFFFFF);
+    is_hardware_t hdwId = (is_hardware_t)(targetId >> 48);
+
+    // Build port factories identically to cltool_dataStreaming()
+    SerialPortFactory& spf = SerialPortFactory::getInstance();
+    spf.portOptions.defaultBaudRate = g_commandLineOptions.baudRate;
+    spf.portOptions.defaultBlocking = false;
+    TcpPortFactory& tpf = TcpPortFactory::getInstance();
+    tpf.portOptions.defaultBlocking = false;
+
+    std::vector<PortFactory*> portFactories = {&spf, &tpf};
+    if (g_commandLineOptions.useMdns) {
+        ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
+        mdpf.portOptions.defaultBlocking = false;
+        mdpf.portOptions.resolvePreference = g_commandLineOptions.mdnsResolvePreference;
+        portFactories.push_back(&mdpf);
+    }
+
+    {
+        InertialSense is(portFactories, {&CltoolDeviceFactory::getInstance()});
+        is.EnableDeviceValidation(true);
+
+        // Pre-warm mDNS cache if needed
+        if (g_commandLineOptions.useMdns) {
+            printf("Discovering mDNS devices...\n");
+            uint32_t deadline = current_timeMs() + 3000;
+            while (current_timeMs() < deadline) {
+                ISmDnsPortFactory::tick();
+                SLEEP_MS(50);
+            }
+        }
+
+        // Discover all devices using wildcard
+        if (!is.Open("*", g_commandLineOptions.baudRate)) {
+            printf("Failed to discover any devices.\n");
+            return false;
+        }
+
+        // Search for matching device
+        DeviceManager& dm = DeviceManager::getInstance();
+        device_handle_t target = dm.getDevice(serialNo, hdwId);
+        if (target) {
+            g_commandLineOptions.comPort = target->getPortName();
+            g_commandLineOptions.useMdns = false;   // Resolved to a concrete port URL; mDNS no longer needed
+            printf("Resolved %s to %s\n", target->getIdAsString().c_str(), g_commandLineOptions.comPort.c_str());
+        } else {
+            printf("Device not found. Discovered devices:\n");
+            for (auto& dev : dm) {
+                printf("  %s --> %s\n", dev->getPortName().c_str(), dev->getIdAsString().c_str());
+            }
+            return false;
+        }
+    }   // InertialSense destructor closes all connections
+
+    // Clear singleton state so the subsequent Open() starts fresh
+    DeviceManager::getInstance().clear(true);
+    PortManager::getInstance().clear();
+    PortManager::getInstance().clearPortFactories();
+    DeviceManager::getInstance().clearDeviceFactories();
+
+    return true;
+}
+
 static int inertialSenseMain()
 {
     g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
     // g_inertialSenseDisplay.Clear();     // clear display
+
+    // Resolve -sn target to a port name before any other operations
+    if (g_commandLineOptions.targetDeviceId != 0) {
+        if (!cltool_resolveDeviceTarget()) {
+            return EXIT_CODE_NO_DEVICES_FOUND;
+        }
+    }
 
     // if replay data log specified on command line, do that now and return
     if (g_commandLineOptions.replayDataLog)

@@ -9,6 +9,7 @@
 #include "ISDFUFirmwareUpdater.h"
 #include <fstream>
 #include <algorithm>
+#include <chrono>
 
 //    static const char* state_names[] = {
 //        "APP_IDLE",
@@ -66,10 +67,34 @@ size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devic
         }
 
         libusb_free_device_list(device_list, 1);
-        libusb_exit(NULL);
+        // NOTE: Do NOT call libusb_exit() here. The returned DFUDevice objects
+        // hold open USB handles from fetchDeviceInfo(). Tearing down the libusb
+        // context invalidates those handles and causes a segfault when the caller
+        // later uses the devices. The caller owns the libusb lifecycle.
         dfuMutex.unlock();
     }
     return devices.size();
+}
+
+/**
+ * Returns the number of DFU devices currently connected, without opening or classifying them.
+ * Uses the same mutex as getAvailableDevices() for consistent access.
+ */
+int ISDFUFirmwareUpdater::getNumDevices(uint16_t vid, uint16_t pid) {
+    int count = 0;
+    if (dfuMutex.try_lock()) {
+        libusb_device **device_list;
+        libusb_init(NULL);
+        size_t device_count = libusb_get_device_list(NULL, &device_list);
+        for (size_t i = 0; i < device_count; ++i) {
+            if (isDFUDevice(device_list[i], vid, pid))
+                count++;
+        }
+        libusb_free_device_list(device_list, 1);
+        libusb_exit(NULL);
+        dfuMutex.unlock();
+    }
+    return count;
 }
 
 /**
@@ -315,6 +340,28 @@ bool ISDFUFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8
 }
 
 /**
+ * Returns the total flash size in bytes, calculated from the flash segment geometry.
+ */
+uint32_t DFUDevice::getTotalFlashSize() const {
+    return (uint32_t)segments[STM32_DFU_INTERFACE_FLASH].pages * segments[STM32_DFU_INTERFACE_FLASH].pageSize;
+}
+
+/**
+ * Returns a human-readable device type name based on processor type and flash size.
+ * STM32L4 -> "IMX-5", STM32U5 <=1MB -> "GPX-1", STM32U5 >1MB -> "IMX-6", else -> "Unknown"
+ */
+const char* DFUDevice::getDeviceTypeName(eProcessorType procType, uint32_t totalFlashSize) {
+    if (procType == IS_PROCESSOR_STM32L4)
+        return "IMX-5";
+    if (procType == IS_PROCESSOR_STM32U5) {
+        if (totalFlashSize > 1024 * 1024)
+            return "IMX-6";
+        return "GPX-1";
+    }
+    return "Unknown";
+}
+
+/**
  * Returns a fwUpdate-compatible target type (fwUpdate::target_t) appropriate for this DFU device,
  * given the parsed hardware id, where available.
  * @return determined fwUpdate::target_t is detectable, otherwise TARGET_UNKNOWN
@@ -324,6 +371,7 @@ fwUpdate::target_t DFUDevice::getTargetType() {
         case IS_HARDWARE_TYPE_IMX:
             if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_IMX5;
             // else if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 1)) return fwUpdate::TARGET_IMX51;
+            if (DECODE_HDW_MAJOR(hardwareId) == 6) return fwUpdate::TARGET_IMX6;
             break;
         case IS_HARDWARE_TYPE_GPX:
             if ((DECODE_HDW_MAJOR(hardwareId) == 1) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_GPX1;
@@ -452,8 +500,16 @@ dfu_error DFUDevice::fetchDeviceInfo() {
     uint16_t hardwareType = 0;
     processorType = IS_PROCESSOR_UNKNOWN;
 
-    if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32L4)) processorType = IS_PROCESSOR_STM32L4; // possible IMX
-    else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5)) processorType = IS_PROCESSOR_STM32U5; // possible GPX
+    if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32L4)) processorType = IS_PROCESSOR_STM32L4;
+    else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5_1M)) processorType = IS_PROCESSOR_STM32U5;
+    else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5_2M)) processorType = IS_PROCESSOR_STM32U5;
+
+    if (processorType == IS_PROCESSOR_UNKNOWN) {
+        log_info(IS_LOG_FWUPDATE, "DFU unknown fingerprint: %s  descriptors(%zu):",
+                 md5_to_string(fingerprint.state).c_str(), dfuDescriptors.size());
+        for (size_t i = 0; i < dfuDescriptors.size(); i++)
+            log_info(IS_LOG_FWUPDATE, "  [%zu] \"%s\"", i, dfuDescriptors[i].c_str());
+    }
 
     // try and read the OTP memory
     dfu_memory_t otp = segments[STM32_DFU_INTERFACE_OTP];
@@ -478,7 +534,10 @@ dfu_error DFUDevice::fetchDeviceInfo() {
 
     if ((hardwareId == 0xFFFF) && (processorType != IS_PROCESSOR_UNKNOWN)) {
         if (processorType == IS_PROCESSOR_STM32L4) hardwareType = IS_HARDWARE_TYPE_IMX; // only the IMX-5 uses the STM32L4
-        else if (processorType == IS_PROCESSOR_STM32U5) hardwareType = IS_HARDWARE_TYPE_GPX; // TODO: Both the GPX-1 and IMX-5.1 will use the STM32U5 (at the moment)
+        else if (processorType == IS_PROCESSOR_STM32U5) {
+            uint32_t totalFlash = getTotalFlashSize();
+            hardwareType = (totalFlash > 1024 * 1024) ? IS_HARDWARE_TYPE_IMX : IS_HARDWARE_TYPE_GPX;
+        }
     }
 
     // based on what we know so far, let's try and figure out a hardware type
@@ -492,7 +551,10 @@ dfu_error DFUDevice::fetchDeviceInfo() {
                 hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_EVB, 2, 0);
                 break;
             case IS_HARDWARE_TYPE_IMX:
-                hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
+                if (processorType == IS_PROCESSOR_STM32L4)
+                    hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
+                else if (processorType == IS_PROCESSOR_STM32U5)
+                    hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 6, 0);
                 break;
             case IS_HARDWARE_TYPE_GPX:
                 hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, 1, 0);
@@ -501,6 +563,8 @@ dfu_error DFUDevice::fetchDeviceInfo() {
     }
 
     libusb_release_interface(usbHandle, 0);
+    libusb_close(usbHandle);
+    usbHandle = nullptr;
     return DFU_ERROR_NONE;
 }
 
@@ -741,6 +805,9 @@ dfu_error DFUDevice::updateFirmware(std::istream& stream, uint64_t baseAddress) 
     ret_libusb = abort();
     if (ret_libusb == LIBUSB_SUCCESS) {
         if (statusCb) {
+            dfu_memory_t& flash = segments[STM32_DFU_INTERFACE_FLASH];
+            statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Flash segment: addr=0x%08X, pageSize=%u, pages=%u",
+                     getDescription(), flash.address, flash.pageSize, flash.pages);
             statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Erasing flash memory...", getDescription());
         }
 
@@ -806,12 +873,16 @@ dfu_error DFUDevice::eraseFlash(const dfu_memory_t& mem, uint32_t& offset, uint3
 
         dlBlockNum = 0; // Erase Flash commands are ALWAYS sent with a 0 wValue/wBlockNum
         ret_libusb = download(dlBlockNum, eraseCommand, 5);
-        if (ret_libusb < LIBUSB_SUCCESS)
+        if (ret_libusb < LIBUSB_SUCCESS) {
+            if (statusCb) statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Erase download failed at 0x%08X: libusb=%d", getDescription(), pageAddress, ret_libusb);
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        }
 
         ret_libusb = waitForState(DFU_STATE_DNLOAD_IDLE, &state);
-        if (ret_libusb < LIBUSB_SUCCESS)
+        if (ret_libusb < LIBUSB_SUCCESS) {
+            if (statusCb) statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Erase waitForState failed at 0x%08X: libusb=%d, state=%d", getDescription(), pageAddress, ret_libusb, state);
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        }
 
         byteInSection += mem.pageSize;
         bytes_erased += mem.pageSize;
@@ -844,6 +915,10 @@ dfu_error DFUDevice::writeFlash(const dfu_memory_t& mem, uint32_t& offset, uint3
 
     if (data_len == 0)
         return DFU_ERROR_NONE; // nothing to do
+
+    log_info(IS_LOG_FWUPDATE, "DFU writeFlash: data_len=%u, pageSize=%u, wTransferSize=%u, chunksPerPage=%u",
+             data_len, mem.pageSize, funcDescriptor.wTransferSize,
+             funcDescriptor.wTransferSize ? (mem.pageSize + funcDescriptor.wTransferSize - 1) / funcDescriptor.wTransferSize : 0);
 
     // Write memory
     uint32_t bytes_written = 0;
@@ -1276,29 +1351,40 @@ int DFUDevice::readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen) {
  * @param actual_state if not null, the final state will be returned (useful in the event of a timeout).
  * @return DFU_ERROR_NONE if state watches the required_state, otherwise will return DFU_ERROR_TIMEOUT if the timeout condition occurs first.
  */
-int DFUDevice::waitForState(dfu_state required_state, dfu_state* actual_state) {
+int DFUDevice::waitForState(dfu_state required_state, dfu_state* actual_state, uint32_t timeout_ms) {
     dfu_status status = DFU_STATUS_ERR_UNKNOWN;
     uint32_t waitTime = 0;
     dfu_state state;
     uint8_t stringIndex;
     int ret_libusb = 0;
-    uint8_t tryCounter = 0;
 
     if (actual_state == nullptr)
         actual_state = &state;
 
+    auto start = std::chrono::steady_clock::now();
+
+    int polls = 0;
+
     do {
         ret_libusb = getStatus(&status, &waitTime, actual_state, &stringIndex);
+        if (ret_libusb < LIBUSB_SUCCESS)
+            return ret_libusb;
+
+        polls++;
+
         if (status != DFU_STATUS_OK) {
             clearStatus();
         }
         if (*actual_state != required_state) {
-            if (tryCounter++ > 5)
-                return ret_libusb;
+            auto elapsed = std::chrono::steady_clock::now() - start;
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms)
+                return LIBUSB_ERROR_TIMEOUT;
 
-            SLEEP_MS(_MAX(waitTime, 25));
+            SLEEP_MS(1);  // Poll aggressively; device bwPollTimeout is overly conservative
         }
     } while ((status != DFU_STATUS_OK) || (*actual_state != required_state));
+
+    log_more_debug(IS_LOG_FWUPDATE, "DFU waitForState: polls=%d, bwPollTimeout=%ums, state=%d", polls, waitTime, required_state);
 
     return LIBUSB_SUCCESS;
 }
