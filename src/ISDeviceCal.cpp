@@ -313,7 +313,7 @@ static void JsonObjv1p2ToSensor(const json& jTC, int device, sensor_tcal_group_t
     }
 }
 
-bool ISDeviceCal::loadCalibrationFromJsonObj(const std::string& filePath, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose)
+bool ISDeviceCal::loadCalibrationFromJsonFile(const std::string& filePath, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose)
 {
     // Read file
     std::ifstream jsonFile(filePath);
@@ -323,7 +323,6 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const std::string& filePath, sOrtho
         return false;
     }
 
-    // cout << "Loading calibration: " << filePath << endl;
     printf("Loading calibration: %s\n", filePath.c_str());
 
     // Parse JSON
@@ -340,6 +339,30 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const std::string& filePath, sOrtho
     {   // Error in file.  Likely invalid data (i.e. Infinity or NAN).
         return false;
     }
+
+    return loadCalibrationFromJsonObj(jObj, ocal, info, dinfo, tcal, mcal, pose, filePath);
+}
+
+bool ISDeviceCal::loadCalibrationFromJsonString(const std::string& jsonString, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose)
+{
+    json jObj;
+    try {
+        jObj = json::parse(jsonString);
+    } catch (const json::parse_error& e) {
+        cout << "JSON parse error: " << e.what() << endl;
+        return false;
+    }
+
+    if (jObj.empty())
+        return false;
+
+    return loadCalibrationFromJsonObj(jObj, ocal, info, dinfo, tcal, mcal, pose);
+}
+
+bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose, const std::string& filePath)
+{
+    if (jObj.empty())
+        return false;
 
     //////////////////////////////////////////////////////////////////////////
     //  Calibration Info
@@ -405,7 +428,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const std::string& filePath, sOrtho
                 info->devSerialNum = jInf["devSerialNum"].get<int>();
             }
         }
-        else
+        else if (!filePath.empty())
         {   // Get date and time from filename
             memset(info, 0, sizeof(sensor_cal_info_t));
 
@@ -483,7 +506,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const std::string& filePath, sOrtho
                 JsonObjv1p2ToSensor(jObj["tempComp2"], 1, *tcal);
         }
     }
-    
+
     if (info)
     {   // Update info size and checksum
         info->size = sizeof(sensor_cal_info_t);
