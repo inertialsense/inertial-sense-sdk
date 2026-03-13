@@ -101,10 +101,7 @@ DID_REFERENCE_IMU               = 95
 DID_IMUS_RAW                    = 96
 DID_IMU_RAW                     = 97
 
-DID_IMU_AV_TEST_1               = 101
-DID_IMU_AV_TEST_2               = 102
-DID_IMU_AV_TEST_3               = 103
-DID_IMU_AV_TEST_4               = 104
+DID_AV_IMUS                     = 100
 
 DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
@@ -179,6 +176,7 @@ did_name_lookup = {
  DID_IMU_RAW : "imuRaw",
  DID_PIMU : "pimu",
  DID_IMU : "imu",
+ DID_AV_IMUS : "avImus",
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",
  DID_GPS_RTK_OPT : "gpsRtkOpt",

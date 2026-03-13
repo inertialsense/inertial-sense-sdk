@@ -315,7 +315,7 @@ void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices)
 }
 
 
-int preintegratedImuToIMU(imu_t *imu, const pimu_t *pImu)
+int preintegratedImuToIMUheader(imu_t *imu, const pimu_t *pImu)
 {
     if (pImu->dt == 0.0f)
     {
@@ -324,10 +324,25 @@ int preintegratedImuToIMU(imu_t *imu, const pimu_t *pImu)
 
     imu->time = pImu->time;
     imu->status = pImu->status;
-    float divDt = 1.0f / pImu->dt;
-    mul_Vec3_X(imu->I.pqr, pImu->theta, divDt);
-    mul_Vec3_X(imu->I.acc, pImu->vel, divDt);
     return 1;
+}
+
+
+int preintegratedImuToImuI(imui_t *imu, const pimu_t *pImu, float divDt)
+{
+    mul_Vec3_X(imu->pqr, pImu->theta, divDt);
+    mul_Vec3_X(imu->acc, pImu->vel, divDt);
+    return 1;
+}
+
+
+int preintegratedImuToImu(imu_t *imu, const pimu_t *pImu)
+{
+    if (preintegratedImuToIMUheader(imu, pImu) == 0)
+    {
+        return 0;
+    }
+    return preintegratedImuToImuI(&imu->I, pImu, 1.0f / pImu->dt);
 }
 
 

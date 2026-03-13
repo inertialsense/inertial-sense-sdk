@@ -39,6 +39,8 @@ MPS2UG   = 1E6/9.81 # m/s^2 to micro g
 
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
+REMOVE_IMU_SLOPE = 1    # remove slope and bias from IMU data
+REMOVE_IMU_SPIKES = 1   # remove spikes from IMU data 
 
 def median_filter(data, history_size=3):
     """
@@ -2905,9 +2907,18 @@ class logPlot:
                     imu1 = np.array(imu1)
                     imuCount = 1
 
-                    # remove linear drift
-                    # for i in range(imu1.shape[1]):
-                    #     imu1[:,i] = detrend(imu1[:,i], type='linear')
+                    if REMOVE_IMU_SLOPE:
+                        for i in range(imu1.shape[1]):
+                            imu1[:,i] = detrend(imu1[:,i], type='linear')
+
+                    if REMOVE_IMU_SPIKES:
+                        # Remove spikes in data by replacing with average of adjacent samples
+                        for i in range(imu1.shape[1]):
+                            spike_idx = np.where(abs(imu1[:,i]) >= (0.5 * DEG2RAD))[0]
+                            for j in spike_idx:
+                                prev = imu1[j-1, i] if j > 0 else imu1[j+1, i]
+                                nxt  = imu1[j+1, i] if j < len(imu1)-1 else imu1[j-1, i]
+                                imu1[j, i] = (prev + nxt) / 2.0
 
                 else:   
                     time = self.getData(device, DID_IMUS_RAW, 'time')
@@ -2973,21 +2984,21 @@ class logPlot:
         self.imuAcc(fig=fig, axs=axs, useImus=True, combineImus=True)
 
     def avtImu1PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMU_AV_TEST_1, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuPQR(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu2PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMU_AV_TEST_2, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuPQR(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu3PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMU_AV_TEST_3, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuPQR(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu4PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMU_AV_TEST_4, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuPQR(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu1Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMU_AV_TEST_1, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuAcc(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu2Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMU_AV_TEST_2, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuAcc(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu3Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMU_AV_TEST_3, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuAcc(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu4Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMU_AV_TEST_4, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuAcc(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
 
     def imuPQR(self, did=DID_IMU, fig=None, axs=None, useImus=False, combineImus=False):
         if fig is None:
@@ -3169,22 +3180,10 @@ class logPlot:
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
     def allanVariancePQRTest1(self, fig=None, axs=None):
-        self.allanVariancePQR(did=DID_IMU_AV_TEST_1, fig=fig, axs=axs)
-    def allanVariancePQRTest2(self, fig=None, axs=None):
-        self.allanVariancePQR(did=DID_IMU_AV_TEST_2, fig=fig, axs=axs)
-    def allanVariancePQRTest3(self, fig=None, axs=None):
-        self.allanVariancePQR(did=DID_IMU_AV_TEST_3, fig=fig, axs=axs)
-    def allanVariancePQRTest4(self, fig=None, axs=None):
-        self.allanVariancePQR(did=DID_IMU_AV_TEST_4, fig=fig, axs=axs)
+        self.allanVariancePQR(did=DID_AV_IMUS, fig=fig, axs=axs)
 
     def allanVarianceAccTest1(self, fig=None, axs=None):
-        self.allanVarianceAcc(did=DID_IMU_AV_TEST_1, fig=fig, axs=axs)
-    def allanVarianceAccTest2(self, fig=None, axs=None):
-        self.allanVarianceAcc(did=DID_IMU_AV_TEST_2, fig=fig, axs=axs)
-    def allanVarianceAccTest3(self, fig=None, axs=None):
-        self.allanVarianceAcc(did=DID_IMU_AV_TEST_3, fig=fig, axs=axs)
-    def allanVarianceAccTest4(self, fig=None, axs=None):
-        self.allanVarianceAcc(did=DID_IMU_AV_TEST_4, fig=fig, axs=axs)
+        self.allanVarianceAcc(did=DID_AV_IMUS, fig=fig, axs=axs)
 
     def allanVariancePQR(self, did=DID_IMU, fig=None, axs=None):
         if fig is None:

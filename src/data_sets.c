@@ -364,11 +364,11 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsOnlyTimeFirst,   // 97: DID_IMU_RAW
         0,                      // 98: DID_FIRMWARE_UPDATE
         0,                      // 99: DID_RUNTIME_PROFILER
-        0,                      // 100:
-        0,                      // 101: DID_IMU_AV_TEST_1
-        0,                      // 102: DID_IMU_AV_TEST_2
-        0,                      // 103: DID_IMU_AV_TEST_3
-        0,                      // 104: DID_IMU_AV_TEST_4
+        offsetsOnlyTimeFirst,   // 100: DID_AV_IMUS
+        0,                      // 101: 
+        0,                      // 102: 
+        0,                      // 103: 
+        0,                      // 104: 
         0,                      // 105:
         0,                      // 106:
         0,                      // 107:
@@ -554,11 +554,11 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 97: DID_IMU_RAW
         0,                      // 98: DID_FIRMWARE_UPDATE
         0,                      // 99: DID_RUNTIME_PROFILER
-        0,                      // 100:
-        0,                      // 101: DID_IMU_AV_TEST_1
-        0,                      // 102: DID_IMU_AV_TEST_2
-        0,                      // 103: DID_IMU_AV_TEST_3
-        0,                      // 104: DID_IMU_AV_TEST_4
+        0,                      // 100: DID_AV_IMUS
+        0,                      // 101: 
+        0,                      // 102: 
+        0,                      // 103: 
+        0,                      // 104: 
         0,                      // 105:
         0,                      // 106:
         0,                      // 107:
@@ -647,10 +647,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_PIMU]                  = RMC_BITS_PIMU,
     [DID_REFERENCE_IMU]         = RMC_BITS_REFERENCE_IMU,
     [DID_REFERENCE_PIMU]        = RMC_BITS_REFERENCE_PIMU,
-    [DID_IMU_AV_TEST_1]         = RMC_BITS_IMU_AV_TEST,
-    [DID_IMU_AV_TEST_2]         = RMC_BITS_IMU_AV_TEST,
-    [DID_IMU_AV_TEST_3]         = RMC_BITS_IMU_AV_TEST,
-    [DID_IMU_AV_TEST_4]         = RMC_BITS_IMU_AV_TEST,
+    [DID_AV_IMUS]               = RMC_BITS_IMU_AV_IMUS,
     [DID_BAROMETER]             = RMC_BITS_BAROMETER,
     [DID_MAGNETOMETER]          = RMC_BITS_MAGNETOMETER,
     [DID_GPS1_POS]              = RMC_BITS_GPS1_POS,

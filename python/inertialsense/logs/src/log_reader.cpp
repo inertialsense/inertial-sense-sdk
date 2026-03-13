@@ -161,6 +161,9 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
 
         switch (data->hdr.id) {
             case DID_IMUS_RAW:
+#ifdef DID_AV_IMUS
+            case DID_AV_IMUS:
+#endif
             case DID_IMUS_UNCAL:
                 numImuDevices_ = IMUS_T_NUM_DEVICES(data->hdr.size);
                 break;
@@ -231,15 +234,14 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
             HANDLE_MSG(DID_BAROMETER, dev_log_->barometer);
             HANDLE_MSG(DID_GPS1_RTK_POS, dev_log_->gps1RtkPos);
             HANDLE_MSG(DID_IMUS_UNCAL, dev_log_->imusUncal);
+#ifdef DID_AV_IMUS
             HANDLE_MSG(DID_IMUS_RAW, dev_log_->imusRaw);
+#endif
             HANDLE_MSG(DID_IMU_RAW, dev_log_->imuRaw);
             HANDLE_MSG(DID_PIMU, dev_log_->pimu);
             HANDLE_MSG(DID_IMU, dev_log_->imu);
-#ifdef AV_TEST_IMU_SIZE
-            HANDLE_MSG(DID_IMU_AV_TEST_1, dev_log_->avtImu[0]);
-            HANDLE_MSG(DID_IMU_AV_TEST_2, dev_log_->avtImu[1]);
-            HANDLE_MSG(DID_IMU_AV_TEST_3, dev_log_->avtImu[2]);
-            HANDLE_MSG(DID_IMU_AV_TEST_4, dev_log_->avtImu[3]);
+#ifdef DID_AV_IMUS
+            HANDLE_MSG(DID_AV_IMUS, dev_log_->avtImus);
 #endif
             HANDLE_MSG(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo);
             HANDLE_MSG(DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw);
@@ -359,11 +361,8 @@ void LogReader::forwardData(int device_id) {
     forward_message(DID_IMU_RAW, dev_log_->imuRaw, device_id);
     forward_message(DID_PIMU, dev_log_->pimu, device_id);
     forward_message(DID_IMU, dev_log_->imu, device_id);
-#ifdef AV_TEST_IMU_SIZE
-    forward_message(DID_IMU_AV_TEST_1, dev_log_->avtImu[0], device_id);
-    forward_message(DID_IMU_AV_TEST_2, dev_log_->avtImu[1], device_id);
-    forward_message(DID_IMU_AV_TEST_3, dev_log_->avtImu[2], device_id);
-    forward_message(DID_IMU_AV_TEST_4, dev_log_->avtImu[3], device_id);
+#ifdef DID_AV_IMUS
+    forward_message(DID_AV_IMUS, dev_log_->avtImus, device_id);
 #endif
     forward_message(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, device_id);
     forward_message(DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, device_id);

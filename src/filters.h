@@ -525,7 +525,9 @@ void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices,
 void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
-int preintegratedImuToIMU(imu_t *imu, const pimu_t *imuInt);
+int preintegratedImuToIMUheader(imu_t *imu, const pimu_t *pImu);
+int preintegratedImuToImuI(imui_t *imu, const pimu_t *pImu, float divDt);
+int preintegratedImuToImu(imu_t *imu, const pimu_t *imuInt);
 int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
 
 float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast );

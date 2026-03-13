@@ -1912,11 +1912,11 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_IMU_RAW",                      // 97 
     "DID_FIRMWARE_UPDATE",              // 98 
     "DID_RUNTIME_PROFILER",             // 99 
-    "UNUSED_100",                       // 100
-    "DID_IMU_AV_TEST_1",                // 101
-    "DID_IMU_AV_TEST_2",                // 102
-    "DID_IMU_AV_TEST_3",                // 103
-    "DID_IMU_AV_TEST_4",                // 104
+    "DID_AV_IMUS",                      // 100
+    "UNUSED_101",                       // 101
+    "UNUSED_102",                       // 102
+    "UNUSED_103",                       // 103
+    "UNUSED_104",                       // 104
     "UNUSED_105",                       // 105
     "UNUSED_106",                       // 106
     "UNUSED_107",                       // 107
@@ -1984,11 +1984,8 @@ cISDataMappings::cISDataMappings()
     PopulateMapImus(m_data_set, DID_IMUS_RAW, "5 IMU data calibrated from DID_IMUS_UNCAL.");
     PopulateMapImus(m_data_set, DID_IMUS_UNCAL, "5 IMU data directly from sensor (uncalibrated).");
 
-    PopulateMapImu(m_data_set, DID_IMU_AV_TEST_1, "IMU AV Test 1 data.");
-    PopulateMapImu(m_data_set, DID_IMU_AV_TEST_2, "IMU AV Test 2 data.");
-    PopulateMapImu(m_data_set, DID_IMU_AV_TEST_3, "IMU AV Test 3 data.");
-    PopulateMapImu(m_data_set, DID_IMU_AV_TEST_4, "IMU AV Test 4 data.");
-    
+    PopulateMapImu(m_data_set, DID_AV_IMUS, "IMU AV Test data.");
+
     PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
     PopulateMapPimu(m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");
     PopulateMapMagnetometer(m_data_set, DID_REFERENCE_MAGNETOMETER);

@@ -137,12 +137,7 @@ typedef uint32_t eDataIDs;
 #define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMUS_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
-
-#define DID_IMU_AV_TEST_1               (eDataIDs)101 /** (imu_t) 1x ST IMUs */
-#define DID_IMU_AV_TEST_2               (eDataIDs)102 /** (imu_t) 2x ST IMUs */
-#define DID_IMU_AV_TEST_3               (eDataIDs)103 /** (imu_t) 3x ST IMUs */
-#define DID_IMU_AV_TEST_4               (eDataIDs)104 /** (imu_t) 2x TDK IMUs */
-#define AV_TEST_IMU_SIZE         4   // To enable Allan variance analysis, set to av test IMU array. 
+#define DID_AV_IMUS                (eDataIDs)100 /** (imus_t) Allan variance test.  Uncomment to enable. */
 
 #define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (did_event_t)*/
 
@@ -877,7 +872,7 @@ typedef struct PACKED
 } imu_t;
 
 
-/** (DID_IMUS_UNCAL, DID_IMUS_RAW) Up to MAX_IMU_DEVICES Inertial Measurement Units (IMUs) data */
+/** (DID_IMUS_UNCAL, DID_IMUS_RAW, DID_AV_IMUS) Up to MAX_IMU_DEVICES Inertial Measurement Units (IMUs) data */
 typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -1869,7 +1864,7 @@ typedef struct PACKED
 #define RMC_BITS_PIMU                   0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-#define RMC_BITS_IMU_AV_TEST            0x0000000000000100      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+#define RMC_BITS_IMU_AV_IMUS            0x0000000000000100      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
 // #define RMC_BITS_UNUSED                 0x0000000000000200 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
@@ -1969,8 +1964,10 @@ typedef struct PACKED
                                             | RMC_BITS_WHEEL_ENCODER \
                                             | RMC_BITS_GROUND_VEHICLE)
 #define RMC_PRESET_ALLAN_VARIANCE           (RMC_BITS_PRESET \
+                                            | RMC_BITS_IMU)
+#define RMC_PRESET_ALLAN_VARIANCE_IMUS      (RMC_BITS_PRESET \
                                             | RMC_BITS_IMU \
-                                            | RMC_BITS_IMU_AV_TEST)
+                                            | RMC_BITS_IMU_AV_IMUS)
 #define RMC_PRESET_GPS                      (RMC_BITS_PRESET \
                                             | RMC_BITS_GPS1_POS \
                                             | RMC_BITS_GPS2_POS \
