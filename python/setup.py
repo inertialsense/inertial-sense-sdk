@@ -69,6 +69,8 @@ ext_modules = [
         "inertialsense.logs.log_reader",
         sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
         include_dirs = include_dirs,
+        libraries = libraries,
+        library_dirs = library_dirs,
         extra_objects = extra_objects
     ),
 ]
