@@ -2838,13 +2838,12 @@ class logPlot:
                 b.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 
-    def loadGyros(self, device, did=DID_IMU, useImus=False):
-        return self.loadIMU(device, accelSensor=0, did=did, useImus=useImus)
-
-    def loadAccels(self, device, did=DID_IMU, useImus=False):
-        return self.loadIMU(device, accelSensor=1, did=did, useImus=useImus)
+    def loadGyros(self, device, did):
+        return self.loadIMU(device, accelSensor=0, did=did)
+    def loadAccels(self, device, did):
+        return self.loadIMU(device, accelSensor=1, did=did)
     
-    def loadIMU(self, device, accelSensor, did=DID_IMU, useImus=False):   # 0 = gyro, 1 = accelerometer
+    def loadIMU(self, device, accelSensor, did):   # 0 = gyro, 1 = accelerometer
         imu1 = None
         imu2 = None
         imu3 = None
@@ -2854,20 +2853,21 @@ class logPlot:
         time = None
         dt = None
 
-        if accelSensor==0:
-            # I = np.copy(self.getData(device, DID_IMU_RAW, 'I'))  # to plot raw gyro data
-            # imu1 = I['pqr']                                      # to plot raw gyro data
-            imu1 = np.copy(self.getData(device, DID_PIMU, 'theta'))
+        if did == DID_IMUS_RAW or did == DID_IMUS_UNCAL or did == DID_IMUS:
+            useImus = True
         else:
-            imu1 = np.copy(self.getData(device, DID_PIMU, 'vel'))
+            useImus = False
+
+        if accelSensor==0:
+            imu1 = np.copy(self.getData(device, did, 'theta'))
+        else:
+            imu1 = np.copy(self.getData(device, did, 'vel'))
 
         if np.shape(imu1)[0] != 0 and not useImus:  # DID_PIMU
             name = "PIMU"
             # time = self.getData(device, DID_IMU_RAW, 'time')     # to plot raw gyro data
-            time = self.getData(device, DID_PIMU, 'time')
-            dt = self.getData(device, DID_PIMU, 'dt') 
-            # dt = time[1:] - time[:-1]
-            # dt = np.append(dt, dt[-1])
+            time = self.getData(device, did, 'time')
+            dt = self.getData(device, did, 'dt') 
             # Convert from preintegrated IMU to IMU.
             for i in range(3):
                 imu1[:, i] /= dt
@@ -2921,12 +2921,12 @@ class logPlot:
                                 imu1[j, i] = (prev + nxt) / 2.0
 
                 else:   
-                    time = self.getData(device, DID_IMUS_RAW, 'time')
+                    time = self.getData(device, did, 'time')
                     name = "IMUS"
 
                     if len(time) != 0: # DID_IMUS_RAW 
-                        I = self.getData(device, DID_IMUS_RAW, 'I')
-                        imuStatus = self.getData(device, DID_IMUS_RAW, 'status')
+                        I = self.getData(device, did, 'I')
+                        imuStatus = self.getData(device, did, 'status')
                         dt = time[1:] - time[:-1]
                         dt = np.append(dt, dt[-1])
                         imu1 = []
@@ -2971,36 +2971,27 @@ class logPlot:
         imus = imus[:imuCount]
         return (name, time, dt, imus)
 
-    def imusPQR(self, fig=None, axs=None):
-        self.imuPQR(fig=fig, axs=axs, useImus=True)
+    def imusPqr(self, fig=None, axs=None):
+        self.imuPQR(fig=fig, axs=axs)
 
     def imusAcc(self, fig=None, axs=None):
-        self.imuAcc(fig=fig, axs=axs, useImus=True)
+        self.imuAcc(fig=fig, axs=axs)
 
-    def imusPqrCombined(self, fig=None, axs=None):
-        self.imuPQR(fig=fig, axs=axs, useImus=True, combineImus=True)
+    def imusRawPqrCombined(self, fig=None, axs=None):
+        self.imuPQR(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=True)
+    def imusRawAccCombined(self, fig=None, axs=None):
+        self.imuAcc(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=True)
 
-    def imusAccCombined(self, fig=None, axs=None):
-        self.imuAcc(fig=fig, axs=axs, useImus=True, combineImus=True)
+    def imusRawPqr(self, fig=None, axs=None):
+        self.imuPQR(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False)
+    def imusRawAcc(self, fig=None, axs=None):
+        self.imuAcc(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False)
+    def imusPqr(self, fig=None, axs=None):
+        self.imuPQR(did=DID_IMUS, fig=fig, axs=axs, combineImus=False)
+    def imusAcc(self, fig=None, axs=None):
+        self.imuAcc(did=DID_IMUS, fig=fig, axs=axs, combineImus=False)
 
-    def avtImu1PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu2PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu3PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu4PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu1Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu2Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu3Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-    def avtImu4Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
-
-    def imuPQR(self, did=DID_IMU, fig=None, axs=None, useImus=False, combineImus=False):
+    def imuPQR(self, did=DID_IMU, fig=None, axs=None, combineImus=False):
         if fig is None:
             fig = plt.figure()
 
@@ -3015,7 +3006,7 @@ class logPlot:
                 refSnr.append(refTheta / refDt[:,None])
                 refTime.append(refTime_)
 
-        (name, time, dt, sensors) = self.loadGyros(0, did=did, useImus=useImus)
+        (name, time, dt, sensors) = self.loadGyros(0, did=did)
         fig.suptitle(name + ' PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         plotResidual = (len(sensors)==1 or combineImus) and self.residual 
@@ -3024,7 +3015,7 @@ class logPlot:
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
-                    (name, time, dt, sensors) = self.loadGyros(d, did=did, useImus=useImus)
+                    (name, time, dt, sensors) = self.loadGyros(d, did=did)
                     refTime = time
                     if combineImus:
                         refSnr = sum(sensors) / len(sensors)
@@ -3033,7 +3024,7 @@ class logPlot:
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (name, time, dt, sensors) = self.loadGyros(d, did=did, useImus=useImus)
+            (name, time, dt, sensors) = self.loadGyros(d, did=did)
             if len(sensors):
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
@@ -3090,7 +3081,7 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
 
-    def imuAcc(self, did=DID_IMU, fig=None, axs=None, useImus=False, combineImus=False):
+    def imuAcc(self, did=DID_IMU, fig=None, axs=None, combineImus=False):
         if fig is None:
             fig = plt.figure()
 
@@ -3104,7 +3095,7 @@ class logPlot:
                 refSnr.append(refVel / refDt[:,None])
                 refTime.append(refTime_)
 
-        (name, time, dt, sensors) = self.loadAccels(0, did=did, useImus=useImus)
+        (name, time, dt, sensors) = self.loadAccels(0, did=did)
         fig.suptitle(name + ' Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         plotResidual = (len(sensors)==1 or combineImus) and self.residual 
@@ -3113,7 +3104,7 @@ class logPlot:
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
-                    (name, time, dt, sensors) = self.loadAccels(d, did=did, useImus=useImus)
+                    (name, time, dt, sensors) = self.loadAccels(d, did=did)
                     refTime = time
                     if combineImus:
                         refSnr = sum(sensors) / len(sensors)
@@ -3122,7 +3113,7 @@ class logPlot:
                     continue
 
         for dev_idx, d in enumerate(self.active_devs):
-            (name, time, dt, sensors) = self.loadAccels(d, did=did, useImus=useImus)
+            (name, time, dt, sensors) = self.loadAccels(d, did=did)
             if len(sensors):
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
@@ -3179,13 +3170,12 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
-    def allanVariancePQRTest1(self, fig=None, axs=None):
-        self.allanVariancePQR(did=DID_IMUS, fig=fig, axs=axs)
-
-    def allanVarianceAccTest1(self, fig=None, axs=None):
+    def allanVarianceImusPqr(self, fig=None, axs=None):
+        self.allanVariancePqr(did=DID_IMUS, fig=fig, axs=axs)
+    def allanVarianceImusAcc(self, fig=None, axs=None):
         self.allanVarianceAcc(did=DID_IMUS, fig=fig, axs=axs)
 
-    def allanVariancePQR(self, did=DID_IMU, fig=None, axs=None):
+    def allanVariancePqr(self, did=DID_IMU, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
@@ -3228,22 +3218,8 @@ class logPlot:
                             
                             ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * RAD2DEG * 3600, rw * RAD2DEG * 3600/RTHR2RTS))
 
-                            # (t2, ad, ade, adn) = allantools.ohdev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
-                            # # Compute random walk and bias instability
-                            # t_bi_max = 1000
-                            # idx_max = (np.abs(t2 - t_bi_max)).argmin()
-                            # bi = np.amin(ad[0:idx_max])
-                            # rw_idx = (np.abs(t2 - 1.0)).argmin()
-                            # rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
-
-                            # ax[i, n].loglog(t2, ad * RAD2DEG * 3600, '--', label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG * 3600/RTHR2RTS, bi * RAD2DEG * 3600))
-
                             sumARW[i][n].append(rw * RAD2DEG * 3600/RTHR2RTS)
                             sumBI[i][n].append(bi * RAD2DEG * 3600)
-
-                            # Error bounds debug plots
-                            # ax[i, n].loglog(t2, (ad + ade) * RAD2DEG*3600, '--')
-                            # ax[i, n].loglog(t2, (ad - ade) * RAD2DEG*3600, '--')
 
         totalARW = []
         totalBI = []
@@ -3258,7 +3234,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $\degree/hr$, ARW: %.3g $\degree/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumARW[i][n])), '°/hr')
+                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $\degree/hr$, ARW: %.3g $\degree/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumARW[i][n])), 'Allan Variance (°/hr)')
                     totalARW.append(sumARW[i][n])
                     totalBI.append(sumBI[i][n])
 
