@@ -46,7 +46,7 @@ else:
 
 static_libraries = ['InertialSenseSDK']
 static_lib_dir = '..'
-libraries = []
+libraries = ['Ws2_32', 'Iphlpapi'] if sys.platform == 'win32' else []
 library_dirs = []
 
 if sys.platform == 'win32':
