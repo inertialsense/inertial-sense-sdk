@@ -2,7 +2,8 @@
  * @file test_ISHttpRequest.cpp
  * @brief Unit tests for ISHttpRequest HTTP client
  *
- * Uses a simple POSIX socket server to simulate HTTP responses.
+ * Uses a simple socket server to simulate HTTP responses.
+ * Cross-platform: POSIX sockets on Linux/macOS, Winsock on Windows.
  *
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
@@ -12,10 +13,22 @@
 #include <atomic>
 #include <cstring>
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <arpa/inet.h>
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #pragma comment(lib, "Ws2_32.lib")
+    typedef SOCKET socket_t;
+    #define CLOSE_SOCKET closesocket
+    #define SOCKET_INVALID INVALID_SOCKET
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <unistd.h>
+    #include <arpa/inet.h>
+    typedef int socket_t;
+    #define CLOSE_SOCKET close
+    #define SOCKET_INVALID (-1)
+#endif
 
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
@@ -26,36 +39,45 @@
 
 using json = nlohmann::json;
 
-// Simple POSIX socket HTTP mock server
+#ifdef _WIN32
+// RAII helper to initialize/cleanup Winsock
+struct WinsockInit {
+    WinsockInit() { WSADATA wsa; WSAStartup(MAKEWORD(2, 2), &wsa); }
+    ~WinsockInit() { WSACleanup(); }
+};
+static WinsockInit s_winsockInit;
+#endif
+
+// Simple cross-platform socket HTTP mock server
 class MockHttpServer {
 public:
     MockHttpServer(int port, const std::string& response)
-        : m_port(port), m_response(response), m_listenFd(-1), m_running(false) {}
+        : m_port(port), m_response(response), m_listenFd(SOCKET_INVALID), m_running(false) {}
 
     bool start()
     {
         m_listenFd = socket(AF_INET, SOCK_STREAM, 0);
-        if (m_listenFd < 0) return false;
+        if (m_listenFd == SOCKET_INVALID) return false;
 
         int opt = 1;
-        setsockopt(m_listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        setsockopt(m_listenFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
 
         struct sockaddr_in addr = {};
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
         addr.sin_port = htons(m_port);
 
-        if (bind(m_listenFd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
+        if (bind(m_listenFd, (struct sockaddr*)&addr, sizeof(addr)) != 0)
         {
-            close(m_listenFd);
-            m_listenFd = -1;
+            CLOSE_SOCKET(m_listenFd);
+            m_listenFd = SOCKET_INVALID;
             return false;
         }
 
-        if (listen(m_listenFd, 1) < 0)
+        if (listen(m_listenFd, 1) != 0)
         {
-            close(m_listenFd);
-            m_listenFd = -1;
+            CLOSE_SOCKET(m_listenFd);
+            m_listenFd = SOCKET_INVALID;
             return false;
         }
 
@@ -63,8 +85,8 @@ public:
         m_thread = std::thread([this]() {
             struct sockaddr_in clientAddr = {};
             socklen_t clientLen = sizeof(clientAddr);
-            int clientFd = accept(m_listenFd, (struct sockaddr*)&clientAddr, &clientLen);
-            if (clientFd < 0) return;
+            socket_t clientFd = accept(m_listenFd, (struct sockaddr*)&clientAddr, &clientLen);
+            if (clientFd == SOCKET_INVALID) return;
 
             // Read request (drain until we see end of headers)
             char buf[4096];
@@ -88,8 +110,8 @@ public:
             }
 
             // Small delay then close
-            usleep(50000);
-            close(clientFd);
+            SLEEP_MS(50);
+            CLOSE_SOCKET(clientFd);
         });
 
         return true;
@@ -98,10 +120,10 @@ public:
     void stop()
     {
         m_running = false;
-        if (m_listenFd >= 0)
+        if (m_listenFd != SOCKET_INVALID)
         {
-            close(m_listenFd);
-            m_listenFd = -1;
+            CLOSE_SOCKET(m_listenFd);
+            m_listenFd = SOCKET_INVALID;
         }
         if (m_thread.joinable())
             m_thread.join();
@@ -112,7 +134,7 @@ public:
 private:
     int m_port;
     std::string m_response;
-    int m_listenFd;
+    socket_t m_listenFd;
     std::atomic<bool> m_running;
     std::thread m_thread;
 };
