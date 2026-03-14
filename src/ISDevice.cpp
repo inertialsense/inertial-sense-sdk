@@ -10,6 +10,7 @@
 #include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
 #include "ISDeviceCal.h"
+#include "ISHttpRequest.h"
 #include "util/util.h"
 #include "imx_defaults.h"
 #include "ISLogger.h"
@@ -221,7 +222,7 @@ bool ISDevice::handshakeISbl() {
 
         if ((i == 4) && portAvailable(port)) {
             log_warn(IS_LOG_ISDEVICE, "[%s] ISDevice::handshakeISbl() is unable to clear the port RX buffer. Handshaking is not possible.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-            return false;   // unable to clear buffer, so we can't handshake
+            return true;   // unable to clear buffer, so we can't handshake, but return true anyway so we don't keep trying
         }
     }
     fn.mark("RX Buffer cleared. Starting handshake.");
@@ -252,7 +253,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
         return false;
 
     FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+    //log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
     if (!hasHandshake) {
         hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
         fn.mark("Handshake == " + std::to_string(hasHandshake));
@@ -323,7 +324,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     // hdwId = IS_HARDWARE_TYPE_UNKNOWN;
     // devInfo = {};
     fn.mark("Timed-out waiting.");
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+    // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
     return false;
 }
 
@@ -493,6 +494,62 @@ std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
 
 std::string ISDevice::getIdAsString() const {
     return getIdAsString(devInfo);
+}
+
+uint64_t ISDevice::parseDeviceIdString(const std::string& str) {
+    uint32_t serialNo = 0;
+    is_hardware_t hdwId = IS_HARDWARE_ANY;
+
+    // Find separator — accept both "::" (canonical) and ":" (shorthand)
+    std::string snPart;
+    size_t sepPos = str.find("::");
+    size_t sepLen = 2;
+    if (sepPos == std::string::npos) {
+        sepPos = str.find(':');
+        sepLen = 1;
+    }
+
+    if (sepPos != std::string::npos) {
+        // Has hardware type prefix, e.g. "IMX-5.0::SN129495" or "IMX-5.0:129495"
+        std::string hdwStr = str.substr(0, sepPos);
+        snPart = str.substr(sepPos + sepLen);
+
+        // Parse hardware type: "IMX-5.0", "GPX-1.0", "uINS-3.2", etc.
+        size_t dashPos = hdwStr.find('-');
+        if (dashPos != std::string::npos) {
+            std::string typeName = hdwStr.substr(0, dashPos);
+            std::string verStr = hdwStr.substr(dashPos + 1);
+            uint8_t hdwType = 0;
+            if (strcasecmp(typeName.c_str(), "IMX") == 0)       hdwType = IS_HARDWARE_TYPE_IMX;
+            else if (strcasecmp(typeName.c_str(), "GPX") == 0)   hdwType = IS_HARDWARE_TYPE_GPX;
+            else if (strcasecmp(typeName.c_str(), "uINS") == 0)  hdwType = IS_HARDWARE_TYPE_UINS;
+            else if (strcasecmp(typeName.c_str(), "EVB") == 0)   hdwType = IS_HARDWARE_TYPE_EVB;
+            if (hdwType) {
+                uint8_t major = 0, minor = 0;
+                size_t dotPos = verStr.find('.');
+                if (dotPos != std::string::npos) {
+                    major = (uint8_t)strtoul(verStr.c_str(), nullptr, 10);
+                    minor = (uint8_t)strtoul(verStr.c_str() + dotPos + 1, nullptr, 10);
+                } else {
+                    major = (uint8_t)strtoul(verStr.c_str(), nullptr, 10);
+                }
+                hdwId = ENCODE_HDW_ID(hdwType, major, minor);
+            }
+        }
+    } else {
+        // No separator — could be "SN129495" or just "129495"
+        snPart = str;
+    }
+
+    // Strip optional "SN" prefix from serial number part
+    if (snPart.size() > 2 && strncasecmp(snPart.c_str(), "SN", 2) == 0)
+        snPart = snPart.substr(2);
+    serialNo = strtoul(snPart.c_str(), nullptr, 10);
+
+    if (serialNo == 0)
+        return 0;
+
+    return ((uint64_t)hdwId << 48) | serialNo;
 }
 
 /**
@@ -1010,6 +1067,9 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
     if (!port)
         return false;   // No device, no flash-sync
 
+    if (devInfo.hdwRunState != HDW_STATE_APP)
+        return false;   // Device not running application firmware
+
     if (forceSync)
         sysParams.flashCfgChecksum = 0xFFFFFFFF;    // Invalidate to force re-sync
 
@@ -1042,6 +1102,9 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
     if (!port)
         return false;   // No device, no flash-sync
+
+    if (devInfo.hdwRunState != HDW_STATE_APP)
+        return false;   // Device not running application firmware
 
     if (forceSync)
         gpxStatus.flashCfgChecksum = 0xFFFFFFFF;    // Invalidate to force re-sync
@@ -1228,7 +1291,7 @@ bool ISDevice::UploadImxCalibrationFromFile(std::string path)
 {
     // Load Calibration data
     sensor_cal_t scal = {};
-    if( !ISDeviceCal::loadCalibrationFromJsonObj( path, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal) ) )
+    if( !ISDeviceCal::loadCalibrationFromJsonFile( path, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal) ) )
         return false;
 
     if (!port)
@@ -1253,7 +1316,198 @@ bool ISDevice::UploadImxCalibrationFromFile(std::string path)
     {
         log_error(IS_LOG_ISDEVICE, "[%s] Calibration upload failed!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
         return false;
-    }       
+    }
+}
+
+bool ISDevice::UploadImxCalibrationFromJson(const nlohmann::json& calJson)
+{
+    // Load calibration data from JSON object
+    sensor_cal_t scal = {};
+    if (!ISDeviceCal::loadCalibrationFromJsonObj(calJson, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal)))
+        return false;
+
+    if (!port)
+        return false;
+
+    int calUploadState = 0;
+    int result = 0;
+    do {
+        result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, scal);
+        SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
+    } while (result == 0);
+
+    if (result == 1)
+    {
+        log_info(IS_LOG_ISDEVICE, "[%s] Calibration upload from JSON complete.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        return true;
+    }
+    else
+    {
+        log_error(IS_LOG_ISDEVICE, "[%s] Calibration upload from JSON failed!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        return false;
+    }
+}
+
+int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
+{
+    using json = nlohmann::json;
+
+    // Build hardware type string (e.g., "IMX-5.0")
+    const char *typeName = "???";
+    switch (devInfo.hardwareType) {
+        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
+        case IS_HARDWARE_TYPE_IMX:  typeName = "IMX"; break;
+        case IS_HARDWARE_TYPE_GPX:  typeName = "GPX"; break;
+        default: break;
+    }
+    std::string hwType = std::string(typeName) + "-" + std::to_string(devInfo.hardwareVer[0]) + "." + std::to_string(devInfo.hardwareVer[1]);
+
+    log_info(IS_LOG_ISDEVICE, "[%s] Fetching calibration from DB for %s SN%ld",
+        getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), hwType.c_str(), devInfo.serialNumber);
+
+    // Step 1: Fetch device calibration list
+    std::string deviceUrl = restBaseUrl + "/api/calibration/device/" + hwType + "/" + std::to_string(devInfo.serialNumber);
+    ISHttpRequest::Response listResp = ISHttpRequest::get(deviceUrl);
+
+    if (listResp.statusCode == -1)
+    {
+        log_error(IS_LOG_ISDEVICE, "[%s] Failed to connect to calibration DB at %s",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), deviceUrl.c_str());
+        return -1;
+    }
+
+    if (listResp.statusCode == 404)
+    {
+        log_warn(IS_LOG_ISDEVICE, "[%s] Device not found in calibration DB (HTTP 404)",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        return 404;
+    }
+
+    if (listResp.statusCode != 200)
+    {
+        log_error(IS_LOG_ISDEVICE, "[%s] Calibration DB returned HTTP %d: %s",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), listResp.statusCode, listResp.statusMessage.c_str());
+        return listResp.statusCode;
+    }
+
+    // Step 2: Parse response to find most recent calibration UUID
+    json listJson;
+    try {
+        listJson = json::parse(listResp.body);
+    } catch (const json::parse_error& e) {
+        log_error(IS_LOG_ISDEVICE, "[%s] Failed to parse calibration list JSON: %s",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), e.what());
+        return -1;
+    }
+
+    // Find most recent calibration by calDateTime
+    std::string bestUuid;
+    std::string bestDateTime;
+
+    // API returns { "<deviceUuid>": [ {calUuid, calDateTime, ...}, ... ] }
+    // Iterate all values in the top-level object to find calibration entries
+    if (listJson.is_object())
+    {
+        for (auto& [devUuid, calArray] : listJson.items())
+        {
+            if (!calArray.is_array())
+                continue;
+
+            for (const auto& cal : calArray)
+            {
+                std::string calUuid;
+                if (cal.contains("calUuid"))
+                    calUuid = cal["calUuid"].get<std::string>();
+                else if (cal.contains("uuid"))
+                    calUuid = cal["uuid"].get<std::string>();
+                else
+                    continue;
+
+                std::string dateTime;
+                if (cal.contains("calDateTime"))
+                    dateTime = cal["calDateTime"].get<std::string>();
+
+                if (bestUuid.empty() || dateTime > bestDateTime)
+                {
+                    bestUuid = calUuid;
+                    bestDateTime = dateTime;
+                }
+            }
+        }
+    }
+    else if (listJson.is_array())
+    {
+        // Fallback: top-level array of calibration entries
+        for (const auto& cal : listJson)
+        {
+            std::string calUuid;
+            if (cal.contains("calUuid"))
+                calUuid = cal["calUuid"].get<std::string>();
+            else if (cal.contains("uuid"))
+                calUuid = cal["uuid"].get<std::string>();
+            else
+                continue;
+
+            std::string dateTime;
+            if (cal.contains("calDateTime"))
+                dateTime = cal["calDateTime"].get<std::string>();
+
+            if (bestUuid.empty() || dateTime > bestDateTime)
+            {
+                bestUuid = calUuid;
+                bestDateTime = dateTime;
+            }
+        }
+    }
+
+    if (bestUuid.empty())
+    {
+        log_warn(IS_LOG_ISDEVICE, "[%s] No calibrations found for device in DB",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        return 404;
+    }
+
+    log_info(IS_LOG_ISDEVICE, "[%s] Found calibration UUID: %s (date: %s)",
+        getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), bestUuid.c_str(), bestDateTime.c_str());
+
+    // Step 3: Fetch full calibration JSON
+    std::string calUrl = restBaseUrl + "/api/calibration/" + bestUuid;
+    ISHttpRequest::Response calResp = ISHttpRequest::get(calUrl);
+
+    if (calResp.statusCode == -1)
+    {
+        log_error(IS_LOG_ISDEVICE, "[%s] Failed to fetch calibration data from %s",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), calUrl.c_str());
+        return -1;
+    }
+
+    if (calResp.statusCode != 200)
+    {
+        log_error(IS_LOG_ISDEVICE, "[%s] Calibration DB returned HTTP %d for UUID %s",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), calResp.statusCode, bestUuid.c_str());
+        return calResp.statusCode;
+    }
+
+    // Step 4: Parse and upload calibration
+    json calJson;
+    try {
+        calJson = json::parse(calResp.body);
+    } catch (const json::parse_error& e) {
+        log_error(IS_LOG_ISDEVICE, "[%s] Failed to parse calibration JSON: %s",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), e.what());
+        return -1;
+    }
+
+    if (!UploadImxCalibrationFromJson(calJson))
+    {
+        log_error(IS_LOG_ISDEVICE, "[%s] Failed to upload calibration from DB",
+            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        return -1;
+    }
+
+    log_info(IS_LOG_ISDEVICE, "[%s] Successfully uploaded calibration from DB (UUID: %s)",
+        getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), bestUuid.c_str());
+    return 200;
 }
 
 bool ISDevice::softwareReset() {

@@ -13,6 +13,7 @@
 #include <functional>
 #include <memory>
 
+#include "json.hpp"
 #include "core/msg_logger.h"
 #include "DeviceLog.h"
 #include "protocol/FirmwareUpdate.h"
@@ -165,6 +166,14 @@ public:
     static uint64_t getUniqueId(const dev_info_t& devInfo) { return ((uint64_t)ENCODE_DEV_INFO_TO_HDW_ID(devInfo) << 48) | devInfo.serialNumber; }
 
     uint64_t getUniqueId() { return getUniqueId(this->devInfo); }
+
+    /**
+     * Parses a device identifier string into a unique ID (hdwId << 48 | serialNumber).
+     * Accepted formats: "IMX-5.0::SN129495", "IMX-5.0:129495", "GPX-1.0:SN42", "SN129495", "129495"
+     * If no hardware type is specified, IS_HARDWARE_ANY is used.
+     * @return unique ID, or 0 on parse failure
+     */
+    static uint64_t parseDeviceIdString(const std::string& str);
 
     /**
      * Binds the specified port to this device. Reconfigures the port handler to call back
@@ -562,6 +571,20 @@ public:
      * @return true for success, false for failure.
      */
     bool UploadImxCalibrationFromFile(std::string path);
+
+    /**
+     * @brief Upload calibration from a pre-parsed JSON object
+     * @param calJson - Parsed JSON object containing calibration data
+     * @return true for success, false for failure.
+     */
+    bool UploadImxCalibrationFromJson(const nlohmann::json& calJson);
+
+    /**
+     * @brief Fetch calibration from REST API and upload to device
+     * @param restBaseUrl - Base URL of the calibration database (e.g., "http://caldb.local:8080")
+     * @return HTTP status code (200 = success), -1 for connection/parse errors
+     */
+    int UploadIMXCalibrationFromURL(const std::string& restBaseUrl);
 
     void SaveFlashConfigFile(std::string path);
 

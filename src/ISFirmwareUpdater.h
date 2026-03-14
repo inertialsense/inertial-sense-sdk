@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <deque>
 #include <map>
+#include <mutex>
 
 #include "ISConstants.h"
 
@@ -155,9 +156,47 @@ public:
         message(const std::string& _target, const ISFwUpdaterCmd& _cmd, eLogLevel _severity, const std::string& _msg) : target(_target), cmd(_cmd), severity(_severity), msg(_msg) { };
     };
 
-    explicit ISFwUpdateState() = default;
+    ISFwUpdateState() = default;
+
+    // Copy constructor — copies all data fields but creates a fresh mutex (mutexes are non-copyable).
+    // The source is NOT locked here; callers should use getSnapshot() for thread-safe copies.
+    ISFwUpdateState(const ISFwUpdateState& other)
+        : lastMessage(other.lastMessage), state(other.state), status(other.status),
+          target(other.target), slot(other.slot), progress(other.progress),
+          messages(other.messages), hasErrors(other.hasErrors) { }
+
+    ISFwUpdateState& operator=(const ISFwUpdateState& other) {
+        if (this != &other) {
+            lastMessage = other.lastMessage;
+            state = other.state;
+            status = other.status;
+            target = other.target;
+            slot = other.slot;
+            progress = other.progress;
+            messages = other.messages;
+            hasErrors = other.hasErrors;
+        }
+        return *this;
+    }
+
+    /**
+     * Acquire a lock on this state object. All reads and writes to this state should be done while holding this lock,
+     * to prevent cross-thread data races (e.g., GUI thread reading while IOManager thread writes).
+     */
+    std::unique_lock<std::recursive_mutex> lock() const { return std::unique_lock<std::recursive_mutex>(mtx); }
+
+    /**
+     * Returns a thread-safe snapshot (copy) of the current state. The caller can safely read from the copy
+     * without holding a lock. Prefer this over direct field access from non-owner threads.
+     */
+    ISFwUpdateState getSnapshot() const {
+        auto lk = lock();
+        ISFwUpdateState snapshot(*this);
+        return snapshot;
+    }
 
     void resetState() {
+        auto lk = lock();
         lastMessage.clear();
         messages.clear();
         target = fwUpdate::TARGET_HOST;
@@ -175,6 +214,9 @@ public:
     float                       progress = 0.f;                     //!< the current/last progress of the target upload
     std::vector<message>        messages;                           //!< the collection of all messages that have occurred during the update
     bool                        hasErrors = false;                  //!< an easy indicator to track errors while still in progress, generally true if msgs contains one more IS_LOG_LEVEL_ERROR messages
+
+private:
+    mutable std::recursive_mutex mtx;                               //!< protects all fields from concurrent read/write across threads
 };
 
 

@@ -163,21 +163,64 @@ class ISDeviceCal
 public:
     /**
      * @brief Load calibration data from a JSON file
-     * 
+     *
      * @param filePath Path to the JSON file to load
      * @param ocal Pointer to orthonormalization calibration data (can be NULL)
      * @param info Pointer to sensor calibration info (can be NULL)
+     * @param dinfo Pointer to sensor data info (can be NULL)
      * @param tcal Pointer to temperature compensation calibration (can be NULL)
      * @param mcal Pointer to motion calibration (can be NULL)
      * @param pose Pointer to current pose value (can be NULL)
      * @return true if calibration was successfully loaded, false otherwise
      */
-    static bool loadCalibrationFromJsonObj(const std::string& filePath, 
-                                       sOrthoCal *ocal, 
-                                       sensor_cal_info_t *info = NULL, 
+    static bool loadCalibrationFromJsonFile(const std::string& filePath,
+                                       sOrthoCal *ocal,
+                                       sensor_cal_info_t *info = NULL,
                                        sensor_data_info_t *dinfo = NULL,
-                                       sensor_tcal_group_t *tcal = NULL, 
-                                       sensor_mcal_group_t* mcal = NULL, 
+                                       sensor_tcal_group_t *tcal = NULL,
+                                       sensor_mcal_group_t* mcal = NULL,
+                                       int* pose = NULL);
+
+    /**
+     * @brief Load calibration data from a pre-parsed JSON object
+     *
+     * @param jObj The parsed JSON object containing calibration data
+     * @param ocal Pointer to orthonormalization calibration data (can be NULL)
+     * @param info Pointer to sensor calibration info (can be NULL)
+     * @param dinfo Pointer to sensor data info (can be NULL)
+     * @param tcal Pointer to temperature compensation calibration (can be NULL)
+     * @param mcal Pointer to motion calibration (can be NULL)
+     * @param pose Pointer to current pose value (can be NULL)
+     * @param filePath Optional file path used for fallback serial/date extraction (empty if not from file)
+     * @return true if calibration was successfully loaded, false otherwise
+     */
+    static bool loadCalibrationFromJsonObj(const json& jObj,
+                                       sOrthoCal *ocal,
+                                       sensor_cal_info_t *info = NULL,
+                                       sensor_data_info_t *dinfo = NULL,
+                                       sensor_tcal_group_t *tcal = NULL,
+                                       sensor_mcal_group_t* mcal = NULL,
+                                       int* pose = NULL,
+                                       const std::string& filePath = "");
+
+    /**
+     * @brief Load calibration data from a JSON string
+     *
+     * @param jsonString The JSON string to parse
+     * @param ocal Pointer to orthonormalization calibration data (can be NULL)
+     * @param info Pointer to sensor calibration info (can be NULL)
+     * @param dinfo Pointer to sensor data info (can be NULL)
+     * @param tcal Pointer to temperature compensation calibration (can be NULL)
+     * @param mcal Pointer to motion calibration (can be NULL)
+     * @param pose Pointer to current pose value (can be NULL)
+     * @return true if calibration was successfully loaded, false otherwise
+     */
+    static bool loadCalibrationFromJsonString(const std::string& jsonString,
+                                       sOrthoCal *ocal,
+                                       sensor_cal_info_t *info = NULL,
+                                       sensor_data_info_t *dinfo = NULL,
+                                       sensor_tcal_group_t *tcal = NULL,
+                                       sensor_mcal_group_t* mcal = NULL,
                                        int* pose = NULL);
 
     /**
