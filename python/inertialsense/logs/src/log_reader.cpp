@@ -161,6 +161,7 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
 
         switch (data->hdr.id) {
             case DID_IMUS_RAW:
+            case DID_IMUS:
             case DID_IMUS_UNCAL:
                 numImuDevices_ = IMUS_T_NUM_DEVICES(data->hdr.size);
                 break;
@@ -235,6 +236,7 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
             HANDLE_MSG(DID_IMU_RAW, dev_log_->imuRaw);
             HANDLE_MSG(DID_PIMU, dev_log_->pimu);
             HANDLE_MSG(DID_IMU, dev_log_->imu);
+            HANDLE_MSG(DID_IMUS, dev_log_->imus);
             HANDLE_MSG(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo);
             HANDLE_MSG(DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw);
             // HANDLE_MSG(DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt);
@@ -353,6 +355,7 @@ void LogReader::forwardData(int device_id) {
     forward_message(DID_IMU_RAW, dev_log_->imuRaw, device_id);
     forward_message(DID_PIMU, dev_log_->pimu, device_id);
     forward_message(DID_IMU, dev_log_->imu, device_id);
+    forward_message(DID_IMUS, dev_log_->imus, device_id);
     forward_message(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, device_id);
     forward_message(DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, device_id);
     // forward_message(DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt, device_id);

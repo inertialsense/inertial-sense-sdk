@@ -23,7 +23,7 @@ DID_GPS2_SAT                    = 16
 DID_GPS1_VERSION                = 17
 DID_GPS2_VERSION                = 18
 DID_MAG_CAL                     = 19
-DID_INTERNAL_DIAGNOSTIC         = 20
+DID_IMUS                        = 20
 DID_GPS1_RTK_POS_REL            = 21
 DID_GPS1_RTK_POS_MISC           = 22
 DID_FEATURE_BITS                = 23
@@ -100,6 +100,7 @@ DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
 DID_IMUS_RAW                    = 96
 DID_IMU_RAW                     = 97
+
 DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
 DID_GPX_DEV_INFO                = 120
@@ -134,7 +135,6 @@ did_name_lookup = {
  DID_GPS1_VERSION : "gps1Version",
  DID_GPS2_VERSION : "gps2Version",
  DID_MAG_CAL : "magCal",
- DID_INTERNAL_DIAGNOSTIC : "internalDiagnostic",
  DID_GPS1_RTK_POS_REL : "gps1RtkPosRel",
  DID_GPS2_RTK_CMP_REL : "gps1RtkCmpRel",
  DID_GPS1_RTK_POS_MISC: "gps1RtkPosMisc",
