@@ -13,6 +13,7 @@
 #include <functional>
 #include <memory>
 
+#include "json.hpp"
 #include "core/msg_logger.h"
 #include "DeviceLog.h"
 #include "protocol/FirmwareUpdate.h"
@@ -570,6 +571,20 @@ public:
      * @return true for success, false for failure.
      */
     bool UploadImxCalibrationFromFile(std::string path);
+
+    /**
+     * @brief Upload calibration from a pre-parsed JSON object
+     * @param calJson - Parsed JSON object containing calibration data
+     * @return true for success, false for failure.
+     */
+    bool UploadImxCalibrationFromJson(const nlohmann::json& calJson);
+
+    /**
+     * @brief Fetch calibration from REST API and upload to device
+     * @param restBaseUrl - Base URL of the calibration database (e.g., "http://caldb.local:8080")
+     * @return HTTP status code (200 = success), -1 for connection/parse errors
+     */
+    int UploadIMXCalibrationFromURL(const std::string& restBaseUrl);
 
     void SaveFlashConfigFile(std::string path);
 
