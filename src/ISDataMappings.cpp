@@ -1912,7 +1912,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_IMU_RAW",                      // 97 
     "DID_FIRMWARE_UPDATE",              // 98 
     "DID_RUNTIME_PROFILER",             // 99 
-    "UNUSED_100",                       // 101
+    "UNUSED_100",                       // 100
     "UNUSED_101",                       // 101
     "UNUSED_102",                       // 102
     "UNUSED_103",                       // 103
@@ -1984,7 +1984,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapImus(m_data_set, DID_IMUS_RAW, "5 IMU data calibrated from DID_IMUS_UNCAL.");
     PopulateMapImus(m_data_set, DID_IMUS_UNCAL, "5 IMU data directly from sensor (uncalibrated).");
 
-    PopulateMapImus(m_data_set, DID_IMUS, "5 IMU data from DID_IMUS_RAW.");
+    PopulateMapImus(m_data_set, DID_IMUS, "5 IMU data down-sampled from IMU rate to navigation rate.");
 
     PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
     PopulateMapPimu(m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");

@@ -57,7 +57,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_VERSION                (eDataIDs)17 /** (gps_version_t) GPS 1 version info */
 #define DID_GPS2_VERSION                (eDataIDs)18 /** (gps_version_t) GPS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
-#define DID_IMUS                        (eDataIDs)20 /** (imus_t) Allan variance test.  Uncomment to enable. */
+#define DID_IMUS                        (eDataIDs)20 /** (imus_t) Multiple inertial measurement units data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  When enabled, this message adds processing overhead to sensor RTOS task.  */
 #define DID_GPS1_RTK_POS_REL            (eDataIDs)21 /** (gps_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GPS1_RTK_POS_MISC           (eDataIDs)22 /** (gps_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
@@ -1863,7 +1863,7 @@ typedef struct PACKED
 #define RMC_BITS_PIMU                   0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-#define RMC_BITS_IMUS            0x0000000000000100      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+#define RMC_BITS_IMUS                   0x0000000000000100      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
 // #define RMC_BITS_UNUSED                 0x0000000000000200 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGPSDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "

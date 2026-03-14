@@ -474,7 +474,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 17: DID_GPS1_VERSION
         0,                      // 18: DID_GPS2_VERSION
         0,                      // 19: DID_MAG_CAL
-        0,                      // 20: DID_UNUSED_20
+        0,                      // 20: DID_IMUS
         0,                      // 21: DID_GPS1_RTK_POS_REL
         0,                      // 22: DID_GPS1_RTK_POS_MISC,
         0,                      // 23: DID_FEATURE_BITS
@@ -554,7 +554,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 97: DID_IMU_RAW
         0,                      // 98: DID_FIRMWARE_UPDATE
         0,                      // 99: DID_RUNTIME_PROFILER
-        0,                      // 100: DID_IMUS
+        0,                      // 100: 
         0,                      // 101: 
         0,                      // 102: 
         0,                      // 103: 
