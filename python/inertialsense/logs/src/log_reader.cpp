@@ -161,8 +161,8 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
 
         switch (data->hdr.id) {
             case DID_IMUS_RAW:
-#ifdef DID_AV_IMUS
-            case DID_AV_IMUS:
+#ifdef DID_IMUS
+            case DID_IMUS:
 #endif
             case DID_IMUS_UNCAL:
                 numImuDevices_ = IMUS_T_NUM_DEVICES(data->hdr.size);
@@ -234,14 +234,14 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
             HANDLE_MSG(DID_BAROMETER, dev_log_->barometer);
             HANDLE_MSG(DID_GPS1_RTK_POS, dev_log_->gps1RtkPos);
             HANDLE_MSG(DID_IMUS_UNCAL, dev_log_->imusUncal);
-#ifdef DID_AV_IMUS
+#ifdef DID_IMUS
             HANDLE_MSG(DID_IMUS_RAW, dev_log_->imusRaw);
 #endif
             HANDLE_MSG(DID_IMU_RAW, dev_log_->imuRaw);
             HANDLE_MSG(DID_PIMU, dev_log_->pimu);
             HANDLE_MSG(DID_IMU, dev_log_->imu);
-#ifdef DID_AV_IMUS
-            HANDLE_MSG(DID_AV_IMUS, dev_log_->avtImus);
+#ifdef DID_IMUS
+            HANDLE_MSG(DID_IMUS, dev_log_->avtImus);
 #endif
             HANDLE_MSG(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo);
             HANDLE_MSG(DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw);
@@ -361,8 +361,8 @@ void LogReader::forwardData(int device_id) {
     forward_message(DID_IMU_RAW, dev_log_->imuRaw, device_id);
     forward_message(DID_PIMU, dev_log_->pimu, device_id);
     forward_message(DID_IMU, dev_log_->imu, device_id);
-#ifdef DID_AV_IMUS
-    forward_message(DID_AV_IMUS, dev_log_->avtImus, device_id);
+#ifdef DID_IMUS
+    forward_message(DID_IMUS, dev_log_->avtImus, device_id);
 #endif
     forward_message(DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, device_id);
     forward_message(DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, device_id);

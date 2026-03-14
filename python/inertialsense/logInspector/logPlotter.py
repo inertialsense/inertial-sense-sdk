@@ -2984,21 +2984,21 @@ class logPlot:
         self.imuAcc(fig=fig, axs=axs, useImus=True, combineImus=True)
 
     def avtImu1PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuPQR(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu2PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuPQR(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu3PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuPQR(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu4PQR(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuPQR(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuPQR(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu1Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuAcc(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu2Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuAcc(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu3Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuAcc(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
     def avtImu4Acc(self, fig=None, axs=None, useImus=False, combineImus=False):
-        self.imuAcc(DID_AV_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
+        self.imuAcc(DID_IMUS, fig=fig, axs=axs, useImus=useImus, combineImus=combineImus)
 
     def imuPQR(self, did=DID_IMU, fig=None, axs=None, useImus=False, combineImus=False):
         if fig is None:
@@ -3180,10 +3180,10 @@ class logPlot:
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
     def allanVariancePQRTest1(self, fig=None, axs=None):
-        self.allanVariancePQR(did=DID_AV_IMUS, fig=fig, axs=axs)
+        self.allanVariancePQR(did=DID_IMUS, fig=fig, axs=axs)
 
     def allanVarianceAccTest1(self, fig=None, axs=None):
-        self.allanVarianceAcc(did=DID_AV_IMUS, fig=fig, axs=axs)
+        self.allanVarianceAcc(did=DID_IMUS, fig=fig, axs=axs)
 
     def allanVariancePQR(self, did=DID_IMU, fig=None, axs=None):
         if fig is None:

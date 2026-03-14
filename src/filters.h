@@ -525,7 +525,6 @@ void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices,
 void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
-int preintegratedImuToIMUheader(imu_t *imu, const pimu_t *pImu);
 int preintegratedImuToImuI(imui_t *imu, const pimu_t *pImu, float divDt);
 int preintegratedImuToImu(imu_t *imu, const pimu_t *imuInt);
 int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
@@ -542,6 +541,16 @@ float deltaThetaDeltaVelBortz( pimu_t *output, imu_t *imu, imu_t *imuLast, int N
  * \param imuLast       Previous gyro and accelerometer sample.
  */
 void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast);
+
+/** 
+ * \brief Compute coning and sculling integrals from multiple gyro and accelerometer samples
+ *
+ * \param pimuOut       Coning and sculling integral output array
+ * \param pimuCnt       Number of elements in pimuOut array
+ * \param imusIn        Array of gyro and accelerometer samples.
+ * \param imuLastArray  Array of previous gyro and accelerometer samples.
+ */
+void integrateImusIntoPimuArray(pimu_t pimuOut[MAX_IMU_DEVICES], const int pimuCnt, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES]);
 
 // Set integral, time, and status to zero
 void zeroPimu(pimu_t *pimu);
