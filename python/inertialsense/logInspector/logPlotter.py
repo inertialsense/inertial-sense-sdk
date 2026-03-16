@@ -2911,12 +2911,14 @@ class logPlot:
 
                     if REMOVE_IMU_SPIKES:
                         # Remove spikes in data by replacing with average of adjacent samples
-                        for i in range(imu1.shape[1]):
-                            spike_idx = np.where(abs(imu1[:,i]) >= (0.5 * DEG2RAD))[0]
-                            for j in spike_idx:
-                                prev = imu1[j-1, i] if j > 0 else imu1[j+1, i]
-                                nxt  = imu1[j+1, i] if j < len(imu1)-1 else imu1[j-1, i]
-                                imu1[j, i] = (prev + nxt) / 2.0
+                        # Guard against very short arrays where neighbor-based indexing would fail
+                        if imu1.shape[0] >= 2:
+                            for i in range(imu1.shape[1]):
+                                spike_idx = np.where(abs(imu1[:,i]) >= (0.5 * DEG2RAD))[0]
+                                for j in spike_idx:
+                                    prev = imu1[j-1, i] if j > 0 else imu1[j+1, i]
+                                    nxt  = imu1[j+1, i] if j < len(imu1)-1 else imu1[j-1, i]
+                                    imu1[j, i] = (prev + nxt) / 2.0
 
                 else:   
                     time = self.getData(device, did, 'time')
