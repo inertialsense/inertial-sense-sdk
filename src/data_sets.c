@@ -284,7 +284,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 17: DID_GPS1_VERSION
         0,                      // 18: DID_GPS2_VERSION
         0,                      // 19: DID_MAG_CAL
-        0,                      // 20: DID_UNUSED_20
+        offsetsOnlyTimeFirst,   // 20: DID_IMUS
         0,                      // 21: DID_GPS1_RTK_POS_REL
         offsetsRtkNav,          // 22: DID_GPS1_RTK_POS_MISC
         0,                      // 23: DID_FEATURE_BITS
@@ -309,7 +309,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 42: DID_CAL_SC
         0,                      // 43: DID_CAL_SC1
         0,                      // 44: DID_CAL_SC2
-        0,                      // 45: 
+        0,                      // 45: DID_GPS1_SIG
         offsetsOnlyTimeFirst,   // 46: DID_SENSORS_ADC_SIGMA
         offsetsOnlyTimeFirst,   // 47: DID_REFERENCE_MAGNETOMETER
         offsetsInl2States,      // 48: DID_INL2_STATES
@@ -348,7 +348,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_FLASH_CFG
         offsetsDebugArray,      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
-        0,                      // 84: 
+        0,                      // 84: DID_GPS2_SIG
         offsetsImuMag,          // 85: DID_IMU_MAG
         offsetsPreImuMag,       // 86: DID_PIMU_MAG
         0,                      // 87: DID_GROUND_VEHICLE
@@ -362,13 +362,13 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
         offsetsOnlyTimeFirst,   // 96: DID_IMUS_RAW
         offsetsOnlyTimeFirst,   // 97: DID_IMU_RAW
-        0,                      // 98:
-        0,                      // 99:
-        0,                      // 100:
-        0,                      // 101:
-        0,                      // 102:
-        0,                      // 103:
-        0,                      // 104:
+        0,                      // 98: DID_FIRMWARE_UPDATE
+        0,                      // 99: DID_RUNTIME_PROFILER
+        0,                      // 100: 
+        0,                      // 101: 
+        0,                      // 102: 
+        0,                      // 103: 
+        0,                      // 104: 
         0,                      // 105:
         0,                      // 106:
         0,                      // 107:
@@ -474,7 +474,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 17: DID_GPS1_VERSION
         0,                      // 18: DID_GPS2_VERSION
         0,                      // 19: DID_MAG_CAL
-        0,                      // 20: DID_UNUSED_20
+        0,                      // 20: DID_IMUS
         0,                      // 21: DID_GPS1_RTK_POS_REL
         0,                      // 22: DID_GPS1_RTK_POS_MISC,
         0,                      // 23: DID_FEATURE_BITS
@@ -552,13 +552,13 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 95: DID_REFERENCE_IMU
         0,                      // 96: DID_IMUS_RAW
         0,                      // 97: DID_IMU_RAW
-        0,                      // 98:
-        0,                      // 99:
-        0,                      // 100:
-        0,                      // 101:
-        0,                      // 102:
-        0,                      // 103:
-        0,                      // 104:
+        0,                      // 98: DID_FIRMWARE_UPDATE
+        0,                      // 99: DID_RUNTIME_PROFILER
+        0,                      // 100: 
+        0,                      // 101: 
+        0,                      // 102: 
+        0,                      // 103: 
+        0,                      // 104: 
         0,                      // 105:
         0,                      // 106:
         0,                      // 107:
@@ -647,6 +647,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_PIMU]                  = RMC_BITS_PIMU,
     [DID_REFERENCE_IMU]         = RMC_BITS_REFERENCE_IMU,
     [DID_REFERENCE_PIMU]        = RMC_BITS_REFERENCE_PIMU,
+    [DID_IMUS]                  = RMC_BITS_IMUS,
     [DID_BAROMETER]             = RMC_BITS_BAROMETER,
     [DID_MAGNETOMETER]          = RMC_BITS_MAGNETOMETER,
     [DID_GPS1_POS]              = RMC_BITS_GPS1_POS,

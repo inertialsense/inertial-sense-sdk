@@ -1832,7 +1832,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPS1_VERSION",                 // 17
     "DID_GPS2_VERSION",                 // 18
     "DID_MAG_CAL",                      // 19
-    "DID_UNUSED_20",                    // 20
+    "DID_IMUS",                         // 20
     "DID_GPS1_RTK_POS_REL",             // 21
     "DID_GPS1_RTK_POS_MISC",            // 22
     "DID_FEATURE_BITS",                 // 23
@@ -1983,6 +1983,8 @@ cISDataMappings::cISDataMappings()
     PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMUS_RAW.");
     PopulateMapImus(m_data_set, DID_IMUS_RAW, "5 IMU data calibrated from DID_IMUS_UNCAL.");
     PopulateMapImus(m_data_set, DID_IMUS_UNCAL, "5 IMU data directly from sensor (uncalibrated).");
+
+    PopulateMapImus(m_data_set, DID_IMUS, "5 IMU data down-sampled from IMU rate to navigation rate.");
 
     PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
     PopulateMapPimu(m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");

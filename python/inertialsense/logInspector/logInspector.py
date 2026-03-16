@@ -361,8 +361,8 @@ class LogInspectorWindow(QMainWindow):
             mplot.plotter.setLog(self.log)
             mplot.plotter.setDownSample(self.downsample)
         self.updatePlot()
-        self.setStatus("")
         self.expandAndSelectDirectory(directory)
+        self.setStatus("")
 
     def setupUi(self):
         self.setObjectName("LogInspector")
@@ -509,11 +509,6 @@ class LogInspectorWindow(QMainWindow):
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
         self.showGps2 = QCheckBox("GPS2", self)
         self.showGps2.stateChanged.connect(self.changeShowGps2Checkbox)
-        self.GpsVelFilterLabel = QLabel(" GPS Vel Filter", self)
-        self.gpsVelFilter = QSpinBox(self)
-        self.gpsVelFilter.setValue(0)
-        self.gpsVelFilter.setMaximumWidth(35)
-        self.gpsVelFilter.valueChanged.connect(self.changeGpsVelFilterInput)
 
         self.VLayoutOptions1 = QVBoxLayout()
         self.VLayoutOptions1.setSpacing(0)
@@ -529,6 +524,11 @@ class LogInspectorWindow(QMainWindow):
         self.VLayoutOptions3.addWidget(self.showGps2)
         
         if 0:   # Show GPS Velocity Filter Input in UI
+            self.GpsVelFilterLabel = QLabel(" GPS Vel Filter", self)
+            self.gpsVelFilter = QSpinBox(self)
+            self.gpsVelFilter.setValue(0)
+            self.gpsVelFilter.setMaximumWidth(35)
+            self.gpsVelFilter.valueChanged.connect(self.changeGpsVelFilterInput)
             self.HLayoutOptions3 = QHBoxLayout()
             self.HLayoutOptions3.addWidget(self.gpsVelFilter)
             self.HLayoutOptions3.addWidget(self.GpsVelFilterLabel)
@@ -689,13 +689,18 @@ class LogInspectorWindow(QMainWindow):
                 self.updatePlot()
 
     def changeGpsVelFilterInput(self, text):
+        # Ignore input until a log is loaded
+        if getattr(self, 'log', None) is None:
+            return
         try:
-            filter_mode = int(text) if text else 0
+            # valueChanged may pass an int or a string depending on signal
+            filter_mode = int(text) if text is not None else 0
             for mplot in self.mplots:
                 if mplot.plotter:
                     mplot.plotter.setGpsVelFilterMode(filter_mode)
-                    self.updatePlot()
-        except ValueError:
+            # update once after applying to all plotters
+            self.updatePlot()
+        except (ValueError, TypeError):
             pass  # Ignore invalid input
 
     def changeUtcCheckbox(self, state):
@@ -914,7 +919,7 @@ class LogInspectorWindow(QMainWindow):
                 self.handleTreeViewClick()
                 continue
             
-        self.setStatus("NPP done.")
+        self.setStatus("")
 
     def selectedDirectory(self):
         directory = os.path.normpath(self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0]))
@@ -990,7 +995,8 @@ class LogInspectorWindow(QMainWindow):
     def plot(self, func, args=None):
         if func is None:
             return
-        print("plotting " + func)
+        self.setStatus("Plotting...")
+        print("Plotting " + func)
         self.selectedPlotFunc = func
         self.plotargs = args
         ax = None
@@ -1006,10 +1012,10 @@ class LogInspectorWindow(QMainWindow):
                 if args is not None:
                     ax = getattr(mplot.plotter, mplot.func)(*args, mplot.figure, axs=ax)
                 else:
-                    ax = getattr(mplot.plotter, mplot.func)(mplot.figure, axs=ax)
+                    ax = getattr(mplot.plotter, mplot.func)(fig=mplot.figure, axs=ax)
             mplot.canvas.draw()
 
-        print("done plotting")
+        self.setStatus("")
 
 def kill_handler(*args):
     instance = QApplication.instance()

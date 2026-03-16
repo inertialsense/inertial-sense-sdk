@@ -315,7 +315,15 @@ void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices)
 }
 
 
-int preintegratedImuToIMU(imu_t *imu, const pimu_t *pImu)
+int preintegratedImuToImuI(imui_t *imu, const pimu_t *pImu, float divDt)
+{
+    mul_Vec3_X(imu->pqr, pImu->theta, divDt);
+    mul_Vec3_X(imu->acc, pImu->vel, divDt);
+    return 1;
+}
+
+
+int preintegratedImuToImu(imu_t *imu, const pimu_t *pImu)
 {
     if (pImu->dt == 0.0f)
     {
@@ -324,10 +332,7 @@ int preintegratedImuToIMU(imu_t *imu, const pimu_t *pImu)
 
     imu->time = pImu->time;
     imu->status = pImu->status;
-    float divDt = 1.0f / pImu->dt;
-    mul_Vec3_X(imu->I.pqr, pImu->theta, divDt);
-    mul_Vec3_X(imu->I.acc, pImu->vel, divDt);
-    return 1;
+    return preintegratedImuToImuI(&imu->I, pImu, 1.0f / pImu->dt);
 }
 
 
@@ -376,6 +381,25 @@ void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
     //  output->dt += integrateDeltaThetaVelRoscoe(output, imu, imu, alpha_last, veloc_last, delta_alpha_last, delta_veloc_last);
 }
 
+/** 
+ * \brief Integrate IMUs (imus_t) into array of preintegrated IMUs (PIMUs).
+ * \param pimuArray      Array of preintegrated IMU outputs to be updated.  Should be initialized to zero and maintained across calls to this function.
+ * \param arraySize      Number of PIMUs to integrate (should be equal to number of IMUs).
+ * \param imuLastArray   Array of previous IMU readings for each IMU.  Should be initialized to zero and maintained across calls to this function.
+ */
+void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arraySize, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES])
+{
+    imu_t imu = {0};
+    imu.time = imusIn->time;
+    for (int i=0; i<arraySize; i++)
+    {
+        imu.I = imusIn->I[i];
+        // Extract per-IMU status bits and preserve both OK and saturation flags
+        const uint32_t perImuOk = IMU_STATUS_IMU_OK_MASK & (imusIn->status >> (i * IMUS_STATUS_IMU_OK_BITSIZE));
+        imu.status = perImuOk | (imusIn->status & IMUS_STATUS_SATURATION_MASK);
+        integratePimu(&pimuArray[i], &imu, &imuLastArray[i]);
+    }
+}
 
 float deltaThetaDeltaVelRiemannSum(pimu_t *output, imu_t *imu, imu_t *imuLast)
 {
