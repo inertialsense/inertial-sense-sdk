@@ -119,6 +119,7 @@ did_name_lookup = {
  DID_NULL : "null",
  DID_DEV_INFO : "devInfo",
  DID_SYS_FAULT : "sysFault",
+ DID_IMUS : "imus",
  DID_INS_1 : "ins1",
  DID_INS_2 : "ins2",
  DID_GPS1_RCVR_POS : "gps1UbxPos",
