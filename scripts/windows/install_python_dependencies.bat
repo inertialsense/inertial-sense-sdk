@@ -9,4 +9,6 @@ for %%i in (%~dp0..\..) do SET SDK_DIR="%%~fi"
 call %SDK_DIR%\scripts\lib\activate_python_venv.bat
 
 python -m pip install --upgrade pip
-python -m pip install gitpython requests ruyaml semver setuptools pybind11 pygithub rich
+REM Core build/test dependencies plus logInspector runtime deps
+python -m pip install gitpython requests ruyaml semver setuptools pybind11 pygithub rich ^
+    pyyaml pyqt5 numpy matplotlib pandas scipy pyserial simplekml tqdm allantools
