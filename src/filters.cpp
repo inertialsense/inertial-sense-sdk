@@ -395,8 +395,8 @@ void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arr
     {
         imu.I = imusIn->I[i];
         // Extract per-IMU status bits and preserve both OK and saturation flags
-        const uint32_t perImuStatus = (imusIn->status >> (i * IMUS_STATUS_IMU_OK_BITSIZE));
-        imu.status = perImuStatus & (IMU_STATUS_IMU_OK_MASK | IMUS_STATUS_SATURATION_MASK);
+        const uint32_t perImuOk = IMU_STATUS_IMU_OK_MASK & (imusIn->status >> (i * IMUS_STATUS_IMU_OK_BITSIZE));
+        imu.status = perImuOk | (imusIn->status & IMUS_STATUS_SATURATION_MASK);
         integratePimu(&pimuArray[i], &imu, &imuLastArray[i]);
     }
 }
