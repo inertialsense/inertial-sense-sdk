@@ -39,8 +39,8 @@ MPS2UG   = 1E6/9.81 # m/s^2 to micro g
 
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
-REMOVE_IMU_SLOPE = 1    # remove slope and bias from IMU data
-REMOVE_IMU_SPIKES = 1   # remove spikes from IMU data 
+REMOVE_IMU_SLOPE = 0    # remove slope and bias from IMU data
+REMOVE_IMU_SPIKES = 0   # remove spikes from IMU data 
 
 def median_filter(data, history_size=3):
     """
