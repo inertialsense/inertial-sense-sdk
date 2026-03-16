@@ -524,7 +524,7 @@ void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices,
 // Duplicate one IMU to multiple IMUs
 void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices);
 
-// Convert integrated IMU to IMU. 0 on success, -1 on failure.
+// Convert integrated IMU to IMU. Returns 1 on success, 0 on failure (e.g. when dt == 0).
 int preintegratedImuToImuI(imui_t *imu, const pimu_t *pImu, float divDt);
 int preintegratedImuToImu(imu_t *imu, const pimu_t *imuInt);
 int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
