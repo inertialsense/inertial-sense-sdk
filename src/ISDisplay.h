@@ -106,6 +106,8 @@ public:
     std::string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
      std::string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
     std::string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
+    std::string DataToStringIMUs(const imus_t &imus, const p_data_hdr_t& hdr);
+    static std::string DataToStringIMUs(const imus_t &imus, int numDevices, bool full=false);
     std::string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
     static std::string DataToStringIMU(const imu_t &imu, bool full=false);
     std::string DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr);
