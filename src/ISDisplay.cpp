@@ -892,7 +892,8 @@ std::string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_EVB_DEV_INFO:      // FALL THROUGH
         case DID_GPX_DEV_INFO:      // FALL THROUGH
         case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);            break;
-        case DID_IMUS:
+        case DID_IMUS_RAW:          // FALL THROUGH
+        case DID_IMUS:              str = DataToStringIMUs(d.imus, data->hdr);                  break;
         case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                    break;
         case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);      break;
         case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);                  break;
@@ -1244,6 +1245,18 @@ std::string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p
     return buf;
 }
 
+std::string cInertialSenseDisplay::DataToStringIMUs(const imus_t &imus, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+
+    int numDevices = (int)IMUS_T_NUM_DEVICES(hdr.size);
+    return std::string(buf) + DataToStringIMUs(imus, numDevices, m_displayMode != DMODE_SCROLL);
+}
+
 std::string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr)
 {
     (void)hdr;
@@ -1269,6 +1282,7 @@ std::string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, bool full)
 #else
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", imu.time);
 #endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08X", imu.status);
 
     if (!full)
     {   // Single line format
@@ -1297,6 +1311,59 @@ std::string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, bool full)
     return buf;
 }
 
+std::string cInertialSenseDisplay::DataToStringIMUs(const imus_t &imus, int numDevices, bool full)
+{
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime = 0;
+    double dtMs = 1000.0*(imus.time - lastTime);
+    lastTime = imus.time;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", imus.time);
+#endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08X", imus.status);
+
+    if (full)
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+
+    for (int i = 0; i < numDevices; i++)
+    {
+        imu_t imu = {};
+        imu.time = imus.time;
+        imu.status = imus.status;
+        imu.I = imus.I[i];
+
+        if (!full)
+        {   // Single line format
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "  IMU%d:", i);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, " pqr[%5.1f,%5.1f,%5.1f]",
+                imu.I.pqr[0] * C_RAD2DEG_F,
+                imu.I.pqr[1] * C_RAD2DEG_F,
+                imu.I.pqr[2] * C_RAD2DEG_F);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, ", acc[%5.1f,%5.1f,%5.1f]",
+                imu.I.acc[0], imu.I.acc[1], imu.I.acc[2]);
+        }
+        else
+        {   // Spacious format
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU%d\n", i);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tPQR\t");
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
+                imu.I.pqr[0] * C_RAD2DEG_F,
+                imu.I.pqr[1] * C_RAD2DEG_F,
+                imu.I.pqr[2] * C_RAD2DEG_F);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
+                imu.I.acc[0], imu.I.acc[1], imu.I.acc[2]);
+        }
+    }
+
+    return buf;
+}
+ 
 
 std::string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr)
 {
