@@ -145,7 +145,8 @@ if (WIN32)
 	add_dependencies(${PROJECT_NAME} gen_files)
 
     # We need to ensure windows static libs are found
-    target_link_libraries(${PROJECT_NAME} Ws2_32.lib Iphlpapi.lib)
+    # PUBLIC so consumers of InertialSenseSDK automatically link Winsock
+    target_link_libraries(${PROJECT_NAME} PUBLIC Ws2_32.lib Iphlpapi.lib)
 elseif(APPLE)
     # macOS specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
@@ -209,5 +210,5 @@ elseif(LINUX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 	# Link in Linux specific packages
-    target_link_libraries(${PROJECT_NAME} ${UDEV_LIBRARIES} m)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${UDEV_LIBRARIES} m)
 endif ()
