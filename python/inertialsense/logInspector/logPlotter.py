@@ -2971,12 +2971,6 @@ class logPlot:
         imus = imus[:imuCount]
         return (name, time, dt, imus)
 
-    def imusPqr(self, fig=None, axs=None):
-        self.imuPQR(fig=fig, axs=axs)
-
-    def imusAcc(self, fig=None, axs=None):
-        self.imuAcc(fig=fig, axs=axs)
-
     def imusRawPqrCombined(self, fig=None, axs=None):
         self.imuPQR(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=True)
     def imusRawAccCombined(self, fig=None, axs=None):
