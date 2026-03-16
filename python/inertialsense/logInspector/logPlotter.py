@@ -282,16 +282,14 @@ def getValidTimeInd(time, tol=100):
     dt = np.diff(time)
     n = len(time)
     ind = np.ones(n, dtype=bool)
-    jump_idx = np.where((dt < 0) | (dt > tol))[0]
-
-    for k in range(0, len(jump_idx), 2):
-        start = jump_idx[k] + 1
-        if k + 1 < len(jump_idx):
-            end = jump_idx[k + 1]
-        else:
-            end = n - 1
-        ind[start: end+1] = False
-
+    # Assumption: median time is good
+    t_med = np.median(time)
+    dt_med = np.median(dt)
+    T = dt_med * len(time)
+    bad_idx1 = np.where((dt < 0) | (dt > tol))
+    bad_idx2 = np.where(abs(time - t_med) > T)
+    ind[bad_idx1] = False
+    ind[bad_idx2] = False
     return ind
 
 class logPlot:
