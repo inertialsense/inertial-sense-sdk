@@ -2887,10 +2887,8 @@ class logPlot:
                     # Accel
                     refVel = self.getData(device, DID_REFERENCE_PIMU, 'vel')
                     ref = refVel / dt[:,None]
-                imu1 = []
-                for sample in range(0, len(I)):
-                    imu1.append(ref)
-                imu1 = np.array(imu1)
+                # Use the computed reference data directly as imu1
+                imu1 = ref
                 imuCount = 1
 
             else:
