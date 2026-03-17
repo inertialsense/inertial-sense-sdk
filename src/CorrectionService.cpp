@@ -35,6 +35,8 @@ CorrectionService::CorrectionService(const std::string& portName, const std::vec
     if (portFactory && !name.empty()) {
         port_handle_t port = portFactory->bindPort(name, type);
         if (port) {
+            localSrcPort = true;
+            srcPortFactory = portFactory;
             init(port);
             return;
         }

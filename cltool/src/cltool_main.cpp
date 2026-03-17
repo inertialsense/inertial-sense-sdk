@@ -616,7 +616,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.imxCalUploadFile.size() > 0)
     {
-        if (!cltool_uploadImxCalibrationFile(inertialSenseInterface, g_commandLineOptions.imxCalUploadFile))
+        if (!inertialSenseInterface.UploadImxCalibrationFromFile(g_commandLineOptions.imxCalUploadFile))
         {   // Exit cltool now and report error code
             std::exit(-3);
         }

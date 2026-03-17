@@ -76,7 +76,7 @@ public:
     explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
         // std::cout << "Creating ISDevice for port " << portName(_port) << " " << this << std::endl;
         hdwId = _hdwId;
-        devInfo = {};
+        devInfo = { 0 };
         imxFlashCfg.checksum = 0xFFFFFFFF;
         gpxFlashCfg.checksum = 0xFFFFFFFF;
         sysParams.flashCfgChecksum = 0xFFFFFFFF;        // Set invalid checksum to trigger synchronization
@@ -130,6 +130,11 @@ public:
                 }
             }
             port = nullptr;
+        }
+
+        if (fwUpdater) {
+            delete fwUpdater;
+            fwUpdater = nullptr;
         }
     }
 
@@ -493,8 +498,8 @@ public:
      * @param flashCfg_ a reference to a nvm_flash_cfg_t struct to be populated
      * @returns true if the flashCfg has been synchronized with the device (and can thus be trusted), otherwise false.
      */
-    bool ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 500);
-    bool GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout = 500);
+    bool ImxFlashConfig(nvm_flash_cfg_t& flashCfg_, uint32_t timeout = 2500);
+    bool GpxFlashConfig(gpx_flash_cfg_t& flashCfg_, uint32_t timeout = 2500);
 
     /**
      * Uploads the provided flashCfg to the remove device, but makes NO checks that it was successfully synchronized.

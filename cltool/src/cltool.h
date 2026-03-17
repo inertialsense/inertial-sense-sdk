@@ -165,6 +165,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t timeoutFlushLoggerSeconds;
     std::vector<uint32_t> outputOnceDid;    
     std::vector<uint32_t> setAckDid;
+    bool imxCalUpload = false;
     std::string imxCalUploadFile;
 
     YAML::Node getNode;

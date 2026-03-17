@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "protocol/FirmwareUpdate.h"
 
 #include "imx_defaults.h"
+#include "uri.hpp"
 
 #if !PLATFORM_IS_EMBEDDED
 #include "ISBootloaderThread.h"
@@ -648,7 +649,14 @@ bool InertialSense::LoadGpxFlashConfigFromFile(std::string path, port_handle_t p
 
 bool InertialSense::UploadImxCalibrationFromFile(std::string path, port_handle_t port)
 {
-    return WithDevice(port, [&](device_handle_t dev) { return dev->UploadImxCalibrationFromFile(path); });
+    return WithDevice(port, [&](device_handle_t dev) {
+        FIX8::basic_uri uri(path);
+        if (uri.parse()) {
+            return (dev->UploadIMXCalibrationFromURL(path) == 200);
+        }
+
+        return dev->UploadImxCalibrationFromFile(path);
+    });
 }
 
 void InertialSense::SetNetworkPortDiscovery(bool enable)

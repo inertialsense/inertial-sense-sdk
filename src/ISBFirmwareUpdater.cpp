@@ -590,6 +590,7 @@ bool ISBFirmwareUpdater::rebootToISB()
         last_reboot = current_timeMs();
         nextStepMs = last_reboot + 2000;   // Give a chance to reboot - don't attempt to process this device again for another 2 seconds.
         device->disconnect(true);  // close AND invalidate the port; this port will have to be rediscovered to be used again.
+        log_debug(IS_LOG_FWUPDATE, "Disconnecting after reboot; Waiting 2 seconds for device to return.");
         // portManager.releasePort(device->port);  //
         // SLEEP_MS(50);
         // portManager.discoverPorts(); // if we are a USB connection, and do a force a quick discoverPorts() to discover if our USB port was lost.
@@ -645,6 +646,8 @@ bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
         if (!keepPortOpen) {
             fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
             device->disconnect(true);
+            nextStepMs = current_timeMs() + 2000;   // Sometimes we can be a little aggressive after a breakup - let's take a hot minute before we try and reconnect
+            log_debug(IS_LOG_FWUPDATE, "Disconnecting after reboot; Waiting 2 seconds for device to return.");
         } else {
             portFlush(device->port);
         }

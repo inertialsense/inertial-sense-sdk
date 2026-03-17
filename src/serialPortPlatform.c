@@ -253,8 +253,8 @@ static int configure_serial_port(int fd, int baudRate)
     struct serial_struct serial;
     ioctl(fd, TIOCGSERIAL, &serial);
     serial.flags |= ASYNC_LOW_LATENCY;
+    serial.closing_wait = ASYNC_CLOSING_WAIT_NONE;
     ioctl(fd, TIOCSSERIAL, &serial);
-
 
 #endif
 
@@ -326,6 +326,33 @@ static int configure_serial_port(int fd, int baudRate)
 }
 
 /**
+ * @brief configures flow control on the specified file descriptor
+ * @param fd
+ * @param control
+ * @return
+ */
+int set_flowcontrol(int fd, int control)
+{
+    struct termios tty;
+    memset(&tty, 0, sizeof tty);
+    if (tcgetattr(fd, &tty) != 0)
+    {
+        perror("error from tggetattr");
+        return -1;
+    }
+
+    if(control) tty.c_cflag |= CRTSCTS;
+    else tty.c_cflag &= ~CRTSCTS;
+
+    if (tcsetattr(fd, TCSANOW, &tty) != 0)
+    {
+        perror("error setting term attributes");
+        return -1;
+    }
+    return 0;
+}
+
+/**
  * @brief Set the serial port to non-blocking mode.
  * @brief Use modern O_NONBLOCK instead of legacy O_NDELAY. Because of non-blocking mode, we have to retry serial write() to handle partial writes until all data received by the OS.
  * This is done by getting the current flags, adding O_NONBLOCK, and then setting the new flags.
@@ -379,7 +406,8 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     if (serialPort->handle != 0)
     {
         // already open --  FIXME: Should we be closing the port and then reopen??
-        serialPortClose(serialPort);
+        // serialPortClose(serialPort);
+        return 1;
     }
 
     serialPortSetName(port, portName);
@@ -632,6 +660,15 @@ static int serialPortClosePlatform(port_handle_t port)
 
 #else
 
+    // we need to do some extended checking here... It seems linux/posix close(fd) can block if data is in the TX buffer, but can't be sent
+    set_flowcontrol(handle->fd, 0);
+    if (tcflush(handle->fd, TCIOFLUSH) < 0) {
+        // something bad happened...
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortClosePlatform():: Error flushing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+    }
+
     close(handle->fd);
     handle->fd = -1;
 
@@ -639,6 +676,8 @@ static int serialPortClosePlatform(port_handle_t port)
 
     free(serialPort->handle);
     serialPort->handle = 0;
+
+    serialPortSleepPlatform(500);   // this is strange, but occasionally some processes can spam Open/Close requests - so just a little something to slow things down; generally close() shouldn't be called often.
 
     return 1;
 }
@@ -680,6 +719,7 @@ static int serialPortFlushPlatform(port_handle_t port)
     if (tcflush(handle->fd, TCIOFLUSH) < 0) {
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
     }
 
 #endif
@@ -721,8 +761,11 @@ static int serialPortDrainPlatform(port_handle_t port)
 
 #else
 
-    if (tcdrain(handle->fd) < 0)
+    if (tcdrain(handle->fd) < 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+    }
 
 #endif
 
@@ -1105,6 +1148,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         int error = tcdrain(handle->fd);
         if (error != 0)
         {   // Drain error
+            // TODO: report the error (probably as a warning)
             return 0;
         }
     }
