@@ -59,8 +59,15 @@ public:
 
     virtual ~CorrectionService() {
         // Don't actually close down any ports for the base CorrectionService - extended services can choose to, if they need but don't do it here
-        // if (source) portClose(source);
         // for (auto a : ports)  portClose(a);
+
+        if (source && localSrcPort) {
+            portClose(source);
+            if (srcPortFactory)
+                srcPortFactory->releasePort(source);
+            else
+                PortManager::getInstance().releasePort(source);
+        }
     }
 
     /**
@@ -205,6 +212,8 @@ private:
     uint32_t rtcm3PacketsProcessed = 0;                                 // total number of RTCM3 packets that have been processed
     uint32_t rtcm3PacketLastMs = 0;                                     // timestamp in ms, since the last RTCM3 packet was seen
     uint32_t lastConnAttemptTs = 0;
+    bool localSrcPort = false;                                          // true if the source port was locally instantiated rather than passed in the constructor
+    PortFactory* srcPortFactory = nullptr;                               // the factory used to create the source port (if localSrcPort is true)
 
     MessageStats::mul_stats_t* msgStats = nullptr;                      // if not-null, call into the msgStats when parsing the source port
 

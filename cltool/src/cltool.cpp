@@ -372,8 +372,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-cal-upload"))
         {
-            i++;
-            g_commandLineOptions.imxCalUploadFile = &argv[i][0];
+            g_commandLineOptions.imxCalUpload = true;
+            if ((i < argc - 1) && (argv[i+1][0] != '-')) {
+                i++;
+                g_commandLineOptions.imxCalUploadFile = &argv[i][0];
+            }
         }
         else if (startsWith(a, "-chipEraseIMX"))
         {

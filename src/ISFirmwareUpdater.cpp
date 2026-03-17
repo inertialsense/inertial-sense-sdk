@@ -28,7 +28,7 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& st
         // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
         // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
         portListenerHdl = PortManager::getInstance().addPortListener(
-                [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
+                [targetHdwId](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
                     if (event == PortManager::PORT_ADDED) {
                         if ( DeviceManager::getInstance().discoverDevice(port, targetHdwId, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION) ) {
                             log_info(IS_LOG_FWUPDATE, "Discovered device [%s] while performing Firmware Updates.", DeviceManager::getInstance().getDevice(port)->getDescription().c_str())
@@ -1289,9 +1289,13 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::cleanupFirmwarePackage() {
         delete srcFile;
         srcFile = nullptr;
     }
+    if (srcFileBytes) {
+        mz_free(srcFileBytes);
+        srcFileBytes = nullptr;
+    }
     if (zip_archive) {
         mz_zip_reader_end(zip_archive);
-        free(zip_archive);
+        mz_free(zip_archive);
         zip_archive = nullptr;
     }
     return PKG_SUCCESS;

@@ -40,7 +40,10 @@ public:
     ISBFirmwareUpdater(fwUpdate::target_t target, const device_handle_t& device, std::deque<uint8_t>& toHost) : FirmwareUpdateDevice(target), device(device), target_devInfo(), toHost(toHost) { }
 
 
-    ~ISBFirmwareUpdater() override { };
+    ~ISBFirmwareUpdater() override {
+        if (imgBuffer) delete imgBuffer;
+        if (imgStream) delete imgStream;
+    };
 
     /**
      * We override this in this class, because we have to do some better handling for erase/write, rather than chunks.

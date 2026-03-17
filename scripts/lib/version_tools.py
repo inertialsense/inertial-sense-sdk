@@ -314,7 +314,7 @@ class RepositoryInfo:
 
                 max_depth = max_depth - 1
 
-            except git.NoSuchPathError as err:
+            except (git.NoSuchPathError, git.InvalidGitRepositoryError) as err:
                 warnings.warn(f"Specified path '{path}' references in invalid or corrupt git repository (submodule, etc).")
                 self.name = "BROKEN_GIT!"       # an indicator that there is something wrong with this git repo
                 self.repo = None

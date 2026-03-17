@@ -370,6 +370,7 @@ private:
 
     // ----  These are for uploads (using fwUpdater)
 
+    char* srcFileBytes = nullptr;                           //!< the pointer to the allocated raw bytes that are wrapped by srcFile - if not null, this should be freed when finished with the stream below is closed.
     std::istream *srcFile = nullptr;                        //!< the file that we are currently sending to a remote device, or nullptr if none
     uint32_t nextStartAttempt = 0;                          //!< the number of millis (uptime?) that we will next attempt to start an upgrade
     int8_t startAttempts = 0;                               //!< the number of attempts that have been made to request that an update be started

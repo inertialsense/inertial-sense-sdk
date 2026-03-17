@@ -334,37 +334,41 @@ bool ISDevice::validate(uint32_t timeout) {
         return false;
 
     FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
-    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
 
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
     is_hardware_t oldHdwId = hdwId;
     dev_info_t oldDevInfo = devInfo;
     hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
 
+    bool hasDevInfo = hasDeviceInfo();
     queryType nextQueryType = QUERYTYPE_NMEA;
     unsigned int startTime = current_timeMs();
     do {
         if ((current_timeMs() - startTime) > timeout) {
             // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
             hdwId = oldHdwId, devInfo = oldDevInfo;
-            fn.mark("Device failed to validate in time.");
+            log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : Device failed to validate in time.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
             return (queryDeviceInfoISbl(250) && hasDeviceInfo());
         }
 
         if (!port || !portIsValid(port) || !portIsOpened(port)) {
-            fn.mark("Port invalidated or closed while validating");
+            log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : Port invalidated or closed while validating.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
             hdwId = oldHdwId, devInfo = oldDevInfo;
             return false;
         }
 
         switch (nextQueryType) {
             case QUERYTYPE_NMEA:
+                log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) Querying NMEA DEV_INFO.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
                 SendRaw((uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
                 break;
             case QUERYTYPE_ISB:
+                log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) Querying ISB DEV_INFO.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
                 GetData(DID_DEV_INFO);
                 break;
             case QUERYTYPE_ISbootloader:
+                log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) Querying ISbl DEV_INFO.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
                 queryDeviceInfoISbl(250);
                 break;
             case QUERYTYPE_mcuBoot:
@@ -372,18 +376,21 @@ bool ISDevice::validate(uint32_t timeout) {
 
         }
 
-        SLEEP_MS(2);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
+        SLEEP_MS(10);    // make sure we give enough time for the device to respond - otherwise we might step each others toes
         // step();   Instead of doing this...
         if (isConnected() && (portType(port) & PORT_TYPE__COMM)) {
+            // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) Parsing responses...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
             is_comm_port_parse_messages(port); // ...read data directly into comm buffer and call callback functions
         }
 
         nextQueryType = static_cast<queryType>(((int)nextQueryType + 1) % (int)QUERYTYPE_MAX);
-    } while (!hasDeviceInfo());
+        hasDevInfo = hasDeviceInfo();
+    } while (!hasDevInfo);
 
     fn.mark("Finished validating.");
+    log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : Validation finished: %s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout, hasDevInfo ? "SUCCESS" : "FAILURE");
 
-    if (hasDeviceInfo()) {
+    if (hasDevInfo) {
         // once we have device info, turn off these other messages
         GetData(DID_DEV_INFO);
         GetData(DID_SYS_PARAMS);
@@ -846,13 +853,17 @@ int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint
         else
         {   // Out of sync.  Request flash config.
             log_debug(IS_LOG_ISDEVICE, "[%s] Out of sync.  Requesting %s...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid));
-            BroadcastBinaryData(flashCfgDid);
+            if (!BroadcastBinaryData(flashCfgDid)) {
+               log_error(IS_LOG_ISDEVICE, "[%s] Failed to request %s!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid));
+            }
         }
     }
     else
     {   // Out of sync.  Request sysParams or gpxStatus.
         log_debug(IS_LOG_ISDEVICE, "[%s] Out of sync.  Requesting %s...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(syncDid));
-        BroadcastBinaryData(syncDid);
+        if (!BroadcastBinaryData(syncDid)) {
+            log_error(IS_LOG_ISDEVICE, "[%s] Failed to request %s!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid));
+        }
     }
     return 0;
 }
@@ -1008,7 +1019,7 @@ bool ISDevice::UploadFlashConfigDiff(uint8_t* newData, uint8_t* curData, size_t 
     for (const cISDataMappings::MemoryUsage& usage : usageVec)
     {
         int offset = static_cast<int>(usage.ptr - newData);
-        log_debug(IS_LOG_ISDEVICE, "[%s] Sending %s: size %lu, offset %d", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid), usage.size, offset);
+        log_more_debug(IS_LOG_ISDEVICE, "[%s] Sending %s: size %lu, offset %d", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid), usage.size, offset);
         failure |= (SendData(flashCfgDid, usage.ptr, static_cast<int>(usage.size), offset) != 0);   // SendData() returns 0 on success
 
         if (!failure)
@@ -1513,18 +1524,18 @@ int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
 bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!portIsValid(port) || (current_timeMs() > nextResetTime)) {
-        for (int i = 0; i < 3; i++) {
-            if (SetSysCmd(SYS_CMD_SOFTWARE_RESET))
-                break;
-            SLEEP_MS(20)
-        }
-        disconnect();
-        portClose(port);
-        nextResetTime = current_timeMs() + resetRequestThreshold;
-        return true;
+    if (!isConnected() || (nextResetTime && (nextResetTime - current_timeMs() > 0)))
+        return false;
+
+    log_info(IS_LOG_ISDEVICE, "[%s] Requesting Software Reset", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+    for (int i = 0; i < 3; i++) {   // we shouldn't need to do this 3 times...
+        if (SetSysCmd(SYS_CMD_SOFTWARE_RESET))
+            break;
+        SLEEP_MS(5)
     }
-    return false;
+    disconnect();
+    nextResetTime = current_timeMs() + resetRequestThreshold;
+    return true;
 }
 
 bool ISDevice::manufacturingInfo(manufacturing_info_t& info, uint32_t timeoutMs) {
@@ -1533,6 +1544,8 @@ bool ISDevice::manufacturingInfo(manufacturing_info_t& info, uint32_t timeoutMs)
     if (!isConnected()) {
         return false;   // No device, no flash config
     }
+
+    log_info(IS_LOG_ISDEVICE, "[%s] Requesting Manufacturing Info", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
 
     int startTime = current_timeMs();
     while ((int)current_timeMs() - startTime < (int)timeoutMs) {
