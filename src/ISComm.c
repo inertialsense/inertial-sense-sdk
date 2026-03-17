@@ -1375,7 +1375,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
         return -1;
     }
 
-    if (pkt->data.ptr == NULL)
+    if (pkt->data.ptr == NULL && pkt->data.size > 0)
     {   // Invalid payload pointer
         return -1;
     }
