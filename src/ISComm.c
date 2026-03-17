@@ -1375,11 +1375,6 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
         return -1;
     }
 
-    if (pkt->data.ptr == NULL && pkt->data.size > 0)
-    {   // Invalid payload pointer
-        return -1;
-    }
-
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
@@ -1394,7 +1389,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     {
         n += portWriteUpdateChecksum(port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));              // Offset (optional)
     }
-    if (pkt->data.size)
+    if (pkt->data.size && pkt->data.ptr)
     {
         n += portWriteUpdateChecksum(port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));  // Payload
     }
@@ -1410,7 +1405,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     {
         memcpyIncUpdateChecksum(&ptr, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));                               // Offset (optional)
     }
-    if (pkt->data.size)
+    if (pkt->data.size && pkt->data.ptr)
     {
         memcpyIncUpdateChecksum(&ptr, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
