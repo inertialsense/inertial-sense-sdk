@@ -1384,16 +1384,16 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     // Write packet to port in multiple write calls (LEGACY).  Interruptable calls to this function that also write to the port could cause severed packets written.
 
     // Write packet to port
-    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                           // Header
+    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                               // Header
     if (pkt->offset)
     {
-        n += portWriteUpdateChecksum(port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));               // Offset (optional)
+        n += portWriteUpdateChecksum(port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));              // Offset (optional)
     }
-    if (pkt->data.size)
+    if (pkt->data.size && pkt->data.ptr)
     {
-        n += portWriteUpdateChecksum(port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));   // Payload
+        n += portWriteUpdateChecksum(port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));  // Payload
     }
-    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                            // Footer (checksum)
+    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                // Footer (checksum)
 #else
     // Write packet to port in a single write call.  Reentrant function that prevents severed packets written to the port if this function gets interrupted and data written the same port.
     uint8_t buf[PKT_BUF_SIZE];
@@ -1405,7 +1405,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     {
         memcpyIncUpdateChecksum(&ptr, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));                               // Offset (optional)
     }
-    if (pkt->data.size)
+    if (pkt->data.size && pkt->data.ptr)
     {
         memcpyIncUpdateChecksum(&ptr, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
