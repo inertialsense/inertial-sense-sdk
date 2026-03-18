@@ -259,7 +259,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
     SLEEP_MS(100);
 
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    serialPortPlatformInit(port);
+    serialPortInit(port, BASE_PORT(port)->pnum, BASE_PORT(port)->ptype, BASE_PORT(port)->pflags);
     m_serial_thread_mutex.lock();
     const char* serial_name = portName(port);
     thread_info->reuse_port = false;

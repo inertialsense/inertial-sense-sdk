@@ -329,7 +329,7 @@ static int configure_serial_port(int fd, int baudRate)
  * @brief configures flow control on the specified file descriptor
  * @param fd
  * @param control
- * @return
+ * @return 0 one success or errno on failure
  */
 int set_flowcontrol(int fd, int control)
 {
@@ -337,8 +337,8 @@ int set_flowcontrol(int fd, int control)
     memset(&tty, 0, sizeof tty);
     if (tcgetattr(fd, &tty) != 0)
     {
-        perror("error from tggetattr");
-        return -1;
+        log_more_debug(IS_LOG_PORT, "set_flowcontrol():: error calling tcgetattr : %s (%d)", strerror(errno), errno);
+        return errno;
     }
 
     if(control) tty.c_cflag |= CRTSCTS;
@@ -346,8 +346,8 @@ int set_flowcontrol(int fd, int control)
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0)
     {
-        perror("error setting term attributes");
-        return -1;
+        log_more_debug(IS_LOG_PORT, "set_flowcontrol():: error calling tcsetattr : %s (%d)", strerror(errno), errno);
+        return errno;
     }
     return 0;
 }
@@ -359,7 +359,7 @@ int set_flowcontrol(int fd, int control)
  * It also uses `flock` to get an exclusive, non-blocking lock on the file descriptor.
  *
  * @param fd The file descriptor.
- * @return int 0 on success, -1 on failure.
+ * @return int 0 on success, errno on failure.
  */
 int set_nonblocking(int fd) 
 {
@@ -367,14 +367,14 @@ int set_nonblocking(int fd)
     if (flags == -1) 
     {
         log_error(IS_LOG_PORT, "set_nonblocking():: error fcntl F_GETFL : %s (%d)", strerror(errno), errno);
-        return -1;
+        return errno;
     }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) == -1) 
     {
         log_error(IS_LOG_PORT, "set_nonblocking():: error setting O_NONBLOCK : %s (%d)", strerror(errno), errno);
-        return -1;
+        return errno;
     }
 
     // Alternate method - this maybe redundant, but better to be safe, eh?
@@ -661,12 +661,15 @@ static int serialPortClosePlatform(port_handle_t port)
 #else
 
     // we need to do some extended checking here... It seems linux/posix close(fd) can block if data is in the TX buffer, but can't be sent
-    set_flowcontrol(handle->fd, 0);
-    if (tcflush(handle->fd, TCIOFLUSH) < 0) {
-        // something bad happened...
-        serialPort->errorCode = errno;
-        serialPort->error = strerror(serialPort->errorCode);
-        log_error(IS_LOG_PORT, "[%s] serialPortClosePlatform():: Error flushing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+    if (set_flowcontrol(handle->fd, 0) == 0) {
+        // no point is doing this if the previous call had an error -- this will probably fail too.
+        if (tcflush(handle->fd, TCIOFLUSH) < 0) {
+            // something bad happened...
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
+            // FIXME: This should *probably* be a silent error - if we're closing a port that was previously closed or lost (USB disconnected, device reset, etc), then do we need to report an error?
+            log_error(IS_LOG_PORT, "[%s] serialPortClosePlatform():: Error flushing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+        }
     }
 
     close(handle->fd);

@@ -35,11 +35,8 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
     port_handle_t port = (port_handle_t)serialPort;
 
     *serialPort = {};
-    serialPort->base.pnum = (uint16_t)PortManager::getInstance().getPortCount();
-    serialPort->base.ptype = (pType | PORT_TYPE__UART | PORT_TYPE__COMM);
+    serialPortInit(port, (uint16_t)PortManager::getInstance().getPortCount(), (pType | PORT_TYPE__UART | PORT_TYPE__COMM), 0);
     strncpy(serialPort->portName, pName.c_str(), pName.length());
-
-    serialPortPlatformInit(port);
 
     // serialPort->base.portOpen = SerialPortFactory::open_port;
     serialPort->base.portValidate = SerialPortFactory::validate_port;
