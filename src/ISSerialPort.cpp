@@ -32,7 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-cISSerialPort::cISSerialPort(port_handle_t port_) : cISStream()
+cISSerialPort::cISSerialPort(port_handle_t port_) : m_timeout(0), m_blocking(false)
 {
     if (port_ != NULLPTR)
     {
@@ -40,7 +40,8 @@ cISSerialPort::cISSerialPort(port_handle_t port_) : cISStream()
     }
     else
     {
-        serialPortPlatformInit(port);
+        memset(port, 0, sizeof(serial_port_t));
+        serialPortInit(port, PortManager::getInstance().getPortCount()+1, PORT_TYPE__UART | PORT_TYPE__COMM, 0);
     }
     Close();
 }
