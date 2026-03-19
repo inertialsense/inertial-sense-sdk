@@ -973,6 +973,10 @@ enum eImusStatus
     IMUS_STATUS_IMU_OK_BITSIZE                  = 6,
     /** IMU valid mask */
     IMUS_STATUS_IMU_OK_MASK                     = (int)0x0000003F,
+    /** Gyro valid mask */
+    IMUS_STATUS_GYR_OK_MASK                     = (int)0x00000007,
+    /** Accelerometer valid mask */
+    IMUS_STATUS_ACC_OK_MASK                     = (int)0x00000038,
     
     /** Sensor saturation */
     IMUS_STATUS_SATURATION_GYR                  = (int)0x40000000,
