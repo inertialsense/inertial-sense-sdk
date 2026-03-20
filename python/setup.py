@@ -49,7 +49,22 @@ static_lib_dir = '..'
 libraries = ['Ws2_32', 'Iphlpapi'] if sys.platform == 'win32' else []
 library_dirs = []
 
-def resolve_windows_sdk_static_lib():
+def should_require_sdk_static_lib():
+    """Return True when current setuptools command will build/link extensions."""
+    build_like_commands = {
+        "build",
+        "build_ext",
+        "bdist",
+        "bdist_wheel",
+        "install",
+        "develop",
+        "editable_wheel",
+    }
+    argv = {arg.lower() for arg in sys.argv[1:] if arg and not arg.startswith('-')}
+    return any(cmd in argv for cmd in build_like_commands)
+
+
+def resolve_windows_sdk_static_lib(strict=True):
     """Locate the prebuilt InertialSenseSDK static library on Windows."""
     sdk_root = Path(__file__).resolve().parent.parent
     candidates = [
@@ -67,14 +82,17 @@ def resolve_windows_sdk_static_lib():
     if dynamic_candidates:
         return str(dynamic_candidates[0])
 
-    raise FileNotFoundError(
-        "Could not find InertialSenseSDK.lib. Expected one of: "
-        + ", ".join(str(c) for c in candidates)
-        + ". Build the SDK first (e.g. SDK/scripts/windows/build_is_sdk.bat)."
-    )
+    if strict:
+        raise FileNotFoundError(
+            "Could not find InertialSenseSDK.lib. Expected one of: "
+            + ", ".join(str(c) for c in candidates)
+            + ". Build the SDK first (e.g. SDK/scripts/windows/build_is_sdk.bat)."
+        )
+    return None
 
 if sys.platform == 'win32':
-    extra_objects = [resolve_windows_sdk_static_lib()]
+    sdk_lib = resolve_windows_sdk_static_lib(strict=should_require_sdk_static_lib())
+    extra_objects = [sdk_lib] if sdk_lib else []
 else: # POSIX
     extra_objects = ['{}/build/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
 
