@@ -15,11 +15,12 @@
 
 #include "json.hpp"
 #include "core/msg_logger.h"
+#include "ChronoStat.h"
 #include "DeviceLog.h"
+#include "ISDeviceCal.h"
+#include "ISFirmwareUpdater.h"
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
-#include "ISFirmwareUpdater.h"
-#include "ChronoStat.h"
 
 extern "C"
 {
@@ -50,6 +51,13 @@ class cISLogger;
 class ISDevice : public std::enable_shared_from_this<ISDevice> {
 public:
 
+    enum AsyncState {
+        ASYNC_STATE__TIMEOUT     = -2,          //!< specific failure state indicating a lack of response within a timeperiod
+        ASYNC_STATE__FAILURE     = -1,          //!< general failure state indicating an error condition, but otherwise a completed async cycle
+        ASYNC_STATE__PENDING     = 0,           //!< indicates that the async operation is still in progress, and should be called again soon
+        ASYNC_STATE__SUCCESS     = 1,           //!< indicates that the async operation was successful, and no further actions are necessary
+    };
+
     enum DevInfoFormatFlags : uint16_t {
         // Description Options
         OMIT_FIRMWARE_VERSION    = 0x0001,      //!< suppresses output of the firmware version
@@ -71,6 +79,7 @@ public:
     const static ISDevice invalidRef;
     static std::string getIdAsString(const dev_info_t& devInfo);
     static std::string getName(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER));
+    static std::string getDescription(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER | ESSENTIAL_FIRMWARE_INFO));
     static std::string getFirmwareInfo(const dev_info_t &devInfo, int flags = 0);
 
     explicit ISDevice(is_hardware_t _hdwId = IS_HARDWARE_TYPE_UNKNOWN, port_handle_t _port = nullptr) {
@@ -571,6 +580,21 @@ public:
     bool LoadGpxFlashConfigFromFile(std::string path);
 
     /**
+     * Asynchronously loads the referenced Device calibration.
+     * It is expected that this function will be called periodically from the step()
+     * function, if a calibration upload is in progress.
+     * @param cal a reference to the calibration data to load on the device
+     * @return one of ASYNC_STATE__* indicating if an upload is in progress or not.
+     *      ASYNC_STATE__TIMEOUT if the calibration failed to upload or an issue occurred.
+     *      ASYNC_STATE__PENDING if the calibration upload is still being performed. step()
+     *      should continue to call this function as long as this value is being returned.
+     *      ASYNC_STATE__SUCCESS if the calibration was successfully uploaded.
+     */
+    int UploadImxCalibrationAsync(ISDeviceCal& cal);
+
+    bool UploadImxCalibration(ISDeviceCal& cal);
+
+    /**
      * @brief UploadImxCalibrationFromFile
      * @param path - Path to JSON calibration file
      * @return true for success, false for failure.
@@ -681,6 +705,9 @@ private:
     pfnIsCommHandler            packetHandler = nullptr;
     pfnIsCommHandler            externalAllHandler = nullptr;        //!< A user-implemented handler for all packet/message types
     pfnIsCommIsbDataHandler     defaultISBHandler = nullptr;
+
+    int                         m_calUploadState = -1;               //!< step indicator for calibration uploads
+    ISDeviceCal*                m_calibration = nullptr;             //!< pointer to a calibration object that is currently being uploaded
 
     static int processPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     static int processIsbMsgs(void* ctx, p_data_t* data, port_handle_t port);

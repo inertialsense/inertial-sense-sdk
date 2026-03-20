@@ -9,7 +9,6 @@
 #include "core/msg_logger.h"
 #include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
-#include "ISDeviceCal.h"
 #include "ISHttpRequest.h"
 #include "util/util.h"
 #include "imx_defaults.h"
@@ -117,6 +116,13 @@ bool ISDevice::step() {
             fn.mark("Synchronizing flash.");
         }
         didStuff = true;
+    }
+
+    if (m_calibration && m_calUploadState != -1) {
+        if (ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration) != ASYNC_STATE__PENDING) {
+            m_calibration = nullptr;
+            m_calUploadState = -1;
+        }
     }
 
     if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
@@ -407,7 +413,9 @@ bool ISDevice::validate(uint32_t timeout) {
 /**
  * Non-blocking, internal(ish) method to validate a device.  Will be called repeatedly from step() as long as "isValidating" is true.
  * @param timeout the maximum number of milliseconds that must pass without a validating response from the device, before giving up.
- * @return -1 if the default fails to validate, 0 if the device is still validating, 1 if the device successfully validated
+ * @return ASYNC_STATE__TIMEOUT if the device fails to validate,
+ *         ASYNC_STATE__PENDING if the device is still validating,
+ *         ASYNC_STATE__SUCCESSif the device successfully validated.
  */
 int ISDevice::validateAsync(uint32_t timeout) {
     if (!isConnected())
@@ -427,7 +435,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
         GetData(DID_SYS_PARAMS);
         GetData(DID_FLASH_CONFIG);
 
-        return 1;
+        return ASYNC_STATE__SUCCESS;
     }
 
     // if this is non-zero, it means we're actively validating; this helps us know when to give up/timeout
@@ -445,7 +453,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
         if (hasDeviceInfo() || queryDeviceInfoISbl(250)) {
             log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), current_timeMs() - validationStartMs);
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-            return 1;
+            return ASYNC_STATE__SUCCESS;
         }
 
         */
@@ -453,7 +461,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
         log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() timed out after %dms [[ %d, %d, %d ]]", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), current_timeMs() - validationStartMs, devInfo.hdwRunState, devInfo.hardwareType, devInfo.serialNumber);
         nextValidationType = QUERYTYPE_NMEA;
         validationStartMs = 0;
-        return -1;
+        return ASYNC_STATE__TIMEOUT;
     }
 
     if (nextValidationMs < now) {
@@ -478,7 +486,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
         nextValidationType = static_cast<queryType>(((int)nextValidationType + 1) % (int)QUERYTYPE_MAX);
         nextValidationMs = now + 10;  // 10 millis to respond before we try the next query method
     }
-    return 0;
+    return ASYNC_STATE__PENDING;
 }
 
 /**
@@ -1226,14 +1234,14 @@ bool SaveFlashConfigToFile(const std::string& path, int flashCfgDid, std::functi
     T flashCfg;
     if (!getCfg(flashCfg))
     {
-        printf("[ERROR] --- Failed to get flash config\n");
+        log_error(IS_LOG_ISDEVICE, "Failed to get flash config.");
         return false;
     }
 
     YAML::Node yaml;
     if (!cISDataMappings::DataToYaml(flashCfgDid, reinterpret_cast<const uint8_t*>(&flashCfg), yaml))
     {
-        printf("[ERROR] --- Failed to serialize flash config to YAML\n");
+        log_error(IS_LOG_ISDEVICE, "Failed to serialize flash config to YAML.");
         return false;
     }
 
@@ -1255,19 +1263,19 @@ bool LoadFlashConfigFromFile(const std::string& path, int flashCfgDid, std::func
         T flashCfg;
         if (!cISDataMappings::YamlToData(flashCfgDid, yaml, reinterpret_cast<uint8_t*>(&flashCfg)))
         {
-            printf("[ERROR] --- Failed to parse YAML into flash config structure\n");
+            log_error(IS_LOG_ISDEVICE, "Failed to parse YAML into flash config structure");
             return false;
         }
 
         if (!setCfg(flashCfg))
         {
-            printf("[ERROR] --- Failed to apply flash config\n");
+            log_error(IS_LOG_ISDEVICE, "Failed to apply flash config");
             return false;
         }
     }
     catch (const YAML::Exception& ex)
     {
-        printf("[ERROR] --- There was an error parsing the YAML file: %s\n", ex.what());
+        log_error(IS_LOG_ISDEVICE, "There was an error parsing the YAML file: %s", ex.what());
         return false;
     }
 
@@ -1298,227 +1306,90 @@ bool ISDevice::LoadGpxFlashConfigFromFile(std::string path)
         [this](gpx_flash_cfg_t& cfg) { return SetGpxFlashConfig(cfg); });
 }
 
-bool ISDevice::UploadImxCalibrationFromFile(std::string path)
-{
-    // Load Calibration data
-    sensor_cal_t scal = {};
-    if( !ISDeviceCal::loadCalibrationFromJsonFile( path, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal) ) )
-        return false;
+/**
+ * @brief Uploads sensor calibration data to a device in steps.
+ * @param port The communication port handle.
+ * @param calUploadState The current state of the upload process. This is updated by the function.
+ * @param cal The sensor_cal_t structure containing the calibration data to upload.
+ * @return 1 if the upload is complete, 0 if it's in progress, -1 on error.
+ */
+int ISDevice::UploadImxCalibrationAsync(ISDeviceCal& cal) {
+    if (!isConnected())
+        return ASYNC_STATE__FAILURE;   // nothing to do, if we aren't connected
 
-    if (!port)
-    {
-        return false;        
+    return ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, cal);
+}
+
+
+bool ISDevice::UploadImxCalibration(ISDeviceCal& cal)
+{
+    if (!isConnected())
+        return false;   // nothing to do, if we aren't connected
+
+    int result = 0;
+    try {
+        int calUploadState = 0;
+        do {
+            result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, cal);
+            SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
+        } while (result == ASYNC_STATE__PENDING);
+    } catch (const std::exception& e) {
+        log_error(IS_LOG_ISDEVICE, "[%s] Calibration upload failed!", getIdAsString().c_str());
+        return false;
     }
 
-    int calUploadState = 0;
-    int result = 0;
-    do {
-        result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, scal);
-        
-        SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
-    } while (result == 0);
-    
-    if (result == 1)
+    if (result == ASYNC_STATE__SUCCESS)
     {
-        log_info(IS_LOG_ISDEVICE, "[%s] Calibration upload complete.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        log_info(IS_LOG_ISDEVICE, "[%s] Calibration upload complete.", getIdAsString().c_str());
         return true;
     }
     else
     {
-        log_error(IS_LOG_ISDEVICE, "[%s] Calibration upload failed!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        log_error(IS_LOG_ISDEVICE, "[%s] Calibration upload failed!", getIdAsString().c_str());
         return false;
     }
+}
+
+
+bool ISDevice::UploadImxCalibrationFromFile(std::string path)
+{
+    ISDeviceCal cal(path);
+    return UploadImxCalibration(cal);
 }
 
 bool ISDevice::UploadImxCalibrationFromJson(const nlohmann::json& calJson)
 {
-    // Load calibration data from JSON object
-    sensor_cal_t scal = {};
-    if (!ISDeviceCal::loadCalibrationFromJsonObj(calJson, NULL, &(scal.info), &(scal.data.dinfo), &(scal.data.tcal), &(scal.data.mcal)))
-        return false;
-
-    if (!port)
-        return false;
-
-    int calUploadState = 0;
-    int result = 0;
-    do {
-        result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, scal);
-        SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
-    } while (result == 0);
-
-    if (result == 1)
-    {
-        log_info(IS_LOG_ISDEVICE, "[%s] Calibration upload from JSON complete.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-        return true;
-    }
-    else
-    {
-        log_error(IS_LOG_ISDEVICE, "[%s] Calibration upload from JSON failed!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-        return false;
-    }
+    ISDeviceCal cal(calJson);
+    return UploadImxCalibration(cal);
 }
 
 int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
 {
-    using json = nlohmann::json;
 
-    // Build hardware type string (e.g., "IMX-5.0")
-    const char *typeName = "???";
-    switch (devInfo.hardwareType) {
-        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX:  typeName = "IMX"; break;
-        case IS_HARDWARE_TYPE_GPX:  typeName = "GPX"; break;
-        default: break;
-    }
-    std::string hwType = std::string(typeName) + "-" + std::to_string(devInfo.hardwareVer[0]) + "." + std::to_string(devInfo.hardwareVer[1]);
-
-    log_info(IS_LOG_ISDEVICE, "[%s] Fetching calibration from DB for %s SN%ld",
-        getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), hwType.c_str(), devInfo.serialNumber);
-
-    // Step 1: Fetch device calibration list
-    std::string deviceUrl = restBaseUrl + "/api/calibration/device/" + hwType + "/" + std::to_string(devInfo.serialNumber);
-    ISHttpRequest::Response listResp = ISHttpRequest::get(deviceUrl);
-
-    if (listResp.statusCode == -1)
-    {
-        log_error(IS_LOG_ISDEVICE, "[%s] Failed to connect to calibration DB at %s",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), deviceUrl.c_str());
-        return -1;
-    }
-
-    if (listResp.statusCode == 404)
-    {
-        log_warn(IS_LOG_ISDEVICE, "[%s] Device not found in calibration DB (HTTP 404)",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-        return 404;
-    }
-
-    if (listResp.statusCode != 200)
-    {
-        log_error(IS_LOG_ISDEVICE, "[%s] Calibration DB returned HTTP %d: %s",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), listResp.statusCode, listResp.statusMessage.c_str());
-        return listResp.statusCode;
-    }
-
-    // Step 2: Parse response to find most recent calibration UUID
-    json listJson;
-    try {
-        listJson = json::parse(listResp.body);
-    } catch (const json::parse_error& e) {
-        log_error(IS_LOG_ISDEVICE, "[%s] Failed to parse calibration list JSON: %s",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), e.what());
-        return -1;
-    }
-
-    // Find most recent calibration by calDateTime
-    std::string bestUuid;
-    std::string bestDateTime;
-
-    // API returns { "<deviceUuid>": [ {calUuid, calDateTime, ...}, ... ] }
-    // Iterate all values in the top-level object to find calibration entries
-    if (listJson.is_object())
-    {
-        for (auto& [devUuid, calArray] : listJson.items())
-        {
-            if (!calArray.is_array())
-                continue;
-
-            for (const auto& cal : calArray)
-            {
-                std::string calUuid;
-                if (cal.contains("calUuid"))
-                    calUuid = cal["calUuid"].get<std::string>();
-                else if (cal.contains("uuid"))
-                    calUuid = cal["uuid"].get<std::string>();
-                else
-                    continue;
-
-                std::string dateTime;
-                if (cal.contains("calDateTime"))
-                    dateTime = cal["calDateTime"].get<std::string>();
-
-                if (bestUuid.empty() || dateTime > bestDateTime)
-                {
-                    bestUuid = calUuid;
-                    bestDateTime = dateTime;
-                }
-            }
+    ISDeviceCal cal{};
+    ISHttpRequest::Response calResp = cal.loadFromURL(restBaseUrl, devInfo);
+    switch (calResp.statusCode) {
+        case -2:
+            log_error(IS_LOG_ISDEVICE, "[%s] Failed to parse calibration response.", getIdAsString().c_str());
+            return calResp.statusCode;
+        case -1:
+            log_error(IS_LOG_ISDEVICE, "[%s] Failed to connect to calibration DB at %s", getIdAsString().c_str(), restBaseUrl.c_str());
+            return calResp.statusCode;
+        case 404:
+            log_warn(IS_LOG_ISDEVICE, "[%s] Device not found in calibration DB", getIdAsString().c_str());
+            return calResp.statusCode;
+        case 200: {
+            int pos = calResp.statusMessage.find("] ");
+            auto msg = calResp.statusMessage.substr(pos+2);
+            log_info(IS_LOG_ISDEVICE, "[%s] %s", getIdAsString().c_str(), msg.c_str());
+            break; // success
         }
-    }
-    else if (listJson.is_array())
-    {
-        // Fallback: top-level array of calibration entries
-        for (const auto& cal : listJson)
-        {
-            std::string calUuid;
-            if (cal.contains("calUuid"))
-                calUuid = cal["calUuid"].get<std::string>();
-            else if (cal.contains("uuid"))
-                calUuid = cal["uuid"].get<std::string>();
-            else
-                continue;
-
-            std::string dateTime;
-            if (cal.contains("calDateTime"))
-                dateTime = cal["calDateTime"].get<std::string>();
-
-            if (bestUuid.empty() || dateTime > bestDateTime)
-            {
-                bestUuid = calUuid;
-                bestDateTime = dateTime;
-            }
-        }
+        default:
+            log_error(IS_LOG_ISDEVICE, "[%s] Calibration DB returned HTTP %d: %s", getIdAsString().c_str(), calResp.statusCode, calResp.statusMessage.c_str());
+            return calResp.statusCode;
     }
 
-    if (bestUuid.empty())
-    {
-        log_warn(IS_LOG_ISDEVICE, "[%s] No calibrations found for device in DB",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-        return 404;
-    }
-
-    log_info(IS_LOG_ISDEVICE, "[%s] Found calibration UUID: %s (date: %s)",
-        getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), bestUuid.c_str(), bestDateTime.c_str());
-
-    // Step 3: Fetch full calibration JSON
-    std::string calUrl = restBaseUrl + "/api/calibration/" + bestUuid;
-    ISHttpRequest::Response calResp = ISHttpRequest::get(calUrl);
-
-    if (calResp.statusCode == -1)
-    {
-        log_error(IS_LOG_ISDEVICE, "[%s] Failed to fetch calibration data from %s",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), calUrl.c_str());
-        return -1;
-    }
-
-    if (calResp.statusCode != 200)
-    {
-        log_error(IS_LOG_ISDEVICE, "[%s] Calibration DB returned HTTP %d for UUID %s",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), calResp.statusCode, bestUuid.c_str());
-        return calResp.statusCode;
-    }
-
-    // Step 4: Parse and upload calibration
-    json calJson;
-    try {
-        calJson = json::parse(calResp.body);
-    } catch (const json::parse_error& e) {
-        log_error(IS_LOG_ISDEVICE, "[%s] Failed to parse calibration JSON: %s",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), e.what());
-        return -1;
-    }
-
-    if (!UploadImxCalibrationFromJson(calJson))
-    {
-        log_error(IS_LOG_ISDEVICE, "[%s] Failed to upload calibration from DB",
-            getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-        return -1;
-    }
-
-    log_info(IS_LOG_ISDEVICE, "[%s] Successfully uploaded calibration from DB (UUID: %s)",
-        getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), bestUuid.c_str());
-    return 200;
+    return UploadImxCalibration(cal) ? 200 : -1;
 }
 
 bool ISDevice::softwareReset() {
