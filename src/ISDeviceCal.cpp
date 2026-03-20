@@ -1066,7 +1066,7 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
     try {
         listJson = json::parse(listResp.body);
     } catch (const json::parse_error& e) {
-        return ISHttpRequest::Response {.statusCode = -1, .statusMessage = utils::string_format("Failed to parse calibration list JSON: %s", e.what()) };
+        { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("Failed to parse calibration list JSON: %s", e.what()); return r; }
     }
 
     // Find most recent calibration by calDateTime
@@ -1131,7 +1131,7 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
 
     if (bestUuid.empty())
     {
-        return ISHttpRequest::Response {.statusCode = 404, .statusMessage = "Received valid JSON response from server, but no suitable calibration found (Has this device ever been calibrated?)."};
+        { ISHttpRequest::Response r; r.statusCode = 404; r.statusMessage = "Received valid JSON response from server, but no suitable calibration found (Has this device ever been calibrated?)."; return r; }
     }
 
     log_info(IS_LOG_CALIBRATION, "Found calibration UUID: %s (date: %s)", bestUuid.c_str(), bestDateTime.c_str());
@@ -1144,14 +1144,14 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
     {
         std::string msg = utils::string_format("Failed to fetch calibration data from %s", calUrl.c_str());
         log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
-        return ISHttpRequest::Response {.statusCode = 404, .statusMessage = msg };
+        { ISHttpRequest::Response r; r.statusCode = 404; r.statusMessage = msg; return r; }
     }
 
     if (calResp.statusCode != 200)
     {
         std::string msg = utils::string_format("Calibration DB returned HTTP %d for UUID %s: %s", calResp.statusCode, bestUuid.c_str(), calResp.statusMessage.c_str());
         log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
-        return ISHttpRequest::Response {.statusCode = calResp.statusCode, .statusMessage = msg };
+        { ISHttpRequest::Response r; r.statusCode = calResp.statusCode; r.statusMessage = msg; return r; }
     }
 
     // Step 4: Parse and upload calibration
@@ -1159,15 +1159,15 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
     try {
         calJson = json::parse(calResp.body);
     } catch (const json::parse_error& e) {
-        return ISHttpRequest::Response {.statusCode = -1, .statusMessage = utils::string_format("Failed to parse calibration data from %s", calUrl.c_str()) };
+        { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("Failed to parse calibration data from %s", calUrl.c_str()); return r; }
     }
 
     if (!loadCalibrationFromJsonObj(calJson,  &ocal, &info, &data.dinfo, &data.tcal, &data.mcal, &pose))
     {
-        return ISHttpRequest::Response {.statusCode = -1, .statusMessage = utils::string_format("[%s] Failed to parse calibration from DB", ISDevice::getIdAsString(devInfo).c_str()) };
+        { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("[%s] Failed to parse calibration from DB", ISDevice::getIdAsString(devInfo).c_str()); return r; }
     }
 
     std::string msg = utils::string_format("[%s] Successfully parsed calibration from DB (UUID: %s)", ISDevice::getIdAsString(devInfo).c_str(), bestUuid.c_str());
     log_info(IS_LOG_CALIBRATION, "%s", msg.c_str());
-    return ISHttpRequest::Response {.statusCode = 200, .statusMessage = msg };
+    { ISHttpRequest::Response r; r.statusCode = 200; r.statusMessage = msg; return r; }
 }
