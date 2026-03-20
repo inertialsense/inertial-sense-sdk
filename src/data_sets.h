@@ -972,7 +972,11 @@ enum eImusStatus
     /** Number of IMU OK bits */
     IMUS_STATUS_IMU_OK_BITSIZE                  = 6,
     /** IMU valid mask */
-    IMUS_STATUS_IMU_OK_MASK                     = (int)0x0000003F,
+    IMUS_STATUS_IMU_OK_MASK                     = IMUS_STATUS_GYR_X_OK | IMUS_STATUS_GYR_Y_OK | IMUS_STATUS_GYR_Z_OK | IMUS_STATUS_ACC_X_OK | IMUS_STATUS_ACC_Y_OK | IMUS_STATUS_ACC_Z_OK,
+    /** Gyro valid mask */
+    IMUS_STATUS_GYR_OK_MASK                     = IMUS_STATUS_GYR_X_OK | IMUS_STATUS_GYR_Y_OK | IMUS_STATUS_GYR_Z_OK,
+    /** Accelerometer valid mask */
+    IMUS_STATUS_ACC_OK_MASK                     = IMUS_STATUS_ACC_X_OK | IMUS_STATUS_ACC_Y_OK | IMUS_STATUS_ACC_Z_OK,
     
     /** Sensor saturation */
     IMUS_STATUS_SATURATION_GYR                  = (int)0x40000000,
@@ -998,7 +1002,11 @@ enum eImuStatus
     /** Number of IMU OK bits */
     IMU_STATUS_IMU_OK_BITSIZE                   = 6,
     /** IMU valid mask */
-    IMU_STATUS_IMU_OK_MASK                      = (int)0x0000003F,
+    IMU_STATUS_IMU_OK_MASK                      = IMU_STATUS_GYR_X_OK | IMU_STATUS_GYR_Y_OK | IMU_STATUS_GYR_Z_OK | IMU_STATUS_ACC_X_OK | IMU_STATUS_ACC_Y_OK | IMU_STATUS_ACC_Z_OK,
+    /** Gyro valid mask */
+    IMU_STATUS_GYR_OK_MASK                      = IMU_STATUS_GYR_X_OK | IMU_STATUS_GYR_Y_OK | IMU_STATUS_GYR_Z_OK,
+    /** Accelerometer valid mask */
+    IMU_STATUS_ACC_OK_MASK                      = IMU_STATUS_ACC_X_OK | IMU_STATUS_ACC_Y_OK | IMU_STATUS_ACC_Z_OK,
 
     /** Sensor shock detected */
     IMU_STATUS_SHOCK_PRESENT                    = (int)0x00000040,
