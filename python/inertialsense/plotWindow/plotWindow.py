@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget,QVBoxLayout
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, QTimer
 import sys, os
 
 class plotWindow():
@@ -23,7 +23,34 @@ class plotWindow():
         self.MainWindow.setCentralWidget(self.tabs)
         # self.MainWindow.resize(1920, 1080)
         self.MainWindow.resize(1200, 980)
+
+        self._close_marker_path = os.environ.get('IMX_CLOSE_PLOTS_MARKER', '')
+        self._close_marker_mtime = 0.0
+        if self._close_marker_path:
+            try:
+                self._close_marker_mtime = os.path.getmtime(self._close_marker_path)
+            except OSError:
+                self._close_marker_mtime = 0.0
+
+            self._close_timer = QTimer(self.MainWindow)
+            self._close_timer.timeout.connect(self._poll_close_request)
+            self._close_timer.start(250)
+
         self.MainWindow.show()
+
+    def _poll_close_request(self):
+        if not self._close_marker_path:
+            return
+        try:
+            marker_mtime = os.path.getmtime(self._close_marker_path)
+        except OSError:
+            return
+
+        if marker_mtime > self._close_marker_mtime:
+            self._close_marker_mtime = marker_mtime
+            plt.close('all')
+            self.MainWindow.close()
+            self.app.quit()
 
     def addPlot(self, title, figure, threeD=False):
         new_tab = QWidget()
