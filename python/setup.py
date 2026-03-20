@@ -49,8 +49,32 @@ static_lib_dir = '..'
 libraries = ['Ws2_32', 'Iphlpapi'] if sys.platform == 'win32' else []
 library_dirs = []
 
+def resolve_windows_sdk_static_lib():
+    """Locate the prebuilt InertialSenseSDK static library on Windows."""
+    sdk_root = Path(__file__).resolve().parent.parent
+    candidates = [
+        sdk_root / "build-release" / "InertialSenseSDK.lib",
+        sdk_root / "build-debug" / "InertialSenseSDK.lib",
+        sdk_root / "build" / "InertialSenseSDK.lib",
+    ]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+
+    # Fallback: search any build-like folder directly under SDK
+    dynamic_candidates = sorted(sdk_root.glob("build*/InertialSenseSDK.lib"))
+    if dynamic_candidates:
+        return str(dynamic_candidates[0])
+
+    raise FileNotFoundError(
+        "Could not find InertialSenseSDK.lib. Expected one of: "
+        + ", ".join(str(c) for c in candidates)
+        + ". Build the SDK first (e.g. SDK/scripts/windows/build_is_sdk.bat)."
+    )
+
 if sys.platform == 'win32':
-    extra_objects = [r'..\build-release\InertialSenseSDK.lib']
+    extra_objects = [resolve_windows_sdk_static_lib()]
 else: # POSIX
     extra_objects = ['{}/build/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
 
