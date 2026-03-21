@@ -215,7 +215,7 @@ std::string utils::did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, in
     return std::string(buf);
 }
 
-std::string utils::getHardwareAsString(const dev_info_t& devInfo) {
+std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
     // hardware type & version
     const char *typeName = "\?\?\?";
     switch (devInfo.hardwareType) {
@@ -225,6 +225,9 @@ std::string utils::getHardwareAsString(const dev_info_t& devInfo) {
         default: typeName = "\?\?\?"; break;
     }
     std::string out = utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
+    if (!showRev)
+        return out;
+
     if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
         out += utils::string_format(".%u", devInfo.hardwareVer[2]);
         if (devInfo.hardwareVer[3] != 0)
@@ -717,4 +720,65 @@ bool utils::validDomainName(const std::string& domainName) {
     static const std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
     std::smatch match;
     return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
+}
+
+std::string utils::encodeSTM32UID(const uint32_t uid[3]) {
+    // STM32 UID is 3x 32-bit registers stored as little-endian.
+    // UUID encoding:
+    //   Field 1 (8 hex): uid[0] bytes in LE order, swapped to BE
+    //   Field 2 (4 hex): first 2 bytes of uid[1] in LE order, swapped to BE
+    //   Field 3 (4 hex): constant 0x8EF4
+    //   Field 4 (4 hex): constant 0x996B
+    //   Field 5 (12 hex): remaining bytes from uid[1] and uid[2]
+
+    uint8_t bytes[12];
+    // Write uid registers as little-endian bytes
+    for (int i = 0; i < 3; i++) {
+        bytes[i * 4 + 0] = (uint8_t)(uid[i] >> 0);
+        bytes[i * 4 + 1] = (uint8_t)(uid[i] >> 8);
+        bytes[i * 4 + 2] = (uint8_t)(uid[i] >> 16);
+        bytes[i * 4 + 3] = (uint8_t)(uid[i] >> 24);
+    }
+
+    // Field 1: uid[0] bytes swapped to big-endian (reverse the 4 LE bytes)
+    // Field 2: first 2 bytes of uid[1] swapped to big-endian (reverse the 2 LE bytes)
+    char buf[48];
+    snprintf(buf, sizeof(buf),
+             "%02x%02x%02x%02x-%02x%02x-8EF4-996B-%02x%02x%02x%02x%02x%02x",
+             bytes[3], bytes[2], bytes[1], bytes[0],    // uid[0] BE
+             bytes[5], bytes[4],                          // uid[1] first 2 bytes BE
+             bytes[6], bytes[7],                          // uid[1] last 2 bytes (remaining)
+             bytes[8], bytes[9], bytes[10], bytes[11]);   // uid[2] all 4 bytes
+
+    return std::string(buf);
+}
+
+std::string utils::generateUUIDv4() {
+    // Simple UUID v4 generator using rand()
+    static bool seeded = false;
+    if (!seeded) {
+        srand((unsigned int)time(nullptr));
+        seeded = true;
+    }
+
+    auto randByte = []() -> uint8_t { return (uint8_t)(rand() & 0xFF); };
+
+    uint8_t bytes[16];
+    for (auto& b : bytes)
+        b = randByte();
+
+    // Set version (4) and variant (10xx)
+    bytes[6] = (bytes[6] & 0x0F) | 0x40;  // version 4
+    bytes[8] = (bytes[8] & 0x3F) | 0x80;  // variant 10xx
+
+    char buf[48];
+    snprintf(buf, sizeof(buf),
+             "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             bytes[0], bytes[1], bytes[2], bytes[3],
+             bytes[4], bytes[5],
+             bytes[6], bytes[7],
+             bytes[8], bytes[9],
+             bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+
+    return std::string(buf);
 }

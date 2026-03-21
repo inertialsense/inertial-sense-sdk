@@ -1,6 +1,14 @@
 /**
  * @file ISDeviceCal.cpp
- * @brief Device calibration load/save functions for JSON format
+ * @brief This file contains the implementation of the ISDeviceCal class, which provides
+ * functionality to load and save device calibration data from/to JSON files. It handles
+ * different versions of calibration data formats and provides a structured way to manage
+ * sensor calibration information, including orthonormalization, temperature compensation,
+ * and motion calibration.
+ *
+ * The file includes helper functions for string manipulation, file system operations,
+ * and matrix/vector conversions, which are essential for parsing and generating the
+ * JSON calibration files.
  *
  * @author Inertial Sense, Inc.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
@@ -23,12 +31,13 @@
 #endif
 
 #include "com_manager.h"
+#include "ISDevice.h"
 #include "ISLogFile.h"
 
 using namespace std;
 using json = nlohmann::json;
 
-// Macro for checking if vector is all zeros
+// Macro for checking if a 3-element vector is all zeros
 #define VEC3_ALL_ZERO(v) ((v)[0] == 0.0f && (v)[1] == 0.0f && (v)[2] == 0.0f)
 
 // Helper function prototypes
@@ -38,7 +47,12 @@ static std::string getParentPath(const std::string& path);
 static bool createDirectoryRecursive(const std::string& path);
 static bool mat3x3_IsIdentity(const float* mat);
 
-// Helper function implementations
+/**
+ * @brief Splits a string by a delimiter.
+ * @param s The string to split.
+ * @param delimiter The character to split the string by.
+ * @return A vector of strings.
+ */
 static std::vector<std::string> split(const std::string& s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
@@ -49,6 +63,11 @@ static std::vector<std::string> split(const std::string& s, char delimiter) {
     return tokens;
 }
 
+/**
+ * @brief Extracts the filename from a file path.
+ * @param path The file path.
+ * @return The filename.
+ */
 static std::string getFilename(const std::string& path) {
     size_t pos = path.find_last_of("/\\");
     if (pos != std::string::npos) {
@@ -57,6 +76,11 @@ static std::string getFilename(const std::string& path) {
     return path;
 }
 
+/**
+ * @brief Gets the parent directory of a file path.
+ * @param path The file path.
+ * @return The parent directory path.
+ */
 static std::string getParentPath(const std::string& path) {
     size_t pos = path.find_last_of("/\\");
     if (pos != std::string::npos) {
@@ -65,6 +89,11 @@ static std::string getParentPath(const std::string& path) {
     return ".";
 }
 
+/**
+ * @brief Recursively creates a directory.
+ * @param path The directory path to create.
+ * @return True if the directory was created successfully or already exists, false otherwise.
+ */
 static bool createDirectoryRecursive(const std::string& path) {
     if (path.empty()) return true;
     
@@ -85,6 +114,11 @@ static bool createDirectoryRecursive(const std::string& path) {
     return mkdir(path.c_str(), 0755) == 0 || errno == EEXIST;
 }
 
+/**
+ * @brief Checks if a 3x3 matrix is an identity matrix.
+ * @param mat Pointer to the 3x3 matrix (row-major).
+ * @return True if the matrix is an identity matrix, false otherwise.
+ */
 static bool mat3x3_IsIdentity(const float* mat) {
     const float epsilon = 1e-6f;
     for (int i = 0; i < 3; i++) {
@@ -98,6 +132,12 @@ static bool mat3x3_IsIdentity(const float* mat) {
     return true;
 }
 
+/**
+ * @brief Converts a float vector to a space-delimited string.
+ * @param vec Pointer to the float vector.
+ * @param len The number of elements in the vector.
+ * @return The string representation of the vector.
+ */
 std::string VectorToString(const float* vec, int len) {
     std::ostringstream oss;
     for (int i = 0; i < len; i++) {
@@ -107,6 +147,12 @@ std::string VectorToString(const float* vec, int len) {
     return oss.str();
 }
 
+/**
+ * @brief Converts a space-delimited string to a float vector.
+ * @param str The space-delimited string.
+ * @param vec Pointer to the float vector to store the result.
+ * @param len The number of elements in the vector.
+ */
 void StringToVector(const std::string& str, float* vec, int len) {
     std::vector<std::string> vals = split(str, ' ');
     for (int i = 0; i < len && i < (int)vals.size(); i++) {
@@ -119,7 +165,13 @@ void StringToVector(const std::string& str, float* vec, int len) {
 // in which case this value can be updated accordingly.
 #define MATRIX_ROW_END_CHAR     '\n'
 
-// Matrix/Vector string conversion stubs (these would need full implementation if sOrthoCal is used)
+/**
+ * @brief Converts a matrix to a string.
+ * @param mat Pointer to the matrix (row-major).
+ * @param rows The number of rows in the matrix.
+ * @param cols The number of columns in the matrix.
+ * @return The string representation of the matrix.
+ */
 std::string MatrixToString(const float* mat, int rows, int cols) {
     std::ostringstream oss;
     for (int i = 0; i < rows; i++) {
@@ -132,9 +184,17 @@ std::string MatrixToString(const float* mat, int rows, int cols) {
     return oss.str();
 }
 
+/**
+ * @brief Converts a string to a matrix.
+ * @param str The string representation of the matrix.
+ * @param mat Pointer to the matrix to store the result (row-major).
+ * @param rows The number of rows in the matrix.
+ * @param cols The number of columns in the matrix.
+ */
 void StringToMatrix(const std::string& str, float* mat, int rows, int cols) {
     std::string normalized = str;
-    for (char& ch : normalized) {   // Use either '\n' or ';' as the end of row character
+    // Normalize row separators to ';'
+    for (char& ch : normalized) {
         if (ch == '\n') {
             ch = ';';
         }
@@ -151,18 +211,39 @@ void StringToMatrix(const std::string& str, float* mat, int rows, int cols) {
     }
 }
 
+/**
+ * @brief Converts sensor calibration info version to a string.
+ * @param info The sensor calibration info.
+ * @return The version string.
+ */
 static std::string calInfoVersionToString(const sensor_cal_info_t& info) {
     return cISLogFile::formatString("%d.%d.%d %d", info.version[0], info.version[1], info.version[2], info.version[3]);
 }
 
+/**
+ * @brief Converts sensor calibration info date to a string.
+ * @param info The sensor calibration info.
+ * @return The date string.
+ */
 static std::string calInfoDateToString(const sensor_cal_info_t& info) {
     return cISLogFile::formatString("%04d-%02d-%02d %d", info.calDate[0] + 2000, info.calDate[1], info.calDate[2], info.calDate[3]);
 }
 
+/**
+ * @brief Converts sensor calibration info time to a string.
+ * @param info The sensor calibration info.
+ * @return The time string.
+ */
 static std::string calInfoTimeToString(const sensor_cal_info_t& info) {
     return cISLogFile::formatString("%02d:%02d:%02d %d", info.calTime[0], info.calTime[1], info.calTime[2], info.calTime[3]);
 }
 
+/**
+ * @brief Parses a JSON object and populates a 3-axis temperature calibration data structure.
+ * @param jTC The JSON object containing temperature calibration data.
+ * @param key The key for the specific sensor data (e.g., "gyr1").
+ * @param dev The destination nvm_sensor_tcal_3axis_t structure.
+ */
 static void JsonObjToTcal3axis(const json& jTC, const std::string& key, nvm_sensor_tcal_3axis_t &dev)
 {
     if (jTC.contains(key))
@@ -175,7 +256,7 @@ static void JsonObjToTcal3axis(const json& jTC, const std::string& key, nvm_sens
             const json& jPt = jPts[p];
             if (!jPt.contains("index") || jPt["index"].get<int>() != (int)p)
             {
-                printf("TC index mismatch.\n");
+                log_error(IS_LOG_CALIBRATION, "TC index mismatch.");
                 return;
             }
         }
@@ -183,7 +264,7 @@ static void JsonObjToTcal3axis(const json& jTC, const std::string& key, nvm_sens
         // Error check number of points
         if (jPts.size() > TCAL_MAX_NUM_POINTS)
         {
-            printf("TC point index from file too large.\n");
+            log_error(IS_LOG_CALIBRATION, "TC point index from file too large.");
             return;
         }
 
@@ -193,19 +274,19 @@ static void JsonObjToTcal3axis(const json& jTC, const std::string& key, nvm_sens
             const json& jPt = jPts[p];
             if (!jPt.contains("tmp"))
             {
-                printf("TC point tmp value missing.\n");
+                log_error(IS_LOG_CALIBRATION, "TC point tmp value missing.");
                 return;
             }
             dev.pt[p].temp = jPt["tmp"].get<float>();
             if (!jPt.contains("SS"))
             {
-                printf("TC point SS array missing.\n");
+                log_error(IS_LOG_CALIBRATION, "TC point SS array missing.");
                 return;
             }
             const json& jSS = jPt["SS"];
             if (jSS.size() != 3)
             {
-                printf("TC point SS array wrong size.\n");
+                log_error(IS_LOG_CALIBRATION, "TC point SS array wrong size.");
                 return;
             }
             for (int i = 0; i < 3; i++)
@@ -216,6 +297,11 @@ static void JsonObjToTcal3axis(const json& jTC, const std::string& key, nvm_sens
     }
 }
 
+/**
+ * @brief Parses a JSON object and populates a sensor temperature calibration group.
+ * @param jTC The JSON object containing temperature calibration data for multiple sensors.
+ * @param tcal The destination sensor_tcal_group_t structure.
+ */
 static void JsonObjToSensor(const json& jTC, sensor_tcal_group_t& tcal)
 {
     for (int d = 0; d < MAX_IMU_DEVICES; d++)
@@ -229,19 +315,25 @@ static void JsonObjToSensor(const json& jTC, sensor_tcal_group_t& tcal)
     }
 }
 
+/**
+ * @brief Parses a legacy (v1.2) JSON object and populates a sensor temperature calibration group.
+ * @param jTC The JSON object containing legacy temperature calibration data.
+ * @param device The device index.
+ * @param tcal The destination sensor_tcal_group_t structure.
+ */
 static void JsonObjv1p2ToSensor(const json& jTC, int device, sensor_tcal_group_t &tcal)
 {
     // Double check that indices match up
     for (size_t i = 0; i < jTC.size(); i++)
         if (jTC[i]["index"].get<int>() != (int)i)
         {
-            printf("TC index mismatch.\n");
+            log_error(IS_LOG_CALIBRATION, "TC index mismatch.");
             return;
         }
 
     if (jTC.size() > TCAL_MAX_NUM_POINTS)
     {
-        printf("TC point index from file too large.\n");
+        log_error(IS_LOG_CALIBRATION, "TC point index from file too large.");
         return;
     }
 
@@ -263,7 +355,6 @@ static void JsonObjv1p2ToSensor(const json& jTC, int device, sensor_tcal_group_t
             tcal.mag[device].pt[i].temp = temp;
         }
 
-        //////////////////////////////////////////////////////////////////////////
         // Gyros
         if (jPt.contains("gyrS") && jPt.contains("gyrK"))
         {
@@ -279,7 +370,6 @@ static void JsonObjv1p2ToSensor(const json& jTC, int device, sensor_tcal_group_t
             }
         }
 
-        //////////////////////////////////////////////////////////////////////////
         // Accels
         if (jPt.contains("accS") && jPt.contains("accK"))
         {
@@ -295,7 +385,6 @@ static void JsonObjv1p2ToSensor(const json& jTC, int device, sensor_tcal_group_t
             }
         }
 
-        //////////////////////////////////////////////////////////////////////////
         // Magnetometers
         if (jPt.contains("magS") && jPt.contains("magK"))
         {
@@ -313,58 +402,33 @@ static void JsonObjv1p2ToSensor(const json& jTC, int device, sensor_tcal_group_t
     }
 }
 
-bool ISDeviceCal::loadCalibrationFromJsonFile(const std::string& filePath, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose)
-{
-    // Read file
-    std::ifstream jsonFile(filePath);
-    if (!jsonFile.is_open())
-    {
-        cout << "Calibration file not found: " << filePath << endl;
-        return false;
-    }
+/**
+ * @class ISDeviceCal
+ * @brief Provides methods to handle device calibration data.
+ *
+ * This class includes functions to load calibration data from JSON objects, strings,
+ * and files, and to save calibration data back to JSON format. It supports various
+ * calibration types, including orthonormalization, temperature compensation, and
+ * motion calibration.
+ */
 
-    printf("Loading calibration: %s\n", filePath.c_str());
-
-    // Parse JSON
-    json jObj;
-    try {
-        jsonFile >> jObj;
-    } catch (const json::parse_error& e) {
-        cout << "JSON parse error: " << e.what() << endl;
-        return false;
-    }
-    jsonFile.close();
-
-    if (jObj.empty())
-    {   // Error in file.  Likely invalid data (i.e. Infinity or NAN).
-        return false;
-    }
-
-    return loadCalibrationFromJsonObj(jObj, ocal, info, dinfo, tcal, mcal, pose, filePath);
-}
-
-bool ISDeviceCal::loadCalibrationFromJsonString(const std::string& jsonString, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose)
-{
-    json jObj;
-    try {
-        jObj = json::parse(jsonString);
-    } catch (const json::parse_error& e) {
-        cout << "JSON parse error: " << e.what() << endl;
-        return false;
-    }
-
-    if (jObj.empty())
-        return false;
-
-    return loadCalibrationFromJsonObj(jObj, ocal, info, dinfo, tcal, mcal, pose);
-}
-
+/**
+ * @brief Loads calibration data from a JSON object.
+ * @param jObj The JSON object containing the calibration data.
+ * @param ocal Pointer to sOrthoCal structure to store orthonormalization calibration data. Can be nullptr.
+ * @param info Pointer to sensor_cal_info_t structure to store calibration info. Can be nullptr.
+ * @param dinfo Pointer to sensor_data_info_t structure to store data info. Can be nullptr.
+ * @param tcal Pointer to sensor_tcal_group_t structure to store temperature calibration data. Can be nullptr.
+ * @param mcal Pointer to sensor_mcal_group_t structure to store motion calibration data. Can be nullptr.
+ * @param pose Pointer to an integer to store the current pose. Can be nullptr.
+ * @param filePath The file path of the JSON file, used for fallback date/time parsing.
+ * @return True if loading is successful, false otherwise.
+ */
 bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose, const std::string& filePath)
 {
     if (jObj.empty())
         return false;
 
-    //////////////////////////////////////////////////////////////////////////
     //  Calibration Info
     if (info)
     {
@@ -429,7 +493,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
             }
         }
         else if (!filePath.empty())
-        {   // Get date and time from filename
+        {   // Fallback: Get date and time from filename if "info" block is missing
             memset(info, 0, sizeof(sensor_cal_info_t));
 
             info->version[0] = SENSOR_CAL_VER0;
@@ -446,7 +510,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
                 info->devSerialNum = std::stoi(match[1].str());
             }
 
-            // Date
+            // Date from filename (e.g., ..._YYYYMMDD_...)
             std::vector<std::string> parts = split(fileName, '_');
             if (parts.size() > 2)
             {
@@ -460,7 +524,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
                 }
             }
 
-            // Time
+            // Time from filename (e.g., ..._HHMM_...)
             if (parts.size() > 3)
             {
                 std::string str = parts[3];
@@ -479,8 +543,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
         info->checksum = flashChecksum32(info, info->size);
     }
 
-    //////////////////////////////////////////////////////////////////////////
-    //  Orthonormalization
+    //  Orthonormalization and Motion Calibration
     if (ocal || mcal)
     {
         if (jObj.contains("calibration"))
@@ -489,7 +552,6 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
         }
     }
 
-    //////////////////////////////////////////////////////////////////////////
     //  Temperature Compensation
     if (tcal)
     {
@@ -498,7 +560,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
             JsonObjToSensor(jObj["tempComp"], *tcal);
         }
         else
-        {   // Old file format
+        {   // Old file format (v1.2)
             if (jObj.contains("tempComp1"))
                 JsonObjv1p2ToSensor(jObj["tempComp1"], 0, *tcal);
 
@@ -521,11 +583,84 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
     return true;
 }
 
+/**
+ * @brief Loads calibration data from a JSON string.
+ * @param jsonString The JSON string containing the calibration data.
+ * @param ocal Pointer to sOrthoCal structure to store orthonormalization calibration data. Can be nullptr.
+ * @param info Pointer to sensor_cal_info_t structure to store calibration info. Can be nullptr.
+ * @param dinfo Pointer to sensor_data_info_t structure to store data info. Can be nullptr.
+ * @param tcal Pointer to sensor_tcal_group_t structure to store temperature calibration data. Can be nullptr.
+ * @param mcal Pointer to sensor_mcal_group_t structure to store motion calibration data. Can be nullptr.
+ * @param pose Pointer to an integer to store the current pose. Can be nullptr.
+ * @return True if loading is successful, false otherwise.
+ */
+bool ISDeviceCal::loadCalibrationFromJsonString(const std::string& jsonString, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose)
+{
+    json jObj;
+    try {
+        jObj = json::parse(jsonString);
+    } catch (const json::parse_error& e) {
+        log_error(IS_LOG_CALIBRATION, "Error parsing calibration data: %s", e.what());
+        return false;
+    }
+
+    if (jObj.empty())
+        return false;
+
+    return loadCalibrationFromJsonObj(jObj, ocal, info, dinfo, tcal, mcal, pose);
+}
+
+/**
+ * @brief Loads calibration data from a JSON file.
+ * @param filePath The path to the JSON file.
+ * @param ocal Pointer to sOrthoCal structure to store orthonormalization calibration data. Can be nullptr.
+ * @param info Pointer to sensor_cal_info_t structure to store calibration info. Can be nullptr.
+ * @param dinfo Pointer to sensor_data_info_t structure to store data info. Can be nullptr.
+ * @param tcal Pointer to sensor_tcal_group_t structure to store temperature calibration data. Can be nullptr.
+ * @param mcal Pointer to sensor_mcal_group_t structure to store motion calibration data. Can be nullptr.
+ * @param pose Pointer to an integer to store the current pose. Can be nullptr.
+ * @return True if loading is successful, false otherwise.
+ */
+bool ISDeviceCal::loadCalibrationFromJsonFile(const std::string& filePath, sOrthoCal *ocal, sensor_cal_info_t *info, sensor_data_info_t *dinfo, sensor_tcal_group_t *tcal, sensor_mcal_group_t* mcal, int* pose)
+{
+    // Read file
+    std::ifstream jsonFile(filePath);
+    if (!jsonFile.is_open())
+    {
+        log_error(IS_LOG_CALIBRATION, "Unable to open calibration file: %s", filePath.c_str());
+        return false;
+    }
+
+    log_info(IS_LOG_CALIBRATION, "Loading calibration: %s", filePath.c_str());
+
+    // Parse JSON
+    json jObj;
+    try {
+        jsonFile >> jObj;
+    } catch (const json::parse_error& e) {
+        log_error(IS_LOG_CALIBRATION, "Error parsing calibration data: %s", e.what());
+        return false;
+    }
+    jsonFile.close();
+
+    if (jObj.empty())
+    {   // Error in file.  Likely invalid data (i.e. Infinity or NAN).
+        return false;
+    }
+
+    return loadCalibrationFromJsonObj(jObj, ocal, info, dinfo, tcal, mcal, pose, filePath);
+}
+
+/**
+ * @brief Saves 3-axis sensor temperature calibration data to a JSON object.
+ * @param sensor The nvm_sensor_tcal_3axis_t structure to save.
+ * @return The JSON object representing the sensor data.
+ */
 static json saveSensorToJsonObj(nvm_sensor_tcal_3axis_t &sensor)
 {
     json jTC = json::array();
 
-    // Temp Comp - Gyro
+    // Temp Comp
     for (int p = 0; p < (int)sensor.numPts; p++)
     {
         json jSS = json::array();
@@ -545,6 +680,11 @@ static json saveSensorToJsonObj(nvm_sensor_tcal_3axis_t &sensor)
     return jTC;
 }
 
+/**
+ * @brief Saves a group of sensor temperature calibration data to a JSON object.
+ * @param tcal Pointer to the sensor_tcal_group_t structure to save.
+ * @return The JSON object representing the temperature calibration data.
+ */
 static json saveTcToJsonObj(sensor_tcal_group_t* tcal)
 {
     if (!tcal)
@@ -575,9 +715,19 @@ static json saveTcToJsonObj(sensor_tcal_group_t* tcal)
     return jTC;
 }
 
+/**
+ * @brief Saves calibration data to a JSON file.
+ * @param filePath The path to the JSON file.
+ * @param cal Pointer to sOrthoCal structure containing orthonormalization calibration data. Can be nullptr.
+ * @param info Pointer to sensor_cal_info_t structure containing calibration info. Can be nullptr.
+ * @param tcal Pointer to sensor_tcal_group_t structure containing temperature calibration data. Can be nullptr.
+ * @param mcal Pointer to sensor_mcal_group_t structure containing motion calibration data. Can be nullptr.
+ * @param pose The current pose.
+ * @return True if saving is successful, false otherwise.
+ */
 bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose)
 {
-    printf("saveCalibrationToJsonObj: %s\n", filePath.c_str());
+    log_debug(IS_LOG_CALIBRATION, "saveCalibrationToJsonObj: %s\n", filePath.c_str());
 
     // Create parent directory if needed
     std::string parentPath = getParentPath(filePath);
@@ -587,7 +737,6 @@ bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCa
 
     json jTop = json::object();
 
-    //////////////////////////////////////////////////////////////////////////
     //  Calibration Info
     if (info)
     {
@@ -599,14 +748,12 @@ bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCa
         jTop["info"] = jInf;
     }
 
-    //////////////////////////////////////////////////////////////////////////
     //  Temperature Compensation
     if (tcal)
     {
         jTop["tempComp"] = saveTcToJsonObj(tcal);
     }
 
-    //////////////////////////////////////////////////////////////////////////
     //  Orthonormalization
     if (mcal)
     {
@@ -624,11 +771,22 @@ bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCa
     return true;
 }
 
+/**
+ * @brief Checks if motion calibration data is present (i.e., not identity/zero).
+ * @param orth Pointer to the 3x3 orthonormalization matrix.
+ * @param bias Pointer to the 3-element bias vector.
+ * @return True if motion calibration data is present, false otherwise.
+ */
 static bool motionCalPresent(const float* orth, const float* bias)
 {
     return !mat3x3_IsIdentity(orth) || !VEC3_ALL_ZERO(bias);
 }
 
+/**
+ * @brief Parses a JSON object and populates an sCalData structure for least squares data.
+ * @param jObj The JSON object.
+ * @param sen The destination sCalData structure.
+ */
 void OrthoLeastSquaresDataJsonObjToSensor(const json& jObj, sCalData &sen)
 {
     // Y data
@@ -644,6 +802,12 @@ void OrthoLeastSquaresDataJsonObjToSensor(const json& jObj, sCalData &sen)
         sen.Ahat.fromString(jObj["Ahat"].get<std::string>());
 }
 
+/**
+ * @brief Saves an sCalData structure for least squares data to a JSON object.
+ * @param jObj The destination JSON object.
+ * @param sen The sCalData structure to save.
+ * @return The updated JSON object.
+ */
 static json OrthoLeastSquaresDataSensorToJsonObj(const json& jObj, sCalData &sen)
 {
     json result = jObj;
@@ -654,17 +818,30 @@ static json OrthoLeastSquaresDataSensorToJsonObj(const json& jObj, sCalData &sen
     return result;
 }
 
+/**
+ * @brief Parses a JSON object and populates orthonormalization matrix and bias vector.
+ * @param jObj The JSON object.
+ * @param orth Pointer to the 3x3 orthonormalization matrix.
+ * @param bias Pointer to the 3-element bias vector.
+ */
 static void OrthoJsonObjToSensor(const json& jObj, float* orth, float* bias)
 {
-    // Ortho
+    // Ortho matrix
     if (jObj.contains("A"))
         StringToMatrix(jObj["A"].get<std::string>(), orth, 3, 3);
 
-    // Bias
+    // Bias vector
     if (jObj.contains("bias"))
         StringToVector(jObj["bias"].get<std::string>(), bias, 3);
 }
 
+/**
+ * @brief Saves orthonormalization matrix and bias vector to a JSON object.
+ * @param jObj The destination JSON object.
+ * @param orth Pointer to the 3x3 orthonormalization matrix.
+ * @param bias Pointer to the 3-element bias vector.
+ * @return The updated JSON object.
+ */
 static json OrthoSensorToJsonObj(json jObj, const float* orth, const float* bias)
 {
     jObj["A"] = MatrixToString(orth, 3, 3);
@@ -673,6 +850,13 @@ static json OrthoSensorToJsonObj(json jObj, const float* orth, const float* bias
     return jObj;
 }
 
+/**
+ * @brief Loads motion calibration data from a JSON object.
+ * @param jCal The JSON object containing the motion calibration data.
+ * @param pose Pointer to an integer to store the current pose. Can be nullptr.
+ * @param ocal Pointer to sOrthoCal structure to store orthonormalization calibration data. Can be nullptr.
+ * @param mcal Pointer to sensor_mcal_group_t structure to store motion calibration data. Can be nullptr.
+ */
 void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal, sensor_mcal_group_t *mcal)
 {
     // Current pose
@@ -683,7 +867,7 @@ void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal
 
     for (int d = 0; d < MAX_IMU_DEVICES; d++)
     {
-        // Set default identity matrix
+        // Set default identity matrix for motion cal
         for (int i = 0; i < 9; i++)
         {
             float val = ((i == 0 || i == 4 || i == 8) ? 1.0f : 0.0f);
@@ -710,7 +894,7 @@ void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal
 
     for (int d = 0; d < MAX_MAG_DEVICES; d++)
     {   // Mag Data
-        // Set default identity matrix
+        // Set default identity matrix for motion cal
         for (int i = 0; i < 9; i++)
         {
             float val = ((i == 0 || i == 4 || i == 8) ? 1.0f : 0.0f);
@@ -726,13 +910,21 @@ void ISDeviceCal::loadMcFromJsonObj(const json& jCal, int *pose, sOrthoCal *ocal
     }
 }
 
+/**
+ * @brief Saves motion calibration data to a JSON object.
+ * @param filePath The file path, used for comments in the JSON.
+ * @param pose The current pose.
+ * @param cal Pointer to sOrthoCal structure containing orthonormalization calibration data. Can be nullptr.
+ * @param mcal Pointer to sensor_mcal_group_t structure containing motion calibration data. Can be nullptr.
+ * @return The JSON object representing the motion calibration data.
+ */
 json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoCal *cal, sensor_mcal_group_t *mcal)
 {
     json jCal = json::object();
     jCal["comment_line1"] = cISLogFile::formatString(" Sensor Calibration Data - %s ", filePath.c_str());
     jCal["comment_line2"] = " Y = A * X.  Y = truth data, X = adc measured data, A = calibration data. ";
 
-    // Add last pose saved to xml.  If we crash, we can restart from here.
+    // Add last pose saved to json. If we crash, we can restart from here.
     if (pose != -1)
     {
         jCal["curPose"] = pose;
@@ -774,6 +966,13 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
     return jCal;
 }
 
+/**
+ * @brief Uploads sensor calibration data to a device in steps.
+ * @param port The communication port handle.
+ * @param calUploadState The current state of the upload process. This is updated by the function.
+ * @param cal The sensor_cal_t structure containing the calibration data to upload.
+ * @return 1 if the upload is complete, 0 if it's in progress, -1 on error.
+ */
 int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal)
 {
     switch (calUploadState++)
@@ -811,7 +1010,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     case 7:     // Motion cal - Magnetometers
         if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION, MAX_MAG_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, mag)) != 0) { return 0; }
-        // printf("Done uploadSensorCal() - hdl: %d, serial#: %d, devSerialNum: %d\n", port, serialNum, cal.info.devSerialNum);
+        // log_debug(IS_LOG_CALIBRATION, "Done uploadSensorCal() - hdl: %d, serial#: %d, devSerialNum: %d\n", port, serialNum, cal.info.devSerialNum);
         return 1;    // Done
         
     default:    // Error
@@ -822,3 +1021,153 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 }
 
 
+ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo)
+{
+    using json = nlohmann::json;
+    ISHttpRequest::Response resp;
+
+    // // Build hardware type string (e.g., "IMX-5.0")
+    // const char *typeName = "???";
+    // switch (devInfo.hardwareType) {
+    //     case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
+    //     case IS_HARDWARE_TYPE_IMX:  typeName = "IMX"; break;
+    //     case IS_HARDWARE_TYPE_GPX:  typeName = "GPX"; break;
+    //     default: break;
+    // }
+    // std::string hwType = std::string(typeName) + "-" + std::to_string(devInfo.hardwareVer[0]) + "." + std::to_string(devInfo.hardwareVer[1]);
+    std::string hwType = utils::getHardwareAsString(devInfo, false);
+
+    log_info(IS_LOG_CALIBRATION, "[%s] Fetching calibration from DB for %s SN%ld", ISDevice::getIdAsString(devInfo).c_str(), hwType.c_str(), devInfo.serialNumber);
+
+    // Step 1: Fetch device calibration list
+    std::string deviceUrl = restBaseUrl + "/api/calibration/device/" + hwType + "/" + std::to_string(devInfo.serialNumber);
+    ISHttpRequest::Response listResp = ISHttpRequest::get(deviceUrl);
+
+    if (listResp.statusCode == -1)
+    {
+        log_error(IS_LOG_CALIBRATION, "[%s] Failed to connect to calibration DB at %s", ISDevice::getIdAsString(devInfo).c_str(), deviceUrl.c_str());
+        return listResp;
+    }
+
+    if (listResp.statusCode == 404)
+    {
+        log_warn(IS_LOG_CALIBRATION, "[%s] Device not found in calibration DB (HTTP 404)", ISDevice::getIdAsString(devInfo).c_str());
+        return listResp;
+    }
+
+    if (listResp.statusCode != 200)
+    {
+        log_error(IS_LOG_CALIBRATION, "[%s] Calibration DB returned HTTP %d: %s", ISDevice::getIdAsString(devInfo).c_str(), listResp.statusCode, listResp.statusMessage.c_str());
+        return listResp;
+    }
+
+    // Step 2: Parse response to find most recent calibration UUID
+    json listJson;
+    try {
+        listJson = json::parse(listResp.body);
+    } catch (const json::parse_error& e) {
+        { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("Failed to parse calibration list JSON: %s", e.what()); return r; }
+    }
+
+    // Find most recent calibration by calDateTime
+    std::string bestUuid;
+    std::string bestDateTime;
+
+    // API returns { "<deviceUuid>": [ {calUuid, calDateTime, ...}, ... ] }
+    // Iterate all values in the top-level object to find calibration entries
+    if (listJson.is_object())
+    {
+        for (auto& [devUuid, calArray] : listJson.items())
+        {
+            if (!calArray.is_array())
+                continue;
+
+            for (const auto& cal : calArray)
+            {
+                std::string calUuid;
+                if (cal.contains("calUuid"))
+                    calUuid = cal["calUuid"].get<std::string>();
+                else if (cal.contains("uuid"))
+                    calUuid = cal["uuid"].get<std::string>();
+                else
+                    continue;
+
+                std::string dateTime;
+                if (cal.contains("calDateTime"))
+                    dateTime = cal["calDateTime"].get<std::string>();
+
+                if (bestUuid.empty() || dateTime > bestDateTime)
+                {
+                    bestUuid = calUuid;
+                    bestDateTime = dateTime;
+                }
+            }
+        }
+    }
+    else if (listJson.is_array())
+    {
+        // Fallback: top-level array of calibration entries
+        for (const auto& cal : listJson)
+        {
+            std::string calUuid;
+            if (cal.contains("calUuid"))
+                calUuid = cal["calUuid"].get<std::string>();
+            else if (cal.contains("uuid"))
+                calUuid = cal["uuid"].get<std::string>();
+            else
+                continue;
+
+            std::string dateTime;
+            if (cal.contains("calDateTime"))
+                dateTime = cal["calDateTime"].get<std::string>();
+
+            if (bestUuid.empty() || dateTime > bestDateTime)
+            {
+                bestUuid = calUuid;
+                bestDateTime = dateTime;
+            }
+        }
+    }
+
+    if (bestUuid.empty())
+    {
+        { ISHttpRequest::Response r; r.statusCode = 404; r.statusMessage = "Received valid JSON response from server, but no suitable calibration found (Has this device ever been calibrated?)."; return r; }
+    }
+
+    log_info(IS_LOG_CALIBRATION, "Found calibration UUID: %s (date: %s)", bestUuid.c_str(), bestDateTime.c_str());
+
+    // Step 3: Fetch full calibration JSON
+    std::string calUrl = restBaseUrl + "/api/calibration/" + bestUuid;
+    ISHttpRequest::Response calResp = ISHttpRequest::get(calUrl);
+
+    if (calResp.statusCode == -1)
+    {
+        std::string msg = utils::string_format("Failed to fetch calibration data from %s", calUrl.c_str());
+        log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
+        { ISHttpRequest::Response r; r.statusCode = 404; r.statusMessage = msg; return r; }
+    }
+
+    if (calResp.statusCode != 200)
+    {
+        std::string msg = utils::string_format("Calibration DB returned HTTP %d for UUID %s: %s", calResp.statusCode, bestUuid.c_str(), calResp.statusMessage.c_str());
+        log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
+        { ISHttpRequest::Response r; r.statusCode = calResp.statusCode; r.statusMessage = msg; return r; }
+    }
+
+    // Step 4: Parse and upload calibration
+    json calJson;
+    try {
+        calJson = json::parse(calResp.body);
+    } catch (const json::parse_error& e) {
+        { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("Failed to parse calibration data from %s", calUrl.c_str()); return r; }
+    }
+
+    if (!loadCalibrationFromJsonObj(calJson,  &ocal, &info, &data.dinfo, &data.tcal, &data.mcal, &pose))
+    {
+        { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("[%s] Failed to parse calibration from DB", ISDevice::getIdAsString(devInfo).c_str()); return r; }
+    }
+
+    std::string msg = utils::string_format("[%s] Successfully parsed calibration from DB (UUID: %s)", ISDevice::getIdAsString(devInfo).c_str(), bestUuid.c_str());
+    log_info(IS_LOG_CALIBRATION, "%s", msg.c_str());
+    { ISHttpRequest::Response r; r.statusCode = 200; r.statusMessage = msg; return r; }
+}

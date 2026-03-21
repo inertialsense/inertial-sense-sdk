@@ -18,11 +18,22 @@
 
 std::string ISHttpRequest::buildGetRequest(const std::string& host, const std::string& path)
 {
-    std::string req = "GET " + path + " HTTP/1.1\r\n";
+    return buildRequest("GET", host, path, "", "");
+}
+
+std::string ISHttpRequest::buildRequest(const std::string& method, const std::string& host, const std::string& path,
+                                        const std::string& contentType, const std::string& body)
+{
+    std::string req = method + " " + path + " HTTP/1.1\r\n";
     req += "Host: " + host + "\r\n";
     req += "Accept: */*\r\n";
+    if (!contentType.empty())
+        req += "Content-Type: " + contentType + "\r\n";
+    if (!body.empty())
+        req += "Content-Length: " + std::to_string(body.size()) + "\r\n";
     req += "Connection: close\r\n";
     req += "\r\n";
+    req += body;
     return req;
 }
 
@@ -35,7 +46,7 @@ ISHttpRequest::Response ISHttpRequest::parseResponse(port_handle_t port, int tim
     int bytesRead = portReadLineTimeout(port, lineBuf, sizeof(lineBuf), timeoutMs);
     if (bytesRead <= 0)
     {
-        log_error(IS_LOG_ISDEVICE, "ISHttpRequest: Timeout reading HTTP status line");
+        log_error(IS_LOG_HTTP_REQUEST, "Timeout reading HTTP status line");
         return resp;
     }
 
@@ -44,7 +55,7 @@ ISHttpRequest::Response ISHttpRequest::parseResponse(port_handle_t port, int tim
     size_t firstSpace = statusLine.find(' ');
     if (firstSpace == std::string::npos)
     {
-        log_error(IS_LOG_ISDEVICE, "ISHttpRequest: Malformed HTTP status line");
+        log_error(IS_LOG_HTTP_REQUEST, "Malformed HTTP status line");
         return resp;
     }
     size_t secondSpace = statusLine.find(' ', firstSpace + 1);
@@ -193,7 +204,8 @@ ISHttpRequest::Response ISHttpRequest::parseResponse(port_handle_t port, int tim
     return resp;
 }
 
-ISHttpRequest::Response ISHttpRequest::get(const std::string& url, int timeoutMs)
+ISHttpRequest::Response ISHttpRequest::sendRequest(const std::string& url, const std::string& method,
+                                                    const std::string& contentType, const std::string& body, int timeoutMs)
 {
     Response resp;
 
@@ -207,7 +219,7 @@ ISHttpRequest::Response ISHttpRequest::get(const std::string& url, int timeoutMs
 
     if (host.empty())
     {
-        log_error(IS_LOG_ISDEVICE, "ISHttpRequest: Failed to parse host from URL: %s", url.c_str());
+        log_error(IS_LOG_HTTP_REQUEST, "Failed to parse host from URL: %s", url.c_str());
         return resp;
     }
 
@@ -215,7 +227,7 @@ ISHttpRequest::Response ISHttpRequest::get(const std::string& url, int timeoutMs
     if (path.empty())
         path = "/";
 
-    log_info(IS_LOG_ISDEVICE, "ISHttpRequest: GET %s (host=%s, port=%d, path=%s)", url.c_str(), host.c_str(), port, path.c_str());
+    log_info(IS_LOG_HTTP_REQUEST, "%s %s (host=%s, port=%d, path=%s)", method.c_str(), url.c_str(), host.c_str(), port, path.c_str());
 
     // Create TCP connection
     std::string serverUrl = "tcp://" + host + ":" + std::to_string(port);
@@ -223,18 +235,18 @@ ISHttpRequest::Response ISHttpRequest::get(const std::string& url, int timeoutMs
 
     if (!tcpPort || (portOpen(tcpPort) != PORT_ERROR__NONE))
     {
-        log_error(IS_LOG_ISDEVICE, "ISHttpRequest: Failed to connect to %s:%d", host.c_str(), port);
+        log_error(IS_LOG_HTTP_REQUEST, "Failed to connect to %s:%d", host.c_str(), port);
         if (tcpPort)
             TcpPortFactory::getInstance().releasePort(tcpPort);
         return resp;
     }
 
-    // Send GET request
-    std::string request = buildGetRequest(host, path);
+    // Build and send request
+    std::string request = buildRequest(method, host, path, contentType, body);
     int bytesSent = portWrite(tcpPort, (uint8_t*)request.data(), (int)request.length());
     if ((size_t)bytesSent != request.length())
     {
-        log_error(IS_LOG_ISDEVICE, "ISHttpRequest: Failed to send request to %s", url.c_str());
+        log_error(IS_LOG_HTTP_REQUEST, "Failed to send request to %s", url.c_str());
         portClose(tcpPort);
         TcpPortFactory::getInstance().releasePort(tcpPort);
         return resp;
@@ -247,7 +259,43 @@ ISHttpRequest::Response ISHttpRequest::get(const std::string& url, int timeoutMs
     portClose(tcpPort);
     TcpPortFactory::getInstance().releasePort(tcpPort);
 
-    log_info(IS_LOG_ISDEVICE, "ISHttpRequest: Response %d %s (%d bytes)", resp.statusCode, resp.statusMessage.c_str(), (int)resp.body.size());
+    log_info(IS_LOG_HTTP_REQUEST, "Response %d %s (%d bytes)", resp.statusCode, resp.statusMessage.c_str(), (int)resp.body.size());
 
     return resp;
+}
+
+ISHttpRequest::Response ISHttpRequest::get(const std::string& url, int timeoutMs)
+{
+    return sendRequest(url, "GET", "", "", timeoutMs);
+}
+
+ISHttpRequest::Response ISHttpRequest::post(const std::string& url, const std::string& jsonBody, int timeoutMs)
+{
+    return sendRequest(url, "POST", "application/json", jsonBody, timeoutMs);
+}
+
+ISHttpRequest::Response ISHttpRequest::put(const std::string& url, const std::string& jsonBody, int timeoutMs)
+{
+    return sendRequest(url, "PUT", "application/json", jsonBody, timeoutMs);
+}
+
+ISHttpRequest::Response ISHttpRequest::putMultipart(const std::string& url, const std::vector<MultipartField>& fields, int timeoutMs)
+{
+    static const std::string boundary = "----ISHttpRequestBoundary";
+
+    // Build multipart body
+    std::string body;
+    for (const auto& field : fields)
+    {
+        body += "--" + boundary + "\r\n";
+        body += "Content-Disposition: form-data; name=\"" + field.name + "\"\r\n";
+        if (!field.contentType.empty())
+            body += "Content-Type: " + field.contentType + "\r\n";
+        body += "\r\n";
+        body += field.data + "\r\n";
+    }
+    body += "--" + boundary + "--\r\n";
+
+    std::string contentType = "multipart/form-data; boundary=" + boundary;
+    return sendRequest(url, "PUT", contentType, body, timeoutMs);
 }

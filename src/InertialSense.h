@@ -585,24 +585,12 @@ public:
     template<typename Func>
     bool WithDevice(port_handle_t port, Func&& func)
     {
-        device_handle_t device = (port == NULL) ? deviceManager.front() : DeviceByPort(port);
+        device_handle_t device = (port == NULL) ? deviceManager.front() : deviceManager.getDevice(port);
         return (device ? func(device) : false);
     }
 
-
-    // bool registerDevice(device_handle_t device);
-    // device_handle_t registerNewDevice(const ISDevice& orig);
-    // device_handle_t registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
-
-    // bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
-    // bool releaseDevice(device_handle_t device, bool closePort = true);
-
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
-
-
-    // CorrectionService& getCorrectionService() { return m_correctionService; }
-    // Rtcm3CorrectionServer& getCorrectionsServer() { return m_correctionsServer; }
 
 protected:
     static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
@@ -643,8 +631,8 @@ private:
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
     bool HasReceivedDeviceInfoFromAllDevices();
-    bool OpenSerialPorts(const char* port, int baudRate);
-    void CloseSerialPorts(bool drainBeforeClose = false);
+    bool OpenPorts(const char* port, int baudRate);
+    void ClosePorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 

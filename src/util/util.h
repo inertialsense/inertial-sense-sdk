@@ -226,7 +226,7 @@ namespace utils {
         DV_BIT_EXACT_MATCH      = 0x4000,        //!< when matching/comparing, match exactly (version & time)
     };
 
-    std::string getHardwareAsString(const dev_info_t& devInfo);
+    std::string getHardwareAsString(const dev_info_t& devInfo, bool showRev = true);
     std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
     std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1, const std::string& sep = " ");
     // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
@@ -272,6 +272,22 @@ namespace utils {
     uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
 
     bool validDomainName(const std::string& domainName);
+
+    /**
+     * Encodes the 3x uint32_t STM32 UID registers into the UUID format required by the calibration-db API.
+     * Encoding: UID registers as LE uint32_t bytes, swapped to BE for UUID fields 1 & 2,
+     * field 3 = 0x8EF4, field 4 prefix = 0x99 0x6B.
+     * Example: SN522807 → "20313933-534B-8EF4-996B-5016002b0016"
+     * @param uid Array of 3 uint32_t values from manufacturing_info_t.uid[0..2]
+     * @return UUID string formatted as "xxxxxxxx-xxxx-8EF4-996B-xxxxxxxxxxxx"
+     */
+    std::string encodeSTM32UID(const uint32_t uid[3]);
+
+    /**
+     * Generates a random UUID v4 string.
+     * @return UUID string formatted as "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+     */
+    std::string generateUUIDv4();
 };
 
 class ByteBuffer : public std::streambuf {

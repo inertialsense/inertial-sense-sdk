@@ -436,7 +436,7 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 
     m_disableBroadcastsOnClose = false;
     m_baudRate = baudRate;
-    if (OpenSerialPorts(port, baudRate))
+    if (OpenPorts(port, baudRate))
     {
         m_disableBroadcastsOnClose = disableBroadcastsOnClose;
         return true;
@@ -826,6 +826,7 @@ int InertialSense::getFirmwareUpdatePercent() {
 }
 
 #if !PLATFORM_IS_EMBEDDED
+[[ deprecated("This function is deprecated. It will be removed for the 3.0 SDK release.") ]]
 is_operation_result InertialSense::BootloadFile(
         const string& comPort,
         const uint32_t serialNum,
@@ -929,11 +930,11 @@ int InertialSense::OnPortError(port_handle_t port, int errCode, const char *errM
     return 0;
 }
 
-bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
+bool InertialSense::OpenPorts(const char* portPattern, int baudRate)
 {
     m_baudRate = baudRate;
 
-    CloseSerialPorts();
+    ClosePorts();
 
     SerialPortFactory::getInstance().setBaudRate(m_baudRate);
 
@@ -961,7 +962,6 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.    (WHJ) I commented this out.  We don't want to force device verification with the loopback tests.
         log_info(IS_LOG_FACILITY_NONE, "Querying OS for available serial ports.");
         portManager.discoverPorts();
-        // cISSerialPort::GetComPorts(portNames);
         if (portPattern[1] != '\0')
         {
             maxCount = atoi(portPattern + 1);
@@ -1018,7 +1018,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     return (m_enableDeviceValidation ? !deviceManager.empty() : !portManager.empty());
 }
 
-void InertialSense::CloseSerialPorts(bool drainBeforeClose)
+void InertialSense::ClosePorts(bool drainBeforeClose)
 {
     // TODO: we should find the associated port in the m_comManagerState.devices, and remove the port reference
     // TODO: we need to provide a notification mechanism to inform consumers (ie, test_common framework) to clean up as well.
@@ -1028,164 +1028,12 @@ void InertialSense::CloseSerialPorts(bool drainBeforeClose)
     for (auto port : portManager.locked_range()) {
         if (port) {
             if (drainBeforeClose) {
-                serialPortDrain(port, 0);
+                portDrain(port, 0);
             }
-            serialPortClose(port);
+            portClose(port);
         }
     }
 }
-
-#if 0
-
-/**
-* Get the device info
-* @param port the port to get device info for
-* @return the device info
-*/
-const dev_info_t InertialSense::DeviceInfo(port_handle_t port)
-{
-    device_handle_t device = DeviceByPort(port);
-    if (device)
-        return device->devInfo;
-
-    return {};
-}
-
-/**
-* Get current device system command
-* @param port the port to get sysCmd for
-* @return current device system command
-*/
-system_command_t InertialSense::GetSysCmd(port_handle_t port)
-{
-    device_handle_t device = DeviceByPort(port);
-    if (device)
-        return device->sysCmd;
-
-    return { 0, 0 };    // nothing...
-}
-
-#endif
-
-/**
- * Returns the device associated with the specified port
- * @param port
- * @return device_handle_t which is connected to port, otherwise NULL
- */
-device_handle_t InertialSense::DeviceByPort(port_handle_t port)
-{
-    for (auto device : deviceManager) {
-        if (device->port == port)
-            return device;
-    }
-    return nullptr;
-}
-
-/**
- * Resturns the device associated with the specified port name
- * @param port
- * @return device_handle_t which is connected to port, otherwise NULL
- */
-device_handle_t InertialSense::DeviceByPortName(const std::string& port_name) {
-    for (auto device : deviceManager) {
-        if (device->port) {
-            const char* devPortName = portName(device->port);
-            if (devPortName && (std::string(devPortName) == port_name))
-                return device;
-        }
-    }
-    return nullptr;
-}
-
-/**
- * @return a list of discovered ports which are not currently associated with a open device
- */
-[[deprecated("Use InertialSense.portManager.discoverPorts() instead.")]]
-std::vector<std::string> InertialSense::checkForNewPorts(std::vector<std::string>& oldPorts) {
-    std::vector<std::string> new_ports, all_ports;
-    cISSerialPort::GetComPorts(all_ports);
-
-    // remove from "ports", all the ports which we currently have an open connection for.
-    for (auto& portName : all_ports) {
-        bool ignored = false;
-        for (auto& ignoredPort : m_ignoredPorts) {
-            if (ignoredPort == portName)
-                ignored = true;
-        }
-        for (auto& ignoredPort : oldPorts) {
-            if (ignoredPort == portName)
-                ignored = true;
-        }
-        if (ignored)
-            continue;
-
-        if (DeviceByPortName(portName) == nullptr) {
-            new_ports.push_back(portName);
-        }
-    }
-
-    return new_ports;
-}
-
-
-#if 0
-/**
- * Returns a subset of connected devices filtered by the passed devInfo and filterFlags.
- * filterFlags is a bitmask the matches the returned bitmap from compareDevInfo, in which
- * each bit corresponds to a field in devInfo, which must be matched in order to be
- * selected. All bits which are set in filterFlags must also be set in the result from
- * compareDevInfo in order to selected.  Passing 0x0000 for filterFlags will return all available
- * devices (any device matches), while passing 0xFFFF will only match an exact match, including
- * the serial number.
- * @param devInfo
- * @param filterFlags
- * @return a vector of device_handle_t which match the filter criteria
- */
-std::vector<device_handle_t> InertialSense::selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags) {
-    std::vector<device_handle_t> selected;
-
-    for (auto device : m_comManagerState.devices) {
-        uint32_t matchy = util::compareDevInfo(devInfo, device->devInfo) & filterFlags;
-        if (matchy == filterFlags)
-            selected.push_back(device);
-    }
-    return selected;
-}
-
-/**
- * Returns a subset of connected devices filtered by the passed hardware id.
- * Note that any HdwId component (TYPE, MAJOR, MINOR) which bit mask is all ones, will
- * be ignored in the filter criteria.  Ie, to filter on ALL IMX devices, regardless of
- * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
- * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
- * @param hdwId
- * @return a vector of device_handle_t which match the filter criteria (hdwId)
- */
-std::vector<device_handle_t> InertialSense::selectByHdwId(const uint16_t hdwId) {
-    dev_info_t devInfo = { };
-    uint32_t filterFlags = 0;
-
-    // filter hdw type
-    devInfo.hardwareType = DECODE_HDW_TYPE(hdwId);
-    if (devInfo.hardwareType != (HDW_TYPE__MASK >> HDW_TYPE__SHIFT)) {
-        filterFlags |= (1 << 1);
-    }
-
-    // filter major hdw version
-    devInfo.hardwareVer[0] = DECODE_HDW_MAJOR(hdwId);
-    if (devInfo.hardwareVer[0] != (HDW_MAJOR__MASK >> HDW_MAJOR__SHIFT)) {
-        filterFlags |= (1 << 4);
-    }
-
-    // filter minor hdw version
-    devInfo.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
-    if (devInfo.hardwareVer[1] != (HDW_MINOR__MASK >> HDW_MINOR__SHIFT)) {
-        filterFlags |= (1 << 5);
-    }
-
-    return selectByDevInfo(devInfo, filterFlags);
-}
-#endif
 
 /**
  * Handles port management for the InertialSense class. Specifically, defaults to opening newly discovered ports. This function can be
@@ -1212,7 +1060,7 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
 /*
                 if (portOpen(port) == PORT_ERROR__OPEN_FAILURE) {
                     log_debug(IS_LOG_FACILITY_NONE, "Error opening serial port '%s'.  Ignoring.  Error was: %s", pName.c_str(), SERIAL_PORT(port)->error);
-                    serialPortClose(port);           // failed to open
+                    portClose(port);           // failed to open
                     m_ignoredPorts.push_back(pName);     // record this port name as bad, so we don't try and reopen it again
                 }
 */

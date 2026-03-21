@@ -15,8 +15,9 @@
 
 #include <string>
 #include <vector>
-#include "IS_calibration.h"
 #include "json.hpp"
+#include "IS_calibration.h"
+#include "ISHttpRequest.h"
 
 #define NUM_POSES                           18
 #define NUM_RATES_PER_POSE                  3       // rates per pose, each stage has a rate
@@ -158,9 +159,34 @@ struct sOrthoCal
  * from/to JSON files, including sensor calibration info, temperature compensation,
  * and motion calibration (orthonormalization).
  */
-class ISDeviceCal
+class ISDeviceCal : public sensor_cal_t
 {
 public:
+    /**
+     * Creates an empty calibration object - this will need to be populated
+     */
+    explicit ISDeviceCal() : sensor_cal_t({}) {};
+
+    /**
+     * Creates a calibration object populated from parsing the provided JSON object
+     * @param jObj json object containing all the calibration details
+     */
+    ISDeviceCal(const json& jObj) : sensor_cal_t({}) {
+        loadCalibrationFromJsonObj(jObj, &ocal, &info, &data.dinfo, &data.tcal, &data.mcal, &pose);
+    }
+
+
+    /**
+     * Creates a calibration object populated by parsing JSON contents from the specified file
+     * @param filePath a path to a JSON file which contains the calibration details
+     */
+    ISDeviceCal(const std::string& filePath) : sensor_cal_t({}) {
+        loadCalibrationFromJsonFile(filePath, &ocal, &info, &data.dinfo, &data.tcal, &data.mcal, &pose);
+    }
+
+    ISHttpRequest::Response loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo);
+
+
     /**
      * @brief Load calibration data from a JSON file
      *
@@ -272,6 +298,9 @@ public:
 
     static const int CAL_UPLOAD_SLEEP_MS = 150;
 
+protected:
+    sOrthoCal ocal = {};                //!< orthonormalization calibration data
+    int pose = -1;                      //!< Current pose value
 };
 
 
