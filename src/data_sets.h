@@ -194,9 +194,15 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE    2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
-// Max number of devices across all hardware types: uINS-3, uINS-4, IMX-5, and IMX-6
-#define MAX_IMU_DEVICES     5        // g_numImuDevices defines the actual number of hardware specific devices
-#define MAX_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
+// Version 1.3 of sensor calibration format supports up to 3 IMUs and 2 mags, with separate orthonormalization and bias calibration for each device
+#define NUM_IMU_DEVICES_V1P3    3
+#define NUM_MAG_DEVICES_V1P3    2
+// Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
+#define NUM_IMU_DEVICES_V1P4    5
+#define NUM_MAG_DEVICES_V1P4    1
+// Max number of devices across all hardware types: uINS-3, IMX-5, and IMX-6
+#define MAX_IMU_DEVICES         NUM_IMU_DEVICES_V1P4    // g_numImuDevices defines the actual number of hardware specific devices
+#define MAX_MAG_DEVICES         NUM_MAG_DEVICES_V1P4    // g_numMagDevices defines the actual number of hardware specific devices
 
 /** INS status flags */
 enum eInsStatusFlags
