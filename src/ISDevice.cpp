@@ -13,6 +13,7 @@
 #include "util/util.h"
 #include "imx_defaults.h"
 #include "ISLogger.h"
+#include "../../ROS/catkin_ws/src/inertial-sense-sdk/src/DeviceManager.h"
 
 const ISDevice ISDevice::invalidRef;
 
@@ -103,6 +104,11 @@ bool ISDevice::step() {
 
     if (portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
         return false;
+
+    if (was_connected != portIsOpened(port)) {
+        was_connected = isConnected();
+        DeviceManager::getInstance().notifyListeners(shared_from_this(), isConnected() ? DeviceManager::DEVICE_CONNECTED : DeviceManager::DEVICE_DISCONNECTED);
+    }
 
     bool didStuff = false;
     if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
@@ -1635,7 +1641,8 @@ bool ISDevice::connect(bool revalidate) {
     if (revalidate)
         devInfo.hdwRunState = HDW_STATE_UNKNOWN; // this will further reinforce a validation
 
-    if (!portIsOpened(port)) {
+    bool alreadyOpened = portIsOpened(port);
+    if (!alreadyOpened) {
         if (nextConnectMs > current_timeMs()) {
             SLEEP_MS(15);
             log_debug(IS_LOG_ISDEVICE, "Connection throttled. You can retry this device again in %dms.", nextConnectMs - current_timeMs());
@@ -1656,7 +1663,13 @@ bool ISDevice::connect(bool revalidate) {
         SLEEP_MS(15);
         success = validate();          // if validating, only return true if we successfully validated
     }
-    log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), (success ? " (revalidated)" : ""));
+
+    // ONLY notify of DEVICE_CONNECTED, if the port was closed at the start of this function
+    if (!alreadyOpened) {
+        DeviceManager::getInstance().notifyListeners(shared_from_this(), DeviceManager::DEVICE_CONNECTED);  // notify that we've connected (if we are)
+        log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), (success ? " (revalidated)" : ""));
+    }
+    was_connected = success;
     return success;
 }
 
