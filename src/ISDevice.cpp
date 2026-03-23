@@ -7,13 +7,13 @@
  */
 
 #include "core/msg_logger.h"
+#include "DeviceManager.h"
 #include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
 #include "ISHttpRequest.h"
+#include "ISLogger.h"
 #include "util/util.h"
 #include "imx_defaults.h"
-#include "ISLogger.h"
-#include "../../ROS/catkin_ws/src/inertial-sense-sdk/src/DeviceManager.h"
 
 const ISDevice ISDevice::invalidRef;
 
