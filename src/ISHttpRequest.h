@@ -11,6 +11,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 extern "C"
 {
@@ -26,6 +27,12 @@ public:
         std::map<std::string, std::string> headers;
     };
 
+    struct MultipartField {
+        std::string name;
+        std::string contentType;   // e.g., "application/json", "application/zip"
+        std::string data;
+    };
+
     /**
      * Perform an HTTP GET request to the given URL.
      * @param url Full HTTP URL (e.g., "http://host:port/path")
@@ -34,8 +41,39 @@ public:
      */
     static Response get(const std::string& url, int timeoutMs = 10000);
 
+    /**
+     * Perform an HTTP POST request with a JSON body.
+     * @param url Full HTTP URL
+     * @param jsonBody JSON string to send as the request body
+     * @param timeoutMs Timeout in milliseconds
+     * @return Response with status code, headers, and body. statusCode == -1 on error.
+     */
+    static Response post(const std::string& url, const std::string& jsonBody, int timeoutMs = 10000);
+
+    /**
+     * Perform an HTTP PUT request with a JSON body.
+     * @param url Full HTTP URL
+     * @param jsonBody JSON string to send as the request body
+     * @param timeoutMs Timeout in milliseconds
+     * @return Response with status code, headers, and body. statusCode == -1 on error.
+     */
+    static Response put(const std::string& url, const std::string& jsonBody, int timeoutMs = 10000);
+
+    /**
+     * Perform an HTTP PUT request with a multipart/form-data body.
+     * @param url Full HTTP URL
+     * @param fields Vector of multipart fields to include in the body
+     * @param timeoutMs Timeout in milliseconds
+     * @return Response with status code, headers, and body. statusCode == -1 on error.
+     */
+    static Response putMultipart(const std::string& url, const std::vector<MultipartField>& fields, int timeoutMs = 10000);
+
 private:
     static std::string buildGetRequest(const std::string& host, const std::string& path);
+    static std::string buildRequest(const std::string& method, const std::string& host, const std::string& path,
+                                    const std::string& contentType, const std::string& body);
+    static Response sendRequest(const std::string& url, const std::string& method,
+                                const std::string& contentType, const std::string& body, int timeoutMs);
     static Response parseResponse(port_handle_t port, int timeoutMs);
 };
 
