@@ -593,6 +593,10 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
         case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
         case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
         case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
+        case IS_HDW_GNSS_SONY: typeName = "CXD"; break;
+        case IS_HDW_GNSS_UBLOX: typeName = "UBX"; break;
+        case IS_HDW_GNSS_SEPTENTRIO: typeName = "SEP"; break;
+        case IS_HDW_GNSS_STM_TESSIO: typeName = "STM"; break;
         default: typeName = "\?\?\?"; break;
     }
     out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
@@ -1459,6 +1463,13 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
+            break;
+        case DID_GPX_DEV_INFO:
+            gpxDevInfo = *(dev_info_t*)data->ptr;
+            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_DEV_INFO: hwType=%d, fw=%d.%d.%d.%d",
+                getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(),
+                gpxDevInfo.hardwareType, gpxDevInfo.firmwareVer[0], gpxDevInfo.firmwareVer[1],
+                gpxDevInfo.firmwareVer[2], gpxDevInfo.firmwareVer[3]);
             break;
         case DID_SYS_CMD:
             sysCmd = *(system_command_t*)data->ptr;
