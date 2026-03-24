@@ -222,6 +222,10 @@ std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) 
         case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
         case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
         case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
+        case IS_HDW_GNSS_SONY: typeName = "CXD"; break;
+        case IS_HDW_GNSS_UBLOX: typeName = "UBX"; break;
+        case IS_HDW_GNSS_SEPTENTRIO: typeName = "SEP"; break;
+        case IS_HDW_GNSS_STM_TESSIO: typeName = "STM"; break;
         default: typeName = "\?\?\?"; break;
     }
     std::string out = utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
@@ -613,7 +617,8 @@ int64_t utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b,
         if (a.firmwareVer[3] != b.firmwareVer[3])
             result |= ((int64_t)(a.firmwareVer[3] > b.firmwareVer[3]) & 0xFF) << 24;
 
-        result |= ((int64_t)(a.buildType - b.buildType) & 0xFF);
+        if (a.buildType && b.buildType && a.buildType != b.buildType)
+            result |= ((int64_t)(a.buildType - b.buildType) & 0xFF);
     }
 
     if (fields & (DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME)) {

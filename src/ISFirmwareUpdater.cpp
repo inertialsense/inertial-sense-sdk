@@ -239,6 +239,8 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     remoteDevInfo.hdwRunState = msg.data.version_resp.hdwRunState;
     memcpy(remoteDevInfo.hardwareVer, msg.data.version_resp.hardwareVer, 4);
     memcpy(remoteDevInfo.firmwareVer, msg.data.version_resp.firmwareVer, 4);
+    remoteDevInfo.buildType = msg.data.version_resp.buildType;
+    remoteDevInfo.buildNumber = msg.data.version_resp.buildNumber;
     remoteDevInfo.buildYear = msg.data.version_resp.buildYear;
     remoteDevInfo.buildMonth = msg.data.version_resp.buildMonth;
     remoteDevInfo.buildDay = msg.data.version_resp.buildDay;
@@ -246,7 +248,6 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     remoteDevInfo.buildMinute = msg.data.version_resp.buildMinute;
     remoteDevInfo.buildSecond = msg.data.version_resp.buildSecond;
     remoteDevInfo.buildMillisecond = msg.data.version_resp.buildMillis;
-    remoteDevInfo.buildType = msg.data.version_resp.buildType;
 
     target_devInfo = &remoteDevInfo;
     LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo).c_str());
@@ -1018,36 +1019,33 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
             target = fwUpdate::TARGET_ISB_IMX5;
 
-        // Resolve target_devInfo from host device info when target hasn't responded to version request
+        // Resolve target_devInfo when not already populated (e.g., no waitfor command, or explicit -uf-cmd mode)
         if (!target_devInfo) {
             if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
                 ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
                 // Target is the same device as the host — use its dev info directly
                 remoteDevInfo = *devInfo;
                 target_devInfo = &remoteDevInfo;
-            } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX) && device) {
-                if (device->gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX) {
-                    // GPX dev info already populated via DID_GPX_DEV_INFO
-                    remoteDevInfo = device->gpxDevInfo;
-                    target_devInfo = &remoteDevInfo;
-                } else if (effectivePolicy == UPDATE_POLICY_IF_NEWER) {
-                    // GPX dev info not yet available — request it async and retry
-                    if (!pingTimeoutExpires) {
-                        pingTimeoutExpires = current_timeMs() + 3000;
-                        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Requesting GPX device info for version comparison (up to 3s)...");
-                    }
-                    device->GetData(DID_GPX_DEV_INFO);
-                    if (current_timeMs() < pingTimeoutExpires) {
-                        return;  // stay CMD_QUEUED, re-enter on next cycle
-                    }
-                    // Timeout — proceed without target version (will fall through to upload)
-                    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_WARN, "Timed out waiting for GPX device info; proceeding with upload");
-                    pingTimeoutExpires = 0;
+            } else if (effectivePolicy == UPDATE_POLICY_IF_NEWER) {
+                // Target info not available — request via firmware update protocol and retry async
+                if (!pingTimeoutExpires) {
+                    pingTimeoutExpires = current_timeMs() + 3000;
+                    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Requesting target version info for version comparison (up to 3s)...");
                 }
-                if (target_devInfo && remoteDevInfo.firmwareVer[0] == 2 && remoteDevInfo.firmwareVer[1] == 0 && remoteDevInfo.firmwareVer[2] == 0)
-                    flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
-            } else
+                fwUpdate_requestVersionInfo(target);
+                if (current_timeMs() < pingTimeoutExpires) {
+                    return;  // stay CMD_QUEUED, re-enter on next cycle
+                }
+                // Timeout — proceed without target version (will fall through to upload)
+                LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_WARN, "Timed out waiting for target version info; proceeding with upload");
+                pingTimeoutExpires = 0;
+            }
+
+            // Set useAlternateMD5 for legacy firmware compatibility
+            if (target_devInfo && remoteDevInfo.firmwareVer[0] == 2 && remoteDevInfo.firmwareVer[1] == 0 && remoteDevInfo.firmwareVer[2] == 0)
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+            else if (!target_devInfo)
+                flags |= fwUpdate::IMG_FLAG_useAlternateMD5;  // unknown version, use alternate MD5 for safety
         }
 
         // IF_NEWER: compare image version against target's current firmware version

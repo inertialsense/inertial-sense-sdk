@@ -37,6 +37,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
+#include "core/msg_logger.h"
+
 #include "protocol_nmea.h"
 #include "CorrectionService.h"
 #include "NtripCorrectionService.h"
@@ -957,8 +959,6 @@ void getMemoryEvent(InertialSense& inertialSenseInterface, uint32_t addrs, const
 
 static int cltool_dataStreaming()
 {
-    IS_LOG_OUTPUT(stdout);
-
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
     // Build explicit port factory list — only include ISmDnsPortFactory when -use-mdns is specified
@@ -1364,6 +1364,10 @@ static int inertialSenseMain()
 
 int main(int argc, char* argv[])
 {
+
+    // IS_LOG_OUTPUT(stdout);
+    // IS_SET_LOG_LEVEL(IS_LOG_LEVEL_MORE_DEBUG);
+
     // Parse command line options
     if (!cltool_parseCommandLine(argc, argv))
     {   // parsing failed
