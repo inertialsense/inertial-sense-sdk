@@ -449,8 +449,10 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
         portClose(port);
 
-    if (portIsOpened(deviceEntry.device->port))
-        notifyListeners(deviceEntry.device, DEVICE_CONNECTED);  // notify that we've connected (if we are)
+    if (portIsOpened(deviceEntry.device->port)) {
+        if (deviceEntry.device->connect())  // even though the port is opened, we want the device to manage connection initialization
+            notifyListeners(deviceEntry.device, DEVICE_CONNECTED);  // connect() above wont notify, because the port is already opened.
+    }
 
     return true;    // successfully handled
 }
