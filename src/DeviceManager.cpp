@@ -648,7 +648,8 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
     ISFileManager::GetAllFilesInDirectory(firmwarePath, true, "", fwImageFiles);
 
     // build a map of devInfo to files; we want to use a custom sorted map, where the map is ordered by version info
-    std::map<uint16_t, std::map<dev_info_t, std::string, decltype(&utils::compareFirmwareVersions)>> fwImages;
+    using cmpFn_t = int64_t(*)(const dev_info_t&, const dev_info_t&);
+    std::map<uint16_t, std::map<dev_info_t, std::string, cmpFn_t>> fwImages;
 
     for (auto imgPath : fwImageFiles) {
         std::string imgDir, imgFile, imgExt;
@@ -658,7 +659,7 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
         if (utils::devInfoFromString(imgFile, tmpDevInfo)) {
             auto hdwId = ENCODE_DEV_INFO_TO_HDW_ID(tmpDevInfo);
             if (fwImages.find(hdwId) != fwImages.end())
-                fwImages[hdwId] = std::map<dev_info_t, std::string, decltype(&utils::compareFirmwareVersions)>(&utils::compareFirmwareVersions);
+                fwImages[hdwId] = std::map<dev_info_t, std::string, cmpFn_t>(static_cast<cmpFn_t>(&utils::compareFirmwareVersions));
             fwImages[hdwId][tmpDevInfo] = imgPath;
         }
     }

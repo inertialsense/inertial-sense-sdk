@@ -597,25 +597,36 @@ bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2
  *   determine the specific differences between versions.
  */
 int64_t utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b) {
+    return compareFirmwareVersions(a, b, 0xFFFF);
+}
+
+int64_t utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b, uint16_t fields) {
     int64_t result = 0;
-    if (a.firmwareVer[0] != b.firmwareVer[0])
-        result |= ((int64_t)(a.firmwareVer[0] - b.firmwareVer[0]) & 0xFF) << 56;
-    if (a.firmwareVer[1] != b.firmwareVer[1])
-        result |= ((int64_t)(a.firmwareVer[1] - b.firmwareVer[1]) & 0xFF) << 48;
-    if (a.firmwareVer[2] != b.firmwareVer[2])
-        result |= ((int64_t)(a.firmwareVer[2] - b.firmwareVer[2]) & 0xFF) << 32;
-    if (a.firmwareVer[3] != b.firmwareVer[3])
-        result |= ((int64_t)(a.firmwareVer[3] > b.firmwareVer[3]) & 0xFF) << 24;
 
-    uint64_t aDateTime = intDateTimeFromDevInfo(a);
-    uint64_t bDateTime = intDateTimeFromDevInfo(b);
-    if (aDateTime != bDateTime)
-        result |= ((int64_t)(aDateTime - bDateTime) & 0xFF) << 16;
+    if (fields & DV_BIT_FIRMWARE_VER) {
+        if (a.firmwareVer[0] != b.firmwareVer[0])
+            result |= ((int64_t)(a.firmwareVer[0] - b.firmwareVer[0]) & 0xFF) << 56;
+        if (a.firmwareVer[1] != b.firmwareVer[1])
+            result |= ((int64_t)(a.firmwareVer[1] - b.firmwareVer[1]) & 0xFF) << 48;
+        if (a.firmwareVer[2] != b.firmwareVer[2])
+            result |= ((int64_t)(a.firmwareVer[2] - b.firmwareVer[2]) & 0xFF) << 32;
+        if (a.firmwareVer[3] != b.firmwareVer[3])
+            result |= ((int64_t)(a.firmwareVer[3] > b.firmwareVer[3]) & 0xFF) << 24;
 
-    if (a.buildNumber != b.buildNumber)
-        result |= ((int64_t)(a.buildNumber - b.buildNumber) & 0xFF) << 8;
+        result |= ((int64_t)(a.buildType - b.buildType) & 0xFF);
+    }
 
-    result |= ((int64_t)(a.buildType - b.buildType) & 0xFF);
+    if (fields & (DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME)) {
+        uint64_t aDateTime = intDateTimeFromDevInfo(a);
+        uint64_t bDateTime = intDateTimeFromDevInfo(b);
+        if (aDateTime != bDateTime)
+            result |= ((int64_t)(aDateTime - bDateTime) & 0xFF) << 16;
+    }
+
+    if (fields & DV_BIT_BUILD_KEY) {
+        if (a.buildNumber != b.buildNumber)
+            result |= ((int64_t)(a.buildNumber - b.buildNumber) & 0xFF) << 8;
+    }
 
     return result;
 }

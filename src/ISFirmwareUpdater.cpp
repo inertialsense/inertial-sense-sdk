@@ -7,6 +7,10 @@
 
 #include "ISBFirmwareUpdater.h"
 
+// Forward declarations for static helpers used throughout this file
+static bool icontains(const std::string& haystack, const std::string& needle);
+static update_policy_e parsePolicyString(const std::string& str);
+
 #define LOG_FWUPDATE_STATUS(log_level, ...)   { do {                                                        \
     /* log_msg(IS_LOG_FWUPDATE, log_level, __VA_ARGS__); */                                                 \
     if (pfnStatus_cb) { pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), log_level, __VA_ARGS__); }    \
@@ -664,6 +668,50 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
         session_target = target = fwUpdate::TARGET_HOST;
         session_image_slot = slotNum = 0;
         failLabel.clear();
+
+        // Late pattern resolution: if this step has no resolved policy yet, try matching
+        // policyPatterns against the target name within this step's commands.
+        if (!activeStep.empty() &&
+            (stepPolicies.find(activeStep) == stepPolicies.end() ||
+             stepPolicies[activeStep].policy == UPDATE_POLICY_DEFAULT)) {
+            for (auto& c : commands) {
+                if (c.step == activeStep && c.cmd == "target" && c.hasArg("target")) {
+                    std::string targetName = c.getArg("target");
+                    for (auto& [pattern, policy] : policyPatterns) {
+                        if (icontains(targetName, pattern)) {
+                            stepPolicies[activeStep].policy = policy;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Check if this step should be skipped entirely.
+        // Policies only apply to steps that have a "target" command — because policies are
+        // inherently about firmware targets. Steps without a target are control-flow (FINALIZE,
+        // ERROR, etc.) and should always run. Without a target, there's no version to compare
+        // for IF_NEWER, and no device to skip or force.
+        bool stepHasTarget = false;
+        for (auto& c : commands) {
+            if (c.step == activeStep && c.cmd == "target") { stepHasTarget = true; break; }
+        }
+
+        if (!activeStep.empty() && stepHasTarget) {
+            update_policy_e policy = getEffectivePolicy(activeStep);
+            if (policy == UPDATE_POLICY_SKIP) {
+                LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping step '%s' (policy: SKIP)", activeStep.c_str());
+                for (auto& c : commands) {
+                    if (c.step == activeStep && c.status == ISFwUpdaterCmd::CMD_QUEUED)
+                        c.status = ISFwUpdaterCmd::CMD_NOT_EXECUTED;
+                }
+                cmd.status = ISFwUpdaterCmd::CMD_NOT_EXECUTED;
+                activeCmd = &getNextQueuedCmd(&cmd);
+                return *activeCmd;
+            }
+        }
+
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
     }
 
@@ -699,6 +747,27 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
     } else if (cmd.cmd == "force") {
         forceUpdate = (cmd[0] == "true" ? true : false);
+        defaultPolicy = forceUpdate ? UPDATE_POLICY_FORCE : UPDATE_POLICY_DEFAULT;
+        cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+    } else if (cmd.cmd == "policy") {
+        std::string policyArg = cmd.getArg("policy", cmd[0]);
+        std::string patternArg = cmd.getArg("target", "");
+        update_policy_e p = parsePolicyString(policyArg);
+        if (p == UPDATE_POLICY_DEFAULT) {
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR, "Unknown update policy: '%s' (valid: skip, if-newer, force, always)", policyArg.c_str());
+        } else if (!patternArg.empty()) {
+            // Explicit target pattern provided: apply as a pattern match
+            setPolicyPattern(patternArg, p);
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Set update policy '%s' for targets matching '%s'", policyArg.c_str(), patternArg.c_str());
+        } else if (!activeStep.empty()) {
+            // No target specified, but we're inside a step scope: apply to the current step
+            setStepPolicy(activeStep, p);
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Set update policy '%s' for step '%s'", policyArg.c_str(), activeStep.c_str());
+        } else {
+            // No target, no active step: set the global default
+            setDefaultPolicy(p);
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Set default update policy: %s", policyArg.c_str());
+        }
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
     } else if ((cmd.cmd == "chunk") && (cmd.args.size() == 1)) {
         chunkSize = strtol(cmd[0].c_str(), nullptr, 10);
@@ -722,7 +791,7 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
 }
 
 void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
-    // NOTE: Unlike other actions, use of copy of the ISFwUpdaterCmd, because processPackageManifest() by design
+    // NOTE: Unlike other actions, use a copy of the ISFwUpdaterCmd, because processPackageManifest() by design
     // modifies the list of commands to process, which could possibly invalidate the underlying reference to this
     // command.
 
@@ -915,6 +984,30 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         if (cmd.hasArg("chunkSize")) progressRate = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
         if (cmd.hasArg("force")) forceUpdate = (cmd.getArg("force", "false") == "true");
 
+        // Resolve effective update policy for this upload
+        update_policy_e effectivePolicy;
+        if (cmd.hasArg("force") && cmd.getArg("force") == "true") {
+            effectivePolicy = UPDATE_POLICY_FORCE;
+        } else if (cmd.hasArg("update-policy")) {
+            effectivePolicy = parsePolicyString(cmd.getArg("update-policy"));
+            if (effectivePolicy == UPDATE_POLICY_DEFAULT)
+                effectivePolicy = getEffectivePolicy(cmd.step);
+        } else {
+            effectivePolicy = getEffectivePolicy(cmd.step);
+        }
+
+        // SKIP: skip this upload entirely
+        if (effectivePolicy == UPDATE_POLICY_SKIP) {
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping upload of '%s' (policy: SKIP)", filename.c_str());
+            cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+            cmd.resultMsg = "Upload skipped (policy: SKIP).";
+            return;
+        }
+
+        // FORCE: ensure forceUpdate is set for protocol-level behavior
+        if (effectivePolicy == UPDATE_POLICY_FORCE)
+            forceUpdate = true;
+
         fwUpdate_resetEngine();
 
         uint8_t flags = 0;
@@ -925,31 +1018,77 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
             target = fwUpdate::TARGET_ISB_IMX5;
 
-        // any target which doesn't report version info will also expect the old MD5 digest
+        // Resolve target_devInfo from host device info when target hasn't responded to version request
         if (!target_devInfo) {
-            // TODO: We should be able to remove most of this after 2.1.0 has been released
             if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
                 ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
-                // just copy in the current "main" device's dev info, since they are the same device as the target
+                // Target is the same device as the host — use its dev info directly
                 remoteDevInfo = *devInfo;
                 target_devInfo = &remoteDevInfo;
-            } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) {
-                // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
-                const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
-                if (gpxVInfo) {
-                    int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
-                    if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
-                        (sscanf(gpxVInfo, "G%d.%d.%d-%d", &v1, &v2, &v3, &bn) == 4)) {
-                        remoteDevInfo.hardwareType = IS_HARDWARE_TYPE_GPX;
-                        remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
-                        remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
-                        target_devInfo = &remoteDevInfo;
-                        if ((v1 == 2) && (v2 == 0) && (v3 == 0))
-                            flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+            } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX) && device) {
+                if (device->gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX) {
+                    // GPX dev info already populated via DID_GPX_DEV_INFO
+                    remoteDevInfo = device->gpxDevInfo;
+                    target_devInfo = &remoteDevInfo;
+                } else if (effectivePolicy == UPDATE_POLICY_IF_NEWER) {
+                    // GPX dev info not yet available — request it async and retry
+                    if (!pingTimeoutExpires) {
+                        pingTimeoutExpires = current_timeMs() + 3000;
+                        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Requesting GPX device info for version comparison (up to 3s)...");
                     }
+                    device->GetData(DID_GPX_DEV_INFO);
+                    if (current_timeMs() < pingTimeoutExpires) {
+                        return;  // stay CMD_QUEUED, re-enter on next cycle
+                    }
+                    // Timeout — proceed without target version (will fall through to upload)
+                    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_WARN, "Timed out waiting for GPX device info; proceeding with upload");
+                    pingTimeoutExpires = 0;
                 }
+                if (target_devInfo && remoteDevInfo.firmwareVer[0] == 2 && remoteDevInfo.firmwareVer[1] == 0 && remoteDevInfo.firmwareVer[2] == 0)
+                    flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
             } else
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+        }
+
+        // IF_NEWER: compare image version against target's current firmware version
+        if (effectivePolicy == UPDATE_POLICY_IF_NEWER && target_devInfo) {
+            dev_info_t imageDevInfo = {};
+            uint16_t parsed = 0;
+            bool hasImageVer = false;
+
+            if (cmd.hasArg("image-version")) {
+                std::string verStr = cmd.getArg("image-version");
+                // devInfoFromString expects a 'v' or 'fw' prefix for version parsing
+                if (!verStr.empty() && verStr[0] != 'v' && verStr.substr(0, 2) != "fw")
+                    verStr.insert(0, "v");
+                parsed = utils::devInfoFromString(verStr, imageDevInfo);
+                if (parsed & utils::DV_BIT_FIRMWARE_VER)
+                    hasImageVer = true;
+            }
+
+            // Fallback: try to parse version from the filename itself
+            if (!hasImageVer && !filename.empty()) {
+                parsed = utils::devInfoFromString(filename, imageDevInfo);
+                if (parsed & utils::DV_BIT_FIRMWARE_VER)
+                    hasImageVer = true;
+            }
+
+            if (hasImageVer) {
+                std::string imageVerStr = utils::devInfoToString(imageDevInfo, utils::DV_BIT_FIRMWARE_VER);
+                std::string targetVerStr = utils::devInfoToString(*target_devInfo, utils::DV_BIT_FIRMWARE_VER);
+
+                // Only compare fields that were actually parsed from the image version string
+                int64_t cmp = utils::compareFirmwareVersions(imageDevInfo, *target_devInfo, parsed);
+                if (cmp <= 0) {
+                    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO,
+                        "Target is already up to date (%s); skipping upload of '%s' (image version: %s)",
+                        targetVerStr.c_str(), filename.c_str(), imageVerStr.c_str());
+                    cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+                    cmd.resultMsg = "Target is already up to date.";
+                    return;
+                }
+            }
+            // If no image version available, fall through to upload (can't compare)
         }
 
         fwUpdate::update_status_e status = initializeUpload(target, filename, slotNum, flags, forceUpdate, chunkSize, progressRate);
@@ -993,6 +1132,7 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         if (session_status == fwUpdate::FINISHED) {
             cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
             cmd.resultMsg = "Upload successful.";
+            targetUploadPerformed[target] = true;
         } else if (session_status < fwUpdate::NOT_STARTED) {
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
             cmd.resultMsg = utils::string_format("Error: %s", fwUpdate_getNiceStatusName(fwUpdate_getSessionStatus()));
@@ -1005,6 +1145,27 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
 
 void ISFirmwareUpdater::cmd_resetDevice(ISFwUpdaterCmd& cmd) {
     // std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    bool force = (cmd.getArg("force", "false") == "true");
+
+    if (!force) {
+        // Skip reset if target's policy is SKIP
+        update_policy_e policy = getEffectivePolicy(cmd.step);
+        if (policy == UPDATE_POLICY_SKIP) {
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping reset (policy: SKIP)");
+            cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+            cmd.resultMsg = "Reset skipped (policy: SKIP).";
+            return;
+        }
+
+        // Skip reset if no upload was actually performed for this target (e.g. IF_NEWER with same version)
+        if (targetUploadPerformed.find(target) == targetUploadPerformed.end()) {
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping reset — no upload was performed for this target");
+            cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+            cmd.resultMsg = "Reset skipped (no upload performed).";
+            return;
+        }
+    }
 
     bool hard = (cmd.getArg("type", "soft") == "hard");
     if (cmd.hasArg("type") && (cmd["type"] == "tobl")) {
@@ -1073,10 +1234,63 @@ void ISFirmwareUpdater::initialize() {
     //mz_zip_archive *zip_archive = nullptr; //!< is NOT null IF we are updating from a firmware package (zip archive).
     //fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
     remoteDevInfo = {};
+    targetUploadPerformed.clear();
     logLevel = IS_LOG_LEVEL_INFO;                           //!< default log level to show
+
+    // NOTE: stepPolicies, policyPatterns, and defaultPolicy are intentionally
+    // NOT reset here. They are set by policy commands which run BEFORE the
+    // package command calls initialize() via processPackageManifest().
 
     updateState.resetState();
 }
+
+
+void ISFirmwareUpdater::setStepPolicy(const std::string& stepLabel, update_policy_e policy) {
+    stepPolicies[stepLabel].policy = policy;
+}
+
+void ISFirmwareUpdater::setPolicyPattern(const std::string& pattern, update_policy_e policy) {
+    policyPatterns.emplace_back(pattern, policy);
+}
+
+void ISFirmwareUpdater::setDefaultPolicy(update_policy_e policy) {
+    defaultPolicy = policy;
+}
+
+update_policy_e ISFirmwareUpdater::getEffectivePolicy(const std::string& stepLabel) const {
+    auto it = stepPolicies.find(stepLabel);
+    if (it != stepPolicies.end() && it->second.policy != UPDATE_POLICY_DEFAULT)
+        return it->second.policy;
+
+    if (defaultPolicy != UPDATE_POLICY_DEFAULT)
+        return defaultPolicy;
+
+    if (forceUpdate)
+        return UPDATE_POLICY_FORCE;
+
+    return UPDATE_POLICY_IF_NEWER;
+}
+
+/**
+ * Case-insensitive substring match. Returns true if haystack contains needle (ignoring case).
+ */
+static bool icontains(const std::string& haystack, const std::string& needle) {
+    if (needle.size() > haystack.size()) return false;
+    auto it = std::search(haystack.begin(), haystack.end(), needle.begin(), needle.end(),
+        [](char a, char b) { return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b)); });
+    return it != haystack.end();
+}
+
+/**
+ * Parses a policy string ("skip", "if-newer", "force", "always") into an update_policy_e value.
+ */
+static update_policy_e parsePolicyString(const std::string& str) {
+    if (str == "skip") return UPDATE_POLICY_SKIP;
+    if (str == "if-newer") return UPDATE_POLICY_IF_NEWER;
+    if (str == "force" || str == "always") return UPDATE_POLICY_FORCE;
+    return UPDATE_POLICY_DEFAULT;
+}
+
 
 /**
  * Locates the next queued, command in the command stack and returns it
@@ -1206,7 +1420,36 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
                         if (image["slot"].IsDefined() && image["slot"].IsScalar())
                             args += ",slot="+image["slot"].as<std::string>();
 
-                        //commands.emplace_back("slot",);
+                        // Extract image version from manifest (for IF_NEWER comparison)
+                        if (image["version"].IsDefined() && image["version"].IsScalar()) {
+                            std::string verStr = image["version"].as<std::string>();
+                            args += ",image-version=" + verStr;
+                        }
+
+                        // Resolve update policy for this step:
+                        //   1. Exact stepPolicies entry (from CLI setStepPolicy) — highest priority
+                        //   2. Pattern match from policyPatterns (from CLI setPolicyPattern)
+                        //   3. Manifest's update: field (only if no CLI default was set)
+                        if (stepPolicies.find(labelName) == stepPolicies.end() ||
+                            stepPolicies[labelName].policy == UPDATE_POLICY_DEFAULT) {
+                            // Try deferred pattern match against step label
+                            for (auto& [pattern, policy] : policyPatterns) {
+                                if (icontains(labelName, pattern)) {
+                                    stepPolicies[labelName].policy = policy;
+                                    break;
+                                }
+                            }
+                        }
+                        // Only apply manifest's update: field if no CLI-level policy
+                        // (neither per-step, pattern, nor defaultPolicy) would override it.
+                        if (defaultPolicy == UPDATE_POLICY_DEFAULT &&
+                            (stepPolicies.find(labelName) == stepPolicies.end() ||
+                             stepPolicies[labelName].policy == UPDATE_POLICY_DEFAULT)) {
+                            if (image["update"].IsDefined() && image["update"].IsScalar()) {
+                                stepPolicies[labelName].policy = parsePolicyString(image["update"].as<std::string>());
+                            }
+                        }
+
                         commands.emplace_back(labelName, "upload", args);
                     } else {
                         // anything that isn't "image" is treated like a normal command

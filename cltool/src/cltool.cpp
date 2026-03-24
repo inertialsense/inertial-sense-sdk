@@ -911,6 +911,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.updateAppFirmwareFilename = argv[++i];         // use next argument
             }
         }
+        else if (startsWith(a, "-fw-set-policy") && (i + 1) < argc)
+        {
+            g_commandLineOptions.fwPolicyOverrides.push_back(argv[++i]);
+        }
         else if (startsWith(a, "-uv"))
         {
             g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
@@ -1257,6 +1261,11 @@ void cltool_outputUsage()
     cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used with option -uf." << endlbOn;
     cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
     cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
+    cout << "    -fw-set-policy " << boldOff << "POLICY[:PATTERN]  Set update policy (skip, if-newer, force)." << endlbOn;
+    cout << "         " << boldOff << "                              Without :PATTERN, sets default for all targets." << endlbOn;
+    cout << "         " << boldOff << "                              With :PATTERN, overrides policy for matching" << endlbOn;
+    cout << "         " << boldOff << "                              step labels or target names (case-insensitive" << endlbOn;
+    cout << "         " << boldOff << "                              substring match). Can be specified multiple times." << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Messages)" << endl;

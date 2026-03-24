@@ -1039,6 +1039,23 @@ static int cltool_dataStreaming()
 
         try
         {
+            // Inject policy override commands before the firmware update commands
+            if (!g_commandLineOptions.fwPolicyOverrides.empty()) {
+                std::vector<std::string> combined;
+                for (auto& po : g_commandLineOptions.fwPolicyOverrides) {
+                    auto colonPos = po.find(':');
+                    if (colonPos != std::string::npos) {
+                        // pattern-specific: "skip:GNSS" → "policy=skip,target=GNSS"
+                        combined.push_back("policy=" + po.substr(0, colonPos) + ",target=" + po.substr(colonPos + 1));
+                    } else {
+                        // default: "force" → "policy=force"
+                        combined.push_back("policy=" + po);
+                    }
+                }
+                combined.insert(combined.end(), g_commandLineOptions.fwUpdateCmds.begin(), g_commandLineOptions.fwUpdateCmds.end());
+                g_commandLineOptions.fwUpdateCmds = combined;
+            }
+
             if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
                 if (inertialSenseInterface.updateFirmware(
                         g_commandLineOptions.updateFirmwareTarget,

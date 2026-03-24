@@ -1454,6 +1454,13 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
             break;
+        case DID_GPX_DEV_INFO:
+            gpxDevInfo = *(dev_info_t*)data->ptr;
+            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_DEV_INFO: hwType=%d, fw=%d.%d.%d.%d",
+                getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(),
+                gpxDevInfo.hardwareType, gpxDevInfo.firmwareVer[0], gpxDevInfo.firmwareVer[1],
+                gpxDevInfo.firmwareVer[2], gpxDevInfo.firmwareVer[3]);
+            break;
         case DID_SYS_CMD:
             sysCmd = *(system_command_t*)data->ptr;
             break;
