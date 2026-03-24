@@ -205,7 +205,7 @@ public:
         bool valid = portIsValid(port);
         bool comPort = portType(port) & PORT_TYPE__COMM;    // Not sure that this is entirely required; but it doesn't really hurt currently
         bool open = portIsOpened(port);
-        return valid && comPort && open;
+        return (valid && comPort && open);
     }
 
     /**
@@ -690,6 +690,8 @@ public:
     };
 
 private:
+    bool                        was_connected = false;               //!< true, if this device's port was opened during the previous call to step()
+
     uint32_t                    validationStartMs = 0;               //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
     uint32_t                    nextValidationMs = 0;                //!< if current_timeMs() > than this time, we'll perform the next validation query, otherwise we wait to see if the previous responds.
     queryType                   nextValidationType = QUERYTYPE_NMEA; //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
