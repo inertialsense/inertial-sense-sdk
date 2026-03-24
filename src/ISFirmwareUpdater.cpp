@@ -7,6 +7,9 @@
 
 #include "ISBFirmwareUpdater.h"
 
+#include <algorithm>
+#include <map>
+
 // Forward declarations for static helpers used throughout this file
 static bool icontains(const std::string& haystack, const std::string& needle);
 static update_policy_e parsePolicyString(const std::string& str);
@@ -507,7 +510,7 @@ bool ISFirmwareUpdater::step() {
             activeCmd = &getNextQueuedCmd(activeCmd);
         activeCmd = &runCommand(*activeCmd);
     } else {
-        activeCmd = nullptr;
+        activeCmd = &nullCmd;
     }
 
     bool result = fwUpdate_step();
@@ -660,6 +663,8 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
         if (!cmd.cmd.empty()) {
             LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command '%s\\%s'", cmd.step.c_str(), cmd.cmd.c_str());
         }
+        if (updateState.state == ISFwUpdateState::UDPATER_SUSPENDED)
+            return cmd; // this should prevent the next QUEUED command from executing (until updateState is changed)
     } else
         updateState.state = ISFwUpdateState::UPDATER_IN_PROGRESS;
 
@@ -716,7 +721,11 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
     }
 
-    if (cmd.cmd == "package") cmd_ExtractPackage(cmd);
+    if (cmd.cmd == "package") {
+        cmd_ExtractPackage(cmd);
+        // cmd reference is now dangling (commands vector was repopulated) — return nullCmd
+        return nullCmd;
+    }
     else if (cmd.cmd == "target") cmd_SetTarget(cmd);
     else if (cmd.cmd == "waitfor") cmd_WaitFor(cmd);
     else if (cmd.cmd == "delay") cmd_Delay(cmd);
@@ -759,15 +768,15 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
         } else if (!patternArg.empty()) {
             // Explicit target pattern provided: apply as a pattern match
             setPolicyPattern(patternArg, p);
-            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Set update policy '%s' for targets matching '%s'", policyArg.c_str(), patternArg.c_str());
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Set update policy '%s' for targets matching '%s'", policyArg.c_str(), patternArg.c_str());
         } else if (!activeStep.empty()) {
             // No target specified, but we're inside a step scope: apply to the current step
             setStepPolicy(activeStep, p);
-            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Set update policy '%s' for step '%s'", policyArg.c_str(), activeStep.c_str());
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Set update policy '%s' for step '%s'", policyArg.c_str(), activeStep.c_str());
         } else {
             // No target, no active step: set the global default
             setDefaultPolicy(p);
-            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Set default update policy: %s", policyArg.c_str());
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Set default update policy: %s", policyArg.c_str());
         }
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
     } else if ((cmd.cmd == "chunk") && (cmd.args.size() == 1)) {
@@ -791,6 +800,18 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
     return *activeCmd;
 }
 
+/**
+ * @brief locates a provided manifest (either directly, or within a ZIP package), extracts the manifest and expands the
+ * manifest into a new set of commands, loading them into the command queue. Optionally, this can suspend the updater
+ * after extracting those commands..
+ * @param args a set of positional arguments
+ * This command has the following arguments:
+ *     path [requires] :: the path to the package - if the path ends with ".yaml" it is treated as a path directly to
+ *       the manifest file, otherwise its assumed the path is a .zip file which contains a manifest.yaml.
+ *     suspend [optional] :: if true (default is false) the updater will be suspeneded (requiring explicit resumption)
+ *       immediately after extracting the manifest and populating the command queue - this allows additional "post-processing"
+ *       on the resulting command queue before performing any additional commands.
+ */
 void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
     // NOTE: Unlike other actions, use a copy of the ISFwUpdaterCmd, because processPackageManifest() by design
     // modifies the list of commands to process, which could possibly invalidate the underlying reference to this
@@ -798,8 +819,15 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
 
     // std::lock_guard<std::recursive_mutex> lock(mutex);
     std::string arg0 = cmd[0];  // REMEMBER cmd[0] is getting the first argument (std::string) from cmd
+    bool suspendAfterExtraction = ((cmd.args.size() == 2) && (cmd[1] == "true"));
     bool isManifest = (arg0.length() >= 5) && (0 == arg0.compare (arg0.length() - 5, 5, ".yaml"));
     pkg_error_e err_result = isManifest ? processPackageManifest(arg0) : openFirmwarePackage(arg0);
+
+    // processPackageManifest/openFirmwarePackage modifies the commands vector, which
+    // invalidates any pointers into it (including the caller's reference and activeCmd).
+    // Reset activeCmd so step() doesn't dereference a dangling pointer.
+    activeCmd = &nullCmd;
+
     if (err_result != PKG_SUCCESS) {
         const char *err_msg = nullptr;
         switch (err_result) {
@@ -843,7 +871,11 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
                 break;
         }
         handleCommandError(cmd, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", arg0.c_str(), err_result, err_msg);
+    } else if (suspendAfterExtraction) {
+        // we aren't ready to process any new commands from the package...
+        updateState.state = ISFwUpdateState::UDPATER_SUSPENDED;
     }
+
 }
 
 /**
@@ -1079,8 +1111,8 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                 int64_t cmp = utils::compareFirmwareVersions(imageDevInfo, *target_devInfo, parsed);
                 if (cmp <= 0) {
                     LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO,
-                        "Target is already up to date (%s); skipping upload of '%s' (image version: %s)",
-                        targetVerStr.c_str(), filename.c_str(), imageVerStr.c_str());
+                        "Ignoring Update. New firmware %s is older than device %s.",
+                        imageVerStr.c_str(), targetVerStr.c_str());
                     cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
                     cmd.resultMsg = "Target is already up to date.";
                     return;
@@ -1242,6 +1274,32 @@ void ISFirmwareUpdater::initialize() {
     updateState.resetState();
 }
 
+
+std::vector<ISFirmwareUpdater::StepInfo> ISFirmwareUpdater::getStepSummary() const {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    std::vector<StepInfo> result;
+    std::map<std::string, size_t> targetIndex;  // targetName -> index in result
+
+    for (const auto& cmd : commands) {
+        if (cmd.step.empty() || cmd.cmd != "target" || !cmd.args.count("target"))
+            continue;
+
+        std::string targetName = cmd.args.at("target");
+        auto it = targetIndex.find(targetName);
+        if (it == targetIndex.end()) {
+            // First time seeing this target — create a new entry
+            targetIndex[targetName] = result.size();
+            result.push_back({targetName, {cmd.step}, getEffectivePolicy(cmd.step)});
+        } else {
+            // Additional step for the same target — just add the step label
+            auto& existing = result[it->second];
+            if (std::find(existing.stepLabels.begin(), existing.stepLabels.end(), cmd.step) == existing.stepLabels.end()) {
+                existing.stepLabels.push_back(cmd.step);
+            }
+        }
+    }
+    return result;
+}
 
 void ISFirmwareUpdater::setStepPolicy(const std::string& stepLabel, update_policy_e policy) {
     stepPolicies[stepLabel].policy = policy;
