@@ -8,6 +8,7 @@ else()
     set(IS_SDK_BUILD_DIR "${IS_SDK_DIR}/build")
 endif()
 
+unset(SDK_LIBRARY_PATH CACHE)
 find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_BUILD_DIR})
 
 if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)

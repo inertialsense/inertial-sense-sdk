@@ -127,6 +127,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     std::string updateAppFirmwareFilename;     // -uf file_name
     std::string updateBootloaderFilename;     // -ub file_name
     std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
+    std::vector<std::string> fwPolicyOverrides; // -fw-set-policy args
     bool forceBootloaderUpdate;                // -fb
     bool bootloaderVerify;                     // -bv
     bool replayDataLog;
