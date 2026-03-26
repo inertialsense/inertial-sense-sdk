@@ -1051,29 +1051,32 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
             target = fwUpdate::TARGET_ISB_IMX5;
 
-        // Resolve target_devInfo when not already populated (e.g., no waitfor command, or explicit -uf-cmd mode)
+        // Resolve target_devInfo when not already populated (e.g., no waitfor command, or explicit -uf-cmd mode).
+        // This must happen for ALL policies — not just IF_NEWER — because the resolved version
+        // determines the IMG_FLAG_useAlternateMD5 flag needed for correct checksum computation.
         if (!target_devInfo) {
             if (((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
                 ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX))) {
                 // Target is the same device as the host — use its dev info directly
                 remoteDevInfo = *devInfo;
                 target_devInfo = &remoteDevInfo;
-            } else if (effectivePolicy == UPDATE_POLICY_IF_NEWER) {
-                // Target info not available — request via firmware update protocol and retry async
+            } else {
+                // Target is a different device (e.g., GPX proxied through IMX) — request version
+                // info from the target via the firmware update protocol
                 if (!pingTimeoutExpires) {
                     pingTimeoutExpires = current_timeMs() + 3000;
-                    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Requesting target version info for version comparison (up to 3s)...");
+                    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Requesting target version info (up to 3s)...");
                 }
                 fwUpdate_requestVersionInfo(target);
                 if (current_timeMs() < pingTimeoutExpires) {
                     return;  // stay CMD_QUEUED, re-enter on next cycle
                 }
-                // Timeout — proceed without target version (will fall through to upload)
+                // Timeout — proceed without target version
                 LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_WARN, "Timed out waiting for target version info; proceeding with upload");
                 pingTimeoutExpires = 0;
             }
 
-            // Set useAlternateMD5 for legacy firmware compatibility
+            // Set useAlternateMD5 for legacy firmware compatibility (only needed for GPX 2.0.0)
             if (target_devInfo && remoteDevInfo.firmwareVer[0] == 2 && remoteDevInfo.firmwareVer[1] == 0 && remoteDevInfo.firmwareVer[2] == 0)
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
             else if (!target_devInfo)
