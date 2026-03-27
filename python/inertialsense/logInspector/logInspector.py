@@ -3,12 +3,12 @@
 import sys, os, signal, ctypes
 
 import shutil, json, io, traceback, yaml, subprocess, re
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView, QFileSystemModel,\
+from PyQt6 import QtCore
+from PyQt6.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView,\
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
-    QTableWidget,QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
-from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
-from PyQt5.QtCore import pyqtSignal, QItemSelectionModel, Qt
+    QTableWidget, QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
+from PyQt6.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem, QFileSystemModel
+from PyQt6.QtCore import pyqtSignal, QItemSelectionModel, Qt
 
 import matplotlib
 matplotlib.use('Agg')
@@ -228,7 +228,7 @@ class MPlotter(QDialog):
                 self.setWindowTitle(title)
             self.setParent(parentDialog)
             self.resize(1110, 900)
-            self.setWindowFlags(Qt.Window)  # Allow this window to go on top or behind main dialog
+            self.setWindowFlags(Qt.WindowType.Window)  # Allow this window to go on top or behind main dialog
 
         self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
         self.plotter = logPlot()
@@ -321,6 +321,8 @@ class LogInspectorWindow(QMainWindow):
             return None
 
     def updatePlot(self):
+        if self.log is None:
+            return
         self.plot(self.selectedPlot(), self.plotargs)
         self.updateWindowTitle()
 
@@ -543,30 +545,30 @@ class LogInspectorWindow(QMainWindow):
         self.VLayoutOptions2x.setSpacing(0)
         self.VLayoutOptions2x.addLayout(self.VLayoutOptions2)
         self.VLayoutOptions2x.addLayout(self.VLayoutOptions3)
-        self.VLayoutOptions2x.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.VLayoutOptions2x.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
         self.LayoutBelowPlotSelection = QHBoxLayout()
         self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions1)
         self.LayoutBelowPlotSelection.addLayout(self.VLayoutOptions2x)
-        self.LayoutBelowPlotSelection.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        self.LayoutBelowPlotSelection.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
         self.LayoutBelowPlotSelection.addWidget(group_box)
 
         self.controlLayout.addLayout(self.LayoutBelowPlotSelection)
 
     def createPlotSelectionPost(self):
-        self.VLayoutOptions1.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.VLayoutOptions2.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.LayoutVTests.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.VLayoutOptions1.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        self.VLayoutOptions2.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        self.LayoutVTests.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
     def createFileTree(self):
         self.dirModel = QFileSystemModel()
         self.dirModel.setRootPath(self.config["root_path"])
-        self.dirModel.setFilter(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot)
+        self.dirModel.setFilter(QtCore.QDir.Filter.Dirs | QtCore.QDir.Filter.NoDotAndDotDot)
         self.recentDirsPushButton = QPushButton("⋯")
         self.recentDirsPushButton.setFixedWidth(25)
         self.recentDirsPushButton.clicked.connect(self.showRootPathsHistMenu)
         self.upDirPushButton = QPushButton()
-        self.upDirPushButton.setIcon(self.style().standardIcon(QStyle.SP_ArrowUp))
+        self.upDirPushButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowUp))
         self.upDirPushButton.clicked.connect(self.fileTreeUpDir)
         self.dirLineEdit = QLineEdit()
         self.dirLineEdit.setText(self.config["root_path"])
@@ -580,8 +582,8 @@ class LogInspectorWindow(QMainWindow):
         self.fileTree.setColumnHidden(3, True)
         self.fileTree.setMinimumWidth(300)
         self.fileTree.clicked.connect(self.handleTreeViewClick)
-        self.fileTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.fileTree.setSelectionMode(QAbstractItemView.SingleSelection) 
+        self.fileTree.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.fileTree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection) 
         self.fileTree.customContextMenuRequested.connect(self.handleTreeViewRightClick)
         self.fileTree.doubleClicked.connect(self.setTreeViewDirectoryRoot)
         # self.populateRMSCheck(self.config['root_path'])
@@ -635,12 +637,12 @@ class LogInspectorWindow(QMainWindow):
         self.newAppButton.clicked.connect(self.newWindow)
         self.toolLayout.addWidget(self.newAppButton)
 
-        self.toolLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.toolLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         # self.toolLayout.addWidget(QSpacerItem(150, 10, QSizePolicy.Expanding))
 
         self.copyImagePushButton = QPushButton()
         self.copyImagePushButton.setToolTip("Copy the current plot to the system clipboard.")
-        self.copyImagePushButton.setIcon(self.style().standardIcon(QStyle.SP_DialogSaveButton))
+        self.copyImagePushButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         self.toolLayout.addWidget(self.copyImagePushButton)
         self.copyImagePushButton.clicked.connect(self.copyPlotToClipboard)
 
@@ -658,7 +660,7 @@ class LogInspectorWindow(QMainWindow):
         self.downSampleToOne.setToolTip("Set data downsample rate to 1.")
         self.downSampleToOne.setMinimumWidth(1)
         self.downSampleToOne.setMaximumWidth(20)
-        self.downSampleToOne.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        self.downSampleToOne.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed))
         self.downSampleToOne.setText("1")
         self.toolLayout.addWidget(self.downSampleToOne)
         self.downSampleToOne.clicked.connect(self.setDownSampleToOne)
@@ -760,7 +762,7 @@ class LogInspectorWindow(QMainWindow):
 
     def showError(self, e):
         msg = QMessageBox()
-        msg.setIcon(QMessageBox.Critical)
+        msg.setIcon(QMessageBox.Icon.Critical)
         msg.setText("Unable to load log: " + e.__str__())
         msg.setDetailedText(traceback.format_exc())
         msg.exec()
@@ -776,7 +778,7 @@ class LogInspectorWindow(QMainWindow):
         self.fileTree.expand(index)
         # Select the folder
         self.fileTree.setCurrentIndex(index)
-        self.fileTree.selectionModel().select(index, QItemSelectionModel.Select)        
+        self.fileTree.selectionModel().select(index, QItemSelectionModel.SelectionFlag.Select)
         # Scroll to the selected item
         self.fileTree.scrollTo(index)
         
@@ -966,22 +968,22 @@ class LogInspectorWindow(QMainWindow):
             cleanFolder(directory)
         if action == deleteFolderAction:
             msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Question)
+            msg.setIcon(QMessageBox.Icon.Question)
             msg.setText("Are you sure you want to delete this folder?\n\n" + directory)
-            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
             result = msg.exec()
-            if result == QMessageBox.Yes:
+            if result == QMessageBox.StandardButton.Yes:
                 removeDirectory(directory)
 
     def showDeviceInfo(self):
         dlg = DeviceInfoDialog(self.log, self)
         dlg.show()
-        dlg.exec_()
+        dlg.exec()
 
     def showFlashConfig(self):
         dlg = FlashConfigDialog(self.log, self)
         dlg.show()
-        dlg.exec_()
+        dlg.exec()
 
     def plotMPlot(self, mplot, func, args):
         mplot.figure.clear()
@@ -1032,6 +1034,9 @@ def main():
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     app = QApplication(sys.argv)
+    app.styleHints().setColorScheme(Qt.ColorScheme.Light)
+    if os.name == 'nt':
+        app.setStyle('Fusion')
 
     configFilePath = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "log_inspector.yaml")
 
