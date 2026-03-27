@@ -367,9 +367,10 @@ void DeviceRuntimeTests::LogEvent(system_time_t time, std::string str)
     }
     m_log += str;
 
-#if 0   // Print to display
-    std::cout << str;
-#endif
+    if (m_printToDisplay)
+    {   // Print to display
+        std::cout << str;
+    }
 
     // Log to file
     FILE *file = fopen(m_filename.c_str(), "a");

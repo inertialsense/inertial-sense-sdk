@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <istream>
 
-#include "../ISConstants.h"
+#include "ISConstants.h"
 #include <string>
 
 typedef union {
@@ -33,7 +33,7 @@ void md5_init(md5Context_t& context);
  * @param data the bytes to consume into the hash
  * @return a static buffer of 16 unsigned bytes which represent the 128 total bits of the MD5 hash
  */
-void md5_update(md5Context_t& context, const unsigned char *input, unsigned int inputLen);
+void md5_update(md5Context_t& context, const unsigned char *input, size_t inputLen);
 
 /**
  * updates the passed reference to an array, the current running md5 sum.
@@ -43,7 +43,7 @@ void md5_final(md5Context_t& context, md5hash_t& hash);
 
 // Hash generation functions
 void md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data);
-int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5);
+int md5_stream_details(std::istream& is, size_t& filesize, md5hash_t& md5);
 int md5_file_details(const std::string& filename, size_t& filesize, md5hash_t& md5);
 
 // Hash match check

@@ -22,22 +22,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 #include <vector>
 
+#include "core/msg_logger.h"
+#include "message_stats.h"
 #include "ISConstants.h"
-#include "ISTcpClient.h"
-#include "ISTcpServer.h"
 #include "ISLogger.h"
 #include "ISDisplay.h"
 #include "ISUtilities.h"
-#include "ISSerialPort.h"
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISDevice.h"
-#include "ISClient.h"
 #include "message_stats.h"
-#include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
+
+#include "PortManager.h"
+#include "DeviceManager.h"
 
 extern "C"
 {
@@ -50,33 +51,35 @@ extern "C"
 
 class InertialSense;
 
-typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
-typedef std::function<void(InertialSense* i, p_ack_t* ack, unsigned char packetIdentifier, int pHandle)> pfnHandleAckData;
-typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pHandle);
+typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
+typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
+typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
+typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)> pfnHandleAckData;
 
 /**
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
 */
-class InertialSense : public iISTcpServerDelegate
+class InertialSense
 {
 public:
+    PortManager& portManager = PortManager::getInstance();
+    DeviceManager& deviceManager = DeviceManager::getInstance();
+
     struct com_manager_cpp_state_t
     {
-        // per device vars
-        std::vector<ISDevice> devices;
-
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
-        pfnHandleAckData binaryAckCallback;     // acknowledgment command and set data callback
-#define SIZE_BINARY_CALLBACK	256
-        pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK];
-        pfnStepLogFunction stepLogFunction;
-        InertialSense* inertialSenseInterface;
-        char* clientBuffer;
-        int clientBufferSize;
-        int* clientBytesToSend;
-        int16_t discoveryTimeout = 5000;
+        pfnHandleAckData binaryAckCallback;    // acknowledgment command and set data callback
+#define SIZE_BINARY_CALLBACK    256
+        pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK] = {};
+        pfnStepLogFunction stepLogFunction = nullptr;
+        InertialSense* inertialSenseInterface = nullptr;
+        char* clientBuffer = nullptr;
+        int clientBufferSize = 0;
+        int* clientBytesToSend = 0;
+        int16_t discoveryTimeout = DeviceManager::DISCOVERY__DEFAULT_TIMEOUT;
     };
 
     typedef struct
@@ -84,6 +87,14 @@ public:
         std::string port;
         std::string error;
     } bootload_result_t;
+
+
+    /**
+    * Constructor
+    */
+    InertialSense();
+
+    InertialSense(std::vector<PortFactory*> pFactories, std::vector<DeviceFactory*> dFactories);
 
     /**
     * Constructor
@@ -94,19 +105,22 @@ public:
     * @param callbackRtcm3 RTCM3 received data callback (optional).
     * @param callbackSpartn Spartn received data callback (optional).
     */
-    InertialSense(
-            pfnHandleBinaryData    callbackIsb = NULL,
-            pfnHandleAckData       handlerAck = NULL,
-            pfnIsCommAsapMsg       callbackRmc = NULL,
-            pfnIsCommGenMsgHandler callbackNmea = NULL,
-            pfnIsCommGenMsgHandler callbackUblox = NULL,
-            pfnIsCommGenMsgHandler callbackRtcm3 = NULL,
-            pfnIsCommGenMsgHandler callbackSpartn = NULL );
+    explicit InertialSense(
+            pfnHandleBinaryData     callbackIsb,
+            pfnHandleAckData        callbackHandlerAck = NULL,
+            pfnComManagerRmcHandler callbackRmc = NULL,
+            pfnIsCommGenMsgHandler  callbackNmea = NULL,
+            pfnIsCommGenMsgHandler  callbackUblox = NULL,
+            pfnIsCommGenMsgHandler  callbackRtcm3 = NULL,
+            pfnIsCommGenMsgHandler  callbackSpartn = NULL,
+            pfnOnNewDeviceHandler   callbackNewDevice = NULL);
 
     /**
     * Destructor
     */
     virtual ~InertialSense();
+
+    static InertialSense* getLastInstance();
 
     /**
     * Closes any open connection and then opens the device
@@ -130,26 +144,21 @@ public:
     /**
     * Get all open serial port names
     */
-    std::vector<std::string> GetPorts();
+    std::vector<std::string> GetPortNames() { return {}; }
 
     /**
-    * Get the number of open devices
-    * @return the number of open devices
-    */
-    size_t DeviceCount();
-
-    /**
-     * Returns a vector of available, connected devices
-     * @return
+     * @return a vector of available ports
+     * NOTE that this may return ports which do not have a corresponding ISDevice
      */
-    std::vector<ISDevice>& getDevices();
+    std::set<port_handle_t> getPorts() { return portManager; }
 
+    int DeviceCount() { return (int)deviceManager.DeviceCount(); }
 
-    /**
-     * Returns a reference to an is_device_t struct that contains information about the specified device
-     * @return
-     */
-    ISDevice& getDevice(uint32_t index);
+    std::list<device_handle_t>& getDevices() { return deviceManager; };
+
+    device_handle_t getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
+
+    device_handle_t getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -160,7 +169,7 @@ public:
     /**
      * Register a callback handler for data stream errors.
      */
-    void setErrorHandler(pfnIsCommParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
+    void setErrorHandler(pfnComManagerParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
 
     /**
     * Enable or disable logging - logging is disabled by default
@@ -209,289 +218,59 @@ public:
     bool LoggerEnabled() { return m_logger.Enabled(); }
 
     /**
-	 * @brief Get pointer to ISLogger
-	 * 
-	 * @return cISLogger* ISLogger pointer
-	 */
-	cISLogger* Logger() { return &m_logger; }
-
-	/**
-	 * @brief Log raw data directly to ISLogger
-	 * 
-	 * @param device Index of device (pHandle) for raw data.
-	 * @param dataSize Number of bytes of raw data.
-	 * @param data Pointer to raw data.
-	 */
-	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
-
-	/**
-	* Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
-	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
-	* @return true if connection opened, false if failure
-	*/
-	bool OpenConnectionToServer(const std::string& connectionString);
-
-    /**
-    * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
-    * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
-    * @return true if success, false if error
-    */
-    bool CreateHost(const std::string& connectionString);
-
-    /**
-    * Close any open connection to a server
-    */
-    void CloseServerConnection();
-
-    /**
-    * Request device(s) version information (dev_info_t).
-    */
-    void QueryDeviceInfo();
-
-    /**
-    * Turn off all messages.  Current port only if allPorts = false.
-    */
-    void StopBroadcasts(bool allPorts=true);
-
-    /**
-     * Current data streaming will continue streaming at boot. 
-     */
-    void SavePersistent();
-
-    /**
-     * Software reset device(s) with open serial port.
-     */
-    void SoftwareReset();
-
-    /**
-     * @brief Request a specific data set by DID.
+     * @brief Get pointer to ISLogger
      * 
-     * @param dataId Data set ID  
-     * @param length Byte length of data requested.  Zero means entire data set.
-     * @param offset Byte offset into data
-     * @param period Broadcast period multiple
+     * @return cISLogger* ISLogger pointer
      */
-    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
+    cISLogger* Logger() { return &m_logger; }
 
     /**
-    * Send data to the IMX - this is usually only used for advanced or special cases, normally you won't use this method
-    * @param dataId the data id of the data to send
-    * @param data the data to send
-    * @param length length of data to send
-    * @param offset offset into data to send at
-    */
-    void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
-
-    /**
-    * Send raw data to the IMX - (byte swapping disabled)
-    * @param dataId the data id of the data to send
-    * @param data the data to send
-    * @param length length of data to send
-    * @param offset offset into data to send at
-    */
-    void SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length = 0, uint32_t offset = 0);
-
-    /**
-    * Send raw (bare) data directly to serial port
-    * @param data the data to send
-    * @param length length of data to send
-    */
-    void SendRaw(uint8_t* data, uint32_t length);
-
-    /**
-    * Get the device info
-    * @param pHandle the pHandle to get device info for
-    * @return the device info
-    */
-    const dev_info_t DeviceInfo(int pHandle = 0);
-
-    /**
-    * Get current device system command
-    * @param pHandle the pHandle to get sysCmd for
-    * @return current device system command
-    */
-    system_command_t GetSysCmd(int pHandle = 0);
-
-    /**
-    * Set device configuration
-    * @param pHandle the pHandle to set sysCmd for
-    * @param command system command value (see eSystemCommand)
-    */
-    void SetSysCmd(const uint32_t command, int pHandle = -1);
-
-    /**
-     * Sends message to device to set devices Event Filter
-     * param Target: 0 = device, 
-     *               1 = forward to device GNSS 1 port (ie GPX), 
-     *               2 = forward to device GNSS 2 port (ie GPX),
-     *               else will return
-     *       pHandle: Send in target COM port. 
-     *                If arg is < 0 default port will be used 
-    */
-    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, int pHandle = -1);
-
-    /**
-     * @brief IMX/GPX Flash Configuration Synchronization
-     *
-     * The InertialSense class maintains synchronization between the host's local flash
-     * configuration and the configuration stored on the connected IMX or GPX device.
+     * @brief Log raw data directly to ISLogger
      * 
-     * Key Concepts:
-     * - Each device maintains local copies of flash configuration:
-     *      - IMX: device.imxFlashCfg
-     *      - GPX: device.gpxFlashCfg
-     * - The device also reports its flash configuration checksum via:
-     *      - IMX: device.sysParams.flashCfgChecksum
-     *      - GPX: device.gpxStatus.flashCfgChecksum
-     * 
-     * Synchronization Mechanism:
-     * - Periodically (every SYNC_FLASH_CFG_CHECK_PERIOD_MS), SyncFlashConfig() compares
-     *   the local checksum with the device-reported checksum.
-     * - If mismatched, the full flash configuration is requested from the device.
-     * - Uploads are initiated via SetImxFlashConfig() / SetGpxFlashConfig(), which:
-     *      - Compute and send only the changed regions of the configuration.
-     *      - Update tracking variables (upload time, expected checksum).
-     * - The Update() function drives both synchronization and upload completion.
-     * 
-     * Validation:
-     * - ImxFlashConfigSynced() / GpxFlashConfigSynced() return true if:
-     *      - Local and device checksums match.
-     *      - No upload is pending.
-     *      - No upload failure is detected.
-     * - ImxFlashConfigUploadFailure() / GpxFlashConfigUploadFailure() detect if a
-     *   configuration update was rejected or not yet received by the device.
-     * - WaitForImxFlashCfgSynced() / WaitForGpxFlashCfgSynced() can be used to block
-     *   until synchronization is complete.
+     * @param device device associated with this raw data.
+     * @param dataSize Number of bytes of raw data.
+     * @param data Pointer to raw data.
      */
+    void LogRawData(device_handle_t device, int dataSize, const uint8_t* data);
 
     /**
-    * Get the flash config, returns the latest flash config read from the IMX flash memory
-    * @param flashCfg the flash config value
-    * @param pHandle the port pHandle to get flash config
-    * @return bool whether the flash config is valid and currently synchronized
-    */
-    bool ImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
-    bool GpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
+     * Locates the device associated with the specified port
+     * @param port
+     * @return device_handle_t which is connected to port, otherwise NULL
+     */
+    device_handle_t DeviceByPort(port_handle_t port = 0);
 
     /**
-    * Indicates whether the current flash config has been downloaded and available via ImxFlashConfig()
-    * @param pHandle the port pHandle to get flash config
-    * @return bool whether the flash config is valid and currently synchronized
-    */
-    bool ImxFlashConfigSynced(int pHandle = 0);
-    bool GpxFlashConfigSynced(int pHandle = 0);
+     * Locates the device associated with the specified port name
+     * @param port
+     * @return device_handle_t which is connected to port, otherwise NULL
+     */
+    device_handle_t DeviceByPortName(const std::string& port_name);
 
     /**
-     * @brief Failed to upload flash configuration for any reason.   
+     * @return a list of discovered ports which are not currently associated with a open device
+     */
+    std::vector<std::string> checkForNewPorts(std::vector<std::string>& oldPorts);
+
+    /**
+     * @brief Process received data from a port
      * 
-     * @param pHandle the port pHandle to get flash config for
-     * @return true Flash config upload was either not received or rejected.
+     * @param port 
+     * @param data 
      */
-    bool ImxFlashConfigUploadFailure(int pHandle = 0);
-    bool GpxFlashConfigUploadFailure(int pHandle = 0);
-
-    /**
-    * Set the flash config and update flash config on the IMX flash memory
-    * @param flashCfg the flash config
-    * @param pHandle the pHandle to set flash config for
-    * @return true if success
-    */
-    bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
-    bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
-
-    /**
-     * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
-     * 
-     * @param pHandle the port pHandle
-     * @return false When failed to synchronize
-     */
-    bool WaitForImxFlashCfgSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS, int pHandle = 0);
-    bool WaitForGpxFlashCfgSynced(bool forceSync = false, uint32_t timeout = SYNC_FLASH_CFG_TIMEOUT_MS, int pHandle = 0);
-
-    void ProcessRxData(int pHandle, p_data_t* data);
-    void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
-
-    /**
-     * Request a specific device broadcast binary data
-     * @param pHandle the device's pHandle to request data from
-     * @param dataId the data id (DID_* - see data_sets.h) to broadcast
-     * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
-     * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
-     */
-    bool BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple);
-
-    /**
-    * Broadcast binary data
-    * @param dataId the data id (DID_* - see data_sets.h) to broadcast
-    * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
-    * @param callback optional callback for this dataId
-    * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
-    */
-    bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
-
-    /**
-    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS, stream data necessary for post processing.
-    * @param rmcPreset realtimeMessageController preset
-    */
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
-
-    /**
-    * Get the number of bytes read or written to/from client or server connections
-    * @return byte count
-    */
-    uint64_t ClientServerByteCount() { return m_clientServerByteCount; }
-
-    /**
-    * Get the current number of client connections
-    * @return int number of current client connected
-    */
-    int ClientConnectionCurrent() { return m_clientConnectionsCurrent; }
-
-    /**
-    * Get the total number of client connections
-    * @return int number of total client that have connected
-    */
-    int ClientConnectionTotal() { return m_clientConnectionsTotal; }
-
-    /**
-    * Get TCP server IP address and port (i.e. "127.0.0.1:7777")
-    * @return string IP address and port
-    */
-    std::string TcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
-
-    /**
-    * Get Client connection info string (i.e. "127.0.0.1:7777")
-    * @return string IP address and port
-    */
-    std::string ClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
+    void ProcessRxData(port_handle_t port, p_data_t* data);
+    void ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize);
 
     /**
     * Flush all data from receive port
     */
     void FlushRx()
     {
-        uint8_t buf[10];
-        for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+        for (auto device : deviceManager)
         {
-            if (!serialPortIsOpen(&m_comManagerState.devices[i].serialPort))
-            {
-                while (serialPortReadTimeout(&(m_comManagerState.devices[i].serialPort), buf, sizeof(buf), 0));
-            }
+            if (device->isConnected())
+                portFlush(device->port);
         }
-    }
-
-    /**
-    * Get access to the underlying serial port
-    * @param pHandle the pHandle to get the serial port for
-    * @return the serial port
-    */
-    serial_port_t* SerialPort(int pHandle = 0)
-    {
-        if ((size_t)pHandle >= m_comManagerState.devices.size())
-        {
-            return NULL;
-        }
-        return &(m_comManagerState.devices[pHandle].serialPort);
     }
 
     /**
@@ -512,6 +291,7 @@ public:
     */
     void EnableDeviceValidation(bool enable) { m_enableDeviceValidation = enable; }
 
+#if !PLATFORM_IS_EMBEDDED
     /**
     * Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
     * Please ensure that all other connections to the com port are closed before calling this function.
@@ -525,46 +305,23 @@ public:
             const std::string& blFileName,
             bool forceBootloaderUpdate,
             int baudRate = IS_BAUDRATE_921600,
-            ISBootloader::pfnBootloadProgress uploadProgress = NULLPTR,
-            ISBootloader::pfnBootloadProgress verifyProgress = NULLPTR,
-            ISBootloader::pfnBootloadStatus infoProgress = NULLPTR,
+            fwUpdate::pfnProgressCb uploadProgress = NULLPTR,
+            fwUpdate::pfnProgressCb verifyProgress = NULLPTR,
+            fwUpdate::pfnStatusCb infoProgress = NULLPTR,
             void (*waitAction)() = NULLPTR
     );
+#endif
 
     /**
-     * V2 firmware update mechanism. Calling this function will attempt to inititate a firmware update with the targeted device(s) on the connected port(s), with callbacks to provide information about the status
+     * V2 firmware update mechanism. Calling this function will attempt to initiate a firmware update with the targeted device(s), with callbacks to provide information about the status
      * of the update process.
-     * @param comPort
-     * @param baudRate
      * @param targetDevice the device which all commands should be directed to
      * @param cmds a vector of strings to be interpreted as commands, performed in sequence.  ie ["slot=0","upload=myfirmware.bin","slot=1","upload=configuration.conf","softReset"]
-     * @param uploadProgress
-     * @param verifyProgress
-     * @param infoProgress
-     * @param waitAction
-     * @param LoadFlashConfig
+     * @param infoProgress a callback method which provides progress information about the update
+     * @param waitAction a callback which is checked periodically to see if the update should be cancelled
      * @return
      */
-    is_operation_result updateFirmware(
-            const std::string& comPort,
-            int baudRate,
-            fwUpdate::target_t targetDevice,
-            std::vector<std::string> cmds,
-            ISBootloader::pfnBootloadProgress uploadProgress,
-            ISBootloader::pfnBootloadProgress verifyProgress,
-            ISBootloader::pfnBootloadStatus infoProgress,
-            void (*waitAction)()
-    );
-
-    is_operation_result updateFirmware(
-            ISDevice& device,
-            fwUpdate::target_t targetDevice,
-            std::vector<std::string> cmds,
-            ISBootloader::pfnBootloadProgress uploadProgress,
-            ISBootloader::pfnBootloadProgress verifyProgress,
-            ISBootloader::pfnBootloadStatus infoProgress,
-            void (*waitAction)()
-    );
+    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb fwUpdateStatus, void (*waitAction)() = nullptr);
 
     /**
      * @return true if all devices have finished all firmware update steps
@@ -584,114 +341,303 @@ public:
     int getFirmwareUpdatePercent();
 
     /**
-    * Gets current update status for selected device index
-    * @param deviceIndex
-    */
-    fwUpdate::update_status_e getUpdateStatus(uint32_t deviceIndex);
+     * Step through all known devices; performing validation, data processing, and firmware upgrades.
+     * This should be called at periodic intervals in order to allow all devices to process.
+     * TODO: Ideally this should not be called, and each device will have its own thread to process
+     *   its own data, etc.  But, that doesn't exists yet.
+     */
+    void step() { for (auto device : deviceManager) { device->step(); } }
 
     /**
-    * Gets device index from COM port
-    * @param COM port
+    * Request device(s) version information (dev_info_t) for all connected devices. This does not wait for, or
+    * validate the response.
     */
-    int getUpdateDeviceIndex(const char* com);
+    static void QueryDeviceInfo();
 
     /**
-    * Gets current devInfo using device index
-    * @param dev_info_t devI
-    * @param uint32_t deviceIndex
+    * Turn off broadcasting of all messages on all connected devices.
+     * @param allPorts if true (default), will instruct each device to stop all message broadcasts on all device
+     *   ports (Ser0, Ser1, Ser2, etc). Otherwise (false), only the device port which is directly connected to
+     *   this host will stop broadcasting; the device will continue to broadcast on its other ports.
     */
-    bool getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex);
+    static void StopBroadcasts(bool allPorts=true);
+
+    /**
+     * Persists the currently streaming/broadcasting messages to flash memory, and enables broastcasts on boot.
+     * This will cause the device to automatically resume streaming of its current message sets on all configured
+     * ports each time the device reboots.
+     */
+    static void SavePersistent();
+
+    /**
+     * Instructs all connected devices to perform a software reset.
+     */
+    static void SoftwareReset();
+
+    /**
+     * @brief Request a specific data set by DID.
+     *
+     * @param dataId Data set ID
+     * @param length Byte length of data requested.  Zero means entire data set.
+     * @param offset Byte offset into data
+     * @param period Broadcast period multiple
+     */
+    static void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
+
+    /**
+    * Send packet payload data to all devices; the payload data is wrapped according to the pktInfo parameter
+    * and the appropriate checksum is calculated and appended.  This function can be used to send non-standard packets
+    * and data sets, such as RTCM, UBLOX, etc.
+    * @param pktInfo a field indication the type of, and flags for, the packet to be sent
+    * @param dataId the data id of the data to send
+    * @param payload the data to send
+    * @param length length of data to send
+    * @param offset offset into data to send at
+     */
+    static void Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0);
+
+    /**
+     * Send IS packet payload data to all devices; the payload data is wrapped in an ISB packet with the specified dataId
+     * and the appropriate checksum is calculated and appended.  This function can be used to send a subset of a data set.
+     * For example, to set only a portion of DID_FLASH_CONFIG, you could use SendData like this:
+     *   SendData(DID_FLASH_CONFIG, &cfg.refLla[0], sizeof(double)*3, offsetof(nvm_flash_cfg_t, refLla));
+     * @param dataId the data id of the data to send
+     * @param payload the data to send
+     * @param length length of data to send
+     * @param offset offset into data to send at
+     */
+    static void SendData(eDataIDs dataId, void* data, uint32_t length, uint32_t offset = 0);
+
+    /**
+    * Send raw (bare) data directly to serial port
+    * @param data the data to send
+    * @param length length of data to send
+    */
+    static void SendRaw(void* data, uint32_t length);
+
+    /**
+     * Send the specified string as a NMEA sentence.  This function will insert the prefix and calculate the checksum if they
+     * are not already provided.
+     * @param nmeaMsg the sentence to send
+     */
+    static void SendNmea(const std::string& nmeaMsg);
+
+    /**
+     * Request a specific device broadcast binary data
+     * @param port the device's port to request data from
+     * @param dataId the data id (DID_* - see data_sets.h) to broadcast
+     * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+     * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
+     */
+    static void BroadcastBinaryData(uint32_t dataId, int periodMultiple);
+
+    /**
+    * Broadcast binary data
+    * @param dataId the data id (DID_* - see data_sets.h) to broadcast
+    * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+    * @param callback optional callback for this dataId
+    * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
+    */
+    // bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
+
+    /**
+    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS, stream data necessary for post processing.
+    * @param rmcPreset realtimeMessageController preset
+    */
+    static void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
+
+    /**
+    * Get current device system command
+    * @param port the port to get sysCmd for
+    * @return current device system command
+    */
+    system_command_t GetSysCmd(port_handle_t port = 0);
+
+    /**
+    * Set device configuration
+    * @param port the port to set sysCmd for
+    * @param command system command value (see eSystemCommand)
+    */
+    void SetSysCmd(const uint32_t command, port_handle_t port = 0);
+
+    /**
+     * Sends message to device to set devices Event Filter
+     * param Target: 0 = device,
+     *               1 = forward to device GNSS 1 port (ie GPX),
+     *               2 = forward to device GNSS 2 port (ie GPX),
+     *               else will return
+     *       port: Send in target COM port.
+     *                If arg is < 0 default port will be used
+    */
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port = 0);
+
+    // TODO - These have (generally) all been moved into ISDevice and are no longer needed here.
+    //  these DO NOT operate a all devices, but on a single device, which is redudant at best
+    //  and ambiguous at worst.
+    //  Kyle Mallory - Remove by 7/23/2025
+
+    /**
+    * Get the flash config, returns the latest flash config read from the IMX flash memory
+    * @param flashCfg the flash config value
+    * @param port the port to get flash config for
+    * @return bool whether the flash config is valid, currently synchronized
+    */
+    bool ImxFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
+    bool GpxFlashConfig(gpx_flash_cfg_t &flashCfg, port_handle_t port = 0);
+
+    /**
+    * Set the flash config and update flash config on the IMX flash memory
+    * @param flashCfg the flash config
+    * @param port the port to set flash config for
+    * @return true if success
+    */
+    bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
+    bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, port_handle_t port = 0);
+
+    /**
+    * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
+    * @param port the port to get flash config for
+    * @return true if the flash config is valid, currently synchronized, otherwise false.
+    */
+    bool ImxFlashConfigSynced(port_handle_t port = 0);
+    bool GpxFlashConfigSynced(port_handle_t port = 0);
+
+    /**
+     * @brief Failed to upload flash configuration for any reason.
+     *
+     * @param port the port to get flash config for
+     * @return true Flash config upload was either not received or rejected.
+     */
+    bool ImxFlashConfigUploadFailure(port_handle_t port = 0);
+    bool GpxFlashConfigUploadFailure(port_handle_t port = 0);
+
+    /**
+     * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized.
+     *
+     * @param port the port
+     * @return false When failed to synchronize
+     */
+    bool WaitForImxFlashCfgSynced(port_handle_t port = 0);
+    bool WaitForGpxFlashCfgSynced(port_handle_t port = 0);
 
     /**
      * @brief SaveImxFlashConfigToFile
      * @param path - Path to YAML flash config file
      * @param pHandle - Handle of current device
+     * @return true for failure to upload file, false for success.
      */
-    bool SaveImxFlashConfigToFile(std::string path, int pHandle = 0);
-    bool SaveGpxFlashConfigToFile(std::string path, int pHandle = 0);
+    bool SaveImxFlashConfigToFile(std::string path, port_handle_t port = 0);
+    bool SaveGpxFlashConfigToFile(std::string path, port_handle_t port = 0);
 
     /**
-     * @brief LoadFlashConfig
+     * @brief LoadFlashConfigFromFile
      * @param path - Path to YAML flash config file
      * @param pHandle - Handle of current device
-     * @return -1 for failure to upload file, 0 for success.
+     * @return true for failure to upload file, false for success.
      */
-    bool LoadImxFlashConfigFromFile(std::string path, int pHandle = 0);
-    bool LoadGpxFlashConfigFromFile(std::string path, int pHandle = 0);
+    bool LoadImxFlashConfigFromFile(std::string path, port_handle_t port = 0);
+    bool LoadGpxFlashConfigFromFile(std::string path, port_handle_t port = 0);
 
-    std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
-    std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
+    /**
+     * @brief Uploads IMX Calibration from file to device
+     * @param path File path to calibration JSON file
+     * @param port Port handle to device. If NULL, first device found will be used.
+     * @return true on success
+     * @return false on failure
+     */
+    bool UploadImxCalibrationFromFile(std::string path, port_handle_t port = 0);
+
+    /**
+     * @brief Enable or disable automatic discovery on network ports.
+     *
+     * When enabled, network port discovery (including mDNS-based discovery) is performed
+     * on all supported network ports. When disabled, network ports are not automatically
+     * discovered.
+     *
+     * Calling this function will clear existing network port factories and close any
+     * associated ports managed by them, effectively resetting network discovery state.
+     * It is safe to call while ports are open, but any open network ports may be closed
+     * and will need to be re-established if still required.
+     *
+     * @param enable Set to true to enable discovery on all network ports, or false to
+     *               disable discovery and clear existing network discovery state.
+     */
+    void SetNetworkPortDiscovery(bool enable = false);
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
-    ISDevice* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
+
+    /**
+     * Registers a custom handler to instantiate discovered devices. Default behavior is to
+     * create new ISDevice instances for each new device discovered. Setting a NewDeviceHandler
+     * to a custom function allows for instancing a custom ISDevice subclass and/or doing any
+     * additional initialization of that device at creation. The handler is provided the port
+     * and the device info for the newly discovered device.
+     * @param handler a function pointer to be called when a new device is discovered
+     * @return the previously registered handler, if any
+     */
+    pfnOnNewDeviceHandler registerNewDeviceHandler(pfnOnNewDeviceHandler handler) {
+        pfnOnNewDeviceHandler oldHandler = m_newDeviceHandler;
+        m_newDeviceHandler = handler;
+        return oldHandler;
+    }
+
+    template<typename Func>
+    bool WithDevice(port_handle_t port, Func&& func)
+    {
+        device_handle_t device = (port == NULL) ? deviceManager.front() : deviceManager.getDevice(port);
+        return (device ? func(device) : false);
+    }
 
     static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
     static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
 protected:
-    bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
-    void OnClientConnecting(cISTcpServer* server) OVERRIDE;
-    void OnClientConnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
-    void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
-    void OnClientDisconnected(cISTcpServer* server, is_socket_t socket) OVERRIDE;
+    static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
 
 private:
     uint32_t m_timeMs;
     InertialSense::com_manager_cpp_state_t m_comManagerState;
-    pfnIsCommAsapMsg       m_handlerRmc = NULLPTR;
-    pfnIsCommGenMsgHandler m_handlerNmea = NULLPTR;
-    pfnIsCommGenMsgHandler m_handlerUblox = NULLPTR;
-    pfnIsCommGenMsgHandler m_handlerRtcm3 = NULLPTR;
-    pfnIsCommGenMsgHandler m_handlerSpartn = NULLPTR;
-    pfnIsCommParseErrorHandler m_handlerError = NULLPTR;
+    pfnOnNewDeviceHandler m_newDeviceHandler = NULLPTR;
+    pfnOnCloneDeviceHandler m_cloneDeviceHandler = NULLPTR;
+    pfnIsCommGenMsgHandler  m_handlerNmea = NULLPTR;
+    pfnIsCommGenMsgHandler  m_handlerUblox = NULLPTR;
+    pfnIsCommGenMsgHandler  m_handlerRtcm3 = NULLPTR;
+    pfnIsCommGenMsgHandler  m_handlerSpartn = NULLPTR;
+    pfnComManagerRmcHandler m_handlerRmc = NULLPTR;
+    pfnComManagerParseErrorHandler m_handlerError = NULLPTR;
+
     cISLogger m_logger;
     void* m_logThread;
     cMutex m_logMutex;
-    std::map<int, std::vector<p_data_buf_t>> m_logPackets;
+    std::map<port_handle_t, std::vector<p_data_buf_t>> m_logPackets;
     time_t m_lastLogReInit;
 
     char m_clientBuffer[512];
     int m_clientBufferBytesToSend;
     bool m_forwardGpgga;
 
-    cISTcpServer m_tcpServer;
-    cISSerialPort m_serialServer;
-    cISStream* m_clientStream;				// Our client connection to a server
-    uint64_t m_clientServerByteCount;
-    int m_clientConnectionsCurrent = 0;
-    int m_clientConnectionsTotal = 0;
-    mul_msg_stats_t m_clientMessageStats = {};
-
+    int m_baudRate = IS_BAUDRATE_DEFAULT;
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
-    com_manager_init_t m_cmInit;
-    com_manager_port_t *m_cmPorts;
-    is_comm_instance_t m_gpComm;
-    uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
-    mul_msg_stats_t m_serverMessageStats = {};
-    unsigned int m_syncCheckTimeMs = 0;
+
+    std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
+
+    std::set<port_handle_t> portsToValidate;    //!< ports which were discovered but have not been validated as an ISDevice
+
 
     // returns false if logger failed to open
     bool UpdateServer();
-    bool UpdateClient();
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
-    bool HasReceivedDeviceInfo(size_t index);
     bool HasReceivedDeviceInfoFromAllDevices();
-    void RemoveDevice(size_t index);
-    bool OpenSerialPorts(const char* port, int baudRate);
-    void CloseSerialPorts(bool drainBeforeClose = false);
+    bool OpenPorts(const char* port, int baudRate);
+    void ClosePorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
-    static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
-    static void BootloadStatusUpdate(void* obj, const char* str);
+    static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
-    void CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t did);
-    void SyncFlashConfig(unsigned int timeMs);
-    void DeviceSyncFlashCfg(int devIndex, unsigned int timeMs, uint16_t flashCfgDid, uint16_t syncDid, unsigned int &uploadTimeMs, uint32_t &flashCfgChecksum, uint32_t &syncChecksum, uint32_t &uploadChecksum);
-    bool UploadFlashConfigDiff(int pHandle, uint8_t* newData, uint8_t* curData, size_t sizeBytes, uint32_t did, uint32_t& uploadTimeMsOut, uint32_t& checksumOut);
-    void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
-    bool ValidFlashCfgCksum(uint32_t checksum) { return (checksum != 0xFFFFFFFF); }
+    void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory);
+    void deviceManagerHandler(uint8_t event, device_handle_t device);
 };
 
 #endif

@@ -14,9 +14,9 @@
 
 #if defined(GPX_GNSS_F9P)
     #error "F9P defined. Are you sure want to do this?  If so comment this line out in rtk_defines.h"
-    #define L1_L5_RTK   0		// Use second slot for L2 
+    #define L1_L5_RTK   0        // Use second slot for L2 
 #else
-    #define L1_L5_RTK   1		// Use second slot for L5 
+    #define L1_L5_RTK   1        // Use second slot for L5 
 #endif
 
 // #if defined(RTK_EMBEDDED)

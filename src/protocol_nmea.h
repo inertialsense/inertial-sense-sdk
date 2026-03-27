@@ -1,10 +1,13 @@
 #ifndef PROTOCOL_NMEA_H_
 #define PROTOCOL_NMEA_H_
 
+#include <vector>
+#include <string>
+
 #include "data_sets.h"
 #include "time_conversion.h"
 
-#if !defined(GPX_1) && !defined(IMX_5) && !defined(NAV_POST_PROCESS)
+#if !defined(GPX_1) && !defined(IS_IMX) && !defined(NAV_POST_PROCESS)
 extern uint32_t g_cpu_msec;
 #endif
 
@@ -17,8 +20,8 @@ extern uint32_t g_cpu_msec;
 
 enum eNmeaProtocolVersion
 {
-    NMEA_PROTOCOL_2P3 		= 230,	// 2.3 (Default version)
-    NMEA_PROTOCOL_4P10 		= 410,	// 4.10
+    NMEA_PROTOCOL_2P3   = 230,    // 2.3 (Default version)
+    NMEA_PROTOCOL_4P10  = 410,    // 4.10
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -33,6 +36,10 @@ void nmea_set_protocol_version(int protocol_version);
 void nmea_set_gnss_id(int gnssId);
 uint32_t nmea_compute_checksum(uint8_t* str, int size);
 void nmea_sprint(char buf[], int bufSize, int &offset, const char *fmt, ...);
+inline void nmea_sprint_f(char* buf, int bufSize, int& offset, const char* fmt, float v)
+{ 
+    nmea_sprint(buf, bufSize, offset, fmt, (double)v);
+}
 int nmea_sprint_footer(char* a, int aSize, int &n);
 char *ASCII_find_next_field(char *str);
 char *ASCII_to_u8(uint8_t *val, char *ptr);
@@ -45,7 +52,6 @@ char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos);
-void nmea_GPSTimeToUTCTimeMsPrecision_ZDA_debug(char* a, int aSize, int &offset, gps_pos_t &pos);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////
@@ -83,8 +89,10 @@ int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
-uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS]);
-uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS]);
+//uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci);
+//uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci);
 // NMEA standard messages
 int nmea_parse_gns(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags=0);
 int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags=0);

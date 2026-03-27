@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.16.3)
 
 project(cltool)
 
@@ -18,6 +18,8 @@ include_directories(
 # Link the InertialSenseSDK static library 
 link_directories(${IS_SDK_DIR})
 
+add_definitions(-DIS_LOG_LEVEL=IS_LOG_LEVEL_MORE_INFO)
+
 if(WIN32)
     # yamlcpp needs to know it's a static lib
     add_definitions(-DYAML_CPP_STATIC_DEFINE)
@@ -28,6 +30,11 @@ add_executable(${PROJECT_NAME}
     src/cltool_main.cpp
     src/cltool.cpp
 )
+
+# Build using C11 and CXX20
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Link IS-SDK libraries to the executable
 include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)

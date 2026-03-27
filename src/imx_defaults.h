@@ -12,9 +12,6 @@ extern "C" {
 #define tNAV_MIN_PERIOD_IMX5_MS_NAV_MODE    7       // W/ GPS
 #define tNAV_MIN_PERIOD_IMX5_MS_AHRS_MODE   5       // No GPS
 #define tNAV_MIN_PERIOD_IMX5_MS_VRS_MODE    4       // No GPS or magnetometer
-#define tNAV_MIN_PERIOD_INS3_MS_NAV_MODE    2       // W/ GPS
-#define tNAV_MIN_PERIOD_INS3_MS_AHRS_MODE   2       // No GPS
-#define tNAV_MIN_PERIOD_INS3_MS_VRS_MODE    2       // No GPS or magnetometer
 
 #define tNAV_MIN_PERIOD_MS_NAV_MODE         tNAV_MIN_PERIOD_IMX5_MS_NAV_MODE        // W/ GPS
 #define tNAV_MIN_PERIOD_MS_AHRS_MODE        tNAV_MIN_PERIOD_IMX5_MS_AHRS_MODE       // No GPS

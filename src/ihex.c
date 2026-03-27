@@ -34,18 +34,18 @@ static int parse_hex_line(char* theline, uint8_t bytes[], int* addr, int* num, i
     
     *num = 0;
     if (theline[0] != ':') return 0;
-    if (strlen(theline) < 11) return 0;		
+    if (strlen(theline) < 11) return 0;        
     ptr = theline+1;
     if (!sscanf(ptr, "%02x", &len)) return 0;
     ptr += 2;
-    if ( strlen(theline) < (11 + ((size_t)len * 2)) ) return 0;
+    if (strlen(theline) < (11 + ((size_t)len * 2))) return 0;
     if (!sscanf(ptr, "%04x", addr)) return 0;
     ptr += 4;
       /* printf("Line: length=%d Addr=%d\n", len, *addr); */
     if (!sscanf(ptr, "%02x", code)) return 0;
     ptr += 2;
     sum = (len & 255) + ((*addr >> 8) & 255) + (*addr & 255) + (*code & 255);
-    while(*num != len) 
+    while (*num != len) 
     {
         if (!sscanf(ptr, "%02hhx", &bytes[*num])) return 0;
         ptr += 2;
@@ -54,15 +54,15 @@ static int parse_hex_line(char* theline, uint8_t bytes[], int* addr, int* num, i
         if (*num >= 256) return 0;
     }
     if (!sscanf(ptr, "%02x", &cksum)) return 0;
-    if ( ((sum & 255) + (cksum & 255)) & 255 ) return 0; /* checksum error */
+    if (((sum & 255) + (cksum & 255)) & 255) return 0; /* checksum error */
     return 1;
 }
 
 static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
 {
-    char line[512];	// Max line length is 256
+    char line[512];    // Max line length is 256
     int addr, n, status;
-    uint8_t bytes[256];	
+    uint8_t bytes[256];    
     int i, lineno=1;
     int minaddr=65536, maxaddr=0;
     bool alreadysetaddr = false;
@@ -71,7 +71,7 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
     uint32_t address = 0;
 
     uint8_t* image_local = malloc(MAX_IHEX_SECTION_LEN);
-    memset(image_local, 0xFF, MAX_IHEX_SECTION_LEN);		// Any unspecified bytes default to 0xFF
+    memset(image_local, 0xFF, MAX_IHEX_SECTION_LEN);    // Any unspecified bytes default to 0xFF
 
     while (!feof(*ihex_file) && !ferror(*ihex_file)) {
 
@@ -88,7 +88,7 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
         // Parse the line
         if (parse_hex_line(line, bytes, &addr, &n, &status))
         {
-            if (status == 0)	// Copy data into memory 
+            if (status == 0)    // Copy data into memory 
             {
                 for (i = 0; i < n; i++)
                 {
@@ -97,22 +97,22 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
                     if (addr > maxaddr) maxaddr = addr;
                     addr++;
 
-                    if (addr > MAX_IHEX_SECTION_LEN) return -1;	// Buffer exceeded
+                    if (addr > MAX_IHEX_SECTION_LEN) return -1;    // Buffer exceeded
                 }
             }
-            else if (status == 1)	// End of file 
+            else if (status == 1)    // End of file 
             {
                 eof = true;
                 break;
             }
-            else if (status == 4)	// Programming location. *should* also work if there are no code == 4 in the hex file
+            else if (status == 4)    // Programming location. *should* also work if there are no code == 4 in the hex file
             {
                 if (alreadysetaddr)
                 {
                     // Go back one line, so the next call to this function gets the address to write to
                     fseek(*ihex_file, last_line, SEEK_SET);
 
-                    break;	// Not finished with file, but reached end of sector	
+                    break;    // Not finished with file, but reached end of sector    
                 }
 
                 address = bytes[1] << 16 | bytes[0] << 24;
@@ -144,14 +144,14 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
 
         memcpy(section->image, &image_local[minaddr], section->len);
 
-        if(image_local) free(image_local);
+        if (image_local) free(image_local);
         
         return eof ? 1 : 0; // Return 1 if end of file reached
     }
 
-    if(image_local) free(image_local);
+    if (image_local) free(image_local);
     
-    return -1;	// Malloc failed or nothing in sector
+    return -1;    // Malloc failed or nothing in sector
 }
 
 static void ihex_unload_section(ihex_image_section_t* section)
@@ -169,7 +169,7 @@ size_t ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image
 {
     FILE* ihex_file;
     ihex_file = fopen(ihex_filename, "r");
-    if(ihex_file==NULL) return 0;
+    if (ihex_file==NULL) return 0;
 
     size_t iter = 0;
     size_t numSections = 0;
@@ -180,9 +180,9 @@ size_t ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image
     do {
         int ret = ihex_load_section(&ihex_file, &image[iter]);
         
-        if (ret < 0) break;	// Error
+        if (ret < 0) break;     // Error
         numSections++;
-        if (ret == 1) break;	    // Last sector in file found (EOF)
+        if (ret == 1) break;    // Last sector in file found (EOF)
     } while (++iter < num_slots);
 
     // ACT ON SECTIONS HERE

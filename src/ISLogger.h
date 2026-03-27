@@ -43,7 +43,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // default logging path if none specified
 #define DEFAULT_LOGS_DIRECTORY          "IS_logs"
-#define DEFAULT_LOGS_MAX_FILE_SIZE      (1024 * 1024 * 5)	// 5 MB
+#define DEFAULT_LOGS_MAX_FILE_SIZE      (1024 * 1024 * 5)    // 5 MB
 
 class cISLogger
 {
@@ -52,7 +52,6 @@ public:
     {
         LOGTYPE_DAT = 0,    // serial
         LOGTYPE_RAW,        // packetized serial.  Supports multiple packet types
-        LOGTYPE_SDAT,       // sorted -- unsupported/deprecated, DO NOT USE!
         LOGTYPE_CSV,
         LOGTYPE_KML,
         LOGTYPE_JSON,
@@ -70,16 +69,16 @@ public:
         uint32_t maxFileSize;                       // Largest size of each individual log file.
         bool useSubFolderTimestamp;                 // Cause each log instance to be written to separate timestamped folder.
         std::string timeStamp;                      // Used to name each log instance directory.  System date and time used if left empty.
-        std::string subDirectory;                   // Write logs into sub-directory of this name inside log instance directory. 
+        std::string subDirectory;                   // Write logs into sub-directory of this name inside log instance directory.
 
-        sSaveOptions(                               // Default Options:
-            eLogType type = LOGTYPE_RAW,            // Raw packetized serial.  
+        sSaveOptions(// Default Options:
+            eLogType type = LOGTYPE_RAW,            // Raw packetized serial.
             float limitPercent = 0.5,               // 50% of total drive
             float limitMb = 0,                      // Drive usage limit in MB.  0 disables this limit
             uint32_t fileSize = 5 * 1024 * 1024,    // 5 MB size of each individual file in log
             bool useTimestamp = true,               // A timestamped subdirectory is created for new log
             std::string subDir = ""                 // Logs will be written into a subdirector of this string name within the timestamped subdirectory this string is not empty
-        ) : logType(type),
+      ) : logType(type),
             driveUsageLimitPercent(limitPercent),
             driveUsageLimitMb(limitMb),
             maxFileSize(fileSize),
@@ -104,7 +103,7 @@ public:
     bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float driveUsageLimitPercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
     // Establish link between devices and this logger
-    std::shared_ptr<cDeviceLog> registerDevice(ISDevice& device);
+    std::shared_ptr<cDeviceLog> registerDevice(device_handle_t device);
     std::shared_ptr<cDeviceLog> registerDevice(uint16_t hdwId, uint32_t serialNo);
     std::shared_ptr<cDeviceLog> registerDevice(dev_info_t& devInfo) { return registerDevice(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber); }
 
@@ -117,6 +116,9 @@ public:
     p_data_buf_t* ReadData(std::shared_ptr<cDeviceLog> devLogger = nullptr);
     p_data_buf_t* ReadData(size_t devIndex);
     p_data_buf_t* ReadNextData(size_t& devIndex);
+    packet_t* ReadPacket(protocol_type_t& ptype, std::shared_ptr<cDeviceLog> devLogger = nullptr);
+    packet_t* ReadPacket(protocol_type_t& ptype, size_t devIndex);
+    packet_t* ReadNextPacket(protocol_type_t& ptype, size_t& devIndex);
     void EnableLogging(bool enabled) { m_enabled = enabled; }
     bool Enabled() { return m_enabled; }
     void CloseAllFiles();
@@ -140,12 +142,15 @@ public:
     std::shared_ptr<cDeviceLog> DeviceLogBySerialNumber(uint32_t serialNo) {
         return (m_devices.count(serialNo) ? m_devices[serialNo] : nullptr);
     }
+
+    void Cleanup();
+
     // bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
     // const dev_info_t* DeviceInfo(unsigned int device = 0);
 
     /**
      * @brief Copy (convert) one log to another log type.
-     * 
+     *
      * @param log Input log
      * @param timestamp Time to use on the output log
      * @param outputDir Directory to write output log
@@ -153,8 +158,8 @@ public:
      * @param maxFileSize Max size of the individual output files
      * @param driveUsageLimitPercent Drive usage limit in percent of total drive space
      * @param driveUsageLimitMb Drive usage limit in MB
-     * @param useSubFolderTimestamp Output logs should be written into a timestamped subdirectory 
-     * @param enableCsvIns2ToIns1Conversion  Convert Ins2 to Ins1 within the log 
+     * @param useSubFolderTimestamp Output logs should be written into a timestamped subdirectory
+     * @param enableCsvIns2ToIns1Conversion  Convert Ins2 to Ins1 within the log
      * @return true if log copy (conversion) output was successful, false if not.
      */
     bool CopyLog(
@@ -163,7 +168,7 @@ public:
         const std::string& outputDir = g_emptyString,
         eLogType logType = LOGTYPE_DAT,
         uint32_t maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE,
-        float driveUsageLimitPercent = 0.5f, 
+        float driveUsageLimitPercent = 0.5f,
         bool useSubFolderTimestamp = true,
         bool enableCsvIns2ToIns1Conversion = true);
     unsigned int Count() { return m_logStats.Count(); }
@@ -206,7 +211,7 @@ public:
 
         for (auto d : DeviceLogs())
         {
-            d->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+            d->SetKmlConfig(m_gpsData, m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
         }
     }
 
@@ -219,10 +224,6 @@ public:
         else if (logTypeString == "kml")
         {
             return cISLogger::eLogType::LOGTYPE_KML;
-        }
-        else if (logTypeString == "sdat")
-        {
-            return cISLogger::eLogType::LOGTYPE_SDAT;
         }
         else if (logTypeString == "json")
         {
@@ -240,6 +241,23 @@ public:
     void PrintIsCommStatus();
     void PrintLogDiskUsage();
 
+    /**
+     * These are static functions which need to use the port_handle_t to identify which cDeviceLog instance they belong to
+     * and then call into that logger as needed...
+     */
+    std::shared_ptr<cDeviceLog> getDeviceLogByPort(port_handle_t port);
+
+    static inline int logPortData(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData) {
+        (void)op; // Suppress unused parameter warning
+        // remember, that as a logger, we GENERALLY are only interested in WRITING data, regardless of whether that data is sent or received.
+        if (!userData)
+            return -1;
+
+        cISLogger* logInstance = (cISLogger*)userData;
+        auto devLog = logInstance->getDeviceLogByPort(port);
+        return (devLog && logInstance->LogData(devLog, len, buf)) ? 1 : -1;
+    }
+
 private:
 #if CPP11_IS_ENABLED
     cISLogger(const cISLogger& copy) = delete;
@@ -247,8 +265,7 @@ private:
     cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-    bool InitDevicesForWriting(std::vector<ISDevice>& devices);
-    void Cleanup();
+    bool InitDevicesForWriting(std::vector<device_handle_t>& devices);
     void PrintProgress();
 
     static time_t GetTime()
@@ -260,38 +277,37 @@ private:
 #endif
     }
 
-    eLogType				m_logType = LOGTYPE_DAT;
-    bool					m_useChunkHeader = true;
-    bool					m_enabled = false;
-    std::string				m_rootDirectory;
-    std::string				m_directory;
-    std::string				m_timeStamp;
+    eLogType        m_logType = LOGTYPE_DAT;
+    bool            m_useChunkHeader = true;
+    bool            m_enabled = false;
+    std::string     m_rootDirectory;
+    std::string     m_directory;
+    std::string     m_timeStamp;
     std::map<uint32_t, std::shared_ptr<cDeviceLog>> m_devices = { };
 
-    uint64_t				m_maxDiskSpace = 0;		// Limit for logging.  Zero to disable file culling drive management.
-    uint64_t				m_usedDiskSpace = 0;	// Size of all logs
-    uint32_t				m_maxFileSize = 0;
-    cLogStats				m_logStats;
+    uint64_t        m_maxDiskSpace = 0;        // Limit for logging.  Zero to disable file culling drive management.
+    uint64_t        m_usedDiskSpace = 0;    // Size of all logs
+    uint32_t        m_maxFileSize = 0;
+    cLogStats       m_logStats;
 #if PLATFORM_IS_EVB_2
-    cISLogFileFatFs         m_errorFile;
+    cISLogFileFatFs m_errorFile;
 #else
-    cISLogFile				m_errorFile;
+    cISLogFile      m_errorFile;
 #endif
 
-    bool					m_altClampToGround = false;
-    bool					m_gpsData = false;
-    bool					m_showSample = false;
-    bool					m_showPath = false;
-    bool					m_showTimeStamp = false;
-    double					m_iconUpdatePeriodSec = false;
-    time_t                  m_logStartTime = 0;
-    time_t					m_lastCommTime = 0;
-    time_t					m_timeoutFlushSeconds = 0;
-    time_t					m_timeoutFileCullingSeconds = 10;
-    time_t					m_lastFileCullingTime = 0;
-    int						m_progress = 0;
-    bool					m_showParseErrors = true;
+    bool            m_altClampToGround = false;
+    bool            m_gpsData = false;
+    bool            m_showSample = false;
+    bool            m_showPath = false;
+    bool            m_showTimeStamp = false;
+    double          m_iconUpdatePeriodSec = false;
+    time_t          m_logStartTime = 0;
+    time_t          m_lastCommTime = 0;
+    time_t          m_timeoutFlushSeconds = 0;
+    time_t          m_timeoutFileCullingSeconds = 10;
+    time_t          m_lastFileCullingTime = 0;
+    int             m_progress = 0;
+    bool            m_showParseErrors = true;
 };
-
 
 #endif // IS_LOGGER_H

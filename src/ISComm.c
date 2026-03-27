@@ -10,37 +10,43 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+// #define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+// #define IS_ENABLED_FACILITIES  (IS_LOG_ISCOMM)
+
+#include "core/msg_logger.h"
 #include "ISConstants.h"
 #include "ISComm.h"
 
-#define MAX_MSG_LENGTH_ISB					PKT_BUF_SIZE
-#define MAX_MSG_LENGTH_NMEA					200
-#define MAX_MSG_LENGTH_RTCM					1023	// RTCM3 standard
-#define MAX_MSG_LENGTH_UBX					1024
-#define MAX_MSG_LENGTH_SONY					4090
-#define PKT_PARSER_TIMEOUT_MS               100		// Set to 0 to disable timeout
+#define MAX_MSG_LENGTH_ISB          PKT_BUF_SIZE
+#define MAX_MSG_LENGTH_NMEA         200
+#define MAX_MSG_LENGTH_RTCM         1023  // RTCM3 standard
+#define MAX_MSG_LENGTH_UBX          1024
+#define MAX_MSG_LENGTH_SONY         4090
+#define PKT_PARSER_TIMEOUT_MS       100   // Set to 0 to disable timeout
 
-typedef union 
+// #define DEBUG_PARSE_MSG             (!PLATFORM_IS_EMBEDDED)
+
+typedef union
 {
     uint16_t ck;
     struct
     {
-        uint8_t a;	// Lower 8 bits
-        uint8_t b;	// Upper 8 bits
+        uint8_t a; // Lower 8 bits
+        uint8_t b; // Upper 8 bits
     };
 } checksum16_u;
 
 const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
-                            // Actual on IMX-5:
-    IS_BAUDRATE_10000000,  	// 10000000
-    IS_BAUDRATE_921600,    	//   930233 (default baudrate)
-    IS_BAUDRATE_460800,    	//   462428
-    IS_BAUDRATE_230400,    	//   230547
+                          // Actual on IMX-5:
+    IS_BAUDRATE_10000000, // 10000000
+    IS_BAUDRATE_921600,   //   930233 (default baudrate)
+    IS_BAUDRATE_460800,   //   462428
+    IS_BAUDRATE_230400,   //   230547
     IS_BAUDRATE_115200,
     IS_BAUDRATE_57600,
     IS_BAUDRATE_38400,
     IS_BAUDRATE_19200,
-    IS_BAUDRATE_9600 
+    IS_BAUDRATE_9600
 };
 
 /**
@@ -49,7 +55,7 @@ const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
 * @param len the number of bytes to calculate the CRC for
 * @return the CRC value
 */
-unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len)
+unsigned int calculate24BitCRCQ(const unsigned char* buffer, unsigned int len)
 {
     static const unsigned int TABLE_CRC24Q[] =
     {
@@ -108,7 +114,7 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
 }
 
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size)
-{	
+{
     checksum16_u cksum;
     cksum.ck = cksum_init;
     for (uint32_t i=0; i<size; i++)
@@ -150,7 +156,7 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
     unsigned int bits = 0;
     for (unsigned int i = pos; i < pos + len; i++)
     {
-        bits = (bits << 1) + ((buffer[i / 8] >> (7 - i % 8)) & 1u);
+        bits = (bits << 1) + ((buffer[i / 8] >> (7 - i % 8)) & 1U);
     }
     return bits;
 }
@@ -164,7 +170,7 @@ int validateBaudRate(unsigned int baudRate)
     {   // Valid baud rate
         return 0;
     }
-    
+
 #else
 
     if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
@@ -178,20 +184,19 @@ int validateBaudRate(unsigned int baudRate)
         }
     }
     else if (baudRate <= IS_BAUDRATE_MAX)
-    {	// High speed custom baud rates
+    {   // High speed custom baud rates
         return 0;
     }
 
 #endif
 
     // Invalid baud rate
-    return -1;    
+    return -1;
 }
-
 
 /**
  * @brief Sets buffer to initial state
- * 
+ *
  * @param c is_comm_instance_t*
  * @return returns the size of the buffer
  */
@@ -204,24 +209,151 @@ int is_comm_reset_buffer(is_comm_instance_t* c)
     return c->rxBuf.size;
 }
 
-void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler)
 {
     memset(c, 0, sizeof(is_comm_instance_t));
 
     // Clear buffer and initialize buffer pointers
     memset(buffer, 0, bufferSize);
-    
+
     c->rxBuf.size = bufferSize;
     c->rxBuf.start = buffer;
     c->rxBuf.end = buffer + bufferSize;
 
     is_comm_reset_buffer(c);
-    
+
     // Set parse enable flags
-    c->config.enabledMask = DEFAULT_PROTO_MASK;
-    
+    c->cb.protocolMask = DEFAULT_PROTO_MASK;
+
     c->rxPkt.data.ptr = c->rxBuf.start;
     c->rxErrorState = 1;
+
+    c->cb.all = pktHandler;
+}
+
+void is_comm_port_init(comm_port_t* port, pfnIsCommHandler pktHandler) {
+    if (port && (portType((port_handle_t)port) & PORT_TYPE__COMM)) {
+        is_comm_init(&port->comm, port->buffer, sizeof(port->buffer), pktHandler);
+    }
+}
+
+is_comm_instance_t* is_comm_get_port_instance(port_handle_t port) {
+    if (port && (portType((port_handle_t)port) & PORT_TYPE__COMM)) {
+        return &COMM_PORT(port)->comm;
+    }
+    return NULL;
+}
+
+/**
+ * Registering all handler for given comm instance
+ *
+ * @return handler on success
+ * @return NULL if port invalid
+ */
+pfnIsCommHandler is_comm_register_all_handler(is_comm_instance_t* comm, pfnIsCommHandler cbHandler) {
+    if (!comm)
+        return NULL;
+
+    pfnIsCommHandler priorCb = comm->cb.all;
+    comm->cb.all = cbHandler;
+    return priorCb;
+}
+
+/**
+ * Registering ISB handler for given comm instance
+ *
+ * @return handler on success
+ * @return NULL if port invalid
+ */
+pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler) {
+    if (!comm)
+        return NULL;
+
+    pfnIsCommIsbDataHandler priorCb = comm->cb.isbData;
+    comm->cb.isbData = cbHandler;
+    comm->cb.protocolMask |= ENABLE_PROTOCOL_ISB;
+    return priorCb;
+}
+
+/**
+ * Registering ISB handler for given port
+ *
+ * @return handler on success
+ * @return NULL if port invalid
+ */
+pfnIsCommIsbDataHandler is_comm_register_port_isb_handler(port_handle_t port, pfnIsCommIsbDataHandler cbHandler)
+{
+    if (port)
+        return is_comm_register_isb_handler(&COMM_PORT(port)->comm,  cbHandler);
+
+    return NULL;
+}
+
+/**
+ * Registers msg handler for specific comm instance and protocol type
+ *
+ * @return handler on success
+ * @return NULL if port invalid
+ */
+pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler) {
+    if (!comm || (ptype < _PTYPE_FIRST_DATA) || (ptype > _PTYPE_LAST_DATA))
+        return NULL;
+
+    pfnIsCommGenMsgHandler priorCb = comm->cb.generic[ptype];
+    comm->cb.generic[ptype] = cbHandler;
+    comm->cb.protocolMask |= (int)(0x01) << ptype;
+    return priorCb;
+}
+
+/**
+ * Registers msg handler for specific port and protocol type
+ *
+ * @return handler on success
+ * @return NULL if port invalid
+ */
+pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int ptype, pfnIsCommGenMsgHandler cbHandler) {
+    if (port)
+        return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+
+    return NULL;
+}
+
+void is_comm_register_callbacks(is_comm_instance_t* c, is_comm_callbacks_t *callbacks) {
+    if (callbacks)
+        c->cb = *callbacks;
+}
+
+void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *callbacks) {
+    if (port)
+        is_comm_register_callbacks(&COMM_PORT(port)->comm, callbacks);
+}
+
+void is_comm_enable_protocol(is_comm_instance_t* instance, protocol_type_t ptype) {
+    if (instance)
+        instance->cb.protocolMask |= (0x01 << ptype);
+}
+
+void is_comm_disable_protocol(is_comm_instance_t* instance, protocol_type_t ptype) {
+    if (instance)
+        instance->cb.protocolMask &= ~(0x01 << ptype);
+}
+
+void is_comm_set_protocol_mask(is_comm_instance_t* instance, uint32_t protocolMask) {
+    if (instance)
+        instance->cb.protocolMask = protocolMask;
+}
+
+uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance) {
+    uint32_t protocols = 0;
+    if (instance->cb.protocolMask)
+        return instance->cb.protocolMask;
+
+    if (instance->cb.isbData) protocols |= _PTYPE_INERTIAL_SENSE_DATA;
+    for (int i = _PTYPE_FIRST_DATA ; i < _PTYPE_LAST_DATA; i++) {
+        if (instance->cb.generic[i]) protocols |= (0x1 << i);
+    }
+
+    return protocols;
 }
 
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
@@ -277,51 +409,51 @@ static protocol_type_t processIsbPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
+    int numBytes = 0;
 
     switch (p->state)
     {
-    case 0:
-        if (*(c->rxBuf.scan) == PSC_ISB_PREAMBLE_BYTE1)
-        {
+        case 0:
+            if (*(c->rxBuf.scan) == PSC_ISB_PREAMBLE_BYTE1)
+            {
+                p->state++;
+            }
+            return _PTYPE_NONE;
+
+        case 1:
+            if (*(c->rxBuf.scan) == PSC_ISB_PREAMBLE_BYTE2)
+            {   // Found complete preamble
+                p->state++;
+                return _PTYPE_NONE;
+            }
+            // Invalid preamble - Reset state
+            return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
+
+        case 2:        // Wait for packet header
+            numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+            if (numBytes < (int)(sizeof(packet_hdr_t)-1))
+            {
+                return _PTYPE_NONE;
+            }
             p->state++;
-        }
-        return _PTYPE_NONE;
 
-    case 1:
-        if (*(c->rxBuf.scan) == PSC_ISB_PREAMBLE_BYTE2)
-        {	// Found complete preamble
-            p->state++;
+            // Parse header
+            packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
+            p->size = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;        // Header + payload + footer (checksum)
+            if (p->size > MAX_MSG_LENGTH_ISB)
+            {   // Invalid size
+                return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+            }
             return _PTYPE_NONE;
-        }
-        // Invalid preamble - Reset state
-        return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
 
-    case 2:		// Wait for packet header
-        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
-        if (numBytes < (int)(sizeof(packet_hdr_t)-1))
-        {
-            return _PTYPE_NONE;
-        }
-        p->state++;
-
-        // Parse header
-        packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
-        p->size = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;		// Header + payload + footer (checksum)
-        if (p->size > MAX_MSG_LENGTH_ISB)
-        {	// Invalid size
-            return parseErrorResetState(c, EPARSE_INVALID_SIZE);
-        }
-        return _PTYPE_NONE;
-
-    default:	// Wait for entire packet
-        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
-        if (numBytes < (int)(p->size))
-        {
-            return _PTYPE_NONE;
-        }
-        // Found packet end
-        break;
+        default:    // Wait for entire packet
+            numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+            if (numBytes < (int)(p->size))
+            {
+                return _PTYPE_NONE;
+            }
+            // Found packet end
+            break;
     }
 
     // Reset state
@@ -329,13 +461,22 @@ static protocol_type_t processIsbPkt(void* v)
 
     // Validate checksum
     packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
+    if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)
+        return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+    if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) &&
+        (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB) &&
+        (isbPkt->hdr.id != DID_CAL_SC) &&           // Allow large dataset offsets / (offset+chunk) ranges for calibration data DIDs
+        (isbPkt->hdr.id != DID_CAL_TEMP_COMP) &&
+        (isbPkt->hdr.id != DID_CAL_MOTION) )
+        return parseErrorResetState(c, EPARSE_INVALID_HEADER);
+
     uint16_t payloadSize = isbPkt->hdr.payloadSize;
     uint8_t *payload = c->rxBuf.head + sizeof(packet_hdr_t);
     checksum16_u *cksum = (checksum16_u*)(payload + payloadSize);
     int bytes_cksum = p->size - 2;
     uint16_t calcCksum = is_comm_isb_checksum16(0, c->rxBuf.head, bytes_cksum);
     if (cksum->ck != calcCksum)
-    {	// Invalid checksum
+    {   // Invalid checksum
         return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
     }
 
@@ -348,19 +489,19 @@ static protocol_type_t processIsbPkt(void* v)
     // Header
     pkt->hdr.preamble      = isbPkt->hdr.preamble;
     pkt->hdr.flags         = isbPkt->hdr.flags;
-    pkt->hdr.id = pkt->id  = isbPkt->hdr.id;
+    pkt->id = pkt->hdr.id  = isbPkt->hdr.id;
     pkt->hdr.payloadSize   = payloadSize;
 
     // Payload
     if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
-    {	// Offset is first two bytes in payload
+    {   // Offset is first two bytes in payload
         pkt->data.size     = (payloadSize < 2 ? 0 : payloadSize - 2);
-        pkt->data.ptr      = (pkt->data.size ? payload+2 : NULL);	// Data starts after offset if data size is non-zero
+        pkt->data.ptr      = (pkt->data.size ? payload+2 : NULL);    // Data starts after offset if data size is non-zero
         pkt->offset        = *((uint16_t*)payload);
-        pkt->dataHdr.size  = pkt->data.size;		// rxPkt.hdr.payloadSize and rxPkt.dataHdr.size share same memory.  Remove offset size from payload/data size.
+        pkt->dataHdr.size  = pkt->data.size;        // rxPkt.hdr.payloadSize and rxPkt.dataHdr.size share same memory.  Remove offset size from payload/data size.
     }
     else
-    {	// No offset
+    {   // No offset
         pkt->data.size     = payloadSize;
         pkt->data.ptr      = (payloadSize ? payload : NULL);
         pkt->offset        = 0;
@@ -378,17 +519,20 @@ static protocol_type_t processIsbPkt(void* v)
     case PKT_TYPE_SET_DATA:
     case PKT_TYPE_DATA:
         // Validate data size
-        if (pkt->data.size <= MAX_DATASET_SIZE)
+        if (pkt->data.size <= MAX_DATASET_SIZE || 
+            pkt->hdr.id == DID_CAL_SC || 
+            pkt->hdr.id == DID_CAL_TEMP_COMP ||
+            pkt->hdr.id == DID_CAL_MOTION)
         {
             if (ptype==PKT_TYPE_SET_DATA)
-            {	// acknowledge valid data received
+            {   // acknowledge valid data received
                 c->ackNeeded = PKT_TYPE_ACK;
             }
 
             return _PTYPE_INERTIAL_SENSE_DATA;
         }
         else
-        {	// negative acknowledge data received
+        {   // negative acknowledge data received
             c->ackNeeded = PKT_TYPE_NACK;
         }
         break;
@@ -397,8 +541,11 @@ static protocol_type_t processIsbPkt(void* v)
         {
             p_data_get_t *get = (p_data_get_t*)&(isbPkt->payload.data);
             // Validate data size
-            if (get->size <= MAX_DATASET_SIZE)
-            {	// Update data pointer
+            if (get->size <= MAX_DATASET_SIZE ||
+                get->id == DID_CAL_SC || 
+                get->id == DID_CAL_TEMP_COMP ||
+                get->id == DID_CAL_MOTION)
+            {   // Update data pointer
                 return _PTYPE_INERTIAL_SENSE_CMD;
             }
         }
@@ -421,19 +568,91 @@ static protocol_type_t processNmeaPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
+    int numBytes = 0;
+
+    switch (p->state)
+    {
+        case 0: // Find start
+            if (*(c->rxBuf.scan) == PSC_NMEA_START_BYTE)
+            {   // Found
+                p->state++;
+            }
+            return _PTYPE_NONE;
+
+        case 1:    // Find byte before end
+            if (*(c->rxBuf.scan) == PSC_NMEA_PRE_END_BYTE)
+            {     // Found
+                p->state++;
+            }
+            else
+            {
+                numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+                if (numBytes > MAX_MSG_LENGTH_NMEA)
+                {   // Exceeds max length
+                    return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+                }
+            }
+            return _PTYPE_NONE;
+
+        case 3:        // Wait for end of packet
+            if (*(c->rxBuf.scan) != PSC_NMEA_END_BYTE)
+            {   // Invalid end
+                return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);
+            }
+            // Found packet end
+            break;
+    }
+
+    // Reset state
+    p->state = 0;
+
+    // Validate length
+    numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+    if (numBytes < 8)
+    {   // Packet length too short
+        return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
+    }
+
+    // Validate checksum
+    uint8_t tmp = *(c->rxBuf.scan-1);    // Backup value
+    *(c->rxBuf.scan-1) = 0;                // Null terminate hex string for strtol()
+    int msgChecksum = (int)strtol((const char*)c->rxBuf.scan-3, NULL, 16);
+    *(c->rxBuf.scan-1) = tmp;            // Restore value
+    int calChecksum = 0;
+    for (uint8_t* ptr = c->rxBuf.head + 1, *ptrEnd = c->rxBuf.scan - 4; ptr < ptrEnd; ptr++)
+    {
+        calChecksum ^= (int)*ptr;
+    }
+    if (msgChecksum != calChecksum)
+    {   // Invalid checksum
+        return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
+    }
+
+    /////////////////////////////////////////////////////////
+    // Valid packet found - Checksum passed - Populate rxPkt
+    validPacketFound(c, numBytes, numBytes, getNmeaMsgId(c->rxBuf.head, numBytes));
+
+    return _PTYPE_NMEA;
+}
+
+
+static protocol_type_t processSeptentrioReplyPkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+    int numBytes = 0;
 
     switch (p->state)
     {
     case 0:	// Find start
-        if (*(c->rxBuf.scan) == PSC_NMEA_START_BYTE)
+        if (*(c->rxBuf.scan) == SEPT_PROTO_START_BYTE)
         {	// Found
             p->state++;
         }
         return _PTYPE_NONE;
 
     case 1:	// Find byte before end
-        if (*(c->rxBuf.scan) == PSC_NMEA_PRE_END_BYTE)
+        if (*(c->rxBuf.scan) == SEPT_REPLY_PRE_END_BYTE)
         { 	// Found
             p->state++;
         }
@@ -448,7 +667,7 @@ static protocol_type_t processNmeaPkt(void* v)
         return _PTYPE_NONE;
 
     case 3:		// Wait for end of packet
-        if (*(c->rxBuf.scan) != PSC_NMEA_END_BYTE)
+        if (*(c->rxBuf.scan) != SEPT_REPLY_END_BYTE)
         {	// Invalid end
             return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);
         }
@@ -462,22 +681,22 @@ static protocol_type_t processNmeaPkt(void* v)
     // Validate length
     numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
     if (numBytes < 8)
-    {	// Packet length too short
+    {   // Packet length too short
         return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
     }
 
     // Validate checksum
-    uint8_t tmp = *(c->rxBuf.scan-1);	// Backup value
-    *(c->rxBuf.scan-1) = 0;				// Null terminate hex string for strtol()
+    uint8_t tmp = *(c->rxBuf.scan-1);    // Backup value
+    *(c->rxBuf.scan-1) = 0;                // Null terminate hex string for strtol()
     int msgChecksum = (int)strtol((const char*)c->rxBuf.scan-3, NULL, 16);
-    *(c->rxBuf.scan-1) = tmp;			// Restore value
+    *(c->rxBuf.scan-1) = tmp;            // Restore value
     int calChecksum = 0;
     for (uint8_t* ptr = c->rxBuf.head + 1, *ptrEnd = c->rxBuf.scan - 4; ptr < ptrEnd; ptr++)
     {
         calChecksum ^= (int)*ptr;
     }
     if (msgChecksum != calChecksum)
-    {	// Invalid checksum
+    {   // Invalid checksum
         return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
     }
 
@@ -485,7 +704,125 @@ static protocol_type_t processNmeaPkt(void* v)
     // Valid packet found - Checksum passed - Populate rxPkt
     validPacketFound(c, numBytes, numBytes, getNmeaMsgId(c->rxBuf.head, numBytes));
 
-    return _PTYPE_NMEA;
+    return _PTYPE_SEPTENTRIO_REPLY;
+}
+
+/**
+ * @brief Process Septentrio SBF packets
+ * 
+ * @param v 
+ * @return protocol_type_t 
+ */
+static protocol_type_t processSeptentrioSBFPkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+    int numBytes;
+
+    switch (p->state)
+    {
+    case 0: // for first preamble byte '$'
+        if (*(c->rxBuf.scan) == SEPT_PROTO_START_BYTE)
+        {
+            p->state++;
+        }
+        return _PTYPE_NONE;
+
+    case 1: // for second preamble byte '@' 
+        if (*(c->rxBuf.scan) == SEPT_SBF_PREAMBLE_BYTE2)
+        {	// Found complete preamble
+            p->state++;
+            return _PTYPE_NONE;
+        }
+        // Invalid preamble - Reset state
+        return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
+
+    case 2: // for length to come in
+        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+        if (numBytes < (int)(sizeof(sept_pkt_hdr_t)))
+        {
+            return _PTYPE_NONE;
+        }
+        p->state++;
+
+        // Parse header
+        sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
+        p->size = sepPkt->payloadSize;
+        if (p->size > MAX_MSG_LENGTH_ISB)
+        {	// Invalid size
+            return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+        }
+        return _PTYPE_NONE;
+
+    default:	// Wait for entire packet
+        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+        if (numBytes < (int)(p->size))
+        {
+            return _PTYPE_NONE;
+        }
+
+        // Found packet end
+        break;
+    }
+
+    // Reset state
+    p->state = 0;
+
+    // Validate checksum
+    sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
+    uint16_t cksum = (checksum16_u*)&sepPkt->crc;
+    uint16_t calcCksum = crc_ccitt(sepPkt->msgID, (sepPkt->payloadSize-4));
+
+    if (sepPkt->crc != calcCksum)
+    {	// Invalid checksum
+        return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
+    }
+
+    /////////////////////////////////////////////////////////
+    // Valid packet found - Checksum passed - Populate rxPkt
+    validPacketReset(c, numBytes);
+
+    return _PTYPE_SEPTENTRIO_SBF;
+}
+
+static protocol_type_t processPreAsciiPkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+    int numBytes;
+
+    switch (p->state)
+    {
+        case 0:	// Find start
+            // 
+            if (*(c->rxBuf.scan) == PSC_PRE_ASCII_START_BYTE)
+            {	// Found pre ASCII start byte
+                p->state++;
+            }
+            return _PTYPE_NONE;
+
+        case 1:	// Find byte before end
+        {
+            if (*(c->rxBuf.scan) == SEPT_SBF_PREAMBLE_BYTE2)
+            { 	// Found Septentrio second preamble byte
+                setParserStart(c, processSeptentrioSBFPkt);
+                
+            }
+            else if (*(c->rxBuf.scan) == SEPT_REPLY_BYTE2)
+            {   // Found Septentrio second preamble byte
+                setParserStart(c, processSeptentrioReplyPkt);
+            }
+            else
+            {   // Did not find Septentrio second preamble byte assume NMEA packet
+                setParserStart(c, processNmeaPkt);
+            }
+
+            // make single recursive call to process based on new parser packet
+            return c->processPkt(c);
+        }
+    }
+
+    return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);	// Invalid end of packet
 }
 
 
@@ -504,9 +841,9 @@ static protocol_type_t processSeptentrioReplyPkt(void* v)
         }
         return _PTYPE_NONE;
 
-    case 1:	// Find byte before end
+    case 1: // Find byte before end
         if (*(c->rxBuf.scan) == SEPT_REPLY_PRE_END_BYTE)
-        { 	// Found
+        {   // Found
             p->state++;
         }
         else
@@ -685,7 +1022,7 @@ static protocol_type_t processUbloxPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
+    int numBytes = 0;
 
     switch (p->state)
     {
@@ -698,16 +1035,16 @@ static protocol_type_t processUbloxPkt(void* v)
 
     case 1:
         if (*(c->rxBuf.scan) == UBLOX_START_BYTE2)
-        {	// Found complete preamble
+        {   // Found complete preamble
             p->state++;
         }
         else
-        {	// Invalid preamble - Reset state
+        {   // Invalid preamble - Reset state
             return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
         }
         return _PTYPE_NONE;
 
-    case 2:		// Wait for packet header
+    case 2:        // Wait for packet header
         if ((int)(c->rxBuf.scan - c->rxBuf.head) < (int)(sizeof(ubx_pkt_hdr_t)-1))
         {
             return _PTYPE_NONE;
@@ -715,11 +1052,11 @@ static protocol_type_t processUbloxPkt(void* v)
 
         // Parse header
         ubx_pkt_hdr_t *hdr = (ubx_pkt_hdr_t*)(c->rxBuf.head);
-        p->size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;		// Header + payload + footer (checksum)
+        p->size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;        // Header + payload + footer (checksum)
         p->state++;
         return _PTYPE_NONE;
 
-    default:	// Wait for end of packet
+    default:    // Wait for end of packet
         numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
         if (numBytes < p->size)
         {
@@ -740,7 +1077,7 @@ static protocol_type_t processUbloxPkt(void* v)
     checksum16_u cksum;
     cksum.ck = is_comm_fletcher16(0, cksum_start, cksum_size);
     if (pktChecksum != cksum.ck)
-    {	// Invalid checksum
+    {   // Invalid checksum
         return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
     }
 
@@ -755,41 +1092,41 @@ static protocol_type_t processRtcm3Pkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
+    int numBytes = 0;
 
     switch (p->state)
     {
-    case 0:		// Find start
-        if (*(c->rxBuf.scan) == RTCM3_START_BYTE)
-        {	// Found start
-            p->state++;
-        }
-        return _PTYPE_NONE;
-
-    case 1:		// Wait for packet header
-        p->state++;
-        return _PTYPE_NONE;
-
-    case 2:
-        p->size = (int)getBitsAsUInt32(c->rxBuf.head, 14, 10) + 6;		// Header + payload + footer (checksum)
-        p->state++;
-
-        // Validate packet length
-        if (p->size > MAX_MSG_LENGTH_RTCM || p->size > c->rxBuf.size - 6)
-        {	// Corrupt data
-            return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
-        }
-        return _PTYPE_NONE;
-
-    default:	// Wait for end of packet
-        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
-        if (numBytes < p->size)
-        {
+        case 0:        // Find start
+            if (*(c->rxBuf.scan) == RTCM3_START_BYTE)
+            {   // Found start
+                p->state++;
+            }
             return _PTYPE_NONE;
-        }
 
-        // Found packet end
-        break;
+        case 1:        // Wait for packet header
+            p->state++;
+            return _PTYPE_NONE;
+
+        case 2:
+            p->size = (int)getBitsAsUInt32(c->rxBuf.head, 14, 10) + 6;        // Header + payload + footer (checksum)
+            p->state++;
+
+            // Validate packet length
+            if (p->size > MAX_MSG_LENGTH_RTCM || p->size > c->rxBuf.size - 6)
+            {   // Corrupt data
+                return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
+            }
+            return _PTYPE_NONE;
+
+        default:    // Wait for end of packet
+            numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+            if (numBytes < p->size)
+            {
+                return _PTYPE_NONE;
+            }
+
+            // Found packet end
+            break;
     }
 
     // Reset state
@@ -801,7 +1138,7 @@ static protocol_type_t processRtcm3Pkt(void* v)
     uint32_t correctCRC = getBitsAsUInt32(c->rxBuf.head + lenWithoutCrc, 0, 24);
 
     if (actualCRC != correctCRC)
-    {	// Invalid checksum
+    {   // Invalid checksum
         return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
     }
 
@@ -850,12 +1187,12 @@ static const uint8_t u8CRC_4_TABLE[] = {
 static uint8_t computeCrc4Ccitt(const uint8_t *buf, const uint32_t numBytes)
 {
     // Initialize local variables
-    uint8_t tableRemainder;
-    uint8_t remainder = 0U; // Initial remainder
+    uint8_t tableRemainder = 0;
+    uint8_t remainder = 0; // Initial remainder
 
     // Compute the CRC value
     // Divide each byte of the message by the corresponding polynomial
-    for (uint32_t ctr = 0U; ctr < numBytes; ctr++)
+    for (uint32_t ctr = 0; ctr < numBytes; ctr++)
     {
         tableRemainder = buf[ctr] ^ remainder;
         remainder = u8CRC_4_TABLE[tableRemainder];
@@ -868,49 +1205,49 @@ static protocol_type_t processSonyByte(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
-    uint8_t checksum;
+    int numBytes = 0;
+    uint8_t checksum = 0;
 
     switch (p->state)
     {
-    case 0:		// Find start
-        if (*(c->rxBuf.scan) == SONY_START_BYTE)
-        {	// Found start
+        case 0:// Find start
+            if (*(c->rxBuf.scan) == SONY_START_BYTE)
+            {   // Found start
+                p->state++;
+            }
+            return _PTYPE_NONE;
+
+        case 1:        // Wait for header
+            if ((int)(c->rxBuf.scan - c->rxBuf.head) < (int)(sizeof(sony_pkt_hdr_t)-1))
+            {
+                return _PTYPE_NONE;
+            }
+
+            // Validate header checksum
+            sony_pkt_hdr_t *hdr = (sony_pkt_hdr_t *)(c->rxBuf.head);
+            checksum = 0;
+            for (size_t i = 0; i < 4; i++)
+            {
+                checksum += c->rxBuf.head[i];
+            }
+            if (checksum != hdr->fcsh || hdr->dataSize > MAX_MSG_LENGTH_SONY || hdr->dataSize > c->rxBuf.size)
+            {   // Invalid header - Reset state
+                return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
+            }
+
+            // Valid header
+            p->size = hdr->dataSize + 6;        // header(4) + FCSH/headerChecksum(1) + data(n) + FCSD/dataChecksum(1)
             p->state++;
-        }
-        return _PTYPE_NONE;
-
-    case 1:		// Wait for header
-        if ((int)(c->rxBuf.scan - c->rxBuf.head) < (int)(sizeof(sony_pkt_hdr_t)-1))
-        {
             return _PTYPE_NONE;
-        }
 
-        // Validate header checksum
-        sony_pkt_hdr_t *hdr = (sony_pkt_hdr_t *)(c->rxBuf.head);
-        checksum = 0;
-        for (size_t i = 0; i < 4; i++)
-        {
-            checksum += c->rxBuf.head[i];
-        }
-        if (checksum != hdr->fcsh || hdr->dataSize > MAX_MSG_LENGTH_SONY || hdr->dataSize > c->rxBuf.size)
-        {	// Invalid header - Reset state
-            return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
-        }
-
-        // Valid header
-        p->size = hdr->dataSize + 6;		// header(4) + FCSH/headerChecksum(1) + data(n) + FCSD/dataChecksum(1)
-        p->state++;
-        return _PTYPE_NONE;
-
-    default:	// Wait for end of packet
-        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
-        if (numBytes < (int)(p->size))
-        {
-            return _PTYPE_NONE;
-        }
-        // Found packet end
-        break;
+        default:    // Wait for end of packet
+            numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+            if (numBytes < (int)(p->size))
+            {
+                return _PTYPE_NONE;
+            }
+            // Found packet end
+            break;
     }
 
     // Reset state
@@ -924,8 +1261,9 @@ static protocol_type_t processSonyByte(void* v)
     {
         checksum += ptr[i];
     }
+
     if (checksum != c->rxBuf.scan[0])
-    {	// Invalid data checksum
+    {   // Invalid data checksum
         return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
     }
 
@@ -943,143 +1281,143 @@ static protocol_type_t processSpartnByte(void* v)
 
     switch (p->state)
     {
-    case 0:
-        if (*(c->rxBuf.scan) == SPARTN_START_BYTE)
-        {
-            p->state++;
-        }
-        return _PTYPE_NONE;
-
-    case 1:
-    case 2:
-    // case 3 is below this to catch bad CRCs before any more is parsed. Can be adapted to filter messages later.
-    case 4:
-    case 5:
-    case 6:
-        p->state++;
-        break;
-
-    case 3: {
-        // Check length and header CRC4
-        const uint8_t dbuf[3] = { c->rxBuf.head[1], c->rxBuf.head[2], c->rxBuf.head[3] & 0xF0 };
-        uint8_t calc = computeCrc4Ccitt(dbuf, 3);
-        if((c->rxBuf.head[3] & 0x0F) != calc)
-        {  	// Invalid header - Reset state
-            return parseErrorResetState(c, EPARSE_INVALID_HEADER);
-        }
-
-        p->state++;
-    } break;
-
-    case 7:			// byte 7 (8th byte) is minimum header, but depending on what bits are set...
-    case 8:
-    case 9:
-    case 10:
-    case 11: {		// we may need to parse up to byte 11 (12th byte) to get the timestamp and encryption length
-        uint16_t payloadLen = ((((uint16_t)(c->rxBuf.head[1]) & 0x01) << 9) |
-                        (((uint16_t)(c->rxBuf.head[2])) << 1) |
-                        ((c->rxBuf.head[3] & 0x80) >> 7)) & 0x3FF;
-
-        // Variable length CRC {0x0, 0x1, 0x2, 0x3} = {1, 2, 3, 4}bytes - appears at end of message
-        payloadLen += (((c->rxBuf.head[3] >> 4) & 0x03) + 1);
-
-        uint8_t extendedTs = c->rxBuf.head[4] & 0x08;
-        uint8_t encrypt = c->rxBuf.head[3] & 0x40;
-        uint8_t *encryptPtr = NULL;
-
-        if(extendedTs)
-        {	// Timestamp is 32 bit
-            if(!encrypt && p->state == 9)
-            {	// Encryption is disabled, we are ready to go to payload bytes
-                p->state = -((int32_t)payloadLen);
-                break;
-            }
-            else if(encrypt && p->state == 11)
-            {	// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
-                encryptPtr = &c->rxBuf.head[10];
-                // Don't break yet; continue to calculate encryption
-            }
-            else
-            {	// Not ready yet
-                p->state++;
-                break;
-            }
-        }
-        else
-        {	// Timestamp is 16 bit
-            if(!encrypt && p->state == 7)
-            {	// Encryption is disabled, we are ready to go to payload bytes
-                p->state = -((int32_t)payloadLen);
-                break;
-            }
-            else if(encrypt && p->state == 9)
-            {	// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
-                encryptPtr = &c->rxBuf.head[8];
-                // Don't break yet; continue to calculate encryption
-            }
-            else
-            {	// Not ready yet
-                p->state++;
-                break;
-            }
-        }
-
-        // Add encryption authentication bytes
-        if(encryptPtr)
-        {	// If the message contains an embedded authentication sequence, add the length
-            if(((encryptPtr[1] >> 3) & 0x07) > 1)
+        case 0:
+            if (*(c->rxBuf.scan) == SPARTN_START_BYTE)
             {
-                switch(encryptPtr[1] & 0x07)
-                {
-                    case 0: payloadLen += 8; break;
-                    case 1: payloadLen += 12; break;
-                    case 2: payloadLen += 16; break;
-                    case 3: payloadLen += 32; break;
-                    case 4: payloadLen += 64; break;
-                    default: break;
+                p->state++;
+            }
+            return _PTYPE_NONE;
+
+        case 1:
+        case 2:
+        // case 3 is below this to catch bad CRCs before any more is parsed. Can be adapted to filter messages later.
+        case 4:
+        case 5:
+        case 6:
+            p->state++;
+            break;
+
+        case 3: {
+            // Check length and header CRC4
+            const uint8_t dbuf[3] = { c->rxBuf.head[1], c->rxBuf.head[2], c->rxBuf.head[3] & 0xF0 };
+            uint8_t calc = computeCrc4Ccitt(dbuf, 3);
+            if ((c->rxBuf.head[3] & 0x0F) != calc)
+            {      // Invalid header - Reset state
+                return parseErrorResetState(c, EPARSE_INVALID_HEADER);
+            }
+
+            p->state++;
+        } break;
+
+        case 7:            // byte 7 (8th byte) is minimum header, but depending on what bits are set...
+        case 8:
+        case 9:
+        case 10:
+        case 11: {        // we may need to parse up to byte 11 (12th byte) to get the timestamp and encryption length
+            uint16_t payloadLen = ((((uint16_t)(c->rxBuf.head[1]) & 0x01) << 9) |
+                            (((uint16_t)(c->rxBuf.head[2])) << 1) |
+                            ((c->rxBuf.head[3] & 0x80) >> 7)) & 0x3FF;
+
+            // Variable length CRC {0x0, 0x1, 0x2, 0x3} = {1, 2, 3, 4}bytes - appears at end of message
+            payloadLen += (((c->rxBuf.head[3] >> 4) & 0x03) + 1);
+
+            uint8_t extendedTs = c->rxBuf.head[4] & 0x08;
+            uint8_t encrypt = c->rxBuf.head[3] & 0x40;
+            uint8_t *encryptPtr = NULL;
+
+            if (extendedTs)
+            {   // Timestamp is 32 bit
+                if (!encrypt && p->state == 9)
+                {   // Encryption is disabled, we are ready to go to payload bytes
+                    p->state = -((int32_t)payloadLen);
+                    break;
+                }
+                else if (encrypt && p->state == 11)
+                {   // Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
+                    encryptPtr = &c->rxBuf.head[10];
+                    // Don't break yet; continue to calculate encryption
+                }
+                else
+                {   // Not ready yet
+                    p->state++;
+                    break;
                 }
             }
-        }
-        else
-        {	// Invalid data
-            return parseErrorResetState(c, EPARSE_INVALID_PAYLOAD);
-        }
+            else
+            {   // Timestamp is 16 bit
+                if (!encrypt && p->state == 7)
+                {   // Encryption is disabled, we are ready to go to payload bytes
+                    p->state = -((int32_t)payloadLen);
+                    break;
+                }
+                else if (encrypt && p->state == 9)
+                {   // Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
+                    encryptPtr = &c->rxBuf.head[8];
+                    // Don't break yet; continue to calculate encryption
+                }
+                else
+                {   // Not ready yet
+                    p->state++;
+                    break;
+                }
+            }
 
-        p->state = -((int32_t)payloadLen);
+            // Add encryption authentication bytes
+            if (encryptPtr)
+            {   // If the message contains an embedded authentication sequence, add the length
+                if (((encryptPtr[1] >> 3) & 0x07) > 1)
+                {
+                    switch(encryptPtr[1] & 0x07)
+                    {
+                        case 0: payloadLen += 8; break;
+                        case 1: payloadLen += 12; break;
+                        case 2: payloadLen += 16; break;
+                        case 3: payloadLen += 32; break;
+                        case 4: payloadLen += 64; break;
+                        default: break;
+                    }
+                }
+            }
+            else
+            {   // Invalid data
+                return parseErrorResetState(c, EPARSE_INVALID_PAYLOAD);
+            }
 
-    } break;
+            p->state = -((int32_t)payloadLen);
+
+        } break;
 
 
-    default:
-        p->state++;
+        default:
+            p->state++;
 
-        if (p->state == 0)
-        {	// Valid packet
+            if (p->state == 0)
+            {   // Valid packet
 
-            p->state = 0;
+                p->state = 0;
 
-            /////////////////////////////////////////////////////////
-            // Valid packet found - Checksum passed - Populate rxPkt
-            int numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
-            validPacketFound(c, numBytes, numBytes, 0);
+                /////////////////////////////////////////////////////////
+                // Valid packet found - Checksum passed - Populate rxPkt
+                int numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+                validPacketFound(c, numBytes, numBytes, 0);
 
-            return _PTYPE_SPARTN;
-        }
-        else if(p->state > 0)
-        {	// corrupt data or bad state
-            return parseErrorResetState(c, EPARSE_INVALID_PAYLOAD);
-        }
+                return _PTYPE_SPARTN;
+            }
+            else if (p->state > 0)
+            {   // corrupt data or bad state
+                return parseErrorResetState(c, EPARSE_INVALID_PAYLOAD);
+            }
 
-        break;
+            break;
     }
 
     return _PTYPE_NONE;
 }
 
 /**
- * Move a buffer of data from src to dest.  This function is used to move data between buffers 
- * that are not aligned to 32-bit boundaries.  Equivalent to memmove() but more efficient on 
- * 32-bit processors.  Requires src and dest do not overlap such that dest will overwrite src 
+ * Move a buffer of data from src to dest.  This function is used to move data between buffers
+ * that are not aligned to 32-bit boundaries.  Equivalent to memmove() but more efficient on
+ * 32-bit processors.  Requires src and dest do not overlap such that dest will overwrite src
  * data not yet copied (i.e. ideal use is dest < src).
  * @param dest the destination buffer
  * @param src the source buffer
@@ -1112,11 +1450,11 @@ void move_buffer_32bit(void* dest, void* src, size_t size)
 /**
  *            *** MAKE SURE YOU UNDERSTAND THIS FUNCTION BEFORE YOU USE IT ***
  *
- * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.  
- * This function should be called before adding data to the is_comm buffer and calling 
- * is_comm_parse_timeout() or related parse functions.  
+ * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.
+ * This function should be called before adding data to the is_comm buffer and calling
+ * is_comm_parse_timeout() or related parse functions.
  * - Reset buffer pointers to the start of the buffer if 1.) parsing is done or 2.) the buffer is full.
- * - Free up buffer space by shifting partial/incomplete packets to the beginning of the buffer. 
+ * - Free up buffer space by shifting partial/incomplete packets to the beginning of the buffer.
  * @param c the comm instance associated with the port
  * @return the number of free bytes available in the buffer
  */
@@ -1178,47 +1516,44 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 {
     is_comm_buffer_t *buf = &(c->rxBuf);
 
-#if PKT_PARSER_TIMEOUT_MS 
-    if (c->processPkt)
-    {	// Parse in progress
-        if (timeMs > c->parser.timeMs + PKT_PARSER_TIMEOUT_MS)
-        {	// Parser timeout.  Increment head and reset parser.
-            c->rxBuf.head++;
-            is_comm_reset_parser(c);
+    #if PKT_PARSER_TIMEOUT_MS
+        if (c->processPkt)
+        {   // Parse in progress
+            if (timeMs > c->parser.timeMs + PKT_PARSER_TIMEOUT_MS)
+            {   // Parser timeout.  Increment head and reset parser.
+                c->rxBuf.head++;
+                is_comm_reset_parser(c);
+            }
         }
-    }
-#endif
+    #endif
 
     // Search for packet
     while (buf->scan < buf->tail)
     {
         if (c->processPkt == NULL)
-        {	// Scan for packet start
+        {   // Scan for packet start
             switch (*(buf->scan))
-            {			
-            case PSC_ISB_PREAMBLE_BYTE1:    { if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)      { setParserStart(c, processIsbPkt); }       break; }
-            // case SEPT_PROTO_START_BYTE:  // Covered by PSC_PRE_ASCII_START_BYTE both NMEA and Septentrio start with '$'
-            // case PSC_NMEA_START_BYTE:    // Covered by PSC_PRE_ASCII_START_BYTE both NMEA and Septentrio start with '$'
-            case PSC_PRE_ASCII_START_BYTE:  { if (c->config.enabledMask & (ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_SEPT)) 
-                                                                                                    { setParserStart(c, processPreAsciiPkt); }  break; }
-            case UBLOX_START_BYTE1:         { if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)    { setParserStart(c, processUbloxPkt); }     break; }
-            case RTCM3_START_BYTE:          { if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)    { setParserStart(c, processRtcm3Pkt); }     break; } 
-            case SPARTN_START_BYTE:         { if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)   { setParserStart(c, processSpartnByte); }   break; }
-            case SONY_START_BYTE:           { if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)     { setParserStart(c, processSonyByte); }     break; }
-            default:                        
-                if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
-                { 
-                    return _PTYPE_PARSE_ERROR; 
-                }                                       
-                break;
+            {
+                case PSC_ISB_PREAMBLE_BYTE1:    if (c->cb.protocolMask & ENABLE_PROTOCOL_ISB)                       { setParserStart(c, processIsbPkt); }       break;
+                case PSC_NMEA_START_BYTE:       if (c->cb.protocolMask & ENABLE_PROTOCOL_NMEA|ENABLE_PROTOCOL_SEPT) { setParserStart(c, processNmeaPkt); }      break;
+                case UBLOX_START_BYTE1:         if (c->cb.protocolMask & ENABLE_PROTOCOL_UBLOX)                     { setParserStart(c, processUbloxPkt); }     break;
+                case RTCM3_START_BYTE:          if (c->cb.protocolMask & ENABLE_PROTOCOL_RTCM3)                     { setParserStart(c, processRtcm3Pkt); }     break;
+                case SPARTN_START_BYTE:         if (c->cb.protocolMask & ENABLE_PROTOCOL_SPARTN)                    { setParserStart(c, processSpartnByte);}    break;
+                case SONY_START_BYTE:           if (c->cb.protocolMask & ENABLE_PROTOCOL_SONY)                      { setParserStart(c, processSonyByte); }     break;
+                default:
+                    if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
+                    {
+                        return _PTYPE_PARSE_ERROR;
+                    }
+                    break;
             }
         }
         else
-        {	// Parsing packet
+        {   // Parsing packet
             protocol_type_t ptype = c->processPkt(c);
             if (ptype != _PTYPE_NONE)
-            {	// Packet found or packet error
-                buf->scan++; 
+            {   // Packet found or packet error
+                buf->scan++;
                 return ptype;
             }
         }
@@ -1226,9 +1561,9 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         buf->scan++;
     }
 
-#if PKT_PARSER_TIMEOUT_MS 
+#if PKT_PARSER_TIMEOUT_MS
     if (c->processPkt)
-    {	// Parsing in progress.  Record current time.
+    {   // Parsing in progress.  Record current time.
         c->parser.timeMs = timeMs;
     }
 #endif
@@ -1236,54 +1571,64 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
-static inline void parse_messages(unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
 {
+    if (!comm)
+        return;
+
     // Search comm buffer for valid packets
     protocol_type_t ptype;
+
+#if DEBUG_PARSE_MSG
+    static const char* ptype_names[_PTYPE_SIZE] = { "NONE", "ERROR", "ISB_ACK", "ISB_CMD", "ISB_DATA", "NMEA", "UBLOX", "RTCM3", "SPARTN", "SONY" };
+    static char log_msg[512];
+    int log_msg_pos = sprintf(log_msg, "parse_messages() parsed:");
+#endif
+
     while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
     {
         // Found valid packet
         switch (ptype)
         {
-        case _PTYPE_INERTIAL_SENSE_DATA:
-            if (callbacks->isb)
-            {
-                callbacks->isb(port, comm);
-            }
-            if (callbacks->isbData)
-            {
-                p_data_t data;
-                is_comm_to_isb_p_data(comm, &data);
-                callbacks->isbData(port, &data);
-            }
-            break;
-        case _PTYPE_INERTIAL_SENSE_ACK:
-        case _PTYPE_INERTIAL_SENSE_CMD:
-            if (callbacks->isb)
-            {
-                callbacks->isb(port, comm);
-            }
-            break;
-
-        case _PTYPE_NMEA:               if (callbacks->nmea)    { callbacks->nmea( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_RTCM3:              if (callbacks->rtcm3)   { callbacks->rtcm3(port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_SPARTN:             if (callbacks->sprtn)   { callbacks->sprtn(port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_UBLOX:              if (callbacks->ublox)   { callbacks->ublox(port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_SONY:               if (callbacks->sony)    { callbacks->sony( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_SEPTENTRIO_SBF:     if (callbacks->sept)    { callbacks->sept( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_SEPTENTRIO_REPLY:   if (callbacks->sept)    { callbacks->sept( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_PARSE_ERROR:        if (callbacks->error)   { callbacks->error(port, comm); } break;
-        default: break;
+            case _PTYPE_INERTIAL_SENSE_DATA:
+                if (comm->cb.isbData)
+                {
+                    p_data_t data;
+                    is_comm_to_isb_p_data(comm, &data);
+#if DEBUG_PARSE_MSG
+                    log_msg_pos += sprintf(log_msg + log_msg_pos, " [ISB.%03d]", data.hdr.id);
+#endif
+                    comm->cb.isbData(comm->cb.context, &data, port);
+                }
+#if DEBUG_PARSE_MSG
+                else { log_msg_pos += sprintf(log_msg + log_msg_pos, " [ISB]"); }
+#endif
+                break;
+            case _PTYPE_INERTIAL_SENSE_ACK:
+            case _PTYPE_INERTIAL_SENSE_CMD:
+                break;
+            default:
+#if DEBUG_PARSE_MSG
+                log_msg_pos += sprintf(log_msg + log_msg_pos, " [%s]", ptype_names[ptype]);
+#endif
+                if (comm->cb.generic[ptype]) {
+                    comm->cb.generic[ptype](comm->cb.context, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
+                }
+                break;
         }
 
-        if (callbacks->all)
+        if (comm->cb.all)
         {
-            callbacks->all(port, comm);
+            comm->cb.all(comm->cb.context, ptype, &(comm->rxPkt), port);
         }
     }
+
+#if DEBUG_PARSE_MSG
+    log_more_debug(IS_LOG_ISCOMM, "%s", log_msg);
+#endif
 }
 
-void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm)
 {
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = (int)_MIN((int)buf_size, is_comm_free(comm));
@@ -1294,11 +1639,19 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
     comm->rxBuf.tail += n;
 
     // Parse messages and call corresponding callback functions
-    parse_messages(0, comm, callbacks);
+    parse_messages(comm, NULL);
 }
 
-void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+void is_comm_port_parse_messages(port_handle_t port)
 {
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
+        return;
+
+    if (COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)
+        return;
+
+    is_comm_instance_t* comm = &COMM_PORT(port)->comm;
+
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int bytesFree = is_comm_free(comm);
 
@@ -1313,7 +1666,7 @@ void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, 
     comm->rxBuf.tail += n;
 
     // Parse messages and call corresponding callback functions
-    parse_messages(port, comm, callbacks);
+    parse_messages(comm, port);
 }
 
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
@@ -1328,7 +1681,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-int is_comm_get_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
+int is_comm_get_data(port_handle_t port, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 
@@ -1337,10 +1690,10 @@ int is_comm_get_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_in
     get.size = size;
     get.period = periodMultiple;
 
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
+    return is_comm_write(port, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     // Header
     pkt->hdr.preamble = PSC_ISB_PREAMBLE;
@@ -1351,13 +1704,13 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
     // Payload
     pkt->offset = offset;
     if (offset)
-    {	// Offset in payload
+    {   // Offset in payload
         pkt->hdr.flags |= ISB_FLAGS_PAYLOAD_W_OFFSET;
         pkt->hdr.payloadSize += 2;
     }
-    pkt->data.ptr = data;
+    pkt->data.ptr = (uint8_t *)data; // discard 'const'
     pkt->data.size = data_size;
-    pkt->size = pkt->hdr.payloadSize + sizeof(packet_hdr_t) + 2;	// Pkt header + payload + checksum
+    pkt->size = pkt->hdr.payloadSize + sizeof(packet_hdr_t) + 2;    // Pkt header + payload + checksum
 
     // Header checksum
     pkt->hdrCksum = is_comm_isb_checksum16(0, &pkt->hdr, sizeof(pkt->hdr));
@@ -1374,7 +1727,7 @@ void memcpyIncUpdateChecksum(uint8_t **dstBuf, const uint8_t* srcBuf, int len, u
 int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
 {
     if (pkt->size > buf_size)
-    {	// Packet doesn't fit in buffer
+    {   // Packet doesn't fit in buffer
         return -1;
     }
 
@@ -1390,45 +1743,50 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
         memcpyIncUpdateChecksum(&buf, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
     MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
-    
+
     // Increment Tx count
     comm->txPktCount++;
 
     return pkt->size;
 }
 
-int portWriteUpdateChecksum(pfnIsCommPortWrite portWrite, int port, const uint8_t* buf, int len, uint16_t *checksum)
+int portWriteUpdateChecksum(port_handle_t port, const uint8_t* buf, int len, uint16_t *checksum)
 {
     *checksum = is_comm_isb_checksum16(*checksum, buf, len);
     return portWrite(port, buf, len);
 }
 
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *pkt)
+int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
+    {   // can't write if we don't have a valid port, or the port isn't an ISComm
+        return -1;
+    }
+
     if (pkt->data.size + sizeof(packet_hdr_t) + 4 > PKT_BUF_SIZE)
-    {	// Packet size + offset + payload + footer is too large
+    {   // Packet size + offset + payload + footer is too large
         return -1;
     }
 
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-#ifdef GPX_1    // @Tony We want to remove this and use the single write call version for all ports.  We first need the stack usage (high water marks) 
+#ifdef GPX_1    // @Tony We want to remove this and use the single write call version for all ports.  We first need the stack usage (high water marks)
     // implemented in the GPX RTOS status so we know if it is save to allocate a 2048 bytes buffer on the stack as a local variable in this function.
-    
+
     // Write packet to port in multiple write calls (LEGACY).  Interruptable calls to this function that also write to the port could cause severed packets written.
 
     // Write packet to port
-    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                                           // Header
+    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                               // Header
     if (pkt->offset)
     {
-        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));               // Offset (optional)
+        n += portWriteUpdateChecksum(port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));              // Offset (optional)
     }
-    if (pkt->data.size)
+    if (pkt->data.size && pkt->data.ptr)
     {
-        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));   // Payload
+        n += portWriteUpdateChecksum(port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));  // Payload
     }
-    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                            // Footer (checksum)
+    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                // Footer (checksum)
 #else
     // Write packet to port in a single write call.  Reentrant function that prevents severed packets written to the port if this function gets interrupted and data written the same port.
     uint8_t buf[PKT_BUF_SIZE];
@@ -1440,24 +1798,24 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int
     {
         memcpyIncUpdateChecksum(&ptr, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));                               // Offset (optional)
     }
-    if (pkt->data.size)
+    if (pkt->data.size && pkt->data.ptr)
     {
         memcpyIncUpdateChecksum(&ptr, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));                   // Payload
     }
     MEMCPY_INC(ptr, (uint8_t*)&(pkt->checksum), 2);                                                                 // Footer (checksum)
 
-    // Write entire packet to port (all at once).  
-    int n = portWrite(port, buf, ptr - buf);
+    // Write entire packet to port (all at once).
+    int n = portWrite(port, buf, (unsigned int)(ptr - buf));
 #endif
 
     // Increment Tx count
-    comm->txPktCount++;
+    COMM_PORT(port)->comm.txPktCount++;
 
     // Check that number of bytes sent matches packet size.  Return number of bytes written on success or -1 on failure.
     return (n == pkt->size) ? n : -1;
 }
 
-int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     packet_t txPkt;
 
@@ -1468,17 +1826,17 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
     return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
-int is_comm_write(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     packet_t txPkt;
 
     // Encode header and header checksum.  Update checksum and write packet to buffer.  Returns number of bytes written on success or -1 on failure.
-    return is_comm_write_pkt(portWrite, port, comm, &txPkt, flags, did, data_size, offset, data);
+    return is_comm_write_pkt(port, &txPkt, flags, did, data_size, offset, data);
 }
 
-int is_comm_write_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
-    if (portWrite == NULL)
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
     {
         return -1;
     }
@@ -1487,7 +1845,7 @@ int is_comm_write_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_i
     is_comm_encode_hdr(txPkt, flags, did, data_size, offset, data);
 
     // Update checksum and write packet to port.  Returns number of bytes written on success or -1 on failure.
-    return is_comm_write_isb_precomp_to_port(portWrite, port, comm, txPkt);
+    return is_comm_write_isb_precomp_to_port(port, txPkt);
 }
 
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)
@@ -1559,7 +1917,7 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *c, const unsigned int maxsize)
-{   
+{
     const bufPtr_t *data = &(c->rxPkt.data);
     if ((data->size + c->rxPkt.offset) <= maxsize)
     {

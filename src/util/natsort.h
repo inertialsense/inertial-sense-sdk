@@ -51,6 +51,19 @@ namespace utils {
     int natcmp(const std::string& a, const std::string& b);
     int natcasecmp(const std::string& a, const std::string& b);
 
+    struct nat_cmp {
+        bool operator()(const std::string& s1, const std::string& s2) const {
+            return (utils::natcmp(s1, s2) < 0);
+        }
+    };
+
+    struct nat_case_cmp {
+        bool operator()(const std::string& s1, const std::string& s2) const {
+            return (utils::natcasecmp(s1, s2) < 0);
+        }
+    };
+
+
 #ifdef __cplusplus
     }
 #endif

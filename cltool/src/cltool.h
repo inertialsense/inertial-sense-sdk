@@ -18,6 +18,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iomanip>      // std::setw
 #include <algorithm>
 #include <string>
+#include <any>
+#include <memory>
 
 // change these includes to be the correct path for your system
 #include "InertialSense.h" // best to include this file first
@@ -25,6 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISBootloaderBase.h"
 #include "util/util.h"
+#include "CorrectionService.h"
 
 #define APP_NAME                "cltool"
 #if PLATFORM_IS_WINDOWS
@@ -36,18 +39,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define EXAMPLE_SPACE_1         "    "
 #define EXAMPLE_SPACE_2         "   "
 #else
-#define APP_EXT	                ""
+#define APP_EXT                 ""
 #define EXAMPLE_PORT            "/dev/ttyS2"
 #define EXAMPLE_LOG_DIR         "logs/20170117_222549                "
 #define EXAMPLE_FIRMWARE_FILE   "fw/IS_IMX-5.hex"
 #define EXAMPLE_BOOTLOADER_FILE "fw/IS_bootloader-STM32L4.hex"
 #define EXAMPLE_SPACE_1         "    "
-#define EXAMPLE_SPACE_2			"         "
+#define EXAMPLE_SPACE_2         "         "
 #endif
 
 enum eExitCodes
 {
-    EXIT_CODE_SUCCESS 	                            =  0,
+    EXIT_CODE_SUCCESS                               =  0,
     EXIT_CODE_INVALID_COMMAND_LINE                  = -1,
     EXIT_CODE_PARSE_COMMAND_LINE_FAILED             = -2,
     EXIT_CODE_NO_DEVICES_FOUND                      = -3,
@@ -56,14 +59,41 @@ enum eExitCodes
     EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS        = -6,
 };
 
+// Exit code descriptions
+static const struct {
+    eExitCodes code;
+    const char* description;
+} g_exitCodeStrings[] = {
+    { EXIT_CODE_SUCCESS,                        "Success" },
+    { EXIT_CODE_INVALID_COMMAND_LINE,           "Invalid command line arguments" },
+    { EXIT_CODE_PARSE_COMMAND_LINE_FAILED,      "Failed to parse command line" },
+    { EXIT_CODE_NO_DEVICES_FOUND,               "No devices found" },
+    { EXIT_CODE_DEVICE_DISCONNECTED,            "Device disconnected" },
+    { EXIT_CODE_FIRMWARE_UPDATE_FAILED,         "Firmware update failed" },
+    { EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS, "Failed to setup communications" },
+};
+
+// Get human-readable description for exit code
+static inline const char* getExitCodeDescription(int exitCode)
+{
+    for (size_t i = 0; i < sizeof(g_exitCodeStrings) / sizeof(g_exitCodeStrings[0]); ++i)
+    {
+        if (g_exitCodeStrings[i].code == exitCode)
+        {
+            return g_exitCodeStrings[i].description;
+        }
+    }
+    return "Unknown exit code";
+}
+
 typedef struct
 {
-    eDataIDs	did;
-    int			periodMultiple;
+    eDataIDs    did;
+    int         periodMultiple;
     struct {
         uint64_t    lastRxTime;
         double      rxCount;
-    }           rxStats;
+    }rxStats;
 } stream_did_t;
 
 typedef struct
@@ -93,48 +123,51 @@ typedef struct
 
 typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
-    std::string comPort; 					// -c com_port
-    std::string updateAppFirmwareFilename; 	// -uf file_name
-    std::string updateBootloaderFilename; 	// -ub file_name
+    std::string comPort;                     // -c com_port
+    std::string updateAppFirmwareFilename;     // -uf file_name
+    std::string updateBootloaderFilename;     // -ub file_name
     std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
-    bool forceBootloaderUpdate;				// -fb
-    bool bootloaderVerify; 					// -bv
+    std::vector<std::string> fwPolicyOverrides; // -fw-set-policy args
+    bool forceBootloaderUpdate;                // -fb
+    bool bootloaderVerify;                     // -bv
     bool replayDataLog;
     bool softwareReset;
     bool magRecal;
     uint32_t magRecalMode;
     survey_in_t surveyIn;
     bool nmeaRx;
-    std::string nmeaMessage;				// A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent 
+    std::string nmeaMessage;                // A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent
     double replaySpeed;
     int displayMode;
-    int verboseLevel = ISBootloader::eLogLevel::IS_LOG_LEVEL_INFO;
-    
+    int verboseLevel = IS_LOG_LEVEL_INFO;
+
     uint64_t rmcPreset;
     bool persistentMessages;
-    stream_did_t datasetEdit;				// -edit DID#=periodMultiple
-    std::vector<stream_did_t> datasets;		// -did DID#=periodMultiple	
-    
+    stream_did_t datasetEdit;               // -edit DID#=periodMultiple
+    std::vector<stream_did_t> datasets;     // -did DID#=periodMultiple
+
     bool enableLogging;
-    std::string logType; 					// -lt=dat
-    std::string logPath; 					// -lp path
-    float logDriveUsageLimitPercent; 		// -lms=max_drive_percent, 0 for disabled
-    float logDriveUsageLimitMb;				// -lmb=max_drive_limit_mb, 0 for disabled
-    uint32_t maxLogFileSize; 				// -lmf=max_file_size
-    std::string logSubFolder; 				// -lts=1
-    int baudRate; 							// -baud=3000000
-    bool disableBroadcastsOnClose;	
-    
-    std::string roverConnection; 			// -rover=type:IP/URL:port:mountpoint:user:password   (server)
-    std::string baseConnection; 			// -base=IP:port    (client)	
-    
+    std::string logType;                    // -lt=dat
+    std::string logPath;                    // -lp path
+    float logDriveUsageLimitPercent;        // -lms=max_drive_percent, 0 for disabled
+    float logDriveUsageLimitMb;             // -lmb=max_drive_limit_mb, 0 for disabled
+    uint32_t maxLogFileSize;                // -lmf=max_file_size
+    std::string logSubFolder;               // -lts=1
+    int baudRate;                           // -baud=3000000
+    bool disableBroadcastsOnClose;
+
+    std::string roverConnection;            // -rover=type:IP/URL:port:mountpoint:user:password   (server)
+    std::string baseConnection;             // -base=IP:port    (client)
+
     bool imxflashCfgSet;
     bool gpxflashCfgSet;
     std::string imxFlashCfg;
     std::string gpxFlashCfg;
     uint32_t timeoutFlushLoggerSeconds;
-    std::vector<uint32_t> outputOnceDid;	
+    std::vector<uint32_t> outputOnceDid;    
     std::vector<uint32_t> setAckDid;
+    bool imxCalUpload = false;
+    std::string imxCalUploadFile;
 
     YAML::Node getNode;
     YAML::Node setNode;
@@ -143,23 +176,26 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     int32_t platformType;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
-    uint32_t runDurationMs = 0;				// Run for this many millis before exiting (0 = indefinitely)
-    bool list_devices = false;				// if true, dumps results of findDevices() including port name.
+    uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
+    bool list_devices = false;              // if true, dumps results of findDevices() including port name.
+    bool useMdns = false;                   // if true, registers ISmDnsPortFactory for mDNS network device discovery
+    uint8_t mdnsResolvePreference = 0x07;  // bitmask of MdnsResolveFlags for address resolution preference (default: IPv4|IPv6|hostname)
     EVFContainer_t evFCont = {0};
     EVMContainer_t evMCont = {0};
     EVOContainer_t evOCont;
 
-    bool disableDeviceValidation = false;	// Keep port(s) open even if no devices response is received.
-    bool listenMode = false;				// Disable device verification and don't send stop-broadcast command on start.
+    uint64_t targetDeviceId = 0;            // -sn: encoded device identifier (hdwId << 48 | serialNumber). Parsed from "IMX-5.0:SN129495" or just "129495"
+    bool disableDeviceValidation = false;   // Keep port(s) open even if no devices response is received.
+    bool listenMode = false;                // Disable device verification and don't send stop-broadcast command on start.
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;
-extern serial_port_t g_serialPort;
+extern port_handle_t g_serialPort;
 extern cInertialSenseDisplay g_inertialSenseDisplay;
 extern bool g_ctrlCPressed;
 
 int cltool_main(int argc, char* argv[]);
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend);
+int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend);
 
 // returns false if failure
 bool cltool_setupLogger(InertialSense& inertialSenseInterface);
@@ -169,10 +205,46 @@ bool cltool_extractEventData();
 void cltool_outputUsage();
 void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
-void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
-void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
+void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
+void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
+bool cltool_uploadImxCalibrationFile(InertialSense& inertialSenseInterface, std::string calFilePath);
+
+/**
+ * Override the ISDevice class so we can implement our own data handlers
+ */
+class CltoolDevice : public ISDevice {
+    public:
+    CltoolDevice(const dev_info_t& _devInfo, port_handle_t _port) : ISDevice(_devInfo, _port) { }
+    ~CltoolDevice() override = default;
+
+    int onIsbDataHandler(p_data_t *data, port_handle_t port) override;
+    int onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port) override;
+    int onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) override;
+};
+
+/**
+ * Implement a new CltoolDeviceFactory to create our CltoolDevice
+ */
+class CltoolDeviceFactory : public DeviceFactory {
+public:
+    static DeviceFactory& getInstance() {
+        static CltoolDeviceFactory instance;
+        return instance;
+    }
+
+private:
+    CltoolDeviceFactory() = default;
+    ~CltoolDeviceFactory() override = default;
+
+    /**
+     * Instantiate/allocate a new ISDevice (note that there is no distinction between IMX vs GPX devices at this point -- TODO??
+     * @param devInfo
+     * @return
+     */
+    virtual device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override { return std::make_shared<CltoolDevice>(devInfo, port); };
+};
 
 #endif // __CLTOOL_H__
 

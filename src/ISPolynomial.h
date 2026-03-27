@@ -26,23 +26,23 @@ y = output data array
 coef = polynomial coefficients
 num_coef = 1 + the highest degree (or order) of the monomials with non-zero coefficients
 
-	2nd Order Example:
-		y    =     A       c
-	[ y1 ] = [ x1  1 ] [ c0 ]
-	[ y2 ]   [ X2  1 ] [ c1 ]
-	[ yn ]   [ x2  1 ]
-	(n x 1)   (n x 2)  (2 x 1)
+    2nd Order Example:
+        y    =     A       c
+    [ y1 ] = [ x1  1 ] [ c0 ]
+    [ y2 ]   [ X2  1 ] [ c1 ]
+    [ yn ]   [ x2  1 ]
+    (n x 1)   (n x 2)  (2 x 1)
 
-	c = inv(At A) At y
+    c = inv(At A) At y
 
-	3rd Order Example:
-		y    =        A          c
-	[ y1 ] = [ x1^2  x1  1 ] [ c0 ]
-	[ y2 ]   [ x2^2  X2  1 ] [ c1 ]
-	[ yn ]   [ xn^2  x2  1 ] [ c2 ]
-	(n x 1)      (n x 3)     (3 x 1)
+    3rd Order Example:
+        y    =        A          c
+    [ y1 ] = [ x1^2  x1  1 ] [ c0 ]
+    [ y2 ]   [ x2^2  X2  1 ] [ c1 ]
+    [ yn ]   [ xn^2  x2  1 ] [ c2 ]
+    (n x 1)      (n x 3)     (3 x 1)
 
-	c = inv(At A) At y
+    c = inv(At A) At y
 
 @return 0 on success, -1 on failure
 */

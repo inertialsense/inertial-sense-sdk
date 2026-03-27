@@ -10,20 +10,12 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <ctime>
 #include <string>
-#include <sstream>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <iomanip>
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
+#include <cstdio>
+#include <cstddef>
 
 #include "DeviceLogRaw.h"
 #include "ISDataMappings.h"
-#include "ISDisplay.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
 #include "message_stats.h"
@@ -31,30 +23,36 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+cDeviceLogRaw::cDeviceLogRaw() : cDeviceLog() { initCommInstance(); }
+cDeviceLogRaw::cDeviceLogRaw(device_handle_t dev) : cDeviceLog(dev) { initCommInstance(); }
+cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) { initCommInstance(); };
 
-cDeviceLogRaw::cDeviceLogRaw() : cDeviceLog()
-{
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
+void cDeviceLogRaw::initCommInstance() {
+    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
+    is_comm_enable_protocol(&m_comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&m_comm, _PTYPE_NMEA);
+    is_comm_enable_protocol(&m_comm, _PTYPE_RTCM3);
+    is_comm_enable_protocol(&m_comm, _PTYPE_UBLOX);
+    // is_comm_register_msg_handler(&m_comm, _PTYPE_SONY, dummyGenericProtocolHandler);
 }
 
-cDeviceLogRaw::cDeviceLogRaw(const ISDevice *dev) : cDeviceLog(dev) {
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
-}
-
-cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
-};
-
-
-void cDeviceLogRaw::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+void cDeviceLogRaw::InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
 //     m_chunk.Init(chunkSize);
     m_chunk.Clear();
-    m_chunk.m_hdr.pHandle = (device != nullptr ? device->portHandle : -1);
-
+    m_chunk.m_hdr.devSerialNum = SerialNumber();
+    if (device) {
+        m_chunk.m_hdr.portId = portId(device->port);
+        m_chunk.m_hdr.portType = portType(device->port);
+    }
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
+void cDeviceLogRaw::InitDeviceForReading()
+{
+    m_chunk.Clear();
+    cDeviceLog::InitDeviceForReading();
+}
 
 bool cDeviceLogRaw::CloseAllFiles()
 {
@@ -75,7 +73,7 @@ bool cDeviceLogRaw::FlushToFile()
     cDeviceLog::FlushToFile();
 
     if (m_writeMode)
-    {	// Write any remaining chunk data to file
+    {   // Write any remaining chunk data to file
         WriteChunkToFile();
 
         return true;
@@ -86,6 +84,8 @@ bool cDeviceLogRaw::FlushToFile()
 
 bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
+    cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);    // call into the super, in case it needs to do something special
+
     // Parse messages for statistics and DID_DEV_INFO
     for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)
     {
@@ -100,15 +100,13 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 timestamp = current_timeSecD();
                 break;
 
-			case _PTYPE_PARSE_ERROR:
-				if (m_showParseErrors)
-				{ 
-					if (m_comm.rxErrorCount>1) 
-					{ 
-						printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
-					}
-				}
-				break;
+            case _PTYPE_PARSE_ERROR:
+                if (m_showParseErrors) {
+                    if (m_comm.rxErrorCount > 1) {
+                        printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
+                    }
+                }
+                break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
@@ -123,14 +121,28 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                         if (device != nullptr)
                             devInfo = (dev_info_t *) &(device->devInfo);
 
-                        // Record the serial number in the chunk header if available
-                        if (!copyDataPToStructP2((void *) devInfo, &m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, sizeof(dev_info_t)))
-                        {
+                        // Record the serial number, protocol and firmware version in the chunk header if available
+                        if (!copyDataPToStructP2((void *) devInfo, &m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, sizeof(dev_info_t))) {
                             int start = m_comm.rxPkt.dataHdr.offset;
                             int end = m_comm.rxPkt.dataHdr.offset + m_comm.rxPkt.dataHdr.size;
-                            int snOffset = offsetof(dev_info_t, serialNumber);
+
+                            if (!devInfo->hdwRunState)
+                                devInfo->hdwRunState = HDW_STATE_APP;   // FIXME: this should go away once the DEV_INFO from the device correctly reports the runState
+
+                            // Did we really get the protocol version?
+                            int protOffset = offsetof(dev_info_t, protocolVer);
+                            if (start <= protOffset && (int) (protOffset + sizeof(uint32_t)) <= end) {
+                                memcpy(m_chunk.m_hdr.fwVersion, devInfo->protocolVer, 4);
+                            }
+
+                            // Did we really get the firmware version?
+                            int fwOffset = offsetof(dev_info_t, firmwareVer);
+                            if (start <= fwOffset && (int) (fwOffset + sizeof(uint32_t)) <= end) {
+                                memcpy(m_chunk.m_hdr.fwVersion, devInfo->firmwareVer, 4);
+                            }
 
                             // Did we really get the serial number?
+                            int snOffset = offsetof(dev_info_t, serialNumber);
                             if (start <= snOffset && (int) (snOffset + sizeof(uint32_t)) <= end) {
                                 m_chunk.m_hdr.devSerialNum = devInfo->serialNumber;
                             }
@@ -152,7 +164,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
         // Save chunk to file and clear
         if (!WriteChunkToFile())
         {
-            return false;
+            return false;   // there was a error writing the chunk to disk
         }
         else if (m_fileSize >= m_maxFileSize)
         {
@@ -165,7 +177,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     m_logSize += dataSize;
     if (!m_chunk.PushBack((unsigned char*)dataBuf, dataSize))
     {
-        return false;
+        return false;   // unable to push the buffer into the chunk
     }
 
     return true;
@@ -202,35 +214,67 @@ bool cDeviceLogRaw::WriteChunkToFile()
     // File byte size
     m_fileSize += fileBytes;
 
+    writeIndexChunk();
+
     return true;
+}
+
+
+packet_t* cDeviceLogRaw::ReadPacket(protocol_type_t &ptype)
+{
+    packet_t* pkt = NULL;
+
+    // Read data from chunk
+    while (!(pkt = ReadPacketFromChunk(ptype)))
+    {
+        // Read next chunk from file
+        if (!ReadChunkFromFile())
+        {
+            return NULL;
+        }
+    }
+
+    return pkt;
 }
 
 
 p_data_buf_t* cDeviceLogRaw::ReadData()
 {
-    p_data_buf_t* data = NULL;
-
     // Read data from chunk
-    while (!(data = ReadDataFromChunk()))
+    while (1)
     {
-        // Read next chunk from file
-        if (!ReadChunkFromFile())
-        {   // File is empty
-            return NULL;
+        protocol_type_t ptype;
+        ReadPacketFromChunk(ptype);
+        switch (ptype)
+        {
+        default:    // Skip other protocols
+            break;
+
+        case _PTYPE_INERTIAL_SENSE_CMD:
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            return &m_pData;
+
+        case _PTYPE_NONE:
+            // Read next chunk from file
+            if (!ReadChunkFromFile())
+            {   // File is empty
+                return NULL;
+            }
         }
     }
 
-    return data;
+    return NULL;
 }
 
 
-p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
+packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
 {
     int chunkSize = m_chunk.GetDataSize();
 
     // Ensure chunk has data
     if (chunkSize <= 0)
     {
+        ptype = _PTYPE_NONE;
         return NULL;
     }
 
@@ -239,7 +283,8 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
         uint8_t *dataPtr = m_chunk.GetDataPtr();
 
         if (dataPtr == NULL)
-        {	// No more data
+        {   // No more data
+            ptype = _PTYPE_NONE;
             return NULL;
         }
 
@@ -247,7 +292,6 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
         uint8_t data = *dataPtr;
         m_chunk.PopFront(1);
 
-        protocol_type_t ptype;
         if ((ptype = is_comm_parse_byte(&m_comm, data)) != _PTYPE_NONE)
         {
             switch (ptype)
@@ -269,11 +313,12 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
 
                 m_pData.hdr = m_comm.rxPkt.dataHdr;
                 memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
-                return &m_pData;
             }
+            return &m_comm.rxPkt;
         }
     }
 
+    ptype = _PTYPE_NONE;
     return NULL;
 }
 
@@ -306,5 +351,3 @@ void cDeviceLogRaw::Flush()
         m_pFile->flush();
     }
 }
-
-

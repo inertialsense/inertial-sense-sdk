@@ -52,14 +52,14 @@ class DeviceRuntimeTests
             memcpy(msg, dataBuf_, _MIN(dataHdr.size, MAX_MSG_LENGTH_NMEA));
         }
 
-        system_time_t   localTime;
-        utc_date_t      date;
-        utc_time_t      time;
-        uint32_t        gpsTowMs;
-        uint32_t        gpsWeek;
-        uint8_t         msg[MAX_MSG_LENGTH_NMEA];
+        system_time_t   localTime = { };
+        utc_date_t      date = { };
+        utc_time_t      time = { };
+        uint32_t        gpsTowMs = 0;
+        uint32_t        gpsWeek = 0;
+        uint8_t         msg[MAX_MSG_LENGTH_NMEA] = { };
         int             msgSize = 0;
-        p_data_hdr_t    dataHdr = {};
+        p_data_hdr_t    dataHdr = { };
         bool            timeIrregular = false;    // used to prevent redundant error logging
     } msg_history_t;
 
@@ -97,12 +97,14 @@ public:
     }
     void Verbose(bool enable=true){ m_verbose = enable; };
 
+    void EnablePrintToDisplay(bool enable=true){ m_printToDisplay = enable; };
+
     struct error_count
     {
-        int parse;
-        int isbGpsTime;
-        int nmeaGgaTime;
-        int nmeaZdaTime;
+        int parse = 0;
+        int isbGpsTime = 0;
+        int nmeaGgaTime = 0;
+        int nmeaZdaTime = 0;
     } m_errorCount = {};
     
 private:
@@ -128,6 +130,7 @@ private:
     bool m_verbose = false;
     dev_info_t m_devInfo = {};
     std::string m_portName;
+    bool m_printToDisplay = true;
 
     RuntimeTest     m_testGgaDuplicate{"GGA Duplicate"};
     RuntimeTest     m_testZdaDuplicate{"ZDA Duplicate"};

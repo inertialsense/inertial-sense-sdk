@@ -10,26 +10,20 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+
 #include "cltool.h"
 #include <string.h>
 #include <chrono>
 #include <ctime>
 #include "ISDataMappings.h"
+#include "ISmDnsPortFactory.h"
 
 using namespace std;
 
 cmd_options_t g_commandLineOptions = {};
-serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
 gpx_flash_cfg_t g_gpxFlashCfg_upload = {};
-
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
-{
-    (void)cmHandle;
-    (void)pHandle;
-    return serialPortWrite(&g_serialPort, bufferToSend->buf, bufferToSend->size);
-}
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 {   // Enable logging in continuous background mode
@@ -40,12 +34,18 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
     options.maxFileSize = g_commandLineOptions.maxLogFileSize;                          // each log file will be no larger than this in bytes
     options.useSubFolderTimestamp = g_commandLineOptions.logSubFolder != cISLogger::g_emptyString;
     options.timeStamp = g_commandLineOptions.logSubFolder;                              // log sub folder name
-    return inertialSenseInterface.EnableLogger(
+
+    bool result = inertialSenseInterface.EnableLogger(
         g_commandLineOptions.enableLogging,
         g_commandLineOptions.logPath,
         options,
         g_commandLineOptions.rmcPreset,
         RMC_OPTIONS_PRESERVE_CTRL);
+
+    for (auto& d : inertialSenseInterface.getDevices())
+        inertialSenseInterface.Logger()->registerDevice(d);
+
+    return result;
 }
 
 static bool startsWith(const char* str, const char* pre)
@@ -72,7 +72,14 @@ static bool matches(const char* str, const char* pre)
 #define CL_DEFAULT_REPLAY_SPEED                     1.0
 #define CL_DEFAULT_BOOTLOAD_VERIFY                  false
 
-
+/**
+ * @brief Parses a string argument for a specific data ID and field.
+ * 
+ * @param s The input string to parse.
+ * @param dataset The dataset to populate with the parsed data ID.
+ * @param fields The fields to populate with the parsed field information.
+ * @return true if the argument was successfully parsed, false otherwise.
+ */
 bool read_get_did_argument(string s, stream_did_t *dataset, std::string &fields)
 {
     eDataIDs did = cISDataMappings::Did(s);
@@ -190,10 +197,8 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
         return false;
     }
 
-    // cout << "Parsed YAML: " << node << endl;
     // Convert indexed keys to sequences i.e. {gps1AntOffset[0]: 1.5, gps1AntOffset[1]: 2.5} becomes {gps1AntOffset: [1.5, 2.5]}
     ConvertIndexedKeysToSequences(node);
-    // cout << "Revised YAML: " << node << endl;
 
     g_commandLineOptions.datasets.clear();
     g_commandLineOptions.outputOnceDid.clear();
@@ -243,8 +248,6 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
     // Update yaml node to ensure keys are DID names instead of DID numbers 
     node = newNode;
 
-    // cout << "Parsed YAML: " << node << endl;
-
     if (g_commandLineOptions.datasets.empty())
     {
         std::cout << "Invalid argument: " << s << std::endl;
@@ -282,14 +285,14 @@ bool read_did_argument(string s, stream_did_t *dataset)
 
 string cltool_version()
 {
-	string info;
-#if defined(IS_SDK_DESCRIBE_TAG)
-	info += string("") + IS_SDK_DESCRIBE_TAG;
+    string info("Version ");
+#if defined(IS_SDK_REPO_VERSION)
+    info += string("") + IS_SDK_REPO_VERSION;
 #endif
 #if defined(IS_SDK_BUILD_DATE) && defined(IS_SDK_BUILD_TIME)
-	info += string(" ") + IS_SDK_BUILD_DATE + " " + IS_SDK_BUILD_TIME;
+    info += string(" ") + IS_SDK_BUILD_DATE + " " + IS_SDK_BUILD_TIME;
 #endif
-	return info;
+    return info;
 }
 
 void print_dids()
@@ -331,6 +334,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.nmeaMessage = "";
     g_commandLineOptions.updateBootloaderFilename = "";
     g_commandLineOptions.forceBootloaderUpdate = false;
+    g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_WARN;
 
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
@@ -340,7 +344,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;
     g_commandLineOptions.runDurationMs = 0; // run until interrupted, by default
 
-    if(argc <= 1)
+    if (argc <= 1)
     {   // Display usage menu if no options are provided
         cltool_outputUsage();
         return false;
@@ -366,12 +370,26 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
         }
+        else if (startsWith(a, "-cal-upload"))
+        {
+            g_commandLineOptions.imxCalUpload = true;
+            if ((i < argc - 1) && (argv[i+1][0] != '-')) {
+                i++;
+                g_commandLineOptions.imxCalUploadFile = &argv[i][0];
+            }
+        }
+        else if (startsWith(a, "-chipEraseIMX"))
+        {
+            g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
+        }
         else if (startsWith(a, "-chipEraseIMX"))
         {
             g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
         }
         else if (matches(a, "-c") && (i + 1) < argc)
         {
+            // Supports: single port (e.g., "COM5"), comma-separated ports (e.g., "COM2,COM4,COM5"),
+            // wildcard (e.g., "*" for all ports, "*4" for first 4 ports)
             g_commandLineOptions.comPort = argv[++i];   // use next argument
         }
         else if (startsWith(a, "-dboc"))
@@ -427,14 +445,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.evFCont.dest = stoi(token);
 
             if (g_commandLineOptions.evFCont.dest == 0)
-                printf("EVF Target: Primary device\n");
+                printf("EVF Target: Primary device.\n");
             else if (g_commandLineOptions.evFCont.dest == 1)
-                printf("EVF Target: device GNSS1 port\n");
+                printf("EVF Target: device GNSS1 port.\n");
             else if (g_commandLineOptions.evFCont.dest == 2)
-                printf("EVF Target: device GNSS2 port\n");
+                printf("EVF Target: device GNSS2 port.\n");
             else
             {
-                printf("EVF Target: INVALID\n");
+                printf("EVF Target: INVALID '%s'\n", token);
                 g_commandLineOptions.evFCont.sendEVF = false;
                 continue;
             }
@@ -566,7 +584,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 printf("EVO Enabled!\n");
             }
             else if ((i + 1) < argc)
-                printf("EVO destination file: MISSING! See usage!\n"); 
+                printf("EVO destination file: MISSING! See usage!\n");
             else if ((i + 2) < argc)
                 printf("EVO SRC file type: MISSING! See usage!\n");
             else
@@ -644,6 +662,24 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
+        else if (startsWith(a, "-use-mdns"))
+        {
+            g_commandLineOptions.useMdns = true;
+        }
+        else if (startsWith(a, "-mdns-resolve="))
+        {
+            std::string val = &a[14];
+            uint8_t flags = 0;
+            if (val.find("v4") != std::string::npos || val.find("ipv4") != std::string::npos)
+                flags |= MDNS_RESOLVE_IPV4;
+            if (val.find("v6") != std::string::npos || val.find("ipv6") != std::string::npos)
+                flags |= MDNS_RESOLVE_IPV6;
+            if (val.find("hostname") != std::string::npos || val.find("host") != std::string::npos)
+                flags |= MDNS_RESOLVE_HOSTNAME;
+            if (flags == 0)
+                flags = MDNS_RESOLVE_DEFAULT;
+            g_commandLineOptions.mdnsResolvePreference = flags;
+        }
         else if (startsWith(a, "-lmf="))
         {
             g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
@@ -714,7 +750,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-platform"))
         {
             #define PLATFORM_TYPE_TAG_LEN    10
-            if(strlen(a) <= PLATFORM_TYPE_TAG_LEN || !isdigit(a[PLATFORM_TYPE_TAG_LEN]))
+            if (strlen(a) <= PLATFORM_TYPE_TAG_LEN || !isdigit(a[PLATFORM_TYPE_TAG_LEN]))
             {
                 cout << "Platform type not specified.\n\n";
                 return false;
@@ -731,6 +767,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.platformType = platformType;
             }
         }
+        else if (startsWith(a, "-presetGPS"))
+        {
+            g_commandLineOptions.rmcPreset = RMC_PRESET_GPS;
+            enable_display_mode();
+        }
         else if (startsWith(a, "-presetGPXPPD"))
         {
             g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
@@ -744,6 +785,20 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-presetINS"))
         {
             g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-preset="))
+        {
+            if (startsWith(a, "-preset=INS"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
+            else if (startsWith(a, "-preset=PPD"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD;
+            else if (startsWith(a, "-preset=PPD_GROUND_VEHICLE"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
+            else if (startsWith(a, "-preset=PPD_RTK"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_RTK_DBG;
+            else if (startsWith(a, "-preset=PPD_GPX"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))
@@ -774,14 +829,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-reset"))
         {
             g_commandLineOptions.softwareReset = true;
-        }		
-		else if (startsWith(a, "-romBootloader"))
-		{
-			g_commandLineOptions.sysCommand = SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER;
-		}
-		else if (startsWith(a, "-rover="))
-		{
-			g_commandLineOptions.roverConnection = &a[7];
+        }        
+        else if (startsWith(a, "-romBootloader"))
+        {
+            g_commandLineOptions.sysCommand = SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER;
+        }
+        else if (startsWith(a, "-rover="))
+        {
+            g_commandLineOptions.roverConnection = &a[7];
 
             // DID_GPS1_POS must be enabled for NTRIP VRS to supply rover position.
             stream_did_t dataset = {};
@@ -817,26 +872,36 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:        g_commandLineOptions.disableDeviceValidation = true;    break;
             }
         }
+        else if (matches(a, "-sn") && (i + 1) < argc)
+        {
+            g_commandLineOptions.targetDeviceId = ISDevice::parseDeviceIdString(argv[++i]);
+            if (g_commandLineOptions.targetDeviceId == 0) {
+                cout << "Invalid device identifier: " << argv[i] << ". Expected: 129495, SN129495, or IMX-5.0:SN129495" << endl;
+                return false;
+            }
+        }
         else if (startsWith(a, "-s"))
         {
             enable_display_mode(cInertialSenseDisplay::DMODE_SCROLL);
         }
         else if (startsWith(a, "-ub") && (i + 1) < argc)
         {
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO;
             g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
             g_commandLineOptions.updateBootloaderFilename = argv[++i];              // use next argument
         }
         else if (startsWith(a, "-uf") && (i + 1) < argc)
         {
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO;
             if ((strcmp(a, "-ufpkg") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
                 g_commandLineOptions.fwUpdateCmds.push_back(string("package=") + string(argv[++i]));
                 enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }
             else if ((strcmp(a, "-uf-cmd") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
                 splitString(string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
                 enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }
@@ -845,6 +910,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;  // use legacy firmware update mechanism
                 g_commandLineOptions.updateAppFirmwareFilename = argv[++i];         // use next argument
             }
+        }
+        else if (startsWith(a, "-fw-set-policy") && (i + 1) < argc)
+        {
+            g_commandLineOptions.fwPolicyOverrides.push_back(argv[++i]);
         }
         else if (startsWith(a, "-uv"))
         {
@@ -855,11 +924,29 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.disableDeviceValidation = true;
         }
-        else if (startsWith(a, "-verbose"))
+        else if (startsWith(a, "-verbose") || startsWith(a, "-ll"))
         {
-            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO;
             if (a[8] == '=')
-                g_commandLineOptions.verboseLevel = atoi(&a[9]);
+            {
+                switch (a[9])
+                {
+                    case 'e': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_ERROR; break;
+                    case 'w': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_WARN; break;
+                    case 'i': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO; break;
+                    case 'I': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO; break;
+                    case 'd': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_DEBUG; break;
+                    case 'D': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_DEBUG; break;
+                    default: g_commandLineOptions.verboseLevel = (eLogLevel)atoi(&a[9]); break;
+                }
+            } else {
+                const char* p = &a[8];
+                while (*p == '+' || *p == '-' ) {
+                    g_commandLineOptions.verboseLevel += (*p == '+' ? 1 : -1);
+                    p++;
+                }
+            }
+            IS_SET_LOG_LEVEL((eLogLevel)g_commandLineOptions.verboseLevel);
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
@@ -874,20 +961,25 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
     }
 
-    // We are either using a serial port or replaying data
-    if ((g_commandLineOptions.comPort.length() == 0) && !g_commandLineOptions.replayDataLog)
+    // Always apply the verboseLevel to the SDK log system
+    IS_SET_LOG_LEVEL((eLogLevel)g_commandLineOptions.verboseLevel);
+
+    // We are either using a serial port, targeting a device by serial number, or replaying data
+    bool hasPort = (g_commandLineOptions.comPort.length() != 0);
+    bool hasTarget = (g_commandLineOptions.targetDeviceId != 0);
+    if (!hasPort && !hasTarget && !g_commandLineOptions.replayDataLog)
     {
         cltool_outputUsage();
         return false;
     }
-    else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+    else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && !hasPort && !hasTarget)
     {
-        cout << "Use DEVICE_PORT option \"-c \" with bootloader" << endl;
+        cout << "Use DEVICE_PORT option \"-c \" or \"-sn \" with bootloader" << endl;
         return false;
     }
-    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && !hasPort && !hasTarget)
     {
-        cout << "Use DEVICE_PORT option \"-c \" with bootloader" << endl;
+        cout << "Use DEVICE_PORT option \"-c \" or \"-sn \" with bootloader" << endl;
         return false;
     }
 
@@ -946,7 +1038,7 @@ bool cltool_extractEventData()
     uint8_t evScratch[1028 + DID_EVENT_HEADER_SIZE];
     c.rxBuf.start = evScratch;
     c.rxBuf.size = 1028 + DID_EVENT_HEADER_SIZE;
-    
+
     std::time_t logTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     if (g_commandLineOptions.evOCont.inFile.length() == 0)
@@ -1008,7 +1100,7 @@ bool cltool_extractEventData()
     {
 
         string deviceFolder = g_commandLineOptions.evOCont.outFile + "/SN-" + std::to_string(dl->SerialNumber());
-        
+
         if (stat(deviceFolder.c_str(), &info) == 0)
         {
             if (!(info.st_mode & S_IFDIR))
@@ -1053,14 +1145,14 @@ bool cltool_extractEventData()
                 {
                     case EVENT_MSG_TYPE_ID_RAW:  fileName = deviceFolder + "/out.raw"; break;
                     case EVENT_MSG_TYPE_ID_ASCII: fileName = deviceFolder + "/out.txt";  break;
-                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1: 
-                        fileName = deviceFolder + "/rcvr1.rtcm"; 
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1:
+                        fileName = deviceFolder + "/rcvr1.rtcm";
                         c.rxBuf.size = ev->length;
                         c.rxBuf.head = evScratch;
                         c.rxBuf.end = evScratch + ev->length;
                         c.rxBuf.tail = evScratch + ev->length;
                         c.rxBuf.scan = evScratch;
-                        
+
                         c.processPkt = nullptr;
 
                         is_comm_parse_timeout(&c, 0);
@@ -1069,7 +1161,7 @@ bool cltool_extractEventData()
                     case EVENT_MSG_TYPE_ID_RTMC3_EXT: fileName = deviceFolder + "/rcvr_ext.rtcm";  break;
                     case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
                     case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
-                    default: 
+                    default:
                         fileName = deviceFolder + "/UNKNOWN_" + std::to_string(ev->msgTypeID) + ".Bin";
                         printf("Event type %d found but is not supported. Output at: %s\n", ev->msgTypeID, fileName.c_str());
                         break;
@@ -1077,7 +1169,7 @@ bool cltool_extractEventData()
                 event_outputEvToFile(fileName, evScratch, ev->length);
             }
 
-            if(++count % 5000 == 0)
+            if (++count % 5000 == 0)
                 printf("Read %d msgs from SN-%d\n", count, dl->SerialNumber());
 
         }
@@ -1104,6 +1196,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << " # edit DID_FLASH_CONFIG message" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1    "        << EXAMPLE_SPACE_2 << " # connect to multiple ports (comma-separated)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GPS1_POS                                    # Return specific DIDs" << endlbOff;
@@ -1117,53 +1210,62 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
-	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four." << endlbOn;
+	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port(s). Options: single port (e.g., COM5 or /dev/ttyUSB0), multiple ports separated by ',' (e.g., COM2,COM4,COM5), \"*\" for all ports, or \"*4\" for first four ports." << endlbOn;
+	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
+    cout << "    -use-mdns" << boldOff << "       Enable mDNS network discovery of remote devices (e.g., socat TCP-forwarded serial ports)." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
-	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
-	cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
-	cout << "    -nmea" << boldOff << "           Listen mode for NMEA message without sending stop-broadcast command `$STPB` at start." << endlbOn;
-	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
+    cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
+    cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
+    cout << "    -nmea" << boldOff << "           Listen mode for NMEA message without sending stop-broadcast command `$STPB` at start." << endlbOn;
+    cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
-	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
-	cout << "    -s" << boldOff << "              Scroll displayed messages to show history." << endlbOn;
-	cout << "    -stats" << boldOff << "          Display statistics of data received." << endlbOn;
-	cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
-	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
+    cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
+    cout << "    -s" << boldOff << "              Scroll displayed messages to show history." << endlbOn;
+    cout << "    -stats" << boldOff << "          Display statistics of data received." << endlbOn;
+    cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
+    cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
     cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
     cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
-	cout << "    -v" << boldOff << "              Print version information." << endlbOn;
+    cout << "    -v" << boldOff << "              Print version information." << endlbOn;
 
-	cout << endlbOn;
-	cout << "OPTIONS (Special)" << endl;
-	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
-	cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
-	if (g_internal)
-	{
-	cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
-	cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
-	}
+    cout << endlbOn;
+    cout << "OPTIONS (Special)" << endl;
+    cout << "    -cal-upload" << boldOff << "FILE_PATH      Upload calibration data from FILE_PATH file to the IMX." << endlbOn;
+    cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
+    cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
+    cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
+    if (g_internal)
+    {
+    cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
+    cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
+    }
 
-	cout << endlbOn;
-	cout << "OPTIONS (Event)" << endl;
+    cout << endlbOn;
+    cout << "OPTIONS (Event)" << endl;
     cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
     cout << "         target:" << boldOff << "        t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
     cout << "         portMask:" << boldOff << "      po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
-    cout << "         priorityLevel:" << boldOff << " pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn; 
+    cout << "         priorityLevel:" << boldOff << " pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn;
     cout << "         " << boldOff << "    It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors."  << endlbOn;
     cout << "         msgTypeIdMask:" << boldOff << " id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
     cout << "         " << boldOff << "    See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
     cout << "         " << boldOff << "    at all times to allow broadcast of critical errors." << endlbOn;
 
-	cout << endlbOn;
-	cout << "OPTIONS (Firmware Update)" << endl;
+    cout << endlbOn;
+    cout << "OPTIONS (Firmware Update)" << endl;
     cout << "    -ufpkg " << boldOff << "FILEPATH Update firmware using firmware package file (.fpkg) at FILEPATH." << endlbOn;
-	cout << "    -uf " << boldOff << "FILEPATH    Update app firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud limits." << endlbOn;
-	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used with option -uf." << endlbOn;
-	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
+    cout << "    -uf " << boldOff << "FILEPATH    Update app firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud limits." << endlbOn;
+    cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used with option -uf." << endlbOn;
+    cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
     cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
+    cout << "    -fw-set-policy " << boldOff << "POLICY[:PATTERN]  Set update policy (skip, if-newer, force)." << endlbOn;
+    cout << "         " << boldOff << "                              Without :PATTERN, sets default for all targets." << endlbOn;
+    cout << "         " << boldOff << "                              With :PATTERN, overrides policy for matching" << endlbOn;
+    cout << "         " << boldOff << "                              step labels or target names (case-insensitive" << endlbOn;
+    cout << "         " << boldOff << "                              substring match). Can be specified multiple times." << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Messages)" << endl;
@@ -1186,6 +1288,7 @@ void cltool_outputUsage()
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
 	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
 	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
+	cout << "    -presetGPS     " << boldOff << " Send RMC preset to enable GPS data stream" << endlbOn;
 	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
@@ -1315,4 +1418,9 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
     }
 
     return true;
+}
+
+bool cltool_uploadImxCalibrationFile(InertialSense& inertialSenseInterface, string calFilePath)
+{
+    return inertialSenseInterface.UploadImxCalibrationFromFile(calFilePath);
 }

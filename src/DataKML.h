@@ -21,87 +21,87 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 
 #ifdef USE_IS_INTERNAL
-#	include "../../cpp/libs/families/imx/IS_internal.h"
+#    include "../../cpp/libs/families/imx/IS_internal.h"
 #endif
 
 struct sKmlLogData
 {
-	double                  time;
-	double                  lla[3];
-	float                   theta[3];
-	bool                    deadReckoning;
+    double                  time;
+    double                  lla[3];
+    float                   theta[3];
+    bool                    deadReckoning;
     sKmlLogData() {}
-	sKmlLogData(double _time, double _lla[3], float _theta[3], bool _deadReckoning=false)
-	{
-		time = _time;
+    sKmlLogData(double _time, double _lla[3], float _theta[3], bool _deadReckoning=false)
+    {
+        time = _time;
         lla[0] = _lla[0];
         lla[1] = _lla[1];
         lla[2] = _lla[2];
         theta[0] = _theta[0];
         theta[1] = _theta[1];
         theta[2] = _theta[2];
-		deadReckoning = _deadReckoning;
-	}
+        deadReckoning = _deadReckoning;
+    }
 
-	sKmlLogData(unsigned int _timeMs, double _lla[3])
-	{
-		time = _timeMs*0.001;
+    sKmlLogData(unsigned int _timeMs, double _lla[3])
+    {
+        time = _timeMs*0.001;
         lla[0] = _lla[0];
         lla[1] = _lla[1];
         lla[2] = _lla[2];
         theta[0] = theta[1] = theta[2] = 0;
-		deadReckoning = false;
-	}
+        deadReckoning = false;
+    }
 };
 
 
 class cDataKML
 {
 public:
-	enum MyEnum
-	{
-		KID_INS = 0,
-		KID_REF,
-		KID_GPS,
-		KID_GPS1,
-		KID_GPS2,
+    enum MyEnum
+    {
+        KID_INS = 0,
+        KID_REF,
+        KID_GPS,
+        KID_GPS1,
+        KID_GPS2,
         KID_RTK,
-		MAX_NUM_KID,
-	};
+        MAX_NUM_KID,
+    };
 
-	static inline int DID_TO_KID(int did)
-	{
-		switch (did)
-		{
-		default:					return -1; // Unused
-		case DID_INS_1:				
-		case DID_INS_2:				return KID_INS;
-		case DID_GPS1_POS:			return KID_GPS;
-		case DID_GPS1_RCVR_POS:		return KID_GPS1;
-		case DID_GPS2_POS:			return KID_GPS2;
-        case DID_GPS1_RTK_POS:      return KID_RTK;
-		}
-	}
+    static inline int DID_TO_KID(int did)
+    {
+        switch (did)
+        {
+            default:                return -1; // Unused
+            case DID_INS_1:         // FALL THROUGH       
+            case DID_INS_2:         return KID_INS;
+            case DID_GPS1_POS:      return KID_GPS;
+            case DID_GPS1_RCVR_POS: return KID_GPS1;
+            case DID_GPS2_POS:      return KID_GPS2;
+            case DID_GPS1_RTK_POS:  return KID_RTK;
+        }
+    }
 
-	static inline int BYTES_PER_KID(int kid)
-	{
-		switch (kid)
-		{
-        default:
-            return -1; // Unused
-        case KID_INS:
-        case KID_REF:
-            return 130;
-		case KID_GPS:
-		case KID_GPS1:
-        case KID_GPS2:
-        case KID_RTK:
-            return 65;
-		}
-	}
-	
-	cDataKML();
-	std::string GetDatasetName(int kid);
+    static inline int BYTES_PER_KID(int kid)
+    {
+        switch (kid)
+        {
+            default:
+                return -1; // Unused
+            case KID_INS:
+            case KID_REF:
+                return 130;
+            case KID_GPS:
+            case KID_GPS1:
+            case KID_GPS2:
+            case KID_RTK:
+                return 65;
+        }
+    }
+    
+    cDataKML();
+    std::string GetDatasetName(int kid);
     int WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
 };
 
