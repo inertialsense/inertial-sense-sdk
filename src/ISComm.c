@@ -635,197 +635,12 @@ static protocol_type_t processNmeaPkt(void* v)
     return _PTYPE_NMEA;
 }
 
-
-static protocol_type_t processSeptentrioReplyPkt(void* v)
-{
-    is_comm_instance_t* c = (is_comm_instance_t*)v;
-    is_comm_parser_t* p = &(c->parser);
-    int numBytes = 0;
-
-    switch (p->state)
-    {
-    case 0:	// Find start
-        if (*(c->rxBuf.scan) == SEPT_PROTO_START_BYTE)
-        {	// Found
-            p->state++;
-        }
-        return _PTYPE_NONE;
-
-    case 1:	// Find byte before end
-        if (*(c->rxBuf.scan) == SEPT_REPLY_PRE_END_BYTE)
-        { 	// Found
-            p->state++;
-        }
-        else
-        {
-            numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
-            if (numBytes > MAX_MSG_LENGTH_NMEA)
-            {	// Exceeds max length
-                return parseErrorResetState(c, EPARSE_INVALID_SIZE);
-            }
-        }
-        return _PTYPE_NONE;
-
-    case 3:		// Wait for end of packet
-        if (*(c->rxBuf.scan) != SEPT_REPLY_END_BYTE)
-        {	// Invalid end
-            return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);
-        }
-        // Found packet end
-        break;
-    }
-
-    // Reset state
-    p->state = 0;
-
-    // Validate length
-    numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
-    if (numBytes < 8)
-    {   // Packet length too short
-        return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
-    }
-
-    // Validate checksum
-    uint8_t tmp = *(c->rxBuf.scan-1);    // Backup value
-    *(c->rxBuf.scan-1) = 0;                // Null terminate hex string for strtol()
-    int msgChecksum = (int)strtol((const char*)c->rxBuf.scan-3, NULL, 16);
-    *(c->rxBuf.scan-1) = tmp;            // Restore value
-    int calChecksum = 0;
-    for (uint8_t* ptr = c->rxBuf.head + 1, *ptrEnd = c->rxBuf.scan - 4; ptr < ptrEnd; ptr++)
-    {
-        calChecksum ^= (int)*ptr;
-    }
-    if (msgChecksum != calChecksum)
-    {   // Invalid checksum
-        return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
-    }
-
-    /////////////////////////////////////////////////////////
-    // Valid packet found - Checksum passed - Populate rxPkt
-    validPacketFound(c, numBytes, numBytes, getNmeaMsgId(c->rxBuf.head, numBytes));
-
-    return _PTYPE_SEPTENTRIO_REPLY;
-}
-
 /**
- * @brief Process Septentrio SBF packets
+ * @brief Processes Septentrio Reply Pkt
  * 
  * @param v 
  * @return protocol_type_t 
  */
-static protocol_type_t processSeptentrioSBFPkt(void* v)
-{
-    is_comm_instance_t* c = (is_comm_instance_t*)v;
-    is_comm_parser_t* p = &(c->parser);
-    int numBytes;
-
-    switch (p->state)
-    {
-    case 0: // for first preamble byte '$'
-        if (*(c->rxBuf.scan) == SEPT_PROTO_START_BYTE)
-        {
-            p->state++;
-        }
-        return _PTYPE_NONE;
-
-    case 1: // for second preamble byte '@' 
-        if (*(c->rxBuf.scan) == SEPT_SBF_PREAMBLE_BYTE2)
-        {	// Found complete preamble
-            p->state++;
-            return _PTYPE_NONE;
-        }
-        // Invalid preamble - Reset state
-        return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
-
-    case 2: // for length to come in
-        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
-        if (numBytes < (int)(sizeof(sept_pkt_hdr_t)))
-        {
-            return _PTYPE_NONE;
-        }
-        p->state++;
-
-        // Parse header
-        sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
-        p->size = sepPkt->payloadSize;
-        if (p->size > MAX_MSG_LENGTH_ISB)
-        {	// Invalid size
-            return parseErrorResetState(c, EPARSE_INVALID_SIZE);
-        }
-        return _PTYPE_NONE;
-
-    default:	// Wait for entire packet
-        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
-        if (numBytes < (int)(p->size))
-        {
-            return _PTYPE_NONE;
-        }
-
-        // Found packet end
-        break;
-    }
-
-    // Reset state
-    p->state = 0;
-
-    // Validate checksum
-    sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
-    uint16_t cksum = (checksum16_u*)&sepPkt->crc;
-    uint16_t calcCksum = crc_ccitt(sepPkt->msgID, (sepPkt->payloadSize-4));
-
-    if (sepPkt->crc != calcCksum)
-    {	// Invalid checksum
-        return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
-    }
-
-    /////////////////////////////////////////////////////////
-    // Valid packet found - Checksum passed - Populate rxPkt
-    validPacketReset(c, numBytes);
-
-    return _PTYPE_SEPTENTRIO_SBF;
-}
-
-static protocol_type_t processPreAsciiPkt(void* v)
-{
-    is_comm_instance_t* c = (is_comm_instance_t*)v;
-    is_comm_parser_t* p = &(c->parser);
-    int numBytes;
-
-    switch (p->state)
-    {
-        case 0:	// Find start
-            // 
-            if (*(c->rxBuf.scan) == PSC_PRE_ASCII_START_BYTE)
-            {	// Found pre ASCII start byte
-                p->state++;
-            }
-            return _PTYPE_NONE;
-
-        case 1:	// Find byte before end
-        {
-            if (*(c->rxBuf.scan) == SEPT_SBF_PREAMBLE_BYTE2)
-            { 	// Found Septentrio second preamble byte
-                setParserStart(c, processSeptentrioSBFPkt);
-                
-            }
-            else if (*(c->rxBuf.scan) == SEPT_REPLY_BYTE2)
-            {   // Found Septentrio second preamble byte
-                setParserStart(c, processSeptentrioReplyPkt);
-            }
-            else
-            {   // Did not find Septentrio second preamble byte assume NMEA packet
-                setParserStart(c, processNmeaPkt);
-            }
-
-            // make single recursive call to process based on new parser packet
-            return c->processPkt(c);
-        }
-    }
-
-    return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);	// Invalid end of packet
-}
-
-
 static protocol_type_t processSeptentrioReplyPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -897,6 +712,12 @@ static protocol_type_t processSeptentrioReplyPkt(void* v)
     return _PTYPE_SEPTENTRIO_REPLY;
 }
 
+/**
+ * @brief Processes Septentrio SBF packets
+ * 
+ * @param v 
+ * @return protocol_type_t 
+ */
 static protocol_type_t processSeptentrioSBFPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
