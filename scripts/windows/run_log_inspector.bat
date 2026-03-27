@@ -11,7 +11,7 @@ for %%i in ("%~dp0..\..") do set SDK_DIR="%%~fi"
 call %SDK_DIR%\scripts\lib\activate_python_venv.bat || exit /b
 
 :: Build Log Inspector locally
-python %SDK_DIR%\scripts\build_log_inspector.py --run %*
+python %SDK_DIR%\scripts\build_log_inspector.py --run --no-build %*
 
 :: Propagate the exit code
 set "ec=%ERRORLEVEL%"
