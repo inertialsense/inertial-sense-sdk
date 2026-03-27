@@ -775,8 +775,7 @@ static protocol_type_t processSeptentrioSBFPkt(void* v)
 
     // Validate checksum
     sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
-    uint16_t cksum = (checksum16_u*)&sepPkt->crc;
-    uint16_t calcCksum = crc_ccitt(sepPkt->msgID, (sepPkt->payloadSize-4));
+    uint16_t calcCksum = crc_ccitt((uint8_t*)&sepPkt->msgID, (sepPkt->payloadSize-4));
 
     if (sepPkt->crc != calcCksum)
     {	// Invalid checksum
@@ -794,7 +793,6 @@ static protocol_type_t processPreAsciiPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
 
     switch (p->state)
     {
@@ -1356,7 +1354,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
             switch (*(buf->scan))
             {
                 case PSC_ISB_PREAMBLE_BYTE1:    if (c->cb.protocolMask & ENABLE_PROTOCOL_ISB)                       { setParserStart(c, processIsbPkt); }       break;
-                case PSC_NMEA_START_BYTE:       if (c->cb.protocolMask & ENABLE_PROTOCOL_NMEA|ENABLE_PROTOCOL_SEPT) { setParserStart(c, processNmeaPkt); }      break;
+                case PSC_NMEA_START_BYTE:       if (c->cb.protocolMask & (ENABLE_PROTOCOL_NMEA|ENABLE_PROTOCOL_SEPT)) { setParserStart(c, processNmeaPkt); }      break;
                 case UBLOX_START_BYTE1:         if (c->cb.protocolMask & ENABLE_PROTOCOL_UBLOX)                     { setParserStart(c, processUbloxPkt); }     break;
                 case RTCM3_START_BYTE:          if (c->cb.protocolMask & ENABLE_PROTOCOL_RTCM3)                     { setParserStart(c, processRtcm3Pkt); }     break;
                 case SPARTN_START_BYTE:         if (c->cb.protocolMask & ENABLE_PROTOCOL_SPARTN)                    { setParserStart(c, processSpartnByte);}    break;
