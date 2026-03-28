@@ -876,7 +876,7 @@ class LogInspectorWindow(QMainWindow):
             action.triggered.connect(lambda checked=False, text=item: self.on_select_recent_dir(text))
 
         # Show the menu just below the button
-        menu.exec_(self.recentDirsPushButton.mapToGlobal(self.recentDirsPushButton.rect().bottomLeft()))     
+        menu.exec(self.recentDirsPushButton.mapToGlobal(self.recentDirsPushButton.rect().bottomLeft()))     
 
     def on_select_recent_dir(self, text):
         # Handle the selected item
@@ -945,7 +945,7 @@ class LogInspectorWindow(QMainWindow):
         exploreAction               = menu.addAction("Explore folder")
         cleanFolderAction           = menu.addAction("Clean folder")
         deleteFolderAction          = menu.addAction("Delete folder")
-        action = menu.exec_(self.fileTree.viewport().mapToGlobal(event))
+        action = menu.exec(self.fileTree.viewport().mapToGlobal(event))
         if action == copyAction:
             cb = QApplication.clipboard()
             cb.clear(mode=cb.Clipboard)

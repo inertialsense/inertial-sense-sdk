@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-echo Build Log Inspector
+echo Run Log Inspector
 echo.
 
 :: Set SDK_DIR to the repo root (two levels up from this script)

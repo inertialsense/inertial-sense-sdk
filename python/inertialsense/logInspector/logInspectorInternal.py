@@ -154,7 +154,7 @@ class logInspectorInternal(LogInspectorWindow):
         try:
             dlg = ChooseDevsDialog(self)
             dlg.show()
-            dlg.exec_()
+            dlg.exec()
         except Exception as e:
             self.showError(e)
 
