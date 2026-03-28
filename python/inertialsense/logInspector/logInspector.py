@@ -6,7 +6,8 @@ import shutil, json, io, traceback, yaml, subprocess, re
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView,\
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
-    QTableWidget, QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle, QFileSystemModel
+    QTableWidget, QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
+from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
 from PyQt6.QtCore import pyqtSignal, QItemSelectionModel, Qt
 
