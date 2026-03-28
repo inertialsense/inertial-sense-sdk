@@ -27,6 +27,16 @@
 
 std::mutex ISDFUFirmwareUpdater::dfuMutex;
 
+void ISDFUFirmwareUpdater::initLibUSB() {
+    libusb_init(NULL);
+    log_info(IS_LOG_FWUPDATE, "DFU: libusb initialized");
+}
+
+void ISDFUFirmwareUpdater::exitLibUSB() {
+    libusb_exit(NULL);
+    log_info(IS_LOG_FWUPDATE, "DFU: libusb shutdown");
+}
+
 const char *DFUDevice::dfuDeviceErrors[] = {
         "SUCCESS",
         "DEVICE_NOT_FOUND",
@@ -51,28 +61,29 @@ size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devic
     libusb_device **device_list;
     libusb_device *dev;
 
-    if (dfuMutex.try_lock())
-    {
-        libusb_init(NULL);
+    std::lock_guard<std::mutex> lock(dfuMutex);
 
-        size_t device_count = libusb_get_device_list(NULL, &device_list);
-        for (size_t i = 0; i < device_count; ++i) {
-            dev = device_list[i];
+    size_t device_count = libusb_get_device_list(NULL, &device_list);
+    log_info(IS_LOG_FWUPDATE, "DFU getAvailableDevices: libusb found %zu USB device(s), filtering for VID=%04X PID=%04X",
+             device_count, vid, pid);
 
-            // let's instantiate a DFUDevice object and add it to our list, if everything is cool
-            if (isDFUDevice(dev, vid, pid)) {
-                DFUDevice *dfuDevice = new DFUDevice(dev);
-                devices.push_back(dfuDevice);
-            }
+    int dfuCount = 0;
+    for (size_t i = 0; i < device_count; ++i) {
+        dev = device_list[i];
+
+        if (isDFUDevice(dev, vid, pid)) {
+            dfuCount++;
+            libusb_ref_device(dev);  // prevent dangling pointer after free_device_list
+            DFUDevice *dfuDevice = new DFUDevice(dev);
+            devices.push_back(dfuDevice);
         }
-
-        libusb_free_device_list(device_list, 1);
-        // NOTE: Do NOT call libusb_exit() here. The returned DFUDevice objects
-        // hold open USB handles from fetchDeviceInfo(). Tearing down the libusb
-        // context invalidates those handles and causes a segfault when the caller
-        // later uses the devices. The caller owns the libusb lifecycle.
-        dfuMutex.unlock();
     }
+
+    libusb_free_device_list(device_list, 1);
+
+    log_info(IS_LOG_FWUPDATE, "DFU getAvailableDevices: found %d DFU device(s), %zu enumerated successfully",
+             dfuCount, devices.size());
+
     return devices.size();
 }
 
@@ -82,18 +93,14 @@ size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devic
  */
 int ISDFUFirmwareUpdater::getNumDevices(uint16_t vid, uint16_t pid) {
     int count = 0;
-    if (dfuMutex.try_lock()) {
-        libusb_device **device_list;
-        libusb_init(NULL);
-        size_t device_count = libusb_get_device_list(NULL, &device_list);
-        for (size_t i = 0; i < device_count; ++i) {
-            if (isDFUDevice(device_list[i], vid, pid))
-                count++;
-        }
-        libusb_free_device_list(device_list, 1);
-        libusb_exit(NULL);
-        dfuMutex.unlock();
+    // No mutex needed — libusb enumeration is thread-safe, and we only read descriptors here.
+    libusb_device **device_list;
+    size_t device_count = libusb_get_device_list(NULL, &device_list);
+    for (size_t i = 0; i < device_count; ++i) {
+        if (isDFUDevice(device_list[i], vid, pid))
+            count++;
     }
+    libusb_free_device_list(device_list, 1);
     return count;
 }
 
@@ -132,29 +139,24 @@ size_t ISDFUFirmwareUpdater::filterDevicesByTargetType(std::vector<DFUDevice *> 
 bool ISDFUFirmwareUpdater::isDFUDevice(libusb_device *usbDevice, uint16_t vid, uint16_t pid) {
     struct libusb_device_descriptor desc;
     struct libusb_config_descriptor *cfg;
-    bool success = true;
 
-    if (libusb_get_device_descriptor(usbDevice, &desc) < 0) {
-        success = false;
-    }
+    if (libusb_get_device_descriptor(usbDevice, &desc) < 0)
+        return false;
 
     // Check vendor and product ID
-    else if (((vid != 0x0000) && (desc.idVendor != vid)) || ((pid != 0x0000) && (desc.idProduct != pid))) {
-        success = false;      // must be some other usb device
-    }
+    if (((vid != 0x0000) && (desc.idVendor != vid)) || ((pid != 0x0000) && (desc.idProduct != pid)))
+        return false;
 
-    else if (libusb_get_config_descriptor(usbDevice, 0, &cfg) < 0) {
-        success = false;
-    }
+    if (libusb_get_config_descriptor(usbDevice, 0, &cfg) < 0)
+        return false;
 
     // USB-IF DFU interface class numbers
-    else if ((cfg->interface->altsetting[0].bInterfaceClass != 0xFE) ||
-        (cfg->interface->altsetting[0].bInterfaceSubClass != 0x01) ||
-        (cfg->interface->altsetting[0].bInterfaceProtocol != 0x02)) {
-        success = false;
-    }
+    bool isDfu = (cfg->interface->altsetting[0].bInterfaceClass == 0xFE) &&
+                 (cfg->interface->altsetting[0].bInterfaceSubClass == 0x01) &&
+                 (cfg->interface->altsetting[0].bInterfaceProtocol == 0x02);
 
-    return success;
+    libusb_free_config_descriptor(cfg);
+    return isDfu;
 }
 
 /**
@@ -168,7 +170,6 @@ bool ISDFUFirmwareUpdater::isDFUDevice(libusb_device *usbDevice, uint16_t vid, u
  */
 ISDFUFirmwareUpdater::ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_device *device, uint32_t serialNo) : FirmwareUpdateDevice(target) {
     // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
-    libusb_init(NULL);
     std::vector<DFUDevice*> devices;
     size_t count = ISDFUFirmwareUpdater::getAvailableDevices(devices);
     count = ISDFUFirmwareUpdater::filterDevicesByTargetType(devices, session_target);
@@ -392,23 +393,35 @@ dfu_error DFUDevice::fetchDeviceInfo() {
     struct libusb_config_descriptor *cfg;
     unsigned char str_buff[MAX_DESC_STR_LEN];
 
-    if (!isConnected())
-        open();
+    uint8_t busNum = libusb_get_bus_number(usbDevice);
+    uint8_t devAddr = libusb_get_device_address(usbDevice);
 
-    if (libusb_claim_interface(usbHandle, 0) < LIBUSB_SUCCESS)
+    if (!isConnected()) {
+        auto result = open();
+        if (result != LIBUSB_SUCCESS) {
+            log_error(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: open() failed (dfu_error=%d)",
+                      busNum, devAddr, result);
+            return result;
+        }
+    }
+
+    int ret = libusb_claim_interface(usbHandle, 0);
+    if (ret < LIBUSB_SUCCESS) {
+        log_error(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: claim_interface failed (%s)",
+                  busNum, devAddr, libusb_error_name(ret));
         return DFU_ERROR_DEVICE_BUSY;
+    }
 
-    SLEEP_MS(100);
-    // TODO make this IMX/GPX aware (OTP location maybe processor and/or product/device dependent)
-    // Its important to note that if this is a BRAND NEW, NEVER BEEN PROGRAMMED STM32, it will have no OTP data. Even if we know the MCU type, we still don't know the application its in (ie, IMX-5.1 vs GPX-1).
+    // NOTE: A brief settle time was previously needed here (SLEEP_MS(100)).
+    // If devices fail to enumerate reliably, consider restoring a short delay.
 
     libusb_device *usb_device = libusb_get_device(usbHandle);
     if (libusb_get_device_descriptor(usb_device, &desc) != LIBUSB_SUCCESS) {
+        log_error(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: get_device_descriptor failed", busNum, devAddr);
         libusb_release_interface(usbHandle, 0);
         return DFU_ERROR_LIBUSB;
     }
 
-    //info.dfuSerial;
     vid = desc.idVendor;
     pid = desc.idProduct;
     usbDevice = usb_device;
@@ -425,6 +438,9 @@ dfu_error DFUDevice::fetchDeviceInfo() {
     // Get the manufacturer description
     if (libusb_get_string_descriptor_ascii(usbHandle, desc.iManufacturer, str_buff, sizeof(str_buff)) > LIBUSB_SUCCESS)
         dfuManufacturer = std::string((const char *) str_buff);
+
+    log_debug(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: VID=%04X PID=%04X mfg=\"%s\" prod=\"%s\" serial=\"%s\"",
+              busNum, devAddr, vid, pid, dfuManufacturer.c_str(), dfuProduct.c_str(), dfuSerial.c_str());
 
     // iterate configurations
     for (int cfg_idx = 0; cfg_idx < desc.bNumConfigurations; cfg_idx++) {
@@ -449,14 +465,12 @@ dfu_error DFUDevice::fetchDeviceInfo() {
                             /* fake version 1.0 */
                             funcDescriptor.bLength = 7;
                             funcDescriptor.bcdDFUVersion = libusb_cpu_to_le16(0x0100);
-                            // continue; // no valid functional descriptor
                         }
                     }
 
                     if (funcDescriptor.bLength == 7) {
                         funcDescriptor.bcdDFUVersion = libusb_cpu_to_le16(0x0100);
                     } else if (funcDescriptor.bLength < 9) {
-                        // printf("Error obtaining DFU functional descriptor. Warning: Transfer size can not be detected\n");
                         funcDescriptor.bcdDFUVersion = libusb_cpu_to_le16(0x0100);
                         funcDescriptor.wTransferSize = 0;
                     }
@@ -477,8 +491,14 @@ dfu_error DFUDevice::fetchDeviceInfo() {
                             dfuDescriptors.push_back(alt_name);
                             size_t lastPos = dfuDescriptors.size()-1;
                             decodeMemoryPageDescriptor(dfuDescriptors[lastPos], segments[lastPos]);
-                        } else
+                            log_debug(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: alt[%zu]=\"%s\" addr=0x%08llX pages=%u pageSize=%u",
+                                      busNum, devAddr, lastPos, alt_name,
+                                      (unsigned long long)segments[lastPos].address, segments[lastPos].pages, segments[lastPos].pageSize);
+                        } else {
+                            log_warn(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: failed to read alt descriptor string (alt_idx=%d)",
+                                     busNum, devAddr, alt_idx);
                             dfuDescriptors.push_back("");
+                        }
                     }
                 }
             }
@@ -487,16 +507,14 @@ dfu_error DFUDevice::fetchDeviceInfo() {
         }
     }
 
-    // Calculate a fingerprint from the device info/descriptors (Don't use anything that isn't guaranteed unique per device-type!!)
-    // TODO: IF YOU CHANGE THE DATA USED IN THE HASHING BELOW, YOU WILL ALSO HAVE TO CHANGE THE RESPECTIVE FINGERPRINTS in ISBootloaderDFU.h
-    // DO NOT MODIFY THESE IF YOU DON'T KNOW WHAT YOU'RE DOING AND WHY
+    // Calculate a fingerprint from the device info/descriptors
+    // NOTE: IF YOU CHANGE THE DATA USED IN THE HASHING BELOW, YOU WILL ALSO HAVE TO CHANGE THE RESPECTIVE FINGERPRINTS in ISBootloaderDFU.h
     md5_update(fingerprint, reinterpret_cast<const unsigned char *>(&vid), sizeof(vid));
     md5_update(fingerprint, reinterpret_cast<const unsigned char *>(&pid), sizeof(pid));
     for (auto& dfuDesc: dfuDescriptors) {
         md5_update(fingerprint, reinterpret_cast<const unsigned char *>(dfuDesc.c_str()), (unsigned int)dfuDesc.size());
     }
 
-    // TODO: make this work for both GPX-1 and IMX-5.1
     uint16_t hardwareType = 0;
     processorType = IS_PROCESSOR_UNKNOWN;
 
@@ -505,10 +523,13 @@ dfu_error DFUDevice::fetchDeviceInfo() {
     else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5_2M)) processorType = IS_PROCESSOR_STM32U5;
 
     if (processorType == IS_PROCESSOR_UNKNOWN) {
-        log_info(IS_LOG_FWUPDATE, "DFU unknown fingerprint: %s  descriptors(%zu):",
-                 md5_to_string(fingerprint.state).c_str(), dfuDescriptors.size());
+        log_warn(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: unknown fingerprint: %s  descriptors(%zu):",
+                 busNum, devAddr, md5_to_string(fingerprint.state).c_str(), dfuDescriptors.size());
         for (size_t i = 0; i < dfuDescriptors.size(); i++)
-            log_info(IS_LOG_FWUPDATE, "  [%zu] \"%s\"", i, dfuDescriptors[i].c_str());
+            log_warn(IS_LOG_FWUPDATE, "  [%zu] \"%s\"", i, dfuDescriptors[i].c_str());
+    } else {
+        log_debug(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: fingerprint=%s processor=%d descriptors=%zu",
+                  busNum, devAddr, md5_to_string(fingerprint.state).c_str(), processorType, dfuDescriptors.size());
     }
 
     // try and read the OTP memory
@@ -518,16 +539,26 @@ dfu_error DFUDevice::fetchDeviceInfo() {
         hardwareId = -1; // 0xFFFF
 
         auto rxBuf = new uint8_t[otp.pageSize] {0};
-        auto len = readMemory(static_cast<uint32_t>(otp.address), rxBuf, otp.pageSize); // otp.pageSize);
+        auto len = readMemory(static_cast<uint32_t>(otp.address), rxBuf, otp.pageSize);
         if (len > 0) {
             otp_info_t *id = decodeOTPData(rxBuf, len);
             if (id != nullptr) {
                 sn = id->serialNumber;
                 hardwareType = id->hardwareId;
+                log_debug(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: OTP SN=%u hwId=0x%04X",
+                          busNum, devAddr, sn, hardwareType);
+            } else {
+                log_info(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: OTP read OK (%d bytes) but no valid OTP data (unprogrammed?)",
+                         busNum, devAddr, len);
             }
+        } else {
+            log_warn(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: OTP readMemory failed (ret=%d, addr=0x%08X, size=%u)",
+                     busNum, devAddr, len, (uint32_t)otp.address, otp.pageSize);
         }
         delete [] rxBuf;
     } else {
+        log_warn(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: no OTP segment found (descriptors=%zu)",
+                 busNum, devAddr, dfuDescriptors.size());
         libusb_release_interface(usbHandle, 0);
         return DFU_ERROR_LIBUSB;
     }
@@ -561,6 +592,10 @@ dfu_error DFUDevice::fetchDeviceInfo() {
                 break;
         }
     }
+
+    log_info(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: complete — %s (hwId=0x%04X, SN=%u, proc=%d, flash=%uKB)",
+             busNum, devAddr, getDeviceTypeName(processorType, getTotalFlashSize()),
+             hardwareId, sn, processorType, getTotalFlashSize() / 1024);
 
     libusb_release_interface(usbHandle, 0);
     libusb_close(usbHandle);
@@ -616,19 +651,23 @@ dfu_error DFUDevice::open() {
     int ret_libusb;
     dfu_error ret_dfu = DFU_ERROR_NONE;
 
-    if (libusb_open(usbDevice, &usbHandle) < LIBUSB_SUCCESS) {
+    if ((ret_libusb = libusb_open(usbDevice, &usbHandle)) < LIBUSB_SUCCESS) {
+        log_error(IS_LOG_FWUPDATE, "DFU open: libusb_open failed (%s)", libusb_error_name(ret_libusb));
         return DFU_ERROR_DEVICE_NOTFOUND;
     }
 
-    // Not entirely sure this is needed, but it doesn't seem to hurt either.
+    // Detach kernel driver if active (primarily needed on Linux)
     int kernelActive = libusb_kernel_driver_active(usbHandle, 0);
     if (kernelActive == 1) {
         ret_libusb = libusb_detach_kernel_driver(usbHandle, 0);
+        if (ret_libusb < LIBUSB_SUCCESS)
+            log_warn(IS_LOG_FWUPDATE, "DFU open: detach_kernel_driver failed (%s)", libusb_error_name(ret_libusb));
     }
     libusb_reset_device(usbHandle);
 
     ret_libusb = libusb_claim_interface(usbHandle, 0);
     if (ret_libusb < LIBUSB_SUCCESS) {
+        log_error(IS_LOG_FWUPDATE, "DFU open: claim_interface failed (%s)", libusb_error_name(ret_libusb));
         ret_dfu = DFU_ERROR_DEVICE_BUSY;
     } else {
         // Cancel any existing operations and return to IDLE state
@@ -637,6 +676,7 @@ dfu_error DFUDevice::open() {
             ret_libusb = waitForState(DFU_STATE_IDLE);
         }
         if (ret_libusb < LIBUSB_SUCCESS) {
+            log_warn(IS_LOG_FWUPDATE, "DFU open: failed to reach IDLE state (%s)", libusb_error_name(ret_libusb));
             ret_dfu = DFU_ERROR_STATUS;
         }
     }
@@ -1095,26 +1135,28 @@ dfu_error DFUDevice::finalizeFirmware() {
  * @return
  */
 dfu_error DFUDevice::close() {
+    if (!usbHandle)
+        return DFU_ERROR_NONE;
+
     int ret_libusb;
+    dfu_error ret_dfu = DFU_ERROR_NONE;
 
     // Cancel any existing operations
     ret_libusb = abort();
     if (ret_libusb < LIBUSB_SUCCESS) {
-        libusb_release_interface(usbHandle, 0);
-        return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
-    }
-
-    // Reset status to good
-    ret_libusb = waitForState(DFU_STATE_IDLE);
-    if (ret_libusb < LIBUSB_SUCCESS) {
-        libusb_release_interface(usbHandle, 0);
-        return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        ret_dfu = (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+    } else {
+        // Reset status to good
+        ret_libusb = waitForState(DFU_STATE_IDLE);
+        if (ret_libusb < LIBUSB_SUCCESS)
+            ret_dfu = (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
     }
 
     libusb_release_interface(usbHandle, 0);
-        usbHandle = nullptr;
+    libusb_close(usbHandle);
+    usbHandle = nullptr;
 
-    return DFU_ERROR_NONE;
+    return ret_dfu;
 }
 
 /**
@@ -1122,11 +1164,11 @@ dfu_error DFUDevice::close() {
  * @return
  */
 const char *DFUDevice::getDescription() {
-    static char buff[64];
+    thread_local char buff[64];
     if (sn != 0xFFFFFFFF)
-        sprintf(buff, "%s-%d.%d:SN-%05d", g_isHardwareTypeNames[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != 0xFFFFFFFF ? sn : 0));
+        snprintf(buff, sizeof(buff), "%s-%d.%d:SN-%05d", g_isHardwareTypeNames[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), sn);
     else
-        sprintf(buff, "%s-%d.%d:DFU-%s", g_isHardwareTypeNames[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
+        snprintf(buff, sizeof(buff), "%s-%d.%d:DFU-%s", g_isHardwareTypeNames[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
     return buff;
 }
 

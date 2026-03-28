@@ -105,7 +105,7 @@ bool ISDevice::step() {
     if (portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
         return false;
 
-    if (was_connected != portIsOpened(port)) {
+    if (was_connected != (bool)portIsOpened(port)) {
         was_connected = isConnected();
         DeviceManager::getInstance().notifyListeners(shared_from_this(), isConnected() ? DeviceManager::DEVICE_CONNECTED : DeviceManager::DEVICE_DISCONNECTED);
     }
