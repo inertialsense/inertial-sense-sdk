@@ -322,7 +322,6 @@ std::string renderSysStatus(const data_info_t& info, std::any value, int arrayId
 
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
         BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
-        BIT_MSG(sysStatus, SYS_STATUS_DMA_FAULT_DETECT              , "0x00000002 - DMA Fault Detected.");
         BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
 
         return buff.str();

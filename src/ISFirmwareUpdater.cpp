@@ -450,6 +450,9 @@ void ISFirmwareUpdater::refreshUpdateState() {
         case ISFwUpdateState::UPDATER_CMDS_QUEUED:
             updateState.lastMessage = "Starting update...";
             break;
+        case ISFwUpdateState::UDPATER_SUSPENDED:
+            updateState.lastMessage = "Update suspended.";
+            break;
         case ISFwUpdateState::UPDATER_IN_PROGRESS:
             updateState.lastMessage = "Updating...";
             if (updateState.hasErrors) {

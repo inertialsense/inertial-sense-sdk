@@ -428,9 +428,7 @@ enum eHdwStatusFlags
 enum eSysStatusFlags
 {
     /** Allow IMX to drive Testbed-3 status LEDs */
-    SYS_STATUS_TBED3_LEDS_ENABLED   = (int)0x00000001,
-
-    SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
+    SYS_STATUS_TBED3_LEDS_ENABLED                   = (int)0x00000001,
 
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2         = (int)0x00000004, // 0 = GPS1 is the primary NMEA GNSS source 1 = GPS2 is the primary NMEA GNSS source
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2_offest  = 2,
@@ -1655,6 +1653,7 @@ enum eSystemCommand
     SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967233)
 
     SYS_CMD_RESET_EKF_STATES                            = 70,           // (uint32 inv: 4294967226) // Resets the Extended Kalman Filter (EKF) states in the INS solution. Use to reinitialize navigation filter without a full system reset.
+    SYS_CMD_CLEAR_ERROR_STATUS                          = 71,           // (uint32 inv: 4294967225) // Resets debug information such as CPU reset cause and fault states.
 
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
@@ -4872,7 +4871,10 @@ enum eGPXHdwStatusFlags
     /** Communications Tx buffer limited */
     GPX_HDW_STATUS_ERR_COM_TX_LIMITED                   = (int)0x00010000,
     /** Communications Rx buffer overrun */
-    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,    
+    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000, 
+    /** Communications Err mask */
+    GPX_HDW_STATUS_ERR_COM_MASK                         = (int)0x00030000, 
+    
     /** GPS1 PPS timepulse signal has not been received or is in error */
     GPX_HDW_STATUS_ERR_NO_GPS1_PPS                      = (int)0x00040000,
     /** GPS2 PPS timepulse signal has not been received or is in error */
@@ -4899,7 +4901,9 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_BIT_FAULT                            = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
     GPX_HDW_STATUS_BIT_MASK                             = (int)0x03000000,
+    /** (BIT) Built-in self-test offset */
     GPX_HDW_STATUS_BIT_OFFSET                           = 24,
+
     /** Temperature outside spec'd operating range */
     GPX_HDW_STATUS_ERR_TEMPERATURE                      = (int)0x04000000,
     /** Time synchronized by GPS PPS */
@@ -4916,6 +4920,12 @@ enum eGPXHdwStatusFlags
     
     /** Critical System Fault, CPU error.  (see DID_GPX_STATUS.status, eGpxStatus::GPX_STATUS_FATAL_MASK) */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
+
+    GPX_HDW_STATUS_ERROR_MASK                           = (int)(GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK | GPX_HDW_STATUS_FAULT_GNSS1_INIT | 
+                                                                GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK | GPX_HDW_STATUS_FAULT_GNSS2_INIT | 
+                                                                GPX_HDW_STATUS_ERR_COM_MASK | GPX_HDW_STATUS_ERR_PPS_MASK | GPX_HDW_STATUS_ERR_CNO_MASK |
+                                                                GPX_HDW_STATUS_ERR_TEMPERATURE | GPX_HDW_STATUS_RESET_CAUSE_MASK | 
+                                                                GPX_HDW_STATUS_FAULT_SYS_CRITICAL),
 };
 
 enum eGNSSDriverRstCause {

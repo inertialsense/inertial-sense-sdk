@@ -8,8 +8,9 @@ except ImportError:
 
 import subprocess
 import sys, os, signal, ctypes, yaml
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
+from PyQt6 import QtCore
+from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
+from PyQt6.QtCore import Qt
 
 # import logInspector as logInspector
 
@@ -153,7 +154,7 @@ class logInspectorInternal(LogInspectorWindow):
         try:
             dlg = ChooseDevsDialog(self)
             dlg.show()
-            dlg.exec_()
+            dlg.exec()
         except Exception as e:
             self.showError(e)
 
@@ -255,6 +256,9 @@ def main():
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     app = QApplication(sys.argv)
+    app.styleHints().setColorScheme(Qt.ColorScheme.Light)
+    if os.name == 'nt':
+        app.setStyle('Fusion')
 
     configFilePath = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "log_inspector.yaml")
 

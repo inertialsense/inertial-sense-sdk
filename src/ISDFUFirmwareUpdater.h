@@ -186,6 +186,18 @@ public:
         fetchDeviceInfo();
     }
 
+    ~DFUDevice() {
+        if (usbHandle) {
+            libusb_release_interface(usbHandle, 0);
+            libusb_close(usbHandle);
+            usbHandle = nullptr;
+        }
+        if (usbDevice) {
+            libusb_unref_device(usbDevice);
+            usbDevice = nullptr;
+        }
+    }
+
     bool isConnected() { return (usbHandle != nullptr) && (libusb_get_device(usbHandle) != nullptr); }
 
     /**
@@ -231,30 +243,30 @@ protected:
     dfu_error writeFlash(const dfu_memory_t& mem, uint32_t& address, uint32_t data_len, uint8_t *data);
 
 private:
-    libusb_device *usbDevice;
-    libusb_device_handle *usbHandle;            // if this is not null, then this should be a valid, open handle.
+    libusb_device *usbDevice = nullptr;
+    libusb_device_handle *usbHandle = nullptr;  // if this is not null, then this should be a valid, open handle.
 
-    uint16_t vid;                               // the vendor id for this device (for filtering/selection)
-    uint16_t pid;                               // the product id for this device (for filtering/selection)
-    usb_dfu_func_descriptor funcDescriptor;     // a copy of the DFU functional descriptor
-    std::vector<std::string> dfuDescriptors;    // an array containing the contents of each of the available Alt Identifier strings (used to generate the fingerprint)
+    uint16_t vid = 0;                           // the vendor id for this device (for filtering/selection)
+    uint16_t pid = 0;                           // the product id for this device (for filtering/selection)
+    usb_dfu_func_descriptor funcDescriptor {};  // a copy of the DFU functional descriptor
+    std::vector<std::string> dfuDescriptors {}; // an array containing the contents of each of the available Alt Identifier strings (used to generate the fingerprint)
 
     std::string dfuManufacturer;                // the extracted manufacturer id/name (as a string) from the iManufacturer descriptor
     std::string dfuProduct;                     // the extracted product id/name (as a string) from the iProduct descriptor
     std::string dfuSerial;                      // the extracted DFU device serial number, from descriptors (see iSerialNumber above)
 
-    uint32_t sn;                                // Inertial Sense serial number (from OTP data)
-    uint16_t hardwareId;                        // Inertial Sense Hardware ID (from OTP data)
-    eProcessorType processorType;               // detected processor type/family
-    dfu_memory_t segments[4];                   // memory segment detail, corresponding with the alternate descriptor ID
+    uint32_t sn = -1;                           // Inertial Sense serial number (from OTP data)
+    uint16_t hardwareId = -1;                   // Inertial Sense Hardware ID (from OTP data)
+    eProcessorType processorType = IS_PROCESSOR_UNKNOWN;          // detected processor type/family
+    dfu_memory_t segments[4] {};                // memory segment detail, corresponding with the alternate descriptor ID
 
-    md5Context_t fingerprint;                      // an MD5 hash of various data/parameters used to uniquely identify this device
+    md5Context_t fingerprint {};                // an MD5 hash of various data/parameters used to uniquely identify this device
 
     uint16_t dlBlockNum = 0;                    // download block count; should be reset for each separate transfer
     uint16_t ulBlockNum = 0;                    // upload block count; should be reset for each separate transfer
 
-    fwUpdate::pfnProgressCb progressCb;
-    fwUpdate::pfnStatusCb statusCb;
+    fwUpdate::pfnProgressCb progressCb = nullptr;
+    fwUpdate::pfnStatusCb statusCb = nullptr;
 
     /**
      * @brief OTP section
@@ -305,6 +317,11 @@ public:
      */
     ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_device *device = nullptr, uint32_t serialNo = UINT32_MAX);
     ~ISDFUFirmwareUpdater() { };
+
+    /** Initialize the libusb context. Call once at application startup before any DFU operations. */
+    static void initLibUSB();
+    /** Tear down the libusb context. Call once at application shutdown. */
+    static void exitLibUSB();
 
     static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
 
