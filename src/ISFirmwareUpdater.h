@@ -162,9 +162,10 @@ public:
         UPDATER_WAITING_TO_CANCEL = -1,                     //!< user requested a cancel, but operations are still pending
         UPDATER_IDLE = 0,                                   //!< the Updater is idle. Nothing started, nothing to do, etc.
         UPDATER_CMDS_QUEUED = 1,                            //!< commands are queued, but no commands are in process
-        UPDATER_IN_PROGRESS = 2,                            //!< commands are queued, and one or more are actively being ran
-        UPDATER_SUCCESSFUL = 3,                             //!< no more queued commands, and no errors reported
-        SUCCESS_WITH_NOTIFICATIONS = 4,                     //!< no more queued commands, but there were notifications/messages reported (but not errors)
+        UDPATER_SUSPENDED = 2,                              //!< commands are queued, IN_PROCESS commands can continue to execute, but no QUEUED commands will be allowed to enter IN_PROCESS
+        UPDATER_IN_PROGRESS = 3,                            //!< commands are queued, and one or more are actively being ran
+        UPDATER_SUCCESSFUL = 4,                             //!< no more queued commands, and no errors reported
+        SUCCESS_WITH_NOTIFICATIONS = 5,                     //!< no more queued commands, but there were notifications/messages reported (but not errors)
     };
 
     struct message {
@@ -319,6 +320,22 @@ public:
     void clearAllCommands() { commands.clear(); }
 
     /**
+     * Summary info for a unique target device, aggregated across all manifest steps.
+     */
+    struct StepInfo {
+        std::string targetName;                  //!< unique target device name (e.g., "IMX5")
+        std::vector<std::string> stepLabels;     //!< all step labels that reference this target
+        update_policy_e policy;                  //!< effective policy for the first step (shared across all)
+    };
+
+    /**
+     * Returns a summary of unique firmware update targets from the queued commands.
+     * Deduplicates by target name — each target appears once with all associated step labels.
+     * Thread-safe: locks the internal mutex.
+     */
+    std::vector<StepInfo> getStepSummary() const;
+
+    /**
      * Sets an explicit update policy for a specific step (by exact label name).
      */
     void setStepPolicy(const std::string& stepLabel, update_policy_e policy);
@@ -354,7 +371,7 @@ public:
     void handleCommandError(ISFwUpdaterCmd& cmd, int errCode, const char *errMmsg, ...);
 
     /**
-     * Signals the updater that is should complete any pending commands, and stop processing any further commands. Optionally (if immediately == true), it will
+     * Signals the updater that it should complete any pending commands, and stop processing any further commands. Optionally (if immediately == true), it will
      * no wait for pending commands to complete; this should be avoided do to possibly leaving some devices in an non-bootable state.
      * @param immediately if true (default is false), will not wait for existing actions to complete
      * @return the final update state; this should be fwUpdate::ERR_INTERRUPTED, but maybe any valid state.
@@ -363,6 +380,30 @@ public:
 
     bool isCancelable();
 
+    /**
+     * Signals to the updater that it should complete any pending command, and stop processing any further commands, until later resumed.
+     * This is different from cancel() in that this does not invalidate/skip/cancel any pending/queued commands; it simply falls into
+     * a state where any pending/queued commands are not allowed to start until the updateState exits to the UPDATER_SUSPENDED state,
+     * at which point all remaining commands will proceed. Note that if the current/active command is IN_PROGRESS, it will be allowed
+     * to finish. This does not prevent execution of the state machine or command executor, it only prevents queued commands from being
+     * started.
+     */
+    void suspend() { updateState.state = ISFwUpdateState::UDPATER_SUSPENDED; }
+
+    /**
+     * @return true if the updater is in a suspended state. Note that commands IN_PROGRESS will continue to execute.
+     */
+    bool isSuspended() { return updateState.state == ISFwUpdateState::UDPATER_SUSPENDED; }
+
+    /**
+     * Instructs the updater to exit the SUSPENDED state, and resume processing queued commands.
+     */
+    void resume() { updateState.state = ISFwUpdateState::UPDATER_IN_PROGRESS; }
+
+    /**
+     * @return true if the updater has no pending/queued commands, and the updater has been previously started.
+     *   This means that a call to fwUpdate_isDone() may return false, if the updater was never started.
+     */
     bool fwUpdate_isDone();
 
     /**
@@ -393,7 +434,7 @@ private:
         PKG_ERR_NO_MANIFEST = -12,                          //!< the package does not contain a manifest, or the manifest was invalid.
     };
 
-    std::recursive_mutex mutex;                             //!< make things thread-safe??
+    mutable std::recursive_mutex mutex;                     //!< make things thread-safe??
     fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;           //!< callback for status updates
     PortManager::port_listener_handle_t portListenerHdl {}; //!< handle to a port listener so we can watch for devices that reboot
 

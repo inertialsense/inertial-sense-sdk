@@ -176,8 +176,9 @@ float ISDevice::fwUpdatePercentCompleted() {
  * @return
  */
 std::vector<ISFwUpdateState::message> ISDevice::fwUpdateMessages(eLogLevel level) {
+    auto lk = fwUpdateState.lock();
     std::vector<ISFwUpdateState::message> out;
-    for (auto msg : fwUpdateState.messages) {
+    for (const auto& msg : fwUpdateState.messages) {
         if (msg.severity < level)
             out.push_back(msg);
     }
