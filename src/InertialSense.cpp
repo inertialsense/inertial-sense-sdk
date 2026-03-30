@@ -1081,12 +1081,12 @@ void InertialSense::portManagerHandler(uint8_t event, uint16_t pType, std::strin
 void InertialSense::deviceManagerHandler(uint8_t event, device_handle_t device) {
     switch ((DeviceManager::device_event_e)event) {
         case DeviceManager::DEVICE_ADDED: {
-            log_info(IS_LOG_FACILITY_NONE, "Device %s added on port %s", device->getIdAsString().c_str(), portIsValid(device->port) ? portName(device->port) : "(None)");
+            log_debug(IS_LOG_FACILITY_NONE, "Device %s added on port %s", device->getIdAsString().c_str(), portIsValid(device->port) ? portName(device->port) : "(None)");
 
             // since we've validated, we can remove this from the "portsToValidate" set
             auto removeMe = portsToValidate.find(device->port);
             if (removeMe != portsToValidate.end()) {
-                log_info(IS_LOG_FACILITY_NONE, "Removed %s from portsToValidate", portIsValid(device->port) ? portName(device->port) : "(None)");
+                log_debug(IS_LOG_FACILITY_NONE, "Removed %s from portsToValidate", portIsValid(device->port) ? portName(device->port) : "(None)");
                 portsToValidate.erase(removeMe);
             }
         }
@@ -1102,7 +1102,7 @@ void InertialSense::deviceManagerHandler(uint8_t event, device_handle_t device) 
         case DeviceManager::DEVICE_PORT_LOST:
             break;
         case DeviceManager::DEVICE_REMOVED:
-            log_info(IS_LOG_FACILITY_NONE, "Device %s removed", device->getIdAsString().c_str());
+            log_debug(IS_LOG_FACILITY_NONE, "Device %s removed", device->getIdAsString().c_str());
             break;
     }
 }
