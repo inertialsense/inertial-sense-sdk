@@ -4870,7 +4870,7 @@ enum eGPXHdwStatusFlags
     /** Communications Rx buffer overrun */
     GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000, 
     /** Communications Err mask */
-    GPX_HDW_STATUS_ERR_COM                              = (int)0x00030000, 
+    GPX_HDW_STATUS_ERR_COM_MASK                         = (int)0x00030000, 
     
     /** GPS1 PPS timepulse signal has not been received or is in error */
     GPX_HDW_STATUS_ERR_NO_GPS1_PPS                      = (int)0x00040000,
@@ -4920,7 +4920,7 @@ enum eGPXHdwStatusFlags
 
     GPX_HDW_STATUS_ERROR_MASK                           = (int)(GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK | GPX_HDW_STATUS_FAULT_GNSS1_INIT | 
                                                                 GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK | GPX_HDW_STATUS_FAULT_GNSS2_INIT | 
-                                                                GPX_HDW_STATUS_ERR_COM | GPX_HDW_STATUS_ERR_PPS_MASK | GPX_HDW_STATUS_ERR_CNO_MASK |
+                                                                GPX_HDW_STATUS_ERR_COM_MASK | GPX_HDW_STATUS_ERR_PPS_MASK | GPX_HDW_STATUS_ERR_CNO_MASK |
                                                                 GPX_HDW_STATUS_ERR_TEMPERATURE | GPX_HDW_STATUS_RESET_CAUSE_MASK | 
                                                                 GPX_HDW_STATUS_FAULT_SYS_CRITICAL),
 };
