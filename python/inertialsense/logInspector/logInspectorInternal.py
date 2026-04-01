@@ -191,7 +191,7 @@ class logInspectorInternal(LogInspectorWindow):
             result = reportFunc()
             self.log.openReport()
             self.updatePlot()
-            self.setStatus(name +" Test: " + ("FAILED" if result else "PASSED"))
+            self.setStatus(name +" Test: " + ("PASSED" if result else "FAILED"))
 
     def file_contains(self, filepath, text):
         with open(filepath, 'r') as f:

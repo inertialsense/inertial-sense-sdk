@@ -275,22 +275,35 @@ class Log:
                 data[i] = data[i][data[i][:, 0] < self.max_time]
 
                 # Chop off the min time so everything is wrt to start
+                if data[i].size == 0:
+                    print(f"Warning: data[{i}] is empty after filtering, skipping interpolation.")
+                    continue
                 data[i][:, 0] -= self.min_time
 
                 # Interpolate data so that it has all the same timestamps
-                fi = interp1d(data[i][:, 0], data[i][:, 1:].T, kind='linear', fill_value='extrapolate',
-                              bounds_error=False)
-                data[i] = np.hstack((t[:, None], fi(t).T))
+                try:
+                    fi = interp1d(data[i][:, 0], data[i][:, 1:].T, kind='linear', fill_value='extrapolate',
+                                  bounds_error=False)
+                    data[i] = np.hstack((t[:, None], fi(t).T))
+                except Exception as e:
+                    print(f"Warning: Interpolation failed for device {i}: {e}")
+                    continue
 
                 # Normalize Quaternions
                 data[i][:, 7:] /= norm(data[i][:, 7:], axis=1)[:, None]
 
+            # Remove any empty arrays from data
+            data = [d for d in data if d.size > 0]
+            if len(data) == 0:
+                print("Error: No valid data available for RMS calculation. All devices are empty after filtering.")
+                self.stateArray = None
+                return
             # Make a big 3D numpy array we can work with [dev, sample, data]
             data = np.array(data)
 
             # Convert lla to ned using first device lla at center of data as reference
             refLla = data[0, int(round(len(t) / 2.0)), 1:4].copy()
-            for i in range(self.numDev):
+            for i in range(data.shape[0]):
                 data[i, :, 1:4] = lla2ned(refLla, data[i, :, 1:4])
             self.stateArray = data
 
@@ -379,8 +392,10 @@ class Log:
         self.att_error = att_error
 
     def runImxPerformanceReport(self, params={}):
-        self.data = np.array(self.data)
-        self.getRMSArray()
+        self.data = np.array(self.data)        
+        if not self.getRMSArray() or self.stateArray is None:
+            print("IMX Performance Report aborted: No valid data for RMS calculation.")
+            return False
         self.getRMSTruth()
         self.calcAttitudeError()
 
