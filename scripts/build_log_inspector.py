@@ -22,7 +22,7 @@ def in_venv() -> bool:
 _DLL_DIR_HANDLES: list = []
 _DLLS_ADDED = False
 
-def _add_sdk_dll_dirs(verbose: bool = True) -> None:
+def _add_sdk_dll_dirs(verbose: bool = False) -> None:
     global _DLLS_ADDED
     if _DLLS_ADDED or os.name != "nt":
         return

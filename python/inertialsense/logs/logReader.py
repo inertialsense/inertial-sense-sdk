@@ -47,6 +47,8 @@ class Log:
         self.numRef = 0
         self.refINS = False
         self.using_mounting_bias = False
+        self.stateArray = None
+        self.truth = None
 
     def load(self, directory, serials=['ALL']):
         self.init_vars()
@@ -257,7 +259,15 @@ class Log:
             # If we are in compassing mode, then only calculate RMS after all devices have fix
             if self.compassing:
                 # time_of_fix_ms = [self.data[dev, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS2_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
-                time_of_fix_ms = [self.data[dev, DID_GPS1_POS]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS1_POS]['status'] & 0x08000000)] / 1000.0 for dev in range(self.numDev)]
+                time_of_fix_ms = []
+                for dev in range(self.numDev):
+                    gps1_pos = self.data[dev, DID_GPS1_POS]
+                    fix_mask = (gps1_pos['status'] & 0x08000000) != 0
+                    if not np.any(fix_mask):
+                        print("\033[93m" + "WARNING: dev %d never reached compassing fix; skipping RMS" % dev + "\033[0m")
+                        self.stateArray = None
+                        return False
+                    time_of_fix_ms.append(gps1_pos['timeOfWeekMs'][np.argmax(fix_mask)] / 1000.0)
                 # print time_of_fix_ms
                 self.min_time = max(time_of_fix_ms)
 
@@ -265,14 +275,28 @@ class Log:
             self.min_time = self.max_time - (self.max_time - self.min_time)*(2.0/3.0)  # do not use the first 1/3 (alignment)
             # self.min_time = self.max_time - (self.max_time - self.min_time)*(1.0/2.0)  # do not use the first 1/2 (alignment)
 
+            if self.min_time >= self.max_time:
+                print("\033[93m" + "WARNING: invalid INS RMS time window [%.1f, %.1f], skipping RMS" % (self.min_time, self.max_time) + "\033[0m")
+                self.stateArray = None
+                return False
+
             # Resample at a steady 10 Hz
             dt = 0.1
             # dt = np.average(data[0][1:,0] - data[0][:-1,0])
             t = np.arange(1.0, self.max_time - self.min_time - 1.0, dt)
+            if len(t) == 0:
+                print("\033[93m" + "WARNING: empty INS RMS resample window [%.1f, %.1f], skipping RMS" % (self.min_time, self.max_time) + "\033[0m")
+                self.stateArray = None
+                return False
             for i in range(self.numDev):
                 # Chop off extra data at beginning and end
                 data[i] = data[i][data[i][:, 0] > self.min_time]
                 data[i] = data[i][data[i][:, 0] < self.max_time]
+
+                if len(data[i]) == 0:
+                    print("\033[93m" + "WARNING: dev %d has no INS data in time range [%.1f, %.1f], skipping RMS" % (i, self.min_time, self.max_time) + "\033[0m")
+                    self.stateArray = None
+                    return False
 
                 # Chop off the min time so everything is wrt to start
                 data[i][:, 0] -= self.min_time
@@ -293,6 +317,10 @@ class Log:
             for i in range(self.numDev):
                 data[i, :, 1:4] = lla2ned(refLla, data[i, :, 1:4])
             self.stateArray = data
+            return True
+
+        self.stateArray = None
+        return False
 
     def getRMSTruth(self):
         means = np.empty((len(self.stateArray[0]), 10))
@@ -380,7 +408,8 @@ class Log:
 
     def runImxPerformanceReport(self, params={}):
         self.data = np.array(self.data)
-        self.getRMSArray()
+        if not self.getRMSArray():
+            return -1
         self.getRMSTruth()
         self.calcAttitudeError()
 
