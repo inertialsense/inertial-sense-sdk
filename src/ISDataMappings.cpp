@@ -726,6 +726,140 @@ std::string renderGpxStatus_gnssFwUpdateState(const data_info_t& info, std::any 
 }
 
 
+std::string renderImxHdwBitStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "hdwBitStatus"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t hdwBitStatus = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_ALL                      ,"0x00000001 - Passed all tests");
+        BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_NO_GPS                   ,"0x00000002 - Passed without valid GPS signal");
+        if (HDW_BIT_MODE(hdwBitStatus)) {
+            buff << "0x000000" << std::hex << (hdwBitStatus & HDW_BIT_MODE_MASK) << std::dec
+                 << " - BIT mode: " << HDW_BIT_MODE(hdwBitStatus) << std::endl;
+        }
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_NOISE_PQR                 ,"0x00000100 - FAULT: Gyro noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_NOISE_ACC                 ,"0x00000200 - FAULT: Accelerometer noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_MAGNETOMETER              ,"0x00000400 - FAULT: Magnetometer");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_BAROMETER                 ,"0x00000800 - FAULT: Barometer");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GPS_NO_COM                ,"0x00001000 - FAULT: No GPS serial communications");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GPS_POOR_CNO              ,"0x00002000 - FAULT: Poor GPS signal strength");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GPS_POOR_ACCURACY         ,"0x00004000 - FAULT: GPS poor accuracy");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GPS_NOISE                 ,"0x00008000 - FAULT: GPS noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_IMU_FAULT_REJECTION       ,"0x00010000 - FAULT: IMU fault rejection failure");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   ,"0x01000000 - FAULT: Hardware type does not match firmware");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderImxCalBitStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "calBitStatus"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t calBitStatus = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(calBitStatus, CAL_BIT_PASSED_ALL                      ,"0x00000001 - Passed all calibration tests");
+        if (CAL_BIT_MODE(calBitStatus)) {
+            buff << "0x000000" << std::hex << (calBitStatus & CAL_BIT_MODE_MASK) << std::dec
+                 << " - CAL BIT mode: " << CAL_BIT_MODE(calBitStatus) << std::endl;
+        }
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_EMPTY                ,"0x00000100 - FAULT: Temperature calibration not present");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_TSPAN                ,"0x00000200 - FAULT: Temperature calibration range inadequate");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_INCONSISTENT         ,"0x00000400 - FAULT: Temperature calibration inconsistent");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_CORRUPT              ,"0x00000800 - FAULT: Temperature calibration corrupt");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_BIAS             ,"0x00001000 - FAULT: Gyro bias temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_SLOPE            ,"0x00002000 - FAULT: Gyro slope temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_LIN              ,"0x00004000 - FAULT: Gyro linearity temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_BIAS             ,"0x00008000 - FAULT: Accel bias temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_SLOPE            ,"0x00010000 - FAULT: Accel slope temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_LIN              ,"0x00020000 - FAULT: Accel linearity temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_CAL_SERIAL_NUM            ,"0x00040000 - FAULT: Calibration serial number mismatch");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_MAG_INVALID          ,"0x00080000 - FAULT: Magnetometer cross-axis alignment invalid");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_EMPTY                ,"0x00100000 - FAULT: Motion calibration not present");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_IMU_INVALID          ,"0x00200000 - FAULT: IMU cross-axis alignment invalid");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MOTION_PQR                ,"0x00400000 - FAULT: Motion detected on gyros");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MOTION_ACC                ,"0x00800000 - FAULT: Motion detected on accelerometers");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU1_PQR_BIAS            ,"0x01000000 - NOTICE: IMU 1 gyro bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU2_PQR_BIAS            ,"0x02000000 - NOTICE: IMU 2 gyro bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU1_ACC_BIAS            ,"0x10000000 - NOTICE: IMU 1 accel bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU2_ACC_BIAS            ,"0x20000000 - NOTICE: IMU 2 accel bias offset detected");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxBitResults(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "results"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t results = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(results, GPXBit_resultsBit_PPS1      ,"0x01 - PPS1 test passed");
+        BIT_MSG(results, GPXBit_resultsBit_PPS2      ,"0x02 - PPS2 test passed");
+        BIT_MSG(results, GPXBit_resultsBit_UART      ,"0x04 - UART test passed");
+        BIT_MSG(results, GPXBit_resultsBit_IO        ,"0x08 - IO test passed");
+        BIT_MSG(results, GPXBit_resultsBit_GPS       ,"0x10 - GPS test passed");
+        BIT_MSG(results, GPXBit_resultsBit_FINISHED  ,"0x20 - Test finished");
+        BIT_MSG(results, GPXBit_resultsBit_CANCELED  ,"0x40 - Test canceled");
+        BIT_MSG(results, GPXBit_resultsBit_ERROR     ,"0x80 - Test error");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxBitState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "state"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint8_t state = std::any_cast<uint8_t>(value);
+
+        // eGPXBit_state values (from GPXBit.h)
+        switch (state) {
+            case 0: buff << "NOT_RUNNING" << std::endl; break;
+            case 1: buff << "MANUF_INIT" << std::endl; break;
+            case 2: buff << "MANUF_BLINK" << std::endl; break;
+            case 3: buff << "MANUF_UART" << std::endl; break;
+            case 4: buff << "MANUF_IO" << std::endl; break;
+            case 5: buff << "MANUF_PPS" << std::endl; break;
+            case 6: buff << "MANUF_GPS" << std::endl; break;
+            case 7: buff << "MANUF_REPORT" << std::endl; break;
+            default: buff << "UNKNOWN(" << (int)state << ")" << std::endl; break;
+        }
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     static const string timestampFields[] = { "time", "timeOfWeek", "timeOfWeekMs", "seconds" };
@@ -791,8 +925,8 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("lastCommand", &bit_t::lastCommand, DATA_TYPE_UINT8, "", "Last input command", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " + std::to_string(BIT_STATE_RUNNING) + "=running " + std::to_string(BIT_STATE_DONE) + "=done]", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &bit_t::reserved, DATA_TYPE_UINT8);
-    mapper.AddMember("hdwBitStatus", &bit_t::hdwBitStatus, DATA_TYPE_UINT32, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("calBitStatus", &bit_t::calBitStatus, DATA_TYPE_UINT32, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("hdwBitStatus", &bit_t::hdwBitStatus, DATA_TYPE_UINT32, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImxHdwBitStatus;
+    mapper.AddMember("calBitStatus", &bit_t::calBitStatus, DATA_TYPE_UINT32, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImxCalBitStatus;
     mapper.AddMember("tcPqrBias", &bit_t::tcPqrBias, DATA_TYPE_F32, SYM_DEG_PER_S, "Gyro temp cal bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("tcAccBias", &bit_t::tcAccBias, DATA_TYPE_F32, SYM_DEG_PER_S "/C", "Gyro temp cal slope", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("tcPqrSlope", &bit_t::tcPqrSlope, DATA_TYPE_F32, SYM_DEG_PER_S "/C", "Gyro temp cal linearity", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
@@ -811,11 +945,11 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapGpxBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_bit_t> mapper(data_set, did);
-    mapper.AddMember("results", &gpx_bit_t::results, DATA_TYPE_UINT32, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("results", &gpx_bit_t::results, DATA_TYPE_UINT32, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxBitResults;
     mapper.AddMember("command", &gpx_bit_t::command, DATA_TYPE_UINT8, "", "Command (see eGPXBit_CMD)");
     mapper.AddMember("port", &gpx_bit_t::port, DATA_TYPE_UINT8, "", "Port used with the test");
     mapper.AddMember("testMode", &gpx_bit_t::testMode, DATA_TYPE_UINT8, "", "Self-test mode: 102=TxOverflow, 103=RxOverflow (see eGPXBit_test_mode)");
-    mapper.AddMember("state", &gpx_bit_t::state, DATA_TYPE_UINT8, "", "Built-in self-test state (see eGPXBit_state)");
+    mapper.AddMember("state", &gpx_bit_t::state, DATA_TYPE_UINT8, "", "Built-in self-test state (see eGPXBit_state)").renderExtended = renderGpxBitState;
     mapper.AddMember("detectedHardwareId", &gpx_bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("reserved", &gpx_bit_t::reserved, DATA_TYPE_UINT8, 2);
 }

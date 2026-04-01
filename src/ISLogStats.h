@@ -16,6 +16,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <cstdint>
 #include <map>
+#include <set>
+#include <vector>
 
 #include "data_sets.h"
 #include "ISComm.h"
@@ -53,6 +55,12 @@ struct sLogStatPType
     unsigned int errors;                    // total error count
 };
 
+struct DiagnosticDIDCache {
+    std::vector<uint8_t> data;
+    double timestamp = 0.0;
+    bool observed = false;
+};
+
 class cLogStats
 {
 public:
@@ -63,11 +71,23 @@ public:
     void Clear();
     void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
     void LogData(protocol_type_t ptype, int id, int bytes, double timeMs=0.0);
+    void CacheDiagnosticData(uint32_t did, const uint8_t* data, uint32_t size, double timestamp, uint32_t offset=0);
     unsigned int Count();
     unsigned int Errors();
     std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
     std::string Stats();
+    std::string DiagnosticSummary();
     void WriteToFile(const std::string& fileName);
+
+private:
+    std::map<uint32_t, DiagnosticDIDCache> m_diagCache;
+    static const std::set<uint32_t> s_diagnosticDIDs;
+
+    std::string FormatDevInfoSection(uint32_t did, const char* label);
+    std::string FormatFlashConfigDiffSection(uint32_t did, const char* label);
+    std::string FormatBitSection(uint32_t did, const char* label, const std::string& fields);
+    std::string FormatCuratedSection(uint32_t did, const char* label, const std::string& fields);
+    std::string FormatTimestamp(double timestamp);
 };
 
 
