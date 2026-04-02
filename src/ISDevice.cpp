@@ -7,12 +7,13 @@
  */
 
 #include "core/msg_logger.h"
+#include "DeviceManager.h"
 #include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
 #include "ISHttpRequest.h"
+#include "ISLogger.h"
 #include "util/util.h"
 #include "imx_defaults.h"
-#include "ISLogger.h"
 
 const ISDevice ISDevice::invalidRef;
 
@@ -104,6 +105,11 @@ bool ISDevice::step() {
     if (portFlagsIsSet(port, PORT_FLAG__NO_ISDEVICE))
         return false;
 
+    if (was_connected != (bool)portIsOpened(port)) {
+        was_connected = isConnected();
+        DeviceManager::getInstance().notifyListeners(shared_from_this(), isConnected() ? DeviceManager::DEVICE_CONNECTED : DeviceManager::DEVICE_DISCONNECTED);
+    }
+
     bool didStuff = false;
     if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
@@ -170,8 +176,9 @@ float ISDevice::fwUpdatePercentCompleted() {
  * @return
  */
 std::vector<ISFwUpdateState::message> ISDevice::fwUpdateMessages(eLogLevel level) {
+    auto lk = fwUpdateState.lock();
     std::vector<ISFwUpdateState::message> out;
-    for (auto msg : fwUpdateState.messages) {
+    for (const auto& msg : fwUpdateState.messages) {
         if (msg.severity < level)
             out.push_back(msg);
     }
@@ -587,6 +594,10 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
         case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
         case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
         case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
+        case IS_HDW_GNSS_SONY: typeName = "CXD"; break;
+        case IS_HDW_GNSS_UBLOX: typeName = "UBX"; break;
+        case IS_HDW_GNSS_SEPTENTRIO: typeName = "SEP"; break;
+        case IS_HDW_GNSS_STM_TESSIO: typeName = "STM"; break;
         default: typeName = "\?\?\?"; break;
     }
     out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
@@ -1454,6 +1465,13 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
             break;
+        case DID_GPX_DEV_INFO:
+            gpxDevInfo = *(dev_info_t*)data->ptr;
+            log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_DEV_INFO: hwType=%d, fw=%d.%d.%d.%d",
+                getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(),
+                gpxDevInfo.hardwareType, gpxDevInfo.firmwareVer[0], gpxDevInfo.firmwareVer[1],
+                gpxDevInfo.firmwareVer[2], gpxDevInfo.firmwareVer[3]);
+            break;
         case DID_SYS_CMD:
             sysCmd = *(system_command_t*)data->ptr;
             break;
@@ -1635,7 +1653,8 @@ bool ISDevice::connect(bool revalidate) {
     if (revalidate)
         devInfo.hdwRunState = HDW_STATE_UNKNOWN; // this will further reinforce a validation
 
-    if (!portIsOpened(port)) {
+    bool alreadyOpened = portIsOpened(port);
+    if (!alreadyOpened) {
         if (nextConnectMs > current_timeMs()) {
             SLEEP_MS(15);
             log_debug(IS_LOG_ISDEVICE, "Connection throttled. You can retry this device again in %dms.", nextConnectMs - current_timeMs());
@@ -1656,7 +1675,13 @@ bool ISDevice::connect(bool revalidate) {
         SLEEP_MS(15);
         success = validate();          // if validating, only return true if we successfully validated
     }
-    log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), (success ? " (revalidated)" : ""));
+
+    // ONLY notify of DEVICE_CONNECTED, if the port was closed at the start of this function
+    if (!alreadyOpened) {
+        DeviceManager::getInstance().notifyListeners(shared_from_this(), DeviceManager::DEVICE_CONNECTED);  // notify that we've connected (if we are)
+        log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), (success ? " (revalidated)" : ""));
+    }
+    was_connected = success;
     return success;
 }
 

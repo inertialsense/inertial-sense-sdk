@@ -37,6 +37,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
+#include "core/msg_logger.h"
+
 #include "protocol_nmea.h"
 #include "CorrectionService.h"
 #include "NtripCorrectionService.h"
@@ -957,8 +959,6 @@ void getMemoryEvent(InertialSense& inertialSenseInterface, uint32_t addrs, const
 
 static int cltool_dataStreaming()
 {
-    IS_LOG_OUTPUT(stdout);
-
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
     // Build explicit port factory list — only include ISmDnsPortFactory when -use-mdns is specified
@@ -1040,6 +1040,23 @@ static int cltool_dataStreaming()
         try
         {
             if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
+                // Inject policy override commands before the firmware update commands
+                if (!g_commandLineOptions.fwPolicyOverrides.empty()) {
+                    std::vector<std::string> combined;
+                    for (auto& po : g_commandLineOptions.fwPolicyOverrides) {
+                        auto colonPos = po.find(':');
+                        if (colonPos != std::string::npos) {
+                            // pattern-specific: "skip:GNSS" → "policy=skip,target=GNSS"
+                            combined.push_back("policy=" + po.substr(0, colonPos) + ",target=" + po.substr(colonPos + 1));
+                        } else {
+                            // default: "force" → "policy=force"
+                            combined.push_back("policy=" + po);
+                        }
+                    }
+                    combined.insert(combined.end(), g_commandLineOptions.fwUpdateCmds.begin(), g_commandLineOptions.fwUpdateCmds.end());
+                    g_commandLineOptions.fwUpdateCmds = combined;
+                }
+
                 if (inertialSenseInterface.updateFirmware(
                         g_commandLineOptions.updateFirmwareTarget,
                         g_commandLineOptions.fwUpdateCmds,
@@ -1347,6 +1364,10 @@ static int inertialSenseMain()
 
 int main(int argc, char* argv[])
 {
+
+    // IS_LOG_OUTPUT(stdout);
+    // IS_SET_LOG_LEVEL(IS_LOG_LEVEL_MORE_DEBUG);
+
     // Parse command line options
     if (!cltool_parseCommandLine(argc, argv))
     {   // parsing failed

@@ -261,9 +261,9 @@ static inline int portValidate(port_handle_t port) {
 }
 
 /**
- * returns true if the port's ptype's has the PORT_FLAG__OPENED bit set
+ * returns true if the port is valid, and its pflag has the PORT_FLAG__OPENED bit set
  * @param port the port handle
- * @return the port type
+ * @return 0 if not opened, otherwise non-zero
  */
 static inline uint8_t portIsOpened(port_handle_t port) {
     return (portIsValid(port) && portFlagsIsSet(port, PORT_FLAG__OPENED));

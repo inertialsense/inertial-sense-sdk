@@ -43,6 +43,25 @@ extern "C"
 #endif
 
 
+/**
+ * Defines the update policy for a firmware update step/target.
+ */
+enum update_policy_e : int8_t {
+    UPDATE_POLICY_DEFAULT   = 0,   //!< inherit from updater-level default (backward compat)
+    UPDATE_POLICY_SKIP      = 1,   //!< skip this target's step entirely
+    UPDATE_POLICY_IF_NEWER  = 2,   //!< upload only if image version > target's current version
+    UPDATE_POLICY_FORCE     = 3,   //!< always upload (current behavior)
+};
+
+/**
+ * Stores the update policy and image version metadata for a single step/target.
+ */
+struct step_policy_t {
+    update_policy_e policy = UPDATE_POLICY_DEFAULT;
+    uint8_t imageVersion[4] = {};  //!< parsed from manifest "version: x.y.z.w"
+    bool hasImageVersion = false;  //!< true if imageVersion was explicitly set
+};
+
 
 class ISFwUpdaterCmd {
 public:
@@ -85,6 +104,7 @@ public:
                 {"waitfor", {"timeout", "interval", "force", "on-timeout"}},
                 {"upload", {"filename", "slot", "force", "interval"}},
                 {"reset", {"type"}},
+                {"policy", {"policy", "target"}},
         };
 
         auto tmpArgs = utils::split_string(_args, ",");
@@ -142,9 +162,10 @@ public:
         UPDATER_WAITING_TO_CANCEL = -1,                     //!< user requested a cancel, but operations are still pending
         UPDATER_IDLE = 0,                                   //!< the Updater is idle. Nothing started, nothing to do, etc.
         UPDATER_CMDS_QUEUED = 1,                            //!< commands are queued, but no commands are in process
-        UPDATER_IN_PROGRESS = 2,                            //!< commands are queued, and one or more are actively being ran
-        UPDATER_SUCCESSFUL = 3,                             //!< no more queued commands, and no errors reported
-        SUCCESS_WITH_NOTIFICATIONS = 4,                     //!< no more queued commands, but there were notifications/messages reported (but not errors)
+        UDPATER_SUSPENDED = 2,                              //!< commands are queued, IN_PROCESS commands can continue to execute, but no QUEUED commands will be allowed to enter IN_PROCESS
+        UPDATER_IN_PROGRESS = 3,                            //!< commands are queued, and one or more are actively being ran
+        UPDATER_SUCCESSFUL = 4,                             //!< no more queued commands, and no errors reported
+        SUCCESS_WITH_NOTIFICATIONS = 5,                     //!< no more queued commands, but there were notifications/messages reported (but not errors)
     };
 
     struct message {
@@ -299,6 +320,48 @@ public:
     void clearAllCommands() { commands.clear(); }
 
     /**
+     * Summary info for a unique target device, aggregated across all manifest steps.
+     */
+    struct StepInfo {
+        std::string targetName;                  //!< unique target device name (e.g., "IMX5")
+        std::vector<std::string> stepLabels;     //!< all step labels that reference this target
+        update_policy_e policy;                  //!< effective policy for the first step (shared across all)
+    };
+
+    /**
+     * Returns a summary of unique firmware update targets from the queued commands.
+     * Deduplicates by target name — each target appears once with all associated step labels.
+     * Thread-safe: locks the internal mutex.
+     */
+    std::vector<StepInfo> getStepSummary() const;
+
+    /**
+     * Sets an explicit update policy for a specific step (by exact label name).
+     */
+    void setStepPolicy(const std::string& stepLabel, update_policy_e policy);
+
+    /**
+     * Stores a deferred pattern-based policy override. The pattern is matched (case-insensitive
+     * substring) against step labels during manifest parsing, and against target names at step
+     * transition time. First matching pattern wins.
+     */
+    void setPolicyPattern(const std::string& pattern, update_policy_e policy);
+
+    /**
+     * Sets the updater-wide default policy, used when no step-specific or pattern-matched policy applies.
+     */
+    void setDefaultPolicy(update_policy_e policy);
+
+    /**
+     * Resolves the effective update policy for a given step label, using the following priority:
+     *   1. Exact stepPolicies entry
+     *   2. defaultPolicy (if not DEFAULT)
+     *   3. forceUpdate bool (legacy)
+     *   4. IF_NEWER fallback
+     */
+    update_policy_e getEffectivePolicy(const std::string& stepLabel) const;
+
+    /**
      * Called when an error occurs while processing a command, to perform corrective actions (if possible).
      * Primarily, this checks if there is a failLabel defined and looks for the corresponding command label.
      * Otherwise it logs the message/errorcode, and clears the command stack.
@@ -308,7 +371,7 @@ public:
     void handleCommandError(ISFwUpdaterCmd& cmd, int errCode, const char *errMmsg, ...);
 
     /**
-     * Signals the updater that is should complete any pending commands, and stop processing any further commands. Optionally (if immediately == true), it will
+     * Signals the updater that it should complete any pending commands, and stop processing any further commands. Optionally (if immediately == true), it will
      * no wait for pending commands to complete; this should be avoided do to possibly leaving some devices in an non-bootable state.
      * @param immediately if true (default is false), will not wait for existing actions to complete
      * @return the final update state; this should be fwUpdate::ERR_INTERRUPTED, but maybe any valid state.
@@ -317,6 +380,30 @@ public:
 
     bool isCancelable();
 
+    /**
+     * Signals to the updater that it should complete any pending command, and stop processing any further commands, until later resumed.
+     * This is different from cancel() in that this does not invalidate/skip/cancel any pending/queued commands; it simply falls into
+     * a state where any pending/queued commands are not allowed to start until the updateState exits to the UPDATER_SUSPENDED state,
+     * at which point all remaining commands will proceed. Note that if the current/active command is IN_PROGRESS, it will be allowed
+     * to finish. This does not prevent execution of the state machine or command executor, it only prevents queued commands from being
+     * started.
+     */
+    void suspend() { updateState.state = ISFwUpdateState::UDPATER_SUSPENDED; }
+
+    /**
+     * @return true if the updater is in a suspended state. Note that commands IN_PROGRESS will continue to execute.
+     */
+    bool isSuspended() { return updateState.state == ISFwUpdateState::UDPATER_SUSPENDED; }
+
+    /**
+     * Instructs the updater to exit the SUSPENDED state, and resume processing queued commands.
+     */
+    void resume() { updateState.state = ISFwUpdateState::UPDATER_IN_PROGRESS; }
+
+    /**
+     * @return true if the updater has no pending/queued commands, and the updater has been previously started.
+     *   This means that a call to fwUpdate_isDone() may return false, if the updater was never started.
+     */
     bool fwUpdate_isDone();
 
     /**
@@ -347,7 +434,7 @@ private:
         PKG_ERR_NO_MANIFEST = -12,                          //!< the package does not contain a manifest, or the manifest was invalid.
     };
 
-    std::recursive_mutex mutex;                             //!< make things thread-safe??
+    mutable std::recursive_mutex mutex;                     //!< make things thread-safe??
     fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;           //!< callback for status updates
     PortManager::port_listener_handle_t portListenerHdl {}; //!< handle to a port listener so we can watch for devices that reboot
 
@@ -361,8 +448,12 @@ private:
     std::string statusMsg;                                  //!< a string the reflects the current state of the updater - this should be "Human Readable" (it generally gets reported directly to the user in the UI, etc).
 
     eLogLevel logLevel = IS_LOG_LEVEL_INFO;                 //!< default log level to show
-    //std::vector<ISFwUpdateState::message> stepErrors;       //!< a list of error messages messages that occurred during the update
-    //bool requestPending = false;                            //!< true if a fwUpdate request has been made, and we're still waiting for a response.
+
+    /** ---- Per-target update policy state ---- **/
+    std::map<std::string, step_policy_t> stepPolicies;      //!< resolved per-step policies, keyed by exact step label
+    std::vector<std::pair<std::string, update_policy_e>> policyPatterns; //!< deferred patterns to match against step labels / target names
+    update_policy_e defaultPolicy = UPDATE_POLICY_DEFAULT;  //!< updater-wide default policy
+    std::map<fwUpdate::target_t, bool> targetUploadPerformed; //!< tracks whether any upload actually occurred for each target
 
 
     /** =========================================================== **/

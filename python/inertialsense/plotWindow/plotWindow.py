@@ -1,11 +1,11 @@
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget,QVBoxLayout
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot, QTimer
+from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget,QVBoxLayout
+from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import pyqtSlot, QTimer
 import sys, os
 
 class plotWindow():
@@ -74,7 +74,7 @@ class plotWindow():
         self.tab_handles.append(new_tab)
 
     def show(self):        
-        return self.app.exec_()
+        return self.app.exec()
 
     def saveFig(self, fig, filepath, format='svg', sizeInches=[]):
         if fig == None:

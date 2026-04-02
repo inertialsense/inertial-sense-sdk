@@ -155,6 +155,12 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             // Update log statistics
             m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, timestamp);
             globalLogStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, timestamp);
+
+            // Cache diagnostic DIDs for summary generation
+            if (ptype == _PTYPE_INERTIAL_SENSE_DATA || ptype == _PTYPE_INERTIAL_SENSE_CMD)
+            {
+                m_logStats.CacheDiagnosticData(m_comm.rxPkt.dataHdr.id, m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size, timestamp, m_comm.rxPkt.dataHdr.offset);
+            }
         }
     }
 

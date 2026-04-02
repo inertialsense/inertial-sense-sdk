@@ -51,6 +51,8 @@ public:
         DEVICE_REMOVED,                 //!< a previously known device was removed from the manager
     };
 
+    inline static const char* device_event_names[] = { "DEVICE_ADDED", "DEVICE_PORT_BOUND", "DEVICE_CONNECTED", "DEVICE_INFO_CHANGED", "DEVICE_DISCONNECTED", "DEVICE_PORT_LOST", "DEVICE_REMOVED" };
+
     static const uint16_t OPTIONS_USE_DEFAULTS                    = 0xFFFF;       //!< used to indicate that higher-order options, if set should be used
     static const uint16_t DISCOVERY__IGNORE_CLOSED_PORTS          = 0x0001;       //!< when set, this will cause closed ports to be skipped/ignored, otherwise open the port before attempting discovery
     static const uint16_t DISCOVERY__CLOSE_PORT_ON_FAILURE        = 0x0002;       //!< when set, this will cause the port to be closed when discovery fails, otherwise the port will be left open

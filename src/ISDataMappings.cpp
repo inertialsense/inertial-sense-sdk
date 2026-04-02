@@ -61,6 +61,9 @@ const unsigned char g_asciiToLowerMap[256] =
     224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
 };
 
+#define STR_ENDS_WITH(str, suffix)  ((str.length() >= suffix.length()) && (str.compare(str.length() - suffix.length(), std::string_view::npos, suffix)) == 0)
+
+
 
 /**
  * @brief a basic renderer to convert data types to basic/simple strings
@@ -319,7 +322,6 @@ std::string renderSysStatus(const data_info_t& info, std::any value, int arrayId
 
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
         BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
-        BIT_MSG(sysStatus, SYS_STATUS_DMA_FAULT_DETECT              , "0x00000002 - DMA Fault Detected.");
         BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
 
         return buff.str();
@@ -430,6 +432,434 @@ std::string renderRTKCfgBits(const data_info_t& info, std::any value, int arrayI
     }
 }
 
+/**
+ * @brief a custom data renderer for GNSS Status Bits
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGnssStatusBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "status"))
+        return "";
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+    try {
+        std::stringstream buff;
+        uint32_t gpsStatusBits = std::any_cast<uint32_t>(value);
+
+        // satCount is to be deprecated - but we'll show it for backwards compatibility
+        uint8_t satCount = (gpsStatusBits & GPS_STATUS_NUM_SATS_USED_MASK);
+        buff << utils::string_format("0x000000%02X - %d satellites used in solution (deprecated)", satCount, satCount) << std::endl;
+
+        switch (gpsStatusBits & GPS_STATUS_FIX_MASK) {
+            case GPS_STATUS_FIX_NONE                : buff << "0x00000000 - No GNSS" << std::endl; break;
+            case GPS_STATUS_FIX_DEAD_RECKONING_ONLY : buff << "0x00000100 - GNSS Dead Reckoning Only" << std::endl; break;
+            case GPS_STATUS_FIX_2D                  : buff << "0x00000200 - 2D Fix" << std::endl; break;
+            case GPS_STATUS_FIX_3D                  : buff << "0x00000300 - 3D Fix" << std::endl; break;
+            case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK  : buff << "0x00000400 - 3D Fix + Dead Reckoning" << std::endl; break;
+            case GPS_STATUS_FIX_TIME_ONLY           : buff << "0x00000500 - Time-Only Fix" << std::endl; break;
+            case GPS_STATUS_FIX_REF_LLA             : buff << "0x00000600 - Usign Reference LLA" << std::endl; break;
+            case GPS_STATUS_FIX_UNUSED2             : buff << "0x00000700 - << UNUSED >>" << std::endl; break;
+            case GPS_STATUS_FIX_DGPS                : buff << "0x00000800 - Using DGPS" << std::endl; break;
+            case GPS_STATUS_FIX_SBAS                : buff << "0x00000900 - Using SBAS" << std::endl; break;
+            case GPS_STATUS_FIX_RTK_SINGLE          : buff << "0x00000A00 - RTK Single" << std::endl; break;
+            case GPS_STATUS_FIX_RTK_FLOAT           : buff << "0x00000B00 - RTK Float" << std::endl; break;
+            case GPS_STATUS_FIX_RTK_FIX             : buff << "0x00000C00 - RTK Fix" << std::endl; break;
+        }
+
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_FIX_OK                          , "0x00010000 - within limits (e.g. DOP & accuracy)");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_DGPS_USED                       , "0x00020000 - Differential GPS (DGPS) used.");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD                , "0x00040000 - RTK feedback on the integer solutions to drive the float biases towards the resolved integers");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_UNUSED_1                        , "0x00080000 - << UNUSED >>");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED       , "0x00100000 - GPS1 RTK precision positioning mode enabled");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_STATIC_MODE                     , "0x00200000 - Static mode");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED        , "0x00400000 - GPS2 RTK moving base mode enabled");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR     , "0x00800000 - GPS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)");
+
+        uint32_t rtkError = (gpsStatusBits & GPS_STATUS_FLAGS_ERROR_MASK);
+        switch (rtkError) {
+            case GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING        : buff << "0x01000000 - GPS1 RTK error: Either base observations or antenna position have not been received." << std::endl; break;
+            case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING     : buff << "0x02000000 - GPS1 RTK error: base position moved when it should be stationary" << std::endl; break;
+            case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID    : buff << "0x03000000 - GPS1 RTK error: base position is invalid or not surveyed well" << std::endl; break;
+        }
+
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID         , "0x04000000 - GPS1 RTK precision position and carrier phase range solution with fixed ambiguities.");
+        if (gpsStatusBits & GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_MASK) {
+            BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID          , "0x08000000 - GPS2 RTK moving base heading valid and available in DID_GPS2_RTK_CMP_REL.");
+            BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD   , "0x00002000 - GPS2 RTK Compassing Baseline distance is invalid");
+            BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET , "0x00004000 - GPS2 RTK Compassing Baseline distance is unset (must be > 0)");
+        }
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS_NMEA_DATA                   , "0x00008000 - Data from NMEA message. GPS velocity is NED (not ECEF).");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC                , "0x10000000 - Time is synchronized by GPS PPS.");
+
+
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_UNUSED_2                        , "0x20000000 - <<UNUSED>>");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_UNUSED_3                        , "0x40000000 - <<UNUSED>>");
+        BIT_MSG(gpsStatusBits, GPS_STATUS_FLAGS_UNUSED_4                        , "0x80000000 - <<UNUSED>>");
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+
+std::string renderGpxStatus_status(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "status"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t status = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+    /** Communications parse error count */
+        BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_MASK      , "0x0000000F - Communications parse error count");
+        // BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET    , ""           = 0,
+
+#define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
+
+    /** Rx communications not dectected in last 30 seconds */
+        BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED , "0x00000010 - COM0 RX traffic not dectected in last 30 seconds.");
+        BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED , "0x00000020 - COM1 RX traffic not dectected in last 30 seconds.");
+        BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED , "0x00000040 - COM2 RX traffic not dectected in last 30 seconds.");
+        BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DECTECTED  , "0x00000080 - USB RX traffic not dectected in last 30 seconds.");
+
+    /** General Fault mask */
+        // BIT_MSG(status, GPX_STATUS_GENERAL_FAULT_MASK            , "0xFFFF0000 -
+
+    /** RTK buffer filled causing data loss */
+        BIT_MSG(status, GPX_STATUS_FAULT_RTK_QUEUE_LIMITED       , "0x00010000 - RTK buffer overflow.");
+
+    /** GNSS receiver time fault **/
+        BIT_MSG(status, GPX_STATUS_FAULT_GNSS_RCVR_TIME          , "0x00100000 - GNSS receiver time fault");
+    /** DMA Fault detected **/
+        BIT_MSG(status, GPX_STATUS_FAULT_DMA                     , "0x00800000 - DMA fault");
+
+    /** Fatal faults - critical failure resulting in CPU reset */
+        //BIT_MSG(status, GPX_STATUS_FATAL_MASK                    , 0x1F000000,
+        //BIT_MSG(status, GPX_STATUS_FATAL_OFFSET                  ,           = 24,
+
+        uint32_t fatalStatus = ((status & GPX_STATUS_FATAL_MASK) >> GPX_STATUS_FATAL_OFFSET);
+        switch (fatalStatus) {
+            case GPX_STATUS_FATAL_RESET_LOW_POW:                buff << "0x01000000 - Reset from low power" << std::endl; break;
+            case GPX_STATUS_FATAL_RESET_BROWN:                  buff << "0x02000000 - Reset from brown out" << std::endl; break;
+            case GPX_STATUS_FATAL_RESET_WATCHDOG:               buff << "0x03000000 - Reset from watchdog" << std::endl; break;
+            case GPX_STATUS_FATAL_CPU_EXCEPTION:                buff << "0x04000000 - CPU exception" << std::endl; break;
+            case GPX_STATUS_FATAL_UNHANDLED_INTERRUPT:          buff << "0x05000000 - Unhandled interrupt" << std::endl; break;
+            case GPX_STATUS_FATAL_STACK_OVERFLOW:               buff << "0x06000000 - Stack overflow" << std::endl; break;
+            case GPX_STATUS_FATAL_KERNEL_OOPS:                  buff << "0x07000000 - Kernel oops" << std::endl; break;
+            case GPX_STATUS_FATAL_KERNEL_PANIC:                 buff << "0x08000000 - Kernel panic" << std::endl; break;
+            case GPX_STATUS_FATAL_UNALIGNED_ACCESS:             buff << "0x09000000 - Unaligned access" << std::endl; break;
+            case GPX_STATUS_FATAL_MEMORY_ERROR:                 buff << "0x0A000000 - Memory error" << std::endl; break;
+            case GPX_STATUS_FATAL_BUS_ERROR:                    buff << "0x0B000000 - Bus error" << std::endl; break;
+            case GPX_STATUS_FATAL_USAGE_ERROR:                  buff << "0x0C000000 - Usage error" << std::endl; break;
+            case GPX_STATUS_FATAL_DIV_ZERO:                     buff << "0x0D000000 - Division by zero" << std::endl; break;
+            case GPX_STATUS_FATAL_SER0_REINIT:                  buff << "0x0E000000 - SER0 reinit" << std::endl; break;
+            case GPX_STATUS_FATAL_UNKNOWN:                      buff << "0x1F000000 - Unknown" << std::endl; break;
+        }
+
+    /** Internal use */
+        BIT_MSG(status, GPX_STATUS_FAULT_RP                     , "0x20000000 - RP fault");
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxStatus_hdwStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "hdwStatus"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t hdwStatus = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_SATELLITE_RX            , "0x00000001 - GNSS1 satellite signals are being received (antenna and cable are good)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_SATELLITE_RX            , "0x00000002 - GNSS2 satellite signals are being received (antenna and cable are good)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID      , "0x00000004 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID      , "0x00000008 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+
+    /** GNSS 1 reset required count */
+    // GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x00000070,
+    // GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
+#define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
+
+    /** Failed to communicate or setup GNSS receiver 1 */
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS1_INIT              , "0x00000080 - Failed to communicate or setup GNSS receiver 1");
+        // BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
+
+    /** GNSS 2 reset required count */
+    // GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000700,
+    // GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
+#define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
+
+    /** Failed to communicate or setup GNSS receiver 2 */
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS2_INIT              , "0x00000800 - Failed to communicate or setup GNSS receiver 2");
+        // BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED       , "0x00001000 - GNSS is faulting firmware update REQUIRED");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_LED_ENABLED                   , "0x00002000 - Enables LED in Manufacturing TBed");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED         , "0x00004000 - System Reset is Required for proper function");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FLASH_WRITE_PENDING           , "0x00008000 - System flash write staging or occuring now.");
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_COM_TX_LIMITED            , "0x00010000 - Communications Tx buffer limited");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_COM_RX_OVERRUN            , "0x00020000 - Communications Rx buffer overrun");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_NO_GPS1_PPS               , "0x00040000 - GPS1 PPS timepulse signal has not been received or is in error");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_NO_GPS2_PPS               , "0x00080000 - GPS2 PPS timepulse signal has not been received or is in error");
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_LOW_CNO_GPS1              , "0x00100000 - GPS1 signal strength low (<20)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_LOW_CNO_GPS2              , "0x00200000 - GPS2 signal strength low (<20)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_CNO_GPS1_IR               , "0x00400000 - GPS1 signal irregular. High Cno standard deviation over 5 second period detected.");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_CNO_GPS2_IR               , "0x00800000 - GPS2 signal irregular. High Cno standard deviation over 5 second period detected.");
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_RUNNING                   , "0x01000000 - (BIT) Built-in self-test running");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_PASSED                    , "0x02000000 - (BIT) Built-in self-test passed");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_FAULT                     , "0x03000000 - (BIT) Built-in self-test failure");
+        // GPX_HDW_STATUS_BIT_MASK                              = 0x03000000
+        // GPX_HDW_STATUS_BIT_OFFSET                            = 24,
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_TEMPERATURE               , "0x04000000 - Temperature outside spec'd operating range");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GPS_PPS_TIMESYNC              , "0x08000000 - Time synchronized by GPS PPS");
+
+    /** Cause of system reset */
+        // GPX_HDW_STATUS_RESET_CAUSE_MASK                     = (int)0x70000000,
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE       , "0x10000000 - Reset from Backup mode (low-power state w/ CPU off)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_SOFT              , "0x20000000 - Reset from Software");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_HDW               , "0x40000000 - Reset from Hardware (NRST pin low)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_SYS_CRITICAL            , "0x80000000 - Critical System Fault, CPU error.");
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxStatus_gnssLastResetCause(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    static const char* rstReasons[] = {
+        "Power On", "Watchdog", "ErrOpCode", "ErrorOpCode_FwUp",
+        "ErrorOpCode_init", "UserRequested", "FWUpdate", "SysCmd",
+        "InitTimeout", "Status5", "StatusNot0", "flashUpdate",
+        "RTKEphMissing"
+    };
+
+    if ((info.type == DATA_TYPE_UINT8) && (info.size == 1) && STR_ENDS_WITH(info.name, std::string("lastRstCause"))) {
+        try {
+            std::stringstream buff;
+            uint8_t msgIdx = std::any_cast<uint8_t>(value);
+            if (msgIdx < cxdRst_Max) {
+                return std::string(rstReasons[msgIdx]);
+            }
+        } catch (std::bad_any_cast& e) {
+        }
+    }
+    return "";
+}
+
+std::string renderGpxStatus_gnssInitState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    static const char* initStates[] = {
+        "Bootup", "UartSetting", "UartWait", "UartDone",
+        "VersionCheck", "StopPos", "SetL5", "SetSats",
+        "SetSatLimits", "SetOutput", "SetAlgo", "SetPeriod",
+        "SetRtcmMsgs", "SetRtcmTimeMode", "SetPinningMode", "SetVelocitySmoothing",
+        "SetAltituedSmoothing", "SetEphmOutputPeriod", "StartPos", "Done"
+        };
+
+    if ((info.type == DATA_TYPE_UINT8) && (info.size == 1) && STR_ENDS_WITH(info.name, std::string("initState"))) {
+        try {
+            std::stringstream buff;
+            uint8_t msgIdx = std::any_cast<uint8_t>(value);
+            if (msgIdx <= 19) {
+                return std::string(initStates[msgIdx]);
+            }
+        } catch (std::bad_any_cast& e) {
+        }
+    }
+    return "";
+}
+
+std::string renderGpxStatus_gnssRunState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    static const char* runStates[] = {
+        "Reset", "Initializing", "Running", "Passthrough",
+        "FwUpdate Init", "FwUpdate", "Error", "Shutdown",
+        "ReInit", "Hard Reset"
+    };
+
+    if ((info.type == DATA_TYPE_UINT8) && (info.size == 1) && STR_ENDS_WITH(info.name, std::string("runState"))) {
+        try {
+            std::stringstream buff;
+            uint8_t msgIdx = std::any_cast<uint8_t>(value);
+            if (msgIdx <= kHardReset) {
+                return std::string(runStates[msgIdx]);
+            }
+        } catch (std::bad_any_cast& e) {
+        }
+    }
+    return "";
+}
+
+
+std::string renderGpxStatus_gnssFwUpdateState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    static const char* fwStates[] = {
+        "LockoutWait", "ResetSet", "ResetWait", "StartSet", "StartWait",
+        "BootModeSet", "BootModeWait", "BaudSet", "BaudWait", "BaudFinish",
+        "InjectWait", "InjectFinish", "ProgramExecutionWait", "ProgramExecutionFinish",
+        "WriteNvmWait", "WriteNvmFinish", "Done",
+    };
+
+    if ((info.type == DATA_TYPE_UINT8) && (info.size == 1) && STR_ENDS_WITH(info.name, std::string("fwUpdateState"))) {
+        try {
+            std::stringstream buff;
+            uint8_t msgIdx = std::any_cast<uint8_t>(value);
+            if (msgIdx < cxdRst_Max) {
+                return std::string(fwStates[msgIdx]);
+            }
+        } catch (std::bad_any_cast& e) {
+        }
+    }
+    return "";
+}
+
+
+std::string renderImxHdwBitStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "hdwBitStatus"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t hdwBitStatus = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_ALL                      ,"0x00000001 - Passed all tests");
+        BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_NO_GPS                   ,"0x00000002 - Passed without valid GPS signal");
+        if (HDW_BIT_MODE(hdwBitStatus)) {
+            buff << "0x000000" << std::hex << (hdwBitStatus & HDW_BIT_MODE_MASK) << std::dec
+                 << " - BIT mode: " << HDW_BIT_MODE(hdwBitStatus) << std::endl;
+        }
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_NOISE_PQR                 ,"0x00000100 - FAULT: Gyro noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_NOISE_ACC                 ,"0x00000200 - FAULT: Accelerometer noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_MAGNETOMETER              ,"0x00000400 - FAULT: Magnetometer");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_BAROMETER                 ,"0x00000800 - FAULT: Barometer");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GPS_NO_COM                ,"0x00001000 - FAULT: No GPS serial communications");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GPS_POOR_CNO              ,"0x00002000 - FAULT: Poor GPS signal strength");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GPS_POOR_ACCURACY         ,"0x00004000 - FAULT: GPS poor accuracy");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GPS_NOISE                 ,"0x00008000 - FAULT: GPS noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_IMU_FAULT_REJECTION       ,"0x00010000 - FAULT: IMU fault rejection failure");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   ,"0x01000000 - FAULT: Hardware type does not match firmware");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderImxCalBitStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "calBitStatus"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t calBitStatus = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(calBitStatus, CAL_BIT_PASSED_ALL                      ,"0x00000001 - Passed all calibration tests");
+        if (CAL_BIT_MODE(calBitStatus)) {
+            buff << "0x000000" << std::hex << (calBitStatus & CAL_BIT_MODE_MASK) << std::dec
+                 << " - CAL BIT mode: " << CAL_BIT_MODE(calBitStatus) << std::endl;
+        }
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_EMPTY                ,"0x00000100 - FAULT: Temperature calibration not present");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_TSPAN                ,"0x00000200 - FAULT: Temperature calibration range inadequate");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_INCONSISTENT         ,"0x00000400 - FAULT: Temperature calibration inconsistent");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_CORRUPT              ,"0x00000800 - FAULT: Temperature calibration corrupt");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_BIAS             ,"0x00001000 - FAULT: Gyro bias temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_SLOPE            ,"0x00002000 - FAULT: Gyro slope temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_LIN              ,"0x00004000 - FAULT: Gyro linearity temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_BIAS             ,"0x00008000 - FAULT: Accel bias temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_SLOPE            ,"0x00010000 - FAULT: Accel slope temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_LIN              ,"0x00020000 - FAULT: Accel linearity temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_CAL_SERIAL_NUM            ,"0x00040000 - FAULT: Calibration serial number mismatch");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_MAG_INVALID          ,"0x00080000 - FAULT: Magnetometer cross-axis alignment invalid");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_EMPTY                ,"0x00100000 - FAULT: Motion calibration not present");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_IMU_INVALID          ,"0x00200000 - FAULT: IMU cross-axis alignment invalid");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MOTION_PQR                ,"0x00400000 - FAULT: Motion detected on gyros");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MOTION_ACC                ,"0x00800000 - FAULT: Motion detected on accelerometers");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU1_PQR_BIAS            ,"0x01000000 - NOTICE: IMU 1 gyro bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU2_PQR_BIAS            ,"0x02000000 - NOTICE: IMU 2 gyro bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU1_ACC_BIAS            ,"0x10000000 - NOTICE: IMU 1 accel bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU2_ACC_BIAS            ,"0x20000000 - NOTICE: IMU 2 accel bias offset detected");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxBitResults(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "results"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t results = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(results, GPXBit_resultsBit_PPS1      ,"0x01 - PPS1 test passed");
+        BIT_MSG(results, GPXBit_resultsBit_PPS2      ,"0x02 - PPS2 test passed");
+        BIT_MSG(results, GPXBit_resultsBit_UART      ,"0x04 - UART test passed");
+        BIT_MSG(results, GPXBit_resultsBit_IO        ,"0x08 - IO test passed");
+        BIT_MSG(results, GPXBit_resultsBit_GPS       ,"0x10 - GPS test passed");
+        BIT_MSG(results, GPXBit_resultsBit_FINISHED  ,"0x20 - Test finished");
+        BIT_MSG(results, GPXBit_resultsBit_CANCELED  ,"0x40 - Test canceled");
+        BIT_MSG(results, GPXBit_resultsBit_ERROR     ,"0x80 - Test error");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxBitState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "state"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint8_t state = std::any_cast<uint8_t>(value);
+
+        // eGPXBit_state values (from GPXBit.h)
+        switch (state) {
+            case 0: buff << "NOT_RUNNING" << std::endl; break;
+            case 1: buff << "MANUF_INIT" << std::endl; break;
+            case 2: buff << "MANUF_BLINK" << std::endl; break;
+            case 3: buff << "MANUF_UART" << std::endl; break;
+            case 4: buff << "MANUF_IO" << std::endl; break;
+            case 5: buff << "MANUF_PPS" << std::endl; break;
+            case 6: buff << "MANUF_GPS" << std::endl; break;
+            case 7: buff << "MANUF_REPORT" << std::endl; break;
+            default: buff << "UNKNOWN(" << (int)state << ")" << std::endl; break;
+        }
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     static const string timestampFields[] = { "time", "timeOfWeek", "timeOfWeekMs", "seconds" };
@@ -495,8 +925,8 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("lastCommand", &bit_t::lastCommand, DATA_TYPE_UINT8, "", "Last input command", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " + std::to_string(BIT_STATE_RUNNING) + "=running " + std::to_string(BIT_STATE_DONE) + "=done]", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &bit_t::reserved, DATA_TYPE_UINT8);
-    mapper.AddMember("hdwBitStatus", &bit_t::hdwBitStatus, DATA_TYPE_UINT32, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("calBitStatus", &bit_t::calBitStatus, DATA_TYPE_UINT32, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("hdwBitStatus", &bit_t::hdwBitStatus, DATA_TYPE_UINT32, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImxHdwBitStatus;
+    mapper.AddMember("calBitStatus", &bit_t::calBitStatus, DATA_TYPE_UINT32, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImxCalBitStatus;
     mapper.AddMember("tcPqrBias", &bit_t::tcPqrBias, DATA_TYPE_F32, SYM_DEG_PER_S, "Gyro temp cal bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("tcAccBias", &bit_t::tcAccBias, DATA_TYPE_F32, SYM_DEG_PER_S "/C", "Gyro temp cal slope", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("tcPqrSlope", &bit_t::tcPqrSlope, DATA_TYPE_F32, SYM_DEG_PER_S "/C", "Gyro temp cal linearity", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
@@ -515,11 +945,11 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapGpxBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_bit_t> mapper(data_set, did);
-    mapper.AddMember("results", &gpx_bit_t::results, DATA_TYPE_UINT32, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("results", &gpx_bit_t::results, DATA_TYPE_UINT32, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxBitResults;
     mapper.AddMember("command", &gpx_bit_t::command, DATA_TYPE_UINT8, "", "Command (see eGPXBit_CMD)");
     mapper.AddMember("port", &gpx_bit_t::port, DATA_TYPE_UINT8, "", "Port used with the test");
     mapper.AddMember("testMode", &gpx_bit_t::testMode, DATA_TYPE_UINT8, "", "Self-test mode: 102=TxOverflow, 103=RxOverflow (see eGPXBit_test_mode)");
-    mapper.AddMember("state", &gpx_bit_t::state, DATA_TYPE_UINT8, "", "Built-in self-test state (see eGPXBit_state)");
+    mapper.AddMember("state", &gpx_bit_t::state, DATA_TYPE_UINT8, "", "Built-in self-test state (see eGPXBit_state)").renderExtended = renderGpxBitState;
     mapper.AddMember("detectedHardwareId", &gpx_bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("reserved", &gpx_bit_t::reserved, DATA_TYPE_UINT8, 2);
 }
@@ -730,7 +1160,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<gps_pos_t> mapper(data_set, did);
     mapper.AddMember("week", &gps_pos_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("timeOfWeekMs", &gps_pos_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("status", &gps_pos_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
+    mapper.AddMember("status", &gps_pos_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS).renderExtended = renderGnssStatusBits;
     mapper.AddArray("ecef", &gps_pos_t::ecef, DATA_TYPE_F64, 3, {"m"}, {"Position in ECEF {x,y,z}"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddLlaDegM("lla", offsetof(gps_pos_t, lla), "", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hMSL", &gps_pos_t::hMSL, DATA_TYPE_F32, "m", "Meters above sea level", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -751,7 +1181,7 @@ static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs", &gps_vel_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("vel", &gps_vel_t::vel, DATA_TYPE_F32, 3, {"m/s"}, {"Velocity in ECEF {vx,vy,vz} or NED {vN, vE, 0} if status GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0 or 1"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("sAcc", &gps_vel_t::sAcc, DATA_TYPE_F32, "m/s", "Speed accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-    mapper.AddMember("status", &gps_vel_t::status, DATA_TYPE_UINT32, "", "GPS status: NMEA input if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status", &gps_vel_t::status, DATA_TYPE_UINT32, "", "GPS status: NMEA input if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGnssStatusBits;;
 }
 
 static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1070,8 +1500,8 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_status_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gpx_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status",       &gpx_status_t::status,       DATA_TYPE_UINT32, "", "General status flags (see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("hdwStatus",    &gpx_status_t::hdwStatus,    DATA_TYPE_UINT32, "", "Hardware status flags (see eGPXHdwStatusFlags)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status",       &gpx_status_t::status,       DATA_TYPE_UINT32, "", "General status flags (see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxStatus_status;;
+    mapper.AddMember("hdwStatus",    &gpx_status_t::hdwStatus,    DATA_TYPE_UINT32, "", "Hardware status flags (see eGPXHdwStatusFlags)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxStatus_hdwStatus;
     mapper.AddMember("grmcBitsSer0", &gpx_status_t::grmcBitsSer0, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("grmcBitsSer1", &gpx_status_t::grmcBitsSer1, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("grmcBitsSer2", &gpx_status_t::grmcBitsSer2, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
@@ -1093,10 +1523,10 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     for (int i=0; i<GNSS_RECEIVER_COUNT; i++)
     {
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".lastRstCause", i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].lastRstCause), DATA_TYPE_UINT8, "", "GNSS last reset cause (see eGnssResetCause)");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".fwUpdateState",  i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].fwUpdateState),  DATA_TYPE_UINT8, "", "GNSS FW update status (see FirmwareUpdateState)");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),      DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".runState",       i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].runState),       DATA_TYPE_UINT8, "", "GNSS run status (see eGPXGnssRunState)");
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),      DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)").renderExtended = renderGpxStatus_gnssInitState;
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".runState",       i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].runState),       DATA_TYPE_UINT8, "", "GNSS run status (see eGPXGnssRunState)").renderExtended = renderGpxStatus_gnssRunState;
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".fwUpdateState",  i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].fwUpdateState),  DATA_TYPE_UINT8, "", "GNSS FW update status (see FirmwareUpdateState)").renderExtended = renderGpxStatus_gnssFwUpdateState;
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".lastRstCause", i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].lastRstCause), DATA_TYPE_UINT8, "", "GNSS last reset cause (see eGnssResetCause)").renderExtended = renderGpxStatus_gnssLastResetCause;
     }
     mapper.AddMember("gpxSourcePort", &gpx_status_t::gpxSourcePort, DATA_TYPE_UINT8, "", "Port", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("upTime", &gpx_status_t::upTime, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
@@ -1362,7 +1792,7 @@ static void PopulateMapGpsRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("baseToRoverDistance", &gps_rtk_rel_t::baseToRoverDistance, DATA_TYPE_F32, "", "baseToRoverDistance (m)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("baseToRoverHeading", &gps_rtk_rel_t::baseToRoverHeading, DATA_TYPE_F32, SYM_DEG, "Angle from north to baseToRoverVector in local tangent plane.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("baseToRoverHeadingAcc", &gps_rtk_rel_t::baseToRoverHeadingAcc, DATA_TYPE_F32, SYM_DEG, "Accuracy of baseToRoverHeading.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_6, C_RAD2DEG);
-    mapper.AddMember("status", &gps_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
+    mapper.AddMember("status", &gps_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS).renderExtended = renderGnssStatusBits;
 }
 
 static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
