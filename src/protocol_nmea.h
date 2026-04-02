@@ -104,6 +104,7 @@ int nmea_parse_powgps(const char a[], const int aSize, gps_pos_t &pos);
 int nmea_parse_powtlv(const char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel);
 int nmea_parse_rmc(const char a[], int aSize, gps_vel_t &gpsVel, utc_time_t &utcTime, int utcWeekday, int leapS, uint32_t statusFlags=0);
 int nmea_parse_vtg(const char a[], const int aSize, gps_vel_t &vel, const double refLla[3]);
+int nmea_parse_hdt(const char a[], const int aSize, float &headingRad);
 int nmea_parse_zda(const char a[], const int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS);
 
 /**
