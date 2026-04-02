@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cstring>
 
 #include "ISDataMappings.h"
 #include "ISLogFile.h"
@@ -21,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogStats.h"
 #include "ISUtilities.h"
 #include "protocol_nmea.h"
+#include "util/util.h"
 
 using namespace std;
 
@@ -261,11 +263,259 @@ string cLogStats::Stats()
 void cLogStats::WriteToFile(const string& file_name)
 {
     unsigned int count = Count();
-    // unsigned int errors = Errors();
     if (count != 0)
-    {   // Write log stats to disk
+    {   // Write log summary + stats to disk
         statsFile = CreateISLogFile(file_name, "wb");
+        string diagSummary = DiagnosticSummary();
+        if (!diagSummary.empty())
+        {
+            statsFile->lprintf("%s\n", diagSummary.c_str());
+        }
         statsFile->lprintf("%s", Stats().c_str());
         CloseISLogFile(statsFile);
     }
+}
+
+
+// ============================================================================
+// Diagnostic DID caching and summary generation
+// ============================================================================
+
+const std::set<uint32_t> cLogStats::s_diagnosticDIDs = {
+    DID_DEV_INFO,           // 1
+    DID_SYS_PARAMS,         // 10
+    DID_FLASH_CONFIG,       // 12
+    DID_BIT,                // 64
+    DID_GPX_DEV_INFO,       // 120
+    DID_GPX_FLASH_CFG,      // 121
+    DID_GPX_STATUS,         // 123
+    DID_GPX_BIT,            // 125
+};
+
+void cLogStats::CacheDiagnosticData(uint32_t did, const uint8_t* data, uint32_t size, double timestamp, uint32_t offset)
+{
+    if (s_diagnosticDIDs.find(did) == s_diagnosticDIDs.end())
+        return;
+
+    DiagnosticDIDCache& cache = m_diagCache[did];
+
+    // Get the full struct size from data mappings
+    uint32_t fullSize = cISDataMappings::DataSize(did);
+    if (fullSize == 0)
+        fullSize = offset + size;
+
+    // Initialize buffer to zero on first use or if it's too small
+    if (cache.data.size() < fullSize)
+        cache.data.resize(fullSize, 0);
+
+    // Merge partial update at the correct offset
+    uint32_t copySize = _MIN(size, fullSize - offset);
+    memcpy(cache.data.data() + offset, data, copySize);
+
+    cache.timestamp = timestamp;
+    cache.observed = true;
+}
+
+string cLogStats::FormatTimestamp(double timestamp)
+{
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(3) << timestamp << "s";
+    return ss.str();
+}
+
+string cLogStats::FormatDevInfoSection(uint32_t did, const char* label)
+{
+    auto it = m_diagCache.find(did);
+    if (it == m_diagCache.end() || !it->second.observed)
+        return "";
+
+    const DiagnosticDIDCache& cache = it->second;
+    if (cache.data.size() < sizeof(dev_info_t))
+        return "";
+
+    const dev_info_t* devInfo = reinterpret_cast<const dev_info_t*>(cache.data.data());
+
+    std::stringstream ss;
+    ss << "=== Device Info (" << label << ") ===" << endl;
+    ss << utils::devInfoToString(*devInfo) << endl;
+    ss << "(last received: " << FormatTimestamp(cache.timestamp) << ")" << endl;
+    ss << endl;
+    return ss.str();
+}
+
+static void flashCfgDefaultsIMX(nvm_flash_cfg_t* fc)
+{
+    memset(fc, 0, sizeof(nvm_flash_cfg_t));
+    fc->size                    = sizeof(nvm_flash_cfg_t);
+    fc->key                     = 36;
+    fc->startupImuDtMs          = 1;
+    fc->startupGPSDtMs          = 200;
+    fc->startupNavDtMs          = 4;
+    fc->ser0BaudRate            = IS_BAUDRATE_921600;
+    fc->ser1BaudRate            = IS_BAUDRATE_921600;
+    fc->ser2BaudRate            = IS_BAUDRATE_921600;
+    fc->lastLlaUpdateDistance   = 1000.0f;
+    fc->ioConfig                = IO_CONFIG_DEFAULT;
+    fc->platformConfig          = PLATFORM_CFG_TYPE_NONE;
+    fc->gpsTimeSyncPeriodMs     = 1000;
+    fc->dynamicModel            = DEFAULT_DYNAMIC_MODEL;
+    fc->gnssSatSigConst         = GNSS_SAT_SIG_CONST_DEFAULT;
+    fc->sensorConfig            = (SENSOR_CFG_GYR_FS_MAX<<SENSOR_CFG_GYR_FS_OFFSET) |
+                                  (SENSOR_CFG_ACC_FS_MAX<<SENSOR_CFG_ACC_FS_OFFSET);
+    fc->gpsMinimumElevation     = DEFAULT_GNSS_MIN_ELEVATION_ANGLE;
+    fc->gnssCn0Minimum          = DEFAULT_GNSS_RTK_CN0_MINIMUM;
+    fc->gnssCn0DynMinOffset     = DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET;
+    fc->magInterferenceThreshold = 3.0f;
+    fc->magCalibrationQualityThreshold = 10.0f;
+    fc->imuRejectThreshGyroLow  = 2;
+    fc->imuRejectThreshGyroHigh = 3;
+}
+
+static void flashCfgDefaultsGPX(gpx_flash_cfg_t* fc)
+{
+    memset(fc, 0, sizeof(gpx_flash_cfg_t));
+    fc->size                    = sizeof(gpx_flash_cfg_t);
+    fc->key                     = 2;
+    fc->dynamicModel            = DEFAULT_DYNAMIC_MODEL;
+    fc->gpsTimeSyncPeriodMs     = 1000;         // GPX_MINIMUM_SYNC_RATE_MS
+    fc->startupGPSDtMs          = 200;          // GPX_DEFAULT_GPS_DT_MS
+    fc->gnssSatSigConst         = GNSS_SAT_SIG_CONST_DEFAULT;
+    fc->ser0BaudRate            = IS_BAUDRATE_921600;
+    fc->ser1BaudRate            = IS_BAUDRATE_921600;
+    fc->ser2BaudRate            = IS_BAUDRATE_921600;
+    fc->gpsMinimumElevation     = DEFAULT_GNSS_MIN_ELEVATION_ANGLE;
+    fc->gnssCn0Minimum          = DEFAULT_GNSS_RTK_CN0_MINIMUM;
+    fc->gnssCn0DynMinOffset     = DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET;
+}
+
+string cLogStats::FormatFlashConfigDiffSection(uint32_t did, const char* label)
+{
+    auto it = m_diagCache.find(did);
+    if (it == m_diagCache.end() || !it->second.observed)
+        return "";
+
+    const DiagnosticDIDCache& cache = it->second;
+
+    // Generate defaults for comparison
+    std::vector<uint8_t> defaultBuf;
+    if (did == DID_FLASH_CONFIG)
+    {
+        defaultBuf.resize(sizeof(nvm_flash_cfg_t), 0);
+        flashCfgDefaultsIMX(reinterpret_cast<nvm_flash_cfg_t*>(defaultBuf.data()));
+    }
+    else if (did == DID_GPX_FLASH_CFG)
+    {
+        defaultBuf.resize(sizeof(gpx_flash_cfg_t), 0);
+        flashCfgDefaultsGPX(reinterpret_cast<gpx_flash_cfg_t*>(defaultBuf.data()));
+    }
+    else
+    {
+        return "";
+    }
+
+    const map_name_to_info_t* infoMap = cISDataMappings::NameToInfoMap(did);
+    if (!infoMap)
+        return "";
+
+    data_mapping_string_t stringBuffer;
+    std::stringstream diffFields;
+    int diffCount = 0;
+
+    for (const auto& entry : *infoMap)
+    {
+        const data_info_t& info = entry.second;
+
+        // Skip metadata fields
+        if (info.name == "size" || info.name == "checksum" || info.name == "key")
+            continue;
+
+        uint32_t offset = info.offset;
+        uint32_t fieldSize = info.size;
+
+        if (info.arraySize > 0)
+        {
+            for (int i = 0; i < (int)info.arraySize; i++)
+            {
+                uint32_t elemOffset = offset + i * fieldSize;
+                if (elemOffset + fieldSize > cache.data.size() || elemOffset + fieldSize > defaultBuf.size())
+                    continue;
+
+                if (memcmp(cache.data.data() + elemOffset, defaultBuf.data() + elemOffset, fieldSize) != 0)
+                {
+                    if (cISDataMappings::DataToString(info, nullptr, cache.data.data(), stringBuffer, i))
+                    {
+                        diffFields << info.name << "[" << i << "] = " << stringBuffer << endl;
+                        diffCount++;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (offset + fieldSize > cache.data.size() || offset + fieldSize > defaultBuf.size())
+                continue;
+
+            if (memcmp(cache.data.data() + offset, defaultBuf.data() + offset, fieldSize) != 0)
+            {
+                if (cISDataMappings::DataToString(info, nullptr, cache.data.data(), stringBuffer))
+                {
+                    diffFields << info.name << " = " << stringBuffer << endl;
+                    diffCount++;
+                }
+            }
+        }
+    }
+
+    if (diffCount == 0)
+        return "";
+
+    std::stringstream ss;
+    ss << "=== " << label << " Flash Config (non-default) ===" << endl;
+    ss << "(last received: " << FormatTimestamp(cache.timestamp) << ")" << endl;
+    ss << diffFields.str();
+    ss << endl;
+    return ss.str();
+}
+
+string cLogStats::FormatCuratedSection(uint32_t did, const char* label, const std::string& fields)
+{
+    auto it = m_diagCache.find(did);
+    if (it == m_diagCache.end() || !it->second.observed)
+        return "";
+
+    const DiagnosticDIDCache& cache = it->second;
+
+    std::string output;
+    if (!cISDataMappings::DidBufferToString(did, cache.data.data(), output, fields))
+        return "";
+
+    std::stringstream ss;
+    ss << "=== " << label << " ===" << endl;
+    ss << "(last received: " << FormatTimestamp(cache.timestamp) << ")" << endl;
+    ss << output;
+    ss << endl;
+    return ss.str();
+}
+
+string cLogStats::DiagnosticSummary()
+{
+    std::stringstream ss;
+
+    // Device Info sections (at top)
+    ss << FormatDevInfoSection(DID_DEV_INFO, "IMX");
+    ss << FormatDevInfoSection(DID_GPX_DEV_INFO, "GPX");
+
+    // Flash Config diff sections
+    ss << FormatFlashConfigDiffSection(DID_FLASH_CONFIG, "IMX");
+    ss << FormatFlashConfigDiffSection(DID_GPX_FLASH_CFG, "GPX");
+
+    // BIT sections
+    ss << FormatCuratedSection(DID_BIT, "BIT (IMX)", "hdwBitStatus,calBitStatus");
+    ss << FormatCuratedSection(DID_GPX_BIT, "BIT (GPX)", "results,state,testMode,detectedHardwareId");
+
+    // SysParams / Status sections
+    ss << FormatCuratedSection(DID_SYS_PARAMS, "SysParams (IMX)", "insStatus,hdwStatus,genFaultCode,imuTemp,baroTemp,mcuTemp");
+    ss << FormatCuratedSection(DID_GPX_STATUS, "Status (GPX)", "status,hdwStatus,mcuTemp,gnssStatus0.initState,gnssStatus0.runState,gnssStatus1.initState,gnssStatus1.runState,rtkMode");
+
+    return ss.str();
 }
