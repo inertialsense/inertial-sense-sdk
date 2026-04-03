@@ -436,7 +436,7 @@ class Log:
                 # AHRS
                 thresholdAtt[:2] = 0.1  # (deg) Att (roll, pitch)
                 thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
-        if hardware == 6:
+        elif hardware == 6:
             # Nav - Thresholds for IMX-6
             thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
             thresholdUVW = np.array([0.023, 0.023, 0.047])  # (m/s) UVW
@@ -445,7 +445,8 @@ class Log:
                 # AHRS
                 thresholdAtt[:2] = 0.09 # (deg) Att (roll, pitch)
                 thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
-        else:   # Unsupported hardware
+        elif hardware != 0:
+            # Unsupported hardware
             print(RED + "Hardware type " + str(hardware) + " is not supported!!!" + RESET)
             sys.exit(1)
 
@@ -474,7 +475,7 @@ class Log:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write('** IMX Performance Report - %s - %s\n' % (now, self.directory))
         f.write('\n')
-        mode = ('IMX-5' if hardware == 5 else 'IMX-6' if hardware == 6 else 'UNKNOWN')
+        mode = ('MIXED' if hardware == 0 else 'IMX-5' if hardware == 5 else 'IMX-6' if hardware == 6 else 'UNKNOWN')
         mode += (", NAV" if self.navMode else ", AHRS")
         if self.rtk:        mode += ", RTK"
         if self.compassing: mode += ", DUAL GNSS"
