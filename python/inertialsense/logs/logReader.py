@@ -427,18 +427,17 @@ class Log:
                 # Use default value if not all devices use the same hardware
                 hardware = 0
 
-        # Thresholds for uINS-3
-        # Nav
-        thresholdNED = np.array([0.35,  0.35, 0.8])     # (m)   NED
-        thresholdUVW = np.array([0.04,  0.04, 0.07])    # (m/s) UVW
-        thresholdAtt = np.array([0.11,  0.11, 0.3])     # (deg) Att (roll, pitch, yaw)
-        if not self.navMode:
-            # AHRS
-            thresholdAtt[2]  = 2.0  # (deg) Att (yaw)
-
-        # Thresholds for IMX-5
-        if hardware == 5:
-            # Nav 
+        if hardware == 6:
+            # Nav - Thresholds for IMX-6
+            thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
+            thresholdUVW = np.array([0.035, 0.035, 0.07])   # (m/s) UVW
+            thresholdAtt = np.array([0.033, 0.033, 0.11])   # (deg) Att (roll, pitch, yaw)
+            if not self.navMode: 
+                # AHRS
+                thresholdAtt[:2] = 0.09 # (deg) Att (roll, pitch)
+                thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
+        elif hardware == 5:
+            # Nav - Thresholds for IMX-5
             thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
             thresholdUVW = np.array([0.035, 0.035, 0.07])   # (m/s) UVW
             thresholdAtt = np.array([0.045, 0.045, 0.16])   # (deg) Att (roll, pitch, yaw)
@@ -446,6 +445,9 @@ class Log:
                 # AHRS
                 thresholdAtt[:2] = 0.1  # (deg) Att (roll, pitch)
                 thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
+        else:   # Unsupported hardware
+            print(RED + "Hardware type " + str(hardware) + " is not supported!!!" + RESET)
+            sys.exit(1)
 
         if self.compassing:
             thresholdNED[:2] = 0.5
@@ -472,7 +474,7 @@ class Log:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write('** IMX Performance Report - %s - %s\n' % (now, self.directory))
         f.write('\n')
-        mode = ('IMX-5' if hardware == 5 else 'uINS-3')
+        mode = ('IMX-6' if hardware == 6 else 'IMX-5')
         mode += (", NAV" if self.navMode else ", AHRS")
         if self.rtk:        mode += ", RTK"
         if self.compassing: mode += ", DUAL GNSS"
