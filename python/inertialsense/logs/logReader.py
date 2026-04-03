@@ -439,7 +439,7 @@ class Log:
         if hardware == 6:
             # Nav - Thresholds for IMX-6
             thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
-            thresholdUVW = np.array([0.035, 0.035, 0.07])   # (m/s) UVW
+            thresholdUVW = np.array([0.023, 0.023, 0.047])  # (m/s) UVW
             thresholdAtt = np.array([0.033, 0.033, 0.11])   # (deg) Att (roll, pitch, yaw)
             if not self.navMode: 
                 # AHRS
@@ -496,7 +496,7 @@ class Log:
 
         for n, dev in enumerate(device_idx):
             devInfo = self.data[dev,DID_DEV_INFO][0]
-            line = '%2d SN%d      ' % (n, devInfo['serialNumber'])
+            line = '%2d SN%-10d ' % (n, devInfo['serialNumber'])
             line += '[ %6.4f  %6.4f  %6.4f ]' % (
             self.RMSAtt[n, 0] * RAD2DEG, self.RMSAtt[n, 1] * RAD2DEG, self.RMSAtt[n, 2] * RAD2DEG)
             if self.navMode:
@@ -566,7 +566,7 @@ class Log:
         f.write('Device       Euler Biases[   (deg)     (deg)     (deg) ]\n')
         for dev in device_idx:
             devInfo = self.data[dev, DID_DEV_INFO][0]
-            f.write('%2d SN%d               [ %7.4f   %7.4f   %7.4f ]\n' % (
+            f.write('%2d SN%-10d          [ %7.4f   %7.4f   %7.4f ]\n' % (
                 n, devInfo['serialNumber'], 
                 self.mount_bias_euler[dev, 0] * RAD2DEG, 
                 self.mount_bias_euler[dev, 1] * RAD2DEG,
@@ -574,11 +574,11 @@ class Log:
         f.write('\n')
 
         f.write("----------------- Average Attitude ---------------------\n")
-        f.write("Dev:  \t[ Roll\t\tPitch\t\tYaw ]\n")
+        f.write("Device  \t[ Roll\t\tPitch\t\tYaw ]\n")
         for i in range(self.numIns):
             qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
-            f.write("%d\t%f\t%f\t%f\n" % (self.serials[device_idx[i]], euler[0], euler[1], euler[2]))
+            f.write("%-10d\t%f\t%f\t%f\n" % (self.serials[device_idx[i]], euler[0], euler[1], euler[2]))
 
         # Print Device Information
         f.write('\n')
