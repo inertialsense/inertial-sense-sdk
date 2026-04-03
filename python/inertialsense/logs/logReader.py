@@ -427,18 +427,8 @@ class Log:
                 # Use default value if not all devices use the same hardware
                 hardware = 0
 
-        # Thresholds for uINS-3
-        # Nav
-        thresholdNED = np.array([0.35,  0.35, 0.8])     # (m)   NED
-        thresholdUVW = np.array([0.04,  0.04, 0.07])    # (m/s) UVW
-        thresholdAtt = np.array([0.11,  0.11, 0.3])     # (deg) Att (roll, pitch, yaw)
-        if not self.navMode:
-            # AHRS
-            thresholdAtt[2]  = 2.0  # (deg) Att (yaw)
-
-        # Thresholds for IMX-5
         if hardware == 5:
-            # Nav 
+            # Nav - Thresholds for IMX-5
             thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
             thresholdUVW = np.array([0.035, 0.035, 0.07])   # (m/s) UVW
             thresholdAtt = np.array([0.045, 0.045, 0.16])   # (deg) Att (roll, pitch, yaw)
@@ -446,6 +436,19 @@ class Log:
                 # AHRS
                 thresholdAtt[:2] = 0.1  # (deg) Att (roll, pitch)
                 thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
+        elif hardware == 6:
+            # Nav - Thresholds for IMX-6
+            thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
+            thresholdUVW = np.array([0.023, 0.023, 0.047])  # (m/s) UVW
+            thresholdAtt = np.array([0.033, 0.033, 0.11])   # (deg) Att (roll, pitch, yaw)
+            if not self.navMode: 
+                # AHRS
+                thresholdAtt[:2] = 0.09 # (deg) Att (roll, pitch)
+                thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
+        elif hardware != 0:
+            # Unsupported hardware
+            print(RED + "Hardware type " + str(hardware) + " is not supported. Supported hardware types are 5 and 6; 0 may indicate mixed or unknown hardware across devices." + RESET)
+            sys.exit(1)
 
         if self.compassing:
             thresholdNED[:2] = 0.5
@@ -472,7 +475,7 @@ class Log:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write('** IMX Performance Report - %s - %s\n' % (now, self.directory))
         f.write('\n')
-        mode = ('IMX-5' if hardware == 5 else 'uINS-3')
+        mode = ('MIXED' if hardware == 0 else 'IMX-5' if hardware == 5 else 'IMX-6' if hardware == 6 else 'UNKNOWN')
         mode += (", NAV" if self.navMode else ", AHRS")
         if self.rtk:        mode += ", RTK"
         if self.compassing: mode += ", DUAL GNSS"
@@ -494,7 +497,7 @@ class Log:
 
         for n, dev in enumerate(device_idx):
             devInfo = self.data[dev,DID_DEV_INFO][0]
-            line = '%2d SN%d      ' % (n, devInfo['serialNumber'])
+            line = '%2d SN%-10d ' % (n, devInfo['serialNumber'])
             line += '[ %6.4f  %6.4f  %6.4f ]' % (
             self.RMSAtt[n, 0] * RAD2DEG, self.RMSAtt[n, 1] * RAD2DEG, self.RMSAtt[n, 2] * RAD2DEG)
             if self.navMode:
@@ -564,7 +567,7 @@ class Log:
         f.write('Device       Euler Biases[   (deg)     (deg)     (deg) ]\n')
         for dev in device_idx:
             devInfo = self.data[dev, DID_DEV_INFO][0]
-            f.write('%2d SN%d               [ %7.4f   %7.4f   %7.4f ]\n' % (
+            f.write('%2d SN%-10d          [ %7.4f   %7.4f   %7.4f ]\n' % (
                 n, devInfo['serialNumber'], 
                 self.mount_bias_euler[dev, 0] * RAD2DEG, 
                 self.mount_bias_euler[dev, 1] * RAD2DEG,
@@ -572,11 +575,11 @@ class Log:
         f.write('\n')
 
         f.write("----------------- Average Attitude ---------------------\n")
-        f.write("Dev:  \t[ Roll\t\tPitch\t\tYaw ]\n")
+        f.write("Device  \t[ Roll\t\tPitch\t\tYaw ]\n")
         for i in range(self.numIns):
             qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
-            f.write("%d\t%f\t%f\t%f\n" % (self.serials[device_idx[i]], euler[0], euler[1], euler[2]))
+            f.write("%-10d\t%f\t%f\t%f\n" % (self.serials[device_idx[i]], euler[0], euler[1], euler[2]))
 
         # Print Device Information
         f.write('\n')
