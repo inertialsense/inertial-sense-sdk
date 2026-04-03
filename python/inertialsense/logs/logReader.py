@@ -447,7 +447,7 @@ class Log:
                 thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
         elif hardware != 0:
             # Unsupported hardware
-            print(RED + "Hardware type " + str(hardware) + " is not supported!!!" + RESET)
+            print(RED + "Hardware type " + str(hardware) + " is not supported. Supported hardware types are 5 and 6; 0 may indicate mixed or unknown hardware across devices." + RESET)
             sys.exit(1)
 
         if self.compassing:
