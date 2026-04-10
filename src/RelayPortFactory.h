@@ -12,6 +12,7 @@
 #include <chrono>
 #include <map>
 #include <mutex>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -137,7 +138,11 @@ private:
         std::string  url;                                           ///< http://host:port/api/status
         bool         enabled = false;
         bool         viaMdns = false;
-        std::vector<DeviceRecord> devices;                          ///< cached device records from last successful poll
+        std::vector<DeviceRecord> devices;                          ///< latest poll result (metadata + hints)
+        std::set<std::string> knownPortUrls;                        ///< high-water mark of tcp:// URLs ever seen from this host.
+                                                                    ///< Only cleared on host disable/remove. Ports persist across
+                                                                    ///< device reboots because bridgeboard's slot-based TCP sockets
+                                                                    ///< survive device resets (WaitRecover keeps the listener open).
         std::chrono::steady_clock::time_point lastPollTime = {};
         std::string  lastError;
         uint32_t     consecutiveFailures = 0;

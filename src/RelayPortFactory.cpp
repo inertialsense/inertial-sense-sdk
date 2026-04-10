@@ -107,8 +107,10 @@ void RelayPortFactory::setRelayHostEnabled(const std::string& url, bool enabled)
                  url.c_str(), enabled ? "enabled" : "disabled");
 
         if (!enabled) {
-            // Clear cached devices so locatePorts() stops emitting them
+            // Clear cached state so locatePorts() stops emitting ports and
+            // validatePort() returns false — PortManager will evict them.
             it->second.devices.clear();
+            it->second.knownPortUrls.clear();
         }
     }
 }
@@ -141,8 +143,9 @@ void RelayPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, st
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
     // Emit cached device ports from all enabled hosts, matching against pattern.
-    // Ports are attributed to TcpPortFactory (same pattern as ISmDnsPortFactory) —
-    // RelayPortFactory is a discovery engine; TcpPortFactory owns the port lifecycle.
+    // Ports are attributed to this factory (not TcpPortFactory) so that PortManager
+    // calls our validatePort() for eviction checks — this lets us remove ports
+    // promptly when a host is disabled or its cached device list changes.
     std::regex regexPattern;
     try {
         regexPattern = std::regex(pattern);
@@ -153,18 +156,23 @@ void RelayPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, st
     for (const auto& [url, host] : relayHosts_) {
         if (!host.enabled)
             continue;
-        for (const auto& device : host.devices) {
-            if (std::regex_match(device.portUrl, regexPattern)) {
-                portCallback(&TcpPortFactory::getInstance(), PORT_TYPE__TCP | PORT_TYPE__COMM | pType, device.portUrl);
+        // Emit from knownPortUrls (high-water mark), NOT from the latest poll's devices.
+        // This ensures ports persist across device reboots — bridgeboard's slot-based TCP
+        // sockets survive device resets (WaitRecover keeps the listener open), so the
+        // tcp:// URL remains valid even when the device is temporarily absent from /api/status.
+        for (const auto& portUrl : host.knownPortUrls) {
+            if (std::regex_match(portUrl, regexPattern)) {
+                portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM | pType, portUrl);
             }
         }
     }
 }
 
 bool RelayPortFactory::validatePort(const std::string& pName, uint16_t pType) {
-    // Port validation is handled by TcpPortFactory (ports are attributed to it in locatePorts).
-    // This method is only called if someone explicitly passes RelayPortFactory as the factory for
-    // a port URL, which doesn't happen in normal operation. Check against cache as a safety net.
+    // PortManager calls this to decide whether to keep or evict a port.
+    // A port is valid as long as its relay host is enabled and the port URL is in that
+    // host's knownPortUrls set. Ports survive device reboots because bridgeboard's
+    // slot-based TCP sockets persist across device resets.
     tick();
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
@@ -174,10 +182,8 @@ bool RelayPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     for (const auto& [url, host] : relayHosts_) {
         if (!host.enabled)
             continue;
-        for (const auto& device : host.devices) {
-            if (device.portUrl == pName)
-                return true;
-        }
+        if (host.knownPortUrls.count(pName))
+            return true;
     }
     return false;
 }
@@ -360,6 +366,14 @@ void RelayPortFactory::pollRelayHost(RelayHost& host) {
     host.lastError.clear();
     host.consecutiveFailures = 0;
 
-    log_debug(IS_LOG_FACILITY_NONE, "RelayPortFactory: polled '%s' — %zu devices",
-              host.url.c_str(), host.devices.size());
+    // Accumulate port URLs into the high-water mark set. Ports are never removed from this
+    // set by polling — only by explicit host disable/remove. This reflects the relay's
+    // slot-based persistent TCP sockets: a device rebooting doesn't close the listener,
+    // so the tcp:// URL remains valid even when the device is temporarily absent from /api/status.
+    for (const auto& device : host.devices) {
+        host.knownPortUrls.insert(device.portUrl);
+    }
+
+    log_debug(IS_LOG_FACILITY_NONE, "RelayPortFactory: polled '%s' — %zu devices, %zu known ports",
+              host.url.c_str(), host.devices.size(), host.knownPortUrls.size());
 }
