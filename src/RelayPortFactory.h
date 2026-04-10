@@ -125,6 +125,9 @@ public:
     /// Default number of consecutive failures before logging a warning (ports are retained).
     static constexpr uint32_t DEFAULT_FAILURE_GRACE_COUNT = 3;
 
+    /// mDNS query interval (ms) — matches ISmDnsPortFactory's rate
+    static constexpr int64_t MDNS_QUERY_INTERVAL_MS = 200;
+
 private:
     RelayPortFactory() = default;
     ~RelayPortFactory() = default;
@@ -143,6 +146,7 @@ private:
     std::map<std::string, RelayHost> relayHosts_;                   ///< keyed by URL
     mutable std::recursive_mutex mutex_;
     std::chrono::milliseconds pollInterval_ = std::chrono::seconds(1);
+    std::chrono::steady_clock::time_point lastMdnsQueryTime_ = {}; ///< rate-limit mDNS queries
 
     /// Rate-limited mDNS host discovery (reads from shared mdns:: cache).
     void discoverRelayHostsViaMdns();
