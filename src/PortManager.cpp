@@ -95,6 +95,16 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
         }
     }
 
+    // Alias-aware safety net: check if any existing known port has the same name
+    // (regardless of factory). This catches cases where the same tcp://host:port URL
+    // is emitted by multiple factories or multiple iterations of the same factory
+    // (e.g., dual-stack mDNS producing alias URLs that resolve to the same endpoint).
+    for (auto& [entry, existingPort] : knownPorts) {
+        if (entry.name == portName && existingPort && portIsValid(existingPort)) {
+            return; // already bound under a different factory — don't duplicate
+        }
+    }
+
     // if not, then do we need to allocate it?
     port_handle_t port = factory->bindPort(portName, portType);
     if (port) {

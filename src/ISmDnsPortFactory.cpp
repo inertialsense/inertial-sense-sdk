@@ -13,8 +13,10 @@
     #endif
 #endif
 
+#include <algorithm>
 #include <chrono>
 #include <regex>
+#include <set>
 
 #include "protocol/mdns.hpp"
 #include "util/uri.hpp"
@@ -157,6 +159,10 @@ void ISmDnsPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
     tick(); // Tick everything to ensure we have the latest data
     std::regex regexPattern = std::regex(pattern);
 
+    // Track emitted (rdev, tcp_port) tuples to prevent the same physical device from
+    // being emitted multiple times when a single Pi advertises on dual-stack/multiple interfaces.
+    std::set<std::pair<uint32_t, uint16_t>> emittedPorts;
+
     std::unordered_map<std::string, std::vector<port_t>> portsAndHosts = getPorts();
     for (std::pair<std::string, std::vector<port_t>> hostPorts : portsAndHosts) {
         std::string hostname = hostPorts.first;
@@ -202,6 +208,12 @@ void ISmDnsPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
         for (port_t port : ports) {
             std::pair<std::string, port_t> portPair = {hostname, port};
             portPair = getCanonicalPortData(portPair);
+
+            // Dedupe: skip this (rdev, tcp_port) if already emitted in this locatePorts() call
+            auto portKey = std::make_pair(portPair.second.devid, portPair.second.port);
+            if (!emittedPorts.insert(portKey).second)
+                continue;
+
             std::string mdnsURL = getPortURL(portPair);
             std::string tcpURL = "tcp://" + tcpHost + ":" + std::to_string(portPair.second.port);
             if (std::regex_match(mdnsURL, regexPattern) || std::regex_match(tcpURL, regexPattern)) {
@@ -422,7 +434,13 @@ std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPo
             return record.type == MDNS_RECORDTYPE_SRV && record.name == PTRrecord.data.ptr.name;
         });
         if (SRVrecords.empty()) {continue;}
+        // Normalize hostname: lowercase + strip trailing dot. This ensures a single Pi
+        // advertising on IPv4 + IPv6 + hostname collapses to one map entry regardless
+        // of case or trailing-dot variations in the SRV target name.
         std::string hostname = SRVrecords[0].data.srv.name;
+        std::transform(hostname.begin(), hostname.end(), hostname.begin(), ::tolower);
+        if (!hostname.empty() && hostname.back() == '.')
+            hostname.pop_back();
         std::vector<mdns::mdns_record_cpp_t> TXTrecords = mdns::getRecords([PTRrecord](const mdns::mdns_record_cpp_t& record) -> bool {
             if (record.type == MDNS_RECORDTYPE_TXT && record.name == PTRrecord.data.ptr.name && record.data.txt.key.length() > 5 && record.data.txt.key.rfind("ports", 0) == 0) {
                 std::string txtPortsIndex = record.data.txt.key.substr(5);
