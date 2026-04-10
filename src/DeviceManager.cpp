@@ -684,3 +684,27 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
 
     return results;
 }
+
+// ============================================================
+// Device hint seeding
+// ============================================================
+
+void DeviceManager::seedDeviceHint(port_handle_t port, const dev_info_t& hint) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    deviceHints_[port] = hint;
+    log_debug(IS_LOG_DEVICE_MANAGER, "Seeded device hint for port '%s' (SN=%u, hwType=%d)",
+              portName(port), hint.serialNumber, hint.hardwareType);
+}
+
+const dev_info_t* DeviceManager::getDeviceHint(port_handle_t port) const {
+    // mutex is not mutable, so we cast away const for the lock (DeviceManager's existing pattern)
+    auto& mutableMutex = const_cast<std::recursive_mutex&>(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutableMutex);
+    auto it = deviceHints_.find(port);
+    return (it != deviceHints_.end()) ? &it->second : nullptr;
+}
+
+void DeviceManager::clearDeviceHint(port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    deviceHints_.erase(port);
+}

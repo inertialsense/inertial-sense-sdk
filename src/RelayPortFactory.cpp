@@ -9,8 +9,10 @@
 #include "RelayPortFactory.h"
 #include "TcpPortFactory.h"
 #include "PortManager.h"
+#include "DeviceManager.h"
 #include "core/msg_logger.h"
 #include "protocol/mdns.hpp"
+#include "ISComm.h"
 
 #include <set>
 
@@ -189,14 +191,28 @@ bool RelayPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 }
 
 port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pType) {
-    // Port binding is handled by TcpPortFactory (ports are attributed to it in locatePorts).
-    // Delegate to TcpPortFactory if called directly as a fallback.
-    return TcpPortFactory::getInstance().bindPort(pName, pType);
+    // Delegate actual TCP port creation to TcpPortFactory
+    auto port = TcpPortFactory::getInstance().bindPort(pName, pType);
+    if (port) {
+        // Seed a device hint so DeviceManager can skip the DID_DEV_INFO probe
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        for (const auto& [url, host] : relayHosts_) {
+            if (!host.enabled)
+                continue;
+            for (const auto& device : host.devices) {
+                if (device.portUrl == pName) {
+                    DeviceManager::getInstance().seedDeviceHint(port, device.hint);
+                    return port;
+                }
+            }
+        }
+    }
+    return port;
 }
 
 bool RelayPortFactory::releasePort(port_handle_t port) {
-    // Port release is handled by TcpPortFactory (ports are attributed to it in locatePorts).
-    // Delegate to TcpPortFactory if called directly as a fallback.
+    // Clear any seeded hint for this port before releasing
+    DeviceManager::getInstance().clearDeviceHint(port);
     return TcpPortFactory::getInstance().releasePort(port);
 }
 
@@ -346,11 +362,14 @@ void RelayPortFactory::pollRelayHost(RelayHost& host) {
             // Build the tcp:// URL using the relay's hostname
             std::string portUrl = "tcp://" + hostname + ":" + std::to_string(tcpPort);
 
-            // Populate dev_info_t hint from the relay's authoritative metadata
+            // Populate dev_info_t hint from the relay's authoritative metadata.
+            // The relay has already identified this as an IS device, so we set
+            // protocolVer[0] = PROTOCOL_VERSION_CHAR0 to satisfy hasDeviceInfo().
             dev_info_t hint = {};
             hint.hardwareType = stateToHardwareType(state);
             hint.hdwRunState = (state == "isbl") ? HDW_STATE_BOOTLOADER : HDW_STATE_APP;
             hint.serialNumber = module.value("serial_number", 0u);
+            hint.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
 
             std::string fwVer = module.value("firmware_ver", "");
             if (!fwVer.empty())
