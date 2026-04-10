@@ -7,6 +7,7 @@
  */
 
 #include "RelayPortFactory.h"
+#include "TcpPortFactory.h"
 #include "PortManager.h"
 #include "core/msg_logger.h"
 #include "protocol/mdns.hpp"
@@ -131,7 +132,7 @@ std::vector<RelayPortFactory::RelayHostStatus> RelayPortFactory::getRelayHosts()
 }
 
 // ============================================================
-// PortFactory interface (stubs — wired in Steps 2-4)
+// PortFactory interface
 // ============================================================
 
 void RelayPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback,
@@ -139,43 +140,58 @@ void RelayPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, st
     tick();
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-    // Phase 1 Step 4 will populate this from cached device records.
-    // For now, emit nothing — the skeleton compiles and integrates safely.
-    (void)portCallback;
-    (void)pattern;
-    (void)pType;
+    // Emit cached device ports from all enabled hosts, matching against pattern.
+    // Ports are attributed to TcpPortFactory (same pattern as ISmDnsPortFactory) —
+    // RelayPortFactory is a discovery engine; TcpPortFactory owns the port lifecycle.
+    std::regex regexPattern;
+    try {
+        regexPattern = std::regex(pattern);
+    } catch (const std::regex_error&) {
+        return;
+    }
+
+    for (const auto& [url, host] : relayHosts_) {
+        if (!host.enabled)
+            continue;
+        for (const auto& device : host.devices) {
+            if (std::regex_match(device.portUrl, regexPattern)) {
+                portCallback(&TcpPortFactory::getInstance(), PORT_TYPE__TCP | PORT_TYPE__COMM | pType, device.portUrl);
+            }
+        }
+    }
 }
 
 bool RelayPortFactory::validatePort(const std::string& pName, uint16_t pType) {
+    // Port validation is handled by TcpPortFactory (ports are attributed to it in locatePorts).
+    // This method is only called if someone explicitly passes RelayPortFactory as the factory for
+    // a port URL, which doesn't happen in normal operation. Check against cache as a safety net.
     tick();
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-    // Phase 1 Step 4 will check pName against cached device records.
-    (void)pName;
-    (void)pType;
+    if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP)
+        return false;
+
+    for (const auto& [url, host] : relayHosts_) {
+        if (!host.enabled)
+            continue;
+        for (const auto& device : host.devices) {
+            if (device.portUrl == pName)
+                return true;
+        }
+    }
     return false;
 }
 
 port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pType) {
-    tick();
-    if (!validatePort(pName, pType)) {
-        return nullptr;
-    }
-
-    // Phase 1 Step 4 will create a tcp_port_t here (mirroring TcpPortFactory::bindPort).
-    return nullptr;
+    // Port binding is handled by TcpPortFactory (ports are attributed to it in locatePorts).
+    // Delegate to TcpPortFactory if called directly as a fallback.
+    return TcpPortFactory::getInstance().bindPort(pName, pType);
 }
 
 bool RelayPortFactory::releasePort(port_handle_t port) {
-    if (!port) {
-        return false;
-    }
-
-    // Phase 1 Step 4 will call tcpPortDelete + delete here (mirroring TcpPortFactory::releasePort).
-    log_debug(IS_LOG_FACILITY_NONE, "RelayPortFactory: releasing port '%s'", portName(port));
-    tcpPortDelete(port);
-    delete static_cast<tcp_port_t*>(port);
-    return true;
+    // Port release is handled by TcpPortFactory (ports are attributed to it in locatePorts).
+    // Delegate to TcpPortFactory if called directly as a fallback.
+    return TcpPortFactory::getInstance().releasePort(port);
 }
 
 // ============================================================
