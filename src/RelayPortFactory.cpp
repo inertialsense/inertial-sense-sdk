@@ -25,12 +25,13 @@ using json = nlohmann::json;
 
 namespace {
 
-/// Map bridgeboard's module "state" string to IS hardware type enum.
-uint8_t stateToHardwareType(const std::string& state) {
-    if (state == "imx5" || state == "imx6") return IS_HARDWARE_TYPE_IMX;
-    if (state == "gpx")                     return IS_HARDWARE_TYPE_GPX;
-    if (state == "isbl")                    return IS_HARDWARE_TYPE_UINS; // bootloader — type ambiguous, will be refined by probe
-    return IS_HARDWARE_TYPE_UNKNOWN;
+/// Map bridgeboard's module "state" string to a full encoded is_hardware_t (type + major + minor).
+is_hardware_t stateToHardwareId(const std::string& state) {
+    if (state == "imx5") return IS_HARDWARE_IMX_5_0;
+    if (state == "imx6") return IS_HARDWARE_IMX_6_0;
+    if (state == "gpx")  return IS_HARDWARE_GPX_1_0;
+    if (state == "isbl") return ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 0, 0); // bootloader — type ambiguous
+    return IS_HARDWARE_NONE;
 }
 
 /// Parse a firmware version string like "fw3.0.0-snap" or "2.4.0" into a 4-byte array [major, minor, patch, build].
@@ -211,8 +212,11 @@ port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pTyp
 }
 
 bool RelayPortFactory::releasePort(port_handle_t port) {
-    // Clear any seeded hint for this port before releasing
-    DeviceManager::getInstance().clearDeviceHint(port);
+    // Note: we intentionally do NOT call DeviceManager::clearDeviceHint() here.
+    // During static singleton destruction (program exit), PortManager's destructor calls
+    // releasePort for all known ports, but DeviceManager may already be destroyed — calling
+    // into it causes a double-free. Stale hints are harmless: they're overwritten by the next
+    // seedDeviceHint() if the pointer is reused, and at shutdown they don't matter.
     return TcpPortFactory::getInstance().releasePort(port);
 }
 
@@ -366,7 +370,10 @@ void RelayPortFactory::pollRelayHost(RelayHost& host) {
             // The relay has already identified this as an IS device, so we set
             // protocolVer[0] = PROTOCOL_VERSION_CHAR0 to satisfy hasDeviceInfo().
             dev_info_t hint = {};
-            hint.hardwareType = stateToHardwareType(state);
+            is_hardware_t hdwId = stateToHardwareId(state);
+            hint.hardwareType = DECODE_HDW_TYPE(hdwId);
+            hint.hardwareVer[0] = DECODE_HDW_MAJOR(hdwId);
+            hint.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
             hint.hdwRunState = (state == "isbl") ? HDW_STATE_BOOTLOADER : HDW_STATE_APP;
             hint.serialNumber = module.value("serial_number", 0u);
             hint.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
