@@ -17,6 +17,7 @@
 #include <chrono>
 #include <regex>
 #include <set>
+#include <thread>
 
 #include "protocol/mdns.hpp"
 #include "util/uri.hpp"
@@ -235,6 +236,24 @@ void ISmDnsPortFactory::tick() {
 
     // Allow the MDNS responder to do all of it's processing
     mdns::tick();
+}
+
+/**
+ * Issues a fresh mDNS query, blocks for the specified timeout while pumping responses,
+ * then returns the current discovered port set.
+ */
+void ISmDnsPortFactory::queryNow(uint32_t timeoutMs) {
+    // Send a fresh PTR query immediately (bypass the tick() rate limiter)
+    mdns::sendQuery(MDNS_RECORDTYPE_PTR, "_inertialsense-discovery._tcp.local");
+    lastQueryTime = std::chrono::steady_clock::now();
+
+    // Pump mDNS responses until timeout expires
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
+    while (std::chrono::steady_clock::now() < deadline) {
+        mdns::tick();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    // Caller should now call locatePorts() or PortManager::discoverPorts() to read the refreshed cache
 }
 
 /**
