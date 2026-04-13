@@ -82,7 +82,7 @@ void cDeviceLog::InitDeviceForReading()
 bool cDeviceLog::CloseAllFiles()
 {
     if (m_writeMode) {
-        string str = m_directory + "/stats_SN" + to_string(m_devSerialNo) + ".txt";
+        string str = m_directory + "/summary_SN" + to_string(m_devSerialNo) + ".txt";
         m_logStats.WriteToFile(str);
     }
     return true;
@@ -127,6 +127,12 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
     {
         double timestamp = (ptype == _PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf) : current_timeSecD());
         m_logStats.LogData(ptype, dataHdr->id, dataHdr->size, timestamp);
+
+        // Cache diagnostic DIDs for summary generation
+        if (ptype == _PTYPE_INERTIAL_SENSE_DATA)
+        {
+            m_logStats.CacheDiagnosticData(dataHdr->id, dataBuf, dataHdr->size, timestamp);
+        }
 
         addIndexRecord();
         m_lastIndexOffset += dataHdr->size;
