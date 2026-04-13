@@ -3253,18 +3253,17 @@ enum eIoConfig
     /** GPS type MASK */
     IO_CONFIG_GPS_TYPE_MASK                     = (int)0x00000007,
     /** GPS type - Unused.  USE this when adding a new GNSS Receiver */
-    IO_CONFIG_GPS_TYPE_UNUSED                    = (int)0,
+    IO_CONFIG_GPS_TYPE_NONE                     = (int)0,
     /** GPS type - ublox ZED-F9P w/ RTK */
     IO_CONFIG_GPS_TYPE_UBX_F9P                  = (int)1,
     /** GPS type - NMEA */
     IO_CONFIG_GPS_TYPE_NMEA                     = (int)2,
     /** GPS type - InertialSense GPX */
-    IO_CONFIG_GPS_TYPE_GPX						= (int)3,
+    IO_CONFIG_GPS_TYPE_GPX                      = (int)3,
     /** GPS type - Septentrio */
-    IO_CONFIG_GPS_TYPE_SEPTENTRIO				= (int)4,
-
+    IO_CONFIG_GPS_TYPE_SEPTENTRIO               = (int)4,
     /** GPS type - last type */
-    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_SEPTENTRIO,		// Set to last type
+    IO_CONFIG_GPS_TYPE_LAST                     = IO_CONFIG_GPS_TYPE_SEPTENTRIO,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
