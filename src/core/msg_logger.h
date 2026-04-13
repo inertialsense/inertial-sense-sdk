@@ -69,7 +69,7 @@ extern eLogLevel log_level;
 static inline eLogLevel static_get_log_level() { return log_level; }
 static inline void static_set_log_level(eLogLevel new_level) { log_level = new_level; }
 
-#if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
+#if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX) || defined(PLATFORM_IS_APPLE)
     extern FILE* log_file;
     #define IS_LOG_OUTPUT(out)                  static_log_output(out)
     static inline void static_log_output(FILE* out) { log_file = out; }

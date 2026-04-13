@@ -11,6 +11,15 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <sys/stat.h>
+
+#if PLATFORM_IS_APPLE
+#include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOBSD.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/serial/IOSerialKeys.h>
+#include <sys/param.h>
+#endif
 
 // #define REMOTE_SOCAT_PORTS      // only does anything on linux
 
@@ -66,17 +75,29 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 #if PLATFORM_IS_WINDOWS
     char targetPath[256];
     return (QueryDosDeviceA(pName.c_str(), targetPath, sizeof(targetPath)) != 0);
+#elif PLATFORM_IS_APPLE
+    (void)pType;
+
+    struct stat st;
+    return (!stat(pName.c_str(), &st) && S_ISCHR(st.st_mode) && st.st_rdev);
 #elif PLATFORM_IS_LINUX
     return validate_port__linux(pType, pName);
 #endif
+
+    (void)pName;
+    (void)pType;
+    return false;
 }
 
 void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     std::regex matchPattern(pattern);
     getComPorts(portNames);
+    log_info(IS_LOG_PORT_FACTORY, "SerialPortFactory::locatePorts found %zu candidate port(s)", portNames.size());
     for (auto& name : portNames) {
         auto match = std::regex_match(name, matchPattern);
-        if (validatePort(name, PORT_TYPE__UART) && match)
+        bool valid = validatePort(name, PORT_TYPE__UART);
+        log_info(IS_LOG_PORT_FACTORY, "SerialPortFactory candidate '%s' valid=%d match=%d", name.c_str(), valid ? 1 : 0, match ? 1 : 0);
+        if (valid && match)
             portCallback(this, PORT_TYPE__UART, name);
     }
 }
@@ -189,6 +210,43 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
             portNames.push_back(comPort);
         }
     }
+
+#elif PLATFORM_IS_APPLE
+
+    auto classesToMatch = IOServiceMatching(kIOSerialBSDServiceValue);
+    io_iterator_t portIterator;
+    auto result = IOServiceGetMatchingServices(kIOMainPortDefault, classesToMatch, &portIterator);
+    if (result != KERN_SUCCESS)
+    {
+        return 0;
+    }
+
+    io_object_t serialService = IOIteratorNext(portIterator);
+    while (serialService != 0)
+    {
+        auto bsdPathAsCFString = IORegistryEntrySearchCFProperty(
+            serialService,
+            kIOServicePlane,
+            CFSTR(kIOCalloutDeviceKey),
+            kCFAllocatorDefault,
+            kIORegistryIterateRecursively);
+
+        if (bsdPathAsCFString != nullptr)
+        {
+            char bsdPath[MAXPATHLEN];
+            if (CFStringGetCString((CFStringRef)bsdPathAsCFString, bsdPath, sizeof(bsdPath), kCFStringEncodingUTF8))
+            {
+                portNames.push_back(bsdPath);
+                log_info(IS_LOG_PORT_FACTORY, "SerialPortFactory::getComPorts discovered '%s'", bsdPath);
+            }
+            CFRelease(bsdPathAsCFString);
+        }
+
+        IOObjectRelease(serialService);
+        serialService = IOIteratorNext(portIterator);
+    }
+
+    IOObjectRelease(portIterator);
 
 #elif PLATFORM_IS_LINUX
 

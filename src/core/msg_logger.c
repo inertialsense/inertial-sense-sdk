@@ -9,7 +9,7 @@
 
 eLogLevel log_level = IS_LOG_LEVEL;
 
-#if !defined(PLATFORM_IS_WINDOWS) && !defined(PLATFORM_IS_LINUX)
+#if !defined(PLATFORM_IS_WINDOWS) && !defined(PLATFORM_IS_LINUX) && !defined(PLATFORM_IS_APPLE)
 
 // For other platforms like Zephyr, we provide stub implementations
 void static_log_msg(int facility_code, int msg_log_level, const char *facility_name, const char *format, ...) {
@@ -25,7 +25,7 @@ void static_log_buffer(const char* prefix, const unsigned char* buffer, int len)
     (void)len;
 }
 
-#else // defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
+#else // defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX) || defined(PLATFORM_IS_APPLE)
 
 FILE* log_file = NULL;
 
