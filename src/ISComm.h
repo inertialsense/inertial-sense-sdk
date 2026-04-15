@@ -324,7 +324,7 @@ enum ePktSpecialChars
     SEPT_SBF_PREAMBLE_BYTE2 = 0x40, // 0x40 = '@'
     SEPT_REPLY_BYTE2        = 0x52, // 0x52 = 'R'
     SEPT_REPLY_PRE_END_BYTE = 0x0d, // 0x0d = '\r' <CR>
-    SEPT_REPLY_END_BYTE     = 0x0d, // 0x0a = '\n' <LF>
+    SEPT_REPLY_END_BYTE     = 0x0a, // 0x0a = '\n' <LF>
 };
 
 /** Represents an NMEA message and how it is mapped to a structure in memory */
