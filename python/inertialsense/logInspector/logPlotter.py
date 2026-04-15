@@ -416,8 +416,12 @@ class logPlot:
 
     def getData(self, dev, DID, field, removeLeadingZeros=0):
         try:
-            data = self.log.data[dev, DID][field][::self.d]
+            if self.d == 1:
+                data = self.log.data[dev, DID][field]   # view (no copy)
+            else:
+                data = self.log.data[dev, DID][field][::self.d]
             if removeLeadingZeros:
+                data = data.copy()
                 # Copy the first nonzero data entry to leading zeros
                 # (e.g. first position initialized from GNSS to the initial default position in AHRS)
                 startIdx = np.nonzero(data)[0][0]
@@ -2857,9 +2861,9 @@ class logPlot:
             useImus = False
 
         if accelSensor==0:
-            imu1 = np.copy(self.getData(device, did, 'theta'))
+            imu1 = self.getData(device, did, 'theta').copy()
         else:
-            imu1 = np.copy(self.getData(device, did, 'vel'))
+            imu1 = self.getData(device, did, 'vel').copy()
 
         if np.shape(imu1)[0] != 0 and not useImus:  # DID_PIMU
             name = "PIMU"
