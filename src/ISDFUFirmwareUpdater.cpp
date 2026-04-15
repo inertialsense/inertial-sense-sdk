@@ -398,7 +398,7 @@ dfu_error DFUDevice::fetchDeviceInfo() {
 
     if (!isConnected()) {
         auto result = open();
-        if (result != LIBUSB_SUCCESS) {
+        if (result != DFU_ERROR_NONE) {
             log_error(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: open() failed (dfu_error=%d)",
                       busNum, devAddr, result);
             return result;
