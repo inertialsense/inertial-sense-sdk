@@ -9,8 +9,9 @@
 #ifndef IS_SDK__MDNS_HPP
 #define IS_SDK__MDNS_HPP
 
-#define MDNS_RECORD_TIMEOUT_MS 5000 // Max time that any record will last for
+#define MDNS_RECORD_TIMEOUT_MS 5000 // Legacy fallback — only used if wire TTL is 0 AND not a goodbye (shouldn't happen in practice)
 #define MDNS_REQUEST_TIMEOUT_MS 1000 // How long to wait for a response
+#define MDNS_TTL_FLOOR_S 2 // Minimum TTL floor (seconds) — wire TTLs below this are clamped up
 
 #include <chrono>
 #include <functional>

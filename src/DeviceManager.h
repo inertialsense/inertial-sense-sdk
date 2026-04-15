@@ -195,6 +195,26 @@ public:
     }
 
     /**
+     * Seed a device hint for a port, allowing device validation to skip the DID_DEV_INFO probe.
+     * Called by RelayPortFactory (and potentially other factories) when the relay has already
+     * identified the device's serial number, hardware type, firmware version, etc.
+     * The hint is keyed on port_handle_t and is valid for the lifetime of that port handle.
+     * @param port the port handle (from bindPort) to associate the hint with
+     * @param hint the relay-authoritative device info
+     */
+    void seedDeviceHint(port_handle_t port, const dev_info_t& hint);
+
+    /**
+     * Retrieve a previously seeded device hint for a port, or nullptr if no hint exists.
+     */
+    const dev_info_t* getDeviceHint(port_handle_t port) const;
+
+    /**
+     * Remove a previously seeded device hint.
+     */
+    void clearDeviceHint(port_handle_t port);
+
+    /**
      * Notifies all listeners of a particular device event
      * @param device the device to which the event is applicable
      * @param event the specific event id that occurred.
@@ -363,6 +383,7 @@ private:
 
     int managementOptions = DISCOVERY__DEFAULTS;                        //!< a bit mask of various options used to modify the behavior of the device manager during various operations
     std::recursive_mutex mutex;
+    std::map<port_handle_t, dev_info_t> deviceHints_;                  //!< seeded hints keyed by port_handle_t; valid for the lifetime of the port handle
 
     class LockedRangeProxy {
     private:

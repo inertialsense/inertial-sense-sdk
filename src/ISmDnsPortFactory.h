@@ -49,6 +49,15 @@ public:
     bool releasePort(port_handle_t port) override;
     static void tick();
 
+    /**
+     * Issues a fresh mDNS PTR query and blocks for up to timeoutMs while pumping responses
+     * into the shared mDNS cache. After returning, call locatePorts() or discoverPorts()
+     * to read the refreshed results. Use this for "refresh" actions in EvalTool/cltool
+     * instead of waiting for the next 200ms tick cycle.
+     * @param timeoutMs maximum time to wait for responses (default 1000ms)
+     */
+    static void queryNow(uint32_t timeoutMs = 1000);
+
     static inline const std::unordered_map<uint16_t, std::string> majorAtlas = {
         {166, "ttyACM"}
     };

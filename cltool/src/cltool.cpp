@@ -666,6 +666,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.useMdns = true;
         }
+        else if (startsWith(a, "-use-relay"))
+        {
+            g_commandLineOptions.useRelay = true;
+            if (a[10] == '=')
+                g_commandLineOptions.relayUrl = &a[11];
+        }
         else if (startsWith(a, "-mdns-resolve="))
         {
             std::string val = &a[14];
