@@ -3188,10 +3188,12 @@ class logPlot:
                 sumARW[i].append([])
                 sumBI[i].append([])
 
+        included_devs_pqr = []
         for d in self.active_devs:
             (name, time, dt, sensors) = self.loadGyros(d, did=did)
 
             if len(sensors):
+                included_devs_pqr.append(d)
                 dtMean = np.mean(dt)
                 for i in range(3):
                     for n, pqr in enumerate(sensors):
@@ -3245,7 +3247,7 @@ class logPlot:
             f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R,BI-X\n')
             f.write(',,,(deg/hr),(deg/hr),(deg/hr),(deg / rt hr),(deg / rt hr),(deg / rt hr)\n')
             today = date.today()
-            for d in self.active_devs:
+            for idx, d in enumerate(included_devs_pqr):
                 if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
                     continue 
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
@@ -3253,9 +3255,9 @@ class logPlot:
                 for n, pqr in enumerate(initial_sensors):
                     if np.all(pqr) != None and n<len(initial_sensors):
                         for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][d]))
+                            f.write('%f,' % (sumBI[i][n][idx]))
                         for i in range(3):
-                            f.write('%f,' % (sumARW[i][n][d]))
+                            f.write('%f,' % (sumARW[i][n][idx]))
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
@@ -3282,13 +3284,18 @@ class logPlot:
                 sumBI[i].append([])
 
 
+        included_devs_acc = []
         for d in self.active_devs:
             (namae, time, dt, sensors) = self.loadAccels(d, did=did)
             dtMean = np.mean(dt)
+            dev_included = False
             for i in range(3):
                 for n, acc in enumerate(sensors):
                     if np.all(acc) != None and n<len(sensors):
                         if acc.any(None):
+                            if not dev_included:
+                                included_devs_acc.append(d)
+                                dev_included = True
                             # Averaging window tau values from dt to dt*Nsamples/10
                             t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
                             # Compute the overlapping ADEV
@@ -3337,7 +3344,7 @@ class logPlot:
             f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,ARW-X,ARW-Y,ARW-Z\n')
             f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
             today = date.today()
-            for d in self.active_devs:
+            for idx, d in enumerate(included_devs_acc):
                 if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
                     continue 
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
@@ -3345,9 +3352,9 @@ class logPlot:
                 for n, acc in enumerate(initial_sensors):
                     if np.all(acc) != None and n<len(initial_sensors):
                         for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][d]))
+                            f.write('%f,' % (sumBI[i][n][idx]))
                         for i in range(3):
-                            f.write('%f,' % (sumRW[i][n][d]))
+                            f.write('%f,' % (sumRW[i][n][idx]))
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
