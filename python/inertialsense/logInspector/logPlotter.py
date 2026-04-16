@@ -3272,7 +3272,7 @@ class logPlot:
 
         included_devs_acc = []
         for d in self.active_devs:
-            (namae, time, dt, sensors) = self.loadAccels(d, did=did)
+            (name, time, dt, sensors) = self.loadAccels(d, did=did)
             dtMean = np.mean(dt)
             dev_included = False
             for i in range(3):
