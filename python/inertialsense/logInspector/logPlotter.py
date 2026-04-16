@@ -416,15 +416,19 @@ class logPlot:
 
     def getData(self, dev, DID, field, removeLeadingZeros=0):
         try:
-            data = self.log.data[dev, DID][field][::self.d]
+            if self.d == 1:
+                data = self.log.data[dev, DID][field]   # view (no copy)
+            else:
+                data = self.log.data[dev, DID][field][::self.d]
             if removeLeadingZeros:
+                data = data.copy()
                 # Copy the first nonzero data entry to leading zeros
                 # (e.g. first position initialized from GNSS to the initial default position in AHRS)
                 startIdx = np.nonzero(data)[0][0]
                 data[0:startIdx] = data[startIdx]
             return data
         except:
-            return []
+            return np.array([])
 
     def getGpsTowOffset(self, dev):
         towOffset = self.getData(dev, DID_GPS1_POS, 'towOffset')
@@ -2857,9 +2861,9 @@ class logPlot:
             useImus = False
 
         if accelSensor==0:
-            imu1 = np.copy(self.getData(device, did, 'theta'))
+            imu1 = self.getData(device, did, 'theta').copy()
         else:
-            imu1 = np.copy(self.getData(device, did, 'vel'))
+            imu1 = self.getData(device, did, 'vel').copy()
 
         if np.shape(imu1)[0] != 0 and not useImus:  # DID_PIMU
             name = "PIMU"
@@ -2867,8 +2871,7 @@ class logPlot:
             time = self.getData(device, did, 'time')
             dt = self.getData(device, did, 'dt') 
             # Convert from preintegrated IMU to IMU.
-            for i in range(3):
-                imu1[:, i] /= dt
+            imu1 = imu1 / dt[:, None]
             imuCount = 1
 
         else:
@@ -2897,10 +2900,7 @@ class logPlot:
                     I = self.getData(device, did, 'I')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
-                    imu1 = []
-                    for sample in range(0, len(I)):
-                        imu1.append(I[sample][accelSensor])
-                    imu1 = np.array(imu1)
+                    imu1 = np.array([s[accelSensor] for s in I])
                     imuCount = 1
 
                     if REMOVE_IMU_SLOPE:
@@ -2927,31 +2927,11 @@ class logPlot:
                         imuStatus = self.getData(device, did, 'status')
                         dt = time[1:] - time[:-1]
                         dt = np.append(dt, dt[-1])
-                        imu1 = []
-                        imu2 = []
-                        imu3 = []
-                        imu4 = []
-                        imu5 = []
-                        # if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
-                        for sample in range(0, len(I)):
-                            imu1.append(I[sample][0][accelSensor])
-                        # if (imuStatus[0] & (0x00020000<<(accelSensor*3))):     # Gyro or accel 2
-                        for sample in range(0, len(I)):
-                            imu2.append(I[sample][1][accelSensor])
-                        # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 3
-                        for sample in range(0, len(I)):
-                            imu3.append(I[sample][2][accelSensor])
-                        # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 4
-                        for sample in range(0, len(I)):
-                            imu4.append(I[sample][3][accelSensor])
-                        # if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 5
-                        for sample in range(0, len(I)):
-                            imu5.append(I[sample][4][accelSensor])
-                        imu1 = np.array(imu1)
-                        imu2 = np.array(imu2)
-                        imu3 = np.array(imu3)
-                        imu4 = np.array(imu4)
-                        imu5 = np.array(imu5)
+                        imu1 = np.array([s[0][accelSensor] for s in I])
+                        imu2 = np.array([s[1][accelSensor] for s in I])
+                        imu3 = np.array([s[2][accelSensor] for s in I])
+                        imu4 = np.array([s[3][accelSensor] for s in I])
+                        imu5 = np.array([s[4][accelSensor] for s in I])
                         imuCount = self.log.c_log.numImuDevices
 
         if self.log.serials[device] != 'Ref INS':
@@ -2999,6 +2979,9 @@ class logPlot:
                 refTime.append(refTime_)
 
         (name, time, dt, sensors) = self.loadGyros(0, did=did)
+        if len(time) == 0:  # No DID_IMU data, try loading from DID_PIMU
+            did = DID_PIMU
+            (name, time, dt, sensors) = self.loadGyros(0, did=did)
         fig.suptitle(name + ' PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         plotResidual = (len(sensors)==1 or combineImus) and self.residual 
@@ -3088,6 +3071,9 @@ class logPlot:
                 refTime.append(refTime_)
 
         (name, time, dt, sensors) = self.loadAccels(0, did=did)
+        if len(time) == 0:  # No DID_IMU data, try loading from DID_PIMU
+            did = DID_PIMU
+            (name, time, dt, sensors) = self.loadAccels(0, did=did)
         fig.suptitle(name + ' Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         plotResidual = (len(sensors)==1 or combineImus) and self.residual 
@@ -3188,10 +3174,12 @@ class logPlot:
                 sumARW[i].append([])
                 sumBI[i].append([])
 
+        included_devs_pqr = []
         for d in self.active_devs:
             (name, time, dt, sensors) = self.loadGyros(d, did=did)
 
             if len(sensors):
+                included_devs_pqr.append(d)
                 dtMean = np.mean(dt)
                 for i in range(3):
                     for n, pqr in enumerate(sensors):
@@ -3245,7 +3233,7 @@ class logPlot:
             f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R,BI-X\n')
             f.write(',,,(deg/hr),(deg/hr),(deg/hr),(deg / rt hr),(deg / rt hr),(deg / rt hr)\n')
             today = date.today()
-            for d in self.active_devs:
+            for idx, d in enumerate(included_devs_pqr):
                 if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
                     continue 
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
@@ -3253,9 +3241,9 @@ class logPlot:
                 for n, pqr in enumerate(initial_sensors):
                     if np.all(pqr) != None and n<len(initial_sensors):
                         for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][d]))
+                            f.write('%f,' % (sumBI[i][n][idx]))
                         for i in range(3):
-                            f.write('%f,' % (sumARW[i][n][d]))
+                            f.write('%f,' % (sumARW[i][n][idx]))
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
@@ -3282,13 +3270,18 @@ class logPlot:
                 sumBI[i].append([])
 
 
+        included_devs_acc = []
         for d in self.active_devs:
-            (namae, time, dt, sensors) = self.loadAccels(d, did=did)
+            (name, time, dt, sensors) = self.loadAccels(d, did=did)
             dtMean = np.mean(dt)
+            dev_included = False
             for i in range(3):
                 for n, acc in enumerate(sensors):
                     if np.all(acc) != None and n<len(sensors):
                         if acc.any(None):
+                            if not dev_included:
+                                included_devs_acc.append(d)
+                                dev_included = True
                             # Averaging window tau values from dt to dt*Nsamples/10
                             t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
                             # Compute the overlapping ADEV
@@ -3337,7 +3330,7 @@ class logPlot:
             f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,ARW-X,ARW-Y,ARW-Z\n')
             f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
             today = date.today()
-            for d in self.active_devs:
+            for idx, d in enumerate(included_devs_acc):
                 if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
                     continue 
                 hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
@@ -3345,9 +3338,9 @@ class logPlot:
                 for n, acc in enumerate(initial_sensors):
                     if np.all(acc) != None and n<len(initial_sensors):
                         for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][d]))
+                            f.write('%f,' % (sumBI[i][n][idx]))
                         for i in range(3):
-                            f.write('%f,' % (sumRW[i][n][d]))
+                            f.write('%f,' % (sumRW[i][n][idx]))
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
@@ -3356,12 +3349,21 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        (name, time, dt, sensors) = self.loadAccels(0)
+        if len(self.active_devs) == 0:
+            return
+        d = self.active_devs[0]
+        did = DID_IMU
+        (name, time, dt, sensors) = self.loadAccels(d, did=did)
+        if len(time) == 0:  # No DID_IMU data, try loading from DID_PIMU
+            did = DID_PIMU
+            (name, time, dt, sensors) = self.loadAccels(d, did=did)
+        if len(time) == 0:
+            return
         ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
         fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
-            (name, time, dt, sensors) = self.loadAccels(d)
+            (name, time, dt, sensors) = self.loadAccels(d, did=did)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if refTime.size > 5:
                 refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
@@ -3408,12 +3410,21 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        (name, time, dt, sensors) = self.loadGyros(0)
+        if len(self.active_devs) == 0:
+            return
+        d = self.active_devs[0]
+        did = DID_IMU
+        (name, time, dt, sensors) = self.loadGyros(d, did=did)
+        if len(time) == 0:  # No DID_IMU data, try loading from DID_PIMU
+            did = DID_PIMU
+            (name, time, dt, sensors) = self.loadGyros(d, did=did)
+        if len(time) == 0:
+            return
         ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
         fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
-            (name, time, dt, sensors) = self.loadGyros(d)
+            (name, time, dt, sensors) = self.loadGyros(d, did=did)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if refTime.size > 5:
                 refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')

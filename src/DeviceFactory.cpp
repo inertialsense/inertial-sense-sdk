@@ -98,6 +98,19 @@ std::unique_ptr<DeviceFactory::ValidationContext> DeviceFactory::beginValidation
     ctx->device = sharedDevice ? sharedDevice : std::make_shared<ISDevice>(hdwId, port);
     ctx->hdwId = hdwId;
     ctx->timeoutMs = timeoutMs;
+
+    // Check for a pre-seeded hint (e.g., from RelayPortFactory). If the relay has already
+    // identified this device, skip the DID_DEV_INFO probe entirely.
+    const dev_info_t* hint = DeviceManager::getInstance().getDeviceHint(port);
+    if (hint && hint->serialNumber != 0 && hint->hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
+        ctx->device->devInfo = *hint;
+        ctx->device->hdwId = ENCODE_DEV_INFO_TO_HDW_ID((*hint));
+        ctx->complete = true;
+        ctx->result = 1;
+        log_info(IS_LOG_DEVICE_FACTORY, "beginValidation: using seeded hint for port '%s' (SN=%u, hwType=%d) — skipping probe.",
+                 portName(port), hint->serialNumber, hint->hardwareType);
+    }
+
     return ctx;
 }
 

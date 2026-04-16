@@ -994,6 +994,8 @@ bool ISDevice::SetImxFlashConfig(nvm_flash_cfg_t& flashCfg) {
 bool ISDevice::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg) {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
+    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(gpx_flash_cfg_t));
+
     bool success = UploadFlashConfigDiff(
         reinterpret_cast<uint8_t*>(&flashCfg),
         reinterpret_cast<uint8_t*>(&gpxFlashCfg),

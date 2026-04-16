@@ -44,6 +44,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "NtripCorrectionService.h"
 #include "TcpPortFactory.h"
 #include "ISmDnsPortFactory.h"
+#include "RelayPortFactory.h"
 #include "util/natsort.h"
 #include "util/uri.hpp"
 
@@ -975,6 +976,9 @@ static int cltool_dataStreaming()
         mdpf.portOptions.resolvePreference = g_commandLineOptions.mdnsResolvePreference;
         portFactories.push_back(&mdpf);
     }
+    if (g_commandLineOptions.useRelay) {
+        portFactories.push_back(&RelayPortFactory::getInstance());
+    }
 
     InertialSense inertialSenseInterface(portFactories, {&CltoolDeviceFactory::getInstance()});
     g_inertialSenseInterface = &inertialSenseInterface;
@@ -988,6 +992,42 @@ static int cltool_dataStreaming()
         while (current_timeMs() < deadline) {
             ISmDnsPortFactory::tick();
             SLEEP_MS(50);
+        }
+    }
+
+    // Pre-warm relay discovery: add/enable relay host(s) and pump tick() to populate the cache
+    if (g_commandLineOptions.useRelay) {
+        auto& rpf = RelayPortFactory::getInstance();
+        if (!g_commandLineOptions.relayUrl.empty()) {
+            // Manual URL provided — add and enable it
+            rpf.addRelayHost(g_commandLineOptions.relayUrl);
+            rpf.setRelayHostEnabled(g_commandLineOptions.relayUrl, true);
+        }
+        printf("Discovering relay hosts...\n");
+        uint32_t deadline = current_timeMs() + 3000;
+        while (current_timeMs() < deadline) {
+            RelayPortFactory::tick();
+            SLEEP_MS(50);
+            // If no manual URL, enable any mDNS-discovered hosts
+            if (g_commandLineOptions.relayUrl.empty()) {
+                for (auto& host : rpf.getRelayHosts()) {
+                    if (!host.enabled)
+                        rpf.setRelayHostEnabled(host.url, true);
+                }
+            }
+            // Check if we have devices — can stop early
+            auto hosts = rpf.getRelayHosts();
+            bool hasDevices = false;
+            for (const auto& h : hosts) {
+                if (h.enabled && h.deviceCount > 0) { hasDevices = true; break; }
+            }
+            if (hasDevices) break;
+        }
+        auto hosts = rpf.getRelayHosts();
+        for (const auto& h : hosts) {
+            printf("  Relay: %s  enabled=%d  devices=%zu  %s\n",
+                   h.url.c_str(), h.enabled, h.deviceCount,
+                   h.viaMdns ? "(mDNS)" : "(manual)");
         }
     }
 
@@ -1239,6 +1279,9 @@ static bool cltool_resolveDeviceTarget()
         mdpf.portOptions.resolvePreference = g_commandLineOptions.mdnsResolvePreference;
         portFactories.push_back(&mdpf);
     }
+    if (g_commandLineOptions.useRelay) {
+        portFactories.push_back(&RelayPortFactory::getInstance());
+    }
 
     {
         InertialSense is(portFactories, {&CltoolDeviceFactory::getInstance()});
@@ -1251,6 +1294,33 @@ static bool cltool_resolveDeviceTarget()
             while (current_timeMs() < deadline) {
                 ISmDnsPortFactory::tick();
                 SLEEP_MS(50);
+            }
+        }
+
+        // Pre-warm relay discovery if needed
+        if (g_commandLineOptions.useRelay) {
+            auto& rpf = RelayPortFactory::getInstance();
+            if (!g_commandLineOptions.relayUrl.empty()) {
+                rpf.addRelayHost(g_commandLineOptions.relayUrl);
+                rpf.setRelayHostEnabled(g_commandLineOptions.relayUrl, true);
+            }
+            printf("Discovering relay hosts...\n");
+            uint32_t deadline = current_timeMs() + 3000;
+            while (current_timeMs() < deadline) {
+                RelayPortFactory::tick();
+                SLEEP_MS(50);
+                if (g_commandLineOptions.relayUrl.empty()) {
+                    for (auto& host : rpf.getRelayHosts()) {
+                        if (!host.enabled)
+                            rpf.setRelayHostEnabled(host.url, true);
+                    }
+                }
+                auto hosts = rpf.getRelayHosts();
+                bool hasDevices = false;
+                for (const auto& h : hosts) {
+                    if (h.enabled && h.deviceCount > 0) { hasDevices = true; break; }
+                }
+                if (hasDevices) break;
             }
         }
 
