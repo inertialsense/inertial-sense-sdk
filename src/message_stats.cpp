@@ -187,15 +187,27 @@ void MessageStats::append(const string& message, MessageStats::mul_stats_t &msgS
         break;
     
     case _PTYPE_SEPTENTRIO_SBF:
-        {
-            updateTimeMs(msgStats.sept_sbf, timeMs, bytes);
-        }
+    {
+        if (msgStats.sept_sbf.find(id) == msgStats.sept_sbf.end())
+        {   // Create new
+            msgStats.sept_sbf[id] = createNewMsgStats(timeMs);
+        }// Update count and timestamps
+        updateTimeMs(msgStats.sept_sbf[id], timeMs, bytes);
+    
         break;
-    case_PTYPE_SEPTENTRIO_REPLY:
-        {
-            updateTimeMs(msgStats.sept_reply, timeMs, bytes);
+    }
+
+    case _PTYPE_SEPTENTRIO_REPLY:
+    {
+        if (msgStats.sept_reply.find(id) == msgStats.sept_reply.end())
+        {   // Create new
+            msgStats.sept_reply[id] = createNewMsgStats(timeMs);
         }
+        // Update count and timestamps
+        updateTimeMs(msgStats.sept_reply[id], timeMs, bytes);
+    
         break;
+    }
     
 
     default:

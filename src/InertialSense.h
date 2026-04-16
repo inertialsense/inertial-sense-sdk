@@ -113,6 +113,8 @@ public:
             pfnIsCommGenMsgHandler  callbackUblox = NULL,
             pfnIsCommGenMsgHandler  callbackRtcm3 = NULL,
             pfnIsCommGenMsgHandler  callbackSpartn = NULL,
+            pfnIsCommGenMsgHandler  callbackSeptSbf = NULL,
+            pfnIsCommGenMsgHandler  callbackSeptReply = NULL,
             pfnOnNewDeviceHandler   callbackNewDevice = NULL);
 
     /**
