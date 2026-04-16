@@ -604,6 +604,8 @@ private:
     pfnIsCommGenMsgHandler  m_handlerUblox = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerRtcm3 = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerSpartn = NULLPTR;
+    pfnIsCommGenMsgHandler  m_handlerSeptSbf = NULLPTR;
+    pfnIsCommGenMsgHandler  m_handlerSeptReply = NULLPTR;
     pfnComManagerRmcHandler m_handlerRmc = NULLPTR;
     pfnComManagerParseErrorHandler m_handlerError = NULLPTR;
 

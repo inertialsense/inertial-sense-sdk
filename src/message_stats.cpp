@@ -185,6 +185,18 @@ void MessageStats::append(const string& message, MessageStats::mul_stats_t &msgS
             updateTimeMs(msgStats.ack, timeMs, bytes);
         }
         break;
+    
+    case _PTYPE_SEPTENTRIO_SBF:
+        {
+            updateTimeMs(msgStats.sept_sbf, timeMs, bytes);
+        }
+        break;
+    case_PTYPE_SEPTENTRIO_REPLY:
+        {
+            updateTimeMs(msgStats.sept_reply, timeMs, bytes);
+        }
+        break;
+    
 
     default:
     case _PTYPE_PARSE_ERROR:
