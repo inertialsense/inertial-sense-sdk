@@ -333,6 +333,34 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
     // Extract the name of the mdns record
     mdns_string_t entryName = mdns_string_extract(data, size, &name_offset, entrybuffer, sizeof(entrybuffer));
 
+    // RFC 6762 §10.1: TTL=0 is a "goodbye" — the record is being withdrawn.
+    // Immediately remove any matching record from the cache.
+    if (ttl == 0) {
+        mdns_record_cpp_t probe;
+        probe.name = std::string(MDNS_STRING_ARGS(entryName));
+        probe.type = static_cast<mdns_record_type>(rtype);
+        probe.rclass = rclass;
+        // For goodbye, we need to match the record identity. Build a minimal record for lookup.
+        // The hash/equality on mdns_record_cpp_t uses (name, type, rclass) + type-specific rdata.
+        // Since we don't have the full rdata here for matching, erase ALL records with the same
+        // (name, type, rclass) prefix — conservative but correct for goodbye semantics.
+        std::vector<mdns_record_cpp_t> toRemove;
+        for (const auto& [rec, ts] : responses) {
+            if (rec.name == probe.name && rec.type == probe.type && rec.rclass == probe.rclass) {
+                toRemove.push_back(rec);
+            }
+        }
+        for (const auto& rec : toRemove) {
+            responses.erase(rec);
+            log_debug(IS_LOG_MDNS_CACHE, "mDNS goodbye: removed record '%s' type=%d", rec.name.c_str(), rec.type);
+        }
+        return 0;
+    }
+
+    // Clamp wire TTL to minimum floor to prevent overly aggressive eviction
+    if (ttl < MDNS_TTL_FLOOR_S)
+        ttl = MDNS_TTL_FLOOR_S;
+
     // TXT records are received as an array of TXT records that all have the same name, class, and ttl
     // but because of this they have slightly different logic for handling them
     if (rtype != MDNS_RECORDTYPE_TXT) {
@@ -454,22 +482,21 @@ int mdns::handleMdnsQueryResponses() {
 }
 
 /**
- * Cleanup expired responses that have either had their TTLs expire or are older than the MDNS_RECORD_TIMEOUT_MS
+ * Cleanup expired responses based on their wire TTL.
+ * The TTL is already clamped to MDNS_TTL_FLOOR_S at ingestion time (queryCallback),
+ * and TTL=0 (goodbye) packets are handled immediately in queryCallback — so this
+ * cleanup only needs to check the TTL-based expiry.
  */
 void mdns::cleanupExpiredResponses() {
+    auto now = std::chrono::steady_clock::now();
     std::vector<mdns_record_cpp_t> deadRecords;
-    for (std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>> response: responses) {
-        // Delete records with expired TTLs
-        if (response.second < std::chrono::steady_clock::now() - std::chrono::seconds(response.first.ttl)) {
-            deadRecords.push_back(response.first);
-        }
-
-        // Delete records that exceed our timeout
-        if (response.second < std::chrono::steady_clock::now() - std::chrono::milliseconds(MDNS_RECORD_TIMEOUT_MS)) {
-            deadRecords.push_back(response.first);
+    for (const auto& [record, timestamp] : responses) {
+        // Record expires when (receive_time + ttl_seconds) < now
+        if (timestamp < now - std::chrono::seconds(record.ttl)) {
+            deadRecords.push_back(record);
         }
     }
-    for (mdns_record_cpp_t deadRecord: deadRecords) {
+    for (const auto& deadRecord : deadRecords) {
         responses.erase(deadRecord);
     }
 }

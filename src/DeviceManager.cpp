@@ -50,6 +50,8 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
         for (auto d : *this) {
             if (d && d->hasDeviceInfo() && (d->port == port)) {
                 if (options & DISCOVERY__FORCE_REVALIDATION) {
+                    // Clear device info so hasDeviceInfo() returns false,
+                    // forcing full revalidation via Phase 2+3.
                     d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
                     memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
                 } else {
@@ -75,7 +77,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
 
         // Check if DeviceManager already has a device for this port
         device_handle_t existingDev = getDevice(port);
-        if (existingDev) {
+        if (existingDev && !(options & DISCOVERY__FORCE_REVALIDATION)) {
             if (existingDev->matchesHdwId(hdwId)) {
                 if (!existingDev->port)
                     existingDev->assignPort(port);
@@ -118,8 +120,22 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
         log_debug(IS_LOG_DEVICE_MANAGER, "Concurrently validating %zu port(s) across %zu factory(ies)",
             pending.size(), factories.size());
 
+        uint32_t loopDeadline = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
+        uint32_t loopStartMs = current_timeMs();
+
         bool allResolved = false;
         while (!allResolved) {
+            if ((current_timeMs() - loopStartMs) > loopDeadline) {
+                log_debug(IS_LOG_DEVICE_MANAGER, "Discovery validation loop deadline reached (%dms). Resolving remaining ports.", loopDeadline);
+                for (auto& pp : pending) {
+                    if (!pp.resolved) {
+                        pp.resolved = true;
+                        if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+                            portClose(pp.port);
+                    }
+                }
+                break;
+            }
             allResolved = true;
             for (auto& pp : pending) {
                 if (pp.resolved)
@@ -683,4 +699,28 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
     }
 
     return results;
+}
+
+// ============================================================
+// Device hint seeding
+// ============================================================
+
+void DeviceManager::seedDeviceHint(port_handle_t port, const dev_info_t& hint) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    deviceHints_[port] = hint;
+    log_debug(IS_LOG_DEVICE_MANAGER, "Seeded device hint for port '%s' (SN=%u, hwType=%d)",
+              portName(port), hint.serialNumber, hint.hardwareType);
+}
+
+const dev_info_t* DeviceManager::getDeviceHint(port_handle_t port) const {
+    // mutex is not mutable, so we cast away const for the lock (DeviceManager's existing pattern)
+    auto& mutableMutex = const_cast<std::recursive_mutex&>(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutableMutex);
+    auto it = deviceHints_.find(port);
+    return (it != deviceHints_.end()) ? &it->second : nullptr;
+}
+
+void DeviceManager::clearDeviceHint(port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    deviceHints_.erase(port);
 }

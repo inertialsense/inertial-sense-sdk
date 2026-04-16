@@ -3,8 +3,8 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as Navigation
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget,QVBoxLayout
-from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget,QVBoxLayout
+from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import pyqtSlot, QTimer
 import sys, os
 
