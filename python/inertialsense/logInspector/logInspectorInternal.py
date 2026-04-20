@@ -92,6 +92,8 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('IMUs Raw Accel', 'imusRawAcc')
         self.addListItem('IMUs Raw Gyro Combined',  'imusRawPqrCombined')
         self.addListItem('IMUs Raw Accel Combined', 'imusRawAccCombined')
+        self.addListItem('IMUs Raw Gyro FFT', 'gyroFFT')
+        self.addListItem('IMUs Raw Accel FFT', 'accelFFT')
         self.addListItem('IMUs Gyro',  'imusPqr')
         self.addListItem('IMUs Accel', 'imusAcc')
         super(logInspectorInternal, self).createListSensors()
