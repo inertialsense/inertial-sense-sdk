@@ -113,16 +113,16 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    nvm_sensor_tcal_3axis_t gyr[NUM_IMU_DEVICES_V1P3];          // Gyro temperature calibration
-    nvm_sensor_tcal_3axis_t acc[NUM_IMU_DEVICES_V1P3];          // Accel temperature calibration
-    nvm_sensor_tcal_3axis_t mag[NUM_MAG_DEVICES_V1P3];          // Mag temperature calibration
+    nvm_sensor_tcal_3axis_t gyr[MAX_IMU_DEVICES_V1P3];          // Gyro temperature calibration
+    nvm_sensor_tcal_3axis_t acc[MAX_IMU_DEVICES_V1P3];          // Accel temperature calibration
+    nvm_sensor_tcal_3axis_t mag[MAX_MAG_DEVICES_V1P3];          // Mag temperature calibration
 } sensor_tcal_group_v1p3_t;
 
 typedef struct PACKED
 {
-    nvm_sensor_tcal_3axis_t gyr[NUM_IMU_DEVICES_V1P4];          // Gyro temperature calibration
-    nvm_sensor_tcal_3axis_t acc[NUM_IMU_DEVICES_V1P4];          // Accel temperature calibration
-    nvm_sensor_tcal_3axis_t mag[NUM_MAG_DEVICES_V1P4];          // Mag temperature calibration
+    nvm_sensor_tcal_3axis_t gyr[MAX_IMU_DEVICES_V1P4];          // Gyro temperature calibration
+    nvm_sensor_tcal_3axis_t acc[MAX_IMU_DEVICES_V1P4];          // Accel temperature calibration
+    nvm_sensor_tcal_3axis_t mag[MAX_MAG_DEVICES_V1P4];          // Mag temperature calibration
 } sensor_tcal_group_v1p4_t;
 
 // 1/3 of sensor_tcal_group_t used for uploading calibration
@@ -141,16 +141,16 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    sensor_motion_cal_t     pqr[NUM_IMU_DEVICES_V1P3];          // Gyros (x3 IMUs)
-    sensor_motion_cal_t     acc[NUM_IMU_DEVICES_V1P3];          // Accelerometers (x3 IMUs)
-    sensor_motion_cal_t     mag[NUM_MAG_DEVICES_V1P3];          // Magnetometers
+    sensor_motion_cal_t     pqr[MAX_IMU_DEVICES_V1P3];          // Gyros (x3 IMUs)
+    sensor_motion_cal_t     acc[MAX_IMU_DEVICES_V1P3];          // Accelerometers (x3 IMUs)
+    sensor_motion_cal_t     mag[MAX_MAG_DEVICES_V1P3];          // Magnetometers
 } sensor_mcal_group_v1p3_t;
 
 typedef struct PACKED
 {
-    sensor_motion_cal_t     pqr[NUM_IMU_DEVICES_V1P4];          // Gyros (x5 IMUs)
-    sensor_motion_cal_t     acc[NUM_IMU_DEVICES_V1P4];          // Accelerometers (x5 IMUs)
-    sensor_motion_cal_t     mag[NUM_MAG_DEVICES_V1P4];          // Magnetometers
+    sensor_motion_cal_t     pqr[MAX_IMU_DEVICES_V1P4];          // Gyros (x5 IMUs)
+    sensor_motion_cal_t     acc[MAX_IMU_DEVICES_V1P4];          // Accelerometers (x5 IMUs)
+    sensor_motion_cal_t     mag[MAX_MAG_DEVICES_V1P4];          // Magnetometers
 } sensor_mcal_group_v1p4_t;
 
 ////////////////////////////////////////////////
