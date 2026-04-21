@@ -1038,6 +1038,29 @@ static int cltool_dataStreaming()
         return -1;    // Failed to open serial port
     }
 
+    // Filter devices by hardware type if -device TYPE was specified
+    if (g_commandLineOptions.filterHdwType != IS_HARDWARE_ANY)
+    {
+        DeviceManager& dm = DeviceManager::getInstance();
+        std::vector<device_handle_t> toRelease;
+        for (auto& device : inertialSenseInterface.getDevices())
+        {
+            if (!device->matchesHdwId(g_commandLineOptions.filterHdwType))
+                toRelease.push_back(device);
+        }
+        for (auto& device : toRelease)
+        {
+            printf("[INFO] Skipping non-matching device: %s on %s\n",
+                   device->getIdAsString().c_str(), device->getPortName().c_str());
+            dm.releaseDevice(device, true, true);
+        }
+        if (inertialSenseInterface.getDevices().empty())
+        {
+            cout << "No devices of the requested type found." << endl;
+            return EXIT_CODE_NO_DEVICES_FOUND;
+        }
+    }
+
     if (g_commandLineOptions.list_devices) {
         /**
          * List discovered devices and exit

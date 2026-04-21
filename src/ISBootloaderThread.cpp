@@ -859,6 +859,8 @@ is_operation_result cISBootloaderThread::update(
     beginTimeMs = current_timeMs();
 
     is_operation_result overall_result = IS_OP_OK;
+    int devicesSucceeded = 0;
+    int devicesFailed = 0;
     while (m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
@@ -879,8 +881,13 @@ is_operation_result cISBootloaderThread::update(
                 serialThread->thread = NULL;
 
                 thread_serial_t* t = serialThread;        // set by update_thread_serial
-                if (t->opResult != IS_OP_OK && t->opResult != IS_OP_CANCELLED && t->opResult != IS_OP_CLOSED)
+                if (t->opResult == IS_OP_OK)
                 {
+                    devicesSucceeded++;
+                }
+                else if (t->opResult != IS_OP_CANCELLED && t->opResult != IS_OP_CLOSED)
+                {
+                    devicesFailed++;
                     if (overall_result == IS_OP_OK)      // keep the first non-OK as the return
                     {
                         overall_result = t->opResult;
@@ -960,9 +967,20 @@ is_operation_result cISBootloaderThread::update(
 
     threadJoinAndFree(libusb_thread);
 
-    // Only report run time if the update was successful
-    if (overall_result == IS_OP_OK)
+    // Report final status
+    if (devicesSucceeded > 0 && devicesFailed == 0)
     {
+        tmp = "Update succeeded (" + to_string(devicesSucceeded) + " device(s)) in " + to_string(((double)timeDeltaMs) / 1000) + " seconds.";
+        m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
+    }
+    else if (devicesSucceeded > 0 && devicesFailed > 0)
+    {
+        tmp = "Update succeeded on " + to_string(devicesSucceeded) + " device(s), failed on " + to_string(devicesFailed) + " device(s).";
+        m_infoProgress(NULL, IS_LOG_LEVEL_WARN, tmp.c_str());
+    }
+    else if (overall_result == IS_OP_OK)
+    {
+        // No threads ran (edge case) -- keep original success path
         tmp = "Update succeeded in " + to_string(((double)timeDeltaMs) / 1000) + " seconds.";
         m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
     }
@@ -1006,7 +1024,7 @@ is_operation_result cISBootloaderThread::update(
     m_update_in_progress = false;
     m_update_mutex.unlock();
 
-    if (overall_result != IS_OP_OK) {
+    if (overall_result != IS_OP_OK && devicesSucceeded == 0) {
         m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update failed!");
         if(m_waitAction) m_waitAction();     // Final UI update
         return overall_result;
