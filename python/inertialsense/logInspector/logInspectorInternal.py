@@ -36,9 +36,13 @@ class ChooseDevsDialog(QDialog):
             checkbox = QCheckBox()
             checkbox.setText(str(parent.log.serials[i]))
             checkbox.setChecked(i in parent.mplots[0].plotter.active_devs)
-            checkbox.clicked.connect(self.updatePlot)
             self.checkboxes.append(checkbox)
             self.mainLayout.addWidget(checkbox)
+
+        self.applyButton = QPushButton()
+        self.applyButton.setText("Apply")
+        self.applyButton.clicked.connect(self.updatePlot)
+        self.mainLayout.addWidget(self.applyButton)
 
         self.okbutton = QPushButton()
         self.okbutton.setText("OK")
@@ -58,17 +62,16 @@ class ChooseDevsDialog(QDialog):
         self.parent.updatePlot()
 
     def clickedOk(self):
+        self.updatePlot()
         self.close()
 
     def selectAll(self):
         for checkbox in self.checkboxes:
             checkbox.setChecked(True)
-        self.updatePlot()
 
     def selectNone(self):
         for checkbox in self.checkboxes:
             checkbox.setChecked(False)
-        self.updatePlot()
 
 
 class logInspectorInternal(LogInspectorWindow):
@@ -93,7 +96,9 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('IMUs Raw Gyro Combined',  'imusRawPqrCombined')
         self.addListItem('IMUs Raw Accel Combined', 'imusRawAccCombined')
         self.addListItem('IMUs Raw Gyro FFT', 'gyroFFT')
+        self.addListItem('IMUs Raw Gyro PSD', 'gyroRawPSD')
         self.addListItem('IMUs Raw Accel FFT', 'accelFFT')
+        self.addListItem('IMUs Raw Accel PSD', 'accelRawPSD')
         self.addListItem('IMUs Gyro',  'imusPqr')
         self.addListItem('IMUs Accel', 'imusAcc')
         super(logInspectorInternal, self).createListSensors()

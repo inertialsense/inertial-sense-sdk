@@ -3516,6 +3516,55 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, None, fig, 'gyroFFT')
 
+    def gyroRawPSD(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+
+        if len(self.active_devs) == 0:
+            return
+        d = self.active_devs[0]
+        did = DID_IMUS_RAW
+        (name, time, dt, sensors) = self.loadGyros(d, did=did)
+        if len(time) == 0 or len(sensors) == 0:
+            return
+        num_sensors = len(sensors)
+        ax = fig.subplots(3, num_sensors, sharex=True, squeeze=False)
+        fig.suptitle(name + ' Gyro PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (name, time, dt, sensors) = self.loadGyros(d, did=did)
+            if len(time) == 0 or len(sensors) == 0:
+                continue
+
+            N = time.size
+            Nhalf = N // 2 + 1
+            Fs = 1.0 / np.mean(dt)
+            f = np.linspace(0, 0.5 * Fs, Nhalf)
+
+            for n, pqr in enumerate(sensors):
+                if pqr is None or np.all(pqr == None):
+                    continue
+                if n >= num_sensors:
+                    continue
+                for i in range(3):
+                    axislable = 'P' if (i == 0) else 'Q' if (i == 1) else 'R'
+                    alable = 'Gyro%d ' % n if num_sensors > 1 else 'Gyro '
+                    sp = np.fft.fft(pqr[:, i] * 180.0 / np.pi)
+                    sp = sp[:Nhalf]
+                    psd = (1.0 / (N * Fs)) * np.abs(sp) ** 2
+                    psd[1:-1] = 2 * psd[1:-1]
+                    psd_db = 10.0 * np.log10(np.maximum(psd, 1e-24))
+                    self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB dps^2/Hz', 'Hz')
+                    ax[i][n].plot(f, psd_db, label=self.log.serials[d])
+
+        for i in range(num_sensors):
+            self.legends_add(ax[0][i].legend(ncol=2))
+            for d in range(3):
+                ax[d][i].grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, None, fig, 'gyroRawPSD')
+
     def accelFFT(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
@@ -3563,6 +3612,55 @@ class logPlot:
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, None, fig, 'accelFFT')
+
+    def accelRawPSD(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+
+        if len(self.active_devs) == 0:
+            return
+        d = self.active_devs[0]
+        did = DID_IMUS_RAW
+        (name, time, dt, sensors) = self.loadAccels(d, did=did)
+        if len(time) == 0 or len(sensors) == 0:
+            return
+        num_sensors = len(sensors)
+        ax = fig.subplots(3, num_sensors, sharex=True, squeeze=False)
+        fig.suptitle(name + ' Accel PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (name, time, dt, sensors) = self.loadAccels(d, did=did)
+            if len(time) == 0 or len(sensors) == 0:
+                continue
+
+            N = time.size
+            Nhalf = N // 2 + 1
+            Fs = 1.0 / np.mean(dt)
+            f = np.linspace(0, 0.5 * Fs, Nhalf)
+
+            for n, acc in enumerate(sensors):
+                if acc is None or np.all(acc == None):
+                    continue
+                if n >= num_sensors:
+                    continue
+                for i in range(3):
+                    axislable = 'X' if (i == 0) else 'Y' if (i == 1) else 'Z'
+                    alable = 'Accel%d ' % n if num_sensors > 1 else 'Accel '
+                    sp = np.fft.fft(acc[:, i])
+                    sp = sp[:Nhalf]
+                    psd = (1.0 / (N * Fs)) * np.abs(sp) ** 2
+                    psd[1:-1] = 2 * psd[1:-1]
+                    psd_db = 10.0 * np.log10(np.maximum(psd, 1e-24))
+                    self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB (m/s^2)^2/Hz', 'Hz')
+                    ax[i][n].plot(f, psd_db, label=self.log.serials[d])
+
+        for i in range(num_sensors):
+            self.legends_add(ax[0][i].legend(ncol=2))
+            for d in range(3):
+                ax[d][i].grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, None, fig, 'accelRawPSD')
 
     def altitude(self, fig=None, axs=None):
         if fig is None:
