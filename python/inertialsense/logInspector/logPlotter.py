@@ -6,7 +6,7 @@ from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from datetime import date, datetime
 import pandas as pd
-from scipy.signal import detrend
+from scipy.signal import detrend, welch
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -3370,33 +3370,20 @@ class logPlot:
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refAcc = refVel / refDt[:,None]
 
-            N = time.size
-            psd = np.zeros((N//2, 3))
-            # 1/T = frequency
             Fs = 1 / np.mean(dt)
-            f = np.linspace(0, 0.5*Fs, N // 2)
 
             for n, acc in enumerate(sensors):
                 if np.all(acc) != None and n<len(sensors):
                     for i in range(3):
-                        sp0 = np.fft.fft(acc[:,i] / 9.8)
-                        sp0 = sp0[:N // 2]
-                        # psd = abssp*abssp
-                        # freq = np.fft.fftfreq(time.shape[-1])
-        #                    np.append(psd, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                        psd[:,i] = 1/N/Fs * np.abs(sp0)**2
-                        psd[1:-1,i] = 2 * psd[1:-1,i]
-
-                    for i in range(3):
                         axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
-                        # ax[i].loglog(f, psd[:, i])
                         alable = 'Accel'
                         if len(sensors) > 1:
                             alable += '%d ' % n
                         else:
                             alable += ' '
+                        f, psd = welch(acc[:, i], fs=Fs)
                         self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB (m/s^2)^2/Hz', 'Hz')
-                        ax[i][n].plot(f, 10*np.log10(psd[:, i]), label=self.log.serials[d])
+                        ax[i][n].plot(f, 10*np.log10(np.maximum(psd, 1e-24)), label=self.log.serials[d])
 
         for i in range(len(sensors)):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -3431,34 +3418,20 @@ class logPlot:
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refGyr = refTheta / refDt[:,None]
 
-            N = time.size
-            Nhalf = N // 2 + 1
-            psd = np.zeros((Nhalf, 3))
-            # 1/T = frequency
             Fs = 1 / np.mean(dt)
-            f = np.linspace(0, 0.5*Fs, Nhalf)
 
             for n, pqr in enumerate(sensors):
                 if np.all(pqr) != None and n<len(sensors):
                     for i in range(3):
-                        sp0 = np.fft.fft(pqr[:,i] * 180.0/np.pi)
-                        sp0 = sp0[:Nhalf]
-                        # psd = abssp*abssp
-                        # freq = np.fft.fftfreq(time.shape[-1])
-            #                    np.append(psd, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                        psd[:,i] = 1/N/Fs * np.abs(sp0)**2
-                        psd[1:-1,i] = 2 * psd[1:-1,i]
-
-                    for i in range(3):
                         axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
-                        # ax[i].loglog(f, psd[:, i])
                         alable = 'Gyro'
                         if len(sensors) > 1:
                             alable += '%d ' % n
                         else:
                             alable += ' '
+                        f, psd = welch(pqr[:, i] * 180.0 / np.pi, fs=Fs)
                         self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB dps^2/Hz', 'Hz')
-                        ax[i][n].plot(f, 10*np.log10(psd[:, i]), label=self.log.serials[d])
+                        ax[i][n].plot(f, 10*np.log10(np.maximum(psd, 1e-24)), label=self.log.serials[d])
 
         for i in range(len(sensors)):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -3536,10 +3509,7 @@ class logPlot:
             if len(time) == 0 or len(sensors) == 0:
                 continue
 
-            N = time.size
-            Nhalf = N // 2 + 1
             Fs = 1.0 / np.mean(dt)
-            f = np.linspace(0, 0.5 * Fs, Nhalf)
 
             for n, pqr in enumerate(sensors):
                 if pqr is None or np.all(pqr == None):
@@ -3549,13 +3519,9 @@ class logPlot:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i == 1) else 'R'
                     alable = 'Gyro%d ' % n if num_sensors > 1 else 'Gyro '
-                    sp = np.fft.fft(pqr[:, i] * 180.0 / np.pi)
-                    sp = sp[:Nhalf]
-                    psd = (1.0 / (N * Fs)) * np.abs(sp) ** 2
-                    psd[1:-1] = 2 * psd[1:-1]
-                    psd_db = 10.0 * np.log10(np.maximum(psd, 1e-24))
+                    f, psd = welch(pqr[:, i] * 180.0 / np.pi, fs=Fs)
                     self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB dps^2/Hz', 'Hz')
-                    ax[i][n].plot(f, psd_db, label=self.log.serials[d])
+                    ax[i][n].plot(f, 10.0 * np.log10(np.maximum(psd, 1e-24)), label=self.log.serials[d])
 
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -3633,10 +3599,7 @@ class logPlot:
             if len(time) == 0 or len(sensors) == 0:
                 continue
 
-            N = time.size
-            Nhalf = N // 2 + 1
             Fs = 1.0 / np.mean(dt)
-            f = np.linspace(0, 0.5 * Fs, Nhalf)
 
             for n, acc in enumerate(sensors):
                 if acc is None or np.all(acc == None):
@@ -3646,13 +3609,9 @@ class logPlot:
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i == 1) else 'Z'
                     alable = 'Accel%d ' % n if num_sensors > 1 else 'Accel '
-                    sp = np.fft.fft(acc[:, i])
-                    sp = sp[:Nhalf]
-                    psd = (1.0 / (N * Fs)) * np.abs(sp) ** 2
-                    psd[1:-1] = 2 * psd[1:-1]
-                    psd_db = 10.0 * np.log10(np.maximum(psd, 1e-24))
+                    f, psd = welch(acc[:, i], fs=Fs)
                     self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB (m/s^2)^2/Hz', 'Hz')
-                    ax[i][n].plot(f, psd_db, label=self.log.serials[d])
+                    ax[i][n].plot(f, 10.0 * np.log10(np.maximum(psd, 1e-24)), label=self.log.serials[d])
 
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
