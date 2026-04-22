@@ -400,7 +400,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             std::string devType = argv[++i];
             std::transform(devType.begin(), devType.end(), devType.begin(), ::tolower);
-            if      (devType == "imx"  || devType == "imx-5" || devType == "imx5")                              g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX;
+            if      (devType == "imx")                                                                           g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX;
+            else if (devType == "imx-5" || devType == "imx5")                                                   g_commandLineOptions.filterHdwType = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, -1);
             else if (devType == "imx5.0" || devType == "imx-5.0")                                               g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX_5_0;
             else if (devType == "imx6.0" || devType == "imx-6.0" || devType == "imx6" || devType == "imx-6")    g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX_6_0;
             else if (devType == "gpx"  || devType == "gpx1" || devType == "gpx-1")                              g_commandLineOptions.filterHdwType = IS_HARDWARE_GPX;
