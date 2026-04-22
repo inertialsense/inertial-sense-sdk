@@ -3388,6 +3388,7 @@ class logPlot:
         for i in range(len(sensors)):
             self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
+                ax[d][i].set_xscale('log')
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
@@ -3436,6 +3437,7 @@ class logPlot:
         for i in range(len(sensors)):
             self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
+                ax[d][i].set_xscale('log')
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
@@ -3526,6 +3528,7 @@ class logPlot:
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
+                ax[d][i].set_xscale('log')
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
@@ -3616,6 +3619,7 @@ class logPlot:
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
+                ax[d][i].set_xscale('log')
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
