@@ -3158,7 +3158,7 @@ class logPlot:
             fig = plt.figure()
 
         (name, time, dt, sensors) = self.loadGyros(0, did=did)
-        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
+        ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
         # Preserve the initial sensors list for later use in subplot configuration and CSV writing
         initial_sensors = sensors
@@ -3253,7 +3253,7 @@ class logPlot:
             fig = plt.figure()
 
         (name, time, dt, sensors) = self.loadAccels(0, did=did)
-        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
+        ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
         # Preserve initial sensors for subplot configuration and CSV writing.
         initial_sensors = sensors
@@ -3359,7 +3359,7 @@ class logPlot:
             (name, time, dt, sensors) = self.loadAccels(d, did=did)
         if len(time) == 0:
             return
-        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
+        ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
         fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
@@ -3408,7 +3408,7 @@ class logPlot:
             (name, time, dt, sensors) = self.loadGyros(d, did=did)
         if len(time) == 0:
             return
-        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
+        ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
         fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
@@ -3455,7 +3455,7 @@ class logPlot:
         if len(time) == 0 or len(sensors) == 0:
             return
         num_sensors = len(sensors)
-        ax = fig.subplots(3, num_sensors, sharex=True, squeeze=False)
+        ax = fig.subplots(3, num_sensors, sharex=True, sharey='row', squeeze=False)
         fig.suptitle(name + ' Gyro FFT - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         for d in self.active_devs:
@@ -3486,6 +3486,7 @@ class logPlot:
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
+                ax[d][i].set_xscale('log')
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
@@ -3503,7 +3504,7 @@ class logPlot:
         if len(time) == 0 or len(sensors) == 0:
             return
         num_sensors = len(sensors)
-        ax = fig.subplots(3, num_sensors, sharex=True, squeeze=False)
+        ax = fig.subplots(3, num_sensors, sharex=True, sharey='row', squeeze=False)
         fig.suptitle(name + ' Gyro PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         for d in self.active_devs:
@@ -3546,7 +3547,7 @@ class logPlot:
         if len(time) == 0 or len(sensors) == 0:
             return
         num_sensors = len(sensors)
-        ax = fig.subplots(3, num_sensors, sharex=True, squeeze=False)
+        ax = fig.subplots(3, num_sensors, sharex=True, sharey='row', squeeze=False)
         fig.suptitle(name + ' Accel FFT - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         for d in self.active_devs:
@@ -3577,6 +3578,7 @@ class logPlot:
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
+                ax[d][i].set_xscale('log')
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
@@ -3594,7 +3596,7 @@ class logPlot:
         if len(time) == 0 or len(sensors) == 0:
             return
         num_sensors = len(sensors)
-        ax = fig.subplots(3, num_sensors, sharex=True, squeeze=False)
+        ax = fig.subplots(3, num_sensors, sharex=True, sharey='row', squeeze=False)
         fig.suptitle(name + ' Accel PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
         for d in self.active_devs:
