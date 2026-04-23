@@ -444,6 +444,23 @@ port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pTyp
                 }
             }
         }
+        // If we get here, bindPort succeeded but no enabled host had a matching
+        // DeviceRecord for this port URL — which means the URL is in some host's
+        // knownPortUrls (or it wouldn't have been emitted by locatePorts) but the
+        // device list hasn't been populated by applyFrame yet. That's the race we
+        // want to keep an eye on: it's the only path that leaves a relay port with
+        // no seeded hint.
+        size_t totalDevs = 0;
+        size_t totalKnown = 0;
+        for (const auto& [url, hostPtr] : relayHosts_) {
+            if (!hostPtr->enabled) continue;
+            totalDevs  += hostPtr->devices.size();
+            totalKnown += hostPtr->knownPortUrls.size();
+        }
+        log_warn(IS_LOG_FACILITY_NONE,
+                 "RelayPortFactory::bindPort: no hint for '%s' (enabled-hosts devices=%zu knownPortUrls=%zu) — "
+                 "snapshot probably not yet applied; port was emitted from knownPortUrls ahead of devices[]",
+                 pName.c_str(), totalDevs, totalKnown);
     }
     return port;
 }
