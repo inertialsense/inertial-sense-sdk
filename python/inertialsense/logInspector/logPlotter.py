@@ -3388,7 +3388,7 @@ class logPlot:
                             alable += ' '
                         f, psd = welch(acc[:, i], fs=Fs)
                         self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB (m/s^2)^2/Hz', 'Hz')
-                        ax[i][n].plot(f, 10*np.log10(np.maximum(psd, 1e-24)), label=self.log.serials[d])
+                        ax[i][n].plot(f[1:], 10*np.log10(np.maximum(psd[1:], 1e-24)), label=self.log.serials[d])
 
         for i in range(len(sensors)):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -3437,7 +3437,7 @@ class logPlot:
                             alable += ' '
                         f, psd = welch(pqr[:, i] * 180.0 / np.pi, fs=Fs)
                         self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB dps^2/Hz', 'Hz')
-                        ax[i][n].plot(f, 10*np.log10(np.maximum(psd, 1e-24)), label=self.log.serials[d])
+                        ax[i][n].plot(f[1:], 10*np.log10(np.maximum(psd[1:], 1e-24)), label=self.log.serials[d])
 
         for i in range(len(sensors)):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -3469,9 +3469,8 @@ class logPlot:
                 continue
 
             N = time.size
-            Nhalf = N // 2 + 1
             Fs = 1.0 / np.mean(dt)
-            f = np.linspace(0, 0.5 * Fs, Nhalf)
+            f = np.fft.rfftfreq(N, 1.0 / Fs)
 
             for n, pqr in enumerate(sensors):
                 if pqr is None or np.all(pqr == None):
@@ -3481,12 +3480,14 @@ class logPlot:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i == 1) else 'R'
                     alable = 'Gyro%d ' % n if num_sensors > 1 else 'Gyro '
-                    sp = np.fft.fft(pqr[:, i] * 180.0 / np.pi)
-                    sp = sp[:Nhalf]
+                    sp = np.fft.rfft(pqr[:, i] * 180.0 / np.pi)
                     fft_mag = (2.0 / N) * np.abs(sp)
+                    fft_mag[0] /= 2.0  # DC bin: remove incorrect 2x factor
+                    if N % 2 == 0:
+                        fft_mag[-1] /= 2.0  # Nyquist bin: remove incorrect 2x factor
                     fft_mag_db = 20.0 * np.log10(np.maximum(fft_mag, 1e-12))
                     self.configureSubplot(ax[i, n], alable + axislable + ' FFT', 'dB dps', 'Hz')
-                    ax[i][n].plot(f, fft_mag_db, label=self.log.serials[d])
+                    ax[i][n].plot(f[1:], fft_mag_db[1:], label=self.log.serials[d])  # skip DC (0 Hz) for log scale
 
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -3529,7 +3530,7 @@ class logPlot:
                     alable = 'Gyro%d ' % n if num_sensors > 1 else 'Gyro '
                     f, psd = welch(pqr[:, i] * 180.0 / np.pi, fs=Fs)
                     self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB dps^2/Hz', 'Hz')
-                    ax[i][n].plot(f, 10.0 * np.log10(np.maximum(psd, 1e-24)), label=self.log.serials[d])
+                    ax[i][n].plot(f[1:], 10.0 * np.log10(np.maximum(psd[1:], 1e-24)), label=self.log.serials[d])
 
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -3561,9 +3562,8 @@ class logPlot:
                 continue
 
             N = time.size
-            Nhalf = N // 2 + 1
             Fs = 1.0 / np.mean(dt)
-            f = np.linspace(0, 0.5 * Fs, Nhalf)
+            f = np.fft.rfftfreq(N, 1.0 / Fs)
 
             for n, acc in enumerate(sensors):
                 if acc is None or np.all(acc == None):
@@ -3573,12 +3573,14 @@ class logPlot:
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i == 1) else 'Z'
                     alable = 'Accel%d ' % n if num_sensors > 1 else 'Accel '
-                    sp = np.fft.fft(acc[:, i])
-                    sp = sp[:Nhalf]
+                    sp = np.fft.rfft(acc[:, i])
                     fft_mag = (2.0 / N) * np.abs(sp)
+                    fft_mag[0] /= 2.0  # DC bin: remove incorrect 2x factor
+                    if N % 2 == 0:
+                        fft_mag[-1] /= 2.0  # Nyquist bin: remove incorrect 2x factor
                     fft_mag_db = 20.0 * np.log10(np.maximum(fft_mag, 1e-12))
                     self.configureSubplot(ax[i, n], alable + axislable + ' FFT', 'dB m/s^2', 'Hz')
-                    ax[i][n].plot(f, fft_mag_db, label=self.log.serials[d])
+                    ax[i][n].plot(f[1:], fft_mag_db[1:], label=self.log.serials[d])  # skip DC (0 Hz) for log scale
 
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
@@ -3621,7 +3623,7 @@ class logPlot:
                     alable = 'Accel%d ' % n if num_sensors > 1 else 'Accel '
                     f, psd = welch(acc[:, i], fs=Fs)
                     self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB (m/s^2)^2/Hz', 'Hz')
-                    ax[i][n].plot(f, 10.0 * np.log10(np.maximum(psd, 1e-24)), label=self.log.serials[d])
+                    ax[i][n].plot(f[1:], 10.0 * np.log10(np.maximum(psd[1:], 1e-24)), label=self.log.serials[d])
 
         for i in range(num_sensors):
             self.legends_add(ax[0][i].legend(ncol=2))
