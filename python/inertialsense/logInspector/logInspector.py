@@ -328,7 +328,10 @@ class LogInspectorWindow(QMainWindow):
         self.updateWindowTitle()
 
     def deviceInfo(self):
-        info = self.log.data[0,DID_DEV_INFO][0]
+        dev_info = self.log.data[0, DID_DEV_INFO]
+        if len(dev_info) == 0:
+            return ''
+        info = dev_info[0]
         return 'SN' + str(info['serialNumber']) + ', H:' + verArrayToString(info['hardwareVer']) + ', F:' + verArrayToString(info['firmwareVer']) + ' build ' + str(info['buildNumber']) + ', ' + dateTimeArrayToString(info) + ', ' + info['addInfo'].decode('UTF-8')
 
     def updateWindowTitle(self):
