@@ -274,7 +274,7 @@ RelayPortFactory::~RelayPortFactory() {
 void RelayPortFactory::addRelayHost(const std::string& url) {
     std::string canonical = normalizeBaseUrl(url, DEFAULT_HTTP_PORT);
     if (canonical.empty()) {
-        log_warn(IS_LOG_FACILITY_NONE, "RelayPortFactory: ignored unparseable relay URL '%s'", url.c_str());
+        log_warn(IS_LOG_PORT_FACTORY, "RelayPortFactory: ignored unparseable relay URL '%s'", url.c_str());
         return;
     }
 
@@ -287,7 +287,7 @@ void RelayPortFactory::addRelayHost(const std::string& url) {
     host->enabled = false;
     host->viaMdns = false;
     relayHosts_[canonical] = std::move(host);
-    log_info(IS_LOG_FACILITY_NONE, "RelayPortFactory: added manual relay host '%s'", canonical.c_str());
+    log_info(IS_LOG_PORT_FACTORY, "RelayPortFactory: added manual relay host '%s'", canonical.c_str());
 }
 
 bool RelayPortFactory::removeRelayHost(const std::string& url) {
@@ -312,7 +312,7 @@ bool RelayPortFactory::removeRelayHost(const std::string& url) {
     if (removed && removed->streamThread && removed->streamThread->joinable()) {
         removed->streamThread->join();
     }
-    log_info(IS_LOG_FACILITY_NONE, "RelayPortFactory: removed relay host '%s'", canonical.c_str());
+    log_info(IS_LOG_PORT_FACTORY, "RelayPortFactory: removed relay host '%s'", canonical.c_str());
     return true;
 }
 
@@ -333,7 +333,7 @@ void RelayPortFactory::setRelayHostEnabled(const std::string& url, bool enabled)
         if (host.enabled == enabled) return;
 
         host.enabled = enabled;
-        log_info(IS_LOG_FACILITY_NONE, "RelayPortFactory: relay host '%s' %s",
+        log_info(IS_LOG_PORT_FACTORY, "RelayPortFactory: relay host '%s' %s",
                  canonical.c_str(), enabled ? "enabled" : "disabled");
 
         if (enabled) {
@@ -444,23 +444,6 @@ port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pTyp
                 }
             }
         }
-        // If we get here, bindPort succeeded but no enabled host had a matching
-        // DeviceRecord for this port URL — which means the URL is in some host's
-        // knownPortUrls (or it wouldn't have been emitted by locatePorts) but the
-        // device list hasn't been populated by applyFrame yet. That's the race we
-        // want to keep an eye on: it's the only path that leaves a relay port with
-        // no seeded hint.
-        size_t totalDevs = 0;
-        size_t totalKnown = 0;
-        for (const auto& [url, hostPtr] : relayHosts_) {
-            if (!hostPtr->enabled) continue;
-            totalDevs  += hostPtr->devices.size();
-            totalKnown += hostPtr->knownPortUrls.size();
-        }
-        log_warn(IS_LOG_FACILITY_NONE,
-                 "RelayPortFactory::bindPort: no hint for '%s' (enabled-hosts devices=%zu knownPortUrls=%zu) — "
-                 "snapshot probably not yet applied; port was emitted from knownPortUrls ahead of devices[]",
-                 pName.c_str(), totalDevs, totalKnown);
     }
     return port;
 }
@@ -548,7 +531,7 @@ void RelayPortFactory::discoverRelayHostsViaMdns() {
             host->enabled = false;
             host->viaMdns = true;
             relayHosts_[url] = std::move(host);
-            log_info(IS_LOG_FACILITY_NONE, "RelayPortFactory: discovered relay host via mDNS: '%s'", url.c_str());
+            log_info(IS_LOG_PORT_FACTORY, "RelayPortFactory: discovered relay host via mDNS: '%s'", url.c_str());
         }
     }
 }
@@ -571,7 +554,7 @@ void RelayPortFactory::pollRelayHost(RelayHost& host) {
         host.lastError = res ? ("HTTP " + std::to_string(res->status))
                              : httplib::to_string(res.error());
         if (host.consecutiveFailures == DEFAULT_FAILURE_GRACE_COUNT) {
-            log_warn(IS_LOG_FACILITY_NONE,
+            log_warn(IS_LOG_PORT_FACTORY,
                      "RelayPortFactory: relay host '%s' unreachable after %u polls: %s",
                      host.url.c_str(), host.consecutiveFailures, host.lastError.c_str());
         }
@@ -599,7 +582,7 @@ void RelayPortFactory::pollRelayHost(RelayHost& host) {
     if (!snap.serverInstanceId.empty() && !host.serverInstanceId.empty() &&
         snap.serverInstanceId != host.serverInstanceId) {
         host.knownPortUrls.clear();
-        log_info(IS_LOG_FACILITY_NONE, "RelayPortFactory: relay '%s' restarted (new instance id); resyncing",
+        log_info(IS_LOG_PORT_FACTORY, "RelayPortFactory: relay '%s' restarted (new instance id); resyncing",
                  host.url.c_str());
     }
     host.serverInstanceId = snap.serverInstanceId;
@@ -615,7 +598,7 @@ void RelayPortFactory::pollRelayHost(RelayHost& host) {
         host.knownPortUrls.insert(device.portUrl);
     }
 
-    log_debug(IS_LOG_FACILITY_NONE, "RelayPortFactory: polled '%s' — %zu devices, %zu known ports",
+    log_debug(IS_LOG_PORT_FACTORY, "RelayPortFactory: polled '%s' — %zu devices, %zu known ports",
               host.url.c_str(), host.devices.size(), host.knownPortUrls.size());
 }
 
@@ -653,7 +636,7 @@ void RelayPortFactory::stopSseWorker(RelayHost& host) {
 void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
     auto [hostname, port] = splitBaseUrl(host.url, DEFAULT_HTTP_PORT);
 
-    log_debug(IS_LOG_FACILITY_NONE, "RelayPortFactory: starting SSE loop for '%s'", host.url.c_str());
+    log_debug(IS_LOG_PORT_FACTORY, "RelayPortFactory: starting SSE loop for '%s'", host.url.c_str());
     int backoffMs = SSE_RECONNECT_INITIAL_MS;
     while (!host.stopRequested.load()) {
         httplib::Client sseClient(hostname, port);
@@ -698,7 +681,7 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
                 evtInstance != host.serverInstanceId) {
                 host.knownPortUrls.clear();
                 host.devices.clear();
-                log_info(IS_LOG_FACILITY_NONE,
+                log_info(IS_LOG_PORT_FACTORY,
                          "RelayPortFactory: relay '%s' restarted (SSE id instance changed); resyncing",
                          host.url.c_str());
             }
@@ -754,7 +737,7 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
             if (host.stopRequested.load()) return false;
             bool firstChunk = !host.streamConnected.exchange(true);
             if (firstChunk) {
-                log_debug(IS_LOG_FACILITY_NONE, "RelayPortFactory: SSE stream connected to '%s' (%zu bytes first chunk)",
+                log_debug(IS_LOG_PORT_FACTORY, "RelayPortFactory: SSE stream connected to '%s' (%zu bytes first chunk)",
                           host.url.c_str(), size);
             }
 
@@ -816,7 +799,7 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
             if (host.sseConsecutiveFailures >= DEFAULT_MAX_SSE_RETRIES) {
                 host.activeTransport = RelayFeedType::Polling;
                 host.lastError += " — falling back to polling";
-                log_warn(IS_LOG_FACILITY_NONE,
+                log_warn(IS_LOG_PORT_FACTORY,
                          "RelayPortFactory: relay '%s' SSE failed %u times; switching to polling",
                          host.url.c_str(), host.sseConsecutiveFailures);
                 break; // exit loop; tick() takes over via pollRelayHost()
