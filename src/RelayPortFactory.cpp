@@ -16,6 +16,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
+#include <cstring>
 #include <set>
 #include <thread>
 
@@ -115,8 +117,34 @@ static constexpr int SSE_READ_TIMEOUT_S     = 30;
 static constexpr int SSE_RECONNECT_INITIAL_MS = 250;
 static constexpr int SSE_RECONNECT_MAX_MS     = 2000;
 
+/// Parse a "YYYY-MM-DD HH:MM:SS" timestamp (as bridgeboard's build_date field) into
+/// the dev_info_t date/time byte fields. Missing or malformed input leaves everything zero.
+void parseBuildDate(const std::string& s, dev_info_t& hint) {
+    int y = 0, mo = 0, d = 0, h = 0, mi = 0, se = 0;
+    if (std::sscanf(s.c_str(), "%d-%d-%d %d:%d:%d", &y, &mo, &d, &h, &mi, &se) < 3)
+        return;
+    if (y >= 2000 && y < 2000 + 256) hint.buildYear = static_cast<uint8_t>(y - 2000);
+    if (mo > 0 && mo < 13) hint.buildMonth = static_cast<uint8_t>(mo);
+    if (d > 0 && d < 32)   hint.buildDay   = static_cast<uint8_t>(d);
+    if (h >= 0 && h < 24)  hint.buildHour  = static_cast<uint8_t>(h);
+    if (mi >= 0 && mi < 60) hint.buildMinute = static_cast<uint8_t>(mi);
+    if (se >= 0 && se < 60) hint.buildSecond = static_cast<uint8_t>(se);
+}
+
+/// Parse the first hex word of bridgeboard's firmware_commit ("deadbeef abc123.0") into
+/// repoRevision. Non-hex input leaves it zero.
+void parseRepoRevision(const std::string& s, dev_info_t& hint) {
+    try {
+        hint.repoRevision = static_cast<uint32_t>(std::stoul(s, nullptr, 16));
+    } catch (...) {}
+}
+
 /// Parse a single device entry from the SN-7804 `/api/availableDevices` schema
 /// (or from a `device.added` / `device.changed` SSE event payload — same shape).
+///
+/// Populates every dev_info_t field the relay can supply so consumers don't need to
+/// issue a follow-up DID_DEV_INFO query: hardwareType/Ver, serialNumber, full
+/// protocolVer[], firmwareVer, manufacturer, build date/time, repo revision.
 bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     if (!dev.is_object()) return false;
 
@@ -133,10 +161,32 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     hint.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
     hint.hdwRunState = (state == "isbl") ? HDW_STATE_BOOTLOADER : HDW_STATE_APP;
     hint.serialNumber = dev.value("serial_number", 0u);
+
+    // Protocol version — all four components are compile-time constants baked into the SDK.
+    // Populating only CHAR0 leaves consumers reading CHAR1..3 as zero, which can trip
+    // version-compatibility checks.
     hint.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
+    hint.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
+    hint.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
+    hint.protocolVer[3] = PROTOCOL_VERSION_CHAR3;
 
     std::string fwVer = dev.value("firmware_ver", "");
     if (!fwVer.empty()) parseFirmwareVer(fwVer, hint.firmwareVer);
+
+    std::string fwCommit = dev.value("firmware_commit", "");
+    if (!fwCommit.empty()) parseRepoRevision(fwCommit, hint);
+
+    std::string buildDate = dev.value("build_date", "");
+    if (!buildDate.empty()) parseBuildDate(buildDate, hint);
+
+    // Manufacturer isn't in the SN-7804 schema — bridgeboard only relays IS devices,
+    // so we hard-code a sane default. This matches what real devices report.
+    std::strncpy(hint.manufacturer, "Inertial Sense", sizeof(hint.manufacturer) - 1);
+
+    // Build type — SN-7804 doesn't ship this, but 'r' (production release) is the
+    // default the SDK's display/upload paths tolerate. If it matters later, bridgeboard
+    // can expose it explicitly.
+    hint.buildType = 'r';
 
     out.portUrl = std::move(uri);
     out.hint = hint;
@@ -660,12 +710,15 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
                     else                          host.devices.push_back(rec);
                     host.knownPortUrls.insert(rec.portUrl);
 
-                    // If the device is already bound to a port_handle, re-seed the hint so
-                    // DeviceManager reflects updated metadata (e.g., a firmware-version change
-                    // after a reboot). No-op for ports that aren't currently bound.
-                    if (auto handle = PortManager::getInstance().getPort(rec.portUrl, PORT_TYPE__TCP)) {
-                        DeviceManager::getInstance().seedDeviceHint(handle, rec.hint);
-                    }
+                    // NOTE: we intentionally do NOT call into PortManager or DeviceManager
+                    // from here. PortManager's discoverPorts/validatePort path acquires
+                    // PortManager.mutex and then calls into RelayPortFactory::validatePort
+                    // which takes our mutex_ — the inverse lock order. Touching PortManager
+                    // here (we used to call getPort + seedDeviceHint for already-bound ports
+                    // so device.changed would refresh the hint) races that path and deadlocks
+                    // under load. The freshened hint is picked up naturally on the next
+                    // bindPort; if a caller needs an updated hint on an already-bound port,
+                    // they can rebind, or we can add a deferred-apply queue later.
                 }
             } else if (evt == EVT_DEVICE_REMOVED) {
                 std::string uri = payload.is_object() ? payload.value("uri", std::string{}) : std::string{};
