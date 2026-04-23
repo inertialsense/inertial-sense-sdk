@@ -78,18 +78,20 @@ extern "C" {
 /** Protocol Type */
 typedef enum
 {
-    _PTYPE_NONE                 = 0,  /** No complete valid data available yet */
-    _PTYPE_PARSE_ERROR          = 1,  /** Invalid data or checksum error */
-    _PTYPE_INERTIAL_SENSE_ACK   = 2,  /** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
-    _PTYPE_INERTIAL_SENSE_CMD   = 3,  /** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
-    _PTYPE_INERTIAL_SENSE_DATA  = 4,  /** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
-    _PTYPE_NMEA                 = 5,  /** Protocol Type: NMEA (National Marine Electronics Association) */
-    _PTYPE_UBLOX                = 6,  /** Protocol Type: uBlox binary */
-    _PTYPE_RTCM3                = 7,  /** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
-    _PTYPE_SPARTN               = 8,  /** Protocol Type: SPARTN binary */
-    _PTYPE_SONY                 = 9,  /** Protocol Type: Sony binary */
+    _PTYPE_NONE                 = 0,    /** No complete valid data available yet */
+    _PTYPE_PARSE_ERROR          = 1,    /** Invalid data or checksum error */
+    _PTYPE_INERTIAL_SENSE_ACK   = 2,    /** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
+    _PTYPE_INERTIAL_SENSE_CMD   = 3,    /** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
+    _PTYPE_INERTIAL_SENSE_DATA  = 4,    /** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
+    _PTYPE_NMEA                 = 5,    /** Protocol Type: NMEA (National Marine Electronics Association) */
+    _PTYPE_UBLOX                = 6,    /** Protocol Type: uBlox binary */
+    _PTYPE_RTCM3                = 7,    /** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+    _PTYPE_SPARTN               = 8,    /** Protocol Type: SPARTN binary */
+    _PTYPE_SONY                 = 9,    /** Protocol Type: Sony binary */
+    _PTYPE_SEPTENTRIO_SBF       = 10,   /** Protocol Type: Septentrio binary */
+    _PTYPE_SEPTENTRIO_REPLY     = 11,   /** Protocol Type: Septentrio reply msg */
     _PTYPE_FIRST_DATA           = _PTYPE_INERTIAL_SENSE_DATA,
-    _PTYPE_LAST_DATA            = _PTYPE_SONY,
+    _PTYPE_LAST_DATA            = _PTYPE_SEPTENTRIO_REPLY,
     _PTYPE_SIZE                 = _PTYPE_LAST_DATA + 1,
 } protocol_type_t;
 
@@ -280,6 +282,9 @@ is performed).
 */
 enum ePktSpecialChars
 {
+    /** Dollar sign ($), used by NMEA and Septentrio protocol to signify start of message (36) */
+    PSC_PRE_ASCII_START_BYTE = 0x24,
+
     /** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
     PSC_NMEA_START_BYTE = 0x24,
 
@@ -312,6 +317,14 @@ enum ePktSpecialChars
 
     /** Sony GNSS start byte */
     SONY_START_BYTE = 0x7F,
+
+    /** Septentrio GNSS Second bytes */
+    /** Dollar sign ($), used by Septentrio protocol to signify start of message (36) */
+    SEPT_PROTO_START_BYTE   = 0x24, // 0x24 = '$'
+    SEPT_SBF_PREAMBLE_BYTE2 = 0x40, // 0x40 = '@'
+    SEPT_REPLY_BYTE2        = 0x52, // 0x52 = 'R'
+    SEPT_REPLY_PRE_END_BYTE = 0x0d, // 0x0d = '\r' <CR>
+    SEPT_REPLY_END_BYTE     = 0x0a, // 0x0a = '\n' <LF>
 };
 
 /** Represents an NMEA message and how it is mapped to a structure in memory */
@@ -502,6 +515,16 @@ typedef struct
 
 } ubx_pkt_hdr_t;
 
+
+typedef struct
+{
+    uint8_t syncChar1;      // 0x24
+    uint8_t syncChar2;      // 0x40
+    uint16_t crc;           // CRC16 checksum of the payload
+    uint16_t msgID;         // Message ID
+    uint16_t payloadSize;   // Size of the payload in bytes
+} sept_pkt_hdr_t;
+
 /** Sony binary packet header */
 typedef struct
 {
@@ -552,6 +575,9 @@ typedef enum
     ENABLE_PROTOCOL_RTCM3       = (0x00000001 << _PTYPE_RTCM3),
     ENABLE_PROTOCOL_SPARTN      = (0x00000001 << _PTYPE_SPARTN),
     ENABLE_PROTOCOL_SONY        = (0x00000001 << _PTYPE_SONY),
+    ENABLE_PROTOCOL_SBF         = (0x00000001 << _PTYPE_SEPTENTRIO_SBF),
+    ENABLE_PROTOCOL_SEPT_REPLY  = (0x00000001 << _PTYPE_SEPTENTRIO_REPLY),
+    ENABLE_PROTOCOL_SEPT        = (ENABLE_PROTOCOL_SBF| ENABLE_PROTOCOL_SEPT_REPLY),
 } eProtocolMask;
 
 typedef enum {
@@ -958,6 +984,16 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
  * @return uint16_t 
  */
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
+
+/**
+ * @brief crc_ccitt - Calculate the CRC-CCITT checksum for a given data buffer. Used for Septentrio SBF packets. 0 seed 
+ * 
+ * @param data 
+ * @param length 
+ * @return uint16_t crc_ccitt checksum
+ */
+uint16_t crc_ccitt(const uint8_t *data, size_t length);
+
 #define is_comm_isb_checksum16  is_comm_fletcher16
 // #define is_comm_isb_checksum16  is_comm_xor16
 

@@ -175,6 +175,8 @@ InertialSense::InertialSense(std::vector<PortFactory*> pFactories, std::vector<D
     m_handlerUblox  = nullptr;
     m_handlerRtcm3  = nullptr;
     m_handlerSpartn = nullptr;
+    m_handlerSeptSbf = nullptr;
+    m_handlerSeptReply = nullptr;
 }
 
 InertialSense::InertialSense() : InertialSense(std::vector<PortFactory*>(), std::vector<DeviceFactory*>()) {
@@ -189,6 +191,8 @@ InertialSense::InertialSense(
         pfnIsCommGenMsgHandler  handlerUblox,
         pfnIsCommGenMsgHandler  handlerRtcm3,
         pfnIsCommGenMsgHandler  handlerSpartn,
+        pfnIsCommGenMsgHandler  handlerSeptSbf,
+        pfnIsCommGenMsgHandler  handlerSeptReply,
         pfnOnNewDeviceHandler handlerNewDevice)
 {
     s_is = this;
@@ -228,6 +232,8 @@ InertialSense::InertialSense(
     m_handlerUblox  = handlerUblox;
     m_handlerRtcm3  = handlerRtcm3;
     m_handlerSpartn = handlerSpartn;
+    m_handlerSeptSbf = handlerSeptSbf;
+    m_handlerSeptReply = handlerSeptReply;
 }
 
 InertialSense::~InertialSense()
@@ -978,6 +984,8 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate)
     comManagerRegisterProtocolHandler(_PTYPE_UBLOX, m_handlerUblox);
     comManagerRegisterProtocolHandler(_PTYPE_RTCM3, m_handlerRtcm3);
     comManagerRegisterProtocolHandler(_PTYPE_SPARTN, m_handlerSpartn);
+    comManagerRegisterProtocolHandler(_PTYPE_SEPTENTRIO_SBF, m_handlerSeptSbf);
+    comManagerRegisterProtocolHandler(_PTYPE_SEPTENTRIO_REPLY, m_handlerSeptReply);
 
     // TODO: This should all be handled by the PortManager & PortFactory
     // handle wildcard, auto-detect serial ports
