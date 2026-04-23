@@ -6,7 +6,7 @@ from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from datetime import date, datetime
 import pandas as pd
-from scipy.signal import detrend
+from scipy.signal import detrend, welch
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -413,6 +413,11 @@ class logPlot:
 
             fig.savefig(os.path.join(directory + "/" + name + '.' + self.format), bbox_inches='tight')
             fig.set_size_inches(restoreSize)
+
+    def getDidName(self, did):
+        if not hasattr(self, '_did_name_map'):
+            self._did_name_map = {v: k for k, v in globals().items() if k.startswith('DID_') and isinstance(v, int)}
+        return self._did_name_map.get(did, 'DID_UNKNOWN(%d)' % did)
 
     def getData(self, dev, DID, field, removeLeadingZeros=0):
         try:
@@ -2866,7 +2871,7 @@ class logPlot:
             imu1 = self.getData(device, did, 'vel').copy()
 
         if np.shape(imu1)[0] != 0 and not useImus:  # DID_PIMU
-            name = "PIMU"
+            name = self.getDidName(did)
             # time = self.getData(device, DID_IMU_RAW, 'time')     # to plot raw gyro data
             time = self.getData(device, did, 'time')
             dt = self.getData(device, did, 'dt') 
@@ -2876,7 +2881,7 @@ class logPlot:
 
         else:
             time = self.getData(device, DID_REFERENCE_PIMU, 'time')
-            name = "Reference PIMU"
+            name = self.getDidName(DID_REFERENCE_PIMU)
 
             if time.size > 5: # DID_REFERENCE_PIMU, ignore data if there are just a few RefIMU data points (logging bug?)
                 dt = self.getData(device, DID_REFERENCE_PIMU, 'dt')
@@ -2894,7 +2899,7 @@ class logPlot:
 
             else:
                 time = self.getData(device, did, 'time')
-                name = "IMU"
+                name = self.getDidName(did)
 
                 if len(time) != 0 and not useImus:
                     I = self.getData(device, did, 'I')
@@ -2920,7 +2925,7 @@ class logPlot:
 
                 else:   
                     time = self.getData(device, did, 'time')
-                    name = "IMUS"
+                    name = self.getDidName(did)
 
                     if len(time) != 0: # DID_IMUS_RAW 
                         I = self.getData(device, did, 'I')
@@ -3158,7 +3163,7 @@ class logPlot:
             fig = plt.figure()
 
         (name, time, dt, sensors) = self.loadGyros(0, did=did)
-        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
+        ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
         # Preserve the initial sensors list for later use in subplot configuration and CSV writing
         initial_sensors = sensors
@@ -3253,7 +3258,7 @@ class logPlot:
             fig = plt.figure()
 
         (name, time, dt, sensors) = self.loadAccels(0, did=did)
-        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
+        ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
         # Preserve initial sensors for subplot configuration and CSV writing.
         initial_sensors = sensors
@@ -3359,8 +3364,8 @@ class logPlot:
             (name, time, dt, sensors) = self.loadAccels(d, did=did)
         if len(time) == 0:
             return
-        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
-        fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
+        fig.suptitle(name + ' PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
             (name, time, dt, sensors) = self.loadAccels(d, did=did)
@@ -3370,37 +3375,25 @@ class logPlot:
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refAcc = refVel / refDt[:,None]
 
-            N = time.size
-            psd = np.zeros((N//2, 3))
-            # 1/T = frequency
             Fs = 1 / np.mean(dt)
-            f = np.linspace(0, 0.5*Fs, N // 2)
 
             for n, acc in enumerate(sensors):
                 if np.all(acc) != None and n<len(sensors):
                     for i in range(3):
-                        sp0 = np.fft.fft(acc[:,i] / 9.8)
-                        sp0 = sp0[:N // 2]
-                        # psd = abssp*abssp
-                        # freq = np.fft.fftfreq(time.shape[-1])
-        #                    np.append(psd, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                        psd[:,i] = 1/N/Fs * np.abs(sp0)**2
-                        psd[1:-1,i] = 2 * psd[1:-1,i]
-
-                    for i in range(3):
                         axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
-                        # ax[i].loglog(f, psd[:, i])
                         alable = 'Accel'
                         if len(sensors) > 1:
                             alable += '%d ' % n
                         else:
                             alable += ' '
-                        self.configureSubplot(ax[i, n], alable + axislable + ' PSD (dB (m/s^2)^2/Hz)', 'Hz')
-                        ax[i][n].plot(f, 10*np.log10(psd[:, i]), label=self.log.serials[d])
+                        f, psd = welch(acc[:, i], fs=Fs)
+                        self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB (m/s^2)^2/Hz', 'Hz')
+                        ax[i][n].plot(f[1:], 10*np.log10(np.maximum(psd[1:], 1e-24)), label=self.log.serials[d])
 
         for i in range(len(sensors)):
             self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
+                ax[d][i].set_xscale('log')
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
@@ -3420,8 +3413,8 @@ class logPlot:
             (name, time, dt, sensors) = self.loadGyros(d, did=did)
         if len(time) == 0:
             return
-        ax = fig.subplots(3, len(sensors), sharex=True, squeeze=False)
-        fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
+        fig.suptitle(name + ' PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
             (name, time, dt, sensors) = self.loadGyros(d, did=did)
@@ -3431,42 +3424,215 @@ class logPlot:
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refGyr = refTheta / refDt[:,None]
 
-            N = time.size
-            Nhalf = N // 2 + 1
-            psd = np.zeros((Nhalf, 3))
-            # 1/T = frequency
             Fs = 1 / np.mean(dt)
-            f = np.linspace(0, 0.5*Fs, Nhalf)
 
             for n, pqr in enumerate(sensors):
                 if np.all(pqr) != None and n<len(sensors):
                     for i in range(3):
-                        sp0 = np.fft.fft(pqr[:,i] * 180.0/np.pi)
-                        sp0 = sp0[:Nhalf]
-                        # psd = abssp*abssp
-                        # freq = np.fft.fftfreq(time.shape[-1])
-            #                    np.append(psd, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                        psd[:,i] = 1/N/Fs * np.abs(sp0)**2
-                        psd[1:-1,i] = 2 * psd[1:-1,i]
-
-                    for i in range(3):
                         axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
-                        # ax[i].loglog(f, psd[:, i])
                         alable = 'Gyro'
                         if len(sensors) > 1:
                             alable += '%d ' % n
                         else:
                             alable += ' '
-                        self.configureSubplot(ax[i, n], alable + axislable + ' PSD (dB dps^2/Hz)', 'Hz')
-                        ax[i][n].plot(f, 10*np.log10(psd[:, i]), label=self.log.serials[d])
+                        f, psd = welch(pqr[:, i] * 180.0 / np.pi, fs=Fs)
+                        self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB dps^2/Hz', 'Hz')
+                        ax[i][n].plot(f[1:], 10*np.log10(np.maximum(psd[1:], 1e-24)), label=self.log.serials[d])
 
         for i in range(len(sensors)):
             self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
+                ax[d][i].set_xscale('log')
                 ax[d][i].grid(True)
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, None, fig, 'gyroPSD')
+
+    def gyroFFT(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+
+        if len(self.active_devs) == 0:
+            return
+        d = self.active_devs[0]
+        did = DID_IMUS_RAW
+        (name, time, dt, sensors) = self.loadGyros(d, did=did)
+        if len(time) == 0 or len(sensors) == 0:
+            return
+        num_sensors = len(sensors)
+        ax = fig.subplots(3, num_sensors, sharex=True, sharey='row', squeeze=False)
+        fig.suptitle(name + ' Gyro FFT - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (name, time, dt, sensors) = self.loadGyros(d, did=did)
+            if len(time) == 0 or len(sensors) == 0:
+                continue
+
+            N = time.size
+            Fs = 1.0 / np.mean(dt)
+            f = np.fft.rfftfreq(N, d=1.0 / Fs)
+
+            for n, pqr in enumerate(sensors):
+                if pqr is None or np.all(pqr == None):
+                    continue
+                if n >= num_sensors:
+                    continue
+                for i in range(3):
+                    axislable = 'P' if (i == 0) else 'Q' if (i == 1) else 'R'
+                    alable = 'Gyro%d ' % n if num_sensors > 1 else 'Gyro '
+                    sp = np.fft.rfft(pqr[:, i] * 180.0 / np.pi)
+                    fft_mag = (2.0 / N) * np.abs(sp)
+                    fft_mag[0] /= 2.0  # DC bin: (2.0/N) factor above is for interior bins only; halve to correct
+                    if N % 2 == 0:
+                        fft_mag[-1] /= 2.0  # Nyquist bin: same correction as DC
+                    fft_mag_db = 20.0 * np.log10(np.maximum(fft_mag, 1e-12))
+                    self.configureSubplot(ax[i, n], alable + axislable + ' FFT', 'dB dps', 'Hz')
+                    ax[i][n].plot(f[1:], fft_mag_db[1:], label=self.log.serials[d])  # skip DC (0 Hz) for log scale
+
+        for i in range(num_sensors):
+            self.legends_add(ax[0][i].legend(ncol=2))
+            for d in range(3):
+                ax[d][i].set_xscale('log')
+                ax[d][i].grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, None, fig, 'gyroFFT')
+
+    def gyroRawPSD(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+
+        if len(self.active_devs) == 0:
+            return
+        d = self.active_devs[0]
+        did = DID_IMUS_RAW
+        (name, time, dt, sensors) = self.loadGyros(d, did=did)
+        if len(time) == 0 or len(sensors) == 0:
+            return
+        num_sensors = len(sensors)
+        ax = fig.subplots(3, num_sensors, sharex=True, sharey='row', squeeze=False)
+        fig.suptitle(name + ' Gyro PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (name, time, dt, sensors) = self.loadGyros(d, did=did)
+            if len(time) == 0 or len(sensors) == 0:
+                continue
+
+            Fs = 1.0 / np.mean(dt)
+
+            for n, pqr in enumerate(sensors):
+                if pqr is None or np.all(pqr == None):
+                    continue
+                if n >= num_sensors:
+                    continue
+                for i in range(3):
+                    axislable = 'P' if (i == 0) else 'Q' if (i == 1) else 'R'
+                    alable = 'Gyro%d ' % n if num_sensors > 1 else 'Gyro '
+                    f, psd = welch(pqr[:, i] * 180.0 / np.pi, fs=Fs)
+                    self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB dps^2/Hz', 'Hz')
+                    ax[i][n].plot(f[1:], 10.0 * np.log10(np.maximum(psd[1:], 1e-24)), label=self.log.serials[d])
+
+        for i in range(num_sensors):
+            self.legends_add(ax[0][i].legend(ncol=2))
+            for d in range(3):
+                ax[d][i].set_xscale('log')
+                ax[d][i].grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, None, fig, 'gyroRawPSD')
+
+    def accelFFT(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+
+        if len(self.active_devs) == 0:
+            return
+        d = self.active_devs[0]
+        did = DID_IMUS_RAW
+        (name, time, dt, sensors) = self.loadAccels(d, did=did)
+        if len(time) == 0 or len(sensors) == 0:
+            return
+        num_sensors = len(sensors)
+        ax = fig.subplots(3, num_sensors, sharex=True, sharey='row', squeeze=False)
+        fig.suptitle(name + ' Accel FFT - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (name, time, dt, sensors) = self.loadAccels(d, did=did)
+            if len(time) == 0 or len(sensors) == 0:
+                continue
+
+            N = time.size
+            Fs = 1.0 / np.mean(dt)
+            f = np.fft.rfftfreq(N, d=1.0 / Fs)
+
+            for n, acc in enumerate(sensors):
+                if acc is None or np.all(acc == None):
+                    continue
+                if n >= num_sensors:
+                    continue
+                for i in range(3):
+                    axislable = 'X' if (i == 0) else 'Y' if (i == 1) else 'Z'
+                    alable = 'Accel%d ' % n if num_sensors > 1 else 'Accel '
+                    sp = np.fft.rfft(acc[:, i])
+                    fft_mag = (2.0 / N) * np.abs(sp)
+                    fft_mag[0] /= 2.0  # DC bin: (2.0/N) factor above is for interior bins only; halve to correct
+                    if N % 2 == 0:
+                        fft_mag[-1] /= 2.0  # Nyquist bin: same correction as DC
+                    fft_mag_db = 20.0 * np.log10(np.maximum(fft_mag, 1e-12))
+                    self.configureSubplot(ax[i, n], alable + axislable + ' FFT', 'dB m/s^2', 'Hz')
+                    ax[i][n].plot(f[1:], fft_mag_db[1:], label=self.log.serials[d])  # skip DC (0 Hz) for log scale
+
+        for i in range(num_sensors):
+            self.legends_add(ax[0][i].legend(ncol=2))
+            for d in range(3):
+                ax[d][i].set_xscale('log')
+                ax[d][i].grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, None, fig, 'accelFFT')
+
+    def accelRawPSD(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+
+        if len(self.active_devs) == 0:
+            return
+        d = self.active_devs[0]
+        did = DID_IMUS_RAW
+        (name, time, dt, sensors) = self.loadAccels(d, did=did)
+        if len(time) == 0 or len(sensors) == 0:
+            return
+        num_sensors = len(sensors)
+        ax = fig.subplots(3, num_sensors, sharex=True, sharey='row', squeeze=False)
+        fig.suptitle(name + ' Accel PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (name, time, dt, sensors) = self.loadAccels(d, did=did)
+            if len(time) == 0 or len(sensors) == 0:
+                continue
+
+            Fs = 1.0 / np.mean(dt)
+
+            for n, acc in enumerate(sensors):
+                if acc is None or np.all(acc == None):
+                    continue
+                if n >= num_sensors:
+                    continue
+                for i in range(3):
+                    axislable = 'X' if (i == 0) else 'Y' if (i == 1) else 'Z'
+                    alable = 'Accel%d ' % n if num_sensors > 1 else 'Accel '
+                    f, psd = welch(acc[:, i], fs=Fs)
+                    self.configureSubplot(ax[i, n], alable + axislable + ' PSD', 'dB (m/s^2)^2/Hz', 'Hz')
+                    ax[i][n].plot(f[1:], 10.0 * np.log10(np.maximum(psd[1:], 1e-24)), label=self.log.serials[d])
+
+        for i in range(num_sensors):
+            self.legends_add(ax[0][i].legend(ncol=2))
+            for d in range(3):
+                ax[d][i].set_xscale('log')
+                ax[d][i].grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, None, fig, 'accelRawPSD')
 
     def altitude(self, fig=None, axs=None):
         if fig is None:
