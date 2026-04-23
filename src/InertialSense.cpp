@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "InertialSense.h"
 #include "ISmDnsPortFactory.h"
 #include "TcpPortFactory.h"
+#include "RelayPortFactory.h"
 #include "protocol_nmea.h"
 #include "protocol/FirmwareUpdate.h"
 
@@ -661,14 +662,37 @@ bool InertialSense::UploadImxCalibrationFromFile(std::string path, port_handle_t
 
 void InertialSense::SetNetworkPortDiscovery(bool enable)
 {
+    m_networkPortDiscoveryEnabled = enable;
+
     portManager.clearPortFactories();
     portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
     portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
-    if (enable) {
+    if (m_networkPortDiscoveryEnabled) {
         portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
+    }
+    if (m_relayPortDiscoveryEnabled) {
+        portManager.addPortFactory((PortFactory*)&(RelayPortFactory::getInstance()));
     }
 
     // Removes all ports from the PortManager
+    portManager.clear();
+}
+
+void InertialSense::SetRelayPortDiscovery(bool enable)
+{
+    m_relayPortDiscoveryEnabled = enable;
+
+    // Rebuild the factory list preserving whatever mDNS state was set last.
+    portManager.clearPortFactories();
+    portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
+    portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
+    if (m_networkPortDiscoveryEnabled) {
+        portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
+    }
+    if (m_relayPortDiscoveryEnabled) {
+        portManager.addPortFactory((PortFactory*)&(RelayPortFactory::getInstance()));
+    }
+
     portManager.clear();
 }
 
