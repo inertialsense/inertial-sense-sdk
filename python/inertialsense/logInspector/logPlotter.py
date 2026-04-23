@@ -3482,9 +3482,9 @@ class logPlot:
                     alable = 'Gyro%d ' % n if num_sensors > 1 else 'Gyro '
                     sp = np.fft.rfft(pqr[:, i] * 180.0 / np.pi)
                     fft_mag = (2.0 / N) * np.abs(sp)
-                    fft_mag[0] /= 2.0  # DC bin: remove incorrect 2x factor
+                    fft_mag[0] /= 2.0  # DC bin: (2.0/N) factor above is for interior bins only; halve to correct
                     if N % 2 == 0:
-                        fft_mag[-1] /= 2.0  # Nyquist bin: remove incorrect 2x factor
+                        fft_mag[-1] /= 2.0  # Nyquist bin: same correction as DC
                     fft_mag_db = 20.0 * np.log10(np.maximum(fft_mag, 1e-12))
                     self.configureSubplot(ax[i, n], alable + axislable + ' FFT', 'dB dps', 'Hz')
                     ax[i][n].plot(f[1:], fft_mag_db[1:], label=self.log.serials[d])  # skip DC (0 Hz) for log scale
@@ -3575,9 +3575,9 @@ class logPlot:
                     alable = 'Accel%d ' % n if num_sensors > 1 else 'Accel '
                     sp = np.fft.rfft(acc[:, i])
                     fft_mag = (2.0 / N) * np.abs(sp)
-                    fft_mag[0] /= 2.0  # DC bin: remove incorrect 2x factor
+                    fft_mag[0] /= 2.0  # DC bin: (2.0/N) factor above is for interior bins only; halve to correct
                     if N % 2 == 0:
-                        fft_mag[-1] /= 2.0  # Nyquist bin: remove incorrect 2x factor
+                        fft_mag[-1] /= 2.0  # Nyquist bin: same correction as DC
                     fft_mag_db = 20.0 * np.log10(np.maximum(fft_mag, 1e-12))
                     self.configureSubplot(ax[i, n], alable + axislable + ' FFT', 'dB m/s^2', 'Hz')
                     ax[i][n].plot(f[1:], fft_mag_db[1:], label=self.log.serials[d])  # skip DC (0 Hz) for log scale
