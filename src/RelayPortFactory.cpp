@@ -199,19 +199,22 @@ static constexpr const char* EVT_DEVICE_REMOVED  = "device.removed";
 // ============================================================
 
 RelayPortFactory::~RelayPortFactory() {
-    // Collect workers under the lock, then signal + join OUTSIDE the lock so a worker
-    // callback that's currently blocked acquiring mutex_ can make progress and exit.
+    // Collect workers + their abort hooks under the lock, then signal + join OUTSIDE
+    // the lock so a worker callback currently blocked acquiring mutex_ can make progress.
+    // The abort hook unblocks the worker's blocking httplib recv() so join() doesn't hang
+    // waiting for the 15 s server keepalive (or a 30 s read timeout).
     std::vector<std::unique_ptr<std::thread>> threads;
+    std::vector<std::function<void()>> abortHooks;
     {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         for (auto& [url, host] : relayHosts_) {
             host->stopRequested.store(true);
-            if (host->streamThread) threads.push_back(std::move(host->streamThread));
+            if (host->sseAbortHook)    abortHooks.push_back(host->sseAbortHook);
+            if (host->streamThread)    threads.push_back(std::move(host->streamThread));
         }
     }
-    for (auto& t : threads) {
-        if (t && t->joinable()) t->join();
-    }
+    for (auto& hook : abortHooks)  if (hook) hook();
+    for (auto& t    : threads)     if (t && t->joinable()) t->join();
 }
 
 // ============================================================
@@ -243,6 +246,7 @@ bool RelayPortFactory::removeRelayHost(const std::string& url) {
 
     // Pull the host out of the map, then tear down its worker OUTSIDE the lock.
     std::unique_ptr<RelayHost> removed;
+    std::function<void()> abortHook;
     {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         auto it = relayHosts_.find(canonical);
@@ -250,9 +254,11 @@ bool RelayPortFactory::removeRelayHost(const std::string& url) {
             return false;
 
         it->second->stopRequested.store(true);
+        abortHook = it->second->sseAbortHook;
         removed = std::move(it->second);
         relayHosts_.erase(it);
     }
+    if (abortHook) abortHook();
     if (removed && removed->streamThread && removed->streamThread->joinable()) {
         removed->streamThread->join();
     }
@@ -266,6 +272,7 @@ void RelayPortFactory::setRelayHostEnabled(const std::string& url, bool enabled)
 
     // Capture the thread to join outside the lock on a disable.
     std::unique_ptr<std::thread> toJoin;
+    std::function<void()> abortHook;
 
     {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -286,8 +293,9 @@ void RelayPortFactory::setRelayHostEnabled(const std::string& url, bool enabled)
             host.stopRequested.store(false);
             startSseWorker(host);
         } else {
-            // Signal the worker to stop and hand its handle out of the lock scope.
+            // Signal the worker to stop; hand its handle and abort hook out of the lock scope.
             host.stopRequested.store(true);
+            abortHook = host.sseAbortHook;
             if (host.streamThread) toJoin = std::move(host.streamThread);
             host.devices.clear();
             host.knownPortUrls.clear();
@@ -301,6 +309,7 @@ void RelayPortFactory::setRelayHostEnabled(const std::string& url, bool enabled)
         }
     }
 
+    if (abortHook) abortHook();
     if (toJoin && toJoin->joinable()) toJoin->join();
 }
 
@@ -567,44 +576,29 @@ void RelayPortFactory::stopSseWorker(RelayHost& host) {
 
 // SSE worker body. Owns its own I/O; updates host state under mutex_ per event.
 // The worker thread itself never holds mutex_ while blocked in network I/O.
+//
+// Rationale — no separate one-shot /api/availableDevices pre-fetch:
+// SN-7804's SSE stream emits a `snapshot` event as its FIRST frame whenever the client
+// connects without a matching Last-Event-ID. That frame carries exactly the same payload
+// as /api/availableDevices, so a pre-fetch adds latency (an extra round-trip on the same
+// socket) without adding information. The SSE worker's `applyFrame` populates devices,
+// knownPortUrls, serverInstanceId, and lastSnapshotId from that snapshot event directly.
 void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
     auto [hostname, port] = splitBaseUrl(host.url, DEFAULT_HTTP_PORT);
 
-    // -- Step 1: one-shot initial snapshot so ports surface with minimum latency ----
-    // Mirrors what polling would have produced on the first poll.
-    {
-        httplib::Client snapClient(hostname, port);
-        snapClient.set_connection_timeout(HTTP_CONNECT_TIMEOUT_S);
-        snapClient.set_read_timeout(HTTP_READ_TIMEOUT_S);
-        auto res = snapClient.Get(PATH_AVAILABLE_DEVICES);
-        if (res && res->status == 200) {
-            try {
-                auto doc = json::parse(res->body);
-                SnapshotResult snap;
-                if (parseSnapshotJson(doc, snap)) {
-                    std::lock_guard<std::recursive_mutex> lock(mutex_);
-                    host.serverInstanceId = snap.serverInstanceId;
-                    host.lastSnapshotId = snap.snapshotId;
-                    host.devices = std::move(snap.devices);
-                    for (const auto& d : host.devices) host.knownPortUrls.insert(d.portUrl);
-                    host.lastEventTime = std::chrono::steady_clock::now();
-                    host.lastError.clear();
-                    log_debug(IS_LOG_FACILITY_NONE,
-                              "RelayPortFactory: relay '%s' initial snapshot — %zu devices",
-                              host.url.c_str(), host.devices.size());
-                }
-            } catch (const json::parse_error&) {
-                // Fall through — the first SSE frame should be a snapshot anyway.
-            }
-        }
-    }
-
-    // -- Step 2: persistent SSE loop --------------------------------------------
+    log_debug(IS_LOG_FACILITY_NONE, "RelayPortFactory: starting SSE loop for '%s'", host.url.c_str());
     int backoffMs = SSE_RECONNECT_INITIAL_MS;
     while (!host.stopRequested.load()) {
         httplib::Client sseClient(hostname, port);
         sseClient.set_connection_timeout(HTTP_CONNECT_TIMEOUT_S);
         sseClient.set_read_timeout(SSE_READ_TIMEOUT_S);
+
+        // Publish an abort hook so a concurrent setRelayHostEnabled(false) / removeRelayHost
+        // / ~RelayPortFactory() can unblock the pending recv() without waiting for server silence.
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex_);
+            host.sseAbortHook = [&sseClient]() { sseClient.stop(); };
+        }
 
         httplib::Headers headers;
         {
@@ -688,7 +682,11 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
 
         auto on_chunk = [&](const char* data, size_t size) -> bool {
             if (host.stopRequested.load()) return false;
-            host.streamConnected.store(true);
+            bool firstChunk = !host.streamConnected.exchange(true);
+            if (firstChunk) {
+                log_debug(IS_LOG_FACILITY_NONE, "RelayPortFactory: SSE stream connected to '%s' (%zu bytes first chunk)",
+                          host.url.c_str(), size);
+            }
 
             buffer.append(data, size);
             for (;;) {
@@ -727,6 +725,13 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
 
         auto res = sseClient.Get(PATH_EVENTS_DEVICES, headers, on_chunk);
         host.streamConnected.store(false);
+
+        // Clear the abort hook now that the client is about to be destroyed —
+        // prevents use-after-free if the shutdown path races here.
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex_);
+            host.sseAbortHook = nullptr;
+        }
 
         if (host.stopRequested.load()) break;
 

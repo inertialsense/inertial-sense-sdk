@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -179,6 +180,7 @@ private:
         uint64_t     lastSnapshotId = 0;                            ///< numeric half of <instance_id>:<snapshot_id> for Last-Event-ID
         std::unique_ptr<std::thread> streamThread;                  ///< worker running the /api/events/devices reader
         std::atomic<bool> stopRequested{false};                     ///< asks the SSE worker to exit cleanly
+        std::function<void()> sseAbortHook;                         ///< set by worker; aborts the current httplib request (unblocks recv)
         std::atomic<bool> streamConnected{false};                   ///< true while the SSE stream is open
         uint32_t     sseConsecutiveFailures = 0;                    ///< drives fallback to Polling after DEFAULT_MAX_SSE_RETRIES
 
