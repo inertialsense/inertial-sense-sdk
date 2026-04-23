@@ -414,6 +414,11 @@ class logPlot:
             fig.savefig(os.path.join(directory + "/" + name + '.' + self.format), bbox_inches='tight')
             fig.set_size_inches(restoreSize)
 
+    def getDidName(self, did):
+        if not hasattr(self, '_did_name_map'):
+            self._did_name_map = {v: k for k, v in globals().items() if k.startswith('DID_') and isinstance(v, int)}
+        return self._did_name_map.get(did, 'DID_UNKNOWN(%d)' % did)
+
     def getData(self, dev, DID, field, removeLeadingZeros=0):
         try:
             if self.d == 1:
@@ -2866,7 +2871,7 @@ class logPlot:
             imu1 = self.getData(device, did, 'vel').copy()
 
         if np.shape(imu1)[0] != 0 and not useImus:  # DID_PIMU
-            name = "PIMU"
+            name = self.getDidName(did)
             # time = self.getData(device, DID_IMU_RAW, 'time')     # to plot raw gyro data
             time = self.getData(device, did, 'time')
             dt = self.getData(device, did, 'dt') 
@@ -2876,7 +2881,7 @@ class logPlot:
 
         else:
             time = self.getData(device, DID_REFERENCE_PIMU, 'time')
-            name = "Reference PIMU"
+            name = self.getDidName(DID_REFERENCE_PIMU)
 
             if time.size > 5: # DID_REFERENCE_PIMU, ignore data if there are just a few RefIMU data points (logging bug?)
                 dt = self.getData(device, DID_REFERENCE_PIMU, 'dt')
@@ -2894,7 +2899,7 @@ class logPlot:
 
             else:
                 time = self.getData(device, did, 'time')
-                name = "IMU"
+                name = self.getDidName(did)
 
                 if len(time) != 0 and not useImus:
                     I = self.getData(device, did, 'I')
@@ -2920,7 +2925,7 @@ class logPlot:
 
                 else:   
                     time = self.getData(device, did, 'time')
-                    name = "IMUS"
+                    name = self.getDidName(did)
 
                     if len(time) != 0: # DID_IMUS_RAW 
                         I = self.getData(device, did, 'I')
@@ -3360,7 +3365,7 @@ class logPlot:
         if len(time) == 0:
             return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
-        fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        fig.suptitle(name + ' PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
             (name, time, dt, sensors) = self.loadAccels(d, did=did)
@@ -3409,7 +3414,7 @@ class logPlot:
         if len(time) == 0:
             return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
-        fig.suptitle(name + ' Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        fig.suptitle(name + ' PSD - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
             (name, time, dt, sensors) = self.loadGyros(d, did=did)
