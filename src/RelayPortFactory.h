@@ -9,11 +9,14 @@
 #ifndef IS_SDK__RELAY_PORT_FACTORY_H
 #define IS_SDK__RELAY_PORT_FACTORY_H
 
+#include <atomic>
 #include <chrono>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "ISConstants.h"
@@ -35,14 +38,22 @@
  * they want to use as port sources. Only enabled hosts are polled and contribute ports
  * to PortManager.
  *
- * Phase 1: HTTP polling of /api/status at a configurable interval (default 1 Hz).
- * Phase 3 (SN-7805) will upgrade the internal transport to SSE-driven push without
- * changing the public API.
+ * Phase 1 (SN-7719): HTTP polling of /api/status at a configurable interval (default 1 Hz).
+ * Phase 3 (SN-7805): HTTP polling switched to SN-7804's /api/availableDevices slim snapshot,
+ *                    SSE event stream for real-time push (<200 ms add/remove latency),
+ *                    per-host polling fallback when SSE isn't available, and mDNS http_port
+ *                    TXT key honoring so the factory doesn't assume :8080.
+ *
+ * Relay-host URLs are canonicalized on entry to "http://<host>:<port>" (scheme + authority,
+ * no path). Users may pass any of the following to addRelayHost(): a bare hostname or IP,
+ * a host:port pair, a full URL with or without a path — all are normalized to the same
+ * storage key. The HTTP paths /api/availableDevices and /api/events/devices are appended
+ * by the factory at request time.
  *
  * @code{.cpp}
  * portManager.addPortFactory(&RelayPortFactory::getInstance());
- * RelayPortFactory::getInstance().addRelayHost("http://192.168.1.50:8080/api/status");
- * RelayPortFactory::getInstance().setRelayHostEnabled("http://192.168.1.50:8080/api/status", true);
+ * RelayPortFactory::getInstance().addRelayHost("http://192.168.1.50:8080");
+ * RelayPortFactory::getInstance().setRelayHostEnabled("http://192.168.1.50:8080", true);
  * @endcode
  */
 class RelayPortFactory : public PortFactory {
@@ -63,15 +74,26 @@ public:
         dev_info_t   hint = {};     ///< bridgeboard-authoritative device info for seedDeviceHint()
     };
 
+    /// Active transport in use for a given relay host. Exposed via RelayHostStatus
+    /// so UIs can render a badge (and so tests can assert fallback behavior).
+    enum class RelayFeedType : uint8_t {
+        Auto    = 0, ///< initial / negotiating — not yet connected via any transport
+        SSE     = 1, ///< push-based /api/events/devices stream is connected
+        Polling = 2, ///< one-shot polling of /api/availableDevices (SSE unavailable or failed)
+    };
+
     // -- Per-host status snapshot (returned by getRelayHosts()) --
     struct RelayHostStatus {
-        std::string  url;                                           ///< http://host:port/api/status
+        std::string  url;                                           ///< http://host:port (canonical base URL; no path)
         bool         enabled = false;                               ///< whether this host contributes ports
         bool         viaMdns = false;                               ///< true if discovered via mDNS, false if manually added
-        std::chrono::steady_clock::time_point lastPollTime = {};    ///< time of last successful poll
+        std::chrono::steady_clock::time_point lastPollTime = {};    ///< time of last successful poll (Polling mode)
+        std::chrono::steady_clock::time_point lastEventTime = {};   ///< time of last SSE event received (SSE mode)
         std::string  lastError;                                     ///< empty on success; descriptive string on failure
-        uint32_t     consecutiveFailures = 0;                       ///< reset to 0 on each successful poll
+        uint32_t     consecutiveFailures = 0;                       ///< reset to 0 on each successful poll/event
         size_t       deviceCount = 0;                               ///< number of devices reported by this host
+        RelayFeedType feedType = RelayFeedType::Auto;               ///< active transport in use
+        bool         streamConnected = false;                       ///< true iff an SSE stream is currently open
     };
 
     // -- Service-style management API --
@@ -126,29 +148,55 @@ public:
     /// Default number of consecutive failures before logging a warning (ports are retained).
     static constexpr uint32_t DEFAULT_FAILURE_GRACE_COUNT = 3;
 
+    /// Default SSE retry budget — after this many consecutive connect/read failures,
+    /// the host falls back to polling transport for the remainder of its enabled lifetime.
+    static constexpr uint32_t DEFAULT_MAX_SSE_RETRIES = 3;
+
     /// mDNS query interval (ms) — matches ISmDnsPortFactory's rate
     static constexpr int64_t MDNS_QUERY_INTERVAL_MS = 200;
 
 private:
     RelayPortFactory() = default;
-    ~RelayPortFactory() = default;
+    ~RelayPortFactory();
 
     // -- Internal per-host state --
     struct RelayHost {
-        std::string  url;                                           ///< http://host:port/api/status
+        std::string  url;                                           ///< canonical "http://host:port" (no path)
         bool         enabled = false;
         bool         viaMdns = false;
-        std::vector<DeviceRecord> devices;                          ///< latest poll result (metadata + hints)
+        std::vector<DeviceRecord> devices;                          ///< latest poll/snapshot result (metadata + hints)
         std::set<std::string> knownPortUrls;                        ///< high-water mark of tcp:// URLs ever seen from this host.
                                                                     ///< Only cleared on host disable/remove. Ports persist across
                                                                     ///< device reboots because bridgeboard's slot-based TCP sockets
                                                                     ///< survive device resets (WaitRecover keeps the listener open).
-        std::chrono::steady_clock::time_point lastPollTime = {};
+        std::chrono::steady_clock::time_point lastPollTime = {};    ///< last successful poll (Polling mode)
+        std::chrono::steady_clock::time_point lastEventTime = {};   ///< last SSE event received (SSE mode)
         std::string  lastError;
-        uint32_t     consecutiveFailures = 0;
+        uint32_t     consecutiveFailures = 0;                       ///< polling failure counter (resets on success)
+
+        // -- SSE worker state (populated while feedType == SSE) --
+        std::string  serverInstanceId;                              ///< remote bridgeboard's UUID (restart detection)
+        uint64_t     lastSnapshotId = 0;                            ///< numeric half of <instance_id>:<snapshot_id> for Last-Event-ID
+        std::unique_ptr<std::thread> streamThread;                  ///< worker running the /api/events/devices reader
+        std::atomic<bool> stopRequested{false};                     ///< asks the SSE worker to exit cleanly
+        std::atomic<bool> streamConnected{false};                   ///< true while the SSE stream is open
+        uint32_t     sseConsecutiveFailures = 0;                    ///< drives fallback to Polling after DEFAULT_MAX_SSE_RETRIES
+
+        // -- Transport mode --
+        RelayFeedType activeTransport = RelayFeedType::Auto;
+
+        RelayHost() = default;
+        // Non-copyable/movable because of the thread member.
+        RelayHost(const RelayHost&) = delete;
+        RelayHost& operator=(const RelayHost&) = delete;
+        RelayHost(RelayHost&&) = delete;
+        RelayHost& operator=(RelayHost&&) = delete;
     };
 
-    std::map<std::string, RelayHost> relayHosts_;                   ///< keyed by URL
+    /// Hosts are keyed by canonical URL. std::map gives stable iterator/reference semantics,
+    /// which matters because the SSE worker holds a reference to its RelayHost for the
+    /// lifetime of the stream. unique_ptr keeps RelayHost move-stable on container growth.
+    std::map<std::string, std::unique_ptr<RelayHost>> relayHosts_;
     mutable std::recursive_mutex mutex_;
     std::chrono::milliseconds pollInterval_ = std::chrono::seconds(1);
     std::chrono::steady_clock::time_point lastMdnsQueryTime_ = {}; ///< rate-limit mDNS queries
@@ -156,8 +204,17 @@ private:
     /// Rate-limited mDNS host discovery (reads from shared mdns:: cache).
     void discoverRelayHostsViaMdns();
 
-    /// Poll a single enabled relay host's HTTP endpoint, update its cached state.
+    /// Poll a single relay host's /api/availableDevices endpoint (fallback transport).
     void pollRelayHost(RelayHost& host);
+
+    /// Start the SSE worker thread for a host (call with mutex_ held; releases during I/O).
+    void startSseWorker(RelayHost& host);
+
+    /// Ask the SSE worker to stop and join it. Safe to call with mutex_ held.
+    void stopSseWorker(RelayHost& host);
+
+    /// SSE worker body — runs on host.streamThread. Owns its own I/O and respects stopRequested.
+    void sseWorkerLoop(RelayHost& host);
 };
 
 #endif // IS_SDK__RELAY_PORT_FACTORY_H
