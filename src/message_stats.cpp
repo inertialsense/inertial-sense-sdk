@@ -185,6 +185,30 @@ void MessageStats::append(const string& message, MessageStats::mul_stats_t &msgS
             updateTimeMs(msgStats.ack, timeMs, bytes);
         }
         break;
+    
+    case _PTYPE_SEPTENTRIO_SBF:
+    {
+        if (msgStats.sept_sbf.find(id) == msgStats.sept_sbf.end())
+        {   // Create new
+            msgStats.sept_sbf[id] = createNewMsgStats(timeMs);
+        }// Update count and timestamps
+        updateTimeMs(msgStats.sept_sbf[id], timeMs, bytes);
+    
+        break;
+    }
+
+    case _PTYPE_SEPTENTRIO_REPLY:
+    {
+        if (msgStats.sept_reply.find(id) == msgStats.sept_reply.end())
+        {   // Create new
+            msgStats.sept_reply[id] = createNewMsgStats(timeMs);
+        }
+        // Update count and timestamps
+        updateTimeMs(msgStats.sept_reply[id], timeMs, bytes);
+    
+        break;
+    }
+    
 
     default:
     case _PTYPE_PARSE_ERROR:

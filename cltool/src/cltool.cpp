@@ -666,11 +666,28 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.useMdns = true;
         }
-        else if (startsWith(a, "-use-relay"))
+        else if (strcmp(a, "-use-relay-list") == 0)
         {
+            // Print discovered relay hosts and exit (after the 3 s warmup).
             g_commandLineOptions.useRelay = true;
-            if (a[10] == '=')
-                g_commandLineOptions.relayUrl = &a[11];
+            g_commandLineOptions.useRelayList = true;
+        }
+        else if (startsWith(a, "-use-relay-only="))
+        {
+            // Filter mDNS-discovered hosts to a user-specified whitelist.
+            g_commandLineOptions.useRelay = true;
+            splitString(string(&a[strlen("-use-relay-only=")]), ',', g_commandLineOptions.relayOnlyHosts);
+        }
+        else if (startsWith(a, "-use-relay="))
+        {
+            // Manual relay URL(s), comma-separated. Each is added and enabled.
+            g_commandLineOptions.useRelay = true;
+            splitString(string(&a[strlen("-use-relay=")]), ',', g_commandLineOptions.relayUrls);
+        }
+        else if (strcmp(a, "-use-relay") == 0)
+        {
+            // Bare -use-relay: enable factory, auto-enable all mDNS-discovered hosts.
+            g_commandLineOptions.useRelay = true;
         }
         else if (startsWith(a, "-mdns-resolve="))
         {
@@ -1222,6 +1239,10 @@ void cltool_outputUsage()
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
     cout << "    -use-mdns" << boldOff << "       Enable mDNS network discovery of remote devices (e.g., socat TCP-forwarded serial ports)." << endlbOn;
+    cout << "    -use-relay" << boldOff << "      Enable HTTP relay discovery (bridgeboard / SSE); auto-enable all mDNS-discovered relay hosts." << endlbOn;
+    cout << "    -use-relay=" << boldOff << "URL[,URL...]  Register and enable one or more manual relay host URLs (any of \"http://host:port\", \"host:port\", or bare hostname/IP)." << endlbOn;
+    cout << "    -use-relay-only=" << boldOff << "HOST[,HOST...]  When auto-enabling mDNS-discovered relays, enable only hosts whose hostname matches the whitelist." << endlbOn;
+    cout << "    -use-relay-list" << boldOff << " Enable relay discovery, print the resulting host list, and exit." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
