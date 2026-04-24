@@ -224,6 +224,7 @@ namespace utils {
     };
 
     std::string getHardwareAsString(const dev_info_t& devInfo, bool showRev = true);
+    std::string getHardwareAsString(is_hardware_t hdwId);
     std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
     std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1, const std::string& sep = " ");
 

@@ -239,6 +239,21 @@ std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) 
     return out;
 }
 
+// Renders just the type + major + minor captured in an encoded is_hardware_t.
+// Does not include hardwareVer[2]/hardwareVer[3] — those are not part of hdwId.
+std::string utils::getHardwareAsString(is_hardware_t hdwId) {
+    const char *typeName = "\?\?\?";
+    switch (DECODE_HDW_TYPE(hdwId)) {
+        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
+        case IS_HARDWARE_TYPE_IMX:  typeName = "IMX";  break;
+        case IS_HARDWARE_TYPE_GPX:  typeName = "GPX";  break;
+        default:                    typeName = "\?\?\?"; break;
+    }
+    return utils::string_format("%s-%u.%u", typeName,
+                                DECODE_HDW_MAJOR(hdwId),
+                                DECODE_HDW_MINOR(hdwId));
+}
+
 bool utils::parseHardwareFromString(const std::string& s, dev_info_t& devInfo) {
     auto dash = s.find('-');
     if (dash == std::string::npos || dash == 0) return false;
