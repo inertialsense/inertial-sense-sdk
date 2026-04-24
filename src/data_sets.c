@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <math.h>
 
 const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT] = {"UNKNOWN", "uINS", "EVB", "IMX", "GPX"};
+const char* g_isGnssHardwareNames[IS_HDW_GNSS_TYPE_COUNT] = {"UBX", "CXD", "SEP", "STM"};
 
 // Reversed bytes in a float.
 // compiler will likely inline this as it's a tiny function

@@ -226,6 +226,17 @@ namespace utils {
     std::string getHardwareAsString(const dev_info_t& devInfo, bool showRev = true);
     std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
     std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1, const std::string& sep = " ");
+
+    /// Parse a hardware identity string (inverse of getHardwareAsString). Accepts "<TYPE>-<major>.<minor>[.<p2>[.<p3>]]"
+    /// e.g. "IMX-5.0", "GPX-1.0.2", "uINS-3.2". Populates devInfo.hardwareType and hardwareVer[0..3].
+    /// Returns false on unrecognized type prefix or malformed version — caller should leave devInfo unchanged.
+    bool parseHardwareFromString(const std::string& s, dev_info_t& devInfo);
+
+    /// Parse a firmware version string (inverse of getFirmwareAsString). Accepts optional "fw" prefix followed by
+    /// "<M>.<m>.<p>" and an optional build-type suffix "-alpha|-beta|-rc|-devel|-snap" with optional ".<build>".
+    /// Populates devInfo.firmwareVer[0..3] and buildType ('a'|'b'|'c'|'d'|'s'|'r' for release/no suffix).
+    /// Returns false on malformed input.
+    bool parseFirmwareFromString(const std::string& s, dev_info_t& devInfo);
     // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
 
     std::string getCurrentTimestamp();

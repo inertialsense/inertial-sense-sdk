@@ -13,6 +13,7 @@
 #include "core/msg_logger.h"
 #include "protocol/mdns.hpp"
 #include "ISComm.h"
+#include "util/util.h"
 
 #include <algorithm>
 #include <chrono>
@@ -37,29 +38,6 @@ is_hardware_t stateToHardwareId(const std::string& state) {
     if (state == "gpx")  return IS_HARDWARE_GPX_1_0;
     if (state == "isbl") return ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 0, 0); // bootloader — type ambiguous
     return IS_HARDWARE_NONE;
-}
-
-/// Parse a firmware version string like "fw3.0.0-snap" or "2.4.0" into a 4-byte array [major, minor, patch, build].
-void parseFirmwareVer(const std::string& verStr, uint8_t out[4]) {
-    out[0] = out[1] = out[2] = out[3] = 0;
-    // Strip leading "fw" prefix if present
-    std::string s = verStr;
-    if (s.size() > 2 && (s[0] == 'f' || s[0] == 'F') && (s[1] == 'w' || s[1] == 'W'))
-        s = s.substr(2);
-    // Parse "major.minor.patch" — ignore anything after a dash or non-numeric
-    int idx = 0;
-    size_t pos = 0;
-    while (idx < 4 && pos < s.size()) {
-        size_t dot = s.find_first_of(".-", pos);
-        if (dot == std::string::npos) dot = s.size();
-        std::string part = s.substr(pos, dot - pos);
-        if (!part.empty()) {
-            try { out[idx] = static_cast<uint8_t>(std::stoi(part)); } catch (...) {}
-        }
-        idx++;
-        pos = dot + 1;
-        if (dot < s.size() && s[dot] == '-') break; // stop at -snap, -rc1, etc.
-    }
 }
 
 /// Canonicalize any relay input (bare hostname, IP, full URL, URL-with-path) into
@@ -155,10 +133,17 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     if (uri.empty()) return false;
 
     dev_info_t hint = {};
-    is_hardware_t hdwId = stateToHardwareId(state);
-    hint.hardwareType = DECODE_HDW_TYPE(hdwId);
-    hint.hardwareVer[0] = DECODE_HDW_MAJOR(hdwId);
-    hint.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
+
+    // Prefer the consolidated "hdw" string (e.g. "IMX-5.0", "GPX-1.0.2") when present — it
+    // preserves the cached pre-ISBL identity, so we can still tell IMX-5/IMX-6/GPX apart
+    // when state == "isbl". Older bridgeboards don't emit it, so fall back to state mapping.
+    std::string hdwStr = dev.value("hdw", "");
+    if (hdwStr.empty() || !utils::parseHardwareFromString(hdwStr, hint)) {
+        is_hardware_t hdwId = stateToHardwareId(state);
+        hint.hardwareType = DECODE_HDW_TYPE(hdwId);
+        hint.hardwareVer[0] = DECODE_HDW_MAJOR(hdwId);
+        hint.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
+    }
     hint.hdwRunState = (state == "isbl") ? HDW_STATE_BOOTLOADER : HDW_STATE_APP;
     hint.serialNumber = dev.value("serial_number", 0u);
 
@@ -171,7 +156,7 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     hint.protocolVer[3] = PROTOCOL_VERSION_CHAR3;
 
     std::string fwVer = dev.value("firmware_ver", "");
-    if (!fwVer.empty()) parseFirmwareVer(fwVer, hint.firmwareVer);
+    if (!fwVer.empty()) utils::parseFirmwareFromString(fwVer, hint);
 
     std::string fwCommit = dev.value("firmware_commit", "");
     if (!fwCommit.empty()) parseRepoRevision(fwCommit, hint);
@@ -182,11 +167,6 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     // Manufacturer isn't in the SN-7804 schema — bridgeboard only relays IS devices,
     // so we hard-code a sane default. This matches what real devices report.
     std::strncpy(hint.manufacturer, "Inertial Sense", sizeof(hint.manufacturer) - 1);
-
-    // Build type — SN-7804 doesn't ship this, but 'r' (production release) is the
-    // default the SDK's display/upload paths tolerate. If it matters later, bridgeboard
-    // can expose it explicitly.
-    hint.buildType = 'r';
 
     out.portUrl = std::move(uri);
     out.hint = hint;

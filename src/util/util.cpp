@@ -216,17 +216,16 @@ std::string utils::did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, in
 }
 
 std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
-    // hardware type & version
-    const char *typeName = "\?\?\?";
-    switch (devInfo.hardwareType) {
-        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
-        case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
-        case IS_HDW_GNSS_SONY: typeName = "CXD"; break;
-        case IS_HDW_GNSS_UBLOX: typeName = "UBX"; break;
-        case IS_HDW_GNSS_SEPTENTRIO: typeName = "SEP"; break;
-        case IS_HDW_GNSS_STM_TESSIO: typeName = "STM"; break;
-        default: typeName = "\?\?\?"; break;
+    // hardware type & version — resolved via the canonical tables in data_sets.c.
+    const char* typeName = "\?\?\?";
+    const uint8_t t = devInfo.hardwareType;
+    if (t > 0 && t < IS_HARDWARE_TYPE_COUNT) {
+        typeName = g_isHardwareTypeNames[t];
+    } else if (t > IS_HDW_TYPE_PERIPHERAL) {
+        const int peripheralIdx = static_cast<int>(t) - IS_HDW_TYPE_PERIPHERAL - 1;
+        if (peripheralIdx >= 0 && peripheralIdx < IS_HDW_GNSS_TYPE_COUNT) {
+            typeName = g_isGnssHardwareNames[peripheralIdx];
+        }
     }
     std::string out = utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
     if (!showRev)
@@ -238,6 +237,95 @@ std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) 
             out += utils::string_format(".%u", devInfo.hardwareVer[3]);
     }
     return out;
+}
+
+bool utils::parseHardwareFromString(const std::string& s, dev_info_t& devInfo) {
+    auto dash = s.find('-');
+    if (dash == std::string::npos || dash == 0) return false;
+
+    const std::string typeName = s.substr(0, dash);
+    uint8_t type = 0;
+    bool matched = false;
+    // Skip index 0 ("UNKNOWN") — it's a placeholder, not a real hardware type.
+    for (int i = 1; i < IS_HARDWARE_TYPE_COUNT; ++i) {
+        if (typeName == g_isHardwareTypeNames[i]) {
+            type = static_cast<uint8_t>(i);
+            matched = true;
+            break;
+        }
+    }
+    if (!matched) {
+        for (int i = 0; i < IS_HDW_GNSS_TYPE_COUNT; ++i) {
+            if (typeName == g_isGnssHardwareNames[i]) {
+                type = static_cast<uint8_t>(IS_HDW_TYPE_PERIPHERAL + 1 + i);
+                matched = true;
+                break;
+            }
+        }
+    }
+    if (!matched) return false;
+
+    uint8_t ver[4] = {0, 0, 0, 0};
+    size_t pos = dash + 1;
+    for (int idx = 0; idx < 4 && pos < s.size(); ++idx) {
+        size_t dot = s.find('.', pos);
+        if (dot == std::string::npos) dot = s.size();
+        const std::string part = s.substr(pos, dot - pos);
+        if (!part.empty()) {
+            try { ver[idx] = static_cast<uint8_t>(std::stoi(part)); } catch (...) { return false; }
+        }
+        pos = dot + 1;
+    }
+
+    devInfo.hardwareType = type;
+    for (int i = 0; i < 4; ++i) devInfo.hardwareVer[i] = ver[i];
+    return true;
+}
+
+bool utils::parseFirmwareFromString(const std::string& s, dev_info_t& devInfo) {
+    // Strip optional "fw" prefix.
+    std::string w = s;
+    if (w.size() >= 2 && (w[0] == 'f' || w[0] == 'F') && (w[1] == 'w' || w[1] == 'W'))
+        w = w.substr(2);
+    if (w.empty()) return false;
+
+    // Split at the first '-' (build-type suffix); everything before is "<M>.<m>.<p>".
+    const size_t dash = w.find('-');
+    const std::string head = (dash == std::string::npos) ? w : w.substr(0, dash);
+    const std::string tail = (dash == std::string::npos) ? ""  : w.substr(dash + 1);
+
+    uint8_t fv[4] = {0, 0, 0, 0};
+    size_t pos = 0;
+    for (int idx = 0; idx < 3 && pos < head.size(); ++idx) {
+        const size_t dot = head.find('.', pos);
+        const size_t end = (dot == std::string::npos) ? head.size() : dot;
+        const std::string part = head.substr(pos, end - pos);
+        if (!part.empty()) {
+            try { fv[idx] = static_cast<uint8_t>(std::stoi(part)); } catch (...) { return false; }
+        }
+        if (dot == std::string::npos) break;
+        pos = dot + 1;
+    }
+
+    // Decode build-type suffix and optional ".<build>" trailing number.
+    char buildType = 'r';
+    if (!tail.empty()) {
+        const size_t trailDot = tail.find('.');
+        const std::string label = (trailDot == std::string::npos) ? tail : tail.substr(0, trailDot);
+        if      (label == "alpha") buildType = 'a';
+        else if (label == "beta")  buildType = 'b';
+        else if (label == "rc")    buildType = 'c';
+        else if (label == "devel") buildType = 'd';
+        else if (label == "snap")  buildType = 's';
+        else buildType = 'r'; // unknown label — treat as release
+        if (trailDot != std::string::npos) {
+            try { fv[3] = static_cast<uint8_t>(std::stoi(tail.substr(trailDot + 1))); } catch (...) {}
+        }
+    }
+
+    for (int i = 0; i < 4; ++i) devInfo.firmwareVer[i] = fv[i];
+    devInfo.buildType = buildType;
+    return true;
 }
 
 std::string utils::getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix) {

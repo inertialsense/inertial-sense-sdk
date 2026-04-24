@@ -1086,6 +1086,20 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;  // unknown version, use alternate MD5 for safety
         }
 
+        // If the target is in bootloader mode, the app firmware version is unobservable
+        // (firmwareVer reflects the bootloader identifier, e.g. ISbl "v6j" → [6, 'j']).
+        // Any version comparison is wasted energy and tends to look "newer" because
+        // 'j' (106) dwarfs typical app majors. Promote the policy to FORCE so the
+        // upload proceeds and downstream protocol checks are bypassed too. SKIP is
+        // honored — if the caller explicitly asked to skip, we still skip.
+        if (target_devInfo && target_devInfo->hdwRunState == HDW_STATE_BOOTLOADER &&
+            effectivePolicy != UPDATE_POLICY_SKIP && effectivePolicy != UPDATE_POLICY_FORCE) {
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO,
+                "Target is in bootloader mode; promoting policy to FORCE (app version is unobservable).");
+            effectivePolicy = UPDATE_POLICY_FORCE;
+            forceUpdate = true;
+        }
+
         // IF_NEWER: compare image version against target's current firmware version
         if (effectivePolicy == UPDATE_POLICY_IF_NEWER && target_devInfo) {
             dev_info_t imageDevInfo = {};
