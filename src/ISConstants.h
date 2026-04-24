@@ -206,8 +206,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if defined(__ZEPHYR__)
     #include <zephyr/irq.h>
-    #define BEGIN_CRITICAL_SECTION  irq_lock();
-    #define END_CRITICAL_SECTION    irq_unlock(0);
+    #define BEGIN_CRITICAL_SECTION  { uint32_t _irq_state = irq_lock();
+    #define END_CRITICAL_SECTION    irq_unlock(_irq_state) }
 #elif !PLATFORM_IS_EMBEDDED
     #define BEGIN_CRITICAL_SECTION
     #define END_CRITICAL_SECTION
