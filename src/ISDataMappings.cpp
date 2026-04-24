@@ -2065,7 +2065,7 @@ static void PopulateMapSensorTCalGroup(data_set_t data_set[DID_COUNT], uint32_t 
 
 static void PopulateMapSensorSCalInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<sensor_cal_t> mapper(data_set, did);
+    DataMapper<sensor_cal_info_t> mapper(data_set, did);
 
     mapper.AddMember2("size",       offsetof(sensor_cal_info_t, size), DATA_TYPE_UINT32, "", "Size of this struct", DATA_FLAGS_READ_ONLY);
     mapper.AddMember2("checksum",   offsetof(sensor_cal_info_t, checksum), DATA_TYPE_UINT32, "", "XOR of all bytes in this struct excluding size and checksum", DATA_FLAGS_READ_ONLY);
