@@ -312,10 +312,13 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                         devInfo.hardwareVer[1] = 0;
                         break;
                     case ISBootloader::IS_PROCESSOR_STM32U5:
-                        // GPX-1
-                        devInfo.hardwareType = IS_HARDWARE_TYPE_GPX; // OR IMX-6.0
-                        devInfo.hardwareVer[0] = 1;
-                        devInfo.hardwareVer[1] = 0;
+                        // STM32U5 hardware (IMX-6 and GPX-1) uses mcuBoot, not ISbl —
+                        // reaching this branch indicates an unexpected/legacy state.
+                        // Don't assign a misleading default like "GPX-1.0" or "IMX-1.0":
+                        // both type and version are ambiguous from the bootloader response
+                        // alone, and a wrong combination can mis-route firmware images.
+                        // Leave hardwareType/hardwareVer untouched so any previously-cached
+                        // identity (set by an APP-state validation upstream) survives.
                         break;
                     case ISBootloader::IS_PROCESSOR_NUM:
                         break;
@@ -359,8 +362,15 @@ bool ISDevice::validate(uint32_t timeout) {
     unsigned int startTime = current_timeMs();
     do {
         if ((current_timeMs() - startTime) > timeout) {
-            // after we've timed out - make a last ditch effort to check for a legacy (<6j) IS bootloader, otherwise fail
-            hdwId = oldHdwId, devInfo = oldDevInfo;
+            // After we've timed out — make a last-ditch effort to check for a legacy (<6j)
+            // IS bootloader, otherwise fail. Only restore the prior identity if it came
+            // from a successful APP-state validation. A previous mis-identification (e.g.
+            // a spurious "uINS-0.0" from an earlier failed validate) would otherwise persist
+            // across the next bootloader bounce and corrupt subsequent ISBL identification.
+            if (oldDevInfo.hdwRunState == HDW_STATE_APP) {
+                hdwId = oldHdwId;
+                devInfo = oldDevInfo;
+            }
             log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : Device failed to validate in time.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
             return (queryDeviceInfoISbl(250) && hasDeviceInfo());
         }
