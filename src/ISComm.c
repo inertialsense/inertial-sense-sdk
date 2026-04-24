@@ -741,7 +741,7 @@ static protocol_type_t processSeptentrioSBFPkt(void* v)
         // Parse header
         sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
         p->size = sepPkt->payloadSize;
-        if (p->size > MAX_MSG_LENGTH_ISB)
+        if (p->size > MAX_MSG_LENGTH_ISB || p->size < 4)
         {	// Invalid size
             return parseErrorResetState(c, EPARSE_INVALID_SIZE);
         }
