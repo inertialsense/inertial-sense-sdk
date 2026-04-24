@@ -125,6 +125,25 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size)
     return cksum.ck;
 }
 
+#define CRC_CCITT_POLY  0x1021  // x^16 + x^12 + x^5 + x^0
+uint16_t crc_ccitt(const uint8_t *data, size_t length) 
+{
+    uint16_t crc = 0;
+
+    for (size_t i = 0; i < length; ++i) {
+        crc ^= ((uint16_t)data[i]) << 8;
+
+        for (int bit = 0; bit < 8; ++bit) {
+            if (crc & 0x8000)
+                crc = (crc << 1) ^ CRC_CCITT_POLY;
+            else
+                crc <<= 1;
+        }
+    }
+
+    return crc;
+}
+
 /**
 * Retrieve the 32 bit unsigned integer value of the specified bits - note that no bounds checking is done on buffer
 * @param buffer the buffer containing the bits
@@ -553,7 +572,7 @@ static protocol_type_t processNmeaPkt(void* v)
 
     switch (p->state)
     {
-        case 0:    // Find start
+        case 0: // Find start
             if (*(c->rxBuf.scan) == PSC_NMEA_START_BYTE)
             {   // Found
                 p->state++;
@@ -575,7 +594,7 @@ static protocol_type_t processNmeaPkt(void* v)
             }
             return _PTYPE_NONE;
 
-        case 3:        // Wait for end of packet
+        case 2:        // Wait for LF end byte
             if (*(c->rxBuf.scan) != PSC_NMEA_END_BYTE)
             {   // Invalid end
                 return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);
@@ -614,6 +633,194 @@ static protocol_type_t processNmeaPkt(void* v)
     validPacketFound(c, numBytes, numBytes, getNmeaMsgId(c->rxBuf.head, numBytes));
 
     return _PTYPE_NMEA;
+}
+
+/**
+ * @brief Processes Septentrio Reply Pkt
+ * 
+ * @param v 
+ * @return protocol_type_t 
+ */
+static protocol_type_t processSeptentrioReplyPkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+    int numBytes;
+
+    switch (p->state)
+    {
+    case 0:	// Find start
+        if (*(c->rxBuf.scan) == SEPT_PROTO_START_BYTE)
+        {	// Found
+            p->state++;
+        }
+        return _PTYPE_NONE;
+
+    case 1: // Find byte before end
+        if (*(c->rxBuf.scan) == SEPT_REPLY_PRE_END_BYTE)
+        {   // Found
+            p->state++;
+        }
+        else
+        {
+            numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+            if (numBytes > MAX_MSG_LENGTH_NMEA)
+            {	// Exceeds max length
+                return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+            }
+        }
+        return _PTYPE_NONE;
+
+    case 2:		// Wait for LF end byte
+        if (*(c->rxBuf.scan) != SEPT_REPLY_END_BYTE)
+        {	// Invalid end
+            return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);
+        }
+        // Found packet end
+        break;
+    }
+
+    // Reset state
+    p->state = 0;
+
+    // Validate length
+    numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+    if (numBytes < 8)
+    {	// Packet length too short
+        return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
+    }
+
+    // Note: Septentrio reply messages ($Reply:...\r\n) do not contain NMEA-style checksums.
+    // Packet validity is established by the '$R' preamble and '\r\n' terminator alone.
+
+    /////////////////////////////////////////////////////////
+    // Valid packet found - Populate rxPkt
+    validPacketFound(c, numBytes, numBytes, getNmeaMsgId(c->rxBuf.head, numBytes));
+
+    return _PTYPE_SEPTENTRIO_REPLY;
+}
+
+/**
+ * @brief Processes Septentrio SBF packets
+ * 
+ * @param v 
+ * @return protocol_type_t 
+ */
+static protocol_type_t processSeptentrioSBFPkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+    int numBytes;
+
+    switch (p->state)
+    {
+    case 0: // for first preamble byte '$'
+        if (*(c->rxBuf.scan) == SEPT_PROTO_START_BYTE)
+        {
+            p->state++;
+        }
+        return _PTYPE_NONE;
+
+    case 1: // for second preamble byte '@' 
+        if (*(c->rxBuf.scan) == SEPT_SBF_PREAMBLE_BYTE2)
+        {	// Found complete preamble
+            p->state++;
+            return _PTYPE_NONE;
+        }
+        // Invalid preamble - Reset state
+        return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
+
+    case 2: // for length to come in
+        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+        if (numBytes < (int)(sizeof(sept_pkt_hdr_t)))
+        {
+            return _PTYPE_NONE;
+        }
+        p->state++;
+
+        // Parse header
+        sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
+        p->size = sepPkt->payloadSize;
+        if (p->size > MAX_MSG_LENGTH_ISB)
+        {	// Invalid size
+            return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+        }
+        return _PTYPE_NONE;
+
+    default:	// Wait for entire packet
+        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;  // +1: inclusive count; scan lands ON last byte
+        if (numBytes < (int)(p->size))
+        {
+            return _PTYPE_NONE;
+        }
+
+        // Found packet end
+        break;
+    }
+
+    // Reset state
+    p->state = 0;
+
+    // Validate checksum
+    sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
+    uint16_t calcCksum = crc_ccitt((uint8_t*)&sepPkt->msgID, (sepPkt->payloadSize-4));
+
+    if (sepPkt->crc != calcCksum)
+    {	// Invalid checksum
+        return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
+    }
+
+    /////////////////////////////////////////////////////////
+    // Valid packet found - Checksum passed - Populate rxPkt
+    // Use validPacketFound (not validPacketReset) to set rxPkt.data.ptr for the callback
+    validPacketFound(c, numBytes, numBytes, sepPkt->msgID & 0x1FFF);
+
+    return _PTYPE_SEPTENTRIO_SBF;
+}
+
+static protocol_type_t processPreAsciiPkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+
+    switch (p->state)
+    {
+        case 0:	// Find start
+            // 
+            if (*(c->rxBuf.scan) == PSC_PRE_ASCII_START_BYTE)
+            {	// Found pre ASCII start byte
+                p->state++;
+            }
+            return _PTYPE_NONE;
+
+        case 1:	// Find byte before end
+        {
+            // '$' is at scan-1; save it so we can restore head after setParserStart moves it
+            uint8_t* pktStart = c->rxBuf.scan - 1;
+
+            if (*(c->rxBuf.scan) == SEPT_SBF_PREAMBLE_BYTE2)
+            { 	// Found Septentrio SBF second preamble byte '$@'
+                setParserStart(c, processSeptentrioSBFPkt);
+            }
+            else if (*(c->rxBuf.scan) == SEPT_REPLY_BYTE2)
+            {   // Found Septentrio reply second byte '$R'
+                setParserStart(c, processSeptentrioReplyPkt);
+            }
+            else
+            {   // Assume NMEA packet
+                setParserStart(c, processNmeaPkt);
+            }
+
+            // setParserStart sets head = scan (second byte); restore to '$' so the full
+            // packet (including the preamble byte) is included in head..scan range
+            c->rxBuf.head = pktStart;
+
+            // make single recursive call to process based on new parser packet
+            return c->processPkt(c);
+        }
+    }
+
+    return parseErrorResetState(c, EPARSE_MISSING_EOS_MARKER);	// Invalid end of packet
 }
 
 enum
@@ -1141,12 +1348,12 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
         {   // Scan for packet start
             switch (*(buf->scan))
             {
-                case PSC_ISB_PREAMBLE_BYTE1:    if (c->cb.protocolMask & ENABLE_PROTOCOL_ISB)       { setParserStart(c, processIsbPkt); }      break;
-                case PSC_NMEA_START_BYTE:       if (c->cb.protocolMask & ENABLE_PROTOCOL_NMEA)      { setParserStart(c, processNmeaPkt); }     break;
-                case UBLOX_START_BYTE1:         if (c->cb.protocolMask & ENABLE_PROTOCOL_UBLOX)     { setParserStart(c, processUbloxPkt); }    break;
-                case RTCM3_START_BYTE:          if (c->cb.protocolMask & ENABLE_PROTOCOL_RTCM3)     { setParserStart(c, processRtcm3Pkt); }    break;
-                case SPARTN_START_BYTE:         if (c->cb.protocolMask & ENABLE_PROTOCOL_SPARTN)    { setParserStart(c, processSpartnByte); }  break;
-                case SONY_START_BYTE:           if (c->cb.protocolMask & ENABLE_PROTOCOL_SONY)      { setParserStart(c, processSonyByte); }    break;
+                case PSC_ISB_PREAMBLE_BYTE1:    if (c->cb.protocolMask & ENABLE_PROTOCOL_ISB)                           { setParserStart(c, processIsbPkt); }       break;
+                case PSC_NMEA_START_BYTE:       if (c->cb.protocolMask & (ENABLE_PROTOCOL_NMEA|ENABLE_PROTOCOL_SEPT))   { setParserStart(c, processPreAsciiPkt); }  break;
+                case UBLOX_START_BYTE1:         if (c->cb.protocolMask & ENABLE_PROTOCOL_UBLOX)                         { setParserStart(c, processUbloxPkt); }     break;
+                case RTCM3_START_BYTE:          if (c->cb.protocolMask & ENABLE_PROTOCOL_RTCM3)                         { setParserStart(c, processRtcm3Pkt); }     break;
+                case SPARTN_START_BYTE:         if (c->cb.protocolMask & ENABLE_PROTOCOL_SPARTN)                        { setParserStart(c, processSpartnByte);}    break;
+                case SONY_START_BYTE:           if (c->cb.protocolMask & ENABLE_PROTOCOL_SONY)                          { setParserStart(c, processSonyByte); }     break;
                 default:
                     if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                     {

@@ -40,6 +40,8 @@ public:
         std::map<int, stats_t> nmea;
         std::map<int, stats_t> ublox;
         std::map<int, stats_t> rtcm3;
+        std::map<int, stats_t> sept_sbf;
+        std::map<int, stats_t> sept_reply;
         stats_t ack;
         stats_t parseError;
     };

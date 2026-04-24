@@ -113,6 +113,8 @@ public:
             pfnIsCommGenMsgHandler  callbackUblox = NULL,
             pfnIsCommGenMsgHandler  callbackRtcm3 = NULL,
             pfnIsCommGenMsgHandler  callbackSpartn = NULL,
+            pfnIsCommGenMsgHandler  callbackSeptSbf = NULL,
+            pfnIsCommGenMsgHandler  callbackSeptReply = NULL,
             pfnOnNewDeviceHandler   callbackNewDevice = NULL);
 
     /**
@@ -564,6 +566,17 @@ public:
      */
     void SetNetworkPortDiscovery(bool enable = false);
 
+    /**
+     * Enable or disable HTTP relay-based port discovery (RelayPortFactory) alongside the
+     * existing serial/TCP/mDNS factories. Call in tandem with RelayPortFactory::addRelayHost()
+     * + setRelayHostEnabled() to select which relay hosts contribute ports.
+     *
+     * @param enable Set to true to register RelayPortFactory with PortManager, false to
+     *               remove it. Toggling this will also clear PortManager's existing ports,
+     *               matching the SetNetworkPortDiscovery() contract.
+     */
+    void SetRelayPortDiscovery(bool enable = false);
+
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
 
@@ -604,6 +617,8 @@ private:
     pfnIsCommGenMsgHandler  m_handlerUblox = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerRtcm3 = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerSpartn = NULLPTR;
+    pfnIsCommGenMsgHandler  m_handlerSeptSbf = NULLPTR;
+    pfnIsCommGenMsgHandler  m_handlerSeptReply = NULLPTR;
     pfnComManagerRmcHandler m_handlerRmc = NULLPTR;
     pfnComManagerParseErrorHandler m_handlerError = NULLPTR;
 
@@ -620,6 +635,8 @@ private:
     int m_baudRate = IS_BAUDRATE_DEFAULT;
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
+    bool m_networkPortDiscoveryEnabled = false;  ///< last value passed to SetNetworkPortDiscovery
+    bool m_relayPortDiscoveryEnabled   = false;  ///< last value passed to SetRelayPortDiscovery
 
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 
