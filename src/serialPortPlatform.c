@@ -672,6 +672,16 @@ static int serialPortClosePlatform(port_handle_t port)
         }
     }
 
+    // Clear HUPCL so the kernel doesn't drop DTR on close. USB CDC-ACM
+    // devices (IMX-5, GPX-1) treat a DTR transition as a reset, which
+    // used to force a 500 ms settling wait before the port could be
+    // reopened. Preserving DTR across close removes that need.
+    struct termios tty;
+    if (tcgetattr(handle->fd, &tty) == 0) {
+        tty.c_cflag &= ~HUPCL;
+        tcsetattr(handle->fd, TCSANOW, &tty);
+    }
+
     close(handle->fd);
     handle->fd = -1;
 
@@ -679,8 +689,6 @@ static int serialPortClosePlatform(port_handle_t port)
 
     free(serialPort->handle);
     serialPort->handle = 0;
-
-    serialPortSleepPlatform(500);   // this is strange, but occasionally some processes can spam Open/Close requests - so just a little something to slow things down; generally close() shouldn't be called often.
 
     return 1;
 }
