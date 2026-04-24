@@ -1246,6 +1246,19 @@ static int cltool_dataStreaming()
                 SLEEP_MS(1);
             }
  
+            // Re-check device-level fwUpdate errors before reporting status. The earlier
+            // exitCode at line ~1219 captures the state when the loop saw isFirmwareUpdateFinished(),
+            // but additional CMD_ERROR statuses can land between then and now. Without this check
+            // we'd print "Firmware update successful!" and then "Exit Status: -5" — contradictory.
+            if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                for (auto device : inertialSenseInterface.getDevices()) {
+                    if (device->fwUpdateState.hasErrors) {
+                        exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
+                        break;
+                    }
+                }
+            }
+
             // Only report firmware update status if a firmware update was actually initiated.
             if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST && !g_commandLineOptions.fwUpdateCmds.empty())
             {
@@ -1273,16 +1286,6 @@ static int cltool_dataStreaming()
         // Exit Failed to setup communications
         cout << "Failed to setup communications!" << endl;
         exitCode = EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
-    }
-
-    //If Firmware Update is specified return an error code based on the Status of the Firmware Update
-    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
-        for (auto device : inertialSenseInterface.getDevices()) {
-            if (device->fwUpdateState.hasErrors) {
-                exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
-                break;
-            }
-        }
     }
 
     return exitCode;
