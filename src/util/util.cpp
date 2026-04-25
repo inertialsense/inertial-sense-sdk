@@ -244,10 +244,14 @@ std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) 
 std::string utils::getHardwareAsString(is_hardware_t hdwId) {
     const char *typeName = "\?\?\?";
     switch (DECODE_HDW_TYPE(hdwId)) {
-        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX:  typeName = "IMX";  break;
-        case IS_HARDWARE_TYPE_GPX:  typeName = "GPX";  break;
-        default:                    typeName = "\?\?\?"; break;
+        case IS_HARDWARE_TYPE_UINS:    typeName = "uINS"; break;
+        case IS_HARDWARE_TYPE_IMX:     typeName = "IMX";  break;
+        case IS_HARDWARE_TYPE_GPX:     typeName = "GPX";  break;
+        case IS_HDW_GNSS_SONY:         typeName = "CXD";  break;
+        case IS_HDW_GNSS_UBLOX:        typeName = "UBX";  break;
+        case IS_HDW_GNSS_SEPTENTRIO:   typeName = "SEP";  break;
+        case IS_HDW_GNSS_STM_TESSIO:   typeName = "STM";  break;
+        default:                       typeName = "\?\?\?"; break;
     }
     return utils::string_format("%s-%u.%u", typeName,
                                 DECODE_HDW_MAJOR(hdwId),
