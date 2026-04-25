@@ -666,12 +666,16 @@ bool InertialSense::UploadImxCalibrationFromFile(std::string path, port_handle_t
     });
 }
 
-void InertialSense::SetNetworkPortDiscovery(bool enable)
+// Rebuild the PortManager's factory list according to the current enable flags.
+// SerialPortFactory is included by default (m_serialPortDiscoveryEnabled defaults to true);
+// the network and relay factories are opt-in. TcpPortFactory is always present — direct
+// tcp:// URLs are a host-side capability, not a discovery surface.
+void InertialSense::rebuildPortFactories()
 {
-    m_networkPortDiscoveryEnabled = enable;
-
     portManager.clearPortFactories();
-    portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
+    if (m_serialPortDiscoveryEnabled) {
+        portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
+    }
     portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
     if (m_networkPortDiscoveryEnabled) {
         portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
@@ -679,27 +683,26 @@ void InertialSense::SetNetworkPortDiscovery(bool enable)
     if (m_relayPortDiscoveryEnabled) {
         portManager.addPortFactory((PortFactory*)&(RelayPortFactory::getInstance()));
     }
-
-    // Removes all ports from the PortManager
+    // Removes all ports from the PortManager.
     portManager.clear();
+}
+
+void InertialSense::SetSerialPortDiscovery(bool enable)
+{
+    m_serialPortDiscoveryEnabled = enable;
+    rebuildPortFactories();
+}
+
+void InertialSense::SetNetworkPortDiscovery(bool enable)
+{
+    m_networkPortDiscoveryEnabled = enable;
+    rebuildPortFactories();
 }
 
 void InertialSense::SetRelayPortDiscovery(bool enable)
 {
     m_relayPortDiscoveryEnabled = enable;
-
-    // Rebuild the factory list preserving whatever mDNS state was set last.
-    portManager.clearPortFactories();
-    portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
-    portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
-    if (m_networkPortDiscoveryEnabled) {
-        portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
-    }
-    if (m_relayPortDiscoveryEnabled) {
-        portManager.addPortFactory((PortFactory*)&(RelayPortFactory::getInstance()));
-    }
-
-    portManager.clear();
+    rebuildPortFactories();
 }
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)

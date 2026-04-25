@@ -577,6 +577,20 @@ public:
      */
     void SetRelayPortDiscovery(bool enable = false);
 
+    /**
+     * Enable or disable local-serial port discovery (SerialPortFactory) alongside the
+     * other registered factories. Defaults to enabled — most consumers want host-attached
+     * USB/UART devices visible. Disable when the host is also running a service that
+     * holds USB serial ports exclusively (e.g. the bridgeboard relay simulator on the
+     * same machine), to avoid the SDK racing the local-OS enumeration against the
+     * relay-mediated discovery for the same physical device.
+     *
+     * @param enable Set to true (default) to register SerialPortFactory, false to remove
+     *               it. Toggling clears PortManager's existing ports, matching the
+     *               SetNetworkPortDiscovery() / SetRelayPortDiscovery() contract.
+     */
+    void SetSerialPortDiscovery(bool enable = true);
+
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
 
@@ -635,8 +649,13 @@ private:
     int m_baudRate = IS_BAUDRATE_DEFAULT;
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
+    bool m_serialPortDiscoveryEnabled  = true;   ///< last value passed to SetSerialPortDiscovery (default on)
     bool m_networkPortDiscoveryEnabled = false;  ///< last value passed to SetNetworkPortDiscovery
     bool m_relayPortDiscoveryEnabled   = false;  ///< last value passed to SetRelayPortDiscovery
+
+    /// Rebuild PortManager's factory list according to the current m_*PortDiscoveryEnabled
+    /// flags and clear its existing ports. Shared by all three Set*PortDiscovery setters.
+    void rebuildPortFactories();
 
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
 
