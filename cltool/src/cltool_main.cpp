@@ -1188,9 +1188,16 @@ static int cltool_dataStreaming()
             // [C++ COMM INSTRUCTION] STEP 4: Read data
             while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
-                // FIXME: this is a little jank -- we should periodically check for ports, but in the cltool, but we only want to check for the same ports that we originally connected on??
+                // Re-discover ONLY the originally-specified port(s), not every port the
+                // relay/mDNS factories know about. Default `discoverPorts()` uses pattern
+                // "(.+)" which matches all known URLs — for a -ufpkg run targeting a single
+                // TCP/relay device, that opened TCP sockets to every device the relay
+                // exposed (16+ on a fixture testbed) and held them for the duration of the
+                // run, blocking concurrent clients (the bridgeboard enforces "one client
+                // per port"). Passing the resolved comPort scopes the periodic check to
+                // the target we actually care about.
                 if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
-                    PortManager::getInstance().discoverPorts();
+                    PortManager::getInstance().discoverPorts(g_commandLineOptions.comPort);
                     nextPortCheck = current_timeMs() + 1500;
                 }
 
