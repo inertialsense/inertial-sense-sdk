@@ -946,14 +946,7 @@ void ISFirmwareUpdater::cmd_WaitFor(ISFwUpdaterCmd& cmd) {
     }
 
     cmd.status = ISFwUpdaterCmd::CMD_IN_PROCESS;
-    // Accept any response that fwUpdate_handleVersionResponse already gated through.
-    // The strict type-mask check originally placed here would loop indefinitely when a
-    // device firmware echoes back resTarget=0 (TARGET_HOST) — a known bug in older
-    // FirmwareUpdateDevice::fwUpdate_handleVersionInfo where session_target was returned
-    // even when uninitialized. handleVersionResponse already rejects responses whose
-    // resTarget is in valid range AND mismatches our target, so anything that surfaces
-    // here as target_devInfo is a legitimate response from this port's device.
-    if (target_devInfo) {
+    if (target_devInfo && ((remoteDevInfoTargetId & fwUpdate::TARGET_TYPE_MASK) == (target & fwUpdate::TARGET_TYPE_MASK))) {
         // SUCCESS
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
         cmd.resultMsg = "Received response from target.";
@@ -1100,13 +1093,20 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;  // unknown version, use alternate MD5 for safety
         }
 
-        // If the target is in bootloader mode, the app firmware version is unobservable
-        // (firmwareVer reflects the bootloader identifier, e.g. ISbl "v6j" → [6, 'j']).
-        // Any version comparison is wasted energy and tends to look "newer" because
-        // 'j' (106) dwarfs typical app majors. Promote the policy to FORCE so the
-        // upload proceeds and downstream protocol checks are bypassed too. SKIP is
-        // honored — if the caller explicitly asked to skip, we still skip.
-        if (target_devInfo && target_devInfo->hdwRunState == HDW_STATE_BOOTLOADER &&
+        // If the target is a MAIN MCU in bootloader mode, the app firmware version is
+        // unobservable (firmwareVer reflects the bootloader identifier, e.g. ISbl "v6j"
+        // → [6, 'j']). Any version comparison is wasted energy and tends to look "newer"
+        // because 'j' (106) dwarfs typical app majors. Promote the policy to FORCE so the
+        // upload proceeds. SKIP is honored — if the caller explicitly asked to skip, we
+        // still skip.
+        //
+        // Scope to non-peripheral types only: peripherals (CXD/UBX/SEP/STM) use a
+        // bootloader-like interface as their NORMAL operating mode, so HDW_STATE_BOOTLOADER
+        // on a peripheral isn't a "device wiped" signal and shouldn't trigger force-flash.
+        const bool isMainMCU = target_devInfo &&
+                               target_devInfo->hardwareType > IS_HARDWARE_TYPE_UNKNOWN &&
+                               target_devInfo->hardwareType < IS_HDW_TYPE_PERIPHERAL;
+        if (isMainMCU && target_devInfo->hdwRunState == HDW_STATE_BOOTLOADER &&
             effectivePolicy != UPDATE_POLICY_SKIP && effectivePolicy != UPDATE_POLICY_FORCE) {
             LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO,
                 "Target is in bootloader mode; promoting policy to FORCE (app version is unobservable).");
