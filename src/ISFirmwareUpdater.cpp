@@ -946,7 +946,14 @@ void ISFirmwareUpdater::cmd_WaitFor(ISFwUpdaterCmd& cmd) {
     }
 
     cmd.status = ISFwUpdaterCmd::CMD_IN_PROCESS;
-    if (target_devInfo && ((remoteDevInfoTargetId & fwUpdate::TARGET_TYPE_MASK) == (target & fwUpdate::TARGET_TYPE_MASK))) {
+    // Accept any response that fwUpdate_handleVersionResponse already gated through.
+    // The strict type-mask check originally placed here would loop indefinitely when a
+    // device firmware echoes back resTarget=0 (TARGET_HOST) — a known bug in older
+    // FirmwareUpdateDevice::fwUpdate_handleVersionInfo where session_target was returned
+    // even when uninitialized. handleVersionResponse already rejects responses whose
+    // resTarget is in valid range AND mismatches our target, so anything that surfaces
+    // here as target_devInfo is a legitimate response from this port's device.
+    if (target_devInfo) {
         // SUCCESS
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
         cmd.resultMsg = "Received response from target.";
