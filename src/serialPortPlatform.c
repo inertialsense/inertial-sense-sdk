@@ -540,6 +540,11 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     {
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
+        // Stamp the generic base-port error so cross-transport consumers (e.g. UI
+        // port-status markup) can see "this port failed to open" without having to
+        // know about platform-specific errno values. The platform-specific detail
+        // (errno + strerror) remains in serialPort->errorCode/error.
+        serialPort->base.perror = PORT_ERROR__OPEN_FAILURE;
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error opening port: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         return 0;
     }
@@ -548,6 +553,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     {
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
+        serialPort->base.perror = PORT_ERROR__OPEN_FAILURE;
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)", port, serialPort->error, serialPort->errorCode);
         return 0;
     }
