@@ -548,11 +548,70 @@ is_operation_result cISBootloaderBase::update_device
     device = obj->check_is_compatible();
     if (device == IS_IMAGE_SIGN_NONE)
     {
-        obj->logStatus(IS_LOG_LEVEL_ERROR, "Device response missing."); // TODO?  are these the same call?
         delete obj;
-        return IS_OP_ERROR;
+        obj = NULL;
+
+        // ISB not responding -- after a DFU bootloader update the "stay in bootloader"
+        // signal (held in RAM) is lost across the hard reset, so the new ISB may need
+        // extra time to initialize, or it may have already jumped to the application.
+        // Strategy: sleep, retry ISB once more, then fall back to APP detection.
+        SLEEP_MS(IS_REBOOT_DELAY_MS);
+
+        serialPortClose(port);
+        if (serialPortOpenRetry(port, portName(port), baud, 1) == PORT_ERROR__NONE)
+        {
+            obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
+            device = obj->check_is_compatible();
+        }
+
+        if (device == IS_IMAGE_SIGN_NONE)
+        {
+            delete obj;
+            obj = NULL;
+
+            // ISB still not responding -- device likely booted into APP firmware.
+            // Detect APP mode and, if found, reboot back to ISB before retrying.
+            serialPortClose(port);
+            if (serialPortOpenRetry(port, portName(port), baud, 1) == PORT_ERROR__NONE)
+            {
+                cISBootloaderAPP* appObj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, port);
+                serialPortWriteAscii(appObj->m_port, "STPB", 4);
+                uint32_t appDevice = appObj->check_is_compatible();
+
+                const char* enableCmd = NULL;
+                if      ((appDevice & IS_IMAGE_SIGN_APP) & fw_IMX_5)  { appObj->m_filename = filenames.fw_IMX_5.path;  enableCmd = "BLEN"; }
+                else if ((appDevice & IS_IMAGE_SIGN_APP) & fw_EVB_2)  { appObj->m_filename = filenames.fw_EVB_2.path;  enableCmd = "EBLE"; }
+                else if ((appDevice & IS_IMAGE_SIGN_APP) & fw_uINS_3) { appObj->m_filename = filenames.fw_uINS_3.path; enableCmd = "BLEN"; }
+
+                if (enableCmd)
+                {
+                    strncpy(appObj->m_app.enable_command, enableCmd, sizeof(appObj->m_app.enable_command));
+                    appObj->reboot_down();
+                    delete appObj;
+                    SLEEP_MS(IS_REBOOT_DELAY_MS);
+
+                    serialPortClose(port);
+                    if (serialPortOpenRetry(port, portName(port), baud, 1) == PORT_ERROR__NONE)
+                    {
+                        obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
+                        device = obj->check_is_compatible();
+                    }
+                }
+                else
+                {
+                    delete appObj;
+                }
+            }
+        }
+
+        if (device == IS_IMAGE_SIGN_NONE)
+        {
+            if (obj) { obj->logStatus(IS_LOG_LEVEL_ERROR, "Device response missing."); delete obj; obj = NULL; }
+            else statusfn(std::any(), IS_LOG_LEVEL_ERROR, "    | %s: Device response missing.", portName(port));
+            return IS_OP_ERROR;
+        }
     }
-    else if (device == IS_IMAGE_SIGN_ERROR)
+    if (device == IS_IMAGE_SIGN_ERROR)
     {
         obj->logStatus(IS_LOG_LEVEL_ERROR, "Invalid device signature.");
         delete obj;
