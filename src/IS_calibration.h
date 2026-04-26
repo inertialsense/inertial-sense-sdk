@@ -14,11 +14,10 @@ extern "C" {
 #define TCAL_MAX_NUM_POINTS     20      // Maximum number of calibration points allowable
 #define TCAL_MAX_TEMPERATURE    85      // Maximum temperature for temperature calibration
 
-// 1.2.0 = uINS-3, 1.3.0 = IMX-5
+// 1.2.0 = 2x IMU, 1.3.0 = 3x IMU + 2x Mag, 1.4.0 = 5x IMU + 1x Mag
 #define SENSOR_CAL_VER0     1
-#define SENSOR_CAL_VER1     3
+#define SENSOR_CAL_VER1     4
 #define SENSOR_CAL_VER2     0
-
 
 enum eScompCalState
 {
@@ -114,25 +113,23 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    nvm_sensor_tcal_3axis_t gyr[MAX_IMU_DEVICES];               // Gyro temperature calibration
-    nvm_sensor_tcal_3axis_t acc[MAX_IMU_DEVICES];               // Accel temperature calibration
-    nvm_sensor_tcal_3axis_t mag[MAX_MAG_DEVICES];               // Mag temperature calibration
-} sensor_tcal_group_t;
+    nvm_sensor_tcal_3axis_t gyr[MAX_IMU_DEVICES_V1P3];          // Gyro temperature calibration
+    nvm_sensor_tcal_3axis_t acc[MAX_IMU_DEVICES_V1P3];          // Accel temperature calibration
+    nvm_sensor_tcal_3axis_t mag[MAX_MAG_DEVICES_V1P3];          // Mag temperature calibration
+} sensor_tcal_group_v1p3_t;
 
-// 1/3 of sensor_tcal_group_t
+typedef struct PACKED
+{
+    nvm_sensor_tcal_3axis_t gyr[MAX_IMU_DEVICES_V1P4];          // Gyro temperature calibration
+    nvm_sensor_tcal_3axis_t acc[MAX_IMU_DEVICES_V1P4];          // Accel temperature calibration
+    nvm_sensor_tcal_3axis_t mag[MAX_MAG_DEVICES_V1P4];          // Mag temperature calibration
+} sensor_tcal_group_v1p4_t;
+
+// 1/3 of sensor_tcal_group_t used for uploading calibration
 typedef struct PACKED
 {
     nvm_sensor_tcal_3axis_t sensor[MAX_IMU_DEVICES];            // temperature calibration
 } sensor_tcal_group_subset_t;
-
-////////////////////////////////////////////////
-// MCAL v1.2
-typedef struct PACKED
-{                                       // Cross-axis scale factor matrices
-    float                   pqr[9];         // gyros
-    float                   acc[9];         // accelerometers
-    float                   mag[9];         // magnetometers
-} sensor_scalars_t;
 
 ////////////////////////////////////////////////
 // MCAL v1.3
@@ -144,50 +141,53 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    sensor_motion_cal_t     pqr[MAX_IMU_DEVICES];               // Gyros (x3 IMUs)
-    sensor_motion_cal_t     acc[MAX_IMU_DEVICES];               // Accelerometers (x3 IMUs)
-    sensor_motion_cal_t     mag[MAX_MAG_DEVICES];               // Magnetometers
-} sensor_mcal_group_t;
-
-////////////////////////////////////////////////
-// v1.2
-typedef struct PACKED
-{
-    sensor_scalars_t        orth;                       // Sensor ortho-normalization matrices (cross-axis and scale factor)
-    sensors_mpu_t           bias;
-    nvm_sensor_tcal_t       tcal;
-} sensor_cal_mpu_t;
+    sensor_motion_cal_t     pqr[MAX_IMU_DEVICES_V1P3];          // Gyros (x3 IMUs)
+    sensor_motion_cal_t     acc[MAX_IMU_DEVICES_V1P3];          // Accelerometers (x3 IMUs)
+    sensor_motion_cal_t     mag[MAX_MAG_DEVICES_V1P3];          // Magnetometers
+} sensor_mcal_group_v1p3_t;
 
 typedef struct PACKED
 {
-    sensor_data_info_t      dinfo;                      // Size and checksum
-    sensor_cal_mpu_t        mpu[2];
-} sensor_cal_v1p2_data_t;
-
-typedef struct PACKED
-{
-    sensor_cal_v1p2_data_t  data;
-    sensor_cal_info_t       info;                       // uINS-3 legacy has info after data 
-} sensor_cal_v1p2_t;
+    sensor_motion_cal_t     pqr[MAX_IMU_DEVICES_V1P4];          // Gyros (x5 IMUs)
+    sensor_motion_cal_t     acc[MAX_IMU_DEVICES_V1P4];          // Accelerometers (x5 IMUs)
+    sensor_motion_cal_t     mag[MAX_MAG_DEVICES_V1P4];          // Magnetometers
+} sensor_mcal_group_v1p4_t;
 
 ////////////////////////////////////////////////
 // v1.3
 typedef struct PACKED
 {
-    sensor_data_info_t      dinfo;                      // Size and checksum
-    sensor_tcal_group_t     tcal;                       // Temperature compensation
-    sensor_mcal_group_t     mcal;                       // Motion calibration
+    sensor_data_info_t          dinfo;                      // Size and checksum
+    sensor_tcal_group_v1p3_t    tcal;                       // Temperature compensation
+    sensor_mcal_group_v1p3_t    mcal;                       // Motion calibration
 } sensor_cal_v1p3_data_t;
 
 typedef struct PACKED
 {
-    sensor_cal_info_t       info;                       // Hardware IMX-5 and later have info before data to support various versions of calibration without hardware detection
-    sensor_cal_v1p3_data_t  data;
+    sensor_cal_info_t           info;                       // Hardware IMX-5 and later have info before data to support various versions of calibration without hardware detection
+    sensor_cal_v1p3_data_t      data;
 } sensor_cal_v1p3_t;
 
-typedef sensor_cal_v1p3_t   sensor_cal_t;               // Current version
+////////////////////////////////////////////////
+// v1.4
+typedef struct PACKED
+{
+    sensor_data_info_t          dinfo;                      // Size and checksum
+    sensor_tcal_group_v1p4_t    tcal;                       // Temperature compensation
+    sensor_mcal_group_v1p4_t    mcal;                       // Motion calibration
+} sensor_cal_v1p4_data_t;
 
+typedef struct PACKED
+{
+    sensor_cal_info_t           info;
+    sensor_cal_v1p4_data_t      data;
+} sensor_cal_v1p4_t;
 
+// Current version of sensor calibration in use
+typedef sensor_tcal_group_v1p4_t    sensor_tcal_group_t;
+typedef sensor_mcal_group_v1p4_t    sensor_mcal_group_t;
+typedef sensor_cal_v1p4_data_t      sensor_cal_data_t;
+typedef sensor_cal_v1p4_t           sensor_cal_t;               
 
 #ifdef __cplusplus
 }

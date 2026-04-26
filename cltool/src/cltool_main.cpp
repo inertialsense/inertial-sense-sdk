@@ -66,6 +66,89 @@ shared_ptr<Rtcm3CorrectionServer> g_correctionOutput = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
+/// Extract the hostname portion of a canonical "http://host:port" URL for hostname-based filtering.
+static std::string hostnameFromUrl(const std::string& url) {
+    const FIX8::uri parsed{url};
+    return std::string{parsed.get_host()};
+}
+
+/// Pre-warm RelayPortFactory: register manual URLs, then pump tick() for up to 3 s so
+/// mDNS-discovered hosts surface. After warmup, enable hosts per CLI selection:
+///   - `-use-relay=<url>,<url>` → relayUrls are added+enabled manually
+///   - `-use-relay-only=<host>,<host>` → only mDNS-discovered hosts whose hostname
+///     matches an entry in relayOnlyHosts are enabled
+///   - bare `-use-relay` (no value) → all mDNS-discovered hosts are enabled
+/// Prints a one-line-per-host summary.
+static void cltoolWarmRelayDiscovery() {
+    auto& rpf = RelayPortFactory::getInstance();
+
+    // 1. Register any manually-provided URLs and enable them immediately.
+    for (const auto& url : g_commandLineOptions.relayUrls) {
+        if (url.empty()) continue;
+        rpf.addRelayHost(url);
+        rpf.setRelayHostEnabled(url, true);
+    }
+
+    printf("Discovering relay hosts...\n");
+    uint32_t deadline = current_timeMs() + 3000;
+
+    const bool hasManualUrls = !g_commandLineOptions.relayUrls.empty();
+    const bool hasOnlyFilter = !g_commandLineOptions.relayOnlyHosts.empty();
+
+    while (current_timeMs() < deadline) {
+        RelayPortFactory::tick();
+        SLEEP_MS(50);
+
+        // Auto-enable mDNS-discovered hosts unless manual URLs were supplied.
+        // With -use-relay-only, only hosts whose hostname matches the whitelist are enabled.
+        if (!hasManualUrls) {
+            for (auto& host : rpf.getRelayHosts()) {
+                if (host.enabled) continue;
+                if (!host.viaMdns) continue;
+                if (hasOnlyFilter) {
+                    std::string hn = hostnameFromUrl(host.url);
+                    bool match = false;
+                    for (const auto& allowed : g_commandLineOptions.relayOnlyHosts) {
+                        if (hn == allowed) { match = true; break; }
+                    }
+                    if (!match) continue;
+                }
+                rpf.setRelayHostEnabled(host.url, true);
+            }
+        }
+
+        // Early-exit once we've got a stable picture: at least one enabled host has both
+        // device entries AND its transport has resolved (stream connected or polling fallback).
+        // Otherwise the "feed=Auto" badge would be the reported value for the short window
+        // between the one-shot snapshot and the first SSE event.
+        auto hosts = rpf.getRelayHosts();
+        bool ready = false;
+        for (const auto& h : hosts) {
+            if (!h.enabled || h.deviceCount == 0) continue;
+            if (h.streamConnected || h.feedType == RelayPortFactory::RelayFeedType::Polling) {
+                ready = true;
+                break;
+            }
+        }
+        if (ready) break;
+    }
+
+    // Summary line per host, including transport badge.
+    auto hosts = rpf.getRelayHosts();
+    if (hosts.empty()) {
+        printf("  No relay hosts discovered.\n");
+    } else {
+        for (const auto& h : hosts) {
+            const char* feed = (h.feedType == RelayPortFactory::RelayFeedType::SSE)     ? "SSE"
+                             : (h.feedType == RelayPortFactory::RelayFeedType::Polling) ? "Polling"
+                             :                                                            "Auto";
+            printf("  Relay: %s  enabled=%d  devices=%zu  feed=%s  %s\n",
+                   h.url.c_str(), h.enabled, h.deviceCount, feed,
+                   h.viaMdns ? "(mDNS)" : "(manual)");
+        }
+    }
+}
+
 static void display_server_client_status(bool showMessageSummary=false, bool refreshDisplay=false)
 {
     if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
@@ -997,37 +1080,11 @@ static int cltool_dataStreaming()
 
     // Pre-warm relay discovery: add/enable relay host(s) and pump tick() to populate the cache
     if (g_commandLineOptions.useRelay) {
-        auto& rpf = RelayPortFactory::getInstance();
-        if (!g_commandLineOptions.relayUrl.empty()) {
-            // Manual URL provided — add and enable it
-            rpf.addRelayHost(g_commandLineOptions.relayUrl);
-            rpf.setRelayHostEnabled(g_commandLineOptions.relayUrl, true);
-        }
-        printf("Discovering relay hosts...\n");
-        uint32_t deadline = current_timeMs() + 3000;
-        while (current_timeMs() < deadline) {
-            RelayPortFactory::tick();
-            SLEEP_MS(50);
-            // If no manual URL, enable any mDNS-discovered hosts
-            if (g_commandLineOptions.relayUrl.empty()) {
-                for (auto& host : rpf.getRelayHosts()) {
-                    if (!host.enabled)
-                        rpf.setRelayHostEnabled(host.url, true);
-                }
-            }
-            // Check if we have devices — can stop early
-            auto hosts = rpf.getRelayHosts();
-            bool hasDevices = false;
-            for (const auto& h : hosts) {
-                if (h.enabled && h.deviceCount > 0) { hasDevices = true; break; }
-            }
-            if (hasDevices) break;
-        }
-        auto hosts = rpf.getRelayHosts();
-        for (const auto& h : hosts) {
-            printf("  Relay: %s  enabled=%d  devices=%zu  %s\n",
-                   h.url.c_str(), h.enabled, h.deviceCount,
-                   h.viaMdns ? "(mDNS)" : "(manual)");
+        cltoolWarmRelayDiscovery();
+
+        // -use-relay-list is a "print and exit" mode — skip device open.
+        if (g_commandLineOptions.useRelayList) {
+            return 0;
         }
     }
 
@@ -1320,31 +1377,9 @@ static bool cltool_resolveDeviceTarget()
             }
         }
 
-        // Pre-warm relay discovery if needed
+        // Pre-warm relay discovery if needed (shared warmup + enable logic)
         if (g_commandLineOptions.useRelay) {
-            auto& rpf = RelayPortFactory::getInstance();
-            if (!g_commandLineOptions.relayUrl.empty()) {
-                rpf.addRelayHost(g_commandLineOptions.relayUrl);
-                rpf.setRelayHostEnabled(g_commandLineOptions.relayUrl, true);
-            }
-            printf("Discovering relay hosts...\n");
-            uint32_t deadline = current_timeMs() + 3000;
-            while (current_timeMs() < deadline) {
-                RelayPortFactory::tick();
-                SLEEP_MS(50);
-                if (g_commandLineOptions.relayUrl.empty()) {
-                    for (auto& host : rpf.getRelayHosts()) {
-                        if (!host.enabled)
-                            rpf.setRelayHostEnabled(host.url, true);
-                    }
-                }
-                auto hosts = rpf.getRelayHosts();
-                bool hasDevices = false;
-                for (const auto& h : hosts) {
-                    if (h.enabled && h.deviceCount > 0) { hasDevices = true; break; }
-                }
-                if (hasDevices) break;
-            }
+            cltoolWarmRelayDiscovery();
         }
 
         // Discover all devices using wildcard

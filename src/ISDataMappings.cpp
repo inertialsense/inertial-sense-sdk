@@ -2063,6 +2063,19 @@ static void PopulateMapSensorTCalGroup(data_set_t data_set[DID_COUNT], uint32_t 
     }
 }
 
+static void PopulateMapSensorSCalInfo(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_cal_info_t> mapper(data_set, did);
+
+    mapper.AddMember2("size",       offsetof(sensor_cal_info_t, size), DATA_TYPE_UINT32, "", "Size of this struct", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember2("checksum",   offsetof(sensor_cal_info_t, checksum), DATA_TYPE_UINT32, "", "XOR of all bytes in this struct excluding size and checksum", DATA_FLAGS_READ_ONLY);
+
+    mapper.AddArray2 ("version",    offsetof(sensor_cal_info_t, version), DATA_TYPE_UINT8, 4, {""}, {"Calibration version [major, mid, minor, unused]"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddArray2 ("calDate",    offsetof(sensor_cal_info_t, calDate), DATA_TYPE_UINT8, 4, {""}, {"Calibration date [year-2000, month, day, unused]"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddArray2 ("calTime",    offsetof(sensor_cal_info_t, calTime), DATA_TYPE_UINT8, 4, {""}, {"Calibration time [hour, minute, second, unused]"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember2("devSerialNum", offsetof(sensor_cal_info_t, devSerialNum), DATA_TYPE_UINT32, "", "Device serial number", DATA_FLAGS_READ_ONLY);
+}
+
 static void PopulateMapSensorTCalSubsetGroup(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<sensor_tcal_group_subset_t> mapper(data_set, did);
@@ -2502,6 +2515,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
     // PopulateMapSensorTCalGroup(m_data_set, DID_CAL_TEMP_COMP);
+    PopulateMapSensorSCalInfo(       m_data_set, DID_CAL_SC_INFO);
     PopulateMapSensorTCalSubsetGroup(m_data_set, DID_CAL_TEMP_COMP);
     PopulateMapSensorMCalGroup(      m_data_set, DID_CAL_MOTION);
     PopulateMapSensorCompensation(   m_data_set, DID_SCOMP);

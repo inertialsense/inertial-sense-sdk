@@ -194,9 +194,15 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE    2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
-// Max number of devices across all hardware types: uINS-3, uINS-4, IMX-5, and IMX-6
-#define MAX_IMU_DEVICES     5        // g_numImuDevices defines the actual number of hardware specific devices
-#define MAX_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
+// Version 1.3 of sensor calibration format supports up to 3 IMUs and 2 mags, with separate orthonormalization and bias calibration for each device
+#define MAX_IMU_DEVICES_V1P3    3
+#define MAX_MAG_DEVICES_V1P3    2
+// Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
+#define MAX_IMU_DEVICES_V1P4    5
+#define MAX_MAG_DEVICES_V1P4    1
+// Max number of devices across all hardware types: uINS-3, IMX-5, and IMX-6
+#define MAX_IMU_DEVICES         MAX_IMU_DEVICES_V1P4    // g_numImuDevices defines the actual number of hardware specific devices
+#define MAX_MAG_DEVICES         MAX_MAG_DEVICES_V1P4    // g_numMagDevices defines the actual number of hardware specific devices
 
 /** INS status flags */
 enum eInsStatusFlags
@@ -3253,15 +3259,17 @@ enum eIoConfig
     /** GPS type MASK */
     IO_CONFIG_GPS_TYPE_MASK                     = (int)0x00000007,
     /** GPS type - Unused.  USE this when adding a new GNSS Receiver */
-    IO_CONFIG_GPS_TYPE_UNUSED                    = (int)0,
+    IO_CONFIG_GPS_TYPE_NONE                     = (int)0,
     /** GPS type - ublox ZED-F9P w/ RTK */
     IO_CONFIG_GPS_TYPE_UBX_F9P                  = (int)1,
     /** GPS type - NMEA */
     IO_CONFIG_GPS_TYPE_NMEA                     = (int)2,
     /** GPS type - InertialSense GPX */
-    IO_CONFIG_GPS_TYPE_GPX                        = (int)3,
+    IO_CONFIG_GPS_TYPE_GPX                      = (int)3,
+    /** GPS type - Septentrio */
+    IO_CONFIG_GPS_TYPE_SEPTENTRIO               = (int)4,
     /** GPS type - last type */
-    IO_CONFIG_GPS_TYPE_LAST                        = IO_CONFIG_GPS_TYPE_GPX,        // Set to last type
+    IO_CONFIG_GPS_TYPE_LAST                     = IO_CONFIG_GPS_TYPE_SEPTENTRIO,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
