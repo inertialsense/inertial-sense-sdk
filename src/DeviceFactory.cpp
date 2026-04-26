@@ -99,16 +99,20 @@ std::unique_ptr<DeviceFactory::ValidationContext> DeviceFactory::beginValidation
     ctx->hdwId = hdwId;
     ctx->timeoutMs = timeoutMs;
 
-    // Check for a pre-seeded hint (e.g., from RelayPortFactory). If the relay has already
-    // identified this device, skip the DID_DEV_INFO probe entirely.
+    // Check for a pre-seeded hint (e.g., from RelayPortFactory). The hint is INFORMATIVE,
+    // not authoritative — it pre-seeds devInfo so subsequent validation knows what to
+    // expect (e.g. start with the right query type for hdwRunState=BOOTLOADER) and so the
+    // factory can decline a mismatched hdwId early. The hint NEVER substitutes for actual
+    // validation: the calling application should be the one to decide whether to trust a
+    // hint sight-unseen, and both cltool and EvalTool require a real handshake. Without
+    // running the active probe we'd never confirm the device is even responsive on the
+    // other end of the connection.
     const dev_info_t* hint = DeviceManager::getInstance().getDeviceHint(port);
     if (hint && hint->serialNumber != 0 && hint->hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
         ctx->device->devInfo = *hint;
         ctx->device->hdwId = ENCODE_DEV_INFO_TO_HDW_ID((*hint));
-        ctx->complete = true;
-        ctx->result = 1;
-        log_info(IS_LOG_DEVICE_FACTORY, "beginValidation: using seeded hint for port '%s' (SN=%u, hwType=%d) — skipping probe.",
-                 portName(port), hint->serialNumber, hint->hardwareType);
+        log_info(IS_LOG_DEVICE_FACTORY, "beginValidation: seeded hint for port '%s' (SN=%u, hwType=%d, hdwRunState=%d) — validation still required.",
+                 portName(port), hint->serialNumber, hint->hardwareType, hint->hdwRunState);
     }
 
     return ctx;

@@ -410,22 +410,33 @@ bool RelayPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     return false;
 }
 
-port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pType) {
-    auto port = TcpPortFactory::getInstance().bindPort(pName, pType);
-    if (port) {
-        std::lock_guard<std::recursive_mutex> lock(mutex_);
-        for (const auto& [url, hostPtr] : relayHosts_) {
-            const RelayHost& host = *hostPtr;
-            if (!host.enabled) continue;
-            for (const auto& device : host.devices) {
-                if (device.portUrl == pName) {
-                    DeviceManager::getInstance().seedDeviceHint(port, device.hint);
-                    return port;
-                }
+// If we know a hint for this port (it appears in any enabled relay host's device list),
+// seed it into DeviceManager. Used by both bindPort (when we win the bind race) and
+// onPortAlias (when TcpPortFactory wins for a relay-known URL — the port handle is the
+// same TCP port either way; only the hint-seeding side-effect differs).
+void RelayPortFactory::seedHintForPortIfKnown(port_handle_t port, const std::string& portUrl) {
+    if (!port) return;
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    for (const auto& [url, hostPtr] : relayHosts_) {
+        const RelayHost& host = *hostPtr;
+        if (!host.enabled) continue;
+        for (const auto& device : host.devices) {
+            if (device.portUrl == portUrl) {
+                DeviceManager::getInstance().seedDeviceHint(port, device.hint);
+                return;
             }
         }
     }
+}
+
+port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pType) {
+    auto port = TcpPortFactory::getInstance().bindPort(pName, pType);
+    seedHintForPortIfKnown(port, pName);
     return port;
+}
+
+void RelayPortFactory::onPortAlias(port_handle_t existing, const std::string& pName, uint16_t /*pType*/) {
+    seedHintForPortIfKnown(existing, pName);
 }
 
 bool RelayPortFactory::releasePort(port_handle_t port) {

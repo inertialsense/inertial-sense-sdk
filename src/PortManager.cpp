@@ -101,6 +101,11 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
     // (e.g., dual-stack mDNS producing alias URLs that resolve to the same endpoint).
     for (auto& [entry, existingPort] : knownPorts) {
         if (entry.name == portName && existingPort && portIsValid(existingPort)) {
+            // Skip duplicate port allocation, but give the new factory a chance to do
+            // post-bind decoration on the existing port (e.g. RelayPortFactory seeding
+            // a device hint into DeviceManager). Factories that don't override
+            // onPortAlias() default to a no-op.
+            factory->onPortAlias(existingPort, portName, portType);
             return; // already bound under a different factory — don't duplicate
         }
     }

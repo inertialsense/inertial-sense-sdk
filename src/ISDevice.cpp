@@ -352,13 +352,22 @@ bool ISDevice::validate(uint32_t timeout) {
     FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
     log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
 
+    // Check the discovery hint for this port (set by RelayPortFactory or similar). The
+    // hint is informative only — we still actively validate — but it lets us pick the
+    // most-efficient initial query type. This matters for bootloader devices: NMEA and
+    // DID queries can leave a bootloader in an unresponsive state for a window, so when
+    // the hint says HDW_STATE_BOOTLOADER we start with the ISBL query to land cleanly.
+    const dev_info_t* hint = DeviceManager::getInstance().getDeviceHint(port);
+
     // check for Inertial-Sense App by making an NMEA request (which it should respond to)
     is_hardware_t oldHdwId = hdwId;
     dev_info_t oldDevInfo = devInfo;
     hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
 
     bool hasDevInfo = hasDeviceInfo();
-    queryType nextQueryType = QUERYTYPE_NMEA;
+    queryType nextQueryType = (hint && hint->hdwRunState == HDW_STATE_BOOTLOADER)
+                              ? QUERYTYPE_ISbootloader
+                              : QUERYTYPE_NMEA;
     unsigned int startTime = current_timeMs();
     do {
         if ((current_timeMs() - startTime) > timeout) {
@@ -458,6 +467,15 @@ int ISDevice::validateAsync(uint32_t timeout) {
     // if this is non-zero, it means we're actively validating; this helps us know when to give up/timeout
     if (!validationStartMs) {
         validationStartMs = now;
+        // First step of a new validation cycle — pick the initial query type based on
+        // the discovery hint, if any. NMEA/DID queries to a bootloader can leave it in
+        // an unresponsive state, so when the hint says HDW_STATE_BOOTLOADER we lead
+        // with the ISBL query. Without a hint we fall through to NMEA (the default
+        // for app firmware) and round-robin from there.
+        const dev_info_t* hint = DeviceManager::getInstance().getDeviceHint(port);
+        if (hint && hint->hdwRunState == HDW_STATE_BOOTLOADER) {
+            nextValidationType = QUERYTYPE_ISbootloader;
+        }
     }
 
     // doing the timeout check first helps during debugging (since stepping through code will likely trigger the timeout.
