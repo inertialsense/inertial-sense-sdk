@@ -1088,11 +1088,55 @@ static int cltool_dataStreaming()
         }
     }
 
-    // [C++ COMM INSTRUCTION] STEP 2: Open serial port
+    // [C++ COMM INSTRUCTION] STEP 2: Open the requested port and validate a device
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
     {
-        cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
-        return -1;    // Failed to open serial port
+        // InertialSense::Open returns false for several distinct reasons that the
+        // original "Failed to open serial port at <url>" message conflated:
+        //   (a) the URL didn't match any registered PortFactory — PortManager is empty;
+        //   (b) a factory matched but the port couldn't actually be opened (access
+        //       denied, port held by another process, TCP refused, DNS failed); or
+        //   (c) the port opened fine, but no device responded to discovery in time.
+        // For comPort = '*' or a comma-separated list, summarizing as a single
+        // outcome is unhelpful — different ports can fail for different reasons.
+        // Enumerate per-port state from PortManager so the user sees the OS-level
+        // error code (perror, populated by tcpPort/serialPort drivers from errno)
+        // and the validate/open status of each port that was discovered.
+        if (PortManager::getInstance().empty())
+        {
+            cout << "Could not find a recognizable port for '" << g_commandLineOptions.comPort.c_str()
+                 << "' (no PortFactory matched)." << endl;
+        }
+        else
+        {
+            cout << "Could not establish a device connection for '" << g_commandLineOptions.comPort.c_str()
+                 << "':" << endl;
+            DeviceManager& dm = DeviceManager::getInstance();
+            for (auto port : PortManager::getInstance().locked_range())
+            {
+                if (!port) continue;
+                const char* name = portName(port);
+                uint16_t err = portError(port);
+                bool opened = portIsOpened(port);
+                bool valid = portIsValid(port);
+                bool hasDevice = (dm.getDevice(port) != nullptr);
+
+                cout << "  " << (name ? name : "<unnamed>") << ": ";
+                if (hasDevice) {
+                    cout << "device validated (this port is OK)";
+                } else if (err != 0) {
+                    cout << "port error (" << (int)(int16_t)err << ": " << strerror((int)(int16_t)err) << ")";
+                } else if (!valid) {
+                    cout << "port invalidated";
+                } else if (!opened) {
+                    cout << "port could not be opened";
+                } else {
+                    cout << "port opened but device did not respond to discovery";
+                }
+                cout << endl;
+            }
+        }
+        return -1;
     }
 
     if (g_commandLineOptions.list_devices) {
@@ -1118,6 +1162,28 @@ static int cltool_dataStreaming()
     }
 
     int exitCode = EXIT_CODE_SUCCESS;
+
+    // Bootloader-state guard: if any of the connected devices is sitting in
+    // HDW_STATE_BOOTLOADER, the data-streaming, NMEA, and DID flows below will all
+    // hang indefinitely — bootloaders don't speak DID/NMEA. The exception is the
+    // firmware-update path itself (which exists to recover this state); only block
+    // when we're NOT about to update firmware. Provide a clear, actionable message
+    // so the user doesn't sit watching "Tx 0, Rx 0".
+    const bool isFwUpdateRun =
+        (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST &&
+         !g_commandLineOptions.fwUpdateCmds.empty()) ||
+        (g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST &&
+         !g_commandLineOptions.updateAppFirmwareFilename.empty());
+    if (!isFwUpdateRun) {
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (device && device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
+                cout << "Device " << device->getIdAsString()
+                     << " is in BOOTLOADER mode and will not respond to data, NMEA, or DID requests." << endl
+                     << "  Reboot the device, or run a firmware update (-uf, -ufpkg, -uf-cmd) to recover." << endl;
+                return EXIT_CODE_DEVICE_DISCONNECTED;
+            }
+        }
+    }
 
     // [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
     if (cltool_setupCommunications(inertialSenseInterface))
