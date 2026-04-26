@@ -147,9 +147,12 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     hint.hdwRunState = (state == "isbl") ? HDW_STATE_BOOTLOADER : HDW_STATE_APP;
     hint.serialNumber = dev.value("serial_number", 0u);
 
-    // Protocol version — all four components are compile-time constants baked into the SDK.
-    // Populating only CHAR0 leaves consumers reading CHAR1..3 as zero, which can trip
-    // version-compatibility checks.
+    // Protocol version is the SDK's compile-time constant; populating all four
+    // components keeps version-compatibility checks consistent with what a real
+    // probe response would report. Auto-OPEN side effects are gated separately:
+    // hint-driven device registration (DeviceManager::seedDeviceHint) deliberately
+    // never opens the port, so DEVICE_CONNECTED only fires when the user explicitly
+    // opens the port via Find/Open.
     hint.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
     hint.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
     hint.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
