@@ -406,6 +406,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.spiMode = (uint8_t)strtoul(&a[10], NULL, 10);
         }
+        else if (startsWith(a, "-spi-dr="))
+        {
+            g_commandLineOptions.spiDataReadyGpio = (int)strtol(&a[8], NULL, 10);
+        }
+        else if (matches(a, "-spi-dr") && (i + 1) < argc)
+        {
+            g_commandLineOptions.spiDataReadyGpio = (int)strtol(argv[++i], NULL, 10);
+        }
         else if (startsWith(a, "-dboc"))
         {
             g_commandLineOptions.disableBroadcastsOnClose = true;
@@ -1269,6 +1277,7 @@ void cltool_outputUsage()
     cout << "    -spi " << boldOff << "DEVICE_PATH  Select SPI device (e.g., /dev/spi0.0). Registers the SPI port factory instead of serial." << endlbOn;
     cout << "    -spi-speed=" << boldOff << "HZ   SPI clock speed in Hz (default: " << SPI_PORT_DEFAULT_SPEED_HZ << " Hz = 1 MHz)." << endlbOn;
     cout << "    -spi-mode=" << boldOff << "N     SPI clock/phase mode 0-3 (default: " << (int)SPI_PORT_DEFAULT_MODE << ")." << endlbOn;
+    cout << "    -spi-dr " << boldOff << "GPIO_NUM  GPIO number of the data-ready line driven by the SPI slave (e.g. 18). Read is gated until the pin goes high." << endlbOn;
 	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
 	cout << "    -device " << boldOff << "TYPE    Discover all devices and open only those matching TYPE. Options: imx, imx5, imx6, gpx. Implies -c * if no -c port is given." << endlbOn;
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;

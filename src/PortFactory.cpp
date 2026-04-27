@@ -385,6 +385,9 @@ port_handle_t SpiPortFactory::bindPort(const std::string& pName, uint16_t pType)
                 portOptions.defaultMode,
                 PORT_TYPE__COMM);
 
+    if (portOptions.dataReadyGpio >= 0)
+        spiPortSetDataReady(port, portOptions.dataReadyGpio);
+
     portValidate(port);
 
     log_more_debug(IS_LOG_PORT_FACTORY, "Allocated new SPI port '%s'", portName(port));

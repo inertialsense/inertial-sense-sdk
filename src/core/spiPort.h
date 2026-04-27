@@ -36,6 +36,10 @@ struct spi_port_s
     uint32_t speedHz;       // SPI clock speed in Hz
     uint8_t  mode;          // SPI mode 0-3 (CPOL/CPHA)
     uint8_t  bitsPerWord;   // bits per word (typically 8)
+
+    // Data-ready GPIO (sysfs interface); -1 = not configured
+    int drGpioNum;          // GPIO number (e.g. 18 for GPIO18)
+    int drGpioFd;           // open fd to /sys/class/gpio/gpioN/value, or -1
 };
 
 typedef struct spi_port_s spi_port_t;
@@ -58,6 +62,17 @@ void spiPortDelete(port_handle_t port);
 
 int  spiPortSetSpeed(port_handle_t port, uint32_t speedHz);
 int  spiPortSetMode(port_handle_t port, uint8_t mode);
+
+/**
+ * Configures a GPIO as a data-ready input.  When set, spiPortAvailable()
+ * returns 1 only while the pin is high, and spiPortReadTimeout() blocks
+ * until a rising edge is detected (or the timeout expires) before reading.
+ * Pass gpioNum = -1 to remove the data-ready GPIO.
+ * @param port     SPI port handle
+ * @param gpioNum  Linux GPIO number (e.g. 18), or -1 to disable
+ * @return 0 on success, negative errno on failure
+ */
+int  spiPortSetDataReady(port_handle_t port, int gpioNum);
 
 #ifdef __cplusplus
 }

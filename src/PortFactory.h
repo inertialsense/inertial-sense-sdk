@@ -156,8 +156,9 @@ private:
 class SpiPortFactory : public PortFactory {
 public:
     struct {
-        uint32_t defaultSpeedHz = SPI_PORT_DEFAULT_SPEED_HZ;
-        uint8_t  defaultMode    = SPI_PORT_DEFAULT_MODE;
+        uint32_t defaultSpeedHz  = SPI_PORT_DEFAULT_SPEED_HZ;
+        uint8_t  defaultMode     = SPI_PORT_DEFAULT_MODE;
+        int      dataReadyGpio   = -1;  // GPIO number for data-ready input, -1 = disabled
     } portOptions = {};
 
     static SpiPortFactory& getInstance() {
