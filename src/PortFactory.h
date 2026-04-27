@@ -18,6 +18,7 @@
 
 #include "core/base_port.h"
 #include "core/msg_logger.h"
+#include "core/spiPort.h"
 #include "ISConstants.h"
 
 #include "serialPort.h"
@@ -151,6 +152,42 @@ private:
 
 };
 
+
+class SpiPortFactory : public PortFactory {
+public:
+    struct {
+        uint32_t defaultSpeedHz = SPI_PORT_DEFAULT_SPEED_HZ;
+        uint8_t  defaultMode    = SPI_PORT_DEFAULT_MODE;
+    } portOptions = {};
+
+    static SpiPortFactory& getInstance() {
+        static SpiPortFactory instance;
+        return instance;
+    }
+
+    SpiPortFactory(SpiPortFactory const&)            = delete;
+    SpiPortFactory& operator=(SpiPortFactory const&) = delete;
+
+    void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback,
+                     const std::string& pattern, uint16_t pType) override;
+
+    bool validatePort(const std::string& pName, uint16_t pType = 0) override;
+
+    port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
+
+    bool releasePort(port_handle_t port) override;
+
+    SpiPortFactory& setSpeedHz(uint32_t hz)    { portOptions.defaultSpeedHz = hz;   return *this; }
+    SpiPortFactory& setMode(uint8_t mode)      { portOptions.defaultMode    = mode; return *this; }
+
+private:
+    SpiPortFactory()  = default;
+    ~SpiPortFactory() = default;
+
+#if PLATFORM_IS_LINUX
+    static int getSpiDevices(std::vector<std::string>& names);
+#endif
+};
 
 #endif
 

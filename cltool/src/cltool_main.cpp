@@ -45,6 +45,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "TcpPortFactory.h"
 #include "ISmDnsPortFactory.h"
 #include "RelayPortFactory.h"
+#include "PortFactory.h"
 #include "util/natsort.h"
 #include "util/uri.hpp"
 
@@ -1053,6 +1054,12 @@ static int cltool_dataStreaming()
     tpf.portOptions.defaultBlocking = false;
 
     std::vector<PortFactory*> portFactories = {&spf, &tpf};
+    if (g_commandLineOptions.useSpi) {
+        SpiPortFactory& spif = SpiPortFactory::getInstance();
+        if (g_commandLineOptions.spiSpeedHz) spif.setSpeedHz(g_commandLineOptions.spiSpeedHz);
+        spif.setMode(g_commandLineOptions.spiMode);
+        portFactories.push_back(&spif);
+    }
     if (g_commandLineOptions.useMdns) {
         ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
         mdpf.portOptions.defaultBlocking = false;
@@ -1406,6 +1413,12 @@ static bool cltool_resolveDeviceTarget()
     tpf.portOptions.defaultBlocking = false;
 
     std::vector<PortFactory*> portFactories = {&spf, &tpf};
+    if (g_commandLineOptions.useSpi) {
+        SpiPortFactory& spif = SpiPortFactory::getInstance();
+        if (g_commandLineOptions.spiSpeedHz) spif.setSpeedHz(g_commandLineOptions.spiSpeedHz);
+        spif.setMode(g_commandLineOptions.spiMode);
+        portFactories.push_back(&spif);
+    }
     if (g_commandLineOptions.useMdns) {
         ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
         mdpf.portOptions.defaultBlocking = false;

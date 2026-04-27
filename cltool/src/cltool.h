@@ -24,6 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // change these includes to be the correct path for your system
 #include "InertialSense.h" // best to include this file first
 #include "ISDisplay.h"
+#include "core/spiPort.h"
 #include "ISUtilities.h"
 #include "ISBootloaderBase.h"
 #include "util/util.h"
@@ -178,6 +179,9 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t updateFirmwareSlot = 0;
     uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
     bool list_devices = false;              // if true, dumps results of findDevices() including port name.
+    bool useSpi = false;                    // if true, registers SpiPortFactory and targets the spidev path in comPort
+    uint32_t spiSpeedHz = 0;               // SPI clock speed in Hz (0 = use SpiPortFactory default)
+    uint8_t  spiMode    = SPI_PORT_DEFAULT_MODE; // SPI mode 0-3 (CPOL/CPHA)
     bool useMdns = false;                   // if true, registers ISmDnsPortFactory for mDNS network device discovery
     uint8_t mdnsResolvePreference = 0x07;  // bitmask of MdnsResolveFlags for address resolution preference (default: IPv4|IPv6|hostname)
     bool useRelay = false;                  // if true, registers RelayPortFactory for HTTP relay-based device discovery

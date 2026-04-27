@@ -12,6 +12,11 @@
 #include <vector>
 #include <regex>
 
+#if PLATFORM_IS_LINUX
+#   include <dirent.h>
+#   include <sys/stat.h>
+#endif
+
 // #define REMOTE_SOCAT_PORTS      // only does anything on linux
 
 #ifdef REMOTE_SOCAT_PORTS
@@ -359,3 +364,89 @@ void SerialPortFactory::probe_serial8250_comports__linux(std::vector<std::string
 }
 
 #endif // #if PLATFORM_IS_LINUX
+
+// =======================================================================
+// SpiPortFactory
+// =======================================================================
+
+port_handle_t SpiPortFactory::bindPort(const std::string& pName, uint16_t pType)
+{
+    if (!validatePort(pName, pType))
+        return nullptr;
+
+    spi_port_t* spiPort = new spi_port_t;
+    port_handle_t port  = (port_handle_t)spiPort;
+
+    *spiPort = {};
+    spiPortInit(port,
+                (uint16_t)PortManager::getInstance().getPortCount(),
+                pName.c_str(),
+                portOptions.defaultSpeedHz,
+                portOptions.defaultMode,
+                PORT_TYPE__COMM);
+
+    portValidate(port);
+
+    log_more_debug(IS_LOG_PORT_FACTORY, "Allocated new SPI port '%s'", portName(port));
+    return port;
+}
+
+bool SpiPortFactory::releasePort(port_handle_t port)
+{
+    if (!port) return false;
+
+    log_more_debug(IS_LOG_PORT_FACTORY, "Releasing SPI port '%s'", SPI_PORT(port)->name);
+    memset(port, 0, sizeof(spi_port_t));
+    delete (spi_port_t*)port;
+    return true;
+}
+
+bool SpiPortFactory::validatePort(const std::string& pName, uint16_t pType)
+{
+#if PLATFORM_IS_LINUX
+    struct stat st;
+    return (stat(pName.c_str(), &st) == 0 && S_ISCHR(st.st_mode));
+#else
+    (void)pName; (void)pType;
+    return false;
+#endif
+}
+
+void SpiPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback,
+                                  const std::string& pattern, uint16_t pType)
+{
+#if PLATFORM_IS_LINUX
+    std::vector<std::string> names;
+    std::regex matchPattern(pattern.empty() ? ".*" : pattern);
+    getSpiDevices(names);
+    for (auto& name : names)
+    {
+        if (std::regex_match(name, matchPattern) && validatePort(name, PORT_TYPE__SPI))
+            portCallback(this, PORT_TYPE__SPI, name);
+    }
+#else
+    (void)portCallback; (void)pattern; (void)pType;
+#endif
+}
+
+#if PLATFORM_IS_LINUX
+int SpiPortFactory::getSpiDevices(std::vector<std::string>& names)
+{
+    names.clear();
+
+    // spidev devices appear as /dev/spidevB.C (bus B, chip-select C)
+    DIR* dir = opendir("/dev");
+    if (!dir) return 0;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr)
+    {
+        if (strncmp(entry->d_name, "spidev", 6) == 0)
+            names.push_back(std::string("/dev/") + entry->d_name);
+    }
+    closedir(dir);
+
+    std::sort(names.begin(), names.end());
+    return (int)names.size();
+}
+#endif

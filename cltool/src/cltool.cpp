@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <ctime>
 #include "ISDataMappings.h"
 #include "ISmDnsPortFactory.h"
+#include "PortFactory.h"
 
 using namespace std;
 
@@ -391,6 +392,19 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             // Supports: single port (e.g., "COM5"), comma-separated ports (e.g., "COM2,COM4,COM5"),
             // wildcard (e.g., "*" for all ports, "*4" for first 4 ports)
             g_commandLineOptions.comPort = argv[++i];   // use next argument
+        }
+        else if (matches(a, "-spi") && (i + 1) < argc)
+        {   // SPI device port, e.g. /dev/spi0.0
+            g_commandLineOptions.comPort = argv[++i];
+            g_commandLineOptions.useSpi  = true;
+        }
+        else if (startsWith(a, "-spi-speed="))
+        {
+            g_commandLineOptions.spiSpeedHz = (uint32_t)strtoul(&a[11], NULL, 10);
+        }
+        else if (startsWith(a, "-spi-mode="))
+        {
+            g_commandLineOptions.spiMode = (uint8_t)strtoul(&a[10], NULL, 10);
         }
         else if (startsWith(a, "-dboc"))
         {
@@ -1252,6 +1266,9 @@ void cltool_outputUsage()
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port(s). Options: single port (e.g., COM5 or /dev/ttyUSB0), multiple ports separated by ',' (e.g., COM2,COM4,COM5), \"*\" for all ports, or \"*4\" for first four ports." << endlbOn;
+    cout << "    -spi " << boldOff << "DEVICE_PATH  Select SPI device (e.g., /dev/spi0.0). Registers the SPI port factory instead of serial." << endlbOn;
+    cout << "    -spi-speed=" << boldOff << "HZ   SPI clock speed in Hz (default: " << SPI_PORT_DEFAULT_SPEED_HZ << " Hz = 1 MHz)." << endlbOn;
+    cout << "    -spi-mode=" << boldOff << "N     SPI clock/phase mode 0-3 (default: " << (int)SPI_PORT_DEFAULT_MODE << ")." << endlbOn;
 	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
 	cout << "    -device " << boldOff << "TYPE    Discover all devices and open only those matching TYPE. Options: imx, imx5, imx6, gpx. Implies -c * if no -c port is given." << endlbOn;
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
