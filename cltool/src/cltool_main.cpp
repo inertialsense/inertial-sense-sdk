@@ -1089,7 +1089,7 @@ static int cltool_dataStreaming()
     }
 
     // [C++ COMM INSTRUCTION] STEP 2: Open the requested port and validate a device
-    if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
+    if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose, g_commandLineOptions.filterHdwType))
     {
         // InertialSense::Open returns false for several distinct reasons that the
         // original "Failed to open serial port at <url>" message conflated:

@@ -433,7 +433,7 @@ bool InertialSense::Update()
     return anyOpen;
 }
 
-bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
+bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose, uint16_t filterHdwType)
 {
     // null com port, just use other features of the interface like ntrip
     if (port[0] == '0' && port[1] == '\0')
@@ -443,7 +443,7 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 
     m_disableBroadcastsOnClose = false;
     m_baudRate = baudRate;
-    if (OpenPorts(port, baudRate))
+    if (OpenPorts(port, baudRate, filterHdwType))
     {
         m_disableBroadcastsOnClose = disableBroadcastsOnClose;
         return true;
@@ -963,7 +963,7 @@ int InertialSense::OnPortError(port_handle_t port, int errCode, const char *errM
     return 0;
 }
 
-bool InertialSense::OpenPorts(const char* portPattern, int baudRate)
+bool InertialSense::OpenPorts(const char* portPattern, int baudRate, uint16_t filterHdwType)
 {
     m_baudRate = baudRate;
 
@@ -1020,7 +1020,7 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate)
         for (auto port : portManager.locked_range()) portsToValidate.insert(port);
 
         // attempt to discover devices on all known ports
-        deviceManager.discoverDevices(IS_HARDWARE_ANY, m_comManagerState.discoveryTimeout, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);  // In this case, We ABSOLUTELY want to open any closes ports (because they are all closed currently)
+        deviceManager.discoverDevices(filterHdwType, m_comManagerState.discoveryTimeout, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);  // In this case, We ABSOLUTELY want to open any closes ports (because they are all closed currently)
 
         // remove all ports from portToValidate if a device has bound to that port
         for ( auto d : deviceManager ) portsToValidate.erase(d->port);
