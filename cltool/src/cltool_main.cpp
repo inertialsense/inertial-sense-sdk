@@ -1089,7 +1089,7 @@ static int cltool_dataStreaming()
     }
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
-    if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
+    if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose, g_commandLineOptions.filterHdwType))
     {
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
         return -1;    // Failed to open serial port
