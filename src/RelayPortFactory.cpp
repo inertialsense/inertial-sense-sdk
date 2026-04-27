@@ -13,6 +13,7 @@
 #include "core/msg_logger.h"
 #include "protocol/mdns.hpp"
 #include "ISComm.h"
+#include "util/util.h"
 
 #include <algorithm>
 #include <chrono>
@@ -37,29 +38,6 @@ is_hardware_t stateToHardwareId(const std::string& state) {
     if (state == "gpx")  return IS_HARDWARE_GPX_1_0;
     if (state == "isbl") return ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 0, 0); // bootloader — type ambiguous
     return IS_HARDWARE_NONE;
-}
-
-/// Parse a firmware version string like "fw3.0.0-snap" or "2.4.0" into a 4-byte array [major, minor, patch, build].
-void parseFirmwareVer(const std::string& verStr, uint8_t out[4]) {
-    out[0] = out[1] = out[2] = out[3] = 0;
-    // Strip leading "fw" prefix if present
-    std::string s = verStr;
-    if (s.size() > 2 && (s[0] == 'f' || s[0] == 'F') && (s[1] == 'w' || s[1] == 'W'))
-        s = s.substr(2);
-    // Parse "major.minor.patch" — ignore anything after a dash or non-numeric
-    int idx = 0;
-    size_t pos = 0;
-    while (idx < 4 && pos < s.size()) {
-        size_t dot = s.find_first_of(".-", pos);
-        if (dot == std::string::npos) dot = s.size();
-        std::string part = s.substr(pos, dot - pos);
-        if (!part.empty()) {
-            try { out[idx] = static_cast<uint8_t>(std::stoi(part)); } catch (...) {}
-        }
-        idx++;
-        pos = dot + 1;
-        if (dot < s.size() && s[dot] == '-') break; // stop at -snap, -rc1, etc.
-    }
 }
 
 /// Canonicalize any relay input (bare hostname, IP, full URL, URL-with-path) into
@@ -155,23 +133,33 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     if (uri.empty()) return false;
 
     dev_info_t hint = {};
-    is_hardware_t hdwId = stateToHardwareId(state);
-    hint.hardwareType = DECODE_HDW_TYPE(hdwId);
-    hint.hardwareVer[0] = DECODE_HDW_MAJOR(hdwId);
-    hint.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
+
+    // Prefer the consolidated "hdw" string (e.g. "IMX-5.0", "GPX-1.0.2") when present — it
+    // preserves the cached pre-ISBL identity, so we can still tell IMX-5/IMX-6/GPX apart
+    // when state == "isbl". Older bridgeboards don't emit it, so fall back to state mapping.
+    std::string hdwStr = dev.value("hdw", "");
+    if (hdwStr.empty() || !utils::parseHardwareFromString(hdwStr, hint)) {
+        is_hardware_t hdwId = stateToHardwareId(state);
+        hint.hardwareType = DECODE_HDW_TYPE(hdwId);
+        hint.hardwareVer[0] = DECODE_HDW_MAJOR(hdwId);
+        hint.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
+    }
     hint.hdwRunState = (state == "isbl") ? HDW_STATE_BOOTLOADER : HDW_STATE_APP;
     hint.serialNumber = dev.value("serial_number", 0u);
 
-    // Protocol version — all four components are compile-time constants baked into the SDK.
-    // Populating only CHAR0 leaves consumers reading CHAR1..3 as zero, which can trip
-    // version-compatibility checks.
+    // Protocol version is the SDK's compile-time constant; populating all four
+    // components keeps version-compatibility checks consistent with what a real
+    // probe response would report. Auto-OPEN side effects are gated separately:
+    // hint-driven device registration (DeviceManager::seedDeviceHint) deliberately
+    // never opens the port, so DEVICE_CONNECTED only fires when the user explicitly
+    // opens the port via Find/Open.
     hint.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
     hint.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
     hint.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
     hint.protocolVer[3] = PROTOCOL_VERSION_CHAR3;
 
     std::string fwVer = dev.value("firmware_ver", "");
-    if (!fwVer.empty()) parseFirmwareVer(fwVer, hint.firmwareVer);
+    if (!fwVer.empty()) utils::parseFirmwareFromString(fwVer, hint);
 
     std::string fwCommit = dev.value("firmware_commit", "");
     if (!fwCommit.empty()) parseRepoRevision(fwCommit, hint);
@@ -182,11 +170,6 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     // Manufacturer isn't in the SN-7804 schema — bridgeboard only relays IS devices,
     // so we hard-code a sane default. This matches what real devices report.
     std::strncpy(hint.manufacturer, "Inertial Sense", sizeof(hint.manufacturer) - 1);
-
-    // Build type — SN-7804 doesn't ship this, but 'r' (production release) is the
-    // default the SDK's display/upload paths tolerate. If it matters later, bridgeboard
-    // can expose it explicitly.
-    hint.buildType = 'r';
 
     out.portUrl = std::move(uri);
     out.hint = hint;
@@ -430,22 +413,33 @@ bool RelayPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     return false;
 }
 
-port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pType) {
-    auto port = TcpPortFactory::getInstance().bindPort(pName, pType);
-    if (port) {
-        std::lock_guard<std::recursive_mutex> lock(mutex_);
-        for (const auto& [url, hostPtr] : relayHosts_) {
-            const RelayHost& host = *hostPtr;
-            if (!host.enabled) continue;
-            for (const auto& device : host.devices) {
-                if (device.portUrl == pName) {
-                    DeviceManager::getInstance().seedDeviceHint(port, device.hint);
-                    return port;
-                }
+// If we know a hint for this port (it appears in any enabled relay host's device list),
+// seed it into DeviceManager. Used by both bindPort (when we win the bind race) and
+// onPortAlias (when TcpPortFactory wins for a relay-known URL — the port handle is the
+// same TCP port either way; only the hint-seeding side-effect differs).
+void RelayPortFactory::seedHintForPortIfKnown(port_handle_t port, const std::string& portUrl) {
+    if (!port) return;
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    for (const auto& [url, hostPtr] : relayHosts_) {
+        const RelayHost& host = *hostPtr;
+        if (!host.enabled) continue;
+        for (const auto& device : host.devices) {
+            if (device.portUrl == portUrl) {
+                DeviceManager::getInstance().seedDeviceHint(port, device.hint);
+                return;
             }
         }
     }
+}
+
+port_handle_t RelayPortFactory::bindPort(const std::string& pName, uint16_t pType) {
+    auto port = TcpPortFactory::getInstance().bindPort(pName, pType);
+    seedHintForPortIfKnown(port, pName);
     return port;
+}
+
+void RelayPortFactory::onPortAlias(port_handle_t existing, const std::string& pName, uint16_t /*pType*/) {
+    seedHintForPortIfKnown(existing, pName);
 }
 
 bool RelayPortFactory::releasePort(port_handle_t port) {

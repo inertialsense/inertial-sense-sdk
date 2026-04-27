@@ -956,13 +956,20 @@ void ISFirmwareUpdater::cmd_WaitFor(ISFwUpdaterCmd& cmd) {
         timeoutLabel.clear();      //!< a label to jump to, when a "waitfor" times out (which is not always an error)
     } else if (pingTimeoutExpires && (current_timeMs() > pingTimeoutExpires)) {
         // TIMEOUT occurred
-        cmd.status = ISFwUpdaterCmd::CMD_ERROR;
-        cmd.resultMsg = "Timeout limit reached waiting for response from the target device.";
-        pingTimeoutExpires= pingNextRetry = 0;
+        pingTimeoutExpires = pingNextRetry = 0;
         if (!timeoutLabel.empty()) {
+            // The script provided an on-timeout label, so this is expected control flow,
+            // not a failure. The script's terminal step (typically `:ERROR` with `finish: true`)
+            // is the proper place to flag overall failure. Marking the cmd CMD_ERROR here
+            // would contaminate hasErrors for fully-successful runs that just happened to
+            // skip absent peer modules via their on-timeout fallback.
+            cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+            cmd.resultMsg = "Target not found before timeout; diverting to step " + timeoutLabel;
             LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, cmd.resultMsg.c_str());
             activeCmd = &jumpToStep(timeoutLabel.substr(1));
         } else {
+            cmd.status = ISFwUpdaterCmd::CMD_ERROR;
+            cmd.resultMsg = "Timeout limit reached waiting for response from the target device.";
             handleCommandError(cmd, -1, cmd.resultMsg.c_str());
         }
     } else if (pingInterval && (pingNextRetry < current_timeMs())) {
@@ -1084,6 +1091,27 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
             else if (!target_devInfo)
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;  // unknown version, use alternate MD5 for safety
+        }
+
+        // If the target is a MAIN MCU in bootloader mode, the app firmware version is
+        // unobservable (firmwareVer reflects the bootloader identifier, e.g. ISbl "v6j"
+        // → [6, 'j']). Any version comparison is wasted energy and tends to look "newer"
+        // because 'j' (106) dwarfs typical app majors. Promote the policy to FORCE so the
+        // upload proceeds. SKIP is honored — if the caller explicitly asked to skip, we
+        // still skip.
+        //
+        // Scope to non-peripheral types only: peripherals (CXD/UBX/SEP/STM) use a
+        // bootloader-like interface as their NORMAL operating mode, so HDW_STATE_BOOTLOADER
+        // on a peripheral isn't a "device wiped" signal and shouldn't trigger force-flash.
+        const bool isMainMCU = target_devInfo &&
+                               target_devInfo->hardwareType > IS_HARDWARE_TYPE_UNKNOWN &&
+                               target_devInfo->hardwareType < IS_HDW_TYPE_PERIPHERAL;
+        if (isMainMCU && target_devInfo->hdwRunState == HDW_STATE_BOOTLOADER &&
+            effectivePolicy != UPDATE_POLICY_SKIP && effectivePolicy != UPDATE_POLICY_FORCE) {
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO,
+                "Target is in bootloader mode; promoting policy to FORCE (app version is unobservable).");
+            effectivePolicy = UPDATE_POLICY_FORCE;
+            forceUpdate = true;
         }
 
         // IF_NEWER: compare image version against target's current firmware version
@@ -1225,10 +1253,21 @@ void ISFirmwareUpdater::cmd_finish(ISFwUpdaterCmd& cmd) {
             cmd.status = ISFwUpdaterCmd::CMD_NOT_EXECUTED;
     bool reportErrors = (cmd.args.size() == 1 && cmd[0] == "true");
     cmd.resultMsg = utils::string_format("Firmware Update completed %s", reportErrors ? "with errors. Please review update log for specifics." : "successfully.");
-    cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
 
-    if (reportErrors)
-        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, cmd.resultMsg.c_str());
+    if (reportErrors) {
+        // Authoritative failure declaration: the script reached `finish: true`, which is
+        // the manifest's way of saying "this run is a failure outcome". Flag it via
+        // CMD_ERROR so refreshUpdateState() picks it up into hasErrors, and record the
+        // message so the dialog's error expansion shows it.
+        cmd.status = ISFwUpdaterCmd::CMD_ERROR;
+        {
+            auto lk = updateState.lock();
+            updateState.messages.emplace_back(activeStep, cmd, IS_LOG_LEVEL_ERROR, cmd.resultMsg);
+        }
+        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR, cmd.resultMsg.c_str());
+    } else {
+        cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+    }
 }
 
 void ISFirmwareUpdater::initialize() {

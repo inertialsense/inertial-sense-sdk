@@ -128,3 +128,86 @@ TEST(test_utils, parse_devInfo_from_filename) {
     // EXPECT_EQ(devInfoStr, "GPX-1.0 fw2.3.0-snap.153 2024-12-17 00:28:37");
 
 }
+
+TEST(test_utils, parseHardwareFromString_roundtrip) {
+    dev_info_t devInfo = {};
+
+    ASSERT_TRUE(utils::parseHardwareFromString("IMX-5.0", devInfo));
+    EXPECT_EQ(devInfo.hardwareType, IS_HARDWARE_TYPE_IMX);
+    EXPECT_EQ(devInfo.hardwareVer[0], 5);
+    EXPECT_EQ(devInfo.hardwareVer[1], 0);
+    EXPECT_EQ(devInfo.hardwareVer[2], 0);
+    EXPECT_EQ(devInfo.hardwareVer[3], 0);
+
+    ASSERT_TRUE(utils::parseHardwareFromString("GPX-1.0.2", devInfo));
+    EXPECT_EQ(devInfo.hardwareType, IS_HARDWARE_TYPE_GPX);
+    EXPECT_EQ(devInfo.hardwareVer[0], 1);
+    EXPECT_EQ(devInfo.hardwareVer[1], 0);
+    EXPECT_EQ(devInfo.hardwareVer[2], 2);
+
+    ASSERT_TRUE(utils::parseHardwareFromString("uINS-3.2.1.4", devInfo));
+    EXPECT_EQ(devInfo.hardwareType, IS_HARDWARE_TYPE_UINS);
+    EXPECT_EQ(devInfo.hardwareVer[0], 3);
+    EXPECT_EQ(devInfo.hardwareVer[1], 2);
+    EXPECT_EQ(devInfo.hardwareVer[2], 1);
+    EXPECT_EQ(devInfo.hardwareVer[3], 4);
+
+    // Round-trip: emit then parse.
+    devInfo = {};
+    devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
+    devInfo.hardwareVer[0] = 5; devInfo.hardwareVer[1] = 1;
+    std::string s = utils::getHardwareAsString(devInfo);
+    dev_info_t parsed = {};
+    ASSERT_TRUE(utils::parseHardwareFromString(s, parsed));
+    EXPECT_EQ(parsed.hardwareType, devInfo.hardwareType);
+    EXPECT_EQ(parsed.hardwareVer[0], devInfo.hardwareVer[0]);
+    EXPECT_EQ(parsed.hardwareVer[1], devInfo.hardwareVer[1]);
+
+    // Malformed input is rejected without mutating devInfo.
+    dev_info_t before = parsed;
+    EXPECT_FALSE(utils::parseHardwareFromString("", parsed));
+    EXPECT_FALSE(utils::parseHardwareFromString("IMX", parsed));
+    EXPECT_FALSE(utils::parseHardwareFromString("BOGUS-1.0", parsed));
+    EXPECT_EQ(parsed.hardwareType, before.hardwareType);
+    EXPECT_EQ(parsed.hardwareVer[0], before.hardwareVer[0]);
+}
+
+TEST(test_utils, parseFirmwareFromString_roundtrip) {
+    dev_info_t devInfo = {};
+
+    ASSERT_TRUE(utils::parseFirmwareFromString("fw3.0.0", devInfo));
+    EXPECT_EQ(devInfo.firmwareVer[0], 3);
+    EXPECT_EQ(devInfo.firmwareVer[1], 0);
+    EXPECT_EQ(devInfo.firmwareVer[2], 0);
+    EXPECT_EQ(devInfo.firmwareVer[3], 0);
+    EXPECT_EQ(devInfo.buildType, 'r');
+
+    ASSERT_TRUE(utils::parseFirmwareFromString("fw3.0.0-devel.175", devInfo));
+    EXPECT_EQ(devInfo.firmwareVer[0], 3);
+    EXPECT_EQ(devInfo.firmwareVer[3], 175);
+    EXPECT_EQ(devInfo.buildType, 'd');
+
+    ASSERT_TRUE(utils::parseFirmwareFromString("2.1.7-rc.83", devInfo)); // no 'fw' prefix
+    EXPECT_EQ(devInfo.firmwareVer[0], 2);
+    EXPECT_EQ(devInfo.firmwareVer[1], 1);
+    EXPECT_EQ(devInfo.firmwareVer[2], 7);
+    EXPECT_EQ(devInfo.firmwareVer[3], 83);
+    EXPECT_EQ(devInfo.buildType, 'c');
+
+    // Round-trip: emit then parse.
+    dev_info_t src = {};
+    src.firmwareVer[0] = 2; src.firmwareVer[1] = 4; src.firmwareVer[2] = 0; src.firmwareVer[3] = 12;
+    src.buildType = 's';
+    std::string s = utils::getFirmwareAsString(src);
+    dev_info_t parsed = {};
+    ASSERT_TRUE(utils::parseFirmwareFromString(s, parsed));
+    EXPECT_EQ(parsed.firmwareVer[0], src.firmwareVer[0]);
+    EXPECT_EQ(parsed.firmwareVer[1], src.firmwareVer[1]);
+    EXPECT_EQ(parsed.firmwareVer[2], src.firmwareVer[2]);
+    EXPECT_EQ(parsed.firmwareVer[3], src.firmwareVer[3]);
+    EXPECT_EQ(parsed.buildType, src.buildType);
+
+    // ISBL "firmware_ver" like "ISbl.v6j **BOOTLOADER**" is not parseable — helper returns false,
+    // caller leaves fields at whatever they were.
+    EXPECT_FALSE(utils::parseFirmwareFromString("ISbl.v6j **BOOTLOADER**", parsed));
+}

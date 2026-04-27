@@ -592,7 +592,8 @@ enum eIsHardwareType
     IS_HDW_GNSS_SEPTENTRIO          = IS_HDW_TYPE_PERIPHERAL + 3,    // Septentrio
     IS_HDW_GNSS_STM_TESSIO          = IS_HDW_TYPE_PERIPHERAL + 4,    // STM Tessio
 
-    IS_HARDWARE_TYPE_COUNT          = 5     // Keep last
+    IS_HARDWARE_TYPE_COUNT          = 5,     // Keep last non-peripheral
+    IS_HDW_GNSS_TYPE_COUNT          = 4      // Number of entries in g_isGnssHardwareNames (IS_HDW_GNSS_UBLOX..STM_TESSIO)
 };
 
 typedef uint16_t is_hardware_t;
@@ -614,6 +615,8 @@ static const is_hardware_t IS_HDW_SEPTENTRIO_P3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEP
 static const is_hardware_t IS_HDW_SEPTENTRIO_M3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'M' - 'A', 3);
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
+/// Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1).
+extern const char* g_isGnssHardwareNames[IS_HDW_GNSS_TYPE_COUNT];
 
 enum eHdwRunStates {
     HDW_STATE_UNKNOWN,

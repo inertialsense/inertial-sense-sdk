@@ -221,6 +221,18 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 // Async wait: device is rebooting from bootloader to APP mode.
                 // Keep session_status == FINALIZING until device is rediscovered in APP mode.
 
+                // Heartbeat: emit a progress message at progress_interval regardless of
+                // which sub-branch we take below. The host (ISFirmwareUpdater) treats any
+                // received message as a keep-alive (FirmwareUpdate.cpp:708 → resetTimeout);
+                // without it, session_status flips to ERR_TIMEOUT after 20s and the parent
+                // reports "No Response from device" while the device is genuinely rebooting.
+                if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
+                    nextProgressReport = current_timeMs() + progress_interval;
+                    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
+                        "Waiting for device [%s] to reboot into APP mode.",
+                        ISDevice::getIdAsString(target_devInfo).c_str());
+                }
+
                 // Periodically trigger port rediscovery
                 if (current_timeMs() > nextPortCheck) {
                     portManager.discoverPorts();
@@ -230,14 +242,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 // Re-fetch device (port may have changed after USB re-enumeration)
                 device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
                 if (!device) {
-                    // Device not yet rediscovered — report progress and return
-                    if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
-                        nextProgressReport = current_timeMs() + progress_interval;
-                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
-                            "Waiting for device [%s] to reboot into APP mode.",
-                            ISDevice::getIdAsString(target_devInfo).c_str());
-                    }
-                    // Timeout check
+                    // Device not yet rediscovered — keep waiting (heartbeat above)
                     if ((current_timeMs() - last_reboot) > 20000) {
                         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
                             "Timed out waiting for device [%s] to reboot into APP mode. Upload was successful.",

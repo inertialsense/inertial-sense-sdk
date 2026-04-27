@@ -128,6 +128,20 @@ public:
     port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
     bool releasePort(port_handle_t port) override;
 
+    /// PortManager calls this when our locatePorts() emit was deduped against an existing
+    /// port (typically TcpPortFactory got there first for a relay-known tcp:// URL). The
+    /// existing port handle is fine; we just need to seed our device hint into
+    /// DeviceManager so beginValidation can use it. Does NOT create a new port.
+    void onPortAlias(port_handle_t existing, const std::string& pName, uint16_t pType) override;
+
+private:
+    /// Internal helper: if @p portUrl appears in any enabled relay host's device list,
+    /// seed that device's hint into DeviceManager keyed by @p port. Shared by
+    /// bindPort() and onPortAlias().
+    void seedHintForPortIfKnown(port_handle_t port, const std::string& portUrl);
+
+public:
+
     /**
      * External polling driver — same pattern as ISmDnsPortFactory::tick().
      * Drives mDNS host discovery refresh and HTTP polling for all enabled hosts.

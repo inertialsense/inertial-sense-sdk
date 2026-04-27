@@ -1088,11 +1088,55 @@ static int cltool_dataStreaming()
         }
     }
 
-    // [C++ COMM INSTRUCTION] STEP 2: Open serial port
+    // [C++ COMM INSTRUCTION] STEP 2: Open the requested port and validate a device
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose, g_commandLineOptions.filterHdwType))
     {
-        cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
-        return -1;    // Failed to open serial port
+        // InertialSense::Open returns false for several distinct reasons that the
+        // original "Failed to open serial port at <url>" message conflated:
+        //   (a) the URL didn't match any registered PortFactory — PortManager is empty;
+        //   (b) a factory matched but the port couldn't actually be opened (access
+        //       denied, port held by another process, TCP refused, DNS failed); or
+        //   (c) the port opened fine, but no device responded to discovery in time.
+        // For comPort = '*' or a comma-separated list, summarizing as a single
+        // outcome is unhelpful — different ports can fail for different reasons.
+        // Enumerate per-port state from PortManager so the user sees the OS-level
+        // error code (perror, populated by tcpPort/serialPort drivers from errno)
+        // and the validate/open status of each port that was discovered.
+        if (PortManager::getInstance().empty())
+        {
+            cout << "Could not find a recognizable port for '" << g_commandLineOptions.comPort.c_str()
+                 << "' (no PortFactory matched)." << endl;
+        }
+        else
+        {
+            cout << "Could not establish a device connection for '" << g_commandLineOptions.comPort.c_str()
+                 << "':" << endl;
+            DeviceManager& dm = DeviceManager::getInstance();
+            for (auto port : PortManager::getInstance().locked_range())
+            {
+                if (!port) continue;
+                const char* name = portName(port);
+                uint16_t err = portError(port);
+                bool opened = portIsOpened(port);
+                bool valid = portIsValid(port);
+                bool hasDevice = (dm.getDevice(port) != nullptr);
+
+                cout << "  " << (name ? name : "<unnamed>") << ": ";
+                if (hasDevice) {
+                    cout << "device validated (this port is OK)";
+                } else if (err != 0) {
+                    cout << "port error (" << (int)(int16_t)err << ": " << strerror((int)(int16_t)err) << ")";
+                } else if (!valid) {
+                    cout << "port invalidated";
+                } else if (!opened) {
+                    cout << "port could not be opened";
+                } else {
+                    cout << "port opened but device did not respond to discovery";
+                }
+                cout << endl;
+            }
+        }
+        return -1;
     }
 
     if (g_commandLineOptions.list_devices) {
@@ -1118,6 +1162,28 @@ static int cltool_dataStreaming()
     }
 
     int exitCode = EXIT_CODE_SUCCESS;
+
+    // Bootloader-state guard: if any of the connected devices is sitting in
+    // HDW_STATE_BOOTLOADER, the data-streaming, NMEA, and DID flows below will all
+    // hang indefinitely — bootloaders don't speak DID/NMEA. The exception is the
+    // firmware-update path itself (which exists to recover this state); only block
+    // when we're NOT about to update firmware. Provide a clear, actionable message
+    // so the user doesn't sit watching "Tx 0, Rx 0".
+    const bool isFwUpdateRun =
+        (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST &&
+         !g_commandLineOptions.fwUpdateCmds.empty()) ||
+        (g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST &&
+         !g_commandLineOptions.updateAppFirmwareFilename.empty());
+    if (!isFwUpdateRun) {
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (device && device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
+                cout << "Device " << device->getIdAsString()
+                     << " is in BOOTLOADER mode and will not respond to data, NMEA, or DID requests." << endl
+                     << "  Reboot the device, or run a firmware update (-uf, -ufpkg, -uf-cmd) to recover." << endl;
+                return EXIT_CODE_DEVICE_DISCONNECTED;
+            }
+        }
+    }
 
     // [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
     if (cltool_setupCommunications(inertialSenseInterface))
@@ -1188,9 +1254,16 @@ static int cltool_dataStreaming()
             // [C++ COMM INSTRUCTION] STEP 4: Read data
             while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
-                // FIXME: this is a little jank -- we should periodically check for ports, but in the cltool, but we only want to check for the same ports that we originally connected on??
+                // Re-discover ONLY the originally-specified port(s), not every port the
+                // relay/mDNS factories know about. Default `discoverPorts()` uses pattern
+                // "(.+)" which matches all known URLs — for a -ufpkg run targeting a single
+                // TCP/relay device, that opened TCP sockets to every device the relay
+                // exposed (16+ on a fixture testbed) and held them for the duration of the
+                // run, blocking concurrent clients (the bridgeboard enforces "one client
+                // per port"). Passing the resolved comPort scopes the periodic check to
+                // the target we actually care about.
                 if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
-                    PortManager::getInstance().discoverPorts();
+                    PortManager::getInstance().discoverPorts(g_commandLineOptions.comPort);
                     nextPortCheck = current_timeMs() + 1500;
                 }
 
@@ -1246,6 +1319,19 @@ static int cltool_dataStreaming()
                 SLEEP_MS(1);
             }
  
+            // Re-check device-level fwUpdate errors before reporting status. The earlier
+            // exitCode at line ~1219 captures the state when the loop saw isFirmwareUpdateFinished(),
+            // but additional CMD_ERROR statuses can land between then and now. Without this check
+            // we'd print "Firmware update successful!" and then "Exit Status: -5" — contradictory.
+            if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                for (auto device : inertialSenseInterface.getDevices()) {
+                    if (device->fwUpdateState.hasErrors) {
+                        exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
+                        break;
+                    }
+                }
+            }
+
             // Only report firmware update status if a firmware update was actually initiated.
             if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST && !g_commandLineOptions.fwUpdateCmds.empty())
             {
@@ -1273,16 +1359,6 @@ static int cltool_dataStreaming()
         // Exit Failed to setup communications
         cout << "Failed to setup communications!" << endl;
         exitCode = EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
-    }
-
-    //If Firmware Update is specified return an error code based on the Status of the Firmware Update
-    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
-        for (auto device : inertialSenseInterface.getDevices()) {
-            if (device->fwUpdateState.hasErrors) {
-                exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
-                break;
-            }
-        }
     }
 
     return exitCode;
