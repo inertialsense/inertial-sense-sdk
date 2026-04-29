@@ -971,7 +971,9 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate, uint16_t fi
 
     SerialPortFactory::getInstance().setBaudRate(m_baudRate);
 
-    if (portPattern == NULLPTR || validateBaudRate(baudRate) != 0)
+    // baudRate == 0 means the caller has no baud-rate concept (e.g. SPI); skip the
+    // serial-specific validation so non-UART transports are not incorrectly rejected.
+    if (portPattern == NULLPTR || (baudRate != 0 && validateBaudRate(baudRate) != 0))
     {
         return false;
     }
