@@ -103,6 +103,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         src/libusb
         src/libusb/libusb
         src/yaml-cpp
+        src/tl-expected   # D-10 / SN-7881 — header-only tl::expected (CC0). Resolves <tl/expected.hpp>.
         tests/runtime
         external
 )
