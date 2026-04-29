@@ -739,7 +739,10 @@ TEST(IdxBenchmark, DISABLED_PerformanceProfile) {
     };
 
     vector<Result> results;
-    const vector<float> sizes = {0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f};
+    const vector<float> sizes = {
+        0.25f, 0.5f, 1.0f, 2.0f, 3.0f, 4.0f, 6.0f, 8.0f,
+        12.0f, 16.0f, 24.0f, 32.0f, 48.0f, 64.0f, 96.0f, 128.0f,
+    };
 
     for (float sizeMB : sizes) {
         list<vector<uint8_t>*> messages;
