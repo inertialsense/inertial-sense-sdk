@@ -15,11 +15,31 @@
 
 #include <gtest/gtest.h>
 
+// Include com_manager.h first so its include guard skips the broken
+// extern-C wrap inside ISFirmwareUpdater.h that DeviceLog.h transitively
+// pulls in (com_manager.h declares C++ overloads, which are illegal under
+// extern "C").
+#include "com_manager.h"
+#include "DeviceLog.h"
+#include "ISFileManager.h"
+#include "ISLogFile.h"
 #include "ISLogIndex.h"
+#include "ISLogger.h"
+#include "data_sets.h"
+#include "test_data_utils.h"
 
+#include "ISDataMappings.h"
+
+#include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <map>
+#include <string>
+#include <unistd.h>
 #include <vector>
 
 using namespace inertial_sense;
@@ -189,6 +209,403 @@ TEST(IdxMalformed, ImpossibleHeaderSizeReportsCorrupted) {
     EXPECT_EQ(r.error().code, ISErrorCode::Corrupted);
 }
 
+// ---------------------------------------------------------------------------
+// File-level I/O round-trips via cISLogFile.
+// These exercise the cISLogFileBase wrappers (writeHeader / writeRecord /
+// readHeader / readRecord) against a real on-disk file — the path the SDK
+// actually uses in production.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Returns a unique tmp path under /tmp. Deleted by the caller (or by
+// the OS on reboot — these are smoke tests, not crash-resilient).
+std::string makeTmpPath(const char* tag) {
+    char buf[256];
+    std::snprintf(buf, sizeof(buf), "/tmp/test_log_index_%s_%d_%ld.idx",
+                  tag, ::getpid(), static_cast<long>(::time(nullptr)));
+    return std::string{buf};
+}
+
+} // namespace
+
+TEST(IdxFileIO, HeaderAndRecordRoundTripViaCISLogFile) {
+    const auto path = makeTmpPath("hdrrec");
+    {
+        cISLogFile out(path, "wb");
+        ASSERT_TRUE(out.isOpened());
+
+        auto hdr = makeRoundTripHeader();
+        hdr.total_records = 3;
+        ASSERT_TRUE(writeHeader(out, hdr).has_value());
+
+        is_log_idx_record_v2_t r1{ 1000, 0,    0xAAA, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0 };
+        is_log_idx_record_v2_t r2{ 2000, 100,  0xBBB, 0,                            0 };
+        is_log_idx_record_v2_t r3{ 3000, 4096, 0xCCC, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0 };
+        ASSERT_TRUE(writeRecord(out, r1).has_value());
+        ASSERT_TRUE(writeRecord(out, r2).has_value());
+        ASSERT_TRUE(writeRecord(out, r3).has_value());
+    }
+
+    {
+        cISLogFile in(path, "rb");
+        ASSERT_TRUE(in.isOpened());
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
+        EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2);
+        EXPECT_EQ(hdrR->total_records, 3u);
+
+        auto a = readRecord(in);
+        ASSERT_TRUE(a.has_value());
+        EXPECT_EQ(a->did, 0xAAAu);
+        EXPECT_EQ(a->flags, IS_LOG_IDX_REC_FLAG_HAS_TOW);
+
+        auto b = readRecord(in);
+        ASSERT_TRUE(b.has_value());
+        EXPECT_EQ(b->did, 0xBBBu);
+        EXPECT_EQ(b->flags, 0u);
+
+        auto c = readRecord(in);
+        ASSERT_TRUE(c.has_value());
+        EXPECT_EQ(c->did, 0xCCCu);
+        EXPECT_EQ(c->offset, 4096u);
+    }
+    std::remove(path.c_str());
+}
+
+TEST(IdxFileIO, TruncatedHeaderReturnsTruncated) {
+    const auto path = makeTmpPath("trunc");
+    // Write a file with only 32 bytes — half a header.
+    {
+        cISLogFile out(path, "wb");
+        ASSERT_TRUE(out.isOpened());
+        uint8_t halfBuf[32]{};
+        halfBuf[0] = 'I'; halfBuf[1] = 'S'; halfBuf[2] = 'I'; halfBuf[3] = 'X';
+        ASSERT_EQ(out.write(halfBuf, sizeof(halfBuf)), sizeof(halfBuf));
+    }
+
+    cISLogFile in(path, "rb");
+    ASSERT_TRUE(in.isOpened());
+    auto r = readHeader(in);
+    ASSERT_FALSE(r.has_value());
+    EXPECT_EQ(r.error().code, ISErrorCode::Truncated);
+
+    std::remove(path.c_str());
+}
+
+TEST(IdxFileIO, TruncatedRecordReturnsTruncated) {
+    const auto path = makeTmpPath("rectrunc");
+    {
+        cISLogFile out(path, "wb");
+        ASSERT_TRUE(out.isOpened());
+        auto hdr = makeRoundTripHeader();
+        ASSERT_TRUE(writeHeader(out, hdr).has_value());
+        // Write only 12 bytes of a 24-byte record.
+        uint8_t partial[12]{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+        ASSERT_EQ(out.write(partial, sizeof(partial)), sizeof(partial));
+    }
+
+    cISLogFile in(path, "rb");
+    ASSERT_TRUE(in.isOpened());
+    ASSERT_TRUE(readHeader(in).has_value());
+    auto rec = readRecord(in);
+    ASSERT_FALSE(rec.has_value());
+    EXPECT_EQ(rec.error().code, ISErrorCode::Truncated);
+
+    std::remove(path.c_str());
+}
+
+TEST(IdxRecordRange, LargeOffsetRoundTrip) {
+    // v2 widened the offset field to uint64_t. Verify a value
+    // >4GB (i.e. wouldn't fit in v1's u32) round-trips cleanly.
+    constexpr uint64_t big_offset = 0x0000'0001'0000'0000ULL;  // 4 GiB exactly
+    is_log_idx_record_v2_t src{ 1234, big_offset, 100, 0, 0 };
+    uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
+    serializeRecord(buf, src);
+    auto p = parseRecord(buf);
+    EXPECT_EQ(p.offset, big_offset);
+
+    constexpr uint64_t huge_offset = 0xFFFF'FFFF'FFFF'0000ULL;
+    src.offset = huge_offset;
+    serializeRecord(buf, src);
+    p = parseRecord(buf);
+    EXPECT_EQ(p.offset, huge_offset);
+}
+
+TEST(IdxFinalize, FinalizedFlagSemantics) {
+    // The FINALIZED flag is the writer's signal that total_records,
+    // first_timestamp_ms, and last_timestamp_ms are authoritative.
+    // Producing a header with the flag clear means the writer
+    // crashed or hasn't called finalizeIndex yet — readers can fall
+    // back to scanning records to reconstruct totals.
+    auto h = makeDefaultHeader(0, TimestampUnits::HostUptimeMs,
+                                  HeaderTimeSource::Mixed);
+    EXPECT_EQ(h.flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
+        << "default header must NOT have FINALIZED set — set it on close only";
+
+    h.flags = IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    uint8_t buf[IS_LOG_IDX_HEADER_SIZE];
+    serializeHeader(buf, h);
+    auto p = parseHeader(buf);
+    ASSERT_TRUE(p.has_value());
+    EXPECT_EQ(p->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED,
+              IS_LOG_IDX_HDR_FLAG_FINALIZED);
+}
+
+// ---------------------------------------------------------------------------
+// Integration test: drive the actual cDeviceLog::addIndexRecord +
+// writeIndexChunk + finalizeIndex API end-to-end and verify the resulting
+// .idx file is a viable v2 sidecar readable by ISLogIndex helpers. This is
+// the "ISLogger generates a viable .idx alongside .raw" check Kyle asked
+// for in PR #1123 review.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Minimal cDeviceLog subclass for testing the index-emission machinery.
+// Stubs the pure virtuals so we can instantiate; exposes a helper that
+// sets m_fileName + m_writeMode without going through full
+// InitDeviceForWriting (we don't need a real .raw file for this test).
+class TestDeviceLog : public cDeviceLog {
+public:
+    p_data_buf_t* ReadData() override { return nullptr; }
+    void          SetSerialNumber(uint32_t serialNumber) override { m_devSerialNo = serialNumber; }
+    std::string   LogFileExtention() override { return ".raw"; }
+
+    void prepareForIndexEmissionTest(const std::string& baseFilename) {
+        m_fileName = baseFilename;
+        m_writeMode = true;
+        m_logStartUpTime = current_uptimeMs();
+    }
+};
+
+} // namespace
+
+TEST(IdxIntegration, EndToEndViaDeviceLogApi) {
+    TestDeviceLog log;
+    const auto basePath = makeTmpPath("e2e");
+    // Strip the .idx suffix the helper adds — addIndexRecord +
+    // writeIndexChunk both append ".idx" to m_fileName themselves.
+    const std::string baseNoExt = basePath.substr(0, basePath.size() - 4);
+    log.prepareForIndexEmissionTest(baseNoExt);
+
+    // Three synthetic records with distinct DIDs. cISDataMappings::Timestamp
+    // returns 0.0 for these (no payload-ToW field plumbed in a synthetic
+    // header), so the records take the host-uptime fallback with flags=0
+    // — exactly the expected behavior the writer documents.
+    auto makeHdr = [](uint32_t id, uint16_t size) {
+        p_data_hdr_t h{};
+        h.id = id;
+        h.size = size;
+        h.offset = 0;
+        return h;
+    };
+    uint8_t fakeBuf[64]{};
+
+    p_data_hdr_t h1 = makeHdr(DID_DEV_INFO,    sizeof(dev_info_t));
+    p_data_hdr_t h2 = makeHdr(DID_INS_1,       128);
+    p_data_hdr_t h3 = makeHdr(DID_GPS1_POS,    64);
+
+    log.addIndexRecord(&h1, fakeBuf);
+    log.addIndexRecord(&h2, fakeBuf);
+    log.addIndexRecord(&h3, fakeBuf);
+
+    ASSERT_TRUE(log.writeIndexChunk());
+    ASSERT_TRUE(log.finalizeIndex());
+
+    // Read the .idx file back via the same ISLogIndex helpers a
+    // consumer would use.
+    cISLogFile in(baseNoExt + ".idx", "rb");
+    ASSERT_TRUE(in.isOpened());
+
+    auto hdrR = readHeader(in);
+    ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
+    EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2);
+    EXPECT_EQ(hdrR->total_records, 3u);
+    EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
+        << "finalizeIndex must set the FINALIZED flag";
+    EXPECT_NE(hdrR->producer_version, 0u)
+        << "producer_version must be filled from PROTOCOL_VERSION_CHAR0..3";
+
+    auto rec1 = readRecord(in);
+    ASSERT_TRUE(rec1.has_value());
+    EXPECT_EQ(rec1->did, static_cast<uint32_t>(DID_DEV_INFO));
+
+    auto rec2 = readRecord(in);
+    ASSERT_TRUE(rec2.has_value());
+    EXPECT_EQ(rec2->did, static_cast<uint32_t>(DID_INS_1));
+
+    auto rec3 = readRecord(in);
+    ASSERT_TRUE(rec3.has_value());
+    EXPECT_EQ(rec3->did, static_cast<uint32_t>(DID_GPS1_POS));
+
+    std::remove((baseNoExt + ".idx").c_str());
+}
+
+TEST(IdxIntegration, FinalizeWithoutAnyRecordsIsIdempotent) {
+    // Opening + closing without writing any records shouldn't crash
+    // and shouldn't produce a stray .idx file.
+    TestDeviceLog log;
+    const auto basePath = makeTmpPath("noop");
+    const std::string baseNoExt = basePath.substr(0, basePath.size() - 4);
+    log.prepareForIndexEmissionTest(baseNoExt);
+
+    EXPECT_TRUE(log.finalizeIndex());  // no-op since no header written
+
+    // No .idx file should exist.
+    cISLogFile in(baseNoExt + ".idx", "rb");
+    EXPECT_FALSE(in.isOpened());
+}
+
+// ---------------------------------------------------------------------------
+// Full-stack end-to-end: drive cISLogger with simulated telemetry through
+// the actual production logging framework and verify the .idx sidecar that
+// lands alongside the .raw is internally consistent with what the reader
+// sees when re-parsing the .raw stream.
+//
+// This is the test Kyle requested on PR #1123: "before this can be merged,
+// we need to see it work in a real log — even if the log is created with
+// simulated data — so long as it uses the logging framework. Not just
+// timestamp and indexes, but the whole workflow."
+// ---------------------------------------------------------------------------
+TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
+    using namespace std;
+
+    // Generate ~1MB of synthetic but real-shaped telemetry — same utility
+    // that test_ISLogger.cpp::logReader_raw uses, so we know the writer
+    // path through cISLogger has been exercised on this data shape.
+    list<vector<uint8_t>*> messages;
+    GenerateRawLogData(messages, 1.0f);
+    ASSERT_FALSE(messages.empty());
+
+    char dirBuf[256];
+    std::snprintf(dirBuf, sizeof(dirBuf),
+                  "/tmp/test_log_idx_e2e_%d_%ld",
+                  ::getpid(), static_cast<long>(::time(nullptr)));
+    const string logPath = dirBuf;
+    ISFileManager::DeleteDirectory(logPath);
+
+    // -- Write phase: feed packets through cISLogger (the real framework).
+    {
+        cISLogger logger;
+        cISLogger::sSaveOptions options;
+        options.logType = cISLogger::LOGTYPE_RAW;
+        options.useSubFolderTimestamp = false;
+        ASSERT_TRUE(logger.InitSave(logPath, options));
+        auto devLogger = logger.registerDevice(
+            ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), 12345u);
+        ASSERT_TRUE(devLogger != nullptr);
+        logger.EnableLogging(true);
+
+        for (auto* msg : messages) {
+            ASSERT_TRUE(logger.LogData(devLogger, msg->size(),
+                                       reinterpret_cast<const uint8_t*>(msg->data())));
+        }
+        logger.CloseAllFiles();
+    }
+
+    // -- Locate the .raw + .idx files the framework actually emitted.
+    vector<ISFileManager::file_info_t> rawFiles, idxFiles;
+    ISFileManager::GetAllFilesInDirectory(logPath, true, "\\.raw$", rawFiles);
+    ISFileManager::GetAllFilesInDirectory(logPath, true, "\\.idx$", idxFiles);
+    ASSERT_GE(rawFiles.size(), 1u) << "writer did not produce a .raw file";
+    ASSERT_EQ(idxFiles.size(), rawFiles.size())
+        << "every .raw segment should have a matching .idx sidecar";
+
+    // -- Read all index records out of every .idx file (in alphabetical
+    // segment order — same order the reader walks them).
+    std::sort(idxFiles.begin(), idxFiles.end(),
+              [](const ISFileManager::file_info_t& a,
+                 const ISFileManager::file_info_t& b) {
+                  return a.name < b.name;
+              });
+
+    vector<is_log_idx_record_v2_t> allIdxRecords;
+    for (const auto& idxInfo : idxFiles) {
+        cISLogFile in(idxInfo.name, "rb");
+        ASSERT_TRUE(in.isOpened()) << "could not open " << idxInfo.name;
+
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value())
+            << idxInfo.name << ": " << hdrR.error().message;
+        EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2)
+            << idxInfo.name << ": framework must emit v2 sidecar";
+        EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
+            << idxInfo.name << ": clean shutdown via CloseAllFiles must "
+                                "set FINALIZED";
+        EXPECT_NE(hdrR->producer_version, 0u)
+            << idxInfo.name << ": producer_version must be filled in";
+        EXPECT_GT(hdrR->total_records, 0u)
+            << idxInfo.name << ": some ISB packets should have been indexed";
+
+        for (uint32_t i = 0; i < hdrR->total_records; ++i) {
+            auto recR = readRecord(in);
+            ASSERT_TRUE(recR.has_value())
+                << idxInfo.name << " record " << i << ": "
+                << recR.error().message;
+            allIdxRecords.push_back(*recR);
+        }
+    }
+    ASSERT_FALSE(allIdxRecords.empty());
+
+    // -- Walk the .raw stream back through the same cISLogger reader path
+    // a consumer would use, collect every ISB packet's DID in order.
+    // Bound the iteration by the number of source messages — at most one
+    // packet per message — to mirror the model in test_ISLogger.cpp's
+    // logReader_raw, which doesn't rely on ReadNextPacket returning null
+    // at EOF (the reader holds onto a static buffer past stream-end).
+    cISLogger reader;
+    ASSERT_TRUE(reader.LoadFromDirectory(logPath, cISLogger::LOGTYPE_RAW));
+    reader.ShowParseErrors(true);
+
+    vector<uint16_t> readerIsbDids;
+    size_t deviceIndex = 0;
+    for (size_t k = 0; k < messages.size(); ++k) {
+        protocol_type_t pt = _PTYPE_NONE;
+        packet_t* pkt = reader.ReadNextPacket(pt, deviceIndex);
+        if (pkt == nullptr) break;
+        if (pt == _PTYPE_INERTIAL_SENSE_DATA || pt == _PTYPE_INERTIAL_SENSE_CMD) {
+            readerIsbDids.push_back(pkt->dataHdr.id);
+        }
+    }
+    reader.CloseAllFiles();
+
+    // -- The .idx must mirror the ISB packets the reader sees in count + order.
+    // This is the "the whole workflow" check: the writer's per-packet
+    // addIndexRecord (DeviceLogRaw.cpp parser-loop fix) and the reader's
+    // ISB-packet stream agree byte-for-byte on what got logged.
+    ASSERT_EQ(allIdxRecords.size(), readerIsbDids.size())
+        << ".idx record count must equal the number of ISB packets the "
+           "reader extracts from the .raw";
+    for (size_t i = 0; i < allIdxRecords.size(); ++i) {
+        EXPECT_EQ(allIdxRecords[i].did,
+                  static_cast<uint32_t>(readerIsbDids[i]))
+            << "DID mismatch at index record " << i;
+    }
+
+    // -- Sanity: at least one record carries a payload-ToW timestamp
+    // (HAS_TOW flag set). GenerateRawLogData produces DID_INS_2 / GPS
+    // messages with real GPS-ToW fields, which the writer's payload-ToW
+    // path is supposed to capture.
+    bool sawTowFlag = false;
+    for (const auto& r : allIdxRecords) {
+        if (r.flags & IS_LOG_IDX_REC_FLAG_HAS_TOW) { sawTowFlag = true; break; }
+    }
+    EXPECT_TRUE(sawTowFlag)
+        << "expected at least one indexed record to carry a payload-ToW "
+           "timestamp from a GPS/INS DID";
+
+    // -- One-line summary of what the framework actually produced.
+    std::printf("[idx-e2e] %zu source msgs -> %zu .raw seg(s), %zu .idx record(s), "
+                "%zu reader-ISB packets matched, sawTowFlag=%d\n",
+                messages.size(), rawFiles.size(), allIdxRecords.size(),
+                readerIsbDids.size(), sawTowFlag ? 1 : 0);
+
+    // -- Cleanup
+    for (auto* msg : messages) delete msg;
+    ISFileManager::DeleteDirectory(logPath);
+}
+
 TEST(IdxLittleEndian, ByteOrderIsExplicit) {
     // Sanity: a known value at a known field should produce the
     // expected little-endian bytes regardless of host endianness.
@@ -205,4 +622,252 @@ TEST(IdxLittleEndian, ByteOrderIsExplicit) {
     EXPECT_EQ(buf[9],  0xBA);
     EXPECT_EQ(buf[10], 0xFE);
     EXPECT_EQ(buf[11], 0xCA);
+}
+
+// ---------------------------------------------------------------------------
+// Multi-segment regression: when the .raw exceeds maxFileSize the framework
+// rotates to a new segment. Each segment must get its own valid .idx sidecar
+// — its own header, its own per-segment record count, and intact records
+// (the prior bug was that segment N+1 inherited segment N's m_idxHeaderWritten
+// flag and m_idxTotalRecords counter, so the second segment's writeIndexChunk
+// skipped the header write, and finalizeIndex later overwrote the first ~3
+// records with a [stale-totaled] header at offset 0).
+// ---------------------------------------------------------------------------
+TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
+    using namespace std;
+
+    list<vector<uint8_t>*> messages;
+    GenerateRawLogData(messages, 8.0f);  // ~8 MB ⇒ 2+ default-size segments
+    ASSERT_FALSE(messages.empty());
+
+    char dirBuf[256];
+    std::snprintf(dirBuf, sizeof(dirBuf),
+                  "/tmp/test_log_idx_multiseg_%d_%ld",
+                  ::getpid(), static_cast<long>(::time(nullptr)));
+    const string logPath = dirBuf;
+    ISFileManager::DeleteDirectory(logPath);
+
+    {
+        cISLogger logger;
+        cISLogger::sSaveOptions options;
+        options.logType = cISLogger::LOGTYPE_RAW;
+        options.useSubFolderTimestamp = false;
+        // Force segment rotation by setting a small max file size.
+        options.maxFileSize = 2u * 1024u * 1024u;  // 2 MB per segment
+        ASSERT_TRUE(logger.InitSave(logPath, options));
+        auto devLogger = logger.registerDevice(
+            ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), 12345u);
+        logger.EnableLogging(true);
+        for (auto* msg : messages) {
+            ASSERT_TRUE(logger.LogData(devLogger, msg->size(),
+                                       reinterpret_cast<const uint8_t*>(msg->data())));
+        }
+        logger.CloseAllFiles();
+    }
+
+    vector<ISFileManager::file_info_t> rawFiles, idxFiles;
+    ISFileManager::GetAllFilesInDirectory(logPath, true, "\\.raw$", rawFiles);
+    ISFileManager::GetAllFilesInDirectory(logPath, true, "\\.idx$", idxFiles);
+    ASSERT_GE(rawFiles.size(), 2u)
+        << "8 MB at 2 MB/segment should rotate to multiple segments";
+    ASSERT_EQ(idxFiles.size(), rawFiles.size())
+        << "every .raw segment needs its own .idx sidecar";
+
+    // Each .idx must independently parse as a valid v2 file: header
+    // present, FINALIZED, total_records consistent with on-disk size,
+    // and every record reads back without short-read.
+    for (const auto& f : idxFiles) {
+        cISLogFile in(f.name, "rb");
+        ASSERT_TRUE(in.isOpened()) << f.name;
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value())
+            << f.name << ": " << hdrR.error().message;
+        EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2) << f.name;
+        EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
+            << f.name << ": each segment must be finalized";
+
+        const size_t expectedFromSize =
+            (f.size - IS_LOG_IDX_HEADER_SIZE) / IS_LOG_IDX_RECORD_V2_SIZE;
+        EXPECT_EQ(hdrR->total_records, expectedFromSize)
+            << f.name << ": header total_records must match on-disk record count "
+                         "(= file_size - header) / record_size";
+
+        for (uint32_t i = 0; i < hdrR->total_records; ++i) {
+            auto rec = readRecord(in);
+            ASSERT_TRUE(rec.has_value())
+                << f.name << " record " << i << "/" << hdrR->total_records
+                << ": " << rec.error().message;
+        }
+    }
+
+    for (auto* msg : messages) delete msg;
+    ISFileManager::DeleteDirectory(logPath);
+}
+
+// ---------------------------------------------------------------------------
+// Performance benchmark — DISABLED by default. Run with:
+//   ./IS-SDK_unit-tests \
+//       --gtest_also_run_disabled_tests \
+//       --gtest_filter='IdxBenchmark.DISABLED_PerformanceProfile'
+//
+// Sweeps log size, then for each: writes via cISLogger (full framework),
+// reports .raw + .idx file sizes, write-time, read-back time for the
+// whole index, and the time to answer a "find all packets with DID==X"
+// query two ways: (a) scan the .idx, (b) walk the .raw via the reader.
+// CSV is printed between #CSV-START / #CSV-END markers so a downstream
+// plot script can pick it out reliably.
+// ---------------------------------------------------------------------------
+TEST(IdxBenchmark, DISABLED_PerformanceProfile) {
+    using namespace std;
+    using clock_t = std::chrono::steady_clock;
+    auto ms_of = [](clock_t::duration d) {
+        return std::chrono::duration<double, std::milli>(d).count();
+    };
+
+    struct Result {
+        float    sizeMb;
+        size_t   numMessages;
+        size_t   rawBytes;
+        size_t   idxBytes;
+        double   writeMs;
+        double   idxFullReadMs;
+        size_t   totalRecords;
+        uint32_t targetDid;
+        size_t   matchCount;       // should be identical for both methods
+        double   searchViaIdxMs;
+        double   searchViaRawMs;
+    };
+
+    vector<Result> results;
+    const vector<float> sizes = {0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f};
+
+    for (float sizeMB : sizes) {
+        list<vector<uint8_t>*> messages;
+        GenerateRawLogData(messages, sizeMB);
+
+        char dirBuf[256];
+        std::snprintf(dirBuf, sizeof(dirBuf),
+                      "/tmp/idx_bench_%.2fmb_%d_%ld",
+                      sizeMB, ::getpid(), static_cast<long>(::time(nullptr)));
+        const string logPath = dirBuf;
+        ISFileManager::DeleteDirectory(logPath);
+
+        // -- Write phase --
+        auto t0 = clock_t::now();
+        {
+            cISLogger logger;
+            cISLogger::sSaveOptions options;
+            options.logType = cISLogger::LOGTYPE_RAW;
+            options.useSubFolderTimestamp = false;
+            ASSERT_TRUE(logger.InitSave(logPath, options));
+            auto devLogger = logger.registerDevice(
+                ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), 12345u);
+            logger.EnableLogging(true);
+            for (auto* msg : messages) {
+                logger.LogData(devLogger, msg->size(),
+                               reinterpret_cast<const uint8_t*>(msg->data()));
+            }
+            logger.CloseAllFiles();
+        }
+        auto t1 = clock_t::now();
+
+        // -- File sizes --
+        vector<ISFileManager::file_info_t> rawFiles, idxFiles;
+        ISFileManager::GetAllFilesInDirectory(logPath, true, "\\.raw$", rawFiles);
+        ISFileManager::GetAllFilesInDirectory(logPath, true, "\\.idx$", idxFiles);
+        size_t rawBytes = 0, idxBytes = 0;
+        for (const auto& f : rawFiles) rawBytes += f.size;
+        for (const auto& f : idxFiles) idxBytes += f.size;
+
+        // -- Read all .idx records --
+        auto t2 = clock_t::now();
+        vector<is_log_idx_record_v2_t> records;
+        for (const auto& f : idxFiles) {
+            cISLogFile in(f.name, "rb");
+            ASSERT_TRUE(in.isOpened());
+            auto hdrR = readHeader(in);
+            ASSERT_TRUE(hdrR.has_value());
+            records.reserve(records.size() + hdrR->total_records);
+            for (uint32_t i = 0; i < hdrR->total_records; ++i) {
+                auto rec = readRecord(in);
+                ASSERT_TRUE(rec.has_value());
+                records.push_back(*rec);
+            }
+        }
+        auto t3 = clock_t::now();
+
+        // -- Pick the most common DID as the search target. Mid-frequency
+        // would be a fairer test of pure scan cost, but matching counts
+        // across both methods needs a DID that's present in both views.
+        std::map<uint32_t, size_t> didCounts;
+        for (const auto& r : records) didCounts[r.did]++;
+        uint32_t targetDid = 0;
+        size_t   maxCount  = 0;
+        for (const auto& kv : didCounts) {
+            if (kv.second > maxCount) { targetDid = kv.first; maxCount = kv.second; }
+        }
+        ASSERT_NE(targetDid, 0u);
+
+        // -- Search via .idx: in-memory scan over the records vector.
+        // This excludes the file-read cost (already accounted for above).
+        auto t4 = clock_t::now();
+        size_t matchIdx = 0;
+        for (const auto& r : records) {
+            if (r.did == targetDid) ++matchIdx;
+        }
+        auto t5 = clock_t::now();
+
+        // -- Search via .raw: full reader walk, parser per packet.
+        auto t6 = clock_t::now();
+        cISLogger reader;
+        ASSERT_TRUE(reader.LoadFromDirectory(logPath, cISLogger::LOGTYPE_RAW));
+        reader.ShowParseErrors(false);
+        size_t devIdx = 0;
+        size_t matchRaw = 0;
+        for (size_t k = 0; k < messages.size(); ++k) {
+            protocol_type_t pt = _PTYPE_NONE;
+            packet_t* pkt = reader.ReadNextPacket(pt, devIdx);
+            if (pkt == nullptr) break;
+            if ((pt == _PTYPE_INERTIAL_SENSE_DATA || pt == _PTYPE_INERTIAL_SENSE_CMD) &&
+                pkt->dataHdr.id == static_cast<uint16_t>(targetDid)) {
+                ++matchRaw;
+            }
+        }
+        reader.CloseAllFiles();
+        auto t7 = clock_t::now();
+
+        // Sanity: both methods should agree on the count.
+        EXPECT_EQ(matchIdx, matchRaw)
+            << "search results disagree at sizeMB=" << sizeMB;
+
+        Result r{};
+        r.sizeMb         = sizeMB;
+        r.numMessages    = messages.size();
+        r.rawBytes       = rawBytes;
+        r.idxBytes       = idxBytes;
+        r.writeMs        = ms_of(t1 - t0);
+        r.idxFullReadMs  = ms_of(t3 - t2);
+        r.totalRecords   = records.size();
+        r.targetDid      = targetDid;
+        r.matchCount     = matchIdx;
+        r.searchViaIdxMs = ms_of(t5 - t4);
+        r.searchViaRawMs = ms_of(t7 - t6);
+        results.push_back(r);
+
+        for (auto* msg : messages) delete msg;
+        ISFileManager::DeleteDirectory(logPath);
+    }
+
+    // -- CSV output between sentinels for downstream tooling.
+    std::printf("\n#CSV-START\n");
+    std::printf("size_mb,num_messages,raw_bytes,idx_bytes,write_ms,total_records,"
+                "idx_full_read_ms,target_did,match_count,search_via_idx_ms,"
+                "search_via_raw_ms\n");
+    for (const auto& r : results) {
+        std::printf("%.2f,%zu,%zu,%zu,%.3f,%zu,%.3f,%u,%zu,%.4f,%.4f\n",
+                    r.sizeMb, r.numMessages, r.rawBytes, r.idxBytes, r.writeMs,
+                    r.totalRecords, r.idxFullReadMs, r.targetDid, r.matchCount,
+                    r.searchViaIdxMs, r.searchViaRawMs);
+    }
+    std::printf("#CSV-END\n");
 }
