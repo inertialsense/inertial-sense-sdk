@@ -183,11 +183,20 @@ typedef struct PACKED
     sensor_cal_v1p4_data_t      data;
 } sensor_cal_v1p4_t;
 
-// Current version of sensor calibration in use
+// Per-build-target native calibration types. SN-7966: IMX-5 hardware is permanently Cal v1.3,
+// IMX-6 (and host SDK) is permanently Cal v1.4. Host code (no IMX_5/IMX_6 define) sees v1.4 so
+// ISDeviceCal etc. continue to operate on the v1.4 in-memory representation.
+#if defined(IMX_5)
+typedef sensor_tcal_group_v1p3_t    sensor_tcal_group_t;
+typedef sensor_mcal_group_v1p3_t    sensor_mcal_group_t;
+typedef sensor_cal_v1p3_data_t      sensor_cal_data_t;
+typedef sensor_cal_v1p3_t           sensor_cal_t;
+#else
 typedef sensor_tcal_group_v1p4_t    sensor_tcal_group_t;
 typedef sensor_mcal_group_v1p4_t    sensor_mcal_group_t;
 typedef sensor_cal_v1p4_data_t      sensor_cal_data_t;
-typedef sensor_cal_v1p4_t           sensor_cal_t;               
+typedef sensor_cal_v1p4_t           sensor_cal_t;
+#endif
 
 #ifdef __cplusplus
 }

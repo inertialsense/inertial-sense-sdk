@@ -200,9 +200,15 @@ typedef uint32_t eDataIDs;
 // Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
 #define MAX_IMU_DEVICES_V1P4    5
 #define MAX_MAG_DEVICES_V1P4    1
-// Max number of devices across all hardware types: uINS-3, IMX-5, and IMX-6
-#define MAX_IMU_DEVICES         MAX_IMU_DEVICES_V1P4    // g_numImuDevices defines the actual number of hardware specific devices
-#define MAX_MAG_DEVICES         MAX_MAG_DEVICES_V1P4    // g_numMagDevices defines the actual number of hardware specific devices
+// Per-build-target native counts. SN-7966: IMX-5 hardware is permanently Cal v1.3,
+// IMX-6 (and host SDK) is permanently Cal v1.4. Host code (no IMX_5/IMX_6 define) uses v1.4.
+#if defined(IMX_5)
+#define MAX_IMU_DEVICES         MAX_IMU_DEVICES_V1P3
+#define MAX_MAG_DEVICES         MAX_MAG_DEVICES_V1P3
+#else
+#define MAX_IMU_DEVICES         MAX_IMU_DEVICES_V1P4
+#define MAX_MAG_DEVICES         MAX_MAG_DEVICES_V1P4
+#endif
 
 /** INS status flags */
 enum eInsStatusFlags
