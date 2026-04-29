@@ -82,6 +82,15 @@ void cDeviceLog::InitDeviceForReading()
 bool cDeviceLog::CloseAllFiles()
 {
     if (m_writeMode) {
+        // Flush any buffered index records and finalize the .idx
+        // header (rewrite at offset 0 with final totals + FINALIZED
+        // flag). Order matters: chunk-write first so finalizeIndex
+        // sees the right total count.
+        if (!m_indexChunks.empty()) {
+            writeIndexChunk();
+        }
+        finalizeIndex();
+
         string str = m_directory + "/summary_SN" + to_string(m_devSerialNo) + ".txt";
         m_logStats.WriteToFile(str);
     }
@@ -134,7 +143,10 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
             m_logStats.CacheDiagnosticData(dataHdr->id, dataBuf, dataHdr->size, timestamp);
         }
 
-        addIndexRecord();
+        // D-01 / SN-7879: pass the parsed header + buffer through so
+        // the v2 index record carries the actual DID + payload-derived
+        // timestamp + ToW flag.
+        addIndexRecord(dataHdr, dataBuf);
         m_lastIndexOffset += dataHdr->size;
     }
 
@@ -143,7 +155,10 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
 
 bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
-    // Update log statistics done in cDeviceLogRaw::SaveData()
+    // Streaming raw-bytes path: no parsed header available, so the v2
+    // index record gets did=0, timestamp=host_uptime_delta, flags=0
+    // (handled inside addIndexRecord when dataHdr is null).
+    (void)dataBuf;
     addIndexRecord();
     m_lastIndexOffset += dataSize;
 
@@ -312,33 +327,130 @@ void cDeviceLog::OnReadData(p_data_buf_t* data)
     }
 }
 
-void cDeviceLog::addIndexRecord() {
+// Pack the SDK's PROTOCOL_VERSION_CHAR0..3 quadruple into a single u32
+// for the .idx header's `producer_version` field. Layout chosen so a
+// hex dump reads "02 01 00 00" → SDK 2.1.0.0 left-to-right.
+static inline uint32_t encode_sdk_producer_version() noexcept {
+    return  (static_cast<uint32_t>(PROTOCOL_VERSION_CHAR0) << 24)
+          | (static_cast<uint32_t>(PROTOCOL_VERSION_CHAR1) << 16)
+          | (static_cast<uint32_t>(PROTOCOL_VERSION_CHAR2) <<  8)
+          | (static_cast<uint32_t>(PROTOCOL_VERSION_CHAR3));
+}
 
-    uint32_t timeSinceStart = current_uptimeMs() - m_logStartUpTime;
-    if (m_indexChunks.empty() || (timeSinceStart > m_indexChunks.back().time)) {
-        index_record_t newRec;
-        newRec.time = timeSinceStart;
-        newRec.offset = m_lastIndexOffset;
-        newRec.msg_id = m_logStats.Count();
-        newRec.reserved = 0;
-        m_indexChunks.push_back(newRec);
+void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* dataBuf) {
+    using namespace inertial_sense::idx;
+
+    is_log_idx_record_v2_t rec{};
+    rec.offset = m_lastIndexOffset;
+    rec.reserved = 0;
+
+    if (dataHdr != nullptr) {
+        rec.did = dataHdr->id;
+        // cISDataMappings::Timestamp returns 0.0 if the DID doesn't
+        // carry one — that's the signal to fall back to the host
+        // uptime delta and clear the ToW flag.
+        const double tsSeconds = cISDataMappings::Timestamp(dataHdr, dataBuf);
+        if (tsSeconds > 0.0) {
+            rec.timestamp = static_cast<uint64_t>(tsSeconds * 1000.0);
+            rec.flags = IS_LOG_IDX_REC_FLAG_HAS_TOW;
+        } else {
+            rec.timestamp = static_cast<uint64_t>(current_uptimeMs() - m_logStartUpTime);
+            rec.flags = 0;
+        }
     } else {
-        // m_indexChunks.emplace_back()
+        // Streaming-only path: no DID, no payload timestamp. Fall back
+        // to host uptime delta so the record still anchors a position
+        // in the .raw segment by approximate time.
+        rec.did = 0;
+        rec.timestamp = static_cast<uint64_t>(current_uptimeMs() - m_logStartUpTime);
+        rec.flags = 0;
     }
 
+    // Track first/last for the header rewrite at finalize time.
+    if (m_idxTotalRecords == 0 && m_indexChunks.empty()) {
+        m_idxFirstTimestampMs = rec.timestamp;
+    }
+    m_idxLastTimestampMs = rec.timestamp;
+
+    m_indexChunks.push_back(rec);
     m_lastIndexTime = current_uptimeMs();
 }
 
 bool cDeviceLog::writeIndexChunk() {
-    std::string fileName = m_fileName + ".idx";
+    using namespace inertial_sense::idx;
 
+    if (m_indexChunks.empty() && m_idxHeaderWritten) {
+        return true; // nothing to do
+    }
+
+    const std::string fileName = m_fileName + ".idx";
     cISLogFile indexFile(fileName, "ab");
-    // m_indexFile = CreateISLogFile(fileName, "ab");
-    for (index_record_t& rec : m_indexChunks) {
-        if (indexFile.write(&rec, sizeof(index_record_s)) != sizeof(index_record_s))
-            return false; // writing error; we have to assume this entire file is now bad.
+    if (!indexFile.isOpened()) {
+        return false;
+    }
+
+    // First chunk write: emit the v2 header. total_records /
+    // first/last timestamps stay zero here — finalizeIndex() seeks(0)
+    // and rewrites the header on close. ts_units = HostUptimeMs is
+    // the conservative default; per-record `flags` bit 0 still tells
+    // readers when a specific record actually carried a real ToW.
+    if (!m_idxHeaderWritten) {
+        is_log_idx_header_t hdr = makeDefaultHeader(
+            encode_sdk_producer_version(),
+            TimestampUnits::HostUptimeMs,
+            HeaderTimeSource::Mixed);
+        auto r = writeHeader(indexFile, hdr);
+        if (!r) {
+            return false;
+        }
+        m_idxHeaderWritten = true;
+    }
+
+    for (const auto& rec : m_indexChunks) {
+        auto r = writeRecord(indexFile, rec);
+        if (!r) {
+            // writing error; whole file should be considered bad.
+            return false;
+        }
+        ++m_idxTotalRecords;
     }
     m_indexChunks.clear();
     indexFile.close();  // unnecessary since this is destroyed on exit
+    return true;
+}
+
+bool cDeviceLog::finalizeIndex() {
+    using namespace inertial_sense::idx;
+
+    // Idempotent: if no header was ever written (no records emitted)
+    // there's nothing to finalize.
+    if (!m_idxHeaderWritten) {
+        return true;
+    }
+
+    const std::string fileName = m_fileName + ".idx";
+    // Open r+b so we can seek to offset 0 and rewrite the header.
+    cISLogFile indexFile(fileName, "rb+");
+    if (!indexFile.isOpened()) {
+        return false;
+    }
+
+    if (indexFile.seek(0, SEEK_SET) != 0) {
+        return false;
+    }
+
+    is_log_idx_header_t hdr = makeDefaultHeader(
+        encode_sdk_producer_version(),
+        TimestampUnits::HostUptimeMs,
+        HeaderTimeSource::Mixed);
+    hdr.total_records       = m_idxTotalRecords;
+    hdr.first_timestamp_ms  = m_idxFirstTimestampMs;
+    hdr.last_timestamp_ms   = m_idxLastTimestampMs;
+    hdr.flags               = IS_LOG_IDX_HDR_FLAG_FINALIZED;
+
+    auto r = writeHeader(indexFile, hdr);
+    if (!r) {
+        return false;
+    }
     return true;
 }
