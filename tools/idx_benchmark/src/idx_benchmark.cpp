@@ -50,13 +50,16 @@ struct Result {
 void printUsage(const char* argv0) {
     std::fprintf(stderr,
         "usage: %s [--sizes <comma-separated MB>] [--out-csv <path>]\n"
-        "          [--out-dir <dir>] [--quiet]\n"
+        "          [--out-dir <dir>] [--keep] [--quiet]\n"
         "\n"
         "options:\n"
         "  --sizes    comma-separated list of log sizes in MB (default:\n"
         "             0.25,0.5,1,2,3,4,6,8,12,16,24,32,48,64,96,128)\n"
         "  --out-csv  write CSV to this file (default: stdout only)\n"
         "  --out-dir  scratch dir for log files (default: /tmp)\n"
+        "  --keep     do NOT delete the generated log dirs after\n"
+        "             measurement — useful for capturing fixtures.\n"
+        "             Each iteration's path is printed on stderr.\n"
         "  --quiet    suppress per-row progress lines\n"
         "\n"
         "CSV columns:\n"
@@ -80,7 +83,7 @@ std::vector<float> parseSizes(const std::string& csv) {
     return out;
 }
 
-Result runOne(float sizeMB, const std::string& outDir, bool quiet) {
+Result runOne(float sizeMB, const std::string& outDir, bool quiet, bool keep) {
     using clock_t = std::chrono::steady_clock;
     auto ms_of = [](clock_t::duration d) {
         return std::chrono::duration<double, std::milli>(d).count();
@@ -223,7 +226,11 @@ Result runOne(float sizeMB, const std::string& outDir, bool quiet) {
     }
 
     for (auto* msg : messages) delete msg;
-    ISFileManager::DeleteDirectory(logPath);
+    if (keep) {
+        std::fprintf(stderr, "[bench] kept log dir: %s\n", logPath.c_str());
+    } else {
+        ISFileManager::DeleteDirectory(logPath);
+    }
     return r;
 }
 
@@ -249,6 +256,7 @@ int main(int argc, char** argv) {
     std::string outCsv;
     std::string outDir = "/tmp";
     bool quiet = false;
+    bool keep  = false;
 
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
@@ -257,6 +265,7 @@ int main(int argc, char** argv) {
             return 0;
         }
         if (a == "--quiet") { quiet = true; continue; }
+        if (a == "--keep")  { keep  = true; continue; }
         if (i + 1 >= argc) {
             std::fprintf(stderr, "missing argument for %s\n", a.c_str());
             return 1;
@@ -270,7 +279,7 @@ int main(int argc, char** argv) {
     }
 
     std::vector<Result> results;
-    for (float s : sizes) results.push_back(runOne(s, outDir, quiet));
+    for (float s : sizes) results.push_back(runOne(s, outDir, quiet, keep));
 
     // Always emit CSV between sentinels on stdout (compat with the
     // gtest version's plot script) — and optionally also to a file.

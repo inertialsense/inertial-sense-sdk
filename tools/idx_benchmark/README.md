@@ -56,6 +56,9 @@ CLI options:
                       (default: 0.25,0.5,1,2,3,4,6,8,12,16,24,32,48,64,96,128)
 --out-csv <path>      also write a plain CSV file (no #CSV markers)
 --out-dir <dir>       scratch directory for log files (default: /tmp)
+--keep                do NOT delete the generated log dirs after
+                      measurement (useful for capturing fixtures —
+                      each iteration's path is printed on stderr)
 --quiet               suppress per-row progress lines on stderr
 ```
 
