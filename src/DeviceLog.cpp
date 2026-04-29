@@ -155,13 +155,17 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
 
 bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
-    // Streaming raw-bytes path: no parsed header available, so the v2
-    // index record gets did=0, timestamp=host_uptime_delta, flags=0
-    // (handled inside addIndexRecord when dataHdr is null).
+    // Streaming raw-bytes path: no parsed header is available *here*,
+    // but the caller (cDeviceLogRaw::SaveData) parses individual
+    // packets and emits per-packet v2 index records inside its parser
+    // loop. We deliberately do NOT call addIndexRecord(no-args) here
+    // — it would clobber the per-packet emission with a coarser
+    // chunk-level record carrying did=0. The offset increment is also
+    // deferred to the caller so per-packet records capture the
+    // chunk-start offset (D-01 / SN-7879).
+    (void)dataSize;
     (void)dataBuf;
-    addIndexRecord();
-    m_lastIndexOffset += dataSize;
-
+    (void)globalLogStats;
     return true;
 }
 
@@ -214,7 +218,16 @@ bool cDeviceLog::OpenNewSaveFile()
     _MKDIR(m_directory.c_str());
 
     // Open new file
-    m_lastIndexOffset = 0;
+    // D-01 / SN-7879: every .raw segment gets its own .idx sidecar with
+    // its own header + per-segment record counts and timestamps. Reset
+    // the per-segment state here so segment N+1 doesn't inherit segment
+    // N's flags and counters (which would skip the new segment's header
+    // write and overstate its total_records).
+    m_lastIndexOffset       = 0;
+    m_idxHeaderWritten      = false;
+    m_idxTotalRecords       = 0;
+    m_idxFirstTimestampMs   = 0;
+    m_idxLastTimestampMs    = 0;
     m_fileCount++;
     uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
     if (!serNum)
