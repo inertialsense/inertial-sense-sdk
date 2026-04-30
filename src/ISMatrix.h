@@ -65,6 +65,8 @@ extern "C" {
 #define VEC3_ALL_ZERO(v)                    ( (((v)[0]) == ZERO_OF((v)[0])) && (((v)[1]) == ZERO_OF((v)[1])) && (((v)[2]) == ZERO_OF((v)[2])) )
 #define VEC3_ANY_ZERO(v)                    ( (((v)[0]) == ZERO_OF((v)[0])) || (((v)[1]) == ZERO_OF((v)[1])) || (((v)[2]) == ZERO_OF((v)[2])) )
 #define VEC3_ANY_NOT_ZERO(v)                ( (((v)[0]) != ZERO_OF((v)[0])) || (((v)[1]) != ZERO_OF((v)[1])) || (((v)[2]) != ZERO_OF((v)[2])) )
+#define VEC3_ANY_NAN(v)                     ( (is_nan_f((v)[0])) || (is_nan_f((v)[1])) || (is_nan_f((v)[2])) )  
+#define VEC3_NO_NAN(v)                      ( !VEC3_ANY_NAN(v) )
 
 #define INT3_ANY_NOT_ZERO(v)                ( ((v[0])!=(0)) || ((v[1])!=(0)) || ((v[2])!=(0)) )
 
