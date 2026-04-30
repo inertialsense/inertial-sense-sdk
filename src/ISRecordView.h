@@ -62,19 +62,25 @@ public:
      *                      `nullptr` for the empty sentinel.
      * @param size          Number of payload bytes addressable from
      *                      `data`.
+     * @param flags         `IS_LOG_IDX_REC_FLAG_*` bitmask from the
+     *                      source `.idx` record. Bit 0
+     *                      (`HAS_TOW`) marks a sync-eligible record.
+     *                      Defaults to 0 for backward compatibility.
      */
     constexpr ISRecordView(uint32_t did,
                            uint64_t timestampMs,
                            uint64_t deviceId,
                            uint64_t offsetInFile,
                            const uint8_t* data,
-                           std::size_t size) noexcept
+                           std::size_t size,
+                           uint16_t flags = 0) noexcept
         : did_(did),
           timestampMs_(timestampMs),
           deviceId_(deviceId),
           offset_(offsetInFile),
           data_(data),
-          size_(size) {}
+          size_(size),
+          flags_(flags) {}
 
     /**
      * Returns the record's data identifier (`DID_*` from `data_sets.h`).
@@ -111,6 +117,17 @@ public:
      * @return  Byte offset (0 == start-of-file).
      */
     constexpr uint64_t offsetInFile() const noexcept { return offset_; }
+
+    /**
+     * Returns the `IS_LOG_IDX_REC_FLAG_*` bitmask from the source
+     * `.idx` record. Bit 0 (`HAS_TOW`) indicates the record's payload
+     * carried a real GPS time-of-week field — used by D-07's
+     * `ISTimeResolver` as a sync anchor and by D-08's `ISLogWriter`
+     * to preserve the flag through bake/trim.
+     *
+     * @return  Flags bitmask, or 0 for the empty sentinel.
+     */
+    constexpr uint16_t flags() const noexcept { return flags_; }
 
     /**
      * Returns the record's bytes as a (pointer, size) pair. The
@@ -159,6 +176,7 @@ private:
     uint64_t       offset_      = 0;
     const uint8_t* data_        = nullptr;
     std::size_t    size_        = 0;
+    uint16_t       flags_       = 0;
 };
 
 /**
@@ -196,12 +214,14 @@ public:
                 uint64_t timestampMs,
                 uint64_t deviceId,
                 uint64_t offsetInFile,
-                std::vector<uint8_t> bytes)
+                std::vector<uint8_t> bytes,
+                uint16_t flags = 0)
         : did_(did),
           timestampMs_(timestampMs),
           deviceId_(deviceId),
           offset_(offsetInFile),
-          bytes_(std::move(bytes)) {}
+          bytes_(std::move(bytes)),
+          flags_(flags) {}
 
     /** @return  The record's DID, or 0 if untagged. */
     uint32_t did() const noexcept { return did_; }
@@ -219,6 +239,12 @@ public:
 
     /** @return  Original byte offset in the source `.raw` segment. */
     uint64_t offsetInFile() const noexcept { return offset_; }
+
+    /**
+     * @return  `IS_LOG_IDX_REC_FLAG_*` bitmask preserved from the
+     *          source view at construction.
+     */
+    uint16_t flags() const noexcept { return flags_; }
 
     /**
      * @return  `{ data, size }` over the owning buffer; `data` may
@@ -248,11 +274,12 @@ private:
     uint64_t             deviceId_    = 0;
     uint64_t             offset_      = 0;
     std::vector<uint8_t> bytes_;
+    uint16_t             flags_       = 0;
 };
 
 inline OwnedRecord ISRecordView::owned() const {
     std::vector<uint8_t> copy(data_, data_ + size_);
-    return OwnedRecord{ did_, timestampMs_, deviceId_, offset_, std::move(copy) };
+    return OwnedRecord{ did_, timestampMs_, deviceId_, offset_, std::move(copy), flags_ };
 }
 
 } // namespace inertial_sense
