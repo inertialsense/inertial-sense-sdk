@@ -114,15 +114,58 @@ public:
 
     /**
      * Reports whether the segment had a v2 `.idx` sidecar on disk
-     * that parsed cleanly at open time. If false, the reader fell
-     * back to a `.raw`-scan-built in-memory index (D-04 will persist
-     * the rebuild; until then the lazy index is recomputed each
-     * open).
+     * that parsed cleanly at open time. If false, the reader either
+     * rebuilt the in-memory index by scanning the `.raw` (D-04) or,
+     * if the sidecar was absent / stale / v1, optionally persisted
+     * a fresh v2 `.idx` next to the `.raw`.
      *
-     * @return  `true` if the on-disk `.idx` was used; `false` if
-     *          the in-memory fallback was constructed.
+     * @return  `true` if the on-disk `.idx` was used as-is; `false`
+     *          if the in-memory index was rebuilt from a `.raw` scan.
      */
     bool hadOnDiskIndex() const noexcept { return hadOnDiskIndex_; }
+
+    /**
+     * Reports whether the `.raw` ended mid-record — typically because
+     * the embedded logger was killed or power-cut while writing the
+     * tail packet. Records before the truncation are valid and
+     * iterable; the truncation itself is non-fatal.
+     *
+     * @return  `true` if a truncation was detected; `false` if the
+     *          file ended on a clean packet boundary.
+     */
+    bool isTruncated() const noexcept { return isTruncated_; }
+
+    /**
+     * @return  Byte offset into the `.raw` where parsing stopped.
+     *          Equal to `fileSize()` when the file ends cleanly.
+     *          When `isTruncated() == true`, this is the start of
+     *          the discarded partial packet.
+     */
+    uint64_t truncationOffset() const noexcept { return truncationOffset_; }
+
+    /**
+     * @return  Total byte count of the backing `.raw` file. Same
+     *          as `ISLogSource::size()`; exposed here for
+     *          symmetry with `truncationOffset()`.
+     */
+    uint64_t fileSize() const noexcept;
+
+    /**
+     * Side-channel diagnostic strings collected during open.
+     * Categories observed today (added by D-04):
+     *
+     *   - `"truncation: stopped at offset N (file size M)"` when
+     *     `isTruncated() == true`.
+     *   - `"sidecar: rebuilt from .raw scan (reason: missing|stale|v1)"`
+     *     when a `.idx` was rebuilt rather than read from disk.
+     *   - `"sidecar: persist failed (read-only filesystem?)"` when
+     *     the rebuilt index couldn't be written back next to the
+     *     `.raw`. Reading still works from the in-memory index.
+     *
+     * @return  Reference to the warnings vector. Empty when the
+     *          open path was straightforward.
+     */
+    const std::vector<std::string>& warnings() const noexcept { return warnings_; }
 
     /**
      * @return  Earliest record timestamp in this segment, in the
@@ -411,6 +454,17 @@ private:
      */
     ISRecordView viewAt(std::size_t recordIdx) const noexcept;
 
+    /**
+     * Atomically writes `records_` + `header_` out as a v2 `.idx`
+     * sidecar at `idxPath_` (`.idx.tmp` then rename). Called after a
+     * successful scan-rebuild when `IS_LOG_READER_NO_PERSIST_INDEX`
+     * is unset. Failures are non-fatal — the in-memory index still
+     * works.
+     *
+     * @return  `true` if the file was written successfully.
+     */
+    bool persistIndex() const;
+
     // Backing storage.
     std::unique_ptr<ISLogSource>           rawSource_;
     idx::is_log_idx_header_t               header_{};
@@ -423,8 +477,13 @@ private:
     std::vector<std::size_t>               allIndices_;        // 0..N-1
     static const std::vector<std::size_t>  kEmptyIndices_;
 
-    bool                                   hadOnDiskIndex_ = false;
-    uint64_t                               deviceId_       = 0;
+    bool                                   hadOnDiskIndex_     = false;
+    bool                                   isTruncated_        = false;
+    uint64_t                               truncationOffset_   = 0;
+    uint64_t                               deviceId_           = 0;
+    std::vector<std::string>               warnings_;
+    std::filesystem::path                  rawPath_;
+    std::filesystem::path                  idxPath_;
 
     friend class RangeIterator;
     friend class Range;

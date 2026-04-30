@@ -10,6 +10,15 @@
 
 #include "ISLogReader.h"
 
+// com_manager.h FIRST — short-circuits the broken extern-C wrap in
+// ISFirmwareUpdater.h that would otherwise trip C++ overloads. Same
+// trick used in test_log_index.cpp.
+#include "com_manager.h"
+
+#include "ISComm.h"
+#include "ISDataMappings.h"
+#include "data_sets.h"
+
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -245,73 +254,125 @@ ISExpected<ISLogReader>
                            const fs::path& rawPath) {
     ISLogReader r;
     r.rawSource_ = std::move(rawSource);
+    r.rawPath_   = rawPath;
 
     // -----------------------------------------------------------------
-    // Sidecar: replace ".raw" with ".idx" (matches the writer
+    // Sidecar discovery: replace ".raw" with ".idx" (matches the writer
     // convention from cDeviceLog::OpenNewSaveFile / m_fileName + ".idx").
     // -----------------------------------------------------------------
     fs::path idxPath = rawPath;
     if (idxPath.extension() == ".raw") {
         idxPath.replace_extension(".idx");
     } else {
-        // Fallback: append ".idx" (e.g. `.bin.idx` if a non-standard
-        // naming sneaks in). Writer always uses `.raw` today; this
-        // branch is defensive.
-        idxPath += ".idx";
+        idxPath += ".idx";   // defensive — writer always uses .raw today
     }
+    r.idxPath_ = idxPath;
+
+    // -----------------------------------------------------------------
+    // Try the on-disk sidecar first. If it parses cleanly AND its
+    // counters are consistent with the .raw, use it. Otherwise fall
+    // through to the scan-rebuild path (D-04).
+    // -----------------------------------------------------------------
+    enum class RebuildReason { None, Missing, V1, Corrupted, Stale, ReadError };
+    RebuildReason rebuildReason = RebuildReason::Missing;
 
     std::error_code ec;
     if (fs::exists(idxPath, ec)) {
         auto idxSrc = ISFileSource::open(idxPath);
         if (!idxSrc) {
-            // Index couldn't be opened (corrupt FS, perm change between
-            // exists() and open()). Treat as missing — fall through to
-            // the lazy scan.
+            rebuildReason = RebuildReason::ReadError;
         } else {
             const auto& s = **idxSrc;
-            if (s.size() >= idx::IS_LOG_IDX_HEADER_SIZE) {
+            if (s.size() < idx::IS_LOG_IDX_HEADER_SIZE) {
+                rebuildReason = RebuildReason::Corrupted;
+            } else {
                 uint8_t hdrBuf[idx::IS_LOG_IDX_HEADER_SIZE];
                 std::memcpy(hdrBuf, s.data(), idx::IS_LOG_IDX_HEADER_SIZE);
                 auto hdr = idx::parseHeader(hdrBuf);
-                if (hdr) {
-                    // Pull every record. The writer uses
-                    // header_size = IS_LOG_IDX_HEADER_SIZE; if a future v3
-                    // grows the header, hdr.header_size lets us skip the
-                    // unknown trailing fields without misreading records.
+                if (!hdr) {
+                    // LegacyFormat (no magic) → v1 sidecar. Other errors
+                    // (Unsupported / Corrupted) → drop and rebuild.
+                    rebuildReason = (hdr.error().code == ISErrorCode::LegacyFormat)
+                        ? RebuildReason::V1
+                        : RebuildReason::Corrupted;
+                } else {
                     const std::size_t bodyStart = hdr->header_size;
                     if (bodyStart > s.size()) {
-                        return fail(ISErrorCode::Corrupted,
-                                    "ISLogReader: .idx header_size exceeds file size: "
-                                    + idxPath.string());
-                    }
-                    const std::size_t bodyBytes = s.size() - bodyStart;
-                    const std::size_t nRecords  = bodyBytes / idx::IS_LOG_IDX_RECORD_V2_SIZE;
-                    std::vector<idx::is_log_idx_record_v2_t> recs;
-                    recs.reserve(nRecords);
-                    for (std::size_t i = 0; i < nRecords; ++i) {
-                        uint8_t recBuf[idx::IS_LOG_IDX_RECORD_V2_SIZE];
-                        std::memcpy(recBuf,
-                                    s.data() + bodyStart + i * idx::IS_LOG_IDX_RECORD_V2_SIZE,
+                        rebuildReason = RebuildReason::Corrupted;
+                    } else {
+                        const std::size_t bodyBytes = s.size() - bodyStart;
+                        const std::size_t nRecords  = bodyBytes / idx::IS_LOG_IDX_RECORD_V2_SIZE;
+
+                        // Stale-detection: if the header advertises a
+                        // total_records that disagrees with what's
+                        // physically present in the file body, the
+                        // sidecar was truncated, partially overwritten,
+                        // or otherwise out-of-sync with the .raw.
+                        // FINALIZED + matching count is the happy path.
+                        const bool finalized =
+                            (hdr->flags & idx::IS_LOG_IDX_HDR_FLAG_FINALIZED) != 0;
+                        const bool countConsistent =
+                            !finalized || hdr->total_records == nRecords;
+
+                        if (!countConsistent) {
+                            rebuildReason = RebuildReason::Stale;
+                        } else {
+                            // Pull every record.
+                            std::vector<idx::is_log_idx_record_v2_t> recs;
+                            recs.reserve(nRecords);
+                            for (std::size_t i = 0; i < nRecords; ++i) {
+                                uint8_t recBuf[idx::IS_LOG_IDX_RECORD_V2_SIZE];
+                                std::memcpy(recBuf,
+                                    s.data() + bodyStart
+                                        + i * idx::IS_LOG_IDX_RECORD_V2_SIZE,
                                     idx::IS_LOG_IDX_RECORD_V2_SIZE);
-                        recs.push_back(idx::parseRecord(recBuf));
+                                recs.push_back(idx::parseRecord(recBuf));
+                            }
+                            r.header_         = *hdr;
+                            r.hadOnDiskIndex_ = true;
+                            r.buildIndexFromIdx(recs);
+                            // Trusted index → assume the .raw is
+                            // intact end-to-end. A future story can
+                            // optionally tail-verify, but here we
+                            // honor the FINALIZED flag.
+                            r.isTruncated_      = false;
+                            r.truncationOffset_ = r.rawSource_->size();
+                            rebuildReason = RebuildReason::None;
+                        }
                     }
-                    r.header_         = *hdr;
-                    r.hadOnDiskIndex_ = true;
-                    r.buildIndexFromIdx(recs);
                 }
-                // hdr.error() is LegacyFormat / Unsupported / Corrupted —
-                // same fallback path as missing sidecar.
             }
         }
     }
 
     if (!r.hadOnDiskIndex_) {
-        // Fabricate a default header. Lazy index will populate the
-        // counters from the .raw scan (D-04 will persist this back
-        // to disk; for D-02 we just hold it in memory).
+        // Default header; counters get filled in by buildIndexFromScan.
         r.header_ = idx::makeDefaultHeader(0, idx::TimestampUnits::HostUptimeMs,
                                            idx::HeaderTimeSource::Mixed);
         r.buildIndexFromScan();
+
+        // Document the rebuild for the caller.
+        const char* reasonStr = "unknown";
+        switch (rebuildReason) {
+            case RebuildReason::Missing:    reasonStr = "missing";    break;
+            case RebuildReason::V1:         reasonStr = "v1";         break;
+            case RebuildReason::Stale:      reasonStr = "stale";      break;
+            case RebuildReason::Corrupted:  reasonStr = "corrupted";  break;
+            case RebuildReason::ReadError:  reasonStr = "read-error"; break;
+            case RebuildReason::None:       reasonStr = "n/a";        break;
+        }
+        r.warnings_.push_back(
+            std::string{"sidecar: rebuilt from .raw scan (reason: "} + reasonStr + ")");
+
+        // Persist the rebuilt sidecar. Suppressed when the build flips
+        // IS_LOG_READER_NO_PERSIST_INDEX (e.g. tests, customers who
+        // don't want surprise writes to log dirs) or when the .raw
+        // sits on read-only media.
+#if !defined(IS_LOG_READER_NO_PERSIST_INDEX)
+        if (!r.persistIndex()) {
+            r.warnings_.push_back("sidecar: persist failed (read-only filesystem?)");
+        }
+#endif
     }
 
     r.deriveDeviceId(rawPath);
@@ -337,14 +398,130 @@ void ISLogReader::buildIndexFromIdx(
 }
 
 void ISLogReader::buildIndexFromScan() {
-    // D-04 is responsible for the full robust scan-and-rebuild. For
-    // D-02 we land an empty fallback — the reader still answers
-    // metadata queries (recordCount() == 0, allRecords() empty), and
-    // the AC explicitly says missing-sidecar is not an error. The
-    // .raw bytes remain accessible via the source for any downstream
-    // consumer who wants to do their own parse.
     records_.clear();
     byDid_.clear();
+    isTruncated_ = false;
+    truncationOffset_ = rawSource_ ? rawSource_->size() : 0;
+
+    if (!rawSource_ || rawSource_->size() == 0) {
+        return;
+    }
+
+    const uint8_t* base   = rawSource_->data();
+    const std::size_t total = rawSource_->size();
+
+    // is_comm_init wants a scratch buffer to hold the in-progress
+    // packet. PKT_BUF_SIZE is the SDK's max-packet bound. Keep it on
+    // the stack — it's small (a few KB).
+    is_comm_instance_t comm{};
+    uint8_t commBuf[PKT_BUF_SIZE];
+    is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+    is_comm_enable_protocol(&comm, _PTYPE_RTCM3);
+    is_comm_enable_protocol(&comm, _PTYPE_UBLOX);
+
+    // Track the file offset of the byte immediately after the last
+    // successful packet emit. When a packet emits at byte index `i`,
+    // the packet started at `lastEmitEnd` and ended at `i`, so the
+    // .idx record offset is `lastEmitEnd`. After the emit we set
+    // lastEmitEnd = i + 1.
+    std::size_t lastEmitEnd = 0;
+
+    for (std::size_t i = 0; i < total; ++i) {
+        protocol_type_t ptype = is_comm_parse_byte(&comm, base[i]);
+        if (ptype == _PTYPE_NONE) continue;
+
+        if (ptype == _PTYPE_INERTIAL_SENSE_DATA ||
+            ptype == _PTYPE_INERTIAL_SENSE_CMD) {
+            // ISB packet — record into the index.
+            const auto& dataHdr = comm.rxPkt.dataHdr;
+            const uint64_t tsSec = static_cast<uint64_t>(
+                cISDataMappings::TimestampOrCurrentTime(&dataHdr,
+                                                        comm.rxPkt.data.ptr));
+            // TimestampOrCurrentTime returns seconds (double); convert
+            // to ms to match the v2 .idx units convention.
+            const uint64_t tsMs = static_cast<uint64_t>(tsSec * 1000.0);
+
+            idx::is_log_idx_record_v2_t rec{};
+            rec.timestamp = tsMs;
+            rec.offset    = static_cast<uint64_t>(lastEmitEnd);
+            rec.did       = dataHdr.id;
+            rec.flags     = 0;
+            rec.reserved  = 0;
+            records_.push_back(rec);
+        }
+        // Whether or not we recorded this packet (NMEA/RTCM/UBX skipped),
+        // its bytes are consumed; advance the post-emit cursor.
+        lastEmitEnd = i + 1;
+    }
+
+    // After the scan, any bytes the parser consumed-but-didn't-emit
+    // since lastEmitEnd are an incomplete trailing packet — the
+    // truncation signal.
+    if (lastEmitEnd < total) {
+        isTruncated_      = true;
+        truncationOffset_ = static_cast<uint64_t>(lastEmitEnd);
+        warnings_.push_back(
+            "truncation: stopped at offset " + std::to_string(lastEmitEnd) +
+            " (file size " + std::to_string(total) + ")");
+    } else {
+        truncationOffset_ = total;
+    }
+
+    // Populate byDid_ and finalize header counters.
+    byDid_.clear();
+    byDid_.reserve(64);
+    for (std::size_t i = 0; i < records_.size(); ++i) {
+        byDid_[records_[i].did].push_back(i);
+    }
+    if (!records_.empty()) {
+        header_.total_records       = records_.size();
+        header_.first_timestamp_ms  = records_.front().timestamp;
+        header_.last_timestamp_ms   = records_.back().timestamp;
+        header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    }
+}
+
+bool ISLogReader::persistIndex() const {
+    if (idxPath_.empty() || records_.empty()) return false;
+
+    // Atomic write: <raw>.idx.tmp → rename → <raw>.idx. A crash mid-
+    // write leaves the old sidecar (if any) intact.
+    const fs::path tmpPath = idxPath_.string() + ".tmp";
+
+    std::ofstream out(tmpPath, std::ios::binary | std::ios::trunc);
+    if (!out) return false;
+
+    uint8_t hdrBuf[idx::IS_LOG_IDX_HEADER_SIZE];
+    idx::serializeHeader(hdrBuf, header_);
+    out.write(reinterpret_cast<const char*>(hdrBuf), idx::IS_LOG_IDX_HEADER_SIZE);
+    if (!out) { std::error_code ec; fs::remove(tmpPath, ec); return false; }
+
+    for (const auto& rec : records_) {
+        uint8_t recBuf[idx::IS_LOG_IDX_RECORD_V2_SIZE];
+        idx::serializeRecord(recBuf, rec);
+        out.write(reinterpret_cast<const char*>(recBuf),
+                  idx::IS_LOG_IDX_RECORD_V2_SIZE);
+        if (!out) { std::error_code ec; fs::remove(tmpPath, ec); return false; }
+    }
+    out.close();
+    if (!out) { std::error_code ec; fs::remove(tmpPath, ec); return false; }
+
+    std::error_code ec;
+    fs::rename(tmpPath, idxPath_, ec);
+    if (ec) {
+        // Cross-volume rename or permission issue — fall back to copy.
+        fs::copy_file(tmpPath, idxPath_, fs::copy_options::overwrite_existing, ec);
+        std::error_code rmEc;
+        fs::remove(tmpPath, rmEc);
+        if (ec) return false;
+    }
+    return true;
+}
+
+uint64_t ISLogReader::fileSize() const noexcept {
+    return rawSource_ ? rawSource_->size() : 0;
 }
 
 void ISLogReader::deriveDeviceId(const fs::path& rawPath) {

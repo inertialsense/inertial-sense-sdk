@@ -118,6 +118,15 @@ endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# D-04 (SN-7895): when ON (default), ISLogReader's scan-rebuild path
+# persists a fresh v2 .idx next to the .raw. Set OFF for tests, or for
+# customers that don't want surprise writes to log directories.
+option(IS_LOG_READER_PERSIST_INDEX
+       "Persist rebuilt v2 .idx sidecars next to .raw files" ON)
+if(NOT IS_LOG_READER_PERSIST_INDEX)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC IS_LOG_READER_NO_PERSIST_INDEX)
+endif()
+
 # Other settings
 if (WIN32)
     # yamlcpp needs to know it's a static lib.
