@@ -83,34 +83,48 @@ public:
     // Header / segment-level metadata
     // -----------------------------------------------------------------
 
-    /// `.idx` v2 header. If the sidecar was absent, this returns the
-    /// in-memory header constructed from the lazy index (magic =
-    /// "ISIX", version = 2, FINALIZED unset).
+    /**
+     * `.idx` v2 header. If the sidecar was absent, this returns the
+     * in-memory header constructed from the lazy index (magic =
+     * "ISIX", version = 2, FINALIZED unset).
+     */
     const idx::is_log_idx_header_t& header() const noexcept { return header_; }
 
-    /// True if the segment had a v2 `.idx` sidecar that parsed cleanly.
-    /// False if the sidecar was missing — readers fall back to a
-    /// `.raw`-scan-built in-memory index. (D-04 will persist the
-    /// rebuild; until then the lazy index is recomputed each open.)
+    /**
+     * True if the segment had a v2 `.idx` sidecar that parsed cleanly.
+     * False if the sidecar was missing — readers fall back to a
+     * `.raw`-scan-built in-memory index. (D-04 will persist the
+     * rebuild; until then the lazy index is recomputed each open.)
+     */
     bool hadOnDiskIndex() const noexcept { return hadOnDiskIndex_; }
 
-    /// Earliest record timestamp (units per `header().ts_units`).
-    /// 0 if the segment is empty.
+    /**
+     * Earliest record timestamp (units per `header().ts_units`).
+     * 0 if the segment is empty.
+     */
     uint64_t segmentStartTimestamp() const noexcept;
 
-    /// Latest record timestamp. 0 if the segment is empty.
+    /**
+     * Latest record timestamp. 0 if the segment is empty.
+     */
     uint64_t segmentEndTimestamp() const noexcept;
 
-    /// Total record count across all DIDs.
+    /**
+     * Total record count across all DIDs.
+     */
     std::size_t recordCount() const noexcept { return records_.size(); }
 
-    /// Sorted list of DIDs that appear at least once in this segment.
+    /**
+     * Sorted list of DIDs that appear at least once in this segment.
+     */
     std::vector<did_t> presentDids() const;
 
-    /// Device serial number derived from the first `DID_DEV_INFO`
-    /// record's payload. Falls back to filename parsing
-    /// (`LOG_SN<N>_*.raw`) if no DEV_INFO record was logged.
-    /// Returns 0 if neither path produces a value.
+    /**
+     * Device serial number derived from the first `DID_DEV_INFO`
+     * record's payload. Falls back to filename parsing
+     * (`LOG_SN<N>_*.raw`) if no DEV_INFO record was logged.
+     * Returns 0 if neither path produces a value.
+     */
     uint64_t deviceId() const noexcept { return deviceId_; }
 
     // -----------------------------------------------------------------
@@ -165,15 +179,17 @@ public:
         std::size_t size() const noexcept { return end_ - begin_; }
         bool empty() const noexcept { return begin_ == end_; }
 
-        /// Returns the sub-range of records in the closed interval
-        /// `[t0, t1]` (timestamps compared by `value` only — see
-        /// `TimeStamp` ordering rules in D-06). Records are ordered
-        /// in arrival order, NOT timestamp order; this filter does a
-        /// linear scan with early-exit since the sub-range is built
-        /// over the same `indices_` array. For the common case of
-        /// monotonic timestamps within one DID, callers should expect
-        /// O(N) here. A binary-search variant lands when D-07 anchors
-        /// per-DID timestamps in monotonic order.
+        /**
+         * Returns the sub-range of records in the closed interval
+         * `[t0, t1]` (timestamps compared by `value` only — see
+         * `TimeStamp` ordering rules in D-06). Records are ordered
+         * in arrival order, NOT timestamp order; this filter does a
+         * linear scan with early-exit since the sub-range is built
+         * over the same `indices_` array. For the common case of
+         * monotonic timestamps within one DID, callers should expect
+         * O(N) here. A binary-search variant lands when D-07 anchors
+         * per-DID timestamps in monotonic order.
+         */
         Range in_time(TimeStamp t0, TimeStamp t1) const;
 
     private:
@@ -183,26 +199,32 @@ public:
         std::size_t                      end_;
     };
 
-    /// Records for a single DID. If the DID is not present, returns
-    /// an empty range (`begin == end`).
+    /**
+     * Records for a single DID. If the DID is not present, returns
+     * an empty range (`begin == end`).
+     */
     Range records(did_t did) const noexcept;
 
-    /// Records across all DIDs, in arrival order.
+    /**
+     * Records across all DIDs, in arrival order.
+     */
     Range allRecords() const noexcept;
 
-    /// Position an iterator over `allRecords()` at the first record
-    /// with `record.timestamp() >= target`. Uses `.idx` v2 binary
-    /// search internally — O(log N) when records are
-    /// timestamp-monotonic.
-    ///
-    /// **Note on monotonicity:** v2 `.idx` records are written in
-    /// arrival order, which is not always timestamp-monotonic
-    /// (different DIDs ship time from different clocks; cf. the
-    /// PIMU-vs-INS divergence captured in the D-01 cltool
-    /// validation). For non-monotonic input this method falls back
-    /// to a linear scan. D-07's `ISTimeResolver` outputs are
-    /// timestamp-monotonic, so the binary-search fast path will be
-    /// the norm post-D-07.
+    /**
+     * Position an iterator over `allRecords()` at the first record
+     * with `record.timestamp() >= target`. Uses `.idx` v2 binary
+     * search internally — O(log N) when records are
+     * timestamp-monotonic.
+     *
+     * **Note on monotonicity:** v2 `.idx` records are written in
+     * arrival order, which is not always timestamp-monotonic
+     * (different DIDs ship time from different clocks; cf. the
+     * PIMU-vs-INS divergence captured in the D-01 cltool
+     * validation). For non-monotonic input this method falls back
+     * to a linear scan. D-07's `ISTimeResolver` outputs are
+     * timestamp-monotonic, so the binary-search fast path will be
+     * the norm post-D-07.
+     */
     RangeIterator seek(TimeStamp target) const noexcept;
 
 private:

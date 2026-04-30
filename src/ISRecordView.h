@@ -40,11 +40,15 @@ class OwnedRecord;  // forward — defined below.
  */
 class ISRecordView {
 public:
-    /// Default-constructed view is the "empty" / end-of-range sentinel.
-    /// `bytes().first == nullptr` and `bytes().second == 0`.
+    /**
+     * Default-constructed view is the "empty" / end-of-range sentinel.
+     * `bytes().first == nullptr` and `bytes().second == 0`.
+     */
     constexpr ISRecordView() noexcept = default;
 
-    /// Construct a view over a record. Used by `ISLogReader`.
+    /**
+     * Construct a view over a record. Used by `ISLogReader`.
+     */
     constexpr ISRecordView(uint32_t did,
                            uint64_t timestampMs,
                            uint64_t deviceId,
@@ -58,14 +62,18 @@ public:
           data_(data),
           size_(size) {}
 
-    /// Data identifier (`DID_*` from `data_sets.h`). 0 means "no DID
-    /// associated" — used for raw stream chunks the writer didn't tag.
+    /**
+     * Data identifier (`DID_*` from `data_sets.h`). 0 means "no DID
+     * associated" — used for raw stream chunks the writer didn't tag.
+     */
     constexpr uint32_t did() const noexcept { return did_; }
 
-    /// Payload-derived timestamp, tagged with provenance per D-06.
-    /// Source defaults to `PayloadToW` (matches the writer's
-    /// `HeaderTimeSource::PayloadToW` for this story); D-07 will
-    /// refine the provenance based on `ISTimeResolver` outputs.
+    /**
+     * Payload-derived timestamp, tagged with provenance per D-06.
+     * Source defaults to `PayloadToW` (matches the writer's
+     * `HeaderTimeSource::PayloadToW` for this story); D-07 will
+     * refine the provenance based on `ISTimeResolver` outputs.
+     */
     constexpr TimeStamp timestamp() const noexcept {
         return TimeStamp{ timestampMs_,
                           TimeSource::PayloadToW,
@@ -73,29 +81,37 @@ public:
                           deviceId_ };
     }
 
-    /// Byte offset into the segment's `.raw` file where this record's
-    /// bytes begin. Verbatim from the `.idx` record's `offset` field.
+    /**
+     * Byte offset into the segment's `.raw` file where this record's
+     * bytes begin. Verbatim from the `.idx` record's `offset` field.
+     */
     constexpr uint64_t offsetInFile() const noexcept { return offset_; }
 
-    /// Pointer + size of this record's bytes inside the mmap'd region.
-    /// Pointer aliases the segment's mmap; do not dereference after
-    /// the parent reader is destroyed or moved-from.
+    /**
+     * Pointer + size of this record's bytes inside the mmap'd region.
+     * Pointer aliases the segment's mmap; do not dereference after
+     * the parent reader is destroyed or moved-from.
+     */
     constexpr std::pair<const uint8_t*, std::size_t> bytes() const noexcept {
         return { data_, size_ };
     }
 
-    /// Reinterpret-cast helper. Returns `nullptr` if `sizeof(T)` does
-    /// not match the record's byte count — guards against silent
-    /// over-/under-reads when the caller assumes a structure layout.
-    /// (D-03 will introduce a `DIDTraits`-aware checked variant.)
+    /**
+     * Reinterpret-cast helper. Returns `nullptr` if `sizeof(T)` does
+     * not match the record's byte count — guards against silent
+     * over-/under-reads when the caller assumes a structure layout.
+     * (D-03 will introduce a `DIDTraits`-aware checked variant.)
+     */
     template <class T>
     const T* as() const noexcept {
         if (data_ == nullptr || size_ != sizeof(T)) return nullptr;
         return reinterpret_cast<const T*>(data_);
     }
 
-    /// Materialize an owning copy. The returned record holds its own
-    /// buffer and outlives the parent reader.
+    /**
+     * Materialize an owning copy. The returned record holds its own
+     * buffer and outlives the parent reader.
+     */
     OwnedRecord owned() const;
 
 private:

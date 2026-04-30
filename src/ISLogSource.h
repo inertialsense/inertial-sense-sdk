@@ -35,16 +35,22 @@ class ISLogSource {
 public:
     virtual ~ISLogSource() = default;
 
-    /// Pointer to the first byte of the source. Stable for the source
-    /// object's lifetime; never null after construction.
+    /**
+     * Pointer to the first byte of the source. Stable for the source
+     * object's lifetime; never null after construction.
+     */
     virtual const uint8_t* data() const noexcept = 0;
 
-    /// Total byte count of the source.
+    /**
+     * Total byte count of the source.
+     */
     virtual std::size_t size() const noexcept = 0;
 
-    /// True if the underlying byte range is a memory-mapping. False
-    /// when the buffered-I/O fallback was used (mmap unavailable on
-    /// the host filesystem). Informational; doesn't change semantics.
+    /**
+     * True if the underlying byte range is a memory-mapping. False
+     * when the buffered-I/O fallback was used (mmap unavailable on
+     * the host filesystem). Informational; doesn't change semantics.
+     */
     virtual bool isMmapped() const noexcept = 0;
 };
 
