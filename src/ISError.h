@@ -35,6 +35,11 @@ enum class ISErrorCode : uint16_t {
     Truncated,
     Unsupported,
     Internal,
+    // Distinct from Unsupported: the data was successfully parsed and
+    // identified as a recognized older format. Caller can fall back to
+    // a legacy-aware reader rather than treating it as an error.
+    // Added by D-01 / SN-7879 for v1 .idx detection.
+    LegacyFormat,
 };
 
 // Carries the failure code and a short canonical message. Construct
