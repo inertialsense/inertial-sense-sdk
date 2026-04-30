@@ -129,8 +129,13 @@ endif()
 
 # Other settings
 if (WIN32)
-    # yamlcpp needs to know it's a static lib.
-    add_definitions(-DYAML_CPP_STATIC_DEFINE)
+    # yamlcpp needs to know it's a static lib. PUBLIC so consumers of
+    # InertialSenseSDK (e.g. Logalyzer) inherit the define — without
+    # it, yaml-cpp headers emit __declspec(dllimport) symbols that the
+    # linker can't satisfy against the SDK's static lib (LNK2019 on
+    # YAML::Node::AssignData and similar). add_definitions() is
+    # directory-scoped and doesn't propagate to consumers.
+    target_compile_definitions(${PROJECT_NAME} PUBLIC YAML_CPP_STATIC_DEFINE)
 
     # Windows specific include dir for libusb config.h
     if (MSVC)
