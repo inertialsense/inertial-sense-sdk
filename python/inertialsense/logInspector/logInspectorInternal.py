@@ -91,6 +91,8 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('EKF Biases', 'ekfBiases')
 
     def createListSensors(self):
+        self.addListItem('IMUs Uncal Gyro',  'imusUncalPqr')
+        self.addListItem('IMUs Uncal Accel', 'imusUncalAcc')
         self.addListItem('IMUs Raw Gyro',  'imusRawPqr')
         self.addListItem('IMUs Raw Accel', 'imusRawAcc')
         self.addListItem('IMUs Raw Gyro Combined',  'imusRawPqrCombined')
