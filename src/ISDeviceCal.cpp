@@ -33,6 +33,7 @@
 #include "com_manager.h"
 #include "ISDevice.h"
 #include "ISLogFile.h"
+#include "IS_calibration_convert.h"
 
 using namespace std;
 using json = nlohmann::json;
@@ -966,54 +967,95 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
     return jCal;
 }
 
-/**
- * @brief Uploads sensor calibration data to a device in steps.
- * @param port The communication port handle.
- * @param calUploadState The current state of the upload process. This is updated by the function.
- * @param cal The sensor_cal_t structure containing the calibration data to upload.
- * @return 1 if the upload is complete, 0 if it's in progress, -1 on error.
- */
-int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal)
+int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo)
 {
+    // Per-thread v1.3 staging buffer; built once on state==0 when target is IMX-5.
+    // Reused across the 8 send steps to avoid repeated conversion.
+    static thread_local sensor_cal_v1p3_t s_v1p3Buf;
+
+    const int hwMajor = devInfo.hardwareVer[0];
+    const bool sendV1p3 = (hwMajor == 5);
+    const bool sendV1p4 = (hwMajor == 6);
+
+    if (!sendV1p3 && !sendV1p4)
+    {
+        log_error(IS_LOG_CALIBRATION, "uploadSensorCalStep: unresolved hardware version (hardwareVer[0]=%d); refusing upload. Device must be in app mode.", hwMajor);
+        return -1;
+    }
+
+    if (calUploadState == 0 && sendV1p3)
+    {
+        // Build v1.3 payload from in-memory v1.4 cal. Recomputes both checksums.
+        convert_sensor_cal_v1p4_to_v1p3(&cal, &s_v1p3Buf);
+    }
+
     switch (calUploadState++)
     {
-    // Upload Calibration Info
     case 0:     // General Info
-        if (comManagerSendData(port, &(cal.info), DID_CAL_SC, sizeof(sensor_cal_info_t), offsetof(sensor_cal_t, info)) != 0) { return 0; }
+        if (sendV1p3) {
+            if (comManagerSendData(port, &(s_v1p3Buf.info), DID_CAL_SC, sizeof(sensor_cal_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return 0; }
+        } else {
+            if (comManagerSendData(port, &(cal.info), DID_CAL_SC, sizeof(sensor_cal_info_t), offsetof(sensor_cal_t, info)) != 0) { return 0; }
+        }
         break;
 
     case 1:     // Data Info
-        if (comManagerSendData(port, &(cal.data.dinfo), DID_CAL_SC, sizeof(sensor_data_info_t), offsetof(sensor_cal_t, data.dinfo)) != 0) { return 0; }
+        if (sendV1p3) {
+            if (comManagerSendData(port, &(s_v1p3Buf.data.dinfo), DID_CAL_SC, sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, data.dinfo)) != 0) { return 0; }
+        } else {
+            if (comManagerSendData(port, &(cal.data.dinfo), DID_CAL_SC, sizeof(sensor_data_info_t), offsetof(sensor_cal_t, data.dinfo)) != 0) { return 0; }
+        }
         break;
 
-    // Upload Temperature Cal
     case 2:     // Temp comp - Gyros
-        if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP, MAX_IMU_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, gyr)) != 0) { return 0; }
+        if (sendV1p3) {
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.gyr, DID_CAL_TEMP_COMP, MAX_IMU_DEVICES_V1P3 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p3_t, gyr)) != 0) { return 0; }
+        } else {
+            if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP, MAX_IMU_DEVICES_V1P4 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p4_t, gyr)) != 0) { return 0; }
+        }
         break;
 
     case 3:     // Temp comp - Accelerometers
-        if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP, MAX_IMU_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, acc)) != 0) { return 0; }
+        if (sendV1p3) {
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.acc, DID_CAL_TEMP_COMP, MAX_IMU_DEVICES_V1P3 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p3_t, acc)) != 0) { return 0; }
+        } else {
+            if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP, MAX_IMU_DEVICES_V1P4 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p4_t, acc)) != 0) { return 0; }
+        }
         break;
 
     case 4:     // Temp comp - Magnetometers
-        if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP, MAX_MAG_DEVICES * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_t, mag)) != 0) { return 0; }
-        break;  
+        if (sendV1p3) {
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.mag, DID_CAL_TEMP_COMP, MAX_MAG_DEVICES_V1P3 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p3_t, mag)) != 0) { return 0; }
+        } else {
+            if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP, MAX_MAG_DEVICES_V1P4 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p4_t, mag)) != 0) { return 0; }
+        }
+        break;
 
-    // Upload Motion Cal
     case 5:     // Motion cal - Gyros
-        if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION, MAX_IMU_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, pqr)) != 0) { return 0; }
+        if (sendV1p3) {
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.pqr, DID_CAL_MOTION, MAX_IMU_DEVICES_V1P3 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p3_t, pqr)) != 0) { return 0; }
+        } else {
+            if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION, MAX_IMU_DEVICES_V1P4 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p4_t, pqr)) != 0) { return 0; }
+        }
         break;
 
     case 6:     // Motion cal - Accelerometers
-        if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION, MAX_IMU_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, acc)) != 0) { return 0; }
+        if (sendV1p3) {
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.acc, DID_CAL_MOTION, MAX_IMU_DEVICES_V1P3 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p3_t, acc)) != 0) { return 0; }
+        } else {
+            if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION, MAX_IMU_DEVICES_V1P4 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p4_t, acc)) != 0) { return 0; }
+        }
         break;
 
-    case 7:     // Motion cal - Magnetometers
-        if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION, MAX_MAG_DEVICES * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_t, mag)) != 0) { return 0; }
-        // log_debug(IS_LOG_CALIBRATION, "Done uploadSensorCal() - hdl: %d, serial#: %d, devSerialNum: %d\n", port, serialNum, cal.info.devSerialNum);
+    case 7:     // Motion cal - Magnetometers (last step)
+        if (sendV1p3) {
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.mag, DID_CAL_MOTION, MAX_MAG_DEVICES_V1P3 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p3_t, mag)) != 0) { return 0; }
+        } else {
+            if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION, MAX_MAG_DEVICES_V1P4 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p4_t, mag)) != 0) { return 0; }
+        }
         return 1;    // Done
-        
-    default:    // Error
+
+    default:
         return -1;
     }
 
