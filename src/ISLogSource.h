@@ -36,20 +36,31 @@ public:
     virtual ~ISLogSource() = default;
 
     /**
-     * Pointer to the first byte of the source. Stable for the source
-     * object's lifetime; never null after construction.
+     * Returns a pointer to the first byte of the source. The
+     * returned address is stable for the source object's lifetime
+     * and is never null after successful construction (an empty
+     * source returns a non-null pointer to a zero-length range).
+     *
+     * @return  Pointer to byte 0 of the source.
      */
     virtual const uint8_t* data() const noexcept = 0;
 
     /**
-     * Total byte count of the source.
+     * Returns the total byte count of the source.
+     *
+     * @return  Number of bytes addressable from `data()`. Zero is
+     *          legal (empty source).
      */
     virtual std::size_t size() const noexcept = 0;
 
     /**
-     * True if the underlying byte range is a memory-mapping. False
-     * when the buffered-I/O fallback was used (mmap unavailable on
-     * the host filesystem). Informational; doesn't change semantics.
+     * Reports whether the underlying byte range is a memory-mapping
+     * or a buffered-I/O fallback. Informational only; has no
+     * semantic effect on `data()` / `size()`.
+     *
+     * @return  `true` if the source is mmap-backed; `false` if the
+     *          buffered-read fallback was used (mmap unavailable on
+     *          the host filesystem).
      */
     virtual bool isMmapped() const noexcept = 0;
 };
@@ -69,6 +80,19 @@ public:
  */
 class ISFileSource : public ISLogSource {
 public:
+    /**
+     * Opens a file as a read-only byte source. Tries `mmap` first;
+     * falls back to a single buffered read if mmap is unavailable on
+     * the host filesystem.
+     *
+     * @param path  Filesystem path to the file to open.
+     * @return      A heap-allocated source on success; on failure,
+     *              an `ISError` with one of:
+     *              - `NotFound`         — file doesn't exist.
+     *              - `PermissionDenied` — open() returned EACCES.
+     *              - `Io`               — both mmap and buffered-read
+     *                                     paths failed.
+     */
     static ISExpected<std::unique_ptr<ISFileSource>>
         open(const std::filesystem::path& path);
 

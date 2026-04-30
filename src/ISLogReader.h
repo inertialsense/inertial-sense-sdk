@@ -72,11 +72,29 @@ public:
      */
     static ISExpected<ISLogReader> openSegment(const std::filesystem::path& raw);
 
+    /** Destroys the reader and releases the mmap (or buffer) and file handle. */
     ~ISLogReader();
 
     ISLogReader(const ISLogReader&)            = delete;
     ISLogReader& operator=(const ISLogReader&) = delete;
+
+    /**
+     * Move-construct. Transfers the source's mmap and index;
+     * iterators / views obtained from the source are invalidated.
+     *
+     * @param other  Source reader; left in a valid but unspecified
+     *               state (safe to destroy).
+     */
     ISLogReader(ISLogReader&&) noexcept;
+
+    /**
+     * Move-assign. Releases this reader's resources (if any) before
+     * adopting the source's state.
+     *
+     * @param other  Source reader; left in a valid but unspecified
+     *               state.
+     * @return       Reference to `*this`.
+     */
     ISLogReader& operator=(ISLogReader&&) noexcept;
 
     // -----------------------------------------------------------------
@@ -84,46 +102,60 @@ public:
     // -----------------------------------------------------------------
 
     /**
-     * `.idx` v2 header. If the sidecar was absent, this returns the
-     * in-memory header constructed from the lazy index (magic =
-     * "ISIX", version = 2, FINALIZED unset).
+     * Returns the parsed `.idx` v2 header. If the sidecar was absent
+     * at open time, this returns an in-memory header constructed
+     * from the lazy index (magic = "ISIX", version = 2, FINALIZED
+     * unset).
+     *
+     * @return  Reference to the segment's header. Lifetime tied to
+     *          this reader.
      */
     const idx::is_log_idx_header_t& header() const noexcept { return header_; }
 
     /**
-     * True if the segment had a v2 `.idx` sidecar that parsed cleanly.
-     * False if the sidecar was missing — readers fall back to a
-     * `.raw`-scan-built in-memory index. (D-04 will persist the
-     * rebuild; until then the lazy index is recomputed each open.)
+     * Reports whether the segment had a v2 `.idx` sidecar on disk
+     * that parsed cleanly at open time. If false, the reader fell
+     * back to a `.raw`-scan-built in-memory index (D-04 will persist
+     * the rebuild; until then the lazy index is recomputed each
+     * open).
+     *
+     * @return  `true` if the on-disk `.idx` was used; `false` if
+     *          the in-memory fallback was constructed.
      */
     bool hadOnDiskIndex() const noexcept { return hadOnDiskIndex_; }
 
     /**
-     * Earliest record timestamp (units per `header().ts_units`).
-     * 0 if the segment is empty.
+     * @return  Earliest record timestamp in this segment, in the
+     *          units indicated by `header().ts_units`. Returns 0
+     *          if the segment contains no records.
      */
     uint64_t segmentStartTimestamp() const noexcept;
 
     /**
-     * Latest record timestamp. 0 if the segment is empty.
+     * @return  Latest record timestamp in this segment, in the units
+     *          indicated by `header().ts_units`. Returns 0 if the
+     *          segment contains no records.
      */
     uint64_t segmentEndTimestamp() const noexcept;
 
     /**
-     * Total record count across all DIDs.
+     * @return  Total record count across all DIDs in this segment.
      */
     std::size_t recordCount() const noexcept { return records_.size(); }
 
     /**
-     * Sorted list of DIDs that appear at least once in this segment.
+     * @return  Sorted ascending list of DIDs that appear at least
+     *          once in this segment.
      */
     std::vector<did_t> presentDids() const;
 
     /**
-     * Device serial number derived from the first `DID_DEV_INFO`
-     * record's payload. Falls back to filename parsing
-     * (`LOG_SN<N>_*.raw`) if no DEV_INFO record was logged.
-     * Returns 0 if neither path produces a value.
+     * Returns the device's serial number. Derived from the first
+     * `DID_DEV_INFO` record's payload; falls back to filename
+     * parsing (`LOG_SN<N>_*.raw`) if no DEV_INFO record was logged.
+     *
+     * @return  Device serial number, or 0 if neither path produces
+     *          a value.
      */
     uint64_t deviceId() const noexcept { return deviceId_; }
 
@@ -139,19 +171,56 @@ public:
         using reference         = ISRecordView;
         using pointer           = const ISRecordView*;
 
+        /**
+         * Default-constructs the past-the-end / singular sentinel.
+         * `*it` on a default-constructed iterator yields the empty
+         * `ISRecordView`.
+         */
         RangeIterator() noexcept = default;
+
+        /**
+         * Constructs an iterator into a reader's index. Used by
+         * `Range::begin()` / `Range::end()`; not normally called
+         * by application code.
+         *
+         * @param parent   Parent reader; pointer aliased, must
+         *                 outlive the iterator.
+         * @param indices  Vector of record-array indices the
+         *                 iterator walks over (per-DID or all).
+         * @param pos      Initial position in `*indices`.
+         */
         RangeIterator(const ISLogReader* parent,
                       const std::vector<std::size_t>* indices,
                       std::size_t pos) noexcept
             : parent_(parent), indices_(indices), pos_(pos) {}
 
+        /**
+         * @return  An `ISRecordView` over the record at the current
+         *          position, or the empty sentinel if past the end.
+         */
         ISRecordView operator*() const noexcept;
+
+        /** Pre-increment. @return  Reference to `*this` after advancing. */
         RangeIterator& operator++() noexcept { ++pos_; return *this; }
+
+        /** Post-increment. @return  Copy of `*this` before advancing. */
         RangeIterator  operator++(int) noexcept { auto t = *this; ++pos_; return t; }
 
+        /**
+         * @param a  Left-hand iterator.
+         * @param b  Right-hand iterator.
+         * @return   `true` iff both iterators reference the same
+         *           parent + indices array + position.
+         */
         friend bool operator==(const RangeIterator& a, const RangeIterator& b) noexcept {
             return a.parent_ == b.parent_ && a.indices_ == b.indices_ && a.pos_ == b.pos_;
         }
+
+        /**
+         * @param a  Left-hand iterator.
+         * @param b  Right-hand iterator.
+         * @return   `!(a == b)`.
+         */
         friend bool operator!=(const RangeIterator& a, const RangeIterator& b) noexcept {
             return !(a == b);
         }
@@ -164,31 +233,60 @@ public:
 
     class Range {
     public:
+        /**
+         * Constructs a range over a slice of a reader's index.
+         * Used by `records()` / `allRecords()` / `in_time()`; not
+         * normally called by application code.
+         *
+         * @param parent   Parent reader; pointer aliased, must
+         *                 outlive the range.
+         * @param indices  Vector of record-array indices the range
+         *                 walks over.
+         * @param begin    Inclusive starting position in `*indices`.
+         * @param end      Exclusive ending position in `*indices`.
+         */
         Range(const ISLogReader* parent,
               const std::vector<std::size_t>* indices,
               std::size_t begin, std::size_t end) noexcept
             : parent_(parent), indices_(indices), begin_(begin), end_(end) {}
 
+        /** @return  Forward iterator at the first record of the range. */
         RangeIterator begin() const noexcept {
             return RangeIterator{ parent_, indices_, begin_ };
         }
+
+        /** @return  Past-the-end forward iterator for the range. */
         RangeIterator end() const noexcept {
             return RangeIterator{ parent_, indices_, end_ };
         }
 
+        /** @return  Number of records in this range. O(1). */
         std::size_t size() const noexcept { return end_ - begin_; }
+
+        /** @return  `true` iff `size() == 0`. */
         bool empty() const noexcept { return begin_ == end_; }
 
         /**
-         * Returns the sub-range of records in the closed interval
-         * `[t0, t1]` (timestamps compared by `value` only — see
-         * `TimeStamp` ordering rules in D-06). Records are ordered
-         * in arrival order, NOT timestamp order; this filter does a
-         * linear scan with early-exit since the sub-range is built
-         * over the same `indices_` array. For the common case of
-         * monotonic timestamps within one DID, callers should expect
-         * O(N) here. A binary-search variant lands when D-07 anchors
+         * Filters this range to records whose timestamp lies in the
+         * closed interval `[t0, t1]`. Records are ordered in arrival
+         * order, NOT timestamp order; this filter does a linear scan
+         * with early-exit since the sub-range is built over the same
+         * `indices_` array. For the common case of monotonic
+         * timestamps within one DID, callers should expect O(N)
+         * here. A binary-search variant lands when D-07 anchors
          * per-DID timestamps in monotonic order.
+         *
+         * Comparison uses `TimeStamp::value` only; `source` and
+         * `confidence` are ignored (per D-06 ordering rules).
+         *
+         * @param t0  Inclusive start of the interval.
+         * @param t1  Inclusive end of the interval. Must satisfy
+         *            `t0.value <= t1.value` for a non-empty result.
+         * @return    Sub-range whose iteration yields only records
+         *            with timestamps in `[t0, t1]`. Lifetime tied
+         *            to the parent reader.
+         *
+         * @see TimeStamp, ISLogReader::seek
          */
         Range in_time(TimeStamp t0, TimeStamp t1) const;
 
@@ -200,18 +298,25 @@ public:
     };
 
     /**
-     * Records for a single DID. If the DID is not present, returns
-     * an empty range (`begin == end`).
+     * Returns a range over all records carrying the given DID.
+     * If the DID is not present in this segment, returns an empty
+     * range (`begin == end`).
+     *
+     * @param did  Data identifier to filter on.
+     * @return     A range of records, in arrival order, whose
+     *             `did()` equals `did`. Lifetime tied to this
+     *             reader.
      */
     Range records(did_t did) const noexcept;
 
     /**
-     * Records across all DIDs, in arrival order.
+     * @return  A range over every record in the segment, in arrival
+     *          order across all DIDs. Lifetime tied to this reader.
      */
     Range allRecords() const noexcept;
 
     /**
-     * Position an iterator over `allRecords()` at the first record
+     * Positions an iterator over `allRecords()` at the first record
      * with `record.timestamp() >= target`. Uses `.idx` v2 binary
      * search internally — O(log N) when records are
      * timestamp-monotonic.
@@ -224,22 +329,86 @@ public:
      * to a linear scan. D-07's `ISTimeResolver` outputs are
      * timestamp-monotonic, so the binary-search fast path will be
      * the norm post-D-07.
+     *
+     * @param target  Timestamp to seek to. Comparison uses
+     *                `TimeStamp::value` only.
+     * @return        Iterator positioned at the first record with
+     *                `timestamp().value >= target.value`, or
+     *                `allRecords().end()` if no such record exists.
      */
     RangeIterator seek(TimeStamp target) const noexcept;
 
 private:
     ISLogReader() = default;
 
-    // Construction helpers (called from openSegment).
+    // Construction helpers — called from openSegment(). Private,
+    // lightly documented; full responsibility split + invariants live
+    // in the .cpp.
+
+    /**
+     * Finishes constructing a reader given an opened source. Reads
+     * the `.idx` sidecar (if present), populates the in-memory
+     * record vector + byDid_ map, and derives the device id.
+     *
+     * @param raw      Opened byte source for the `.raw` segment.
+     * @param rawPath  Path the segment was opened from; used for
+     *                 sidecar discovery and filename-based device-id
+     *                 fallback.
+     * @return         A fully-initialized reader, or an `ISError`
+     *                 if `.idx` parsing reports `Corrupted`.
+     */
     static ISExpected<ISLogReader>
         construct(std::unique_ptr<ISLogSource> raw,
                   const std::filesystem::path& rawPath);
+
+    /**
+     * Builds the in-memory index from an already-parsed `.idx`
+     * record vector. Populates `records_`, `byDid_`, and
+     * `allIndices_`.
+     *
+     * @param records  Parsed v2 `.idx` records, in arrival order.
+     */
     void buildIndexFromIdx(const std::vector<idx::is_log_idx_record_v2_t>& records);
-    void buildIndexFromScan();   // lazy fallback when .idx is missing.
+
+    /**
+     * Lazy fallback when the `.idx` sidecar is missing. D-02 lands
+     * an empty stub here; D-04 will populate the index by scanning
+     * the `.raw` and persisting the result.
+     */
+    void buildIndexFromScan();
+
+    /**
+     * Resolves the device id by inspecting the first
+     * `DID_DEV_INFO` record's serial number, falling back to
+     * filename parsing.
+     *
+     * @param rawPath  Path the segment was opened from. Used only
+     *                 for the filename-fallback path.
+     */
     void deriveDeviceId(const std::filesystem::path& rawPath);
+
+    /**
+     * Computes the end-of-bytes offset for the record at the given
+     * index. Used by `viewAt` to derive `bytes().second`. Records
+     * sharing an offset (chunk-input artifact from the writer)
+     * resolve to the same end offset.
+     *
+     * @param recordIdx  Index into `records_`.
+     * @return           Byte offset one past the last byte of the
+     *                   record's payload, clamped to the source
+     *                   size.
+     */
     std::size_t recordEndOffset(std::size_t recordIdx) const noexcept;
 
-    // ISRecordView materialization for a record at the given index.
+    /**
+     * Materializes an `ISRecordView` over the record at the given
+     * index. Out-of-range indices yield the empty sentinel view.
+     *
+     * @param recordIdx  Index into `records_`.
+     * @return           View over the record, or the empty sentinel
+     *                   if `recordIdx >= records_.size()` or the
+     *                   source is null.
+     */
     ISRecordView viewAt(std::size_t recordIdx) const noexcept;
 
     // Backing storage.
