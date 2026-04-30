@@ -1195,6 +1195,8 @@ static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+    if (!handle)
+        return PORT_ERROR__NOT_CONNECTED;
 
 #if PLATFORM_IS_WINDOWS
 
