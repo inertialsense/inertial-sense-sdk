@@ -125,7 +125,7 @@ bool ISDevice::step() {
     }
 
     if (m_calibration && m_calUploadState != -1) {
-        if (ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration) != ASYNC_STATE__PENDING) {
+        if (ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo) != ASYNC_STATE__PENDING) {
             m_calibration = nullptr;
             m_calUploadState = -1;
         }
@@ -1358,7 +1358,7 @@ int ISDevice::UploadImxCalibrationAsync(ISDeviceCal& cal) {
     if (!isConnected())
         return ASYNC_STATE__FAILURE;   // nothing to do, if we aren't connected
 
-    return ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, cal);
+    return ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, cal, devInfo);
 }
 
 
@@ -1371,7 +1371,7 @@ bool ISDevice::UploadImxCalibration(ISDeviceCal& cal)
     try {
         int calUploadState = 0;
         do {
-            result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, cal);
+            result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, cal, devInfo);
             SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
         } while (result == ASYNC_STATE__PENDING);
     } catch (const std::exception& e) {
