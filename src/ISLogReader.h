@@ -359,6 +359,22 @@ public:
     Range allRecords() const noexcept;
 
     /**
+     * Materializes an `ISRecordView` over the record at the given
+     * arrival-order index. Composition classes (`ISDeviceLog`,
+     * `ISLog` — D-05) use this to dereference cross-segment
+     * iterators into the underlying segment's bytes.
+     *
+     * @param recordIdx  Arrival-order position in this segment's
+     *                   record vector.
+     * @return           A view, or the empty sentinel if
+     *                   `recordIdx >= recordCount()` or the source
+     *                   is null.
+     */
+    ISRecordView recordAt(std::size_t recordIdx) const noexcept {
+        return viewAt(recordIdx);
+    }
+
+    /**
      * Positions an iterator over `allRecords()` at the first record
      * with `record.timestamp() >= target`. Uses `.idx` v2 binary
      * search internally — O(log N) when records are
