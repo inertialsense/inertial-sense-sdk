@@ -13,6 +13,7 @@ include_directories(
     src
     ${IS_SDK_DIR}/src
     ${IS_SDK_DIR}/src/libusb/libusb
+    ${IS_SDK_DIR}/src/tl-expected
 )
 
 # Link the InertialSenseSDK static library 
