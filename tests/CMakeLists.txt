@@ -17,6 +17,7 @@ include_directories(
     ${IS_SDK_DIR}/src/protocol
     ${IS_SDK_DIR}/src/libusb/libusb
     ${IS_SDK_DIR}/src/util
+    ${IS_SDK_DIR}/src/tl-expected
     ${IS_SDK_DIR}/tests/runtime
 )
 
