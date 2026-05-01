@@ -202,7 +202,7 @@ typedef uint32_t eDataIDs;
 // Version 1.3 of sensor calibration format supports up to 3 IMUs and 2 mags, with separate orthonormalization and bias calibration for each device
 #define NUM_IMU_DEVICES_V1P3    3
 #define NUM_MAG_DEVICES_V1P3    2
-// // Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
+// Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
 #define NUM_IMU_DEVICES_V1P4    5
 #define NUM_MAG_DEVICES_V1P4    1
 // Per-build-target native counts. SN-7966: IMX-5 hardware is permanently Cal v1.3,

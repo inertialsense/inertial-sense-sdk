@@ -1184,7 +1184,9 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
  * On other platforms, it uses `poll` and `ioctl` with `FIONREAD`.
  *
  * @param port The port handle.
- * @return int The number of bytes available to read, or PORT_ERROR__INVALID on error.
+ * @return int The number of bytes available to read, PORT_ERROR__INVALID if the port
+ *         handle is invalid, or PORT_ERROR__NOT_CONNECTED if the internal handle is NULL
+ *         (i.e., the port has not been opened or has been closed).
  */
 static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 {
@@ -1196,7 +1198,11 @@ static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle)
+    {
+        serialPort->errorCode = ENOENT;
+        serialPort->error = "Internal port handle is NULL; Port is closed.";
         return PORT_ERROR__NOT_CONNECTED;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
