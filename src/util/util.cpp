@@ -215,20 +215,39 @@ std::string utils::did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, in
     return std::string(buf);
 }
 
-std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
-    // hardware type & version
-    const char *typeName = "\?\?\?";
-    switch (devInfo.hardwareType) {
-        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
-        case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
-        case IS_HDW_GNSS_SONY: typeName = "CXD"; break;
-        case IS_HDW_GNSS_UBLOX: typeName = "UBX"; break;
-        case IS_HDW_GNSS_SEPTENTRIO: typeName = "SEP"; break;
-        case IS_HDW_GNSS_STM_TESSIO: typeName = "STM"; break;
-        default: typeName = "\?\?\?"; break;
+namespace {
+
+const char* hardwareTypeName(unsigned type) {
+    switch (type) {
+        case IS_HARDWARE_TYPE_UINS:     return "uINS";
+        case IS_HARDWARE_TYPE_IMX:      return "IMX";
+        case IS_HARDWARE_TYPE_GPX:      return "GPX";
+        case IS_HDW_GNSS_SONY:          return "CXD";
+        case IS_HDW_GNSS_UBLOX:         return "UBX";
+        case IS_HDW_GNSS_SEPTENTRIO:    return "SEP";
+        case IS_HDW_GNSS_STM_TESSIO:    return "STM";
+        default:                        return "\?\?\?";
     }
-    std::string out = utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
+}
+
+} // namespace
+
+std::string utils::hdwIdToString(uint16_t hdwId) {
+    return utils::string_format("%s-%u.%u",
+                                hardwareTypeName(DECODE_HDW_TYPE(hdwId)),
+                                static_cast<unsigned>(DECODE_HDW_MAJOR(hdwId)),
+                                static_cast<unsigned>(DECODE_HDW_MINOR(hdwId)));
+}
+
+std::string utils::deviceIdString(uint16_t hdwId, uint64_t serial) {
+    return utils::hdwIdToString(hdwId) + "::SN" + std::to_string(serial);
+}
+
+std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
+    // Type-major-minor portion comes from the canonical packed-id renderer.
+    // The dev_info_t carries two extra sub-rev bytes (hardwareVer[2..3]) that
+    // the uint16 hdwId form can't represent — append them here when present.
+    std::string out = utils::hdwIdToString(ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
     if (!showRev)
         return out;
 

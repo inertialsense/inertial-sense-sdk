@@ -81,6 +81,19 @@ public:
     /** @return  Shared device id of every segment in this composition. */
     uint64_t deviceId() const noexcept { return deviceId_; }
 
+    /**
+     * Returns the device's packed hardware id (`is_hardware_t`).
+     * Forwarded from the first segment — within a composition, every
+     * segment shares the same physical device, so the hardware id is
+     * a single shared value (asserted in `compose`).
+     *
+     * @return  Packed hardware id, or 0 if no DEV_INFO record was
+     *          logged in any segment.
+     */
+    uint16_t hdwId() const noexcept {
+        return segments_.empty() ? uint16_t{0} : segments_.front().hdwId();
+    }
+
     /** @return  Total record count across all segments. */
     std::size_t recordCount() const noexcept { return total_; }
 

@@ -226,6 +226,22 @@ public:
      */
     uint64_t deviceId() const noexcept { return deviceId_; }
 
+    /**
+     * Returns the device's packed hardware id (`is_hardware_t`),
+     * encoding hardware type + major + minor revs. Derived from the
+     * first `DID_DEV_INFO` record's payload via the same scan that
+     * populates `deviceId()`. The filename fallback cannot produce an
+     * `hdwId`, so this returns 0 (`IS_HARDWARE_NONE`) for segments
+     * without a logged DEV_INFO record.
+     *
+     * Pair with `deviceId()` to form a canonical device label via
+     * `utils::deviceIdString(hdwId(), deviceId())`.
+     *
+     * @return  Packed hardware id, or 0 if no DEV_INFO record was
+     *          logged.
+     */
+    uint16_t hdwId() const noexcept { return hdwId_; }
+
     // -----------------------------------------------------------------
     // Iteration
     // -----------------------------------------------------------------
@@ -538,6 +554,7 @@ private:
     bool                                   isTruncated_        = false;
     uint64_t                               truncationOffset_   = 0;
     uint64_t                               deviceId_           = 0;
+    uint16_t                               hdwId_              = 0;
     std::vector<std::string>               warnings_;
     std::filesystem::path                  rawPath_;
     std::filesystem::path                  idxPath_;
