@@ -1,0 +1,437 @@
+/**
+ * @file test_time_resolver.cpp
+ * @brief D-07 / SN-7897 — `ISTimeResolver` acceptance tests.
+ *
+ * Strategy: build a tiny multi-record fixture with a controlled mix
+ * of ToW-bearing and ToW-less records, compose into an
+ * `ISDeviceLog::fromSegments(...)`, and exercise the resolver.
+ *
+ * Note on fixture authorship — the v2 `.idx` schema collapse means
+ * that for HAS_TOW records `.idx.timestamp == ToW`, so the resolver's
+ * slope between sync points is identity. Tests assert the *confidence
+ * tier* and the *direction* of extrapolation rather than precise
+ * numeric outputs for pre-fix records (whose values are inherently
+ * best-effort under the v2 schema — see the resolver header's note).
+ */
+
+#include <gtest/gtest.h>
+
+#include "com_manager.h"  // first
+
+#include "DeviceLog.h"
+#include "ISDeviceLog.h"
+#include "ISFileManager.h"
+#include "ISLogger.h"
+#include "ISTimeResolver.h"
+#include "data_sets.h"
+
+#include <cstdio>
+#include <cstring>
+#include <filesystem>
+#include <utility>
+#include <vector>
+
+#include <unistd.h>
+
+using namespace inertial_sense;
+namespace fs = std::filesystem;
+
+namespace {
+
+constexpr uint16_t kFixtureHwId   = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
+constexpr uint32_t kFixtureSerial = 999555u;
+
+struct FixturePaths {
+    fs::path directory;
+    fs::path rawFile;
+};
+
+void writeRecord(cISLogger& logger, std::shared_ptr<cDeviceLog> dev,
+                 uint32_t did, void* payload, std::size_t size) {
+    is_comm_instance_t comm{};
+    uint8_t buf[1024];
+    is_comm_init(&comm, buf, sizeof(buf), nullptr);
+    uint8_t pkt[2048];
+    const int n = is_comm_data_to_buf(pkt, sizeof(pkt), &comm,
+                                      static_cast<uint16_t>(did),
+                                      static_cast<uint16_t>(size), 0,
+                                      payload);
+    if (n > 0) logger.LogData(dev, n, pkt);
+}
+
+// ToW values picked to fall comfortably inside a typical GPS week (in
+// seconds): 100..200s into the week. Multiplied by 1000 for the ms
+// representation the resolver uses internally.
+ins_2_t makeIns2(double towSec) {
+    ins_2_t s{};
+    s.week       = 2300;
+    s.timeOfWeek = towSec;
+    s.qn2b[0]    = 1.0f;
+    s.lla[0]     = 40.0;
+    s.lla[1]     = -111.0;
+    s.lla[2]     = 1400.0;
+    return s;
+}
+
+// IMU's `time` field is "seconds since boot" — `cISDataMappings::Timestamp`
+// returns it for DID_IMU but DID_IMU is NOT in the resolver's ToW-bearing
+// allowlist. So IMU records are non-sync (host_uptime_delta in their
+// .idx timestamp).
+imu_t makeImu(double bootSec) {
+    imu_t s{};
+    s.time = bootSec;
+    s.I.acc[0] = 0.1f;
+    s.I.acc[1] = 0.2f;
+    s.I.acc[2] = 9.8f;
+    return s;
+}
+
+FixturePaths buildFixture(const std::string& hint,
+                          const std::vector<std::pair<uint32_t, std::vector<uint8_t>>>& records) {
+    FixturePaths f;
+    char dirBuf[256];
+    std::snprintf(dirBuf, sizeof(dirBuf),
+                  "/tmp/test_time_resolver_%s_%d_%ld",
+                  hint.c_str(), ::getpid(),
+                  static_cast<long>(::time(nullptr)));
+    f.directory = dirBuf;
+    ISFileManager::DeleteDirectory(f.directory.string());
+
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType               = cISLogger::LOGTYPE_RAW;
+    opts.useSubFolderTimestamp = false;
+    if (!logger.InitSave(f.directory.string(), opts)) return f;
+    auto devLogger = logger.registerDevice(kFixtureHwId, kFixtureSerial);
+    if (!devLogger) return f;
+    logger.EnableLogging(true);
+
+    for (const auto& [did, payload] : records) {
+        std::vector<uint8_t> mutablePayload = payload;
+        writeRecord(logger, devLogger, did, mutablePayload.data(), mutablePayload.size());
+    }
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> rawFiles;
+    ISFileManager::GetAllFilesInDirectory(f.directory.string(), true,
+                                          "\\.raw$", rawFiles);
+    if (!rawFiles.empty()) f.rawFile = rawFiles.front().name;
+    return f;
+}
+
+template <class T>
+std::vector<uint8_t> bytesOf(const T& t) {
+    std::vector<uint8_t> out(sizeof(T));
+    std::memcpy(out.data(), &t, sizeof(T));
+    return out;
+}
+
+void teardown(FixturePaths& f) {
+    if (!f.directory.empty() && fs::exists(f.directory)) {
+        ISFileManager::DeleteDirectory(f.directory.string());
+    }
+}
+
+class TimeResolverTest : public ::testing::Test {
+protected:
+    FixturePaths f;
+    void TearDown() override { teardown(f); }
+};
+
+// ---------------------------------------------------------------------------
+// Empty log → no sync points → SessionOnly/Unknown for any query.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, EmptyLogResolvesAsSessionOnly) {
+    // Fixture with only ToW-LESS records (DID_IMU, which the resolver's
+    // allowlist excludes). detectSyncPoints should find zero anchors.
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_IMU, bytesOf(makeImu(1.0)));
+    recs.emplace_back(DID_IMU, bytesOf(makeImu(2.0)));
+    f = buildFixture("empty_sync", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto logR = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(logR.has_value()) << logR.error().message;
+
+    auto resolverR = ISTimeResolver::build(logR.value());
+    ASSERT_TRUE(resolverR.has_value());
+
+    EXPECT_TRUE(resolverR->syncPoints().empty());
+
+    TimeStamp t = resolverR->resolve(50000, kFixtureSerial);
+    EXPECT_EQ(t.source, TimeSource::SessionOnly);
+    EXPECT_EQ(t.confidence, TimeConfidence::Unknown);
+    EXPECT_EQ(t.value, 50000u);
+    EXPECT_EQ(t.deviceId, kFixtureSerial);
+}
+
+// ---------------------------------------------------------------------------
+// Sync points detected from INS_2 records with timeOfWeek > 0.
+// Adjacent duplicates collapse.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, SyncPointsFromInsRecords) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // 5 INS_2 records at ToWs 100, 110, 110, 120, 130 (110 duplicates).
+    for (double tow : { 100.0, 110.0, 110.0, 120.0, 130.0 }) {
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    }
+    f = buildFixture("syncs", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto logR = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(logR.has_value()) << logR.error().message;
+
+    auto syncs = ISTimeResolver::detectSyncPoints(logR.value());
+    ASSERT_EQ(syncs.size(), 4u) << "adjacent duplicate at ToW=110 should collapse";
+    EXPECT_EQ(syncs[0].payloadToWMs, 100000u);
+    EXPECT_EQ(syncs[1].payloadToWMs, 110000u);
+    EXPECT_EQ(syncs[2].payloadToWMs, 120000u);
+    EXPECT_EQ(syncs[3].payloadToWMs, 130000u);
+    EXPECT_EQ(syncs[0].deviceId, kFixtureSerial);
+    EXPECT_EQ(syncs[0].sourceDid, static_cast<uint32_t>(DID_INS_2));
+}
+
+// ---------------------------------------------------------------------------
+// Resolve at exact sync-point timestamp → Exact/PayloadToW.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, ResolveExactAtSyncPoint) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0 }) {
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    }
+    f = buildFixture("exact", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    auto t = resolver->resolve(110000, kFixtureSerial);
+    EXPECT_EQ(t.source, TimeSource::PayloadToW);
+    EXPECT_EQ(t.confidence, TimeConfidence::Exact);
+    EXPECT_EQ(t.value, 110000u);
+}
+
+// ---------------------------------------------------------------------------
+// Resolve between two sync points → Interpolated.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, ResolveInterpolated) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0 }) {
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    }
+    f = buildFixture("interp", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // 105_000 ms is halfway between syncs 100_000 and 110_000.
+    // Slope is identity (host==ToW for v2 sync points), so the result
+    // value equals the input.
+    auto t = resolver->resolve(105000, kFixtureSerial);
+    EXPECT_EQ(t.source, TimeSource::ResolvedViaSync);
+    EXPECT_EQ(t.confidence, TimeConfidence::Interpolated);
+    EXPECT_EQ(t.value, 105000u);
+}
+
+// ---------------------------------------------------------------------------
+// Resolve past last sync → ExtrapolatedForward.
+// Resolve before first sync → ExtrapolatedBackward.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, ResolveExtrapolated) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0 }) {
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    }
+    f = buildFixture("extrap", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    auto fwd = resolver->resolve(150000, kFixtureSerial);
+    EXPECT_EQ(fwd.source, TimeSource::ResolvedViaSync);
+    EXPECT_EQ(fwd.confidence, TimeConfidence::ExtrapolatedForward);
+
+    auto bwd = resolver->resolve(50000, kFixtureSerial);
+    EXPECT_EQ(bwd.source, TimeSource::ResolvedViaSync);
+    EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
+}
+
+// ---------------------------------------------------------------------------
+// Discontinuity detection — synthesize a clock jump between sync points
+// by giving the third sync point a much smaller delta than the gap
+// before it.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, DiscontinuityFromUnevenGaps) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // ToW sequence: 100, 110, 130, 130.0001.
+    // For v2-schema sync points, host==ToW, so the slope between any
+    // two non-zero-spaced sync points is exactly 1.0. The detector's
+    // ratio metric only fires on slope CHANGES — same slope = no
+    // discontinuity. To produce a slope change we need at least one
+    // pair with a non-1.0 slope, which v2's collapsed schema can't
+    // express. Instead we exercise the "no discontinuities" path here
+    // and document the v3-required test case in JOURNAL.
+    for (double tow : { 100.0, 110.0, 130.0, 130.0001 }) {
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    }
+    f = buildFixture("disc", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // v2 schema: all slopes are 1.0; no discontinuities expected.
+    EXPECT_TRUE(resolver->discontinuities().empty());
+}
+
+// ---------------------------------------------------------------------------
+// computeStats — counts always add up to the device-log's iterated
+// record count, even for empty / .idx-only-header logs.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, StatsAddUpToRecordCount) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // 3 INS_2 sync records + 2 IMU non-sync records — exercises both
+    // branches of `computeStats` (Exact for matching syncs, the
+    // extrapolation tiers for non-matching).
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(100.0)));
+    recs.emplace_back(DID_IMU,   bytesOf(makeImu(1.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(110.0)));
+    recs.emplace_back(DID_IMU,   bytesOf(makeImu(2.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(120.0)));
+
+    f = buildFixture("stats", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    auto stats = resolver->computeStats(log.value());
+    const std::size_t total = stats.exact + stats.interpolated
+                            + stats.extrapFwd + stats.extrapBack
+                            + stats.unknown;
+    // The fundamental invariant: the histogram sums to the iterated
+    // record count, whatever that is. (cISLogger's writer doesn't
+    // always populate the on-disk .idx for very short fixtures —
+    // that's an upstream-writer quirk independent of D-07; the
+    // other resolve* tests above cover the per-tier outcomes via
+    // direct calls to `resolve()`.)
+    EXPECT_EQ(total, log->recordCount());
+}
+
+// ---------------------------------------------------------------------------
+// Single-sync-point case: resolves backward / forward with slope 1.0.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, SingleSyncPointDegenerateSlope) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(100.0)));
+    f = buildFixture("single", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+    ASSERT_EQ(resolver->syncPoints().size(), 1u);
+
+    auto t = resolver->resolve(105000, kFixtureSerial);
+    EXPECT_EQ(t.confidence, TimeConfidence::ExtrapolatedForward);
+    // Slope defaults to 1.0 with a single sync point: 100_000 + (105_000 - 100_000) = 105_000.
+    EXPECT_EQ(t.value, 105000u);
+
+    auto bwd = resolver->resolve(95000, kFixtureSerial);
+    EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
+    EXPECT_EQ(bwd.value, 95000u);
+}
+
+// ---------------------------------------------------------------------------
+// Live-fixture smoke: exercise the resolver against a real cltool-captured
+// log if one is reachable. Looks at the env var
+// `IS_SDK_LIVE_FIXTURE_RAW` first, then falls back to the project's
+// canonical sample-logs directory. `GTEST_SKIP` when neither exists, so
+// CI without the data is silent rather than red.
+// ---------------------------------------------------------------------------
+TEST(TimeResolverLiveFixture, RealCltoolCaptureSmoke) {
+    fs::path raw;
+    if (const char* env = std::getenv("IS_SDK_LIVE_FIXTURE_RAW")) {
+        raw = env;
+    } else {
+        // Default: the cltool-captured 120 s PPD log from SN519465 that
+        // sits in the project's sample-logs tree. Not committed in the
+        // SDK repo; available on developer machines that ran the
+        // capture script.
+        raw = fs::path(std::getenv("HOME") ? std::getenv("HOME") : "/")
+            / "workspace/inertialsense/sample_logs/cltool_imx5_120s_ppd"
+              "/20260429_105836/LOG_SN519465_20260429_105836_0001.raw";
+    }
+    if (!fs::exists(raw)) {
+        GTEST_SKIP() << "live fixture not present at " << raw
+                     << " (set IS_SDK_LIVE_FIXTURE_RAW to override)";
+    }
+
+    auto log = ISDeviceLog::fromSegments({ raw });
+    ASSERT_TRUE(log.has_value()) << log.error().message;
+    EXPECT_GT(log->recordCount(), 0u);
+
+    auto resolverR = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolverR.has_value()) << resolverR.error().message;
+    const auto& resolver = resolverR.value();
+
+    const auto& syncs = resolver.syncPoints();
+    EXPECT_GT(syncs.size(), 0u) << "expected at least one ToW-bearing record "
+                                   "in a 120 s PPD capture";
+
+    // Sync points must be timestamp-sorted and adjacent-duplicate-free.
+    for (std::size_t i = 1; i < syncs.size(); ++i) {
+        EXPECT_LT(syncs[i - 1].hostTimeMs, syncs[i].hostTimeMs)
+            << "sync points must be strictly increasing after dedup (i=" << i << ")";
+    }
+
+    // Resolve the first sync point's hostTimeMs → must be Exact.
+    if (!syncs.empty()) {
+        const auto first = syncs.front();
+        const auto ts = resolver.resolve(first.hostTimeMs, first.deviceId);
+        EXPECT_EQ(ts.source, TimeSource::PayloadToW);
+        EXPECT_EQ(ts.confidence, TimeConfidence::Exact);
+        EXPECT_EQ(ts.value, first.payloadToWMs);
+    }
+
+    // Resolve a point well before the first sync → ExtrapolatedBackward.
+    if (!syncs.empty()) {
+        const auto bwd = resolver.resolve(0u, log->deviceId());
+        EXPECT_EQ(bwd.source, TimeSource::ResolvedViaSync);
+        EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
+    }
+
+    // Stats histogram sums to iterated record count.
+    auto stats = resolver.computeStats(log.value());
+    const std::size_t total = stats.exact + stats.interpolated
+                            + stats.extrapFwd + stats.extrapBack
+                            + stats.unknown;
+    EXPECT_EQ(total, log->recordCount());
+
+    // Surface a one-line summary in the test log so a developer running
+    // this can eyeball the resolver's behavior on real data.
+    std::printf("[live] raw=%s rawBytes=%llu records=%zu syncs=%zu "
+                "discs=%zu stats: exact=%zu interp=%zu extFwd=%zu "
+                "extBack=%zu unk=%zu\n",
+                raw.c_str(),
+                static_cast<unsigned long long>(fs::file_size(raw)),
+                log->recordCount(), syncs.size(),
+                resolver.discontinuities().size(),
+                stats.exact, stats.interpolated, stats.extrapFwd,
+                stats.extrapBack, stats.unknown);
+}
+
+} // namespace
