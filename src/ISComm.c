@@ -464,10 +464,7 @@ static protocol_type_t processIsbPkt(void* v)
     if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)
         return parseErrorResetState(c, EPARSE_INVALID_SIZE);
     if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) &&
-        (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB) &&
-        (isbPkt->hdr.id != DID_CAL_SC) &&           // Allow large dataset offsets / (offset+chunk) ranges for calibration data DIDs
-        (isbPkt->hdr.id != DID_CAL_TEMP_COMP) &&
-        (isbPkt->hdr.id != DID_CAL_MOTION) )
+        (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB))
         return parseErrorResetState(c, EPARSE_INVALID_HEADER);
 
     uint16_t payloadSize = isbPkt->hdr.payloadSize;
@@ -519,10 +516,10 @@ static protocol_type_t processIsbPkt(void* v)
     case PKT_TYPE_SET_DATA:
     case PKT_TYPE_DATA:
         // Validate data size
-        if (pkt->data.size <= MAX_DATASET_SIZE || 
-            pkt->hdr.id == DID_CAL_SC || 
-            pkt->hdr.id == DID_CAL_TEMP_COMP ||
-            pkt->hdr.id == DID_CAL_MOTION)
+        if (pkt->data.size <= MAX_DATASET_SIZE ||
+            pkt->hdr.id == DID_CAL_TEMP_COMP_GYR ||
+            pkt->hdr.id == DID_CAL_TEMP_COMP_ACC ||
+            pkt->hdr.id == DID_CAL_TEMP_COMP_MAG)
         {
             if (ptype==PKT_TYPE_SET_DATA)
             {   // acknowledge valid data received
@@ -542,9 +539,9 @@ static protocol_type_t processIsbPkt(void* v)
             p_data_get_t *get = (p_data_get_t*)&(isbPkt->payload.data);
             // Validate data size
             if (get->size <= MAX_DATASET_SIZE ||
-                get->id == DID_CAL_SC || 
-                get->id == DID_CAL_TEMP_COMP ||
-                get->id == DID_CAL_MOTION)
+                get->id == DID_CAL_TEMP_COMP_GYR ||
+                get->id == DID_CAL_TEMP_COMP_ACC ||
+                get->id == DID_CAL_TEMP_COMP_MAG)
             {   // Update data pointer
                 return _PTYPE_INERTIAL_SENSE_CMD;
             }

@@ -113,23 +113,33 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    nvm_sensor_tcal_3axis_t gyr[MAX_IMU_DEVICES_V1P3];          // Gyro temperature calibration
-    nvm_sensor_tcal_3axis_t acc[MAX_IMU_DEVICES_V1P3];          // Accel temperature calibration
-    nvm_sensor_tcal_3axis_t mag[MAX_MAG_DEVICES_V1P3];          // Mag temperature calibration
+    nvm_sensor_tcal_3axis_t gyr[NUM_IMU_DEVICES_V1P3];          // Gyro temperature calibration
+    nvm_sensor_tcal_3axis_t acc[NUM_IMU_DEVICES_V1P3];          // Accel temperature calibration
+    nvm_sensor_tcal_3axis_t mag[NUM_MAG_DEVICES_V1P3];          // Mag temperature calibration
 } sensor_tcal_group_v1p3_t;
 
 typedef struct PACKED
 {
-    nvm_sensor_tcal_3axis_t gyr[MAX_IMU_DEVICES_V1P4];          // Gyro temperature calibration
-    nvm_sensor_tcal_3axis_t acc[MAX_IMU_DEVICES_V1P4];          // Accel temperature calibration
-    nvm_sensor_tcal_3axis_t mag[MAX_MAG_DEVICES_V1P4];          // Mag temperature calibration
+    nvm_sensor_tcal_3axis_t gyr[NUM_IMU_DEVICES_V1P4];          // Gyro temperature calibration
+    nvm_sensor_tcal_3axis_t acc[NUM_IMU_DEVICES_V1P4];          // Accel temperature calibration
+    nvm_sensor_tcal_3axis_t mag[NUM_MAG_DEVICES_V1P4];          // Mag temperature calibration
 } sensor_tcal_group_v1p4_t;
 
 // 1/3 of sensor_tcal_group_t used for uploading calibration
 typedef struct PACKED
 {
     nvm_sensor_tcal_3axis_t sensor[MAX_IMU_DEVICES];            // temperature calibration
-} sensor_tcal_group_subset_t;
+} sensor_tcal_gyr_group_t;
+
+typedef struct PACKED
+{
+    nvm_sensor_tcal_3axis_t sensor[MAX_IMU_DEVICES];            // temperature calibration
+} sensor_tcal_acc_group_t;
+
+typedef struct PACKED
+{
+    nvm_sensor_tcal_3axis_t sensor[MAX_MAG_DEVICES];            // temperature calibration
+} sensor_tcal_mag_group_t;
 
 ////////////////////////////////////////////////
 // MCAL v1.3
@@ -139,18 +149,34 @@ typedef struct PACKED
     float                   bias[3];        // Bias
 } sensor_motion_cal_t;
 
+// 1/3 of sensor_mcal_group_t used for uploading calibration
 typedef struct PACKED
 {
-    sensor_motion_cal_t     pqr[MAX_IMU_DEVICES_V1P3];          // Gyros (x3 IMUs)
-    sensor_motion_cal_t     acc[MAX_IMU_DEVICES_V1P3];          // Accelerometers (x3 IMUs)
-    sensor_motion_cal_t     mag[MAX_MAG_DEVICES_V1P3];          // Magnetometers
+    sensor_motion_cal_t sensor[MAX_IMU_DEVICES];                // gyro motion calibration
+} sensor_mcal_gyr_group_t;
+
+typedef struct PACKED
+{
+    sensor_motion_cal_t sensor[MAX_IMU_DEVICES];                // accel motion calibration
+} sensor_mcal_acc_group_t;
+
+typedef struct PACKED
+{
+    sensor_motion_cal_t sensor[MAX_MAG_DEVICES];                // mag motion calibration
+} sensor_mcal_mag_group_t;
+
+typedef struct PACKED
+{
+    sensor_motion_cal_t     pqr[NUM_IMU_DEVICES_V1P3];          // Gyros (x3 IMUs)
+    sensor_motion_cal_t     acc[NUM_IMU_DEVICES_V1P3];          // Accelerometers (x3 IMUs)
+    sensor_motion_cal_t     mag[NUM_MAG_DEVICES_V1P3];          // Magnetometers
 } sensor_mcal_group_v1p3_t;
 
 typedef struct PACKED
 {
-    sensor_motion_cal_t     pqr[MAX_IMU_DEVICES_V1P4];          // Gyros (x5 IMUs)
-    sensor_motion_cal_t     acc[MAX_IMU_DEVICES_V1P4];          // Accelerometers (x5 IMUs)
-    sensor_motion_cal_t     mag[MAX_MAG_DEVICES_V1P4];          // Magnetometers
+    sensor_motion_cal_t     pqr[NUM_IMU_DEVICES_V1P4];          // Gyros (x5 IMUs)
+    sensor_motion_cal_t     acc[NUM_IMU_DEVICES_V1P4];          // Accelerometers (x5 IMUs)
+    sensor_motion_cal_t     mag[NUM_MAG_DEVICES_V1P4];          // Magnetometers
 } sensor_mcal_group_v1p4_t;
 
 ////////////////////////////////////////////////
@@ -196,6 +222,36 @@ typedef sensor_tcal_group_v1p4_t    sensor_tcal_group_t;
 typedef sensor_mcal_group_v1p4_t    sensor_mcal_group_t;
 typedef sensor_cal_v1p4_data_t      sensor_cal_data_t;
 typedef sensor_cal_v1p4_t           sensor_cal_t;
+#endif
+
+#define SIZE_OF_SENSOR_TCAL_GYR_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_ACC_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_MAG_V1P3    (NUM_MAG_DEVICES_V1P3*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_MCAL_GYR_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_ACC_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_MAG_V1P3    (NUM_MAG_DEVICES_V1P3*sizeof(sensor_motion_cal_t))
+
+#define SIZE_OF_SENSOR_TCAL_GYR_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_ACC_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_MAG_V1P4    (NUM_MAG_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_MCAL_GYR_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_ACC_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_MAG_V1P4    (NUM_MAG_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+
+#if defined(IMX_5)
+#define SIZE_OF_SENSOR_TCAL_GYR         SIZE_OF_SENSOR_TCAL_GYR_V1P3
+#define SIZE_OF_SENSOR_TCAL_ACC         SIZE_OF_SENSOR_TCAL_ACC_V1P3
+#define SIZE_OF_SENSOR_TCAL_MAG         SIZE_OF_SENSOR_TCAL_MAG_V1P3
+#define SIZE_OF_SENSOR_MCAL_GYR         SIZE_OF_SENSOR_MCAL_GYR_V1P3
+#define SIZE_OF_SENSOR_MCAL_ACC         SIZE_OF_SENSOR_MCAL_ACC_V1P3
+#define SIZE_OF_SENSOR_MCAL_MAG         SIZE_OF_SENSOR_MCAL_MAG_V1P3
+#else
+#define SIZE_OF_SENSOR_TCAL_GYR         SIZE_OF_SENSOR_TCAL_GYR_V1P4
+#define SIZE_OF_SENSOR_TCAL_ACC         SIZE_OF_SENSOR_TCAL_ACC_V1P4
+#define SIZE_OF_SENSOR_TCAL_MAG         SIZE_OF_SENSOR_TCAL_MAG_V1P4
+#define SIZE_OF_SENSOR_MCAL_GYR         SIZE_OF_SENSOR_MCAL_GYR_V1P4
+#define SIZE_OF_SENSOR_MCAL_ACC         SIZE_OF_SENSOR_MCAL_ACC_V1P4
+#define SIZE_OF_SENSOR_MCAL_MAG         SIZE_OF_SENSOR_MCAL_MAG_V1P4
 #endif
 
 #ifdef __cplusplus
