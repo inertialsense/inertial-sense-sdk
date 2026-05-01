@@ -319,13 +319,13 @@ static void buildV1p4Sample(sensor_cal_v1p4_t &cal, uint32_t serialNum = 60010)
     cal.info.devSerialNum = serialNum;
     cal.info.checksum = flashChecksum32(&cal.info, cal.info.size);
 
-    for (int d = 0; d < MAX_IMU_DEVICES_V1P4; d++)
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P4; d++)
     {
         cal.data.mcal.pqr[d].orth[0] = 1.0f + 0.01f * d;
         cal.data.mcal.pqr[d].bias[0] = 0.001f * (d + 1);
         cal.data.mcal.acc[d].orth[4] = 1.0f + 0.02f * d;
     }
-    for (int d = 0; d < MAX_MAG_DEVICES_V1P4; d++)
+    for (int d = 0; d < NUM_MAG_DEVICES_V1P4; d++)
     {
         cal.data.mcal.mag[d].orth[0] = 2.5f;
         cal.data.mcal.mag[d].bias[1] = 0.5f;
@@ -343,12 +343,12 @@ static void buildV1p3Sample(sensor_cal_v1p3_t &cal, uint32_t serialNum = 60010)
     cal.info.devSerialNum = serialNum;
     cal.info.checksum = flashChecksum32(&cal.info, cal.info.size);
 
-    for (int d = 0; d < MAX_IMU_DEVICES_V1P3; d++)
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
     {
         cal.data.mcal.pqr[d].orth[0] = 1.0f + 0.01f * d;
         cal.data.mcal.pqr[d].bias[0] = 0.001f * (d + 1);
     }
-    for (int d = 0; d < MAX_MAG_DEVICES_V1P3; d++)
+    for (int d = 0; d < NUM_MAG_DEVICES_V1P3; d++)
     {
         cal.data.mcal.mag[d].orth[0] = 2.5f + 0.1f * d;
     }
@@ -370,8 +370,8 @@ TEST(ISDeviceCalConvert, V1p4ToV1p3PreservesSharedFields)
     EXPECT_EQ(v1p3.info.version[1], 3);
     EXPECT_EQ(v1p3.info.devSerialNum, 60010u);
 
-    // First MAX_IMU_DEVICES_V1P3 IMUs survive the downgrade
-    for (int d = 0; d < MAX_IMU_DEVICES_V1P3; d++)
+    // First NUM_IMU_DEVICES_V1P3 IMUs survive the downgrade
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
     {
         EXPECT_FLOAT_EQ(v1p3.data.mcal.pqr[d].orth[0], v1p4.data.mcal.pqr[d].orth[0]);
         EXPECT_FLOAT_EQ(v1p3.data.mcal.pqr[d].bias[0], v1p4.data.mcal.pqr[d].bias[0]);
@@ -396,14 +396,14 @@ TEST(ISDeviceCalConvert, V1p3ToV1p4PreservesSharedFields)
     EXPECT_EQ(v1p4.info.version[1], 4);
     EXPECT_EQ(v1p4.info.devSerialNum, 60011u);
 
-    for (int d = 0; d < MAX_IMU_DEVICES_V1P3; d++)
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
     {
         EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].orth[0], v1p3.data.mcal.pqr[d].orth[0]);
         EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].bias[0], v1p3.data.mcal.pqr[d].bias[0]);
     }
     EXPECT_FLOAT_EQ(v1p4.data.mcal.mag[0].orth[0], v1p3.data.mcal.mag[0].orth[0]);
     // v1p4 IMU slots beyond v1p3 are identity
-    for (int d = MAX_IMU_DEVICES_V1P3; d < MAX_IMU_DEVICES_V1P4; d++)
+    for (int d = NUM_IMU_DEVICES_V1P3; d < NUM_IMU_DEVICES_V1P4; d++)
     {
         EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].orth[0], 1.0f);
         EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].orth[4], 1.0f);
@@ -438,7 +438,7 @@ TEST(ISDeviceCalConvert, RoundTripV1p4ToV1p3ToV1p4PreservesSharedSlots)
 
     EXPECT_EQ(out.info.devSerialNum, orig.info.devSerialNum);
     // Slots that fit in v1.3 (first 3 IMUs, first mag) round-trip exactly
-    for (int d = 0; d < MAX_IMU_DEVICES_V1P3; d++)
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
     {
         EXPECT_FLOAT_EQ(out.data.mcal.pqr[d].orth[0], orig.data.mcal.pqr[d].orth[0]);
         EXPECT_FLOAT_EQ(out.data.mcal.pqr[d].bias[0], orig.data.mcal.pqr[d].bias[0]);

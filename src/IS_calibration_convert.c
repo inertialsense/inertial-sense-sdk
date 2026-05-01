@@ -12,7 +12,7 @@ void set_sensor_cal_data_defaults_v1p4(sensor_cal_v1p4_data_t *data)
     if (data == NULL) { return; }
 
     memset(data, 0, sizeof(sensor_cal_v1p4_data_t));
-    for (int d = 0; d < MAX_IMU_DEVICES_V1P4; d++)
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P4; d++)
     {
         data->mcal.pqr[d].orth[0] = 1;
         data->mcal.pqr[d].orth[4] = 1;
@@ -22,7 +22,7 @@ void set_sensor_cal_data_defaults_v1p4(sensor_cal_v1p4_data_t *data)
         data->mcal.acc[d].orth[4] = 1;
         data->mcal.acc[d].orth[8] = 1;
     }
-    for (int d = 0; d < MAX_MAG_DEVICES_V1P4; d++)
+    for (int d = 0; d < NUM_MAG_DEVICES_V1P4; d++)
     {
         data->mcal.mag[d].orth[0] = 1;
         data->mcal.mag[d].orth[4] = 1;
@@ -38,7 +38,7 @@ void set_sensor_cal_data_defaults_v1p3(sensor_cal_v1p3_data_t *data)
     if (data == NULL) { return; }
 
     memset(data, 0, sizeof(sensor_cal_v1p3_data_t));
-    for (int d = 0; d < MAX_IMU_DEVICES_V1P3; d++)
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
     {
         data->mcal.pqr[d].orth[0] = 1;
         data->mcal.pqr[d].orth[4] = 1;
@@ -48,7 +48,7 @@ void set_sensor_cal_data_defaults_v1p3(sensor_cal_v1p3_data_t *data)
         data->mcal.acc[d].orth[4] = 1;
         data->mcal.acc[d].orth[8] = 1;
     }
-    for (int d = 0; d < MAX_MAG_DEVICES_V1P3; d++)
+    for (int d = 0; d < NUM_MAG_DEVICES_V1P3; d++)
     {
         data->mcal.mag[d].orth[0] = 1;
         data->mcal.mag[d].orth[4] = 1;
@@ -61,12 +61,12 @@ void set_sensor_cal_data_defaults_v1p3(sensor_cal_v1p3_data_t *data)
 
 void convert_tcal_v1p3_to_v1p4(const sensor_tcal_group_v1p3_t *v1p3, sensor_tcal_group_v1p4_t *v1p4)
 {
-    for (int d = 0; d < _MIN(MAX_IMU_DEVICES_V1P3, MAX_IMU_DEVICES_V1P4); d++)
+    for (int d = 0; d < _MIN(NUM_IMU_DEVICES_V1P3, NUM_IMU_DEVICES_V1P4); d++)
     {
         v1p4->gyr[d] = v1p3->gyr[d];
         v1p4->acc[d] = v1p3->acc[d];
     }
-    for (int d = 0; d < _MIN(MAX_MAG_DEVICES_V1P3, MAX_MAG_DEVICES_V1P4); d++)
+    for (int d = 0; d < _MIN(NUM_MAG_DEVICES_V1P3, NUM_MAG_DEVICES_V1P4); d++)
     {
         v1p4->mag[d] = v1p3->mag[d];
     }
@@ -74,12 +74,12 @@ void convert_tcal_v1p3_to_v1p4(const sensor_tcal_group_v1p3_t *v1p3, sensor_tcal
 
 void convert_mcal_v1p3_to_v1p4(const sensor_mcal_group_v1p3_t *v1p3, sensor_mcal_group_v1p4_t *v1p4)
 {
-    for (int d = 0; d < _MIN(MAX_IMU_DEVICES_V1P3, MAX_IMU_DEVICES_V1P4); d++)
+    for (int d = 0; d < _MIN(NUM_IMU_DEVICES_V1P3, NUM_IMU_DEVICES_V1P4); d++)
     {
         v1p4->pqr[d] = v1p3->pqr[d];
         v1p4->acc[d] = v1p3->acc[d];
     }
-    for (int d = 0; d < _MIN(MAX_MAG_DEVICES_V1P3, MAX_MAG_DEVICES_V1P4); d++)
+    for (int d = 0; d < _MIN(NUM_MAG_DEVICES_V1P3, NUM_MAG_DEVICES_V1P4); d++)
     {
         v1p4->mag[d] = v1p3->mag[d];
     }
@@ -104,12 +104,12 @@ void convert_sensor_cal_v1p3_to_v1p4(const sensor_cal_v1p3_t *v1p3, sensor_cal_v
 
 void convert_tcal_v1p4_to_v1p3(const sensor_tcal_group_v1p4_t *v1p4, sensor_tcal_group_v1p3_t *v1p3)
 {
-    for (int d = 0; d < _MIN(MAX_IMU_DEVICES_V1P3, MAX_IMU_DEVICES_V1P4); d++)
+    for (int d = 0; d < _MIN(NUM_IMU_DEVICES_V1P3, NUM_IMU_DEVICES_V1P4); d++)
     {
         v1p3->gyr[d] = v1p4->gyr[d];
         v1p3->acc[d] = v1p4->acc[d];
     }
-    for (int d = 0; d < _MIN(MAX_MAG_DEVICES_V1P3, MAX_MAG_DEVICES_V1P4); d++)
+    for (int d = 0; d < _MIN(NUM_MAG_DEVICES_V1P3, NUM_MAG_DEVICES_V1P4); d++)
     {
         v1p3->mag[d] = v1p4->mag[d];
     }
@@ -117,12 +117,12 @@ void convert_tcal_v1p4_to_v1p3(const sensor_tcal_group_v1p4_t *v1p4, sensor_tcal
 
 void convert_mcal_v1p4_to_v1p3(const sensor_mcal_group_v1p4_t *v1p4, sensor_mcal_group_v1p3_t *v1p3)
 {
-    for (int d = 0; d < _MIN(MAX_IMU_DEVICES_V1P3, MAX_IMU_DEVICES_V1P4); d++)
+    for (int d = 0; d < _MIN(NUM_IMU_DEVICES_V1P3, NUM_IMU_DEVICES_V1P4); d++)
     {
         v1p3->pqr[d] = v1p4->pqr[d];
         v1p3->acc[d] = v1p4->acc[d];
     }
-    for (int d = 0; d < _MIN(MAX_MAG_DEVICES_V1P3, MAX_MAG_DEVICES_V1P4); d++)
+    for (int d = 0; d < _MIN(NUM_MAG_DEVICES_V1P3, NUM_MAG_DEVICES_V1P4); d++)
     {
         v1p3->mag[d] = v1p4->mag[d];
     }

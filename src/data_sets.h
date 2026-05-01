@@ -195,20 +195,15 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
 // Version 1.3 of sensor calibration format supports up to 3 IMUs and 2 mags, with separate orthonormalization and bias calibration for each device
-#define MAX_IMU_DEVICES_V1P3    3
-#define MAX_MAG_DEVICES_V1P3    2
-// Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
-#define MAX_IMU_DEVICES_V1P4    5
-#define MAX_MAG_DEVICES_V1P4    1
+#define NUM_IMU_DEVICES_V1P3    3
+#define NUM_MAG_DEVICES_V1P3    2
+// // Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
+#define NUM_IMU_DEVICES_V1P4    5
+#define NUM_MAG_DEVICES_V1P4    1
 // Per-build-target native counts. SN-7966: IMX-5 hardware is permanently Cal v1.3,
 // IMX-6 (and host SDK) is permanently Cal v1.4. Host code (no IMX_5/IMX_6 define) uses v1.4.
-#if defined(IMX_5)
-#define MAX_IMU_DEVICES         MAX_IMU_DEVICES_V1P3
-#define MAX_MAG_DEVICES         MAX_MAG_DEVICES_V1P3
-#else
-#define MAX_IMU_DEVICES         MAX_IMU_DEVICES_V1P4
-#define MAX_MAG_DEVICES         MAX_MAG_DEVICES_V1P4
-#endif
+#define MAX_IMU_DEVICES         NUM_IMU_DEVICES_V1P4
+#define MAX_MAG_DEVICES         NUM_MAG_DEVICES_V1P4
 
 /** INS status flags */
 enum eInsStatusFlags

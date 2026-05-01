@@ -2096,22 +2096,25 @@ static void PopulateMapSensorMCalGroup(data_set_t data_set[DID_COUNT], uint32_t 
 {
     DataMapper<sensor_mcal_group_t> mapper(data_set, did);
 
+    constexpr int numImu = (int)(sizeof(sensor_mcal_group_t::pqr) / sizeof(sensor_motion_cal_t));
+    constexpr int numMag = (int)(sizeof(sensor_mcal_group_t::mag) / sizeof(sensor_motion_cal_t));
+
     // Gyros
-    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    for (int i=0; i<numImu; i++)
     {
         mapper.AddArray2("pqr" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, pqr[0].orth), DATA_TYPE_F32, 9, {""}, {"Gyr ortho-normalization (cross-axis scalars)"});
         mapper.AddArray2("pqr" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, pqr[0].bias), DATA_TYPE_F32, 3, {""}, {"Gyr biases (additive to temp comp)"});
     }
 
     // Accels
-    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    for (int i=0; i<numImu; i++)
     {
         mapper.AddArray2("acc" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, acc[0].orth), DATA_TYPE_F32, 9, {""}, {"Acc ortho-normalization (cross-axis scalars)"});
         mapper.AddArray2("acc" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, acc[0].bias), DATA_TYPE_F32, 3, {""}, {"Acc biases (additive to temp comp)"});
     }
 
     // Magnetometers
-    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    for (int i=0; i<numMag; i++)
     {
         mapper.AddArray2("mag" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, mag[0].orth), DATA_TYPE_F32, 9, {""}, {"Mag ortho-normalization (cross-axis scalars)"});
         mapper.AddArray2("mag" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, mag[0].bias), DATA_TYPE_F32, 3, {""}, {"Mag biases (additive to temp comp)"});
