@@ -129,7 +129,17 @@ typedef struct PACKED
 typedef struct PACKED
 {
     nvm_sensor_tcal_3axis_t sensor[MAX_IMU_DEVICES];            // temperature calibration
-} sensor_tcal_group_subset_t;
+} sensor_tcal_gyr_group_t;
+
+typedef struct PACKED
+{
+    nvm_sensor_tcal_3axis_t sensor[MAX_IMU_DEVICES];            // temperature calibration
+} sensor_tcal_acc_group_t;
+
+typedef struct PACKED
+{
+    nvm_sensor_tcal_3axis_t sensor[MAX_MAG_DEVICES];            // temperature calibration
+} sensor_tcal_mag_group_t;
 
 ////////////////////////////////////////////////
 // MCAL v1.3
@@ -138,6 +148,22 @@ typedef struct PACKED
     float                   orth[9];        // Ortho-normalization matrices (cross-axis and scale factor)
     float                   bias[3];        // Bias
 } sensor_motion_cal_t;
+
+// 1/3 of sensor_mcal_group_t used for uploading calibration
+typedef struct PACKED
+{
+    sensor_motion_cal_t sensor[MAX_IMU_DEVICES];                // gyro motion calibration
+} sensor_mcal_gyr_group_t;
+
+typedef struct PACKED
+{
+    sensor_motion_cal_t sensor[MAX_IMU_DEVICES];                // accel motion calibration
+} sensor_mcal_acc_group_t;
+
+typedef struct PACKED
+{
+    sensor_motion_cal_t sensor[MAX_MAG_DEVICES];                // mag motion calibration
+} sensor_mcal_mag_group_t;
 
 typedef struct PACKED
 {
@@ -198,6 +224,19 @@ typedef sensor_cal_v1p4_data_t      sensor_cal_data_t;
 typedef sensor_cal_v1p4_t           sensor_cal_t;
 #endif
 
+#define SIZE_OF_SENSOR_TCAL_GYR_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_ACC_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_MAG_V1P3    (NUM_MAG_DEVICES_V1P3*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_MCAL_GYR_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_ACC_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_MAG_V1P3    (NUM_MAG_DEVICES_V1P3*sizeof(sensor_motion_cal_t))
+
+#define SIZE_OF_SENSOR_TCAL_GYR         (NUM_IMU_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_ACC         (NUM_IMU_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_MAG         (NUM_MAG_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_MCAL_GYR         (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_ACC         (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_MAG         (NUM_MAG_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
 
 #ifdef __cplusplus
 }

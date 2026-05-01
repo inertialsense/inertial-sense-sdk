@@ -44,10 +44,10 @@ DID_DEBUG_STRING                = 37
 DID_RTOS_INFO                   = 38
 DID_DEBUG_ARRAY                 = 39
 DID_SENSORS_MCAL                = 40
-# DID_UNUSED_41                 = 41
-DID_CAL_SC                      = 42
-DID_CAL_SC1                     = 43
-DID_CAL_SC2                     = 44
+DID_GPS1_TIMEPULSE              = 41
+# DID_UNUSED                    = 42
+# DID_UNUSED                    = 43
+# DID_UNUSED                    = 44
 DID_SENSORS_ADC_SIGMA           = 46
 DID_REFERENCE_MAGNETOMETER      = 47
 DID_INL2_STATES                 = 48
@@ -157,9 +157,6 @@ did_name_lookup = {
  DID_DEBUG_STRING : "debugString",
  DID_RTOS_INFO : "rtosInfo",
  DID_DEBUG_ARRAY : "debugArray",
- DID_CAL_SC : "calSc",
- DID_CAL_SC1 : "calSc1",
- DID_CAL_SC2 : "calSc2",
  DID_SENSORS_ADC_SIGMA : "sensorsAdcSigma",
  DID_INL2_STATES : "inl2States",
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",

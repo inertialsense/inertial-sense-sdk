@@ -993,65 +993,65 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
     {
     case 0:     // General Info
         if (sendV1p3) {
-            if (comManagerSendData(port, &(s_v1p3Buf.info), DID_CAL_SC, sizeof(sensor_cal_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return 0; }
+            if (comManagerSendData(port, &(s_v1p3Buf.info), DID_CAL_SC_INFO, sizeof(sensor_cal_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, &(cal.info), DID_CAL_SC, sizeof(sensor_cal_info_t), offsetof(sensor_cal_t, info)) != 0) { return 0; }
+            if (comManagerSendData(port, &(cal.info), DID_CAL_SC_INFO, sizeof(sensor_cal_info_t), offsetof(sensor_cal_t, info)) != 0) { return 0; }
         }
         break;
 
     case 1:     // Data Info
         if (sendV1p3) {
-            if (comManagerSendData(port, &(s_v1p3Buf.data.dinfo), DID_CAL_SC, sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, data.dinfo)) != 0) { return 0; }
+            if (comManagerSendData(port, &(s_v1p3Buf.data.dinfo), DID_CAL_SC_INFO, sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, data.dinfo)) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, &(cal.data.dinfo), DID_CAL_SC, sizeof(sensor_data_info_t), offsetof(sensor_cal_t, data.dinfo)) != 0) { return 0; }
+            if (comManagerSendData(port, &(cal.data.dinfo), DID_CAL_SC_INFO, sizeof(sensor_data_info_t), offsetof(sensor_cal_t, data.dinfo)) != 0) { return 0; }
         }
         break;
 
     case 2:     // Temp comp - Gyros
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.gyr, DID_CAL_TEMP_COMP, NUM_IMU_DEVICES_V1P3 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p3_t, gyr)) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR_V1P3) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP, NUM_IMU_DEVICES_V1P4 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p4_t, gyr)) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR) != 0) { return 0; }
         }
         break;
 
     case 3:     // Temp comp - Accelerometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.acc, DID_CAL_TEMP_COMP, NUM_IMU_DEVICES_V1P3 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p3_t, acc)) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC_V1P3) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP, NUM_IMU_DEVICES_V1P4 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p4_t, acc)) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC) != 0) { return 0; }
         }
         break;
 
     case 4:     // Temp comp - Magnetometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.mag, DID_CAL_TEMP_COMP, NUM_MAG_DEVICES_V1P3 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p3_t, mag)) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG_V1P3) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP, NUM_MAG_DEVICES_V1P4 * sizeof(nvm_sensor_tcal_3axis_t), offsetof(sensor_tcal_group_v1p4_t, mag)) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG) != 0) { return 0; }
         }
         break;
 
     case 5:     // Motion cal - Gyros
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.pqr, DID_CAL_MOTION, NUM_IMU_DEVICES_V1P3 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p3_t, pqr)) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR_V1P3) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION, NUM_IMU_DEVICES_V1P4 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p4_t, pqr)) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR) != 0) { return 0; }
         }
         break;
 
     case 6:     // Motion cal - Accelerometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.acc, DID_CAL_MOTION, NUM_IMU_DEVICES_V1P3 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p3_t, acc)) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC_V1P3) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION, NUM_IMU_DEVICES_V1P4 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p4_t, acc)) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC) != 0) { return 0; }
         }
         break;
 
     case 7:     // Motion cal - Magnetometers (last step)
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.mag, DID_CAL_MOTION, NUM_MAG_DEVICES_V1P3 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p3_t, mag)) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG_V1P3) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION, NUM_MAG_DEVICES_V1P4 * sizeof(sensor_motion_cal_t), offsetof(sensor_mcal_group_v1p4_t, mag)) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG) != 0) { return 0; }
         }
         return 1;    // Done
 

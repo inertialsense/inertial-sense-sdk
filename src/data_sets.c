@@ -307,9 +307,9 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsDebugArray,      // 39: DID_DEBUG_ARRAY
         0,                      // 40: DID_SENSORS_MCAL
         offsetsGpsTimepulse,    // 41: DID_GPS1_TIMEPULSE
-        0,                      // 42: DID_CAL_SC
-        0,                      // 43: DID_CAL_SC1
-        0,                      // 44: DID_CAL_SC2
+        0,                      // 42: DID_UNUSED
+        0,                      // 43: DID_UNUSED
+        0,                      // 44: DID_UNUSED
         0,                      // 45: DID_GPS1_SIG
         offsetsOnlyTimeFirst,   // 46: DID_SENSORS_ADC_SIGMA
         offsetsOnlyTimeFirst,   // 47: DID_REFERENCE_MAGNETOMETER
@@ -365,26 +365,26 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsOnlyTimeFirst,   // 97: DID_IMU_RAW
         0,                      // 98: DID_FIRMWARE_UPDATE
         0,                      // 99: DID_RUNTIME_PROFILER
-        0,                      // 100: 
-        0,                      // 101: 
-        0,                      // 102: 
-        0,                      // 103: 
-        0,                      // 104: 
-        0,                      // 105:
-        0,                      // 106:
-        0,                      // 107:
-        0,                      // 108:
-        0,                      // 109:
-        0,                      // 110:
-        0,                      // 111:
-        0,                      // 112:
-        0,                      // 113:
-        0,                      // 114:
-        0,                      // 115:
-        0,                      // 116:
-        0,                      // 117:
-        0,                      // 118:
-        0,                      // 119:
+        0,                      // 100: DID_CAL_TEMP_COMP_GYR
+        0,                      // 101: DID_CAL_TEMP_COMP_ACC
+        0,                      // 102: DID_CAL_TEMP_COMP_MAG
+        0,                      // 103: DID_CAL_MOTION_GYR
+        0,                      // 104: DID_CAL_MOTION_ACC
+        0,                      // 105: DID_CAL_MOTION_MAG
+        0,                      // 106: 
+        0,                      // 107: 
+        0,                      // 108: 
+        0,                      // 109: 
+        0,                      // 110: 
+        0,                      // 111: 
+        0,                      // 112: 
+        0,                      // 113: 
+        0,                      // 114: 
+        0,                      // 115: 
+        0,                      // 116: 
+        0,                      // 117: 
+        0,                      // 118: 
+        0,                      // 119: 
         0,                      // 120: DID_GPX_DEV_INFO
         0,                      // 121: DID_GPX_FLASH_CFG
         0,                      // 122: DID_GPX_RTOS_INFO
@@ -496,11 +496,11 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         rtosTaskOffsets,        // 38: DID_RTOS_INFO
         0,                      // 39: DID_DEBUG_ARRAY
         0,                      // 40: DID_SENSORS_MCAL
-        0,                      // 41: 
-        0,                      // 42: DID_CAL_SC
-        0,                      // 43: DID_CAL_SC1
-        0,                      // 44: DID_CAL_SC2
-        0,                      // 45:
+        0,                      // 41: DID_GPS1_TIMEPULSE
+        0,                      // 42: DID_UNUSED
+        0,                      // 43: DID_UNUSED
+        0,                      // 44: DID_UNUSED
+        0,                      // 45: DID_GPS1_SIG
         0,                      // 46: DID_SENSORS_ADC_SIGMA
         0,                      // 47: DID_REFERENCE_MAGNETOMETER
         0,                      // 48: DID_INL2_STATES
@@ -555,26 +555,26 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 97: DID_IMU_RAW
         0,                      // 98: DID_FIRMWARE_UPDATE
         0,                      // 99: DID_RUNTIME_PROFILER
-        0,                      // 100: 
-        0,                      // 101: 
-        0,                      // 102: 
-        0,                      // 103: 
-        0,                      // 104: 
-        0,                      // 105:
-        0,                      // 106:
-        0,                      // 107:
-        0,                      // 108:
-        0,                      // 109:
-        0,                      // 110:
-        0,                      // 111:
-        0,                      // 112:
-        0,                      // 113:
-        0,                      // 114:
-        0,                      // 115:
-        0,                      // 116:
-        0,                      // 117:
-        0,                      // 118:
-        0,                      // 119:
+        0,                      // 100: DID_CAL_TEMP_COMP_GYR
+        0,                      // 101: DID_CAL_TEMP_COMP_ACC
+        0,                      // 102: DID_CAL_TEMP_COMP_MAG
+        0,                      // 103: DID_CAL_MOTION_GYR
+        0,                      // 104: DID_CAL_MOTION_ACC
+        0,                      // 105: DID_CAL_MOTION_MAG
+        0,                      // 106: 
+        0,                      // 107: 
+        0,                      // 108: 
+        0,                      // 109: 
+        0,                      // 110: 
+        0,                      // 111: 
+        0,                      // 112: 
+        0,                      // 113: 
+        0,                      // 114: 
+        0,                      // 115: 
+        0,                      // 116: 
+        0,                      // 117: 
+        0,                      // 118: 
+        0,                      // 119: 
         0,                      // 120: DID_GPX_DEV_INFO
         0,                      // 121: DID_GPX_FLASH_CFG
         0,                      // 122: DID_GPX_RTOS_INFO

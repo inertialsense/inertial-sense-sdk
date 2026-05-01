@@ -221,9 +221,6 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog) {
             // HANDLE_MSG(DID_RTOS_INFO, dev_log_->rtosInfo);
             HANDLE_MSG(DID_DEBUG_STRING, dev_log_->debugString);
             HANDLE_MSG(DID_DEBUG_ARRAY, dev_log_->debugArray);
-            // HANDLE_MSG(DID_CAL_SC, dev_log_->calSc);
-            // HANDLE_MSG(DID_CAL_SC1, dev_log_->calSc1);
-            // HANDLE_MSG(DID_CAL_SC2, dev_log_->calSc2);
             HANDLE_MSG(DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma);
             HANDLE_MSG(DID_INL2_STATES, dev_log_->inl2States);
             HANDLE_MSG(DID_INL2_STATUS, dev_log_->inl2Status);
@@ -340,9 +337,6 @@ void LogReader::forwardData(int device_id) {
     // forward_message(DID_RTOS_INFO, dev_log_->rtosInfo, device_id);
     forward_message(DID_DEBUG_STRING, dev_log_->debugString, device_id);
     forward_message(DID_DEBUG_ARRAY, dev_log_->debugArray, device_id);
-    // forward_message(DID_CAL_SC, dev_log_->calSc, device_id);
-    // forward_message(DID_CAL_SC1, dev_log_->calSc1, device_id);
-    // forward_message(DID_CAL_SC2, dev_log_->calSc2, device_id);
     forward_message(DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma, device_id);
     forward_message(DID_INL2_STATES, dev_log_->inl2States, device_id);
     forward_message(DID_INL2_STATUS, dev_log_->inl2Status, device_id);

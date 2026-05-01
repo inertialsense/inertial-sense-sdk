@@ -2076,48 +2076,81 @@ static void PopulateMapSensorSCalInfo(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember2("devSerialNum", offsetof(sensor_cal_info_t, devSerialNum), DATA_TYPE_UINT32, "", "Device serial number", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapSensorTCalSubsetGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapSensorTCalGyrGroup(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<sensor_tcal_group_subset_t> mapper(data_set, did);
+    DataMapper<sensor_tcal_gyr_group_t> mapper(data_set, did);
 
     // Can be Gyros, Accel, or Magnetometer 
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
-        mapper.AddMember2("sensor" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_group_subset_t, sensor[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        mapper.AddMember2("sensor" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_gyr_group_t, sensor[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
         for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
         {
-            mapper.AddMember2("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_subset_t, sensor[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
-            mapper.AddArray2 ("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_subset_t, sensor[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+            mapper.AddMember2("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_gyr_group_t, sensor[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_gyr_group_t, sensor[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
         }
     }
 }
 
-static void PopulateMapSensorMCalGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapSensorTCalAccGroup(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<sensor_mcal_group_t> mapper(data_set, did);
+    DataMapper<sensor_tcal_acc_group_t> mapper(data_set, did);
 
-    constexpr int numImu = (int)(sizeof(sensor_mcal_group_t::pqr) / sizeof(sensor_motion_cal_t));
-    constexpr int numMag = (int)(sizeof(sensor_mcal_group_t::mag) / sizeof(sensor_motion_cal_t));
-
-    // Gyros
-    for (int i=0; i<numImu; i++)
+    // Can be Gyros, Accel, or Magnetometer 
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("pqr" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, pqr[0].orth), DATA_TYPE_F32, 9, {""}, {"Gyr ortho-normalization (cross-axis scalars)"});
-        mapper.AddArray2("pqr" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, pqr[0].bias), DATA_TYPE_F32, 3, {""}, {"Gyr biases (additive to temp comp)"});
+        mapper.AddMember2("sensor" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_acc_group_t, sensor[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_acc_group_t, sensor[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_acc_group_t, sensor[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
     }
+}
 
-    // Accels
-    for (int i=0; i<numImu; i++)
+static void PopulateMapSensorTCalMagGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_tcal_mag_group_t> mapper(data_set, did);
+
+    // Can be Gyros, Accel, or Magnetometer 
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
     {
-        mapper.AddArray2("acc" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, acc[0].orth), DATA_TYPE_F32, 9, {""}, {"Acc ortho-normalization (cross-axis scalars)"});
-        mapper.AddArray2("acc" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, acc[0].bias), DATA_TYPE_F32, 3, {""}, {"Acc biases (additive to temp comp)"});
+        mapper.AddMember2("sensor" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_mag_group_t, sensor[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_mag_group_t, sensor[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_mag_group_t, sensor[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
     }
+}
 
-    // Magnetometers
-    for (int i=0; i<numMag; i++)
+static void PopulateMapSensorMCalGyrGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_mcal_gyr_group_t> mapper(data_set, did);
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("mag" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, mag[0].orth), DATA_TYPE_F32, 9, {""}, {"Mag ortho-normalization (cross-axis scalars)"});
-        mapper.AddArray2("mag" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_group_t, mag[0].bias), DATA_TYPE_F32, 3, {""}, {"Mag biases (additive to temp comp)"});
+        mapper.AddArray2("sensor" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_gyr_group_t, sensor[0].orth), DATA_TYPE_F32, 9, {""}, {"Gyr ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("sensor" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_gyr_group_t, sensor[0].bias), DATA_TYPE_F32, 3, {""}, {"Gyr biases (additive to temp comp)"});
+    }
+}
+
+static void PopulateMapSensorMCalAccGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_mcal_acc_group_t> mapper(data_set, did);
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("sensor" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_acc_group_t, sensor[0].orth), DATA_TYPE_F32, 9, {""}, {"Acc ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("sensor" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_acc_group_t, sensor[0].bias), DATA_TYPE_F32, 3, {""}, {"Acc biases (additive to temp comp)"});
+    }
+}
+
+static void PopulateMapSensorMCalMagGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_mcal_mag_group_t> mapper(data_set, did);
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    {
+        mapper.AddArray2("sensor" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_mag_group_t, sensor[0].orth), DATA_TYPE_F32, 9, {""}, {"Mag ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("sensor" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_mag_group_t, sensor[0].bias), DATA_TYPE_F32, 3, {""}, {"Mag biases (additive to temp comp)"});
     }
 }
 
@@ -2300,9 +2333,9 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_DEBUG_ARRAY",                  // 39
     "DID_SENSORS_MCAL",                 // 40
     "DID_GPS1_TIMEPULSE",               // 41
-    "DID_CAL_SC",                       // 42
-    "DID_CAL_TEMP_COMP",                // 43
-    "DID_CAL_MOTION",                   // 44
+    "DID_UNUSED_42",                    // 42
+    "DID_UNUSED_43",                    // 43
+    "DID_UNUSED_44",                    // 44
     "DID_GPS1_SIG",                     // 45
     "DID_SENSORS_ADC_SIGMA",            // 46
     "DID_REFERENCE_MAGNETOMETER",       // 47
@@ -2358,25 +2391,25 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_IMU_RAW",                      // 97 
     "DID_FIRMWARE_UPDATE",              // 98 
     "DID_RUNTIME_PROFILER",             // 99 
-    "UNUSED_100",                       // 100
-    "UNUSED_101",                       // 101
-    "UNUSED_102",                       // 102
-    "UNUSED_103",                       // 103
-    "UNUSED_104",                       // 104
-    "UNUSED_105",                       // 105
+    "DID_CAL_TEMP_COMP_GYR",            // 100
+    "DID_CAL_TEMP_COMP_ACC",            // 101
+    "DID_CAL_TEMP_COMP_MAG",            // 102
+    "DID_CAL_MOTION_GYR",               // 103
+    "DID_CAL_MOTION_ACC",               // 104
+    "DID_CAL_MOTION_MAG",               // 105
     "UNUSED_106",                       // 106
     "UNUSED_107",                       // 107
     "UNUSED_108",                       // 108
     "UNUSED_109",                       // 109
-    "DID_EVB_LUNA_FLASH_CFG",           // 110
-    "DID_EVB_LUNA_STATUS",              // 111
-    "DID_EVB_LUNA_SENSORS",             // 112
-    "DID_EVB_LUNA_REMOTE_KILL",         // 113
-    "DID_EVB_LUNA_VELOCITY_CONTROL",    // 114
-    "DID_EVB_LUNA_VELOCITY_COMMAND",    // 115
-    "DID_EVB_LUNA_AUX_COMMAND",         // 116
-    "",                                 // 117
-    "",                                 // 118
+    "UNUSED_110",                       // 110
+    "UNUSED_111",                       // 111
+    "UNUSED_112",                       // 112
+    "UNUSED_113",                       // 113
+    "UNUSED_114",                       // 114
+    "UNUSED_115",                       // 115
+    "UNUSED_116",                       // 116
+    "UNUSED_117",                       // 117
+    "UNUSED_118",                       // 118
     "DID_EVENT",                        // 119
     "DID_GPX_DEV_INFO",                 // 120
     "DID_GPX_FLASH_CFG",                // 121
@@ -2517,10 +2550,13 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_TCAL);
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
-    // PopulateMapSensorTCalGroup(m_data_set, DID_CAL_TEMP_COMP);
     PopulateMapSensorSCalInfo(       m_data_set, DID_CAL_SC_INFO);
-    PopulateMapSensorTCalSubsetGroup(m_data_set, DID_CAL_TEMP_COMP);
-    PopulateMapSensorMCalGroup(      m_data_set, DID_CAL_MOTION);
+    PopulateMapSensorTCalGyrGroup(   m_data_set, DID_CAL_TEMP_COMP_GYR);
+    PopulateMapSensorTCalAccGroup(   m_data_set, DID_CAL_TEMP_COMP_ACC);
+    PopulateMapSensorTCalMagGroup(   m_data_set, DID_CAL_TEMP_COMP_MAG);
+    PopulateMapSensorMCalGyrGroup(   m_data_set, DID_CAL_MOTION_GYR);
+    PopulateMapSensorMCalAccGroup(   m_data_set, DID_CAL_MOTION_ACC);
+    PopulateMapSensorMCalMagGroup(   m_data_set, DID_CAL_MOTION_MAG);
     PopulateMapSensorCompensation(   m_data_set, DID_SCOMP);
 
     // This must come last
@@ -2662,9 +2698,14 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_NVR_USERPAGE_G1:
     case DID_FLASH_CONFIG:
     case DID_CAL_SC_INFO:
-    case DID_CAL_SC:
-    case DID_CAL_TEMP_COMP:
-    case DID_CAL_MOTION:
+    case DID_CAL_TEMP_COMP_GYR:
+    case DID_CAL_TEMP_COMP_ACC:
+    case DID_CAL_TEMP_COMP_MAG:
+    case DID_CAL_MOTION_GYR:
+    case DID_CAL_MOTION_ACC:
+    case DID_CAL_MOTION_MAG:
+    case DID_CAL_TEMP_COMP_GYR:
+    case DID_CAL_MOTION_GYR:
     case DID_RTOS_INFO:
     case DID_SYS_CMD:
     case DID_NMEA_BCAST_PERIOD:
