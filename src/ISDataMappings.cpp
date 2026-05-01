@@ -2704,8 +2704,6 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_CAL_MOTION_GYR:
     case DID_CAL_MOTION_ACC:
     case DID_CAL_MOTION_MAG:
-    case DID_CAL_TEMP_COMP_GYR:
-    case DID_CAL_MOTION_GYR:
     case DID_RTOS_INFO:
     case DID_SYS_CMD:
     case DID_NMEA_BCAST_PERIOD:
