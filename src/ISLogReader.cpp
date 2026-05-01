@@ -643,6 +643,7 @@ ISRecordView ISLogReader::viewAt(std::size_t recordIdx) const noexcept {
         rec.offset,
         dataPtr,
         dataLen,
+        rec.flags,
     };
 }
 
