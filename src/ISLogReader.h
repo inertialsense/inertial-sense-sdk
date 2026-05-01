@@ -162,10 +162,10 @@ public:
      *
      * Most callers should iterate via `records()` / `allRecords()`
      * — this hatch is for code that needs to re-parse the raw stream
-     * (e.g. the D-03 templated sugar's `extractTypedRange`, which
-     * extracts typed payload structs that the index-record-shared-
-     * offset semantics don't expose cleanly through
-     * `ISRecordView::bytes()`).
+     * (e.g. D-03's templated sugar `extractTypedRange`, which extracts
+     * typed payload structs the chunk-shared-offset semantics of
+     * `ISRecordView::bytes()` don't expose cleanly; D-07's
+     * `ISTimeResolver` scanning ToW-bearing payloads for sync points).
      *
      * @return  `{ data, size }`. `data` aliases the mmap'd region
      *          (or buffer fallback); the lifetime is tied to this
