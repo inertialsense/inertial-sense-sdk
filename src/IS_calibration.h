@@ -231,12 +231,28 @@ typedef sensor_cal_v1p4_t           sensor_cal_t;
 #define SIZE_OF_SENSOR_MCAL_ACC_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(sensor_motion_cal_t))
 #define SIZE_OF_SENSOR_MCAL_MAG_V1P3    (NUM_MAG_DEVICES_V1P3*sizeof(sensor_motion_cal_t))
 
-#define SIZE_OF_SENSOR_TCAL_GYR         (NUM_IMU_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
-#define SIZE_OF_SENSOR_TCAL_ACC         (NUM_IMU_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
-#define SIZE_OF_SENSOR_TCAL_MAG         (NUM_MAG_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
-#define SIZE_OF_SENSOR_MCAL_GYR         (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
-#define SIZE_OF_SENSOR_MCAL_ACC         (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
-#define SIZE_OF_SENSOR_MCAL_MAG         (NUM_MAG_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_TCAL_GYR_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_ACC_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_MAG_V1P4    (NUM_MAG_DEVICES_V1P4*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_MCAL_GYR_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_ACC_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_MAG_V1P4    (NUM_MAG_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
+
+#if defined(IMX_5)
+#define SIZE_OF_SENSOR_TCAL_GYR         SIZE_OF_SENSOR_TCAL_GYR_V1P3
+#define SIZE_OF_SENSOR_TCAL_ACC         SIZE_OF_SENSOR_TCAL_ACC_V1P3
+#define SIZE_OF_SENSOR_TCAL_MAG         SIZE_OF_SENSOR_TCAL_MAG_V1P3
+#define SIZE_OF_SENSOR_MCAL_GYR         SIZE_OF_SENSOR_MCAL_GYR_V1P3
+#define SIZE_OF_SENSOR_MCAL_ACC         SIZE_OF_SENSOR_MCAL_ACC_V1P3
+#define SIZE_OF_SENSOR_MCAL_MAG         SIZE_OF_SENSOR_MCAL_MAG_V1P3
+#else
+#define SIZE_OF_SENSOR_TCAL_GYR         SIZE_OF_SENSOR_TCAL_GYR_V1P4
+#define SIZE_OF_SENSOR_TCAL_ACC         SIZE_OF_SENSOR_TCAL_ACC_V1P4
+#define SIZE_OF_SENSOR_TCAL_MAG         SIZE_OF_SENSOR_TCAL_MAG_V1P4
+#define SIZE_OF_SENSOR_MCAL_GYR         SIZE_OF_SENSOR_MCAL_GYR_V1P4
+#define SIZE_OF_SENSOR_MCAL_ACC         SIZE_OF_SENSOR_MCAL_ACC_V1P4
+#define SIZE_OF_SENSOR_MCAL_MAG         SIZE_OF_SENSOR_MCAL_MAG_V1P4
+#endif
 
 #ifdef __cplusplus
 }

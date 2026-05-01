@@ -993,17 +993,17 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
     {
     case 0:     // General Info
         if (sendV1p3) {
-            if (comManagerSendData(port, &(s_v1p3Buf.info), DID_CAL_SC_INFO, sizeof(sensor_cal_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return 0; }
+            if (comManagerSendData(port, &(s_v1p3Buf.info), DID_CAL_INFO, sizeof(sensor_cal_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, &(cal.info), DID_CAL_SC_INFO, sizeof(sensor_cal_info_t), offsetof(sensor_cal_t, info)) != 0) { return 0; }
+            if (comManagerSendData(port, &(cal.info), DID_CAL_INFO, sizeof(sensor_cal_info_t), offsetof(sensor_cal_t, info)) != 0) { return 0; }
         }
         break;
 
     case 1:     // Data Info
         if (sendV1p3) {
-            if (comManagerSendData(port, &(s_v1p3Buf.data.dinfo), DID_CAL_SC_INFO, sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, data.dinfo)) != 0) { return 0; }
+            if (comManagerSendData(port, &(s_v1p3Buf.data.dinfo), DID_CAL_INFO, sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, data.dinfo)) != 0) { return 0; }
         } else {
-            if (comManagerSendData(port, &(cal.data.dinfo), DID_CAL_SC_INFO, sizeof(sensor_data_info_t), offsetof(sensor_cal_t, data.dinfo)) != 0) { return 0; }
+            if (comManagerSendData(port, &(cal.data.dinfo), DID_CAL_INFO, sizeof(sensor_data_info_t), offsetof(sensor_cal_t, data.dinfo)) != 0) { return 0; }
         }
         break;
 
