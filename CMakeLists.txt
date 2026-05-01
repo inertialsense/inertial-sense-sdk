@@ -44,6 +44,8 @@ file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/src/protocol/*.h"
 	"${CMAKE_CURRENT_LIST_DIR}/src/util/*.cpp"
 	"${CMAKE_CURRENT_LIST_DIR}/src/util/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/derivations/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/derivations/*.h"
 	"${CMAKE_CURRENT_LIST_DIR}/hw-libs/bootloader/bootloaderShared.c"
 	"${CMAKE_CURRENT_LIST_DIR}/tests/runtime/*.cpp"
 	"${CMAKE_CURRENT_LIST_DIR}/tests/runtime/*.h"
@@ -100,6 +102,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         src
         src/util
         src/protocol
+        src/derivations
         src/libusb
         src/libusb/libusb
         src/yaml-cpp

@@ -524,6 +524,11 @@ uint64_t ISLogReader::fileSize() const noexcept {
     return rawSource_ ? rawSource_->size() : 0;
 }
 
+std::pair<const uint8_t*, std::size_t> ISLogReader::rawBytes() const noexcept {
+    if (!rawSource_) return { nullptr, 0 };
+    return { rawSource_->data(), rawSource_->size() };
+}
+
 void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
     deviceId_ = 0;
 

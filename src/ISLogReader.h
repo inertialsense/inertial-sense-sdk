@@ -151,6 +151,22 @@ public:
     uint64_t fileSize() const noexcept;
 
     /**
+     * Direct accessor for the segment's underlying byte buffer.
+     *
+     * Most callers should iterate via `records()` / `allRecords()`
+     * — this hatch is for code that needs to re-parse the raw stream
+     * (e.g. the derivation catalog at D-09, which extracts typed
+     * payload structs that the index-record-shared-offset semantics
+     * don't expose cleanly through `ISRecordView::bytes()`).
+     *
+     * @return  `{ data, size }`. `data` aliases the mmap'd region
+     *          (or buffer fallback); the lifetime is tied to this
+     *          reader. Empty pair if the segment was opened against
+     *          a zero-byte source.
+     */
+    std::pair<const uint8_t*, std::size_t> rawBytes() const noexcept;
+
+    /**
      * Side-channel diagnostic strings collected during open.
      * Categories observed today (added by D-04):
      *
