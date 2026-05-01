@@ -531,35 +531,52 @@ std::pair<const uint8_t*, std::size_t> ISLogReader::rawBytes() const noexcept {
 
 void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
     deviceId_ = 0;
+    hdwId_    = 0;
 
-    // 1) Try to find a DID_DEV_INFO record in the index. We need its
-    //    bytes to read the serialNumber field. dev_info_t is defined
-    //    in data_sets.h with serialNumber as the first field; rather
-    //    than pull the full struct here (which would couple this file
-    //    to a heavy header), we read the first uint32_t at the
-    //    record's offset, which is the serialNumber per the layout.
-    //    DID_DEV_INFO == 1 (data_sets.h:40).
-    constexpr uint32_t kDevInfoDid = 1u;
-    auto it = byDid_.find(kDevInfoDid);
-    if (it != byDid_.end() && !it->second.empty() && rawSource_) {
-        const auto& rec = records_[it->second.front()];
-        if (rec.offset + sizeof(uint32_t) <= rawSource_->size()) {
-            uint32_t sn = 0;
-            std::memcpy(&sn, rawSource_->data() + rec.offset, sizeof(uint32_t));
-            // dev_info_t::serialNumber is little-endian on disk (ARM SDK).
-            // A serial of 0 is implausible for real hardware, so we fall
-            // through to filename parsing if so — protects against the
-            // record being a partial-update where serialNumber wasn't set.
-            if (sn != 0) {
-                deviceId_ = sn;
+    // 1) Walk the raw bytes via `is_comm_parse_byte` looking for the
+    //    first DID_DEV_INFO packet. We can't shortcut to the record's
+    //    `.offset` because that is the ISB packet *start* (framing +
+    //    header + payload + checksum), not the payload offset — we
+    //    need the parser to hand us `comm.rxPkt.data.ptr`, which
+    //    points into the dev_info_t payload proper. Bounded: terminate
+    //    at the first DEV_INFO packet so this is at most a single
+    //    early-exit linear pass.
+    if (rawSource_ && rawSource_->size() > 0) {
+        is_comm_instance_t comm{};
+        uint8_t commBuf[PKT_BUF_SIZE];
+        is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
+        is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+
+        const uint8_t* base = rawSource_->data();
+        const std::size_t total = rawSource_->size();
+        for (std::size_t i = 0; i < total; ++i) {
+            protocol_type_t p = is_comm_parse_byte(&comm, base[i]);
+            if (p != _PTYPE_INERTIAL_SENSE_DATA &&
+                p != _PTYPE_INERTIAL_SENSE_CMD) {
+                continue;
+            }
+            if (comm.rxPkt.dataHdr.id != DID_DEV_INFO) continue;
+            if (comm.rxPkt.dataHdr.size != sizeof(dev_info_t)) continue;
+
+            dev_info_t info{};
+            std::memcpy(&info, comm.rxPkt.data.ptr, sizeof(info));
+            if (info.serialNumber != 0) {
+                deviceId_ = info.serialNumber;
+                hdwId_    = static_cast<uint16_t>(
+                    ENCODE_DEV_INFO_TO_HDW_ID(info));
                 return;
             }
+            // First DEV_INFO had a zero serial — partial-update record
+            // or test fixture stub. Stop scanning; let the filename
+            // fallback handle it.
+            break;
         }
     }
 
     // 2) Filename fallback. cltool/cISLogger emits names of the form
     //    `LOG_SN<n>_<timestamp>_<seq>.raw`. Extract the digits between
-    //    "SN" and the next underscore.
+    //    "SN" and the next underscore. The fallback can recover the
+    //    serial number but not the hardware id, so `hdwId_` stays 0.
     const std::string stem = rawPath.stem().string();   // strips ".raw"
     const std::size_t snPos = stem.find("SN");
     if (snPos != std::string::npos) {

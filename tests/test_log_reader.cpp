@@ -407,6 +407,37 @@ TEST_F(LogReaderTest, DeviceIdIsDerivedFromFixture) {
     EXPECT_NE(r->deviceId(), 0u);
 }
 
+// ---------------------------------------------------------------------------
+// hdwId derivation against a real cltool 120 s PPD capture (IMX-5.0,
+// SN519465). The synthetic test_data_utils fixture writes DEV_INFO records
+// with all-zero hardwareType/hardwareVer fields, so the synthetic path
+// can only verify that hdwId() returns 0 cleanly when the type byte is
+// zero — it can't prove the parse extracts the right bytes. This live
+// test does. GTEST_SKIPped when the fixture isn't on disk so CI is
+// silent rather than red. Override the path with IS_SDK_LIVE_FIXTURE_RAW.
+// ---------------------------------------------------------------------------
+TEST(LogReaderLiveFixture, HdwIdMatchesImx5_0FromCltoolCapture) {
+    fs::path raw;
+    if (const char* env = std::getenv("IS_SDK_LIVE_FIXTURE_RAW")) {
+        raw = env;
+    } else {
+        raw = fs::path(std::getenv("HOME") ? std::getenv("HOME") : "/")
+            / "workspace/inertialsense/sample_logs/cltool_imx5_120s_ppd"
+              "/20260429_105836/LOG_SN519465_20260429_105836_0001.raw";
+    }
+    if (!fs::exists(raw)) {
+        GTEST_SKIP() << "live fixture not present at " << raw
+                     << " (set IS_SDK_LIVE_FIXTURE_RAW to override)";
+    }
+
+    auto r = ISLogReader::openSegment(raw);
+    ASSERT_TRUE(r.has_value()) << r.error().message;
+    EXPECT_EQ(r->deviceId(), 519465u);
+    EXPECT_EQ(r->hdwId(),    IS_HARDWARE_IMX_5_0)
+        << "expected IMX-5.0 from this capture; got hdwId=0x"
+        << std::hex << r->hdwId();
+}
+
 // ============================================================
 // Layout-discipline sanity
 // ============================================================
