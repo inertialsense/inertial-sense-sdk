@@ -355,4 +355,83 @@ TEST_F(TimeResolverTest, SingleSyncPointDegenerateSlope) {
     EXPECT_EQ(bwd.value, 95000u);
 }
 
+// ---------------------------------------------------------------------------
+// Live-fixture smoke: exercise the resolver against a real cltool-captured
+// log if one is reachable. Looks at the env var
+// `IS_SDK_LIVE_FIXTURE_RAW` first, then falls back to the project's
+// canonical sample-logs directory. `GTEST_SKIP` when neither exists, so
+// CI without the data is silent rather than red.
+// ---------------------------------------------------------------------------
+TEST(TimeResolverLiveFixture, RealCltoolCaptureSmoke) {
+    fs::path raw;
+    if (const char* env = std::getenv("IS_SDK_LIVE_FIXTURE_RAW")) {
+        raw = env;
+    } else {
+        // Default: the cltool-captured 120 s PPD log from SN519465 that
+        // sits in the project's sample-logs tree. Not committed in the
+        // SDK repo; available on developer machines that ran the
+        // capture script.
+        raw = fs::path(std::getenv("HOME") ? std::getenv("HOME") : "/")
+            / "workspace/inertialsense/sample_logs/cltool_imx5_120s_ppd"
+              "/20260429_105836/LOG_SN519465_20260429_105836_0001.raw";
+    }
+    if (!fs::exists(raw)) {
+        GTEST_SKIP() << "live fixture not present at " << raw
+                     << " (set IS_SDK_LIVE_FIXTURE_RAW to override)";
+    }
+
+    auto log = ISDeviceLog::fromSegments({ raw });
+    ASSERT_TRUE(log.has_value()) << log.error().message;
+    EXPECT_GT(log->recordCount(), 0u);
+
+    auto resolverR = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolverR.has_value()) << resolverR.error().message;
+    const auto& resolver = resolverR.value();
+
+    const auto& syncs = resolver.syncPoints();
+    EXPECT_GT(syncs.size(), 0u) << "expected at least one ToW-bearing record "
+                                   "in a 120 s PPD capture";
+
+    // Sync points must be timestamp-sorted and adjacent-duplicate-free.
+    for (std::size_t i = 1; i < syncs.size(); ++i) {
+        EXPECT_LT(syncs[i - 1].hostTimeMs, syncs[i].hostTimeMs)
+            << "sync points must be strictly increasing after dedup (i=" << i << ")";
+    }
+
+    // Resolve the first sync point's hostTimeMs → must be Exact.
+    if (!syncs.empty()) {
+        const auto first = syncs.front();
+        const auto ts = resolver.resolve(first.hostTimeMs, first.deviceId);
+        EXPECT_EQ(ts.source, TimeSource::PayloadToW);
+        EXPECT_EQ(ts.confidence, TimeConfidence::Exact);
+        EXPECT_EQ(ts.value, first.payloadToWMs);
+    }
+
+    // Resolve a point well before the first sync → ExtrapolatedBackward.
+    if (!syncs.empty()) {
+        const auto bwd = resolver.resolve(0u, log->deviceId());
+        EXPECT_EQ(bwd.source, TimeSource::ResolvedViaSync);
+        EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
+    }
+
+    // Stats histogram sums to iterated record count.
+    auto stats = resolver.computeStats(log.value());
+    const std::size_t total = stats.exact + stats.interpolated
+                            + stats.extrapFwd + stats.extrapBack
+                            + stats.unknown;
+    EXPECT_EQ(total, log->recordCount());
+
+    // Surface a one-line summary in the test log so a developer running
+    // this can eyeball the resolver's behavior on real data.
+    std::printf("[live] raw=%s rawBytes=%llu records=%zu syncs=%zu "
+                "discs=%zu stats: exact=%zu interp=%zu extFwd=%zu "
+                "extBack=%zu unk=%zu\n",
+                raw.c_str(),
+                static_cast<unsigned long long>(fs::file_size(raw)),
+                log->recordCount(), syncs.size(),
+                resolver.discontinuities().size(),
+                stats.exact, stats.interpolated, stats.extrapFwd,
+                stats.extrapBack, stats.unknown);
+}
+
 } // namespace
