@@ -27,9 +27,11 @@
 #define IS_LOG_HTTP_REQUEST        ((IS_LOG_MDNS_CACHE << 1))
 #define IS_LOG_CORRECTIONS         ((IS_LOG_HTTP_REQUEST << 1))
 #define IS_LOG_CALIBRATION         ((IS_LOG_CORRECTIONS << 1))
+#define IS_LOG_ISLOG               ((IS_LOG_CALIBRATION << 1))    // ISLog / ISDeviceLog / ISLogReader file parse + load
 // APP-specific stuff here goes here
-#define IS_LOG_APP_EVALTOOL        ((IS_LOG_CALIBRATION << 1))
+#define IS_LOG_APP_EVALTOOL        ((IS_LOG_ISLOG << 1))
 #define IS_LOG_APP_CLTOOL          ((IS_LOG_APP_EVALTOOL << 1))
+#define IS_LOG_APP_LOGALYZER       ((IS_LOG_APP_CLTOOL << 1))
 
 #define IS_LOG_FACILITY_ALL        0xFFFF
 

@@ -9,6 +9,8 @@
 
 #include "ISDeviceLog.h"
 
+#include "core/msg_logger.h"
+
 #include <algorithm>
 #include <set>
 #include <utility>
@@ -25,7 +27,10 @@ ISDeviceLog& ISDeviceLog::operator=(ISDeviceLog&&) noexcept = default;
 
 ISExpected<ISDeviceLog>
     ISDeviceLog::fromSegments(std::vector<fs::path> segmentPaths) {
+    log_debug(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: %zu segment(s)",
+              segmentPaths.size());
     if (segmentPaths.empty()) {
+        log_error(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: empty segment list");
         return fail(ISErrorCode::InvalidArgument,
                     "ISDeviceLog::fromSegments: empty segment list");
     }
@@ -36,6 +41,8 @@ ISExpected<ISDeviceLog>
     for (const auto& path : segmentPaths) {
         auto r = ISLogReader::openSegment(path);
         if (!r) {
+            log_error(IS_LOG_ISLOG, "openSegment failed for %s: %s",
+                      path.c_str(), r.error().message.c_str());
             return tl::unexpected<ISError>{ r.error() };
         }
         readers.push_back(std::move(*r));
@@ -46,6 +53,12 @@ ISExpected<ISDeviceLog>
     for (std::size_t i = 1; i < readers.size(); ++i) {
         const uint64_t got = readers[i].deviceId();
         if (got != expected) {
+            log_error(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: device-id "
+                      "mismatch — first segment is SN%lu, segment %zu (%s) "
+                      "is SN%lu",
+                      static_cast<unsigned long>(expected), i,
+                      segmentPaths[i].filename().c_str(),
+                      static_cast<unsigned long>(got));
             return fail(ISErrorCode::Corrupted,
                 std::string{"ISDeviceLog::fromSegments: device-id mismatch — "
                             "first segment is SN"} + std::to_string(expected)
@@ -70,6 +83,10 @@ ISExpected<ISDeviceLog>
     out.segments_ = std::move(readers);
     out.deviceId_ = expected;
     out.buildIndex();
+    log_more_info(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: device 0x%016lx, "
+                  "%zu segment(s), %zu record(s)",
+                  static_cast<unsigned long>(out.deviceId_),
+                  out.segments_.size(), out.total_);
     return out;
 }
 
