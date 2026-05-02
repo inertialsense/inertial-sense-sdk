@@ -10,6 +10,8 @@
 
 #include "ISLogReader.h"
 
+#include "core/msg_logger.h"
+
 // com_manager.h FIRST — short-circuits the broken extern-C wrap in
 // ISFirmwareUpdater.h that would otherwise trip C++ overloads. Same
 // trick used in test_log_index.cpp.
@@ -242,8 +244,11 @@ ISLogReader::ISLogReader(ISLogReader&&) noexcept = default;
 ISLogReader& ISLogReader::operator=(ISLogReader&&) noexcept = default;
 
 ISExpected<ISLogReader> ISLogReader::openSegment(const fs::path& raw) {
+    log_debug(IS_LOG_ISLOG, "ISLogReader::openSegment: %s", raw.c_str());
     auto src = ISFileSource::open(raw);
     if (!src) {
+        log_error(IS_LOG_ISLOG, "ISFileSource::open failed for %s: %s",
+                  raw.c_str(), src.error().message.c_str());
         return tl::unexpected<ISError>{ src.error() };
     }
     return construct(std::move(*src), raw);
@@ -363,6 +368,8 @@ ISExpected<ISLogReader>
         }
         r.warnings_.push_back(
             std::string{"sidecar: rebuilt from .raw scan (reason: "} + reasonStr + ")");
+        log_warn(IS_LOG_ISLOG, "%s: sidecar rebuilt from .raw scan (reason: %s)",
+                 rawPath.filename().c_str(), reasonStr);
 
         // Persist the rebuilt sidecar. Suppressed when the build flips
         // IS_LOG_READER_NO_PERSIST_INDEX (e.g. tests, customers who
@@ -371,6 +378,8 @@ ISExpected<ISLogReader>
 #if !defined(IS_LOG_READER_NO_PERSIST_INDEX)
         if (!r.persistIndex()) {
             r.warnings_.push_back("sidecar: persist failed (read-only filesystem?)");
+            log_warn(IS_LOG_ISLOG, "%s: sidecar persist failed "
+                     "(read-only filesystem?)", rawPath.filename().c_str());
         }
 #endif
     }
@@ -465,6 +474,11 @@ void ISLogReader::buildIndexFromScan() {
         warnings_.push_back(
             "truncation: stopped at offset " + std::to_string(lastEmitEnd) +
             " (file size " + std::to_string(total) + ")");
+        log_warn(IS_LOG_ISLOG, "%s: truncated, stopped at offset %zu "
+                 "(file size %zu)",
+                 rawPath_.filename().c_str(),
+                 static_cast<std::size_t>(lastEmitEnd),
+                 static_cast<std::size_t>(total));
     } else {
         truncationOffset_ = total;
     }

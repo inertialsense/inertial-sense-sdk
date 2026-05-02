@@ -10,6 +10,7 @@
 #include "ISLog.h"
 
 #include "ISLogReader.h"
+#include "core/msg_logger.h"
 
 #include <algorithm>
 #include <cctype>
@@ -40,13 +41,17 @@ bool isRawExtension(const fs::path& p) {
 } // namespace
 
 ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
+    log_info(IS_LOG_ISLOG, "ISLog::openDirectory: %s", logDir.c_str());
+
     std::error_code ec;
     if (!fs::exists(logDir, ec)) {
+        log_error(IS_LOG_ISLOG, "directory does not exist: %s", logDir.c_str());
         return fail(ISErrorCode::NotFound,
                     "ISLog::openDirectory: directory does not exist: "
                     + logDir.string());
     }
     if (!fs::is_directory(logDir, ec)) {
+        log_error(IS_LOG_ISLOG, "not a directory: %s", logDir.c_str());
         return fail(ISErrorCode::InvalidArgument,
                     "ISLog::openDirectory: not a directory: " + logDir.string());
     }
@@ -55,6 +60,8 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
     std::vector<fs::path> rawFiles;
     for (const auto& entry : fs::directory_iterator(logDir, ec)) {
         if (ec) {
+            log_error(IS_LOG_ISLOG, "directory iteration failed: %s",
+                      ec.message().c_str());
             return fail(ISErrorCode::PermissionDenied,
                         "ISLog::openDirectory: directory iteration failed: "
                         + ec.message());
@@ -65,9 +72,11 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
         }
     }
     if (rawFiles.empty()) {
+        log_warn(IS_LOG_ISLOG, "no .raw files in %s", logDir.c_str());
         return fail(ISErrorCode::NotFound,
                     "ISLog::openDirectory: no .raw files in " + logDir.string());
     }
+    log_more_info(IS_LOG_ISLOG, "discovered %zu .raw segment(s)", rawFiles.size());
 
     // Sort lexicographically so per-device segment order is stable.
     std::sort(rawFiles.begin(), rawFiles.end());
@@ -77,9 +86,13 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
     for (const auto& path : rawFiles) {
         auto r = ISLogReader::openSegment(path);
         if (!r) {
+            log_error(IS_LOG_ISLOG, "openSegment failed for %s: %s",
+                      path.c_str(), r.error().message.c_str());
             return tl::unexpected<ISError>{ r.error() };
         }
         const uint64_t devId = r->deviceId();
+        log_debug(IS_LOG_ISLOG, "  %s -> device 0x%016lx",
+                  path.filename().c_str(), static_cast<unsigned long>(devId));
         byDevice[devId].push_back(path);
         // Drop the reader; ISDeviceLog::fromSegments re-opens.
         r = tl::unexpected<ISError>{ ISError{ ISErrorCode::Internal, "drop" } };
@@ -91,14 +104,27 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
 
     out.orderedIds_.reserve(byDevice.size());
     for (auto& [devId, paths] : byDevice) {
+        log_more_info(IS_LOG_ISLOG,
+                      "  building device 0x%016lx: %zu segment(s)",
+                      static_cast<unsigned long>(devId), paths.size());
         auto dl = ISDeviceLog::fromSegments(std::move(paths));
         if (!dl) {
+            log_error(IS_LOG_ISLOG, "ISDeviceLog::fromSegments failed for "
+                      "device 0x%016lx: %s",
+                      static_cast<unsigned long>(devId),
+                      dl.error().message.c_str());
             return tl::unexpected<ISError>{ dl.error() };
         }
         out.devicesById_.emplace(devId, std::move(*dl));
         out.orderedIds_.push_back(devId);
     }
 
+    log_info(IS_LOG_ISLOG, "ISLog::openDirectory: %s -> %zu device(s), "
+             "%zu segment(s), %zu record(s) total",
+             logDir.c_str(),
+             out.orderedIds_.size(),
+             out.allSegments_.size(),
+             out.recordCount());
     return out;
 }
 
