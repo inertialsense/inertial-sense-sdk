@@ -90,6 +90,18 @@ public:
     /** @return  Total record count summed across every device-log. */
     std::size_t recordCount() const noexcept;
 
+    /**
+     * Move every composed `ISDeviceLog` out of this `ISLog`, in
+     * `deviceIds()` order. After the call, the `ISLog` is in a
+     * moved-from state — `deviceIds()`, `device(...)`, etc. all
+     * return empty results. Intended for callers that want to take
+     * direct ownership of each per-device log (e.g. an application
+     * holding a flat `vector<ISDeviceLog>` keyed by row).
+     *
+     * @return  Owned device-logs in the same order as `deviceIds()`.
+     */
+    std::vector<ISDeviceLog> takeDevices();
+
 private:
     ISLog() = default;
 
