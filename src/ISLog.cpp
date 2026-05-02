@@ -180,4 +180,17 @@ std::size_t ISLog::recordCount() const noexcept {
     return n;
 }
 
+std::vector<ISDeviceLog> ISLog::takeDevices() {
+    std::vector<ISDeviceLog> out;
+    out.reserve(orderedIds_.size());
+    for (const uint64_t id : orderedIds_) {
+        auto it = devicesById_.find(id);
+        if (it == devicesById_.end()) continue;
+        out.push_back(std::move(it->second));
+    }
+    devicesById_.clear();
+    orderedIds_.clear();
+    return out;
+}
+
 } // namespace inertial_sense
