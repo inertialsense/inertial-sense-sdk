@@ -215,13 +215,26 @@ public:
     void clearDeviceHint(port_handle_t port);
 
     /**
-     * Notifies all listeners of a particular device event
-     * @param device the device to which the event is applicable
-     * @param event the specific event id that occurred.
+     * Notifies all listeners of a particular device event.
+     *
+     * Listeners are invoked WITHOUT holding DeviceManager::mutex. Holding the
+     * mutex during dispatch creates an AB/BA deadlock with any caller that
+     * already holds another resource (e.g. ISDevice::portMutex) and reaches into
+     * DeviceManager — for example `ISDevice::step()` (which holds portMutex,
+     * fires DEVICE_DISCONNECTED on a port-state change) racing against
+     * `DeviceManager::discoverDevices()` (which holds DeviceManager::mutex and
+     * eventually takes portMutex via `validate→SendRaw`). Snapshotting the
+     * listener vector under the lock and dispatching after release is safe:
+     * the listener registry is only mutated through addPortListener/clear-style
+     * helpers that already take the same mutex.
      */
     void notifyListeners(device_handle_t device, uint8_t event) {
-        std::lock_guard<std::recursive_mutex> lock(mutex);
-        for (device_listener& l : listeners) l(event, device);    // notify that this device's port has been updated
+        std::vector<device_listener> snapshot;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            snapshot = listeners;
+        }
+        for (auto& l : snapshot) l(event, device);
     }
 
 

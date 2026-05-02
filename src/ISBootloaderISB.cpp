@@ -177,7 +177,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 is_operation_result cISBootloaderISB::reboot_up()
 {
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::reboot_up()");
-    m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) %s (SN%u): Rebooting to APP mode...", portName(m_port), m_sn);
 
     // send the "reboot to program mode" command and the device should start in program mode
     if (portWrite(m_port, (unsigned char*)":020000040300F7", 15) == 15) {

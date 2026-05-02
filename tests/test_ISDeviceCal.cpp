@@ -21,6 +21,8 @@
 
 #include "ISDeviceCal.h"
 #include "ISLogFile.h"
+#include "IS_calibration_convert.h"
+#include "data_sets.h"
 #include "json.hpp"
 
 using json = nlohmann::json;
@@ -298,4 +300,181 @@ TEST_F(test_ISDeviceCal, roundTrip_saveAndLoad)
     EXPECT_NEAR(loadMcal.acc[0].orth[4], origMcal.acc[0].orth[4], 0.001f);
 
     std::remove(path.c_str());
+}
+
+
+// =====================================================================================
+// SN-7966: v1.3 <-> v1.4 conversion + version-aware upload tests
+// =====================================================================================
+
+namespace {
+
+// Populate a v1p4 cal with distinguishable per-device values, then compute info checksum.
+static void buildV1p4Sample(sensor_cal_v1p4_t &cal, uint32_t serialNum = 60010)
+{
+    memset(&cal, 0, sizeof(cal));
+    cal.info.size = sizeof(sensor_cal_info_t);
+    cal.info.version[0] = 1;
+    cal.info.version[1] = 4;
+    cal.info.devSerialNum = serialNum;
+    cal.info.checksum = flashChecksum32(&cal.info, cal.info.size);
+
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P4; d++)
+    {
+        cal.data.mcal.pqr[d].orth[0] = 1.0f + 0.01f * d;
+        cal.data.mcal.pqr[d].bias[0] = 0.001f * (d + 1);
+        cal.data.mcal.acc[d].orth[4] = 1.0f + 0.02f * d;
+    }
+    for (int d = 0; d < NUM_MAG_DEVICES_V1P4; d++)
+    {
+        cal.data.mcal.mag[d].orth[0] = 2.5f;
+        cal.data.mcal.mag[d].bias[1] = 0.5f;
+    }
+    cal.data.dinfo.size = sizeof(sensor_cal_v1p4_data_t);
+    cal.data.dinfo.checksum = flashChecksum32(&cal.data, cal.data.dinfo.size);
+}
+
+static void buildV1p3Sample(sensor_cal_v1p3_t &cal, uint32_t serialNum = 60010)
+{
+    memset(&cal, 0, sizeof(cal));
+    cal.info.size = sizeof(sensor_cal_info_t);
+    cal.info.version[0] = 1;
+    cal.info.version[1] = 3;
+    cal.info.devSerialNum = serialNum;
+    cal.info.checksum = flashChecksum32(&cal.info, cal.info.size);
+
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
+    {
+        cal.data.mcal.pqr[d].orth[0] = 1.0f + 0.01f * d;
+        cal.data.mcal.pqr[d].bias[0] = 0.001f * (d + 1);
+    }
+    for (int d = 0; d < NUM_MAG_DEVICES_V1P3; d++)
+    {
+        cal.data.mcal.mag[d].orth[0] = 2.5f + 0.1f * d;
+    }
+    cal.data.dinfo.size = sizeof(sensor_cal_v1p3_data_t);
+    cal.data.dinfo.checksum = flashChecksum32(&cal.data, cal.data.dinfo.size);
+}
+
+} // namespace
+
+TEST(ISDeviceCalConvert, V1p4ToV1p3PreservesSharedFields)
+{
+    sensor_cal_v1p4_t v1p4;
+    buildV1p4Sample(v1p4, 60010);
+
+    sensor_cal_v1p3_t v1p3;
+    convert_sensor_cal_v1p4_to_v1p3(&v1p4, &v1p3);
+
+    EXPECT_EQ(v1p3.info.version[0], 1);
+    EXPECT_EQ(v1p3.info.version[1], 3);
+    EXPECT_EQ(v1p3.info.devSerialNum, 60010u);
+
+    // First NUM_IMU_DEVICES_V1P3 IMUs survive the downgrade
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
+    {
+        EXPECT_FLOAT_EQ(v1p3.data.mcal.pqr[d].orth[0], v1p4.data.mcal.pqr[d].orth[0]);
+        EXPECT_FLOAT_EQ(v1p3.data.mcal.pqr[d].bias[0], v1p4.data.mcal.pqr[d].bias[0]);
+    }
+    // First mag survives
+    EXPECT_FLOAT_EQ(v1p3.data.mcal.mag[0].orth[0], v1p4.data.mcal.mag[0].orth[0]);
+    // v1p3.mag[1] (no v1.4 source) is set to identity defaults by set_sensor_cal_data_defaults_v1p3
+    EXPECT_FLOAT_EQ(v1p3.data.mcal.mag[1].orth[0], 1.0f);
+    EXPECT_FLOAT_EQ(v1p3.data.mcal.mag[1].orth[4], 1.0f);
+    EXPECT_FLOAT_EQ(v1p3.data.mcal.mag[1].orth[8], 1.0f);
+}
+
+TEST(ISDeviceCalConvert, V1p3ToV1p4PreservesSharedFields)
+{
+    sensor_cal_v1p3_t v1p3;
+    buildV1p3Sample(v1p3, 60011);
+
+    sensor_cal_v1p4_t v1p4;
+    convert_sensor_cal_v1p3_to_v1p4(&v1p3, &v1p4);
+
+    EXPECT_EQ(v1p4.info.version[0], 1);
+    EXPECT_EQ(v1p4.info.version[1], 4);
+    EXPECT_EQ(v1p4.info.devSerialNum, 60011u);
+
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
+    {
+        EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].orth[0], v1p3.data.mcal.pqr[d].orth[0]);
+        EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].bias[0], v1p3.data.mcal.pqr[d].bias[0]);
+    }
+    EXPECT_FLOAT_EQ(v1p4.data.mcal.mag[0].orth[0], v1p3.data.mcal.mag[0].orth[0]);
+    // v1p4 IMU slots beyond v1p3 are identity
+    for (int d = NUM_IMU_DEVICES_V1P3; d < NUM_IMU_DEVICES_V1P4; d++)
+    {
+        EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].orth[0], 1.0f);
+        EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].orth[4], 1.0f);
+        EXPECT_FLOAT_EQ(v1p4.data.mcal.pqr[d].orth[8], 1.0f);
+    }
+}
+
+TEST(ISDeviceCalConvert, V1p4ToV1p3RecomputesChecksums)
+{
+    sensor_cal_v1p4_t v1p4;
+    buildV1p4Sample(v1p4);
+
+    sensor_cal_v1p3_t v1p3;
+    convert_sensor_cal_v1p4_to_v1p3(&v1p4, &v1p3);
+
+    EXPECT_EQ(v1p3.info.checksum, flashChecksum32(&v1p3.info, v1p3.info.size));
+    EXPECT_EQ(v1p3.data.dinfo.checksum, flashChecksum32(&v1p3.data, v1p3.data.dinfo.size));
+    EXPECT_EQ(v1p3.info.size, sizeof(sensor_cal_info_t));
+    EXPECT_EQ(v1p3.data.dinfo.size, sizeof(sensor_cal_v1p3_data_t));
+}
+
+TEST(ISDeviceCalConvert, RoundTripV1p4ToV1p3ToV1p4PreservesSharedSlots)
+{
+    sensor_cal_v1p4_t orig;
+    buildV1p4Sample(orig, 60012);
+
+    sensor_cal_v1p3_t intermediate;
+    convert_sensor_cal_v1p4_to_v1p3(&orig, &intermediate);
+
+    sensor_cal_v1p4_t out;
+    convert_sensor_cal_v1p3_to_v1p4(&intermediate, &out);
+
+    EXPECT_EQ(out.info.devSerialNum, orig.info.devSerialNum);
+    // Slots that fit in v1.3 (first 3 IMUs, first mag) round-trip exactly
+    for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
+    {
+        EXPECT_FLOAT_EQ(out.data.mcal.pqr[d].orth[0], orig.data.mcal.pqr[d].orth[0]);
+        EXPECT_FLOAT_EQ(out.data.mcal.pqr[d].bias[0], orig.data.mcal.pqr[d].bias[0]);
+    }
+    EXPECT_FLOAT_EQ(out.data.mcal.mag[0].orth[0], orig.data.mcal.mag[0].orth[0]);
+}
+
+TEST(ISDeviceCalUpload, RefusesUnknownHardwareVersion)
+{
+    sensor_cal_v1p4_t cal;
+    buildV1p4Sample(cal);
+
+    dev_info_t devInfo = {};
+    devInfo.hardwareVer[0] = 0; // unresolved (e.g. bootloader / unconnected)
+
+    int state = 0;
+    int result = ISDeviceCal::uploadSensorCalStep(/*port=*/nullptr, state, cal, devInfo);
+    EXPECT_EQ(result, -1) << "Upload must refuse when hardware version is unresolved";
+}
+
+TEST(ISDeviceCalUpload, AcceptsImx5AndImx6HardwareVersions)
+{
+    sensor_cal_v1p4_t cal;
+    buildV1p4Sample(cal);
+
+    // Note: full upload would call comManagerSendData on a port, which will fail
+    // without a registered port and return non-zero from comManagerSendData. That
+    // surfaces as state machine returning 0 (still "in progress"), not -1. So we
+    // assert "not the refusal code" rather than "success".
+    dev_info_t imx5 = {};
+    imx5.hardwareVer[0] = 5;
+    int state5 = 0;
+    EXPECT_NE(-1, ISDeviceCal::uploadSensorCalStep(nullptr, state5, cal, imx5));
+
+    dev_info_t imx6 = {};
+    imx6.hardwareVer[0] = 6;
+    int state6 = 0;
+    EXPECT_NE(-1, ISDeviceCal::uploadSensorCalStep(nullptr, state6, cal, imx6));
 }

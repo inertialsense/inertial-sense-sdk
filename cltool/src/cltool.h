@@ -189,6 +189,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     EVOContainer_t evOCont;
 
     uint64_t targetDeviceId = 0;            // -sn: encoded device identifier (hdwId << 48 | serialNumber). Parsed from "IMX-5.0:SN129495" or just "129495"
+    is_hardware_t filterHdwType = IS_HARDWARE_ANY; // -device: filter to only open ports for this hardware type (e.g. IS_HARDWARE_IMX, IS_HARDWARE_GPX)
     bool disableDeviceValidation = false;   // Keep port(s) open even if no devices response is received.
     bool listenMode = false;                // Disable device verification and don't send stop-broadcast command on start.
 } cmd_options_t;

@@ -79,9 +79,9 @@ typedef uint32_t eDataIDs;
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
 #define DID_GPS1_TIMEPULSE              (eDataIDs)41 /** (gps_timepulse_t) GPS1 PPS time synchronization. */
-#define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
-#define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
-#define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
+#define DID_UNUSED_42                   (eDataIDs)42 /** unused */
+#define DID_UNUSED_43                   (eDataIDs)43 /** unused */
+#define DID_UNUSED_44                   (eDataIDs)44 /** unused */
 #define DID_GPS1_SIG                    (eDataIDs)45 /** (gps_sig_t) GPS 1 GNSS signal information. */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
@@ -111,7 +111,7 @@ typedef uint32_t eDataIDs;
 #define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) Wheel encoder data to be fused with GPS-INS measurements, set DID_GROUND_VEHICLE for configuration before sending this message */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
 #define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. Base correction output cannot run during a survey and will be automatically disabled if a survey is started. */
-#define DID_CAL_SC_INFO                 (eDataIDs)74 /** INTERNAL USE ONLY (sensor_cal_info_t) */
+#define DID_CAL_INFO                    (eDataIDs)74 /** INTERNAL USE ONLY (sensor_cal_info_t) */
 #define DID_PORT_MONITOR                (eDataIDs)75 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_RTK_STATE                   (eDataIDs)76 /** INTERNAL USE ONLY (rtk_state_t) */
 #define DID_RTK_PHASE_RESIDUAL          (eDataIDs)77 /** INTERNAL USE ONLY (rtk_residual_t) */
@@ -137,6 +137,12 @@ typedef uint32_t eDataIDs;
 #define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMUS_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
+#define DID_CAL_TEMP_COMP_GYR           (eDataIDs)100 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
+#define DID_CAL_TEMP_COMP_ACC           (eDataIDs)101 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
+#define DID_CAL_TEMP_COMP_MAG           (eDataIDs)102 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
+#define DID_CAL_MOTION_GYR              (eDataIDs)103 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
+#define DID_CAL_MOTION_ACC              (eDataIDs)104 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
+#define DID_CAL_MOTION_MAG              (eDataIDs)105 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
 
 #define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (did_event_t)*/
 
@@ -162,7 +168,6 @@ typedef uint32_t eDataIDs;
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
 #define DID_COUNT       (eDataIDs)132    // Used in SDK
-#define DID_COUNT_UINS  (eDataIDs)100    // Used in IMX
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT   256
@@ -195,14 +200,15 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_GPS2             3 // DO NOT CHANGE
 
 // Version 1.3 of sensor calibration format supports up to 3 IMUs and 2 mags, with separate orthonormalization and bias calibration for each device
-#define MAX_IMU_DEVICES_V1P3    3
-#define MAX_MAG_DEVICES_V1P3    2
+#define NUM_IMU_DEVICES_V1P3    3
+#define NUM_MAG_DEVICES_V1P3    2
 // Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
-#define MAX_IMU_DEVICES_V1P4    5
-#define MAX_MAG_DEVICES_V1P4    1
-// Max number of devices across all hardware types: uINS-3, IMX-5, and IMX-6
-#define MAX_IMU_DEVICES         MAX_IMU_DEVICES_V1P4    // g_numImuDevices defines the actual number of hardware specific devices
-#define MAX_MAG_DEVICES         MAX_MAG_DEVICES_V1P4    // g_numMagDevices defines the actual number of hardware specific devices
+#define NUM_IMU_DEVICES_V1P4    5
+#define NUM_MAG_DEVICES_V1P4    1
+// Per-build-target native counts. SN-7966: IMX-5 hardware is permanently Cal v1.3,
+// IMX-6 (and host SDK) is permanently Cal v1.4. Host code (no IMX_5/IMX_6 define) uses v1.4.
+#define MAX_IMU_DEVICES         NUM_IMU_DEVICES_V1P4
+#define MAX_MAG_DEVICES         NUM_MAG_DEVICES_V1P4
 
 /** INS status flags */
 enum eInsStatusFlags
@@ -592,7 +598,8 @@ enum eIsHardwareType
     IS_HDW_GNSS_SEPTENTRIO          = IS_HDW_TYPE_PERIPHERAL + 3,    // Septentrio
     IS_HDW_GNSS_STM_TESSIO          = IS_HDW_TYPE_PERIPHERAL + 4,    // STM Tessio
 
-    IS_HARDWARE_TYPE_COUNT          = 5     // Keep last
+    IS_HARDWARE_TYPE_COUNT          = 5,     // Keep last non-peripheral
+    IS_HDW_GNSS_TYPE_COUNT          = 4      // Number of entries in g_isGnssHardwareNames (IS_HDW_GNSS_UBLOX..STM_TESSIO)
 };
 
 typedef uint16_t is_hardware_t;
@@ -614,6 +621,8 @@ static const is_hardware_t IS_HDW_SEPTENTRIO_P3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEP
 static const is_hardware_t IS_HDW_SEPTENTRIO_M3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'M' - 'A', 3);
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
+/// Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1).
+extern const char* g_isGnssHardwareNames[IS_HDW_GNSS_TYPE_COUNT];
 
 enum eHdwRunStates {
     HDW_STATE_UNKNOWN,

@@ -65,6 +65,22 @@ public:
      * @return true if the port specified was a valid port, and it was successfully released, otherwise false.
      */
     virtual bool releasePort(port_handle_t port) = 0;
+
+    /**
+     * Called by PortManager when this factory's locatePorts() emitted a port that was
+     * already bound under a *different* factory. PortManager skips this factory's bindPort()
+     * to avoid duplicate allocations, but still gives the factory a chance to perform
+     * post-bind decoration on the existing port — e.g. RelayPortFactory uses this to seed
+     * a device hint into DeviceManager even when TcpPortFactory got there first to claim
+     * the port handle. Default: no-op. The factory must NOT take ownership of the port.
+     *
+     * @param existing the port handle that was already bound under another factory
+     * @param pName the canonical port name (URL or device path)
+     * @param pType the port type bitmask
+     */
+    virtual void onPortAlias(port_handle_t existing, const std::string& pName, uint16_t pType) {
+        (void)existing; (void)pName; (void)pType;
+    }
 };
 
 class SerialPortFactory : public PortFactory {

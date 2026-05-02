@@ -2967,6 +2967,10 @@ class logPlot:
         self.imuPQR(did=DID_IMUS, fig=fig, axs=axs, combineImus=False)
     def imusAcc(self, fig=None, axs=None):
         self.imuAcc(did=DID_IMUS, fig=fig, axs=axs, combineImus=False)
+    def imusUncalPqr(self, fig=None, axs=None):
+        self.imuPQR(did=DID_IMUS_UNCAL, fig=fig, axs=axs, combineImus=False)
+    def imusUncalAcc(self, fig=None, axs=None):
+        self.imuAcc(did=DID_IMUS_UNCAL, fig=fig, axs=axs, combineImus=False)
 
     def imuPQR(self, did=DID_IMU, fig=None, axs=None, combineImus=False):
         if fig is None:

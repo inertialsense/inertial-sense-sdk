@@ -31,8 +31,12 @@ using namespace std::chrono_literals;
 
 namespace {
 
-/// Compose one device entry in the SN-7804 schema.
-json makeDevice(int testbed, int slot, const std::string& uri, uint32_t sn = 0, const std::string& state = "imx6") {
+/// Compose one device entry in the SN-7804 schema. The optional `hdw` parameter mirrors
+/// bridgeboard's consolidated hardware identity string (the cached pre-ISBL identity). When
+/// empty, it is derived from `state` for convenience; pass it explicitly for `state == "isbl"`
+/// to exercise the identity-preservation path.
+json makeDevice(int testbed, int slot, const std::string& uri, uint32_t sn = 0,
+                const std::string& state = "imx6", const std::string& hdw = "") {
     json d = {
         {"testbed", testbed},
         {"slot", slot},
@@ -42,6 +46,13 @@ json makeDevice(int testbed, int slot, const std::string& uri, uint32_t sn = 0, 
         {"device_path", std::string("/dev/ttyACM") + std::to_string(slot)},
         {"has_tcp_client", false},
     };
+    std::string hdwOut = hdw;
+    if (hdwOut.empty()) {
+        if      (state == "imx5") hdwOut = "IMX-5.0";
+        else if (state == "imx6") hdwOut = "IMX-6.0";
+        else if (state == "gpx")  hdwOut = "GPX-1.0";
+    }
+    if (!hdwOut.empty()) d["hdw"] = hdwOut;
     if (sn) {
         d["serial_number"] = sn;
         d["firmware_ver"] = "fw3.0.0-test";

@@ -396,6 +396,24 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.disableBroadcastsOnClose = true;
         }
+        else if (matches(a, "-device") && (i + 1) < argc)
+        {
+            std::string devType = argv[++i];
+            std::transform(devType.begin(), devType.end(), devType.begin(), ::tolower);
+            if      (devType == "imx")                                                                           g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX;
+            else if (devType == "imx-5" || devType == "imx5")                                                   g_commandLineOptions.filterHdwType = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, -1);
+            else if (devType == "imx5.0" || devType == "imx-5.0")                                               g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX_5_0;
+            else if (devType == "imx6.0" || devType == "imx-6.0" || devType == "imx6" || devType == "imx-6")    g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX_6_0;
+            else if (devType == "gpx"  || devType == "gpx1" || devType == "gpx-1")                              g_commandLineOptions.filterHdwType = IS_HARDWARE_GPX;
+            else
+            {
+                cout << "Invalid device type: " << devType << ". Expected: imx, imx5, imx6, gpx, uins, evb." << endl;
+                return false;
+            }
+            // If no port was explicitly set, default to wildcard discovery
+            if (g_commandLineOptions.comPort.empty())
+                g_commandLineOptions.comPort = "*";
+        }
         else if (startsWith(a, "-dur="))
         {
             g_commandLineOptions.runDurationMs = (uint32_t)(atof(&a[5])*1000.0);
@@ -1235,6 +1253,7 @@ void cltool_outputUsage()
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port(s). Options: single port (e.g., COM5 or /dev/ttyUSB0), multiple ports separated by ',' (e.g., COM2,COM4,COM5), \"*\" for all ports, or \"*4\" for first four ports." << endlbOn;
 	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
+	cout << "    -device " << boldOff << "TYPE    Discover all devices and open only those matching TYPE. Options: imx, imx5, imx6, gpx. Implies -c * if no -c port is given." << endlbOn;
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
