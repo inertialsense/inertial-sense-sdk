@@ -433,7 +433,7 @@ bool InertialSense::Update()
     return anyOpen;
 }
 
-bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
+bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose, uint16_t filterHdwType)
 {
     // null com port, just use other features of the interface like ntrip
     if (port[0] == '0' && port[1] == '\0')
@@ -443,7 +443,7 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 
     m_disableBroadcastsOnClose = false;
     m_baudRate = baudRate;
-    if (OpenPorts(port, baudRate))
+    if (OpenPorts(port, baudRate, filterHdwType))
     {
         m_disableBroadcastsOnClose = disableBroadcastsOnClose;
         return true;
@@ -666,12 +666,16 @@ bool InertialSense::UploadImxCalibrationFromFile(std::string path, port_handle_t
     });
 }
 
-void InertialSense::SetNetworkPortDiscovery(bool enable)
+// Rebuild the PortManager's factory list according to the current enable flags.
+// SerialPortFactory is included by default (m_serialPortDiscoveryEnabled defaults to true);
+// the network and relay factories are opt-in. TcpPortFactory is always present — direct
+// tcp:// URLs are a host-side capability, not a discovery surface.
+void InertialSense::rebuildPortFactories()
 {
-    m_networkPortDiscoveryEnabled = enable;
-
     portManager.clearPortFactories();
-    portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
+    if (m_serialPortDiscoveryEnabled) {
+        portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
+    }
     portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
     if (m_networkPortDiscoveryEnabled) {
         portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
@@ -679,27 +683,26 @@ void InertialSense::SetNetworkPortDiscovery(bool enable)
     if (m_relayPortDiscoveryEnabled) {
         portManager.addPortFactory((PortFactory*)&(RelayPortFactory::getInstance()));
     }
-
-    // Removes all ports from the PortManager
+    // Removes all ports from the PortManager.
     portManager.clear();
+}
+
+void InertialSense::SetSerialPortDiscovery(bool enable)
+{
+    m_serialPortDiscoveryEnabled = enable;
+    rebuildPortFactories();
+}
+
+void InertialSense::SetNetworkPortDiscovery(bool enable)
+{
+    m_networkPortDiscoveryEnabled = enable;
+    rebuildPortFactories();
 }
 
 void InertialSense::SetRelayPortDiscovery(bool enable)
 {
     m_relayPortDiscoveryEnabled = enable;
-
-    // Rebuild the factory list preserving whatever mDNS state was set last.
-    portManager.clearPortFactories();
-    portManager.addPortFactory((PortFactory*)&(SerialPortFactory::getInstance()));
-    portManager.addPortFactory((PortFactory*)&(TcpPortFactory::getInstance()));
-    if (m_networkPortDiscoveryEnabled) {
-        portManager.addPortFactory((PortFactory*)&(ISmDnsPortFactory::getInstance()));
-    }
-    if (m_relayPortDiscoveryEnabled) {
-        portManager.addPortFactory((PortFactory*)&(RelayPortFactory::getInstance()));
-    }
-
-    portManager.clear();
+    rebuildPortFactories();
 }
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
@@ -960,7 +963,7 @@ int InertialSense::OnPortError(port_handle_t port, int errCode, const char *errM
     return 0;
 }
 
-bool InertialSense::OpenPorts(const char* portPattern, int baudRate)
+bool InertialSense::OpenPorts(const char* portPattern, int baudRate, uint16_t filterHdwType)
 {
     m_baudRate = baudRate;
 
@@ -1017,7 +1020,7 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate)
         for (auto port : portManager.locked_range()) portsToValidate.insert(port);
 
         // attempt to discover devices on all known ports
-        deviceManager.discoverDevices(IS_HARDWARE_ANY, m_comManagerState.discoveryTimeout, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);  // In this case, We ABSOLUTELY want to open any closes ports (because they are all closed currently)
+        deviceManager.discoverDevices(filterHdwType, m_comManagerState.discoveryTimeout, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);  // In this case, We ABSOLUTELY want to open any closes ports (because they are all closed currently)
 
         // remove all ports from portToValidate if a device has bound to that port
         for ( auto d : deviceManager ) portsToValidate.erase(d->port);

@@ -15,8 +15,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <any>
 #include <cinttypes>
+#include <cstdio>
 #include <map>
 #include <string>
+#include <typeinfo>
 #include <vector>
 #include <functional>
 #include <type_traits>
@@ -233,7 +235,12 @@ public:
 
     ~DataMapper()
     {
-        assert((totalSize == structSize) && "Size of mapped fields does not match struct size");
+        if (totalSize != structSize)
+        {
+            fprintf(stderr, "DataMapper ERROR [%s]: mapped size %u != struct size %u (diff %d bytes)\n",
+                typeid(MAP_TYPE).name(), totalSize, structSize, (int)structSize - (int)totalSize);
+            assert(false && "Size of mapped fields does not match struct size");
+        }
     }
 
     template <typename MemberType>

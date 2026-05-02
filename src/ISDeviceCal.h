@@ -294,7 +294,21 @@ public:
                                    sOrthoCal *cal, 
                                    sensor_mcal_group_t *mcal);
 
-    static int uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal);
+    /**
+     * @brief Uploads sensor calibration to a device in steps, with version-aware conversion.
+     *
+     * Resolves the on-device cal version from devInfo.hardwareVer[0] (5 -> v1.3, 6 -> v1.4)
+     * and transmits a payload sized/laid out for that version. For IMX-5 targets, the in-memory
+     * v1.4 calibration is downgraded to v1.3 on the host before sending. Refuses upload when the
+     * hardware version is unresolved (e.g. devInfo unpopulated). (SN-7966)
+     *
+     * @param port Communication port handle
+     * @param calUploadState State machine cursor (caller-owned, init to 0)
+     * @param cal In-memory calibration (v1.4 format)
+     * @param devInfo Target device info; hardwareVer[0] selects v1.3 vs v1.4 transmission
+     * @return ASYNC_STATE__PENDING (in progress), ASYNC_STATE__SUCCESS (done), ASYNC_STATE__FAILURE (error)
+     */
+    static int uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo);
 
     static const int CAL_UPLOAD_SLEEP_MS = 150;
 

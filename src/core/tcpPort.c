@@ -104,8 +104,17 @@ int tcpPortOpen(port_handle_t port) {
  */
 int tcpPortClose(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
-    if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
-        tcpPort->base.perror = -(tcpPort->socket);
+    if (tcpPort->socket < 0) {
+        // socket < 0 covers three cases, none of which are an "operation failed"
+        // for this call:
+        //   1. Never opened (socket initialized to -EBADF in tcpPortInit).
+        //   2. Open previously failed — perror was already stamped at the
+        //      original failure site (HANDLE_SOCKET_ERROR / tcpPortValidate).
+        //   3. Already closed — perror reflects whatever the prior close set.
+        // In all three, closing again is a benign no-op; stamping perror here
+        // would either invent a phantom EBADF (case 1) or overwrite a more
+        // meaningful prior error (cases 2/3) and surface "errant" status to
+        // consumers reading via portError() (e.g. UI markup).
         return tcpPort->socket;
     }
 

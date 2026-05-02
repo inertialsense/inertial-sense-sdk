@@ -1,6 +1,8 @@
 name: Code Linter (C++)
 
 on:
+  # Auto-triggers disabled: linter findings cluttered PR review without
+  # adding value. Workflow remains available via manual workflow_dispatch.
   workflow_dispatch:
     inputs:
       logLevel:
@@ -12,13 +14,6 @@ on:
           - info
           - warning
           - debug
-  push:
-    branches:
-      - '**'
-    pull_request:
-      - 'development'
-      - 'dev_v2'
-      - 'master'
 
 jobs:
   cpp-linter:

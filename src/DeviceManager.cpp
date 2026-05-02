@@ -710,6 +710,29 @@ void DeviceManager::seedDeviceHint(port_handle_t port, const dev_info_t& hint) {
     deviceHints_[port] = hint;
     log_debug(IS_LOG_DEVICE_MANAGER, "Seeded device hint for port '%s' (SN=%u, hwType=%d)",
               portName(port), hint.serialNumber, hint.hardwareType);
+
+    // Hint-driven device registration. When a port surfaces a complete device
+    // identity via a relay snapshot (or other authoritative metadata source),
+    // register the device immediately so consumers can render it without first
+    // running an active probe. This is intentionally a "discovery-without-open"
+    // path: deviceHandler() only fires DEVICE_CONNECTED when portIsOpened(), and
+    // relay ports come back from bindPort() in a closed state — so a hint-only
+    // registration produces DEVICE_ADDED + DEVICE_PORT_BOUND only. Real
+    // validation, port-open, and DEVICE_CONNECTED happen later when the user
+    // explicitly opens the port (e.g. Find / Open in the UI).
+    if (port && hint.serialNumber != 0 && hint.hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
+        if (!getDevice(port)) {
+            // Iterate registered factories until one accepts the hint. Pass
+            // options=0 so a non-matching factory doesn't close the port on
+            // its way out — we want the next factory to get a clean shot.
+            for (auto factory : factories) {
+                if (deviceHandler(factory, hint, port, /*options=*/0)) {
+                    log_debug(IS_LOG_DEVICE_MANAGER, "Hint-registered device for port '%s' (no port open, no connect)", portName(port));
+                    break;
+                }
+            }
+        }
+    }
 }
 
 const dev_info_t* DeviceManager::getDeviceHint(port_handle_t port) const {

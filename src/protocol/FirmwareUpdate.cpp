@@ -618,7 +618,12 @@ namespace fwUpdate {
         payload_t response;
         response.hdr.target_device = TARGET_HOST;
         response.hdr.msg_type = MSG_VERSION_INFO_RESP;
-        response.data.version_resp.resTarget = session_target;
+        // Echo back the queried target, not session_target — REQ_VERSION_INFO doesn't
+        // update session_target (only REQ_UPDATE does, around line 305), so a standalone
+        // version-info query would otherwise respond with resTarget=0/TARGET_HOST.
+        // Hosts use resTarget to confirm the response is for their requested target;
+        // a mismatched/zero resTarget causes infinite ping-loop on the host side.
+        response.data.version_resp.resTarget = payload.hdr.target_device;
         response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareType = devInfo.hardwareType;
         response.data.version_resp.hdwRunState = devInfo.hdwRunState;
