@@ -989,7 +989,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
         convert_sensor_cal_v1p4_to_v1p3(&cal, &s_v1p3Buf);
     }
 
-    switch (calUploadState++)
+    switch (calUploadState)
     {
     case 0:     // General Info
         if (sendV1p3) {
@@ -1053,12 +1053,14 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
         } else {
             if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG) != 0) { return 0; }
         }
+        calUploadState++;   // Increment state to mark completion here in case any upload fails and we need to retry the last step.  We don't want to resend all previous steps if only the last one fails.
         return 1;    // Done
 
     default:
         return -1;
     }
 
+    calUploadState++;
     return 0;
 }
 
