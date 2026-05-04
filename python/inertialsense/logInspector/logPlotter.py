@@ -3007,6 +3007,7 @@ class logPlot:
                         refSnr = sensors[0]
                     continue
 
+        print('SN, Axis, mean (deg/s), std (deg/s)')
         for dev_idx, d in enumerate(self.active_devs):
             (name, time, dt, sensors) = self.loadGyros(d, did=did)
             if len(sensors):
@@ -3031,6 +3032,7 @@ class logPlot:
                                 if combineImus:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean*180.0/np.pi, std*180.0/np.pi), 'deg/s')
+                                print('%s, %s%s, %.4g, %.3g' % (label, alable.strip(), axislable, mean*180.0/np.pi, std*180.0/np.pi))
                                 ax[i, n].plot(time, snr[:, i] * 180.0/np.pi, label=label)
                                 if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
@@ -3122,6 +3124,8 @@ class logPlot:
                                 if combineImus:
                                     n = 0
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'm/s^2')
+                                if did == DID_IMUS:
+                                    print('%s %s%s (m/s^2), mean: %.4g, std: %.3g' % (label, alable, axislable, mean, std))
                                 ax[i, n].plot(time, sensor[:, i], label=label)
                                 if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'm/s^2')
