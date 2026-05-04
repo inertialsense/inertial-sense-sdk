@@ -160,8 +160,7 @@ static void handleDevInfo(dev_info_t* info)
 static void handleGps1Pos(gps_pos_t* pos)
 {
     uint32_t fixType = pos->status & GPS_STATUS_FIX_MASK;
-    uint32_t numSats = (pos->status & GPS_STATUS_NUM_SATS_USED_MASK)
-                        >> GPS_STATUS_NUM_SATS_USED_OFFSET;
+    uint32_t numSats = (pos->status & GPS_STATUS_NUM_SATS_USED_MASK);
 
     printf("[GPS1_POS]  towMs=%u ms   LLA=%11.7f, %11.7f, %8.2f m   "
            "fix=%u   sats=%u\n",
