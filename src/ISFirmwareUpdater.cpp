@@ -640,8 +640,17 @@ void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, con
     LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR, buffer);
 
     if (failLabel.empty()) {
-        // if no label has been specified, clear all commands and reset
-        // commands.clear();
+        // No on-error label: this is an unrecoverable error. Cancel any remaining
+        // QUEUED commands so the outer step() loop has nothing to advance to and
+        // the run actually halts. Without this, runCommand() picks the next queued
+        // command (e.g. `upload` after a failed `target`) and proceeds with no
+        // target set -- the device then either hangs waiting for chunks it never
+        // receives, or rejects whatever default target was used.
+        for (auto& c : commands) {
+            if (c.status == ISFwUpdaterCmd::CMD_QUEUED) {
+                c.status = ISFwUpdaterCmd::CMD_CANCELLED;
+            }
+        }
         activeCmd = &nullCmd;
         target = fwUpdate::TARGET_HOST;
         return;
@@ -901,7 +910,7 @@ void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
         else if (targetName == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
         else if (targetName == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
         else {
-            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)", targetName.c_str());
+            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, GNSS1, GNSS2)", targetName.c_str());
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
             return;
         }
