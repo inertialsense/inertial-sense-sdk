@@ -462,7 +462,13 @@ int main()
 
     while (g_running && portIsOpened(port))
     {
-        is_comm_port_parse_messages(port);
+        // Gate the (potentially blocking) parse call on the DR GPIO level.
+        // portAvailable() is a non-blocking sysfs read that returns 1 only
+        // while DR is HIGH.  When DR is low the loop skips straight to the
+        // display refresh check, so the runtime counter and message counts
+        // update on schedule regardless of how much data the device is sending.
+        if (portAvailable(port))
+            is_comm_port_parse_messages(port);
 
         double now = elapsedSeconds();
         if (now - lastRedraw >= DISPLAY_REFRESH_S)
