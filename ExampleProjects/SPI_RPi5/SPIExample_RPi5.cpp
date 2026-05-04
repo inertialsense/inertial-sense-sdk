@@ -75,6 +75,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 
 #include <stdio.h>
 #include <signal.h>
+#include <time.h>       // clock_gettime, CLOCK_MONOTONIC
 
 // STEP 1: Add Includes
 // Adjust paths if your project layout differs from the SDK example directory structure.
@@ -112,6 +113,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 // rounding up so the actual rate never exceeds the requested rate.
 #define MS_TO_PERIOD(ms)    (((ms) + NAV_DT_MS - 1) / NAV_DT_MS)
 
+// Approximate ISB wire overhead added to each received packet (header + CRC + framing).
+#define ISB_OVERHEAD_BYTES  16
+
+// How often the status display is redrawn (seconds).
+#define DISPLAY_REFRESH_S   0.25
+
 // =============================================================================
 // Graceful shutdown on SIGINT / SIGTERM
 // =============================================================================
@@ -121,52 +128,154 @@ static volatile bool g_running = true;
 static void sigHandler(int) { g_running = false; }
 
 // =============================================================================
-// Message handlers - called once per received packet
+// Stats and last-message storage
+// =============================================================================
+
+static struct {
+    uint32_t ins1Count;
+    uint32_t pimuCount;
+    uint32_t devInfoCount;
+    uint32_t gps1PosCount;
+    uint64_t bytesRx;       // payload + overhead bytes received
+    uint64_t bytesTx;       // bytes sent (startup requests)
+} g_stats = {};
+
+static ins_1_t    g_lastIns1    = {};
+static pimu_t     g_lastPimu    = {};
+static dev_info_t g_lastDevInfo = {};
+static gps_pos_t  g_lastGps1Pos = {};
+
+static bool g_hasIns1    = false;
+static bool g_hasPimu    = false;
+static bool g_hasDevInfo = false;
+static bool g_hasGps1Pos = false;
+
+static struct timespec g_startTime;
+
+// =============================================================================
+// Timing helper
+// =============================================================================
+
+static double elapsedSeconds()
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (double)(now.tv_sec  - g_startTime.tv_sec) +
+           (double)(now.tv_nsec - g_startTime.tv_nsec) * 1e-9;
+}
+
+// =============================================================================
+// Status display
+//
+// Moves the cursor to the top-left and redraws in place so the terminal does
+// not scroll.  Called from the main loop at DISPLAY_REFRESH_S intervals.
+// =============================================================================
+
+static void printStatus()
+{
+    // \033[H  - cursor to row 1, col 1
+    // \033[J  - erase from cursor to end of screen
+    printf("\033[H\033[J");
+
+    printf("=============================================================\n");
+    printf(" InertialSense SPI Example  |  %s  |  %.1f MHz\n",
+           SPI_DEVICE, SPI_SPEED_HZ / 1.0e6);
+    printf("=============================================================\n\n");
+
+    printf("Streaming started.  Press Ctrl+C to stop.\n");
+    printf("  DID_INS_1    @ ~14 ms  (~71 Hz)   received: %10u\n", g_stats.ins1Count);
+    printf("  DID_PIMU     @ ~14 ms  (~71 Hz)   received: %10u\n", g_stats.pimuCount);
+    printf("  DID_DEV_INFO @ ~2 s    (0.5 Hz)   received: %10u\n", g_stats.devInfoCount);
+    printf("  DID_GPS1_POS @ ~504 ms (~2 Hz)    received: %10u\n\n", g_stats.gps1PosCount);
+
+    printf("Runtime: %7.1f s    Bytes TX: %10llu    Bytes RX: %10llu\n\n",
+           elapsedSeconds(),
+           (unsigned long long)g_stats.bytesTx,
+           (unsigned long long)g_stats.bytesRx);
+
+    printf("--- Last Messages -----------------------------------------------\n");
+
+    if (g_hasIns1)
+        printf("[INS1]     tow=%10.3f s   LLA=%11.7f, %11.7f, %8.2f m"
+               "   euler=%6.1f, %6.1f, %6.1f deg\n",
+            g_lastIns1.timeOfWeek,
+            g_lastIns1.lla[0], g_lastIns1.lla[1], g_lastIns1.lla[2],
+            g_lastIns1.theta[0] * C_RAD2DEG_F,
+            g_lastIns1.theta[1] * C_RAD2DEG_F,
+            g_lastIns1.theta[2] * C_RAD2DEG_F);
+    else
+        printf("[INS1]     (waiting...)\n");
+
+    if (g_hasPimu)
+        printf("[PIMU]     t=%10.3f s   dt=%.4f s"
+               "   dTheta=%8.4f, %8.4f, %8.4f rad"
+               "   dVel=%8.4f, %8.4f, %8.4f m/s\n",
+            g_lastPimu.time, g_lastPimu.dt,
+            g_lastPimu.theta[0], g_lastPimu.theta[1], g_lastPimu.theta[2],
+            g_lastPimu.vel[0],   g_lastPimu.vel[1],   g_lastPimu.vel[2]);
+    else
+        printf("[PIMU]     (waiting...)\n");
+
+    if (g_hasDevInfo)
+        printf("[DEV_INFO] SN=%-10u   HW=%u.%u.%u.%u   FW=%u.%u.%u.%u\n",
+            g_lastDevInfo.serialNumber,
+            g_lastDevInfo.hardwareVer[0], g_lastDevInfo.hardwareVer[1],
+            g_lastDevInfo.hardwareVer[2], g_lastDevInfo.hardwareVer[3],
+            g_lastDevInfo.firmwareVer[0], g_lastDevInfo.firmwareVer[1],
+            g_lastDevInfo.firmwareVer[2], g_lastDevInfo.firmwareVer[3]);
+    else
+        printf("[DEV_INFO] (waiting...)\n");
+
+    if (g_hasGps1Pos)
+    {
+        uint32_t fixType = g_lastGps1Pos.status & GPS_STATUS_FIX_MASK;
+        uint32_t numSats = g_lastGps1Pos.status & GPS_STATUS_NUM_SATS_USED_MASK;
+        printf("[GPS1_POS] towMs=%-10u ms   LLA=%11.7f, %11.7f, %8.2f m"
+               "   fix=%u   sats=%u\n",
+            g_lastGps1Pos.timeOfWeekMs,
+            g_lastGps1Pos.lla[0], g_lastGps1Pos.lla[1], g_lastGps1Pos.lla[2],
+            fixType, numSats);
+    }
+    else
+        printf("[GPS1_POS] (waiting...)\n");
+
+    fflush(stdout);
+}
+
+// =============================================================================
+// Message handlers - store last value, update counters and byte totals
 // =============================================================================
 
 static void handleIns1(ins_1_t* ins)
 {
-    printf("[INS1]  tow=%10.3f s   LLA=%11.7f, %11.7f, %8.2f m   "
-           "euler=%6.1f, %6.1f, %6.1f deg\n",
-        ins->timeOfWeek,
-        ins->lla[0], ins->lla[1], ins->lla[2],
-        ins->theta[0] * C_RAD2DEG_F,
-        ins->theta[1] * C_RAD2DEG_F,
-        ins->theta[2] * C_RAD2DEG_F);
+    g_lastIns1 = *ins;
+    g_hasIns1  = true;
+    g_stats.ins1Count++;
+    g_stats.bytesRx += sizeof(ins_1_t) + ISB_OVERHEAD_BYTES;
 }
 
 static void handlePimu(pimu_t* pimu)
 {
-    // PIMU contains pre-integrated (coning & sculling) IMU data.
-    // Divide by dt to recover instantaneous rates/accelerations.
-    printf("[PIMU]  t=%10.3f s   dt=%.4f s   "
-           "dTheta=%7.4f, %7.4f, %7.4f rad   "
-           "dVel=%7.4f, %7.4f, %7.4f m/s\n",
-        pimu->time, pimu->dt,
-        pimu->theta[0], pimu->theta[1], pimu->theta[2],
-        pimu->vel[0],   pimu->vel[1],   pimu->vel[2]);
+    g_lastPimu = *pimu;
+    g_hasPimu  = true;
+    g_stats.pimuCount++;
+    g_stats.bytesRx += sizeof(pimu_t) + ISB_OVERHEAD_BYTES;
 }
 
 static void handleDevInfo(dev_info_t* info)
 {
-    printf("[DEV_INFO]  SN=%u   HW=%u.%u.%u.%u   FW=%u.%u.%u.%u\n",
-        info->serialNumber,
-        info->hardwareVer[0], info->hardwareVer[1],
-        info->hardwareVer[2], info->hardwareVer[3],
-        info->firmwareVer[0], info->firmwareVer[1],
-        info->firmwareVer[2], info->firmwareVer[3]);
+    g_lastDevInfo = *info;
+    g_hasDevInfo  = true;
+    g_stats.devInfoCount++;
+    g_stats.bytesRx += sizeof(dev_info_t) + ISB_OVERHEAD_BYTES;
 }
 
 static void handleGps1Pos(gps_pos_t* pos)
 {
-    uint32_t fixType = pos->status & GPS_STATUS_FIX_MASK;
-    uint32_t numSats = (pos->status & GPS_STATUS_NUM_SATS_USED_MASK);
-
-    printf("[GPS1_POS]  towMs=%u ms   LLA=%11.7f, %11.7f, %8.2f m   "
-           "fix=%u   sats=%u\n",
-        pos->timeOfWeekMs,
-        pos->lla[0], pos->lla[1], pos->lla[2],
-        fixType, numSats);
+    g_lastGps1Pos = *pos;
+    g_hasGps1Pos  = true;
+    g_stats.gps1PosCount++;
+    g_stats.bytesRx += sizeof(gps_pos_t) + ISB_OVERHEAD_BYTES;
 }
 
 // =============================================================================
@@ -201,6 +310,7 @@ int main()
 {
     signal(SIGINT,  sigHandler);
     signal(SIGTERM, sigHandler);
+    clock_gettime(CLOCK_MONOTONIC, &g_startTime);
 
     // -------------------------------------------------------------------------
     // STEP 2: Configure the SPI port factory
@@ -285,9 +395,6 @@ int main()
         return -2;
     }
 
-    printf("SPI port opened: %s  speed=%u Hz  mode=%u  DR GPIO=%d\n\n",
-           SPI_DEVICE, SPI_SPEED_HZ, SPI_PORT_DEFAULT_MODE, DR_GPIO_NUM);
-
     // -------------------------------------------------------------------------
     // STEP 6: Stop all existing device broadcasts
     //
@@ -326,14 +433,11 @@ int main()
     is_comm_get_data(port, DID_DEV_INFO, 0, 0, MS_TO_PERIOD(2000));
     is_comm_get_data(port, DID_GPS1_POS, 0, 0, MS_TO_PERIOD(500));
 
-    printf("Streaming started.  Press Ctrl+C to stop.\n"
-           "  DID_INS_1    @ ~14 ms  (~71 Hz)\n"
-           "  DID_PIMU     @ ~14 ms  (~71 Hz)\n"
-           "  DID_DEV_INFO @ ~2 s    (0.5 Hz)\n"
-           "  DID_GPS1_POS @ ~504 ms (~2 Hz)\n\n");
+    // Each is_comm_get_data call sends a small request packet (~20 bytes on the wire).
+    g_stats.bytesTx += 4 * 20;
 
     // -------------------------------------------------------------------------
-    // STEP 9: Main loop - parse incoming messages
+    // STEP 9: Main loop - parse incoming messages and refresh the status display
     //
     // is_comm_port_parse_messages() drives the receive pipeline:
     //   1. Calls portAvailable() which (because DR is configured) returns
@@ -343,13 +447,30 @@ int main()
     //      through the ISB parser.
     //   3. Calls isbDataHandler() for each fully decoded packet.
     //
+    // The display is redrawn every DISPLAY_REFRESH_S seconds using ANSI escape
+    // codes (\033[H\033[J) to overwrite in place without scrolling.
+    //
     // Run this loop at a rate fast enough to drain the receive buffer before
     // the next packet arrives (~1 ms is typical).
     // -------------------------------------------------------------------------
 
+    // Clear the screen once before the first draw.
+    printf("\033[2J");
+    printStatus();
+
+    double lastRedraw = elapsedSeconds();
+
     while (g_running && portIsOpened(port))
     {
         is_comm_port_parse_messages(port);
+
+        double now = elapsedSeconds();
+        if (now - lastRedraw >= DISPLAY_REFRESH_S)
+        {
+            printStatus();
+            lastRedraw = now;
+        }
+
         SLEEP_MS(1);
     }
 
@@ -357,7 +478,8 @@ int main()
     // Cleanup
     // -------------------------------------------------------------------------
 
-    printf("\nShutting down...\n");
+    printf("\033[H\033[J");   // clear screen on exit
+    printf("Shutting down...\n");
     is_comm_stop_broadcasts_all_ports(port);
     portClose(port);
     spif.releasePort(port);     // also unexports the DR GPIO via sysfs
