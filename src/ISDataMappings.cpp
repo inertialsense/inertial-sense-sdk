@@ -2365,7 +2365,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_WHEEL_ENCODER",                // 71
     "DID_DIAGNOSTIC_MESSAGE",           // 72
     "DID_SURVEY_IN",                    // 73
-    "DID_CAL_INFO",                  // 74
+    "DID_CAL_SC",                  // 74
     "DID_PORT_MONITOR",                 // 75
     "DID_RTK_STATE",                    // 76
     "DID_RTK_PHASE_RESIDUAL",           // 77
@@ -2550,7 +2550,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_TCAL);
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
-    PopulateMapSensorSCalInfo(       m_data_set, DID_CAL_INFO);
+    PopulateMapSensorSCalInfo(       m_data_set, DID_CAL_SC);
     PopulateMapSensorTCalGyrGroup(   m_data_set, DID_CAL_TEMP_COMP_GYR);
     PopulateMapSensorTCalAccGroup(   m_data_set, DID_CAL_TEMP_COMP_ACC);
     PopulateMapSensorTCalMagGroup(   m_data_set, DID_CAL_TEMP_COMP_MAG);
@@ -2697,7 +2697,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_NVR_USERPAGE_G0:
     case DID_NVR_USERPAGE_G1:
     case DID_FLASH_CONFIG:
-    case DID_CAL_INFO:
+    case DID_CAL_SC:
     case DID_CAL_TEMP_COMP_GYR:
     case DID_CAL_TEMP_COMP_ACC:
     case DID_CAL_TEMP_COMP_MAG:
