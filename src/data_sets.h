@@ -2464,6 +2464,7 @@ enum eHdwBitStatusFlags
     HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00008000,    // (Not implemented)
     HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00010000,    // IMU fault rejection failure
     HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,    // Hardware type does not match firmware
+    HDW_BIT_FAULT_EKF_NOT_INITIALIZED       = (int)0x02000000,    // EKF not initialized
 };
 
 /** Calibration built-in test flags */
