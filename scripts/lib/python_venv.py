@@ -14,8 +14,10 @@ def is_virtual_environment(path: str) -> bool:
 
 def create_virtual_environment(path: str) -> str:
     if os.path.exists(path):
-        print(f"Virtual environment already exists: '{path}'.")
-        return path
+        if is_virtual_environment(path):
+            print(f"Virtual environment already exists: '{path}'.")
+            return path
+        raise RuntimeError(f"Existing virtual environment path is invalid for this OS: '{path}'")
     venv.create(path, with_pip=True)
     print(f"New virtual environment created: '{path}'.")
     return path
@@ -43,8 +45,17 @@ def find_virtualenv() -> str:
             print(f"Found virtual environment: {candidate}")
             return candidate
 
-    # Fallback: create under SDK/.venv
+    # Fallback: create under SDK/.venv. If an existing .venv is invalid for the current OS,
+    # create an OS-specific fallback venv so Windows does not reuse a Linux-style env.
     create_here = os.path.realpath(os.path.join(script_dir, ".venv"))
+    if os.path.exists(create_here) and not is_virtual_environment(create_here):
+        fallback = os.path.realpath(os.path.join(script_dir, f".venv-{os.name}"))
+        if is_virtual_environment(fallback):
+            print(f"Found fallback virtual environment: {fallback}")
+            return fallback
+        print(f"Existing .venv is invalid for this OS; using fallback: '{fallback}'")
+        return create_virtual_environment(fallback)
+
     return create_virtual_environment(create_here)
 
 def _site_packages_path(venv_path: str) -> Optional[str]:
