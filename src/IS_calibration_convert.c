@@ -11,7 +11,7 @@ void set_sensor_mcal_data_defaults_v1p4(sensor_cal_v1p4_data_t *data)
 {
     if (data == NULL) { return; }
 
-    memset(data, 0, sizeof(sensor_mcal_group_v1p4_t));
+    memset(&data->mcal, 0, sizeof(sensor_mcal_group_v1p4_t));
     for (int d = 0; d < NUM_IMU_DEVICES_V1P4; d++)
     {
         data->mcal.pqr[d].orth[0] = 1;
@@ -59,7 +59,7 @@ void set_sensor_mcal_data_defaults_v1p3(sensor_cal_v1p3_data_t *data)
     }
     for (int d = 0; d < NUM_MAG_DEVICES_V1P3; d++)
     {
-        data->mcal.mag[d].orth[0] = 2.593418189666583;  // Golden mag calibration only for IMX-5.  Do not use wth IMX-6.
+        data->mcal.mag[d].orth[0] = 2.593418189666583;  // Golden mag calibration only for IMX-5.  Do not use with IMX-6.
         data->mcal.mag[d].orth[4] = 2.593418189666583;
         data->mcal.mag[d].orth[8] = 2.593418189666583;
     }
