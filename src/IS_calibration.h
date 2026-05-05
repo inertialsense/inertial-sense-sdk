@@ -15,9 +15,15 @@ extern "C" {
 #define TCAL_MAX_TEMPERATURE    85      // Maximum temperature for temperature calibration
 
 // 1.2.0 = 2x IMU, 1.3.0 = 3x IMU + 2x Mag, 1.4.0 = 5x IMU + 1x Mag
+#if defined(IMX_5)
+#define SENSOR_CAL_VER0     1
+#define SENSOR_CAL_VER1     3
+#define SENSOR_CAL_VER2     0
+#else // IMX-6 and host SDK
 #define SENSOR_CAL_VER0     1
 #define SENSOR_CAL_VER1     4
 #define SENSOR_CAL_VER2     0
+#endif
 
 enum eScompCalState
 {
