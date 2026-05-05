@@ -19,7 +19,7 @@ extern "C" {
 #define SENSOR_CAL_VER0     1
 #define SENSOR_CAL_VER1     3
 #define SENSOR_CAL_VER2     0
-#elif defined(IMX_6)
+#elif // IMX_6 and host SDK
 #define SENSOR_CAL_VER0     1
 #define SENSOR_CAL_VER1     4
 #define SENSOR_CAL_VER2     0
