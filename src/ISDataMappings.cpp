@@ -1246,7 +1246,7 @@ static void PopulateMapMagnetometer(data_set_t data_set[DID_COUNT], uint32_t did
 {
     DataMapper<magnetometer_t> mapper(data_set, did);
     mapper.AddMember("time", &magnetometer_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("mag", &magnetometer_t::mag, DATA_TYPE_F32, 3, {SYM_M_PER_S}, {"Normalized gauss"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("mag", &magnetometer_t::mag, DATA_TYPE_F32, 3, {"uT"}, {"Magnetic field in microtesla"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapBarometer(data_set_t data_set[DID_COUNT], uint32_t did)
