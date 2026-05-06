@@ -2230,14 +2230,14 @@ static void PopulateMapInl2MagObsInfo(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember("calibrated", &inl2_mag_obs_info_t::calibrated, DATA_TYPE_UINT32, "", "Calibration data present");
     mapper.AddMember("auto_recal", &inl2_mag_obs_info_t::auto_recal, DATA_TYPE_UINT32, "", "Allow mag to auto-recalibrate");
     mapper.AddMember("outlier", &inl2_mag_obs_info_t::outlier, DATA_TYPE_UINT32, "", "Bad sample data");
-    mapper.AddMember("magHdg", &inl2_mag_obs_info_t::magHdg, DATA_TYPE_F32, "deg", "Heading from magnetometer", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE);
-    mapper.AddMember("insHdg", &inl2_mag_obs_info_t::insHdg, DATA_TYPE_F32, "deg", "Heading from INS", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE);
-    mapper.AddMember("magInsHdgDelta", &inl2_mag_obs_info_t::magInsHdgDelta, DATA_TYPE_F32, "deg", "Difference between magHdg and insHdg", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE);
+    mapper.AddMember("magHdg", &inl2_mag_obs_info_t::magHdg, DATA_TYPE_F32, "deg", "Heading from magnetometer", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE, C_RAD2DEG);
+    mapper.AddMember("insHdg", &inl2_mag_obs_info_t::insHdg, DATA_TYPE_F32, "deg", "Heading from INS", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE, C_RAD2DEG);
+    mapper.AddMember("magInsHdgDelta", &inl2_mag_obs_info_t::magInsHdgDelta, DATA_TYPE_F32, "deg", "Difference between magHdg and insHdg", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE, C_RAD2DEG);
     mapper.AddMember("nis", &inl2_mag_obs_info_t::nis, DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_5);
     mapper.AddMember("nis_threshold", &inl2_mag_obs_info_t::nis_threshold, DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddArray("Wcal", &inl2_mag_obs_info_t::Wcal, DATA_TYPE_F32, 9, {""}, {""}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("activeCalSet", &inl2_mag_obs_info_t::activeCalSet, DATA_TYPE_UINT32, "", "Active calibration set (0 or 1)");
-    mapper.AddMember("magHdgOffset", &inl2_mag_obs_info_t::magHdgOffset, DATA_TYPE_F32, "deg", "Offset from mag heading to ins heading estimate", DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("magHdgOffset", &inl2_mag_obs_info_t::magHdgOffset, DATA_TYPE_F32, "deg", "Offset from mag heading to ins heading estimate", DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
     mapper.AddMember("Tcal", &inl2_mag_obs_info_t::Tcal, DATA_TYPE_F32, "", "Scaled computed variance of calibrated magnetometer samples. Above 5 is bad.", DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddArray("bias_cal", &inl2_mag_obs_info_t::bias_cal, DATA_TYPE_F32, 3, {""}, {""}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
