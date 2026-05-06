@@ -3969,7 +3969,7 @@ typedef struct
     float eratio[NFREQ];
 
     /** measurement error factor */
-    float err[7];
+    float err[12];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
     float std[3];
