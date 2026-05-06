@@ -3965,9 +3965,6 @@ typedef struct
     /** base position for relative mode */
     int32_t refpos;
 
-    /** code/phase error ratio */
-    float eratio[NFREQ];
-
     /** measurement error factor */
     float err[12];
 
@@ -4036,8 +4033,14 @@ typedef struct
     /** output single by dgps/float/fix/ppp outage */
     int32_t outsingle;
 
-    /** velocity constraint in compassing mode {var before fix, var after fix} (m^2/s^2) **/
+    /** velocity constraint in compassing mode {var before fix, var after fix} (m^2/s^2) */
     float velcon[2];
+
+    /** LPF alpha for multipath bias estimation. Smaller value means heavier filtering. */
+    float mp_bias_lpf_alpha;
+
+    /** LPF alpha for multipath variance estimation. Smaller value means heavier filtering. */
+    float mp_var_lpf_alpha;
 } prcopt_t;
 typedef prcopt_t gps_rtk_opt_t;
 
