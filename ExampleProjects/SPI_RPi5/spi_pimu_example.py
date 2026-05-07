@@ -2,9 +2,10 @@
 """
 InertialSense SPI DID_PIMU Example - Raspberry Pi 5
 
-Sends a PKT_TYPE_GET_DATA request for DID_PIMU at ~1 Hz, listens for the
-Data Ready (DR) pin to assert, reads the ISB response, parses the pimu_t
-payload, and prints the result.  Runs continuously until the user presses Q.
+Sends PKT_TYPE_GET_DATA for DID_PIMU once per second (Strategy A — fixed-size
+polling, no Data Ready pin required), reads a fixed block of SPI bytes each
+loop tick, parses any ISB DATA packets that arrive, and prints the pimu_t
+fields.  Runs continuously until the user presses Q.
 
 ISB packet format used (protocol version 2):
     Bytes 0-1  : Preamble 0xEF 0x49
@@ -19,16 +20,15 @@ Hardware connections (IMX <-> Raspberry Pi 5 40-pin header):
     IMX SPI_MOSI -> Pin 19  (GPIO10 / SPI0_MOSI)
     IMX SPI_MISO -> Pin 21  (GPIO9  / SPI0_MISO)
     IMX SPI_nCS  -> Pin 24  (GPIO8  / SPI0_CE0)
-    IMX DR       -> Pin 22  (GPIO25 / Data Ready, active high)
     IMX nSPI_EN  -> GND     (hold low at power-up to enable SPI)
 
 Raspberry Pi 5 setup:
     1. Enable SPI0 in /boot/firmware/config.txt, then reboot:
            dtoverlay=spi0-1cs
     2. Install dependencies:
-           sudo apt install python3-spidev python3-lgpio
-    3. Add your user to the spi and gpio groups:
-           sudo usermod -aG spi,gpio $USER   # log out and back in
+           sudo apt install python3-spidev
+    3. Add your user to the spi group:
+           sudo usermod -aG spi $USER   # log out and back in
 
 Run:
     python3 spi_pimu_example.py
@@ -42,7 +42,6 @@ import select
 import tty
 import termios
 import spidev
-import lgpio
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -51,15 +50,12 @@ import lgpio
 SPI_BUS      = 0            # SPI bus number -> /dev/spidevBUS.DEVICE
 SPI_DEVICE   = 0            # SPI device (chip-select index)
 SPI_MODE     = 3            # CPOL=1, CPHA=1  required by the IMX
-SPI_SPEED_HZ = 1_000_000   # 1 MHz
+SPI_SPEED_HZ = 1_000_000   # 1 MHz; Strategy A (no DR) is limited to 3 MHz max
 
-SPI_CHUNK    = 64           # bytes per SPI read burst while DR is HIGH
+SPI_READ_SIZE = 512         # bytes to read each poll tick — large enough to
+                            # hold several PIMU packets (one packet = 48 bytes)
 
-GPIO_CHIP    = 4            # gpiochip4 on Raspberry Pi 5 (use 0 for RPi4)
-DR_GPIO      = 25           # BCM GPIO25 = physical pin 22
-
-NAV_DT_MS      = 7          # IMX-5 nav period in ms; adjust to 4 for IMX-6
-
+NAV_DT_MS     = 7          # IMX-5 nav period in ms; adjust to 4 for IMX-6
 PIMU_PERIOD_MS = 1000       # desired DID_PIMU broadcast period in ms (~1 Hz)
 SEND_INTERVAL_S = 1.0       # how often to (re)send the GET_DATA command (seconds)
 
@@ -83,7 +79,7 @@ DID_PIMU = 3                           # Preintegrated IMU (coning & sculling)
 #   uint32   status    offset 12   eImuStatus flags
 #   float[3] theta     offset 16   Delta-theta (gyro integral, rad)
 #   float[3] vel       offset 28   Delta-velocity (accel integral, m/s)
-_PIMU_FMT  = struct.Struct("<d f I 3f 3f")
+_PIMU_FMT = struct.Struct("<d f I 3f 3f")
 PIMU_SIZE  = _PIMU_FMT.size            # 40
 
 # ---------------------------------------------------------------------------
@@ -171,7 +167,7 @@ def parse_isb_packets(data: bytes):
         yield pkt_type, did, payload
 
 # ---------------------------------------------------------------------------
-# Non-blocking keyboard helpers (same approach as spi_nmea_example.py)
+# Non-blocking keyboard helpers
 # ---------------------------------------------------------------------------
 
 def key_pressed() -> bool:
@@ -185,47 +181,6 @@ def check_exit() -> bool:
         return sys.stdin.read(1).lower() == EXIT_KEY
     return False
 
-
-def sleep_interruptible(seconds: float) -> bool:
-    """Sleep for up to 'seconds', waking every 50 ms to check for the exit key."""
-    deadline = time.monotonic() + seconds
-    while time.monotonic() < deadline:
-        if check_exit():
-            return True
-        time.sleep(0.05)
-    return False
-
-# ---------------------------------------------------------------------------
-# GPIO / SPI helpers
-# ---------------------------------------------------------------------------
-
-def wait_for_dr_high(gpio, timeout_s: float) -> str:
-    """
-    Poll DR until HIGH.  Returns 'high', 'timeout', or 'exit'.
-    Checks the exit key between each 1 ms poll.
-    """
-    deadline = time.monotonic() + timeout_s
-    while lgpio.gpio_read(gpio, DR_GPIO) == 0:
-        if time.monotonic() > deadline:
-            return "timeout"
-        if check_exit():
-            return "exit"
-        time.sleep(0.001)
-    return "high"
-
-
-def read_while_dr_high(spi, gpio) -> bytearray:
-    """
-    Read SPI in SPI_CHUNK-byte bursts while DR is HIGH, then one extra burst.
-    The extra burst captures the 1-2 trailing bytes the IMX holds back before
-    deasserting DR (per the IS SPI spec).
-    """
-    rx = bytearray()
-    while lgpio.gpio_read(gpio, DR_GPIO) == 1:
-        rx.extend(spi.readbytes(SPI_CHUNK))
-    rx.extend(spi.readbytes(SPI_CHUNK))
-    return rx
-
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -235,9 +190,6 @@ def main() -> None:
     spi.open(SPI_BUS, SPI_DEVICE)
     spi.max_speed_hz = SPI_SPEED_HZ
     spi.mode = SPI_MODE
-
-    gpio = lgpio.gpiochip_open(GPIO_CHIP)
-    lgpio.gpio_claim_input(gpio, DR_GPIO)
 
     stop_pkt = build_stop_broadcasts()
     get_pkt  = build_get_data(DID_PIMU, PIMU_PERIOD_MS)
@@ -254,6 +206,7 @@ def main() -> None:
         print(f"GET_DATA packet : {get_pkt.hex(' ').upper()}")
         print(f"Requested period: ~{period_actual} ms  "
               f"({math.ceil(PIMU_PERIOD_MS / NAV_DT_MS)} x {NAV_DT_MS} ms nav DT)")
+        print(f"Read block      : {SPI_READ_SIZE} bytes per poll tick")
         print(f"Press '{EXIT_KEY.upper()}' to exit.\n")
 
         # Stop any broadcasts left over from a previous session.
@@ -261,53 +214,49 @@ def main() -> None:
         spi.xfer2(list(stop_pkt))
         time.sleep(0.05)            # brief pause so the device processes the command
 
-        # Request DID_PIMU at the configured period.
         print(f"Sending GET_DATA for DID_PIMU @ ~{period_actual} ms ...\n", flush=True)
-        spi.xfer2(list(get_pkt))
 
         count     = 0
-        last_send = time.monotonic() - SEND_INTERVAL_S  # fire immediately on first tick
+        last_send = time.monotonic() - SEND_INTERVAL_S  # trigger immediately on first tick
 
         while True:
             now = time.monotonic()
 
             # ------------------------------------------------------------------
             # Send GET_DATA every SEND_INTERVAL_S seconds regardless of whether
-            # the device has responded.  This keeps the broadcast active even if
-            # a packet was missed or the device restarted.
+            # the device has responded.
             # ------------------------------------------------------------------
             if now - last_send >= SEND_INTERVAL_S:
                 spi.xfer2(list(get_pkt))
                 last_send = now
 
             # ------------------------------------------------------------------
-            # Non-blocking DR check.  If DR is HIGH the device has data ready;
-            # read until it drops.  If DR is LOW, move on immediately so the
-            # send timer above stays accurate.
+            # Read a fixed block of SPI bytes (Strategy A — no DR pin).
+            # The IMX clocks out 0x00 when its buffer is empty; non-zero bytes
+            # are parsed as ISB packets below.
             # ------------------------------------------------------------------
-            if lgpio.gpio_read(gpio, DR_GPIO) == 1:
-                rx = read_while_dr_high(spi, gpio)
+            rx = spi.readbytes(SPI_READ_SIZE)
 
-                for pkt_type, did, payload in parse_isb_packets(bytes(rx)):
-                    if pkt_type != PKT_TYPE_DATA or did != DID_PIMU:
-                        continue
-                    if len(payload) < PIMU_SIZE:
-                        print(f"  [!] Short PIMU payload ({len(payload)} < {PIMU_SIZE} bytes), skipping")
-                        continue
+            for pkt_type, did, payload in parse_isb_packets(bytes(rx)):
+                if pkt_type != PKT_TYPE_DATA or did != DID_PIMU:
+                    continue
+                if len(payload) < PIMU_SIZE:
+                    print(f"  [!] Short payload ({len(payload)} < {PIMU_SIZE} bytes), skipping")
+                    continue
 
-                    count += 1
-                    t_time, dt, _, *rest = _PIMU_FMT.unpack_from(payload)
-                    theta = rest[0:3]
-                    vel   = rest[3:6]
+                count += 1
+                t_time, dt, _, *rest = _PIMU_FMT.unpack_from(payload)
+                theta = rest[0:3]
+                vel   = rest[3:6]
 
-                    print(
-                        f"[{count:4d}]  "
-                        f"t={t_time:10.3f} s  "
-                        f"dt={dt:.4f} s  "
-                        f"dTheta={theta[0]:9.5f}, {theta[1]:9.5f}, {theta[2]:9.5f} rad  "
-                        f"dVel={vel[0]:9.5f}, {vel[1]:9.5f}, {vel[2]:9.5f} m/s",
-                        flush=True,
-                    )
+                print(
+                    f"[{count:4d}]  "
+                    f"t={t_time:10.3f} s  "
+                    f"dt={dt:.4f} s  "
+                    f"dTheta={theta[0]:9.5f}, {theta[1]:9.5f}, {theta[2]:9.5f} rad  "
+                    f"dVel={vel[0]:9.5f}, {vel[1]:9.5f}, {vel[2]:9.5f} m/s",
+                    flush=True,
+                )
 
             if check_exit():
                 break
@@ -320,7 +269,6 @@ def main() -> None:
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, saved_termios)
         spi.close()
-        lgpio.gpiochip_close(gpio)
         print("\nExiting.")
 
 
