@@ -23,9 +23,6 @@ include_directories(
 
 find_package(GTest REQUIRED)
 
-# Link the InertialSenseSDK static library 
-link_directories(${IS_SDK_DIR})
-
 file(GLOB TESTS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
 list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
 if(WIN32)   # These do not run in Windows

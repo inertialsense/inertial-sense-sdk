@@ -41,6 +41,9 @@ using json = nlohmann::json;
 // Macro for checking if a 3-element vector is all zeros
 #define VEC3_ALL_ZERO(v) ((v)[0] == 0.0f && (v)[1] == 0.0f && (v)[2] == 0.0f)
 
+// Maximum number of consecutive send failures per step before aborting the upload.
+#define MAX_UPLOAD_SEND_RETRIES 50
+
 // Helper function prototypes
 static std::vector<std::string> split(const std::string& s, char delimiter);
 static std::string getFilename(const std::string& path);
@@ -577,7 +580,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
     }
     if (dinfo)
     {   // Recompute data info size and checksum
-        dinfo->size = sizeof(sensor_cal_v1p3_data_t);
+        dinfo->size = sizeof(sensor_cal_data_t);
         dinfo->checksum = flashChecksum32(dinfo, dinfo->size);
     }
 
@@ -972,6 +975,8 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
     // Per-thread v1.3 staging buffer; built once on state==0 when target is IMX-5.
     // Reused across the 8 send steps to avoid repeated conversion.
     static thread_local sensor_cal_v1p3_t s_v1p3Buf;
+    // Per-thread retry counter; reset at the start of each new upload and after each successful step.
+    static thread_local int s_retryCount = 0;
 
     const int hwMajor = devInfo.hardwareVer[0];
     const bool sendV1p3 = (hwMajor == 5);
@@ -983,82 +988,91 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
         return -1;
     }
 
-    if (calUploadState == 0 && sendV1p3)
+    if (calUploadState == 0)
     {
-        // Build v1.3 payload from in-memory v1.4 cal. Recomputes both checksums.
-        convert_sensor_cal_v1p4_to_v1p3(&cal, &s_v1p3Buf);
+        s_retryCount = 0;   // Reset retry counter at the start of each new upload.
+        if (sendV1p3)
+        {
+            // Build v1.3 payload from in-memory v1.4 cal. Recomputes both checksums.
+            convert_sensor_cal_v1p4_to_v1p3(&cal, &s_v1p3Buf);
+        }
     }
 
-    switch (calUploadState++)
+    // Returns 0 (pending) on send failure; aborts with -1 after MAX_UPLOAD_SEND_RETRIES consecutive failures on the current step.
+    auto sendFail = [&]() -> int {
+        if (++s_retryCount > MAX_UPLOAD_SEND_RETRIES) {
+            log_error(IS_LOG_CALIBRATION, "uploadSensorCalStep: send failed %d times on step %d; aborting upload.", s_retryCount, calUploadState);
+            return -1;
+        }
+        return 0;
+    };
+
+    switch (calUploadState)
     {
-    case 0:     // General Info
+    case 0:     // General Info + Data Info (sent together since both are small and adjacent)
         if (sendV1p3) {
-            if (comManagerSendData(port, &(s_v1p3Buf.info), DID_CAL_INFO, sizeof(sensor_cal_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return 0; }
+            if (comManagerSendData(port, &(s_v1p3Buf.info), DID_CAL_SC, sizeof(sensor_cal_info_t) + sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return sendFail(); }
         } else {
-            if (comManagerSendData(port, &(cal.info), DID_CAL_INFO, sizeof(sensor_cal_info_t), offsetof(sensor_cal_t, info)) != 0) { return 0; }
+            if (comManagerSendData(port, &(cal.info), DID_CAL_SC, sizeof(sensor_cal_info_t) + sizeof(sensor_data_info_t), offsetof(sensor_cal_t, info)) != 0) { return sendFail(); }
         }
         break;
 
-    case 1:     // Data Info
+    case 1:     // Temp comp - Gyros
         if (sendV1p3) {
-            if (comManagerSendData(port, &(s_v1p3Buf.data.dinfo), DID_CAL_INFO, sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, data.dinfo)) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR_V1P3) != 0) { return sendFail(); }
         } else {
-            if (comManagerSendData(port, &(cal.data.dinfo), DID_CAL_INFO, sizeof(sensor_data_info_t), offsetof(sensor_cal_t, data.dinfo)) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR) != 0) { return sendFail(); }
         }
         break;
 
-    case 2:     // Temp comp - Gyros
+    case 2:     // Temp comp - Accelerometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR_V1P3) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC_V1P3) != 0) { return sendFail(); }
         } else {
-            if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC) != 0) { return sendFail(); }
         }
         break;
 
-    case 3:     // Temp comp - Accelerometers
+    case 3:     // Temp comp - Magnetometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC_V1P3) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG_V1P3) != 0) { return sendFail(); }
         } else {
-            if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG) != 0) { return sendFail(); }
         }
         break;
 
-    case 4:     // Temp comp - Magnetometers
+    case 4:     // Motion cal - Gyros
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG_V1P3) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR_V1P3) != 0) { return sendFail(); }
         } else {
-            if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR) != 0) { return sendFail(); }
         }
         break;
 
-    case 5:     // Motion cal - Gyros
+    case 5:     // Motion cal - Accelerometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR_V1P3) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC_V1P3) != 0) { return sendFail(); }
         } else {
-            if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC) != 0) { return sendFail(); }
         }
         break;
 
-    case 6:     // Motion cal - Accelerometers
+    case 6:     // Motion cal - Magnetometers (last step)
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC_V1P3) != 0) { return 0; }
+            if (comManagerSendData(port, s_v1p3Buf.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG_V1P3) != 0) { return sendFail(); }
         } else {
-            if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC) != 0) { return 0; }
+            if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG) != 0) { return sendFail(); }
         }
-        break;
-
-    case 7:     // Motion cal - Magnetometers (last step)
-        if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG_V1P3) != 0) { return 0; }
-        } else {
-            if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG) != 0) { return 0; }
-        }
+        s_retryCount = 0;
+        calUploadState++;   // Increment state to mark completion here in case any upload fails and we need to retry the last step.  We don't want to resend all previous steps if only the last one fails.
         return 1;    // Done
 
     default:
         return -1;
     }
 
+    s_retryCount = 0;
+    calUploadState++;
     return 0;
 }
 
