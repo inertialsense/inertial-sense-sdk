@@ -580,7 +580,7 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
     }
     if (dinfo)
     {   // Recompute data info size and checksum
-        dinfo->size = sizeof(sensor_cal_v1p3_data_t);
+        dinfo->size = sizeof(sensor_cal_data_t);
         dinfo->checksum = flashChecksum32(dinfo, dinfo->size);
     }
 
