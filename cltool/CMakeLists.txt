@@ -15,9 +15,6 @@ include_directories(
     ${IS_SDK_DIR}/src/libusb/libusb
 )
 
-# Link the InertialSenseSDK static library 
-link_directories(${IS_SDK_DIR})
-
 add_definitions(-DIS_LOG_LEVEL=IS_LOG_LEVEL_MORE_INFO)
 
 if(WIN32)
