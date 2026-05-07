@@ -79,7 +79,7 @@ typedef uint32_t eDataIDs;
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
 #define DID_GNSS1_TIMEPULSE              (eDataIDs)41 /** (gnss_timepulse_t) GNSS1 PPS time synchronization. */
-#define DID_UNUSED_42                   (eDataIDs)42 /** unused */
+#define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_UNUSED_43                   (eDataIDs)43 /** unused */
 #define DID_UNUSED_44                   (eDataIDs)44 /** unused */
 #define DID_GNSS1_SIG                    (eDataIDs)45 /** (gnss_sig_t) GPS 1 GNSS signal information. */
@@ -111,7 +111,7 @@ typedef uint32_t eDataIDs;
 #define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) Wheel encoder data to be fused with GPS-INS measurements, set DID_GROUND_VEHICLE for configuration before sending this message */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
 #define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. Base correction output cannot run during a survey and will be automatically disabled if a survey is started. */
-#define DID_CAL_INFO                    (eDataIDs)74 /** INTERNAL USE ONLY (sensor_cal_info_t) */
+#define DID_UNUSED_74                   (eDataIDs)74 /** unused */
 #define DID_PORT_MONITOR                (eDataIDs)75 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_RTK_STATE                   (eDataIDs)76 /** INTERNAL USE ONLY (rtk_state_t) */
 #define DID_RTK_PHASE_RESIDUAL          (eDataIDs)77 /** INTERNAL USE ONLY (rtk_residual_t) */
@@ -906,7 +906,7 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
     
-    /** Magnetometers */
+    /** Magnetometers (uT) */
     float                   mag[3];
 } magnetometer_t;
 
@@ -917,7 +917,7 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
     
-    /** Barometric pressure in kilopascals */
+    /** Barometric pressure in kilopascals (kPa) */
     float                   bar;
 
     /** MSL altitude from barometric pressure sensor in meters */
@@ -1674,11 +1674,12 @@ enum eSystemCommand
     SYS_CMD_SAVE_GNSS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
     SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840)
-    SYS_CMD_MANF_ERASE_CALIBRATION                      = 1357924679,   // (uint32 inv: 2937042616) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
-    SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
+    SYS_CMD_MANF_ERASE_CALIBRATION_MOTION               = 1357924678,   // (uint32 inv: 2937042617) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_ERASE_CALIBRATION                      = 1357924679,   // (uint32 inv: 2937042616) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
+    SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
 
     SYS_CMD_FAULT_TEST_TRIG_MALLOC                      = 57005,
     SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                  = 57006,

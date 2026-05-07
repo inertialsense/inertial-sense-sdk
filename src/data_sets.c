@@ -529,7 +529,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 71: DID_WHEEL_ENCODER
         diagMsgOffsets,         // 72: DID_DIAGNOSTIC_MESSAGE
         0,                      // 73: DID_SURVEY_IN
-        0,                      // 74: DID_CAL_INFO
+        0,                      // 74: DID_CAL_SC
         0,                      // 75: DID_PORT_MONITOR
         0,                      // 76: DID_RTK_STATE
         0,                      // 77: DID_RTK_RESIDUAL

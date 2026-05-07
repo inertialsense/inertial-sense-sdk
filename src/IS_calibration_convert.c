@@ -7,11 +7,11 @@
 #define _MIN(a,b) (((a)<(b))?(a):(b))
 #endif
 
-void set_sensor_cal_data_defaults_v1p4(sensor_cal_v1p4_data_t *data)
+void set_sensor_mcal_data_defaults_v1p4(sensor_cal_v1p4_data_t *data)
 {
     if (data == NULL) { return; }
 
-    memset(data, 0, sizeof(sensor_cal_v1p4_data_t));
+    memset(&data->mcal, 0, sizeof(sensor_mcal_group_v1p4_t));
     for (int d = 0; d < NUM_IMU_DEVICES_V1P4; d++)
     {
         data->mcal.pqr[d].orth[0] = 1;
@@ -29,15 +29,24 @@ void set_sensor_cal_data_defaults_v1p4(sensor_cal_v1p4_data_t *data)
         data->mcal.mag[d].orth[8] = 1;
     }
 
+    // Set data info (size and checksum)
     data->dinfo.size = sizeof(sensor_cal_v1p4_data_t);
     data->dinfo.checksum = flashChecksum32(data, data->dinfo.size);
 }
 
-void set_sensor_cal_data_defaults_v1p3(sensor_cal_v1p3_data_t *data)
+void set_sensor_cal_data_defaults_v1p4(sensor_cal_v1p4_data_t *data)
 {
     if (data == NULL) { return; }
 
-    memset(data, 0, sizeof(sensor_cal_v1p3_data_t));
+    memset(data, 0, sizeof(sensor_cal_v1p4_data_t));    // Default tcal
+    set_sensor_mcal_data_defaults_v1p4(data);           // Default mcal and set size and checksum for data struct
+}
+
+void set_sensor_mcal_data_defaults_v1p3(sensor_cal_v1p3_data_t *data)
+{
+    if (data == NULL) { return; }
+
+    memset(&data->mcal, 0, sizeof(sensor_mcal_group_v1p3_t));    // Default mcal
     for (int d = 0; d < NUM_IMU_DEVICES_V1P3; d++)
     {
         data->mcal.pqr[d].orth[0] = 1;
@@ -55,8 +64,17 @@ void set_sensor_cal_data_defaults_v1p3(sensor_cal_v1p3_data_t *data)
         data->mcal.mag[d].orth[8] = 1;
     }
 
+    // Set data info (size and checksum)
     data->dinfo.size = sizeof(sensor_cal_v1p3_data_t);
     data->dinfo.checksum = flashChecksum32(data, data->dinfo.size);
+}
+
+void set_sensor_cal_data_defaults_v1p3(sensor_cal_v1p3_data_t *data)
+{
+    if (data == NULL) { return; }
+
+    memset(data, 0, sizeof(sensor_cal_v1p3_data_t));    // Default tcal
+    set_sensor_mcal_data_defaults_v1p3(data);           // Default mcal and set size and checksum for data struct
 }
 
 void convert_tcal_v1p3_to_v1p4(const sensor_tcal_group_v1p3_t *v1p3, sensor_tcal_group_v1p4_t *v1p4)
