@@ -58,10 +58,10 @@ SPI_CHUNK    = 64           # bytes per SPI read burst while DR is HIGH
 GPIO_CHIP    = 4            # gpiochip4 on Raspberry Pi 5 (use 0 for RPi4)
 DR_GPIO      = 25           # BCM GPIO25 = physical pin 22
 
-DR_TIMEOUT_S = 5.0          # seconds to wait for DR before resending the request
-NAV_DT_MS    = 7            # IMX-5 nav period in ms; adjust to 4 for IMX-6
+NAV_DT_MS      = 7          # IMX-5 nav period in ms; adjust to 4 for IMX-6
 
 PIMU_PERIOD_MS = 1000       # desired DID_PIMU broadcast period in ms (~1 Hz)
+SEND_INTERVAL_S = 1.0       # how often to (re)send the GET_DATA command (seconds)
 
 EXIT_KEY = "q"              # press this key (case-insensitive) to quit
 
@@ -265,56 +265,54 @@ def main() -> None:
         print(f"Sending GET_DATA for DID_PIMU @ ~{period_actual} ms ...\n", flush=True)
         spi.xfer2(list(get_pkt))
 
-        count = 0
+        count     = 0
+        last_send = time.monotonic() - SEND_INTERVAL_S  # fire immediately on first tick
+
         while True:
-            # ------------------------------------------------------------------
-            # Wait for DR to assert (device has a packet ready).
-            # ------------------------------------------------------------------
-            result = wait_for_dr_high(gpio, DR_TIMEOUT_S)
+            now = time.monotonic()
 
-            if result == "exit":
-                break
-
-            if result == "timeout":
-                # DR did not assert within the timeout — resend the request in
-                # case the device reset or the first packet was missed.
-                print(f"WARNING: DR timeout ({DR_TIMEOUT_S:.0f} s).  "
-                      "Resending GET_DATA ...", flush=True)
+            # ------------------------------------------------------------------
+            # Send GET_DATA every SEND_INTERVAL_S seconds regardless of whether
+            # the device has responded.  This keeps the broadcast active even if
+            # a packet was missed or the device restarted.
+            # ------------------------------------------------------------------
+            if now - last_send >= SEND_INTERVAL_S:
                 spi.xfer2(list(get_pkt))
-                continue
+                last_send = now
 
             # ------------------------------------------------------------------
-            # Read SPI data while DR is HIGH.
+            # Non-blocking DR check.  If DR is HIGH the device has data ready;
+            # read until it drops.  If DR is LOW, move on immediately so the
+            # send timer above stays accurate.
             # ------------------------------------------------------------------
-            rx = read_while_dr_high(spi, gpio)
+            if lgpio.gpio_read(gpio, DR_GPIO) == 1:
+                rx = read_while_dr_high(spi, gpio)
 
-            # ------------------------------------------------------------------
-            # Parse ISB packets.  Print any DID_PIMU DATA packets found.
-            # ------------------------------------------------------------------
-            for pkt_type, did, payload in parse_isb_packets(bytes(rx)):
-                if pkt_type != PKT_TYPE_DATA or did != DID_PIMU:
-                    continue
-                if len(payload) < PIMU_SIZE:
-                    print(f"  [!] Short PIMU payload ({len(payload)} < {PIMU_SIZE} bytes), skipping")
-                    continue
+                for pkt_type, did, payload in parse_isb_packets(bytes(rx)):
+                    if pkt_type != PKT_TYPE_DATA or did != DID_PIMU:
+                        continue
+                    if len(payload) < PIMU_SIZE:
+                        print(f"  [!] Short PIMU payload ({len(payload)} < {PIMU_SIZE} bytes), skipping")
+                        continue
 
-                count += 1
-                t_time, dt, status, *rest = _PIMU_FMT.unpack_from(payload)
-                theta = rest[0:3]
-                vel   = rest[3:6]
+                    count += 1
+                    t_time, dt, _, *rest = _PIMU_FMT.unpack_from(payload)
+                    theta = rest[0:3]
+                    vel   = rest[3:6]
 
-                print(
-                    f"[{count:4d}]  "
-                    f"t={t_time:10.3f} s  "
-                    f"dt={dt:.4f} s  "
-                    f"dTheta={theta[0]:9.5f}, {theta[1]:9.5f}, {theta[2]:9.5f} rad  "
-                    f"dVel={vel[0]:9.5f}, {vel[1]:9.5f}, {vel[2]:9.5f} m/s",
-                    flush=True,
-                )
+                    print(
+                        f"[{count:4d}]  "
+                        f"t={t_time:10.3f} s  "
+                        f"dt={dt:.4f} s  "
+                        f"dTheta={theta[0]:9.5f}, {theta[1]:9.5f}, {theta[2]:9.5f} rad  "
+                        f"dVel={vel[0]:9.5f}, {vel[1]:9.5f}, {vel[2]:9.5f} m/s",
+                        flush=True,
+                    )
 
-            # Check exit key after processing each burst.
             if check_exit():
                 break
+
+            time.sleep(0.001)
 
     except KeyboardInterrupt:
         pass    # Ctrl+C handled by the finally block
