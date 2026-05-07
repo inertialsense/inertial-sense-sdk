@@ -110,7 +110,7 @@ typedef struct PACKED
 {
     /** WGS84 height above ellipsoid (meters) */
     float                   alt;                                //4 bytes (more than 8 decimal places precision)    
-    /** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
+    /** (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
     uint32_t                status;
 } is_can_ins_alt;
 
@@ -220,7 +220,7 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    /** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
+    /** (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
     uint32_t                status;                                    //4 bytes
     /** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
     uint32_t                cnoMean;                                //4 byte

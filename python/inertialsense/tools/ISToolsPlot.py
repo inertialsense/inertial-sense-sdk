@@ -440,7 +440,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         f = plotCPhase(gpsBaseRaw, f, 'BaseRaw')
 
     ###################################################
-    # Raw GPS1
+    # Raw GNSS1
     #
     if peCheck('rawGps1SNR') and gps1Raw:
         f = plotSNR(gps1Raw, f, 'Gps1Raw')
@@ -452,7 +452,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         f = plotCPhase(gps1Raw, f, 'Gps1Raw')
 
     ###################################################
-    # Raw GPS1
+    # Raw GNSS1
     #
     if peCheck('rawGps2SNR') and gps2Raw:
         f = plotSNR(gps2Raw, f, 'GPS2Raw')
@@ -1476,7 +1476,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
     if gps1Ubx and peCheck('gps1Stats'):
         f += 1;    legend = []
-        fig, ax = pt.subplots(f,3, 'GPS1 Stats', sharex=True)
+        fig, ax = pt.subplots(f,3, 'GNSS1 Stats', sharex=True)
 
         pt.subplotSingle(ax[0], gps1Ubx.time, gps1Ubx.satsUsed, 'Satellites Used in Solution', '')
         pt.subplotSingle(ax[1], gps1Ubx.time, gps1Ubx.v['pDop'], 'Accuracy', 'm', options='m')

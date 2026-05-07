@@ -349,7 +349,7 @@ static void flashCfgDefaultsIMX(nvm_flash_cfg_t* fc)
     fc->size                    = sizeof(nvm_flash_cfg_t);
     fc->key                     = 36;
     fc->startupImuDtMs          = 1;
-    fc->startupGPSDtMs          = 200;
+    fc->startupGnssDtMs          = 200;
     fc->startupNavDtMs          = 4;
     fc->ser0BaudRate            = IS_BAUDRATE_921600;
     fc->ser1BaudRate            = IS_BAUDRATE_921600;
@@ -357,12 +357,12 @@ static void flashCfgDefaultsIMX(nvm_flash_cfg_t* fc)
     fc->lastLlaUpdateDistance   = 1000.0f;
     fc->ioConfig                = IO_CONFIG_DEFAULT;
     fc->platformConfig          = PLATFORM_CFG_TYPE_NONE;
-    fc->gpsTimeSyncPeriodMs     = 1000;
+    fc->gnssTimeSyncPeriodMs     = 1000;
     fc->dynamicModel            = DEFAULT_DYNAMIC_MODEL;
     fc->gnssSatSigConst         = GNSS_SAT_SIG_CONST_DEFAULT;
     fc->sensorConfig            = (SENSOR_CFG_GYR_FS_MAX<<SENSOR_CFG_GYR_FS_OFFSET) |
                                   (SENSOR_CFG_ACC_FS_MAX<<SENSOR_CFG_ACC_FS_OFFSET);
-    fc->gpsMinimumElevation     = DEFAULT_GNSS_MIN_ELEVATION_ANGLE;
+    fc->gnssMinimumElevation     = DEFAULT_GNSS_MIN_ELEVATION_ANGLE;
     fc->gnssCn0Minimum          = DEFAULT_GNSS_RTK_CN0_MINIMUM;
     fc->gnssCn0DynMinOffset     = DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET;
     fc->magInterferenceThreshold = 3.0f;
@@ -377,13 +377,13 @@ static void flashCfgDefaultsGPX(gpx_flash_cfg_t* fc)
     fc->size                    = sizeof(gpx_flash_cfg_t);
     fc->key                     = 2;
     fc->dynamicModel            = DEFAULT_DYNAMIC_MODEL;
-    fc->gpsTimeSyncPeriodMs     = 1000;         // GPX_MINIMUM_SYNC_RATE_MS
-    fc->startupGPSDtMs          = 200;          // GPX_DEFAULT_GPS_DT_MS
+    fc->gnssTimeSyncPeriodMs     = 1000;         // GPX_MINIMUM_SYNC_RATE_MS
+    fc->startupGnssDtMs          = 200;          // GPX_DEFAULT_GPS_DT_MS
     fc->gnssSatSigConst         = GNSS_SAT_SIG_CONST_DEFAULT;
     fc->ser0BaudRate            = IS_BAUDRATE_921600;
     fc->ser1BaudRate            = IS_BAUDRATE_921600;
     fc->ser2BaudRate            = IS_BAUDRATE_921600;
-    fc->gpsMinimumElevation     = DEFAULT_GNSS_MIN_ELEVATION_ANGLE;
+    fc->gnssMinimumElevation     = DEFAULT_GNSS_MIN_ELEVATION_ANGLE;
     fc->gnssCn0Minimum          = DEFAULT_GNSS_RTK_CN0_MINIMUM;
     fc->gnssCn0DynMinOffset     = DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET;
 }

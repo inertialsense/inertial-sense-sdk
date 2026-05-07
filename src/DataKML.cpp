@@ -75,25 +75,25 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
             return 0;
 
         case DID_INS_1:
-            deadreckoning = !(d.ins1.insStatus & INS_STATUS_GPS_AIDING_POS);
+            deadreckoning = !(d.ins1.insStatus & INS_STATUS_GNSS_AIDING_POS);
             data = sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta, deadreckoning);
             break;
         case DID_INS_2:
             quat2euler(d.ins2.qn2b, theta);
-            deadreckoning = !(d.ins2.insStatus & INS_STATUS_GPS_AIDING_POS);
+            deadreckoning = !(d.ins2.insStatus & INS_STATUS_GNSS_AIDING_POS);
             data = sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta, deadreckoning);
             break;
         case DID_INS_3:
             quat2euler(d.ins3.qn2b, theta);
-            deadreckoning = !(d.ins3.insStatus & INS_STATUS_GPS_AIDING_POS);
+            deadreckoning = !(d.ins3.insStatus & INS_STATUS_GNSS_AIDING_POS);
             data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, deadreckoning);
             break;
-        case DID_GPS1_POS:
-        case DID_GPS1_RCVR_POS:
-        case DID_GPS2_POS:
+        case DID_GNSS1_POS:
+        case DID_GNSS1_RCVR_POS:
+        case DID_GNSS2_POS:
             data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
             break;
-        case DID_GPS1_RTK_POS:
+        case DID_GNSS1_RTK_POS:
             data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
             break;
     }
