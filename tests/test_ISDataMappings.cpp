@@ -45,13 +45,13 @@ TEST(ISDataMappings, StringToDataToString)
             key += "[0]";
         }
         const data_info_t& info = flashMap.at(key);
-        float gps1AntOffset1 = 1.234f;
-        str1 = to_string(gps1AntOffset1);
+        float gnss1AntOffset1 = 1.234f;
+        str1 = to_string(gnss1AntOffset1);
 
         // float - string to data
         cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, 1);
 
-        EXPECT_EQ(d.flashCfg.gnss1AntOffset[1], gps1AntOffset1);
+        EXPECT_EQ(d.flashCfg.gnss1AntOffset[1], gnss1AntOffset1);
 
         // float - data to string
         data_mapping_string_t stringBuffer;
