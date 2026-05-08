@@ -34,9 +34,16 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <string>
-#include <unistd.h>
 #include <vector>
+
+#ifdef _WIN32
+    #include <process.h>
+    #define getpid _getpid
+#else
+    #include <unistd.h>
+#endif
 
 using namespace inertial_sense;
 using namespace inertial_sense::idx;
@@ -211,13 +218,15 @@ TEST(IdxMalformed, ImpossibleHeaderSizeReportsCorrupted) {
 
 namespace {
 
-// Returns a unique tmp path under /tmp. Deleted by the caller (or by
-// the OS on reboot — these are smoke tests, not crash-resilient).
+// Returns a unique tmp path under the platform temp dir. Deleted by
+// the caller (or by the OS — these are smoke tests, not
+// crash-resilient).
 std::string makeTmpPath(const char* tag) {
-    char buf[256];
-    std::snprintf(buf, sizeof(buf), "/tmp/test_log_index_%s_%d_%ld.idx",
+    char buf[128];
+    std::snprintf(buf, sizeof(buf), "test_log_index_%s_%d_%ld.idx",
                   tag, ::getpid(), static_cast<long>(::time(nullptr)));
-    return std::string{buf};
+    const auto p = std::filesystem::temp_directory_path() / buf;
+    return p.string();
 }
 
 } // namespace
@@ -470,11 +479,12 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
     GenerateRawLogData(messages, 1.0f);
     ASSERT_FALSE(messages.empty());
 
-    char dirBuf[256];
+    char dirBuf[128];
     std::snprintf(dirBuf, sizeof(dirBuf),
-                  "/tmp/test_log_idx_e2e_%d_%ld",
+                  "test_log_idx_e2e_%d_%ld",
                   ::getpid(), static_cast<long>(::time(nullptr)));
-    const string logPath = dirBuf;
+    const string logPath =
+        (std::filesystem::temp_directory_path() / dirBuf).string();
     ISFileManager::DeleteDirectory(logPath);
 
     // -- Write phase: feed packets through cISLogger (the real framework).
@@ -631,11 +641,12 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
     GenerateRawLogData(messages, 8.0f);  // ~8 MB ⇒ 2+ default-size segments
     ASSERT_FALSE(messages.empty());
 
-    char dirBuf[256];
+    char dirBuf[128];
     std::snprintf(dirBuf, sizeof(dirBuf),
-                  "/tmp/test_log_idx_multiseg_%d_%ld",
+                  "test_log_idx_multiseg_%d_%ld",
                   ::getpid(), static_cast<long>(::time(nullptr)));
-    const string logPath = dirBuf;
+    const string logPath =
+        (std::filesystem::temp_directory_path() / dirBuf).string();
     ISFileManager::DeleteDirectory(logPath);
 
     {
