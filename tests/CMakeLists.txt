@@ -27,8 +27,19 @@ file(GLOB TESTS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
 list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
 if(WIN32)   # These do not run in Windows
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_conversion.cpp")
+    # POSIX-only tests: use ::getpid(), /tmp/ paths, or other POSIX APIs
+    # that have no Windows equivalent. Excluded rather than ported because
+    # the tests exercise filesystem interactions that are inherently POSIX.
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_device_log.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_did_traits.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_index.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_reader.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_writer.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_ISHttpRequest.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_md5.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_resolver.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_truncated_log.cpp")
     # yamlcpp needs to know it's a static lib
     add_definitions(-DYAML_CPP_STATIC_DEFINE)
 endif()
