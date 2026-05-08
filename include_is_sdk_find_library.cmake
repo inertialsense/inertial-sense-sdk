@@ -79,8 +79,7 @@ ${IS_SDK_DIR}/src/libusb;\
 ${IS_SDK_DIR}/src/libusb/libusb;\
 ${IS_SDK_DIR}/src/yaml-cpp;\
 ${IS_SDK_DIR}/src/tl-expected;\
-${IS_SDK_DIR}/tests/runtime;\
-${IS_SDK_DIR}/external"
+${IS_SDK_DIR}/tests/runtime"
     )
     message(STATUS "Using prebuilt InertialSenseSDK at: ${SDK_LIBRARY_PATH}")
 else()
