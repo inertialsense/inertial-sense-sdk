@@ -1160,7 +1160,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<gnss_pos_t> mapper(data_set, did);
     mapper.AddMember("week", &gnss_pos_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("timeOfWeekMs", &gnss_pos_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("status", &gnss_pos_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS).renderExtended = renderGnssStatusBits;
+    mapper.AddMember("status", &gnss_pos_t::status, DATA_TYPE_UINT32, "", "GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GNSS_STATUS).renderExtended = renderGnssStatusBits;
     mapper.AddArray("ecef", &gnss_pos_t::ecef, DATA_TYPE_F64, 3, {"m"}, {"Position in ECEF {x,y,z}"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddLlaDegM("lla", offsetof(gnss_pos_t, lla), "", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hMSL", &gnss_pos_t::hMSL, DATA_TYPE_F32, "m", "Meters above sea level", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1172,7 +1172,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GPS leap seconds (GPS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GPS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gnss_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gnss_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
+    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
 }
 
 static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1181,7 +1181,7 @@ static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs", &gnss_vel_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("vel", &gnss_vel_t::vel, DATA_TYPE_F32, 3, {"m/s"}, {"Velocity in ECEF {vx,vy,vz} or NED {vN, vE, 0} if status GNSS_STATUS_FLAGS_GNSS_NMEA_DATA = 0 or 1"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("sAcc", &gnss_vel_t::sAcc, DATA_TYPE_F32, "m/s", "Speed accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-    mapper.AddMember("status", &gnss_vel_t::status, DATA_TYPE_UINT32, "", "GPS status: NMEA input if status flag GNSS_STATUS_FLAGS_GNSS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGnssStatusBits;;
+    mapper.AddMember("status", &gnss_vel_t::status, DATA_TYPE_UINT32, "", "GNSS status: NMEA input if status flag GNSS_STATUS_FLAGS_GNSS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGnssStatusBits;;
 }
 
 static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1792,7 +1792,7 @@ static void PopulateMapGpsRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("baseToRoverDistance", &gnss_rtk_rel_t::baseToRoverDistance, DATA_TYPE_F32, "", "baseToRoverDistance (m)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("baseToRoverHeading", &gnss_rtk_rel_t::baseToRoverHeading, DATA_TYPE_F32, SYM_DEG, "Angle from north to baseToRoverVector in local tangent plane.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("baseToRoverHeadingAcc", &gnss_rtk_rel_t::baseToRoverHeadingAcc, DATA_TYPE_F32, SYM_DEG, "Accuracy of baseToRoverHeading.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_6, C_RAD2DEG);
-    mapper.AddMember("status", &gnss_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS).renderExtended = renderGnssStatusBits;
+    mapper.AddMember("status", &gnss_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GNSS_STATUS).renderExtended = renderGnssStatusBits;
 }
 
 static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)

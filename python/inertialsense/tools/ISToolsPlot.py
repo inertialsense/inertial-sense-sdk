@@ -93,13 +93,13 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
     if ins:
         itd.setGpsWeek(ins.v['week'])
 
-    gps1Pos = log2Data(log, itd.cGPS, 'gps1Pos')
-    # gps1Vel = log2Data(log, itd.cGPS, 'gps1Vel')
+    gnss1Pos = log2Data(log, itd.cGPS, 'gnss1Pos')
+    # gnss1Vel = log2Data(log, itd.cGPS, 'gnss1Vel')
     gps1Ubx = log2Data(log, itd.cGPS, 'gps1UbxPos')
-    gps1RtkPos = log2Data(log, itd.cGPS, 'gps1RtkPos')
-    gps1Raw = log2Data(log, itd.cGPSRaw, 'GPS1Raw')
-    gps2Raw = log2Data(log, itd.cGPSRaw, 'GPS2Raw')
-    gpsBaseRaw = log2Data(log, itd.cGPSRaw, 'GPSBaseRaw')
+    gnss1RtkPos = log2Data(log, itd.cGPS, 'gnss1RtkPos')
+    gnss1Raw = log2Data(log, itd.cGPSRaw, 'GPS1Raw')
+    gnss2Raw = log2Data(log, itd.cGPSRaw, 'GPS2Raw')
+    gnssBaseRaw = log2Data(log, itd.cGPSRaw, 'GPSBaseRaw')
     imu1 = log2Data(log, itd.cIMU, 'imu1')
     dimu = log2Data(log, itd.cIMU, 'imu')
     dimu = log2Data(log, itd.cIMU, 'pimu')
@@ -125,10 +125,10 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
                                                                      gmt1.tm_hour, gmt1.tm_min, gmt1.tm_sec,
                                                                      gmt2.tm_hour, gmt2.tm_min, gmt2.tm_sec,
                                                                      dgmt.tm_hour, dgmt.tm_min, dgmt.tm_sec))
-    if gps1Pos:
-        gmt1 = systime.gmtime(gps1Pos.time[0]  - systime.timezone)
-        gmt2 = systime.gmtime(gps1Pos.time[-1] - systime.timezone)
-        dgmt = systime.gmtime(gps1Pos.time[-1] - gps1Pos.time[0])
+    if gnss1Pos:
+        gmt1 = systime.gmtime(gnss1Pos.time[0]  - systime.timezone)
+        gmt2 = systime.gmtime(gnss1Pos.time[-1] - systime.timezone)
+        dgmt = systime.gmtime(gnss1Pos.time[-1] - gnss1Pos.time[0])
         print("   GPS:  %d-%d-%d %d:%d:%d - %d:%d:%d  (%d:%d:%d)" % (gmt1.tm_year, gmt1.tm_mon, gmt1.tm_mday,
                                                                      gmt1.tm_hour, gmt1.tm_min, gmt1.tm_sec,
                                                                      gmt2.tm_hour, gmt2.tm_min, gmt2.tm_sec,
@@ -183,8 +183,8 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
     #         print("Mag keys:", mag1.v.dtype.names)
     #     if baro:
     #         print("Baro keys:", baro.v.dtype.names)
-    #     if gps1Pos:
-    #         print("GPS keys:", gps1Pos.v.dtype.names)
+    #     if gnss1Pos:
+    #         print("GPS keys:", gnss1Pos.v.dtype.names)
     #     if ins:
     #         print("INS keys:", ins.v.dtype.names)
     #     if sysp:
@@ -199,28 +199,28 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
     if pt.timeIsUtc == 0:
         startTow = ins.time[0]
         ins.time = ins.time - startTow
-        if gps1Pos!=0:
-            meanTowOffset = np.mean(gps1Pos.v['towOffset'])
+        if gnss1Pos!=0:
+            meanTowOffset = np.mean(gnss1Pos.v['towOffset'])
 
-        if gps1Pos:
-            gps1Pos.time = gps1Pos.time - startTow
+        if gnss1Pos:
+            gnss1Pos.time = gnss1Pos.time - startTow
         if gps1Ubx:
             gps1Ubx.time = gps1Ubx.time - startTow
-        if gps1RtkPos:
-            gps1RtkPos.time = gps1RtkPos.time - startTow
+        if gnss1RtkPos:
+            gnss1RtkPos.time = gnss1RtkPos.time - startTow
 
         if sysp:
             sysp.time           = sysp.time - startTow
         if ires and 'time' in ires.v:
             ires.time = ires.time - startTow
         if imu1:
-            if gps1Pos!=0:
+            if gnss1Pos!=0:
                 imu1.time = imu1.time + meanTowOffset - startTow
             else:
                 imu1.time = imu1.time - imu1.time[0]
 
         if dimu:
-            if gps1Pos!=0:
+            if gnss1Pos!=0:
                 dimu.time = dimu.time + meanTowOffset - startTow
             else:
                 dimu.time = dimu.time - dimu.time[0]
@@ -239,7 +239,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
             dbg.time = dbg.time - startTow
 
         if 'ekfStates' in log.data:
-            if gps1Pos!=0:
+            if gnss1Pos!=0:
                 log.data['ekfStates']['time'] = log.data['ekfStates']['time'] + meanTowOffset - startTow
             else:
                 log.data['ekfStates']['time'] = log.data['ekfStates']['time'] - log.data['ekfStates']['time'][0]
@@ -289,12 +289,12 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         print("NED RMS Accuracy (m):      \t", ins.nedErrRms)
 
     if peCheck('rawGPSStats'):
-        if gps1Raw is not 0:
-            print("GPS 1 Corrupt Data Count", gps1Raw.corruptCount, "/", len(gps1Raw.count))
-        if gps2Raw is not 0:
-            print("GPS 2 Corrupt Data Count", gps2Raw.corruptCount, "/", len(gps2Raw.count))
-        if gpsBaseRaw is not 0:
-            print("GPS Base Corrupt Data Count", gpsBaseRaw.corruptCount, "/", len(gpsBaseRaw.count))
+        if gnss1Raw is not 0:
+            print("GPS 1 Corrupt Data Count", gnss1Raw.corruptCount, "/", len(gnss1Raw.count))
+        if gnss2Raw is not 0:
+            print("GPS 2 Corrupt Data Count", gnss2Raw.corruptCount, "/", len(gnss2Raw.count))
+        if gnssBaseRaw is not 0:
+            print("GPS Base Corrupt Data Count", gnssBaseRaw.corruptCount, "/", len(gnssBaseRaw.count))
 
 
     ######################################################################
@@ -430,38 +430,38 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         saveFigures('raw' + name + 'CarrierPhase.svg', f)
         return f
 
-    if peCheck('rawBaseGpsSNR') and gpsBaseRaw:
-        f = plotSNR(gpsBaseRaw, f, 'BaseRaw')
+    if peCheck('rawBaseGpsSNR') and gnssBaseRaw:
+        f = plotSNR(gnssBaseRaw, f, 'BaseRaw')
 
-    if peCheck('rawBaseGpsPrange') and gpsBaseRaw:
-        f = plotPrange(gpsBaseRaw, f, 'BaseRaw')
+    if peCheck('rawBaseGpsPrange') and gnssBaseRaw:
+        f = plotPrange(gnssBaseRaw, f, 'BaseRaw')
 
-    if peCheck('rawBaseCarrierPhase') and gpsBaseRaw:
-        f = plotCPhase(gpsBaseRaw, f, 'BaseRaw')
-
-    ###################################################
-    # Raw GNSS1
-    #
-    if peCheck('rawGps1SNR') and gps1Raw:
-        f = plotSNR(gps1Raw, f, 'Gps1Raw')
-
-    if peCheck('rawGps1Prange') and gps1Raw:
-        f = plotPrange(gps1Raw, f, 'Gps1Raw')
-
-    if peCheck('rawGps1CarrierPhase') and gps1Raw:
-        f = plotCPhase(gps1Raw, f, 'Gps1Raw')
+    if peCheck('rawBaseCarrierPhase') and gnssBaseRaw:
+        f = plotCPhase(gnssBaseRaw, f, 'BaseRaw')
 
     ###################################################
     # Raw GNSS1
     #
-    if peCheck('rawGps2SNR') and gps2Raw:
-        f = plotSNR(gps2Raw, f, 'GPS2Raw')
+    if peCheck('rawGps1SNR') and gnss1Raw:
+        f = plotSNR(gnss1Raw, f, 'Gps1Raw')
 
-    if peCheck('rawGps2Prange') and gps2Raw:
-        f = plotPrange(gps2Raw, f, 'GPS2Raw')
+    if peCheck('rawGps1Prange') and gnss1Raw:
+        f = plotPrange(gnss1Raw, f, 'Gps1Raw')
 
-    if peCheck('rawGps2CarrierPhase') and gps2Raw:
-        f = plotCPhase(gps2Raw, f, 'GPS2Raw')
+    if peCheck('rawGps1CarrierPhase') and gnss1Raw:
+        f = plotCPhase(gnss1Raw, f, 'Gps1Raw')
+
+    ###################################################
+    # Raw GNSS1
+    #
+    if peCheck('rawGps2SNR') and gnss2Raw:
+        f = plotSNR(gnss2Raw, f, 'GPS2Raw')
+
+    if peCheck('rawGps2Prange') and gnss2Raw:
+        f = plotPrange(gnss2Raw, f, 'GPS2Raw')
+
+    if peCheck('rawGps2CarrierPhase') and gnss2Raw:
+        f = plotCPhase(gnss2Raw, f, 'GPS2Raw')
 
     #############################################
     # Compassing Angle
@@ -612,9 +612,9 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         # kmlfile = log.directory + "/" + itd.lla2kml(ins.time, ins.v['lla'], log.serialNumber, "LOG_"+log.serialNumber+"ins.kml", timeStep=tStep, altitudeMode=altMode)
         kmlfile = itd.lla2kml(ins.time, ins.v['lla'], log.serialNumber, log.directory + "/" + "LOG_"+log.serialNumber+"ins.kml", timeStep=tStep, altitudeMode=altMode)
         os.startfile(kmlfile)
-        if gps1Pos:
-            # kmlfile = log.directory + "/" + itd.lla2kml(gps1Pos.time, gps1Pos.v['lla'], log.serialNumber, "LOG_"+log.serialNumber+"gps1Pos.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.red)
-            kmlfile = itd.lla2kml(gps1Pos.time, gps1Pos.v['lla'], log.serialNumber, log.directory + "/" + "LOG_"+log.serialNumber+"gps1Pos.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.red)
+        if gnss1Pos:
+            # kmlfile = log.directory + "/" + itd.lla2kml(gnss1Pos.time, gnss1Pos.v['lla'], log.serialNumber, "LOG_"+log.serialNumber+"gnss1Pos.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.red)
+            kmlfile = itd.lla2kml(gnss1Pos.time, gnss1Pos.v['lla'], log.serialNumber, log.directory + "/" + "LOG_"+log.serialNumber+"gnss1Pos.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.red)
             os.startfile(kmlfile)
         if rIns:
             # kmlfile = log.directory +  "/" + itd.lla2kml(rIns.v['time'], rIns.v['lla'], tru.serialNumber, "LOG_"+tru.serialNumber+"refIns.kml", timeStep=tStep, altitudeMode=altMode, color=simplekml.Color.black)
@@ -706,8 +706,8 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         if pe['att'] >= 2: # Display GPS heading
             # Ignore GPS if timestamp is not valid
-            if gps1Pos and np.fabs(np.mean(getTimeFromGpsTow(ins.v['tow'])) - np.mean(gps1Pos.time)) < 1000:
-                pt.subplotSingle(ax[2], gps1Pos.time, gps1Pos.v['course']*RAD2DEG, options=refColor)
+            if gnss1Pos and np.fabs(np.mean(getTimeFromGpsTow(ins.v['tow'])) - np.mean(gnss1Pos.time)) < 1000:
+                pt.subplotSingle(ax[2], gnss1Pos.time, gnss1Pos.v['course']*RAD2DEG, options=refColor)
                 legend += ['GPS']
 
         ax[2].legend(legend)
@@ -781,11 +781,11 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         if rIns:
             pt.plot3Axes(f, rIns.v['time'], rIns.v['nedDot'], options=rInsColor)
             legend += ['Truth']
-        if gps1Vel:
-            pt.plot3Axes(f, gps1Vel.time, gps1Vel.v['velNed'], options=refColor)
+        if gnss1Vel:
+            pt.plot3Axes(f, gnss1Vel.time, gnss1Vel.v['velNed'], options=refColor)
             legend += ['GPS.velNed']
-        gps1Pos.nedDot = ft.derivative(gps1Pos.time, gps1Pos.ned, delta=2)
-        # pt.plot3Axes(f, gps1Vel.time, gps1Vel.nedDot, options='m')
+        gnss1Pos.nedDot = ft.derivative(gnss1Pos.time, gnss1Pos.ned, delta=2)
+        # pt.plot3Axes(f, gnss1Vel.time, gnss1Vel.nedDot, options='m')
         # legend += ['GPS.ned dot']
         plt.legend(legend)
         saveFigures('gpsVel.svg', f)
@@ -810,8 +810,8 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         if rIns:
             pt.plot3Axes(f, rIns.v['time'], rIns.v['nedDot'], options=rInsColor)
             legend += ['Truth']
-        if gps1Pos:
-            pt.plot3Axes(f, gps1Pos.time, gps1Pos.v['ned'], options=refColor)
+        if gnss1Pos:
+            pt.plot3Axes(f, gnss1Pos.time, gnss1Pos.v['ned'], options=refColor)
             legend += ['GPS']
         pt.plot3Axes(f, ins.time, ins.velNed(), options=insColor)
         legend += ['INS']
@@ -822,7 +822,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
             f += 1;    legend = []
 
             delta = 2
-            gps1Pos.nedVelDot = ft.derivative(gps1Pos.time, gps1Pos.v['ned'], delta)
+            gnss1Pos.nedVelDot = ft.derivative(gnss1Pos.time, gnss1Pos.v['ned'], delta)
             ins.nedVelDot = ft.derivative(ins.time, ins.v['vel'], delta)
             ins.nedVelDot = ft.lpfNoDelay(ins.nedVelDot, cornerFreqHz=20, time=ins.time)
 
@@ -831,8 +831,8 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
                 legend += ['Truth']
             pt.plot3Axes(f, ins.time, ins.nedVelDot)
             legend += ['ins']
-            pt.plot3Axes(f, gps1Pos.time, gps1Pos.nedVelDot, 'NED Vel Dot', 'm/s^2', options=refColor)
-            legend += ['gps1Pos']
+            pt.plot3Axes(f, gnss1Pos.time, gnss1Pos.nedVelDot, 'NED Vel Dot', 'm/s^2', options=refColor)
+            legend += ['gnss1Pos']
             plt.legend(legend)
 
         saveFigures('velNED.svg', f)
@@ -840,23 +840,23 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         #############################################
         # Position - ECEF
-    if peCheck('ecef') and gps1Pos:
+    if peCheck('ecef') and gnss1Pos:
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'ECEF', sharex=True)
 
 
         instime = getTimeFromGpsTow(ins.v['tow'])
-        gpstime = getTimeFromGpsTowMs(gps1Pos.v['timeOfWeekMs'])
+        gpstime = getTimeFromGpsTowMs(gnss1Pos.v['timeOfWeekMs'])
         pt.subplotSingle(ax[0], instime, ins.ecef()[:,0], 'X', 'm', options=insColor)
-        pt.subplotSingle(ax[0], gpstime, gps1Pos.v['ecef'][:,0], options=refColor)
+        pt.subplotSingle(ax[0], gpstime, gnss1Pos.v['ecef'][:,0], options=refColor)
 
         pt.subplotSingle(ax[1], instime, ins.ecef()[:,1], 'Y', 'm', options=insColor)
-        pt.subplotSingle(ax[1], gpstime, gps1Pos.v['ecef'][:,1], options=refColor)
+        pt.subplotSingle(ax[1], gpstime, gnss1Pos.v['ecef'][:,1], options=refColor)
 
         pt.labels('Z', 'm')
         pt.subplotSingle(ax[2], instime, ins.ecef()[:,2], options=insColor)
         legend += ['INS']
-        pt.subplotSingle(ax[2], gpstime, gps1Pos.v['ecef'][:,2], options=refColor)
+        pt.subplotSingle(ax[2], gpstime, gnss1Pos.v['ecef'][:,2], options=refColor)
         legend += ['GPS']
         ax[2].legend(legend)
 
@@ -864,22 +864,22 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         #############################################
         # Position - LLA
-    if peCheck('lla') and gps1Pos and hasattr(gps1Pos, 'pos'):
+    if peCheck('lla') and gnss1Pos and hasattr(gnss1Pos, 'pos'):
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'LLA', sharex=True)
         if rIns:
             pt.subplotSingle(ax[0], rIns.v['time'], rIns.v['lla'][:,0], options=rInsColor)
 
         instime = getTimeFromGpsTow(ins.v['tow'])
-        gpstime = getTimeFromGpsTowMs(gps1Pos.v['timeOfWeekMs'])
+        gpstime = getTimeFromGpsTowMs(gnss1Pos.v['timeOfWeekMs'])
         pt.subplotSingle(ax[0], instime, ins.v['lla'][:,0], 'Latitude', 'deg', options=insColor)
-        pt.subplotSingle(ax[0], gpstime, gps1Pos.v['lla'][:,0], options=refColor)
+        pt.subplotSingle(ax[0], gpstime, gnss1Pos.v['lla'][:,0], options=refColor)
 
         if rIns:
             pt.subplotSingle(ax[1], rIns.v['time'], rIns.v['lla'][:,1], options=rInsColor)
 
         pt.subplotSingle(ax[1], instime, ins.v['lla'][:,1], 'Longitude', 'deg', options=insColor)
-        pt.subplotSingle(ax[1], gpstime, gps1Pos.v['lla'][:,1], options=refColor)
+        pt.subplotSingle(ax[1], gpstime, gnss1Pos.v['lla'][:,1], options=refColor)
 
         if rIns:
             pt.subplotSingle(ax[2], rIns.v['time'], rIns.v['lla'][:,2], options=rInsColor)
@@ -888,7 +888,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         pt.labels('Elipsoid Alt', 'm')
         pt.subplotSingle(ax[2], instime, ins.v['lla'][:,2], options=insColor)
         legend += ['INS']
-        pt.subplotSingle(ax[2], gpstime, gps1Pos.v['lla'][:,2], options=refColor)
+        pt.subplotSingle(ax[2], gpstime, gnss1Pos.v['lla'][:,2], options=refColor)
         legend += ['GPS']
         if baro:
             pt.subplotSingle(ax[2], baro.time, baro.v['mslBar'], options='m')
@@ -921,22 +921,22 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         if ins:
             instime = getTimeFromGpsTow(ins.v['tow'])
-        if gps1Pos:
-            gpstime = getTimeFromGpsTowMs(gps1Pos.v['timeOfWeekMs'])
+        if gnss1Pos:
+            gpstime = getTimeFromGpsTowMs(gnss1Pos.v['timeOfWeekMs'])
 
         if 'gps1UbxPos' in log.data.keys():
             global refLla
-            # ubxNED = pose.lla2ned(refLla, log.data['gps1RtkPos']['lla'])
-            # ubxtime = getTimeFromGpsTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
+            # ubxNED = pose.lla2ned(refLla, log.data['gnss1RtkPos']['lla'])
+            # ubxtime = getTimeFromGpsTowMs(log.data['gnss1RtkPos']['timeOfWeekMs'])
             ubxtime = getTimeFromGpsTowMs(gps1Ubx.v['timeOfWeekMs'])
         # else:
         #     rtkNED = None
 
-        if 'gps1RtkPos' in log.data.keys():
+        if 'gnss1RtkPos' in log.data.keys():
             global refLla
-            # rtkNED = pose.lla2ned(refLla, log.data['gps1RtkPos']['lla'])
-            # rtktime = getTimeFromGpsTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
-            rtktime = getTimeFromGpsTowMs(gps1RtkPos.v['timeOfWeekMs'])
+            # rtkNED = pose.lla2ned(refLla, log.data['gnss1RtkPos']['lla'])
+            # rtktime = getTimeFromGpsTowMs(log.data['gnss1RtkPos']['timeOfWeekMs'])
+            rtktime = getTimeFromGpsTowMs(gnss1RtkPos.v['timeOfWeekMs'])
         else:
             rtkNED = None
 
@@ -945,15 +945,15 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         pt.subplotSingle(ax[0], instime, ins.ned()[:,0], options=insColor, title="North", ylabel='m')
         legend = ['ins']
-        if gps1Pos:
-            pt.subplotSingle(ax[0], gpstime, gps1Pos.ned[:,0], options=refColor)
-            legend += ['gps1Pos']
+        if gnss1Pos:
+            pt.subplotSingle(ax[0], gpstime, gnss1Pos.ned[:,0], options=refColor)
+            legend += ['gnss1Pos']
         if gps1Ubx:
             pt.subplotSingle(ax[0], ubxtime, gps1Ubx.ned[:,0], options=ubxColor)
             legend += ['gps1Ubx']
-        if gps1RtkPos:
-            pt.subplotSingle(ax[0], rtktime, gps1RtkPos.ned[:,0], options=rtkColor)
-            legend += ['gps1RtkPos']
+        if gnss1RtkPos:
+            pt.subplotSingle(ax[0], rtktime, gnss1RtkPos.ned[:,0], options=rtkColor)
+            legend += ['gnss1RtkPos']
         # if rtkNED is not None:
         #     pt.subplotSingle(ax[0], rtktime, rtkNED[:,0], options=rtkColor)
         #     legend += ['rtk']
@@ -961,15 +961,15 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         pt.subplotSingle(ax[1], instime, ins.ned()[:,1], options=insColor, title="East", ylabel='m')
         legend = ['ins']
-        if gps1Pos:
-            pt.subplotSingle(ax[1], gpstime, gps1Pos.ned[:,1], options=refColor)
-            legend += ['gps1Pos']
+        if gnss1Pos:
+            pt.subplotSingle(ax[1], gpstime, gnss1Pos.ned[:,1], options=refColor)
+            legend += ['gnss1Pos']
         if gps1Ubx:
             pt.subplotSingle(ax[1], ubxtime, gps1Ubx.ned[:,1], options=ubxColor)
             legend += ['gps1Ubx']
-        if gps1RtkPos:
-            pt.subplotSingle(ax[1], rtktime, gps1RtkPos.ned[:,1], options=rtkColor)
-            legend += ['gps1RtkPos']
+        if gnss1RtkPos:
+            pt.subplotSingle(ax[1], rtktime, gnss1RtkPos.ned[:,1], options=rtkColor)
+            legend += ['gnss1RtkPos']
         # if rtkNED is not None:
         #     pt.subplotSingle(ax[1], rtktime, rtkNED[:,1], options=rtkColor)
         #     legend += ['rtk']
@@ -977,15 +977,15 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         pt.subplotSingle(ax[2], instime, ins.ned()[:,2], options=insColor, title="Down", ylabel='m')
         legend = ['ins']
-        if gps1Pos:
-            pt.subplotSingle(ax[2], gpstime, gps1Pos.ned[:,2], options=refColor)
-            legend += ['gps1Pos']
+        if gnss1Pos:
+            pt.subplotSingle(ax[2], gpstime, gnss1Pos.ned[:,2], options=refColor)
+            legend += ['gnss1Pos']
         if gps1Ubx:
             pt.subplotSingle(ax[2], ubxtime, gps1Ubx.ned[:,2], options=ubxColor)
             legend += ['gps1Ubx']
-        if gps1RtkPos:
-            pt.subplotSingle(ax[2], rtktime, gps1RtkPos.ned[:,2], options=rtkColor)
-            legend += ['gps1RtkPos']
+        if gnss1RtkPos:
+            pt.subplotSingle(ax[2], rtktime, gnss1RtkPos.ned[:,2], options=rtkColor)
+            legend += ['gnss1RtkPos']
         # if rtkNED is not None:
         #     pt.subplotSingle(ax[2], rtktime, rtkNED[:,2], options=rtkColor)
         #     legend += ['rtk']
@@ -993,9 +993,9 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         #         pt.plot3Axes(f, ins.time, ins.ned(), options=insColor)
         #         legend += ['ins']
-        #         if gps1Pos:
-        #             pt.plot3Axes(f, gps1Pos.time, gps1Pos.ned, options=refColor)
-        #             legend += ['gps1Pos']
+        #         if gnss1Pos:
+        #             pt.plot3Axes(f, gnss1Pos.time, gnss1Pos.ned, options=refColor)
+        #             legend += ['gnss1Pos']
 
         saveFigures('ned.svg', f)
 
@@ -1011,9 +1011,9 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         fig, ax = pt.subplots(f,1, 'NED Map')
         pt.subplotSingle(ax, ins.ned()[:,1], ins.ned()[:,0], options=insColor, title="North East Map")
         legend += ['ins']
-        if gps1Pos:
-            pt.subplotSingle(ax, gps1Pos.ned[:,1], gps1Pos.ned[:,0], options=refColor)
-            legend += ['gps1Pos']
+        if gnss1Pos:
+            pt.subplotSingle(ax, gnss1Pos.ned[:,1], gnss1Pos.ned[:,0], options=refColor)
+            legend += ['gnss1Pos']
         ax.legend(legend)
 
         saveFigures('nedMap.svg', f)
@@ -1025,8 +1025,8 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         f += 1;    legend = []
 
         fig, ax = pt.subplots(f,1, 'RTK NED Map')
-        if gps1RtkPos:
-            pt.subplotSingle(ax, gps1RtkPos.ned[:,1], gps1RtkPos.ned[:,0], options=insColor)
+        if gnss1RtkPos:
+            pt.subplotSingle(ax, gnss1RtkPos.ned[:,1], gnss1RtkPos.ned[:,0], options=insColor)
             legend += ['rtk']
         if gps1Ubx:
             pt.subplotSingle(ax, gps1Ubx.ned[:,1], gps1Ubx.ned[:,0], options=refColor)
@@ -1050,23 +1050,23 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
     #
     #         pt.subplotSingle(ax[0], ins.time, ins.ned()[:,0], options=insColor, title="North", ylabel='m')
     #         legend = ['ins']
-    #         if gps1Pos:
-    #             pt.subplotSingle(ax[0], gps1Pos.time, gps1Pos.ned[:,0], options=refColor)
-    #             legend += ['gps1Pos']
+    #         if gnss1Pos:
+    #             pt.subplotSingle(ax[0], gnss1Pos.time, gnss1Pos.ned[:,0], options=refColor)
+    #             legend += ['gnss1Pos']
     #         ax[0].legend(legend)
     #
     #         pt.subplotSingle(ax[1], ins.time, ins.ned()[:,1], options=insColor, title="East", ylabel='m')
     #         legend = ['ins']
-    #         if gps1Pos:
-    #             pt.subplotSingle(ax[1], gps1Pos.time, gps1Pos.ned[:,1], options=refColor)
-    #             legend += ['gps1Pos']
+    #         if gnss1Pos:
+    #             pt.subplotSingle(ax[1], gnss1Pos.time, gnss1Pos.ned[:,1], options=refColor)
+    #             legend += ['gnss1Pos']
     #         ax[1].legend(legend)
     #
     #         pt.subplotSingle(ax[2], ins.time, ins.ned()[:,2], options=insColor, title="Down", ylabel='m')
     #         legend = ['ins']
-    #         if gps1Pos:
-    #             pt.subplotSingle(ax[2], gps1Pos.time, gps1Pos.ned[:,2], options=refColor)
-    #             legend += ['gps1Pos']
+    #         if gnss1Pos:
+    #             pt.subplotSingle(ax[2], gnss1Pos.time, gnss1Pos.ned[:,2], options=refColor)
+    #             legend += ['gnss1Pos']
     #         ax[2].legend(legend)
     #
     #         saveFigures('nedError.svg', f)
@@ -1077,9 +1077,9 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
         pt.subplotSingle(ax, ins.v['lla'][:,1], ins.v['lla'][:,0], options=insColor, title="Lat Lon Map")
         legend += ['ins']
-        if gps1Pos:
-            pt.subplotSingle(ax, gps1Pos.v['lla'][:,1], gps1Pos.v['lla'][:,0], options=refColor)
-            legend += ['gps1Pos']
+        if gnss1Pos:
+            pt.subplotSingle(ax, gnss1Pos.v['lla'][:,1], gnss1Pos.v['lla'][:,0], options=refColor)
+            legend += ['gnss1Pos']
 
         saveFigures('LatLonMap.svg', f)
 
@@ -1091,8 +1091,8 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
             delta = 1
             ins.nedDot = ft.derivative(ins.time, ins.ned(), delta, title="NED dot")
-            if gps1Pos:
-                gps1Pos.nedDot = ft.derivative(gps1Pos.time, gps1Pos.ned, delta)
+            if gnss1Pos:
+                gnss1Pos.nedDot = ft.derivative(gnss1Pos.time, gnss1Pos.ned, delta)
             if rIns:
                 rIns.nedDot = ft.derivative(rIns.v['time'], rIns.ned, delta)
                 pt.plot3Axes(f, rIns.v['time'], rIns.nedDot, options=rInsColor)
@@ -1100,9 +1100,9 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
 
             pt.plot3Axes(f, ins.time, ins.velNED)
             legend += ['ins']
-            if gps1Pos:
-                pt.plot3Axes(f, gps1Pos.time, gps1Pos.nedDot, 'NED Dot', 'm/s', options=refColor)
-                legend += ['gps1Pos']
+            if gnss1Pos:
+                pt.plot3Axes(f, gnss1Pos.time, gnss1Pos.nedDot, 'NED Dot', 'm/s', options=refColor)
+                legend += ['gnss1Pos']
             plt.legend(legend)
 
     if peCheck('staticBiasAttEst'):
@@ -1136,10 +1136,10 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         if baro:
             pt.subplotSingle(ax, baro.time, baro.v['mslBar'], options='g')
             legend += ['Baro MSL']
-        if gps1Pos:
-            pt.subplotSingle(ax, gps1Pos.time - gps1Pos.time[0], gps1Pos.v['lla'][:,2], options=refColor)
+        if gnss1Pos:
+            pt.subplotSingle(ax, gnss1Pos.time - gnss1Pos.time[0], gnss1Pos.v['lla'][:,2], options=refColor)
             legend += ['GPS ellipsoid']
-            pt.subplotSingle(ax, gps1Pos.time - gps1Pos.time[0], gps1Pos.v['hMSL'], options='m')
+            pt.subplotSingle(ax, gnss1Pos.time - gnss1Pos.time[0], gnss1Pos.v['hMSL'], options='m')
             legend += ['GPS geoid/MSL']
         ax.legend(legend)
 
@@ -1334,7 +1334,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
             pt.subplotSingle(ax, rIns.v['time'], rIns.v['lla'][:,2], options=rInsColor)
             legend += ['Truth']
         if pe['sensorBar'] == 2:
-            pt.subplotSingle(ax, gps1Pos.time, gps1Pos.v['lla'][:,2], options=refColor)
+            pt.subplotSingle(ax, gnss1Pos.time, gnss1Pos.v['lla'][:,2], options=refColor)
             legend += ['GPS']
         ax.legend(legend)
 
@@ -1447,12 +1447,12 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         # GPS Statistics
     if peCheck('gpsStats'):
         f += 1;    legend = []
-        if 'gps1Pos' not in log.data.keys():
+        if 'gnss1Pos' not in log.data.keys():
             print("unable to print gpsStats, because we are missing data")
         else:
             fig, ax = pt.subplots(f,3, 'GPS Stats', sharex=True)
 
-            gpsPos = log.data['gps1Pos']
+            gpsPos = log.data['gnss1Pos']
             time = getTimeFromGpsTowMs(gpsPos['timeOfWeekMs'])
 
             pt.subplotSingle(ax[0], time, gpsPos['status'] & 0xFF, 'Satellites Used in Solution', '')
@@ -1462,9 +1462,9 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
             legend += ['Hor']
             pt.subplotSingle(ax[1], time, gpsPos['vAcc'], options='b')
             legend += ['Ver']
-            if 'gps1RtkPos' in log.data.keys():
-                rtktime = getTimeFromGpsTowMs(log.data['gps1RtkPos']['timeOfWeekMs'])
-                pt.subplotSingle(ax[1], rtktime, log.data['gps1RtkPos']['vAcc'], options=rtkColor)
+            if 'gnss1RtkPos' in log.data.keys():
+                rtktime = getTimeFromGpsTowMs(log.data['gnss1RtkPos']['timeOfWeekMs'])
+                pt.subplotSingle(ax[1], rtktime, log.data['gnss1RtkPos']['vAcc'], options=rtkColor)
                 legend += ['rtkHor']
             ax[1].legend(legend)
 
@@ -1498,7 +1498,7 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
         # RTK-GPS Statistics
     if peCheck('rtkStats'):
         f += 1;    legend = [str(ser) for ser in serialNumbers]
-        if 'gps1Pos' not in log.data or 'gps1RtkPosRel' not in log.data:
+        if 'gnss1Pos' not in log.data or 'gnss1RtkPosRel' not in log.data:
             print("Unable to plot rtkStats - data missing")
         else:
             n_plots = 5
@@ -1510,31 +1510,31 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
             #     n_plots += 1
             fig, ax = pt.subplots(f,n_plots, 'RTK Stats', sharex=True)
 
-            time = getTimeFromGpsTowMs(log.data['gps1Pos']['timeOfWeekMs'])
-            compassing = log.data['gps1Pos']['status'][10] & 0x00400000
+            time = getTimeFromGpsTowMs(log.data['gnss1Pos']['timeOfWeekMs'])
+            compassing = log.data['gnss1Pos']['status'][10] & 0x00400000
             if not compassing:
-                fixType = log.data['gps1Pos']['status'] >> 8 & 0xFF
+                fixType = log.data['gnss1Pos']['status'] >> 8 & 0xFF
                 pt.subplotSingle(ax[0], time, fixType, 'GPS Fix Type: 2=2D, 3=3D, 10=Single, 11=Float, 12=Fix', '')
                 ax[0].legend(legend)
 
-            time = getTimeFromGpsTowMs(log.data['gps1RtkPosRel']['timeOfWeekMs'])
+            time = getTimeFromGpsTowMs(log.data['gnss1RtkPosRel']['timeOfWeekMs'])
 
             if compassing:
-                fixType = log.data['gps1RtkPosRel']['arRatio'].copy()
+                fixType = log.data['gnss1RtkPosRel']['arRatio'].copy()
                 iStatus
                 pt.subplotSingle(ax[0], time, fixType, 'GPS Fix Type: 2=2D, 3=3D, 10=Single, 11=Float, 12=Fix', '')
 
-            if 'gps1RtkPosRel' in log.data.keys():
-                disttobase = log.data['gps1RtkPosRel']['distanceToBase']
+            if 'gnss1RtkPosRel' in log.data.keys():
+                disttobase = log.data['gnss1RtkPosRel']['distanceToBase']
                 disttobase[disttobase > 100000] = np.nan
-                pt.subplotSingle(ax[1], time, log.data['gps1RtkPosRel']['differentialAge'], 'RTK: Age of Differential', 's')
-                pt.subplotSingle(ax[2], time, log.data['gps1RtkPosRel']['arRatio'], 'RTK: AR Ratio', 'num')
+                pt.subplotSingle(ax[1], time, log.data['gnss1RtkPosRel']['differentialAge'], 'RTK: Age of Differential', 's')
+                pt.subplotSingle(ax[2], time, log.data['gnss1RtkPosRel']['arRatio'], 'RTK: AR Ratio', 'num')
                 pt.subplotSingle(ax[3], time, disttobase, 'Distance to Base', 'm')
 
             n_plot = 4
-            if 'gps1RtkPosMisc' in log.data.keys():
-                rtkMiscTime = getTimeFromGpsTowMs(log.data['gps1RtkPosMisc']['timeOfWeekMs'])
-                pt.subplotSingle(ax[n_plot], rtkMiscTime, log.data['gps1RtkPosMisc']['cycleSlipCount'], 'RTK: Slip Counter', ' ' )
+            if 'gnss1RtkPosMisc' in log.data.keys():
+                rtkMiscTime = getTimeFromGpsTowMs(log.data['gnss1RtkPosMisc']['timeOfWeekMs'])
+                pt.subplotSingle(ax[n_plot], rtkMiscTime, log.data['gnss1RtkPosMisc']['cycleSlipCount'], 'RTK: Slip Counter', ' ' )
                 n_plot += 1
 
 
@@ -1772,9 +1772,9 @@ def IsLoggerPlot(pe, log, tru=None, startFigure=None, referencePlot=False, saveF
             # pt.subplotSetYspan(ax[1], yspan);
             print("IMU dt (min, max, mean):", np.min(dtDImu), np.max(dtDImu), np.mean(dtDImu))
 
-        if gps1Pos:
-            dtGps = gps1Pos.time[1:] - gps1Pos.time[0:-1]
-            timeGps = gps1Pos.time[1:]
+        if gnss1Pos:
+            dtGps = gnss1Pos.time[1:] - gnss1Pos.time[0:-1]
+            timeGps = gnss1Pos.time[1:]
             pt.subplotSingle(ax[2], timeGps, dtGps, 'GPS dt', 's')
             # pt.subplotSetYspan(ax[2], yspan);
             print("GPS dt (min, max, mean):", np.min(dtGps), np.max(dtGps), np.mean(dtGps))
