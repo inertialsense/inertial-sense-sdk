@@ -2333,7 +2333,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_DEBUG_ARRAY",                  // 39
     "DID_SENSORS_MCAL",                 // 40
     "DID_GNSS1_TIMEPULSE",               // 41
-    "DID_UNUSED_42",                    // 42
+    "DID_CAL_SC",                       // 42
     "DID_UNUSED_43",                    // 43
     "DID_UNUSED_44",                    // 44
     "DID_GNSS1_SIG",                     // 45
@@ -2365,7 +2365,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_WHEEL_ENCODER",                // 71
     "DID_DIAGNOSTIC_MESSAGE",           // 72
     "DID_SURVEY_IN",                    // 73
-    "DID_CAL_SC",                  // 74
+    "DID_UNUSED_74",                  // 74
     "DID_PORT_MONITOR",                 // 75
     "DID_RTK_STATE",                    // 76
     "DID_RTK_PHASE_RESIDUAL",           // 77
