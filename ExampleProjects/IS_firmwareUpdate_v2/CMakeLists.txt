@@ -8,6 +8,7 @@ include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 # Include InertialSenseSDK header files
 include_directories(
     ${IS_SDK_DIR}/src
+    ${IS_SDK_DIR}/src/tl-expected
     ${IS_SDK_DIR}/src/libusb/libusb
 )
 
