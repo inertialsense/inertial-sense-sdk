@@ -445,11 +445,20 @@ void ISLogReader::buildIndexFromScan() {
             ptype == _PTYPE_INERTIAL_SENSE_CMD) {
             // ISB packet — record into the index.
             const auto& dataHdr = comm.rxPkt.dataHdr;
-            const uint64_t tsSec = static_cast<uint64_t>(
-                cISDataMappings::TimestampOrCurrentTime(&dataHdr,
-                                                        comm.rxPkt.data.ptr));
-            // TimestampOrCurrentTime returns seconds (double); convert
-            // to ms to match the v2 .idx units convention.
+            // D-112 / SN-7999 follow-up: use Timestamp(), NOT
+            // TimestampOrCurrentTime(). The legacy "OrCurrentTime"
+            // fallback returns the *host wall-clock* (1.7e9 sec
+            // since Unix epoch as of 2026) when a record has no
+            // internal timestamp. That value gets baked into the
+            // .idx and then mixed with valid GPS-ToW values from
+            // sibling records, producing chart fold-back rendering
+            // and broken `spanStart()`/`spanEnd()` extents.
+            // `Timestamp()` returns 0 for records without an
+            // internal time field — a clean sentinel downstream
+            // consumers (RawSeriesBuilder, ISDeviceLog::spanStart)
+            // can skip cleanly.
+            const double tsSec =
+                cISDataMappings::Timestamp(&dataHdr, comm.rxPkt.data.ptr);
             const uint64_t tsMs = static_cast<uint64_t>(tsSec * 1000.0);
 
             idx::is_log_idx_record_v2_t rec{};
