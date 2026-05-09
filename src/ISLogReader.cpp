@@ -333,16 +333,50 @@ ISExpected<ISLogReader>
                                     idx::IS_LOG_IDX_RECORD_V2_SIZE);
                                 recs.push_back(idx::parseRecord(recBuf));
                             }
-                            r.header_         = *hdr;
-                            r.hadOnDiskIndex_ = true;
-                            r.buildIndexFromIdx(recs);
-                            // Trusted index → assume the .raw is
-                            // intact end-to-end. A future story can
-                            // optionally tail-verify, but here we
-                            // honor the FINALIZED flag.
-                            r.isTruncated_      = false;
-                            r.truncationOffset_ = r.rawSource_->size();
-                            rebuildReason = RebuildReason::None;
+
+                            // D-112 / SN-7999 follow-up: poison sweep.
+                            // Pre-fix v2 .idx files baked the host's
+                            // wall-clock value (~1.7e12 ms in 2026)
+                            // into the timestamp field whenever a
+                            // record had no internal time, courtesy
+                            // of cISDataMappings::TimestampOrCurrentTime
+                            // in the old buildIndexFromScan. Those
+                            // values overwhelm any valid GPS-ToW
+                            // (max 604_800_000 ms) downstream
+                            // chart layers see, producing fold-back
+                            // rendering. Detect + rebuild.
+                            //
+                            // Threshold: 1_000_000_000_000 ms — far
+                            // above any plausible PayloadToW or
+                            // host-uptime, but well below 2031's
+                            // wall-clock floor. False positives
+                            // would require a log recorded with a
+                            // specifically-broken clock; the rebuild
+                            // path is idempotent so a false positive
+                            // costs only build time, not data.
+                            constexpr uint64_t kPoisonThresholdMs =
+                                1'000'000'000'000ULL;
+                            std::size_t poisonedCount = 0;
+                            for (const auto& rec : recs) {
+                                if (rec.timestamp > kPoisonThresholdMs) {
+                                    ++poisonedCount;
+                                    if (poisonedCount > 4) break;   // early-exit; rebuild anyway
+                                }
+                            }
+                            if (poisonedCount > 0) {
+                                rebuildReason = RebuildReason::Stale;
+                            } else {
+                                r.header_         = *hdr;
+                                r.hadOnDiskIndex_ = true;
+                                r.buildIndexFromIdx(recs);
+                                // Trusted index → assume the .raw is
+                                // intact end-to-end. A future story can
+                                // optionally tail-verify, but here we
+                                // honor the FINALIZED flag.
+                                r.isTruncated_      = false;
+                                r.truncationOffset_ = r.rawSource_->size();
+                                rebuildReason = RebuildReason::None;
+                            }
                         }
                     }
                 }
