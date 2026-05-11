@@ -372,7 +372,7 @@ public:
     /**
      * @returns true if reset() was called recently, and we are waiting for the device to return.
      */
-    bool isResetPending() { return current_timeMs() < nextResetTime; }
+    bool isResetPending() { return (current_timeMs() - lastResetTime) < resetRequestThreshold; }
 
     /**
      * Fetches (if not previously fetched), the devices manufacturing info and populates it into the passed reference.
@@ -660,7 +660,7 @@ public:
 
     uint32_t                    lastResetRequest = 0;                //!< system time when the last reset requests was sent
     uint32_t                    resetRequestThreshold = 5000;        //!< Don't allow to send reset requests more frequently than this...
-    uint32_t                    nextResetTime = 0;                   //!< used to throttle reset requests
+    uint32_t                    lastResetTime = 0;                   //!< used to throttle reset requests
 
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)());
     bool fwUpdateInProgress();

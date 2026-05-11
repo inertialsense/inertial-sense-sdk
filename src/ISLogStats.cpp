@@ -309,6 +309,8 @@ void cLogStats::CacheDiagnosticData(uint32_t did, const uint8_t* data, uint32_t 
         cache.data.resize(fullSize, 0);
 
     // Merge partial update at the correct offset
+    if (offset >= fullSize)
+        return;
     uint32_t copySize = _MIN(size, fullSize - offset);
     memcpy(cache.data.data() + offset, data, copySize);
 
@@ -430,17 +432,17 @@ string cLogStats::FormatFlashConfigDiffSection(uint32_t did, const char* label)
             continue;
 
         uint32_t offset = info.offset;
-        uint32_t fieldSize = info.size;
+        uint32_t elemSize = (info.arraySize > 0) ? info.elementSize : info.size;
 
         if (info.arraySize > 0)
         {
             for (int i = 0; i < (int)info.arraySize; i++)
             {
-                uint32_t elemOffset = offset + i * fieldSize;
-                if (elemOffset + fieldSize > cache.data.size() || elemOffset + fieldSize > defaultBuf.size())
+                uint32_t elemOffset = offset + i * elemSize;
+                if (elemOffset + elemSize > cache.data.size() || elemOffset + elemSize > defaultBuf.size())
                     continue;
 
-                if (memcmp(cache.data.data() + elemOffset, defaultBuf.data() + elemOffset, fieldSize) != 0)
+                if (memcmp(cache.data.data() + elemOffset, defaultBuf.data() + elemOffset, elemSize) != 0)
                 {
                     if (cISDataMappings::DataToString(info, nullptr, cache.data.data(), stringBuffer, i))
                     {
@@ -452,10 +454,10 @@ string cLogStats::FormatFlashConfigDiffSection(uint32_t did, const char* label)
         }
         else
         {
-            if (offset + fieldSize > cache.data.size() || offset + fieldSize > defaultBuf.size())
+            if (offset + elemSize > cache.data.size() || offset + elemSize > defaultBuf.size())
                 continue;
 
-            if (memcmp(cache.data.data() + offset, defaultBuf.data() + offset, fieldSize) != 0)
+            if (memcmp(cache.data.data() + offset, defaultBuf.data() + offset, elemSize) != 0)
             {
                 if (cISDataMappings::DataToString(info, nullptr, cache.data.data(), stringBuffer))
                 {
