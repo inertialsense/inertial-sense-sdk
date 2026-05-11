@@ -334,30 +334,46 @@ ISExpected<ISLogReader>
                                 recs.push_back(idx::parseRecord(recBuf));
                             }
 
-                            // D-112 / SN-7999 follow-up: poison sweep.
-                            // Pre-fix v2 .idx files baked the host's
-                            // wall-clock value (~1.7e12 ms in 2026)
-                            // into the timestamp field whenever a
-                            // record had no internal time, courtesy
-                            // of cISDataMappings::TimestampOrCurrentTime
-                            // in the old buildIndexFromScan. Those
-                            // values overwhelm any valid GPS-ToW
-                            // (max 604_800_000 ms) downstream
-                            // chart layers see, producing fold-back
-                            // rendering. Detect + rebuild.
+                            // Poison sweep: pre-fix v2 .idx files baked
+                            // the host's wall-clock value (~1.7e12 ms
+                            // in 2026) into the timestamp field
+                            // whenever a record had no internal time,
+                            // courtesy of the old
+                            // cISDataMappings::TimestampOrCurrentTime
+                            // call in buildIndexFromScan. Those values
+                            // overwhelm valid GPS-ToW (max
+                            // 604_800_000 ms) downstream consumers
+                            // see, producing fold-back rendering.
+                            // Detect + rebuild.
                             //
                             // Threshold: 1_000_000_000_000 ms — far
                             // above any plausible PayloadToW or
                             // host-uptime, but well below 2031's
-                            // wall-clock floor. False positives
-                            // would require a log recorded with a
-                            // specifically-broken clock; the rebuild
-                            // path is idempotent so a false positive
-                            // costs only build time, not data.
+                            // wall-clock floor.
+                            //
+                            // SN-8004: DID_GPS*_RAW records legitimately
+                            // carry Unix-epoch-seconds timestamps via
+                            // gtime_t (cISDataMappings::Timestamp
+                            // returns `obs.time.sec + obs.time.time`
+                            // for those DIDs — that's seconds since
+                            // 1970, ~1.7e9 in 2026, which becomes
+                            // ~1.7e12 ms after the *1000 conversion).
+                            // Exclude them from the sweep — otherwise
+                            // every RTK log ping-pongs between rebuild
+                            // and re-flag-as-stale on each load.
+                            //
+                            // @note D-112 / SN-7999 (introduced) +
+                            //       SN-8004 (GPS_RAW exclusion).
+                            auto isGpsRawDid = [](uint32_t did) noexcept {
+                                return did == DID_GPS1_RAW
+                                    || did == DID_GPS2_RAW
+                                    || did == DID_GPS_BASE_RAW;
+                            };
                             constexpr uint64_t kPoisonThresholdMs =
                                 1'000'000'000'000ULL;
                             std::size_t poisonedCount = 0;
                             for (const auto& rec : recs) {
+                                if (isGpsRawDid(rec.did)) continue;
                                 if (rec.timestamp > kPoisonThresholdMs) {
                                     ++poisonedCount;
                                     if (poisonedCount > 4) break;   // early-exit; rebuild anyway
