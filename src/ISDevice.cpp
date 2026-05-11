@@ -1436,7 +1436,7 @@ int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
 bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected() || (nextResetTime && (nextResetTime - current_timeMs() > 0)))
+    if (!isConnected() || isResetPending())
         return false;
 
     log_info(IS_LOG_ISDEVICE, "[%s] Requesting Software Reset", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
@@ -1446,7 +1446,7 @@ bool ISDevice::softwareReset() {
         SLEEP_MS(5)
     }
     disconnect();
-    nextResetTime = current_timeMs() + resetRequestThreshold;
+    lastResetTime = current_timeMs();
     return true;
 }
 
