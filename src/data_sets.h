@@ -5500,6 +5500,10 @@ enum eSysFaultStatus
     SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               = 0x00000200,
     SYS_FAULT_STATUS_SENSOR_CALIBRATION             = 0x00000400,
     SYS_FAULT_STATUS_HARDWARE_DETECTION             = 0x00000800,
+    SYS_FAULT_STATUS_FLASH_ECCD_NVM                 = 0x00001000,    // Uncorrectable flash ECC in NVM region; page erased on boot recovery
+    SYS_FAULT_STATUS_FLASH_ECCD_APP_CODE            = 0x00002000,    // Uncorrectable flash ECC in app code region; informational (PR2 will stay-in-ISbl)
+    SYS_FAULT_STATUS_FLASH_ECCD_BL_CODE             = 0x00004000,    // Uncorrectable flash ECC in IS-bootloader code region (IMX-5 only); informational (PR2 will jump to ROM DFU)
+    SYS_FAULT_STATUS_FLASH_ECCC                     = 0x00008000,    // Correctable flash ECC (single-bit, hardware-corrected); informational
     SYS_FAULT_STATUS_GENERAL_ERROR_MASK             = 0x00FFFFF0,
 
 
