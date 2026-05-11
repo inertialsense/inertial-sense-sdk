@@ -25,6 +25,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <system_error>
 
@@ -43,6 +44,44 @@ namespace inertial_sense {
 namespace fs = std::filesystem;
 
 const std::vector<std::size_t> ISLogReader::kEmptyIndices_ = {};
+
+namespace {
+
+/**
+ * @brief Whether a sibling segment (next sequence number) exists alongside this .raw.
+ *
+ * The cISLogger convention is `<prefix>_NNNN.raw` where NNNN is a zero-padded sequence counter (typically 4 digits but
+ * the width is taken from whatever is on disk). This helper detects whether the next-sequence file exists in the same
+ * directory. Used to discriminate normal mid-rotation truncation (a sibling exists; the trailing partial packet
+ * continues into the successor segment) from a genuinely-truncated terminal segment (no successor; logger crashed,
+ * disk full, file copied mid-write, etc.).
+ *
+ * @param rawPath Path to a `.raw` segment file.
+ * @return `true` if a sibling at `<prefix>_(NNNN+1).raw` exists in the same directory; `false` otherwise (no trailing
+ *         segment number, parse failure, or file simply not present).
+ * @note SN-8005.
+ */
+bool hasSiblingSuccessor(const fs::path& rawPath) noexcept {
+    std::error_code ec;
+    const std::string stem = rawPath.stem().string();
+    const auto und = stem.find_last_of('_');
+    if (und == std::string::npos) return false;
+    const std::string seqStr = stem.substr(und + 1);
+    if (seqStr.empty()) return false;
+    if (seqStr.find_first_not_of("0123456789") != std::string::npos) return false;
+
+    int seq = 0;
+    try { seq = std::stoi(seqStr); } catch (...) { return false; }
+
+    // Preserve the original zero-padding width — `_0001` -> `_0002`, not `_2`.
+    std::ostringstream nextSeq;
+    nextSeq << std::setw(static_cast<int>(seqStr.size())) << std::setfill('0') << (seq + 1);
+    const fs::path sibling =
+        rawPath.parent_path() / (stem.substr(0, und + 1) + nextSeq.str() + rawPath.extension().string());
+    return fs::exists(sibling, ec);
+}
+
+} // namespace
 
 // ============================================================
 // ISFileSource — mmap with buffered fallback.
@@ -465,12 +504,29 @@ void ISLogReader::buildIndexFromScan() {
 
     // After the scan, any bytes the parser consumed-but-didn't-emit since lastEmitEnd are an incomplete trailing packet
     // — the truncation signal.
+    //
+    // SN-8005: discriminate normal mid-rotation truncation (segment N ends mid-packet, segment N+1 begins with the
+    // continuation) from genuine truncation (last segment cut by logger crash / disk full). Sibling-exists path emits
+    // log_info because the data is intact in the next segment; no-sibling path keeps log_warn because the tail loss
+    // is real.
     if (lastEmitEnd < total) {
         isTruncated_      = true;
         truncationOffset_ = static_cast<uint64_t>(lastEmitEnd);
-        warnings_.push_back("truncation: stopped at offset " + std::to_string(lastEmitEnd) + " (file size " + std::to_string(total) + ")");
-        log_warn(IS_LOG_ISLOG, "%s: truncated, stopped at offset %zu (file size %zu)",
-                 rawPath_.filename().c_str(), static_cast<std::size_t>(lastEmitEnd), static_cast<std::size_t>(total));
+        const std::size_t trailingBytes = total - lastEmitEnd;
+        if (hasSiblingSuccessor(rawPath_)) {
+            warnings_.push_back("trailing partial packet at end of segment (" + std::to_string(trailingBytes)
+                                + " bytes); continues in next segment");
+            log_info(IS_LOG_ISLOG,
+                     "%s: trailing partial packet (%zu bytes) at offset %zu (file size %zu); data continues in successor segment",
+                     rawPath_.filename().c_str(), trailingBytes,
+                     static_cast<std::size_t>(lastEmitEnd), static_cast<std::size_t>(total));
+        } else {
+            warnings_.push_back("truncation: stopped at offset " + std::to_string(lastEmitEnd)
+                                + " (file size " + std::to_string(total) + ")");
+            log_warn(IS_LOG_ISLOG, "%s: truncated, stopped at offset %zu (file size %zu)",
+                     rawPath_.filename().c_str(), static_cast<std::size_t>(lastEmitEnd),
+                     static_cast<std::size_t>(total));
+        }
     } else {
         truncationOffset_ = total;
     }

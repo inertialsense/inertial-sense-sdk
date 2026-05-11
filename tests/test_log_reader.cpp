@@ -36,9 +36,11 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iterator>
 #include <list>
 #include <set>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -438,6 +440,84 @@ TEST_F(LogReaderTest, GpsRawTimestampDoesNotTriggerPoisonRebuild) {
     EXPECT_TRUE(reader->hadOnDiskIndex())
         << "Poison sweep falsely flagged the .idx as stale despite the >1e12 timestamp belonging to a GPS_RAW record "
            "(Unix-epoch-ms via gtime_t is the documented behavior of cISDataMappings::Timestamp for those DIDs).";
+}
+
+// ============================================================
+// SN-8005 — sibling-aware truncation: mid-rotation tails (next-segment file
+// exists alongside) get demoted to log_info because the data is intact in
+// the successor segment. Terminal-segment truncation (no successor) stays
+// log_warn because the tail loss is real.
+// ============================================================
+
+TEST_F(LogReaderTest, TruncationWithSiblingEmitsTrailingPartialMessage) {
+    // Append 64 bytes of garbage to the .raw so the parser detects an incomplete trailing packet.
+    {
+        std::ofstream out(f_.rawFile, std::ios::binary | std::ios::app);
+        std::vector<char> garbage(64, '\xAA');
+        out.write(garbage.data(), garbage.size());
+    }
+    // Wipe the persisted .idx so openSegment hits the rebuild path that emits the truncation log line.
+    std::error_code ec;
+    fs::remove(f_.idxFile, ec);
+
+    // Create a sibling _0002.raw next to the _0001.raw the fixture produced. We don't need it to be a valid log — we
+    // just need its filesystem presence for the sibling check.
+    const std::string stem = f_.rawFile.stem().string();
+    const auto und = stem.find_last_of('_');
+    ASSERT_NE(und, std::string::npos);
+    const std::string seqStr = stem.substr(und + 1);
+    int seq = std::stoi(seqStr);
+    std::ostringstream nextSeq;
+    nextSeq << std::setw(static_cast<int>(seqStr.size())) << std::setfill('0') << (seq + 1);
+    const fs::path siblingRaw =
+        f_.rawFile.parent_path() / (stem.substr(0, und + 1) + nextSeq.str() + f_.rawFile.extension().string());
+    {
+        std::ofstream siblingOut(siblingRaw, std::ios::binary | std::ios::trunc);
+        siblingOut << "placeholder";   // any content; only existence matters
+    }
+
+    auto r = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(r.has_value()) << r.error().message;
+    EXPECT_TRUE(r->isTruncated());
+
+    bool sawTrailingPartial = false;
+    bool sawTruncatedStopped = false;
+    for (const auto& w : r->warnings()) {
+        if (w.find("trailing partial packet") != std::string::npos) sawTrailingPartial = true;
+        if (w.find("truncation: stopped") != std::string::npos)     sawTruncatedStopped = true;
+    }
+    EXPECT_TRUE(sawTrailingPartial)
+        << "Expected 'trailing partial packet' (mid-rotation, info-level) warning when a sibling segment exists.";
+    EXPECT_FALSE(sawTruncatedStopped)
+        << "Did NOT expect the warn-level 'truncation: stopped' message when a sibling segment exists.";
+
+    fs::remove(siblingRaw, ec);
+}
+
+TEST_F(LogReaderTest, TruncationWithoutSiblingEmitsWarnMessage) {
+    // Same setup as above but without the sibling — this segment is terminal; truncation here means real tail loss.
+    {
+        std::ofstream out(f_.rawFile, std::ios::binary | std::ios::app);
+        std::vector<char> garbage(64, '\xAA');
+        out.write(garbage.data(), garbage.size());
+    }
+    std::error_code ec;
+    fs::remove(f_.idxFile, ec);
+
+    auto r = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(r.has_value()) << r.error().message;
+    EXPECT_TRUE(r->isTruncated());
+
+    bool sawTrailingPartial = false;
+    bool sawTruncatedStopped = false;
+    for (const auto& w : r->warnings()) {
+        if (w.find("trailing partial packet") != std::string::npos) sawTrailingPartial = true;
+        if (w.find("truncation: stopped") != std::string::npos)     sawTruncatedStopped = true;
+    }
+    EXPECT_TRUE(sawTruncatedStopped)
+        << "Expected the warn-level 'truncation: stopped' message for a terminal segment with no successor.";
+    EXPECT_FALSE(sawTrailingPartial)
+        << "Did NOT expect the info-level 'trailing partial packet' message when no sibling segment exists.";
 }
 
 // ============================================================
