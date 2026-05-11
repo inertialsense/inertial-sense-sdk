@@ -207,22 +207,27 @@ ISExpected<std::unique_ptr<ISFileSource>> ISFileSource::open(const fs::path& pat
         }
         return fail(ISErrorCode::Io, "ISFileSource::open: CreateFileW failed: " + path.string());
     }
-    out->fileHandle_ = h;
 
     HANDLE mapping = CreateFileMappingW(h, nullptr, PAGE_READONLY, 0, 0, nullptr);
     if (mapping) {
         void* base = MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
         if (base) {
-            out->mappingHandle_ = mapping;
             out->mmapBase_      = base;
             out->mmapLen_       = out->size_;
             out->mmapped_       = true;
             out->data_          = static_cast<const uint8_t*>(base);
+            // SN-7996 Phase B: the view persists until UnmapViewOfFile regardless of the mapping + file
+            // handles' lifetimes (per Win32 docs). Close both immediately so a 100-segment log doesn't hold
+            // 200 handles open in parallel. fileHandle_ / mappingHandle_ stay null; releaseMapping no-ops
+            // the CloseHandle steps.
+            CloseHandle(mapping);
+            CloseHandle(h);
             return out;
         }
         CloseHandle(mapping);
     }
-    // mmap failed — fall through to buffered read.
+    // mmap failed — keep the file handle for the buffered-read fallback, then close after read completes.
+    out->fileHandle_ = h;
 #else
     int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
     if (fd < 0) {
@@ -231,7 +236,6 @@ ISExpected<std::unique_ptr<ISFileSource>> ISFileSource::open(const fs::path& pat
         }
         return fail(ISErrorCode::Io, "ISFileSource::open: open() failed: " + path.string() + " (" + std::strerror(errno) + ")");
     }
-    out->fd_ = fd;
 
     void* base = ::mmap(nullptr, out->size_, PROT_READ, MAP_PRIVATE, fd, 0);
     if (base != MAP_FAILED) {
@@ -239,14 +243,33 @@ ISExpected<std::unique_ptr<ISFileSource>> ISFileSource::open(const fs::path& pat
         out->mmapLen_  = out->size_;
         out->mmapped_  = true;
         out->data_     = static_cast<const uint8_t*>(base);
+        // SN-7996 Phase B: POSIX explicitly permits closing the fd immediately after mmap (man mmap: "After
+        // the mmap() call has returned, the file descriptor, fd, can be closed immediately without
+        // invalidating the mapping."). Close it now so a 100-segment log doesn't hold 200 FDs open in parallel
+        // and trip the default 1024 ulimit. fd_ stays -1; releaseMapping no-ops the ::close step.
+        ::close(fd);
         return out;
     }
-    // mmap failed (e.g. tmpfs-on-some-kernels, network FS) — fall through.
+    // mmap failed (e.g. tmpfs-on-some-kernels, network FS) — keep the FD only long enough for the buffered
+    // fallback below.
+    out->fd_ = fd;
 #endif
 
     // Buffered fallback: read the whole file into a heap-allocated buffer. v1 segments are < 16 MB by D-01's writer cap
     // so this is fine; if 32-bit machines hit large-segment cases later, that's a future story (per D-02 spec note on
-    // 2 GB).
+    // 2 GB). The OS-level FD/handle from the failed mmap attempt is closed before the std::ifstream open so we don't
+    // briefly hold two FDs against the same file (SN-7996 Phase B).
+#if defined(_WIN32)
+    if (out->fileHandle_) {
+        CloseHandle(static_cast<HANDLE>(out->fileHandle_));
+        out->fileHandle_ = nullptr;
+    }
+#else
+    if (out->fd_ >= 0) {
+        ::close(out->fd_);
+        out->fd_ = -1;
+    }
+#endif
     auto buf = std::unique_ptr<uint8_t[]>(new uint8_t[out->size_]);
     std::ifstream in(path, std::ios::binary);
     if (!in) {
