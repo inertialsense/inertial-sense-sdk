@@ -2,29 +2,23 @@
  * @file test_log_reader.cpp
  * @brief D-02 / SN-7893 acceptance tests for the new ISLogReader.
  *
- * Strategy: each test fixture generates a fresh ~1 MB log via the
- * existing test_data_utils helpers (`GenerateRawLogData` + `cISLogger`)
- * — the same shape D-01 used in its multi-segment integration test.
- * That gives us a single .raw + .idx pair we can hand to ISLogReader
- * and assert against. The temp dir is wiped on test teardown so
+ * Strategy: each test fixture generates a fresh ~1 MB log via the existing test_data_utils helpers
+ * (`GenerateRawLogData` + `cISLogger`) — the same shape D-01 used in its multi-segment integration test. That gives us
+ * a single .raw + .idx pair we can hand to ISLogReader and assert against. The temp dir is wiped on test teardown so
  * runs don't leak state.
  *
- * Why generate per-test rather than commit a binary fixture: the
- * synthetic generator depends on host time (GPS week, current ms),
- * so a committed binary would diverge from the generator's output
- * on every regeneration. Committing the *generator code* (this
- * file, plus tests/test_data_utils.cpp) gives us reproducibility
- * within a run; binary determinism across machines isn't needed for
- * the AC checks (record counts, DID lists, byte-aliasing, etc. all
- * derive from the in-test generation).
+ * Why generate per-test rather than commit a binary fixture: the synthetic generator depends on host time (GPS week,
+ * current ms), so a committed binary would diverge from the generator's output on every regeneration. Committing the
+ * *generator code* (this file, plus tests/test_data_utils.cpp) gives us reproducibility within a run; binary
+ * determinism across machines isn't needed for the AC checks (record counts, DID lists, byte-aliasing, etc. all derive
+ * from the in-test generation).
  */
 
 #include <gtest/gtest.h>
 
-// com_manager.h FIRST — the legacy ISFirmwareUpdater.h wraps it in
-// `extern "C" { ... }`, which is illegal for the C++-overload-bearing
-// com_manager.h. Including it first short-circuits the broken wrap
-// via the include guard. Same trick used in test_log_index.cpp.
+// com_manager.h FIRST — the legacy ISFirmwareUpdater.h wraps it in `extern "C" { ... }`, which is illegal for the
+// C++-overload-bearing com_manager.h. Including it first short-circuits the broken wrap via the include guard. Same
+// trick used in test_log_index.cpp.
 #include "com_manager.h"
 
 #include "DeviceLog.h"
@@ -68,16 +62,12 @@ struct FixtureLayout {
     std::size_t        rawBytes = 0;
 };
 
-// Generate a 1 MB log via GenerateRawLogData + cISLogger and report
-// the resulting .raw + .idx paths. Caller is responsible for
-// tearing down the directory and freeing `messages` entries.
+// Generate a 1 MB log via GenerateRawLogData + cISLogger and report the resulting .raw + .idx paths. Caller is
+// responsible for tearing down the directory and freeing `messages` entries.
 FixtureLayout generateFixture(const std::string& dirHint) {
     FixtureLayout f;
     char dirBuf[256];
-    std::snprintf(dirBuf, sizeof(dirBuf),
-                  "/tmp/test_log_reader_%s_%d_%ld",
-                  dirHint.c_str(),
-                  ::getpid(), static_cast<long>(::time(nullptr)));
+    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_log_reader_%s_%d_%ld", dirHint.c_str(), ::getpid(), static_cast<long>(::time(nullptr)));
     f.directory = dirBuf;
     ISFileManager::DeleteDirectory(f.directory.string());
 
@@ -99,20 +89,16 @@ FixtureLayout generateFixture(const std::string& dirHint) {
         logger.EnableLogging(true);
 
         for (auto* msg : f.messages) {
-            logger.LogData(devLogger, msg->size(),
-                           reinterpret_cast<const uint8_t*>(msg->data()));
+            logger.LogData(devLogger, msg->size(), reinterpret_cast<const uint8_t*>(msg->data()));
         }
         logger.CloseAllFiles();
     }
 
-    // Locate the segment files cISLogger emitted. We restrict to
-    // 1 MB so the writer should produce a single segment; tests
-    // that need multi-segment coverage live in test_log_index.cpp.
+    // Locate the segment files cISLogger emitted. We restrict to 1 MB so the writer should produce a single segment;
+    // tests that need multi-segment coverage live in test_log_index.cpp.
     std::vector<ISFileManager::file_info_t> rawFiles, idxFiles;
-    ISFileManager::GetAllFilesInDirectory(f.directory.string(), true,
-                                          "\\.raw$", rawFiles);
-    ISFileManager::GetAllFilesInDirectory(f.directory.string(), true,
-                                          "\\.idx$", idxFiles);
+    ISFileManager::GetAllFilesInDirectory(f.directory.string(), true, "\\.raw$", rawFiles);
+    ISFileManager::GetAllFilesInDirectory(f.directory.string(), true, "\\.idx$", idxFiles);
     if (rawFiles.empty() || idxFiles.empty()) return f;
 
     f.rawFile  = rawFiles.front().name;
@@ -134,8 +120,7 @@ void teardownFixture(FixtureLayout& f) {
 class LogReaderTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        f_ = generateFixture(::testing::UnitTest::GetInstance()
-                              ->current_test_info()->name());
+        f_ = generateFixture(::testing::UnitTest::GetInstance()->current_test_info()->name());
         ASSERT_FALSE(f_.messages.empty()) << "fixture generation produced no messages";
         ASSERT_FALSE(f_.rawFile.empty())  << "fixture generation produced no .raw";
         ASSERT_TRUE(fs::exists(f_.idxFile)) << "expected .idx alongside .raw";
@@ -191,9 +176,8 @@ TEST_F(LogReaderTest, HeaderAndCountsMatchFixture) {
     auto r = ISLogReader::openSegment(f_.rawFile);
     ASSERT_TRUE(r.has_value());
 
-    // Copy packed-struct fields into stack locals before comparing —
-    // is_log_idx_header_t is #pragma pack(1) so binding a reference to
-    // a misaligned u64 directly is UB even though x86 tolerates it.
+    // Copy packed-struct fields into stack locals before comparing — is_log_idx_header_t is #pragma pack(1) so binding
+    // a reference to a misaligned u64 directly is UB even though x86 tolerates it.
     const uint64_t total_records = r->header().total_records;
     const uint64_t segEnd        = r->segmentEndTimestamp();
     const uint64_t segStart      = r->segmentStartTimestamp();
@@ -205,8 +189,7 @@ TEST_F(LogReaderTest, HeaderAndCountsMatchFixture) {
     EXPECT_FALSE(dids.empty());
     EXPECT_TRUE(std::is_sorted(dids.begin(), dids.end()));
 
-    // The synthetic generator emits at least PIMU + INS + GPS + a
-    // handful of others — so at least 4 distinct DIDs.
+    // The synthetic generator emits at least PIMU + INS + GPS + a handful of others — so at least 4 distinct DIDs.
     EXPECT_GE(dids.size(), 4u);
 }
 
@@ -236,10 +219,9 @@ TEST_F(LogReaderTest, RecordsForKnownDidNonZero) {
     auto r = ISLogReader::openSegment(f_.rawFile);
     ASSERT_TRUE(r.has_value());
 
-    // Pick whichever DID the fixture happens to contain — the
-    // synthetic generator's DID mix isn't fixed by name (different
-    // protocol streams cover different DIDs), so test the lookup
-    // path against the DIDs that actually present in this fixture.
+    // Pick whichever DID the fixture happens to contain — the synthetic generator's DID mix isn't fixed by name
+    // (different protocol streams cover different DIDs), so test the lookup path against the DIDs that actually
+    // present in this fixture.
     auto dids = r->presentDids();
     ASSERT_FALSE(dids.empty());
     for (auto did : dids) {
@@ -254,9 +236,8 @@ TEST_F(LogReaderTest, RecordsForKnownDidNonZero) {
 // ============================================================
 
 TEST_F(LogReaderTest, AllRecordsRangeForCompiles) {
-    // Range-for syntax exercises C++17 forward-iterator concepts
-    // (begin/end/operator++/operator*). The DoD AC asks for that
-    // explicitly so C++17 callers can use the reader naturally.
+    // Range-for syntax exercises C++17 forward-iterator concepts (begin/end/operator++/operator*). The DoD AC asks for
+    // that explicitly so C++17 callers can use the reader naturally.
     auto r = ISLogReader::openSegment(f_.rawFile);
     ASSERT_TRUE(r.has_value());
 
@@ -273,12 +254,10 @@ TEST_F(LogReaderTest, BytesAliasMmapRegion) {
     ASSERT_TRUE(r.has_value());
     ASSERT_GT(r->recordCount(), 0u);
 
-    // Open the .raw separately to bracket the legitimate aliasing
-    // range. We can't poke the reader's source pointer directly
-    // (private), but ISFileSource::open + size gives us the same
-    // file's byte range, and the mmap'd region for the reader
-    // is a contiguous [base, base+size) pair. We assert that the
-    // record's bytes pointer lives somewhere in that range.
+    // Open the .raw separately to bracket the legitimate aliasing range. We can't poke the reader's source pointer
+    // directly (private), but ISFileSource::open + size gives us the same file's byte range, and the mmap'd region for
+    // the reader is a contiguous [base, base+size) pair. We assert that the record's bytes pointer lives somewhere in
+    // that range.
     auto src = ISFileSource::open(f_.rawFile);
     ASSERT_TRUE(src.has_value());
     const std::size_t fileSize = (*src)->size();
@@ -303,8 +282,7 @@ TEST_F(LogReaderTest, OwnedRecordSurvivesReaderClose) {
         ASSERT_GT(r->recordCount(), 0u);
         auto first = *r->allRecords().begin();
         owned = first.owned();
-        // Pointer of the view aliases mmap; pointer of the owned
-        // record is in heap space — must be different.
+        // Pointer of the view aliases mmap; pointer of the owned record is in heap space — must be different.
         EXPECT_NE(first.bytes().first, owned.bytes().first);
     } // r out of scope → mmap unmapped.
 
@@ -323,10 +301,8 @@ TEST_F(LogReaderTest, SeekPositionsAtOrAfterTarget) {
     ASSERT_TRUE(r.has_value());
     if (r->recordCount() < 4u) GTEST_SKIP();
 
-    // Pick a target timestamp that's halfway through the recorded
-    // span, then assert the iterator-yielded record's timestamp is
-    // >= target. We don't assume monotonicity, so we tolerate a
-    // linear-fallback positioning.
+    // Pick a target timestamp that's halfway through the recorded span, then assert the iterator-yielded record's
+    // timestamp is >= target. We don't assume monotonicity, so we tolerate a linear-fallback positioning.
     uint64_t lo = r->segmentStartTimestamp();
     uint64_t hi = r->segmentEndTimestamp();
     uint64_t target = lo + (hi - lo) / 2;
@@ -347,9 +323,7 @@ TEST_F(LogReaderTest, InTimeFiltersToInterval) {
     uint64_t mid_lo = lo + (hi - lo) / 4;
     uint64_t mid_hi = lo + 3 * (hi - lo) / 4;
 
-    auto rng = r->allRecords().in_time(
-        TimeStamp::fromPayloadToW(mid_lo, r->deviceId()),
-        TimeStamp::fromPayloadToW(mid_hi, r->deviceId()));
+    auto rng = r->allRecords().in_time(TimeStamp::fromPayloadToW(mid_lo, r->deviceId()), TimeStamp::fromPayloadToW(mid_hi, r->deviceId()));
 
     for (ISRecordView v : rng) {
         EXPECT_GE(v.timestamp().value, mid_lo);
@@ -403,20 +377,17 @@ TEST_F(LogReaderTest, MoveConstructTransfersOwnership) {
 TEST_F(LogReaderTest, DeviceIdIsDerivedFromFixture) {
     auto r = ISLogReader::openSegment(f_.rawFile);
     ASSERT_TRUE(r.has_value());
-    // Either DEV_INFO record carries the serial we passed in, or
-    // the filename-fallback path picks it up. Either way deviceId()
-    // is non-zero for this fixture.
+    // Either DEV_INFO record carries the serial we passed in, or the filename-fallback path picks it up. Either way
+    // deviceId() is non-zero for this fixture.
     EXPECT_NE(r->deviceId(), 0u);
 }
 
 // ---------------------------------------------------------------------------
-// hdwId derivation against a real cltool 120 s PPD capture (IMX-5.0,
-// SN519465). The synthetic test_data_utils fixture writes DEV_INFO records
-// with all-zero hardwareType/hardwareVer fields, so the synthetic path
-// can only verify that hdwId() returns 0 cleanly when the type byte is
-// zero — it can't prove the parse extracts the right bytes. This live
-// test does. GTEST_SKIPped when the fixture isn't on disk so CI is
-// silent rather than red. Override the path with IS_SDK_LIVE_FIXTURE_RAW.
+// hdwId derivation against a real cltool 120 s PPD capture (IMX-5.0, SN519465). The synthetic test_data_utils fixture
+// writes DEV_INFO records with all-zero hardwareType/hardwareVer fields, so the synthetic path can only verify that
+// hdwId() returns 0 cleanly when the type byte is zero — it can't prove the parse extracts the right bytes. This live
+// test does. GTEST_SKIPped when the fixture isn't on disk so CI is silent rather than red. Override the path with
+// IS_SDK_LIVE_FIXTURE_RAW.
 // ---------------------------------------------------------------------------
 TEST(LogReaderLiveFixture, HdwIdMatchesImx5_0FromCltoolCapture) {
     fs::path raw;
@@ -424,45 +395,35 @@ TEST(LogReaderLiveFixture, HdwIdMatchesImx5_0FromCltoolCapture) {
         raw = env;
     } else {
         raw = fs::path(std::getenv("HOME") ? std::getenv("HOME") : "/")
-            / "workspace/inertialsense/sample_logs/cltool_imx5_120s_ppd"
-              "/20260429_105836/LOG_SN519465_20260429_105836_0001.raw";
+            / "workspace/inertialsense/sample_logs/cltool_imx5_120s_ppd/20260429_105836/LOG_SN519465_20260429_105836_0001.raw";
     }
     if (!fs::exists(raw)) {
-        GTEST_SKIP() << "live fixture not present at " << raw
-                     << " (set IS_SDK_LIVE_FIXTURE_RAW to override)";
+        GTEST_SKIP() << "live fixture not present at " << raw << " (set IS_SDK_LIVE_FIXTURE_RAW to override)";
     }
 
     auto r = ISLogReader::openSegment(raw);
     ASSERT_TRUE(r.has_value()) << r.error().message;
     EXPECT_EQ(r->deviceId(), 519465u);
-    EXPECT_EQ(r->hdwId(),    IS_HARDWARE_IMX_5_0)
-        << "expected IMX-5.0 from this capture; got hdwId=0x"
-        << std::hex << r->hdwId();
+    EXPECT_EQ(r->hdwId(),    IS_HARDWARE_IMX_5_0) << "expected IMX-5.0 from this capture; got hdwId=0x" << std::hex << r->hdwId();
 }
 
 // ============================================================
-// SN-8004 — GPS_RAW DIDs carry Unix-epoch-ms via gtime_t
-// (cISDataMappings::Timestamp returns obs.time.sec + obs.time.time)
-// which legitimately exceeds the poison-sweep threshold (1e12 ms).
-// The sweep must skip those DIDs or every RTK log infinite-rebuilds
-// its .idx on every reload.
+// SN-8004 — GPS_RAW DIDs carry Unix-epoch-ms via gtime_t (cISDataMappings::Timestamp returns obs.time.sec +
+// obs.time.time) which legitimately exceeds the poison-sweep threshold (1e12 ms). The sweep must skip those DIDs or
+// every RTK log infinite-rebuilds its .idx on every reload.
 // ============================================================
 
 TEST_F(LogReaderTest, GpsRawTimestampDoesNotTriggerPoisonRebuild) {
     using namespace idx;
 
-    // Slurp the .idx generated by the fixture, hand-modify the first
-    // record to look like a GPS_RAW packet with a Unix-epoch-ms
-    // timestamp (~1.7e12), write back, re-open.
+    // Slurp the .idx generated by the fixture, hand-modify the first record to look like a GPS_RAW packet with a
+    // Unix-epoch-ms timestamp (~1.7e12), write back, re-open.
     std::ifstream in(f_.idxFile, std::ios::binary);
-    std::vector<char> bytes((std::istreambuf_iterator<char>(in)),
-                            std::istreambuf_iterator<char>());
+    std::vector<char> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     in.close();
-    ASSERT_GT(bytes.size(),
-              IS_LOG_IDX_HEADER_SIZE + IS_LOG_IDX_RECORD_V2_SIZE);
+    ASSERT_GT(bytes.size(), IS_LOG_IDX_HEADER_SIZE + IS_LOG_IDX_RECORD_V2_SIZE);
 
-    auto* recPtr = reinterpret_cast<uint8_t*>(
-        bytes.data() + IS_LOG_IDX_HEADER_SIZE);
+    auto* recPtr = reinterpret_cast<uint8_t*>(bytes.data() + IS_LOG_IDX_HEADER_SIZE);
     is_log_idx_record_v2_t r = parseRecord(recPtr);
     r.did       = DID_GPS1_RAW;
     r.timestamp = 1'700'000'000'000ULL;   // 2023-ish Unix-epoch-ms
@@ -475,10 +436,8 @@ TEST_F(LogReaderTest, GpsRawTimestampDoesNotTriggerPoisonRebuild) {
     auto reader = ISLogReader::openSegment(f_.rawFile);
     ASSERT_TRUE(reader.has_value()) << reader.error().message;
     EXPECT_TRUE(reader->hadOnDiskIndex())
-        << "Poison sweep falsely flagged the .idx as stale despite the "
-           ">1e12 timestamp belonging to a GPS_RAW record (Unix-epoch-ms "
-           "via gtime_t is the documented behavior of "
-           "cISDataMappings::Timestamp for those DIDs).";
+        << "Poison sweep falsely flagged the .idx as stale despite the >1e12 timestamp belonging to a GPS_RAW record "
+           "(Unix-epoch-ms via gtime_t is the documented behavior of cISDataMappings::Timestamp for those DIDs).";
 }
 
 // ============================================================
