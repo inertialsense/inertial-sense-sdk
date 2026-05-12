@@ -84,8 +84,8 @@ public:
 
     typedef enum {
         OFF = 0,
-        GPS1,
-        GPS2,
+        GNSS1,
+        GNSS2,
     } base_gps_source;
 
     bool enable = true;     // enabled until explicitly disabled
@@ -98,8 +98,8 @@ public:
     std::string type_;
     std::string protocol_;
 
-    bool compassing_enable_ = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
-    bool positioning_enable_ = false;    // Enable RTK precision positioning at GPS1
+    bool compassing_enable_ = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GNSS2
+    bool positioning_enable_ = false;    // Enable RTK precision positioning at GNSS1
 
     std::vector<const RtkBaseCorrectionProvider *> correction_outputs_;
 
