@@ -52,7 +52,7 @@ namespace {
 
 is_log_idx_header_t makeRoundTripHeader() {
     auto h = makeDefaultHeader(0x02010000u,
-                               TimestampUnits::GpsTowMs,
+                               TimestampUnits::GNSSTowMs,
                                HeaderTimeSource::PayloadToW);
     h.total_records       = 42;
     h.first_timestamp_ms  = 100ULL;
@@ -405,7 +405,7 @@ TEST(IdxIntegration, EndToEndViaDeviceLogApi) {
 
     p_data_hdr_t h1 = makeHdr(DID_DEV_INFO,    sizeof(dev_info_t));
     p_data_hdr_t h2 = makeHdr(DID_INS_1,       128);
-    p_data_hdr_t h3 = makeHdr(DID_GPS1_POS,    64);
+    p_data_hdr_t h3 = makeHdr(DID_GNSS1_POS,    64);
 
     log.addIndexRecord(&h1, fakeBuf);
     log.addIndexRecord(&h2, fakeBuf);
@@ -438,7 +438,7 @@ TEST(IdxIntegration, EndToEndViaDeviceLogApi) {
 
     is_log_idx_record_v2_t rec3{};
     ASSERT_EQ(readRecord(in, rec3), IsLogIndexResult::Ok);
-    EXPECT_EQ(rec3.did, static_cast<uint32_t>(DID_GPS1_POS));
+    EXPECT_EQ(rec3.did, static_cast<uint32_t>(DID_GNSS1_POS));
 
     std::remove((baseNoExt + ".idx").c_str());
 }
@@ -585,8 +585,8 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
     }
 
     // -- Sanity: at least one record carries a payload-ToW timestamp
-    // (HAS_TOW flag set). GenerateRawLogData produces DID_INS_2 / GPS
-    // messages with real GPS-ToW fields, which the writer's payload-ToW
+    // (HAS_TOW flag set). GenerateRawLogData produces DID_INS_2 / GNSS
+    // messages with real GNSS-ToW fields, which the writer's payload-ToW
     // path is supposed to capture.
     bool sawTowFlag = false;
     for (const auto& r : allIdxRecords) {
@@ -594,7 +594,7 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
     }
     EXPECT_TRUE(sawTowFlag)
         << "expected at least one indexed record to carry a payload-ToW "
-           "timestamp from a GPS/INS DID";
+           "timestamp from a GNSS/INS DID";
 
     // -- One-line summary of what the framework actually produced.
     std::printf("[idx-e2e] %zu source msgs -> %zu .raw seg(s), %zu .idx record(s), "

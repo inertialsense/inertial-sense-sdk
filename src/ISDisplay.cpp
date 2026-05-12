@@ -564,19 +564,19 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
             isTowMode = true;
             break;
 
-        case DID_GPS1_POS:
-        case DID_GPS1_RTK_POS:
+        case DID_GNSS1_POS:
+        case DID_GNSS1_RTK_POS:
             msgTimeMs = d.gpsPos.timeOfWeekMs;
             gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
             isTowMode = true;
             break;
 
-        case DID_GPS1_RTK_POS_REL:
-            msgTimeMs = d.gpsRtkRel.timeOfWeekMs;
+        case DID_GNSS1_RTK_POS_REL:
+            msgTimeMs = d.gnssRtkRel.timeOfWeekMs;
             isTowMode = true;
             break;
 
-        case DID_GPS1_RTK_POS_MISC:
+        case DID_GNSS1_RTK_POS_MISC:
             msgTimeMs = d.gpsPos.timeOfWeekMs;
             gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
             isTowMode = false;
@@ -590,7 +590,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
         case DID_IMU:
         case DID_IMUS:
         case DID_INL2_STATES:
-        case DID_GPS_BASE_RAW:
+        case DID_GNSS_BASE_RAW:
             if (isTowMode)
                 msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
             else
@@ -903,22 +903,22 @@ std::string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);             break;
         case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);           break;
         case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);              break;
-        case DID_GPS1_VERSION:      // FALL THROUGH
-        case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);          break;
-        case DID_GPS1_POS:          // FALL THROUGH
-        case DID_GPS2_POS:          // FALL THROUGH
-        case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);              break;
-        case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
-        case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
-        case DID_GPS1_RAW:          // FALL THROUGH
-        case DID_GPS2_RAW:          // FALL THROUGH
-        case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
-        case DID_GPS1_SAT:
-        case DID_GPS2_SAT:          str = DataToStringGpsSat(d.gpsSat, data->hdr);              break;
-        // case DID_GPS1_SIG:
-        // case DID_GPS2_SIG:          str = DataToStringGpsSig(d.gpsSig, data->hdr);              break;
+        case DID_GNSS1_VERSION:      // FALL THROUGH
+        case DID_GNSS2_VERSION:      str = DataToStringGpsVersion(d.gnssVer, data->hdr);          break;
+        case DID_GNSS1_POS:          // FALL THROUGH
+        case DID_GNSS2_POS:          // FALL THROUGH
+        case DID_GNSS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);              break;
+        case DID_GNSS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gnssRtkRel, data->hdr);           break;
+        case DID_GNSS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gnssRtkMisc, data->hdr);         break;
+        case DID_GNSS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gnssRtkRel, data->hdr);           break;
+        case DID_GNSS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gnssRtkMisc, data->hdr);         break;
+        case DID_GNSS1_RAW:          // FALL THROUGH
+        case DID_GNSS2_RAW:          // FALL THROUGH
+        case DID_GNSS_BASE_RAW:      str = DataToStringRawGPS(d.gnssRaw, data->hdr);              break;
+        case DID_GNSS1_SAT:
+        case DID_GNSS2_SAT:          str = DataToStringGpsSat(d.gpsSat, data->hdr);              break;
+        // case DID_GNSS1_SIG:
+        // case DID_GNSS2_SIG:          str = DataToStringGpsSig(d.gpsSig, data->hdr);              break;
         case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
         case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
         case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;
@@ -955,10 +955,10 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 {
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tSTATUS\n");
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     Aiding: Mag %d, GPS (Hdg %d, Pos %d)\n",
-        (hdwStatus & HDW_STATUS_GPS_SATELLITE_RX_VALID) != 0,
+        (hdwStatus & HDW_STATUS_GNSS_SATELLITE_RX_VALID) != 0,
         (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
-        (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
-        (insStatus & INS_STATUS_GPS_AIDING_POS) != 0);
+        (insStatus & INS_STATUS_GNSS_AIDING_HEADING) != 0,
+        (insStatus & INS_STATUS_GNSS_AIDING_POS) != 0);
     if (insStatus & INS_STATUS_NAV_MODE)
     {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tMode: NAV ");
@@ -1503,7 +1503,7 @@ std::string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, cons
     return buf;
 }
 
-std::string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringGpsVersion(const gnss_version_t &ver, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1516,7 +1516,7 @@ std::string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &v
         ver.swVersion,
         ver.hwVersion);
 
-    for (int i=0; i<GPS_VER_NUM_EXTENSIONS; i++)
+    for (int i=0; i<GNSS_VER_NUM_EXTENSIONS; i++)
     {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s", (char*)&(ver.extension[i]));
     }
@@ -1529,7 +1529,7 @@ std::string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &v
     return buf;
 }
 
-std::string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringGpsPos(const gnss_pos_t &gps, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1541,7 +1541,7 @@ std::string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, cons
     return std::string(buf) + DataToStringGpsPos(gps, m_displayMode != DMODE_SCROLL);
 }
 
-std::string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full)
+std::string cInertialSenseDisplay::DataToStringGpsPos(const gnss_pos_t &gps, bool full)
 {
     char buf[BUF_SIZE];
     char* ptr = buf;
@@ -1560,23 +1560,23 @@ std::string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool
     {   // Single line format
         ptr += SNPRINTF(ptr, ptrEnd - ptr, ", LLA[%12.7f,%12.7f,%7.1f], %d sats, %4.1f cno, %4.3f hAcc, %4.3f vAcc, %4.3f pDop",
             gps.lla[0], gps.lla[1], gps.lla[2],
-            gps.status&GPS_STATUS_NUM_SATS_USED_MASK, gps.cnoMean,
+            gps.status&GNSS_STATUS_NUM_SATS_USED_MASK, gps.cnoMean,
             gps.hAcc, gps.vAcc, gps.pDop);
     }
     else
     {   // Spacious format
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tSats: %2d,  ",
-            gps.status&GPS_STATUS_NUM_SATS_USED_MASK);    // Satellites used in solution
+            gps.status&GNSS_STATUS_NUM_SATS_USED_MASK);    // Satellites used in solution
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status: 0x%08x (", gps.status);
-        switch (gps.status&GPS_STATUS_FIX_MASK)
+        switch (gps.status&GNSS_STATUS_FIX_MASK)
         {
             default:
-            case GPS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);    break;
-            case GPS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
-            case GPS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
-            case GPS_STATUS_FIX_RTK_SINGLE:         ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");   break;
-            case GPS_STATUS_FIX_RTK_FLOAT:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");    break;
-            case GPS_STATUS_FIX_RTK_FIX:            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");      break;
+            case GNSS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GNSS_STATUS_FIX_MASK)>>GNSS_STATUS_FIX_BIT_OFFSET);    break;
+            case GNSS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
+            case GNSS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
+            case GNSS_STATUS_FIX_RTK_SINGLE:         ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");   break;
+            case GNSS_STATUS_FIX_RTK_FLOAT:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");    break;
+            case GNSS_STATUS_FIX_RTK_FIX:            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");      break;
         }
         ptr += SNPRINTF(ptr, ptrEnd - ptr, ") \thAcc: %.3f m     cno: %3.1f dBHz\n", gps.hAcc, gps.cnoMean);    // Position accuracy
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA: ");
@@ -1585,24 +1585,24 @@ std::string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool
             gps.lla[1],     // GPS Longitude
             gps.lla[2]);    // GPS Ellipsoid altitude (meters)
         bool comma = false;
-        if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED)
+        if (gps.status&GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED)
         {
-            if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR)    { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error"); }
-            switch (gps.status&GPS_STATUS_FLAGS_ERROR_MASK)
+            if (gps.status&GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR)    { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error"); }
+            switch (gps.status&GNSS_STATUS_FLAGS_ERROR_MASK)
             {
-                case GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING:           { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing");    } break;
-                case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING:        { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base");    } break;
-                case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID:       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");    } break;
+                case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING:           { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing");    } break;
+                case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING:        { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base");    } break;
+                case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID:       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");    } break;
             }
         }
-        if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED)
+        if (gps.status&GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED)
         {
-            if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED)       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing"); }
+            if (gps.status&GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED)       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing"); }
         }
 
         // Spoof/Jamming Dectect
-        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_JAM_DETECTED)                { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam detected, "); };
-        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED)              { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof detected, "); };
+        if (gps.status2&GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED)                { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam detected, "); };
+        if (gps.status2&GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED)              { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof detected, "); };
 
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
     }
@@ -1616,7 +1616,7 @@ std::string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool
  * @param hdr The data packet header.
  * @return A formatted string containing GPS satellite information.
  */
-std::string cInertialSenseDisplay::DataToStringGpsSat(const gps_sat_t &sats, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringGpsSat(const gnss_sat_t &sats, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1643,7 +1643,7 @@ std::string cInertialSenseDisplay::DataToStringGpsSat(const gps_sat_t &sats, con
  * @param full If true, provides a more spacious format; otherwise, a single-line format.
  * @return A formatted string containing GPS satellite information and distribution metrics.
  */
-std::string cInertialSenseDisplay::DataToStringGpsSat(const gps_sat_t &sats, bool full)
+std::string cInertialSenseDisplay::DataToStringGpsSat(const gnss_sat_t &sats, bool full)
 {
     char buf[BUF_SIZE];
     char* ptr = buf;
@@ -1709,7 +1709,7 @@ std::string cInertialSenseDisplay::DataToStringGpsSat(const gps_sat_t &sats, boo
  * @param hdr The data packet header.
  * @return A formatted string containing RTK relative position information.
  */
-std::string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringRtkRel(const gnss_rtk_rel_t &rel, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1753,7 +1753,7 @@ std::string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, 
  * @param hdr The data packet header.
  * @return A formatted string containing GPS RTK miscellaneous information.
  */
-std::string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringRtkMisc(const gnss_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     std::string didName = cISDataMappings::DataName(hdr.id);
@@ -1783,7 +1783,7 @@ std::string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk
  * @param hdr The data packet header.
  * @return A formatted string containing raw GPS information.
  */
-std::string cInertialSenseDisplay::DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringRawGPS(const gnss_raw_t& raw, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];

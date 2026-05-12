@@ -110,7 +110,7 @@ typedef struct PACKED
 {
     /** WGS84 height above ellipsoid (meters) */
     float                   alt;                                //4 bytes (more than 8 decimal places precision)    
-    /** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
+    /** (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
     uint32_t                status;
 } is_can_ins_alt;
 
@@ -220,11 +220,11 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    /** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
+    /** (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
     uint32_t                status;                                    //4 bytes
     /** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
     uint32_t                cnoMean;                                //4 byte
-} is_can_gps_pos_status;
+} is_can_gnss_pos_status;
 
 typedef struct PACKED
 {
@@ -236,7 +236,7 @@ typedef struct PACKED
     float                   distanceToBase;                            //4 bytes
     /** Angle from north to vectorToBase in local tangent plane. (rad) */
     int16_t                 headingToBase;                            //2 bytes (scaled by 1000 3 decimal places precision)
-} is_can_gps_rtk_rel;
+} is_can_gnss_rtk_rel;
 
 typedef struct PACKED
 {
@@ -271,8 +271,8 @@ typedef union PACKED
     is_can_dual_imu_px dimupx;
     is_can_dual_imu_qy dimuqy;
     is_can_dual_imu_rz dimurz;
-    is_can_gps_pos_status gpspos;
-    is_can_gps_rtk_rel rtkrel;
+    is_can_gnss_pos_status gnsspos;
+    is_can_gnss_rtk_rel rtkrel;
     is_can_roll_rollRate rollrollrate;    
 } is_can_payload;
 

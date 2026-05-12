@@ -28,7 +28,7 @@ cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::D
 int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
     if (ctx) ((ISDevice*)ctx)->onIsbDataHandler(data, port);
 
-    if ((data->hdr.id == DID_SYS_PARAMS) || (data->hdr.id == DID_GPS1_POS) || (data->hdr.id == DID_INS_1))
+    if ((data->hdr.id == DID_SYS_PARAMS) || (data->hdr.id == DID_GNSS1_POS) || (data->hdr.id == DID_INS_1))
         std::cout << isDisplay.DataToString((const p_data_t*)data);
     return 0;
 }
