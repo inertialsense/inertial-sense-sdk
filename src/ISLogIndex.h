@@ -79,7 +79,7 @@ inline constexpr std::size_t IS_LOG_IDX_RECORD_V2_SIZE = 24;
 /// other unit) doesn't re-break the world.
 enum class TimestampUnits : uint8_t {
     HostUptimeMs   = 0,  ///< Milliseconds since `m_logStartUpTime` on the writer host.
-    GpsTowMs       = 1,  ///< GPS time-of-week in ms (resets every Sunday 00:00:00 UTC).
+    GNSSTowMs       = 1,  ///< GNSS time-of-week in ms (resets every Sunday 00:00:00 UTC).
     UnixEpochMs    = 2,  ///< Milliseconds since 1970-01-01T00:00:00Z.
     Mixed          = 3,  ///< Mixed across records — readers must check per-record `flags`.
 };
