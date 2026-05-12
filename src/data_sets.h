@@ -1684,6 +1684,7 @@ enum eSystemCommand
     SYS_CMD_FAULT_TEST_TRIG_MALLOC                      = 57005,
     SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                  = 57006,
     SYS_CMD_FAULT_TEST_TRIG_WATCHDOG                    = 57007,
+    SYS_CMD_FAULT_TEST_TRIG_FLASH_TORN_WRITE            = 57008,    // SN-7873: erase test page, start dword program, NVIC_SystemReset mid-flight to leave a torn dword with bad ECC; auto-fires NMI on next boot to exercise the full classify+recover cycle
 };
 
 enum eSerialPortBridge
