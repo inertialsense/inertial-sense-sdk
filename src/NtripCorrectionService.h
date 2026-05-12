@@ -57,18 +57,18 @@ class NtripCorrectionService : public CorrectionService {
          * @brief updates the GNSS position that is reported back to the NTRIP caster. Depending on the caster
          *   this may not be necessary, however many services will use the GNSS position to provide more accurate
          *   correction information (virtual stations), or route to physical stations nearer to the rover.
-         * @param position a gps_pos_t structure that will be sent to the caster. This is converted to the NMEA
+         * @param position a gnss_pos_t structure that will be sent to the caster. This is converted to the NMEA
          *   GGA sentence structure prior to sending to the caster.
-         * @return true if the gps_pos_t was successfully converted and sent, false otherwise.
+         * @return true if the gnss_pos_t was successfully converted and sent, false otherwise.
          */
-        bool updatePosition(const gps_pos_t& position);
+        bool updatePosition(const gnss_pos_t& position);
 
         /**
          * @brief updates the GNSS position that is reported back to the NTRIP caster. Depending on the caster
          *   this may not be necessary, however many services will use the GNSS position to provide more accurate
          *   correction information (virtual stations), or route to physical stations nearer to the rover.
          * @param nmeaGGA a NMEA GGA sentence which describes the position of the rover. This is sent verbatim to the caster.
-         * @return true if the gps_pos_t was successfully sent, false otherwise.
+         * @return true if the gnss_pos_t was successfully sent, false otherwise.
          */
         bool updatePosition(const std::string nmeaGGA);
 

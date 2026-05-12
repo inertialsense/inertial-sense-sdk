@@ -213,9 +213,9 @@ TEST(BasicTestSuite, test_rtk_base)
     ASSERT_NE(isROS.RTK_base_, nullptr);
     RtkBaseProvider *p = isROS.RTK_base_;
     EXPECT_EQ(p->enable, false);
-    EXPECT_EQ(p->source_gps__serial0_, RtkBaseProvider::base_gps_source::GPS1);
+    EXPECT_EQ(p->source_gps__serial0_, RtkBaseProvider::base_gps_source::GNSS1);
     EXPECT_EQ(p->source_gps__serial1_, RtkBaseProvider::base_gps_source::OFF);
-    EXPECT_EQ(p->source_gps__serial2_, RtkBaseProvider::base_gps_source::GPS2);
+    EXPECT_EQ(p->source_gps__serial2_, RtkBaseProvider::base_gps_source::GNSS2);
     EXPECT_EQ(p->correction_outputs_.size(), 1);
 
     EXPECT_EQ(p->correction_outputs_[0]->type_, "ntrip");

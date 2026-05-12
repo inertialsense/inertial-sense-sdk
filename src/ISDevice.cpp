@@ -1436,7 +1436,7 @@ int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
 bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected() || (nextResetTime && (nextResetTime - current_timeMs() > 0)))
+    if (!isConnected() || isResetPending())
         return false;
 
     log_info(IS_LOG_ISDEVICE, "[%s] Requesting Software Reset", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
@@ -1446,7 +1446,7 @@ bool ISDevice::softwareReset() {
         SLEEP_MS(5)
     }
     disconnect();
-    nextResetTime = current_timeMs() + resetRequestThreshold;
+    lastResetTime = current_timeMs();
     return true;
 }
 
@@ -1539,14 +1539,14 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 
         // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
         //  this seems to be for RTK RTCM3/NTrip Correction services, to republish the device's current position as NMEA GGA
-        case DID_GPS1_POS:
+        case DID_GNSS1_POS:
             static time_t lastTime;
             time_t currentTime = time(NULLPTR);
             if (abs(currentTime - lastTime) > 5) 
             {   // Update every 5 seconds
                 lastTime = currentTime;
-                gps_pos_t &gps = *((gps_pos_t*)data->ptr);
-                if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D) {
+                gnss_pos_t &gps = *((gnss_pos_t*)data->ptr);
+                if ((gps.status&GNSS_STATUS_FIX_MASK) >= GNSS_STATUS_FIX_3D) {
                     // *s_cm_state->clientBytesToSend = nmea_gga(s_cm_state->clientBuffer, s_cm_state->clientBufferSize, gps);
                 }
             }
@@ -1827,23 +1827,23 @@ double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
         case DID_MAGNETOMETER:      stat.sample( ((magnetometer_t*)data.ptr)->time );       break;
         case DID_BAROMETER:         stat.sample( ((barometer_t*)data.ptr)->time );          break;
         case DID_SYS_SENSORS:       stat.sample( ((sys_sensors_t*)data.ptr)->time );        break;
-        case DID_GPS1_POS:
-        case DID_GPS2_POS:          stat.sample( ((gps_pos_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
-        case DID_GPS1_VEL:
-        case DID_GPS2_VEL:          stat.sample( ((gps_vel_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
-        case DID_GPS1_SAT:
-        case DID_GPS2_SAT:          stat.sample( ((gps_sat_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
-        case DID_GPS1_SIG:
-        case DID_GPS2_SIG:          stat.sample( ((gps_sig_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
-        case DID_GPS1_RTK_POS_REL:
-        case DID_GPS2_RTK_CMP_REL:
-            if (((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
-                stat.sample( ((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs * 0.001 );
+        case DID_GNSS1_POS:
+        case DID_GNSS2_POS:          stat.sample( ((gnss_pos_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GNSS1_VEL:
+        case DID_GNSS2_VEL:          stat.sample( ((gnss_vel_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GNSS1_SAT:
+        case DID_GNSS2_SAT:          stat.sample( ((gnss_sat_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GNSS1_SIG:
+        case DID_GNSS2_SIG:          stat.sample( ((gnss_sig_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GNSS1_RTK_POS_REL:
+        case DID_GNSS2_RTK_CMP_REL:
+            if (((gnss_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
+                stat.sample( ((gnss_rtk_rel_t*)data.ptr)->timeOfWeekMs * 0.001 );
             break;
-        case DID_GPS1_RTK_POS_MISC:
-        case DID_GPS2_RTK_CMP_MISC:
-            if (((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
-                stat.sample( ((gps_rtk_misc_t*)data.ptr)->timeOfWeekMs * 0.001 );
+        case DID_GNSS1_RTK_POS_MISC:
+        case DID_GNSS2_RTK_CMP_MISC:
+            if (((gnss_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
+                stat.sample( ((gnss_rtk_misc_t*)data.ptr)->timeOfWeekMs * 0.001 );
             break;
         default:                    stat.sample();  break;
     }

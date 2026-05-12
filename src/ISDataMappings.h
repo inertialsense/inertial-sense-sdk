@@ -83,7 +83,7 @@ typedef enum
     DATA_FLAGS_ANGLE                     = 0x00000200,  // Supports unwrapping angle
     DATA_FLAGS_DECOR_ROLL_MASK           = 0x000F0000,  // Decoration roll
     DATA_FLAGS_INS_STATUS                = 0x00010000,  // "
-    DATA_FLAGS_GPS_STATUS                = 0x00020000,  // "
+    DATA_FLAGS_GNSS_STATUS                = 0x00020000,  // "
 } eDataFlags;
 
 /*
