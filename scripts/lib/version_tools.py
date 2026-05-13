@@ -139,7 +139,7 @@ class RepositoryInfo:
             f.write(f"#define {prefix}REPO_GIT_COMMIT 0x{self.commit[:8]}\n")
             f.write(f"#define {prefix}REPO_VERSION_NO_META \"{str(self.version).split('+')[0]}\"\n")
             f.write(f"#define {prefix}REPO_VERSION \"{str(self.version)}\"\n")
-            f.write(f"#define {prefix}REPO_VERSION_RELEASE_TYPE {str(self.release_type)}  // 'd'=developer, 'c'=release candidate, 'b'=beta, 'a'=alpha, 0=production, 's'=snapshot, '^'=dirty\n")
+            f.write(f"#define {prefix}REPO_VERSION_RELEASE_TYPE {str(self.release_type)}  // 'd'=developer, 'c'=release candidate, 'b'=beta, 'a'=alpha, 0=production, 's'=snapshot\n")
             f.write(f"#define {prefix}REPO_VERSION_MAJOR {str(self.version.major)}\n")
             f.write(f"#define {prefix}REPO_VERSION_MINOR {str(self.version.minor)}\n")
             f.write(f"#define {prefix}REPO_VERSION_REVIS {str(self.version.patch)}\n")
