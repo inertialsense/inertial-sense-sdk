@@ -325,6 +325,12 @@ static inline uint16_t portStatsReset(port_handle_t port) {
  */
 static inline int portOpen(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
+    // Reset any prior error before attempting to open so that a successful
+    // retry clears the "errant" indicator for all port types.  Clearing here
+    // (before the call) rather than on success means the implementation still
+    // owns setting perror on failure, and portClose() is never touched, so
+    // error state from remote-initiated disconnects is preserved.
+    BASE_PORT(port)->perror = PORT_ERROR__NONE;
     return (BASE_PORT(port)->portOpen) ? BASE_PORT(port)->portOpen(port) : PORT_ERROR__NOT_SUPPORTED;
 }
 
