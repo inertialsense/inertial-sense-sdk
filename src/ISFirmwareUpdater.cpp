@@ -761,6 +761,40 @@ ISFwUpdaterCmd& ISFirmwareUpdater::runCommand(ISFwUpdaterCmd& cmd) {
         for (auto [k,v] : cmd.args) msg += v;
         LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, msg.c_str());
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+    } else if (cmd.cmd == "depends-on") {
+        std::string depStep = cmd.getArg("step");
+        if (depStep.empty()) {
+            handleCommandError(cmd, -1, "depends-on: missing required step label argument.");
+        } else {
+            // Find the `target` command in the referenced step. If it is CMD_NOT_EXECUTED
+            // or CMD_QUEUED, the target device was never reachable — skip the current step.
+            bool stepFound = false, targetFound = false, targetWasSkipped = false;
+            for (auto& c : commands) {
+                if (c.step == depStep) {
+                    stepFound = true;
+                    if (c.cmd == "target") {
+                        targetFound = true;
+                        targetWasSkipped = (c.status == ISFwUpdaterCmd::CMD_NOT_EXECUTED ||
+                                            c.status == ISFwUpdaterCmd::CMD_QUEUED);
+                        break;
+                    }
+                }
+            }
+            if (!stepFound) {
+                handleCommandError(cmd, -1, "depends-on: referenced step '%s' not found in manifest.", depStep.c_str());
+            } else if (targetFound && targetWasSkipped) {
+                LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping step '%s' (depends-on '%s' did not run).",
+                                    activeStep.c_str(), depStep.c_str());
+                for (auto& c : commands) {
+                    if (c.step == activeStep && c.status == ISFwUpdaterCmd::CMD_QUEUED)
+                        c.status = ISFwUpdaterCmd::CMD_NOT_EXECUTED;
+                }
+                cmd.status = ISFwUpdaterCmd::CMD_NOT_EXECUTED;
+                activeCmd = &getNextQueuedCmd(&cmd);
+            } else {
+                cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+            }
+        }
     } else if ((cmd.cmd == "slot") && (cmd.args.size() == 1)) {
         slotNum = strtol(cmd[0].c_str(), nullptr, 10);
         cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
@@ -967,12 +1001,11 @@ void ISFirmwareUpdater::cmd_WaitFor(ISFwUpdaterCmd& cmd) {
         // TIMEOUT occurred
         pingTimeoutExpires = pingNextRetry = 0;
         if (!timeoutLabel.empty()) {
-            // The script provided an on-timeout label, so this is expected control flow,
-            // not a failure. The script's terminal step (typically `:ERROR` with `finish: true`)
-            // is the proper place to flag overall failure. Marking the cmd CMD_ERROR here
-            // would contaminate hasErrors for fully-successful runs that just happened to
-            // skip absent peer modules via their on-timeout fallback.
-            cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
+            // Device not found before timeout. This is expected control flow — the manifest's
+            // on-timeout label is the "skip if absent" mechanism. Mark CMD_NOT_EXECUTED (not
+            // CMD_ERROR, which would contaminate hasErrors) so that depends-on: guards in
+            // downstream validate steps can detect that this target was never reachable.
+            cmd.status = ISFwUpdaterCmd::CMD_NOT_EXECUTED;
             cmd.resultMsg = "Target not found before timeout; diverting to step " + timeoutLabel;
             LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, cmd.resultMsg.c_str());
             activeCmd = &jumpToStep(timeoutLabel.substr(1));
@@ -1422,12 +1455,31 @@ ISFwUpdaterCmd& ISFirmwareUpdater::getNextQueuedCmd(ISFwUpdaterCmd* curCmd) {
  * @return the first available command which has the specified step label
  */
 ISFwUpdaterCmd& ISFirmwareUpdater::jumpToStep(const std::string& stepLabel) {
-    // std::lock_guard<std::recursive_mutex> lock(mutex);
-
-    for (auto& cmd : commands) {
-        if (cmd.step == stepLabel) return cmd;
+    // Find the first command of the target step.
+    auto target_it = commands.end();
+    for (auto it = commands.begin(); it != commands.end(); ++it) {
+        if (it->step == stepLabel) { target_it = it; break; }
     }
-    return nullCmd;
+    if (target_it == commands.end()) return nullCmd;
+
+    // For forward jumps, mark all CMD_QUEUED commands between the current position
+    // and the target as CMD_NOT_EXECUTED — consistent with the policy-SKIP path in
+    // runCommand(). This allows depends-on: guards and other introspection to
+    // reliably distinguish "was jumped over" from "hasn't been reached yet".
+    // Backwards jumps are left untouched (they don't occur in current manifests).
+    if (activeCmd != &nullCmd) {
+        for (auto it = commands.begin(); it != commands.end(); ++it) {
+            if (&(*it) == activeCmd) {
+                for (auto jt = std::next(it); jt != target_it; ++jt) {
+                    if (jt->status == ISFwUpdaterCmd::CMD_QUEUED)
+                        jt->status = ISFwUpdaterCmd::CMD_NOT_EXECUTED;
+                }
+                break;
+            }
+        }
+    }
+
+    return *target_it;
 }
 
 /**
