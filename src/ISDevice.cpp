@@ -145,11 +145,18 @@ is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, st
     if (!lock.owns_lock())
         return IS_OP_ERROR;
 
-    fwUpdateState.resetState();
-
-    if (!fwUpdater) {
-        fwUpdater = new ISFirmwareUpdater(shared_from_this(), fwUpdateState);
+    // If a prior updater exists and is still running, refuse to overwrite it.
+    // If it's done or cancelled, clean it up and start fresh — the IOManager tick
+    // would do the same cleanup, but may not have run yet.
+    if (fwUpdater) {
+        if (!fwUpdater->fwUpdate_isDone())
+            return IS_OP_IN_PROGRESS;
+        delete fwUpdater;
+        fwUpdater = nullptr;
     }
+
+    fwUpdateState.resetState();
+    fwUpdater = new ISFirmwareUpdater(shared_from_this(), fwUpdateState);
 
     fwUpdater->setInfoProgressCb(infoProgress);
     fwUpdater->setTarget(targetDevice);
