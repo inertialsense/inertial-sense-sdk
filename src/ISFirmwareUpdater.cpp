@@ -212,12 +212,12 @@ fwUpdate::update_status_e ISFirmwareUpdater::cancel(bool immediately) {
     if (activeCmd && (activeCmd->flags & ISFwUpdaterCmd::CMD_FLAGS__CANCELABLE))
         activeCmd->status = ISFwUpdaterCmd::CMD_CANCELLED;
 
-    // finally, if the user has requested an IMMEDIATE cancel, then we take the nuclear option
-    // WARNING - THIS interrupts all tasks IMMEDIATELY in whatever state they were in. There is no
-    // attempt to allow actions/commands to "save face" and the device maybe left in an inoperable
-    // (and possibly IRRECOVERABLE) state!
+    // For immediate cancel, reset the active pointer and target but do NOT call commands.clear().
+    // commands.clear() deallocates the vector storage while the IOManager thread may hold a
+    // reference into it (the `cmd` parameter of runCommand). CMD_CANCELLED on every remaining
+    // command is enough: hasPendingCommands() returns false for CMD_CANCELLED, so fwUpdate_isDone()
+    // will return true on the next step() call and the IOManager will clean up safely.
     if (immediately) {
-        commands.clear();
         activeCmd = &nullCmd;
         target = fwUpdate::TARGET_HOST;
     }
