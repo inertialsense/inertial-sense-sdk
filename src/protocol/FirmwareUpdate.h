@@ -283,6 +283,7 @@ namespace fwUpdate {
 
             uint8_t buildHash[4];   //!< Git hash
             uint32_t buildNumber;   //!< Build number
+            uint8_t buildFlags;     //!< Build flags (preserves debug/dirty and related build-state flags)
 
             uint8_t buildType;      //!< Build type (0=production, 'c'=release candidate, 'b'=beta, 'a'=alpha, 'd'=developer, '^'=dirty)
             uint8_t buildYear;      //!< Build date year - 2000
