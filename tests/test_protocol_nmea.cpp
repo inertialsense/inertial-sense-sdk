@@ -268,7 +268,8 @@ TEST(protocol_nmea, INFO)
     }
     info.repoRevision = 789;
     snprintf(info.manufacturer, DEVINFO_MANUFACTURER_STRLEN, "manufacturer string 123");
-    info.buildType = 'r';
+    info.buildType = 0;
+    info.buildFlags = 1;
     info.buildYear = 23;
     info.buildMonth = 6;
     info.buildDay = 9;

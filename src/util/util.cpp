@@ -327,7 +327,7 @@ bool utils::parseFirmwareFromString(const std::string& s, dev_info_t& devInfo) {
     }
 
     // Decode build-type suffix and optional ".<build>" trailing number.
-    char buildType = 'r';
+    char buildType = 0;
     if (!tail.empty()) {
         const size_t trailDot = tail.find('.');
         const std::string label = (trailDot == std::string::npos) ? tail : tail.substr(0, trailDot);
@@ -336,7 +336,8 @@ bool utils::parseFirmwareFromString(const std::string& s, dev_info_t& devInfo) {
         else if (label == "rc")    buildType = 'c';
         else if (label == "devel") buildType = 'd';
         else if (label == "snap")  buildType = 's';
-        else buildType = 'r'; // unknown label — treat as release
+        else if (label == "r")     buildType = 0;  // legacy production suffix
+        else buildType = 0; // unknown label — treat as production
         if (trailDot != std::string::npos) {
             try { fv[3] = static_cast<uint8_t>(std::stoi(tail.substr(trailDot + 1))); } catch (...) {}
         }

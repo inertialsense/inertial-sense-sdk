@@ -884,8 +884,9 @@ static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t d
 static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<dev_info_t> mapper(data_set, did);
-    mapper.AddMember("reserved", &dev_info_t::reserved, DATA_TYPE_UINT16);
-    mapper.AddMember("hardwareState", &dev_info_t::hdwRunState, DATA_TYPE_UINT8, "", "Hardware state: APP, BOOTLOADER, ");
+    mapper.AddMember("reserved", &dev_info_t::reserved, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("buildFlags", &dev_info_t::buildFlags, DATA_TYPE_UINT8, "", "Build flags: 0x1=debug mode, 0x2=dirty", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("hardwareState", &dev_info_t::hdwRunState, DATA_TYPE_UINT8, "", "Hardware state: APP, BOOTLOADER, ", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hardwareType", &dev_info_t::hardwareType, DATA_TYPE_UINT8,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("serialNumber", &dev_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
     mapper.AddArray("hardwareVer", &dev_info_t::hardwareVer, DATA_TYPE_UINT8, 4, {""}, {"Hardware version"}, DATA_FLAGS_READ_ONLY);

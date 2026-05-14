@@ -630,11 +630,19 @@ enum eHdwRunStates {
     HDW_STATE_APP,
 };
 
+enum eBuildFlags {
+    BUILD_FLAG_DEBUG = 0x1,
+    BUILD_FLAG_DIRTY = 0x2,
+};
+
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED
 {
     /** Reserved bits */
-    uint16_t        reserved;
+    uint8_t         reserved;
+
+    /** Build flags: 0x1=debug mode, 0x2=dirty (see eBuildFlags) */
+    uint8_t         buildFlags;
 
     /** Hardware Type: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eIsHardwareType) */
     uint8_t         hardwareType;
@@ -663,7 +671,7 @@ typedef struct PACKED
     /** Manufacturer name */
     char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
 
-    /** Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=developer/debug) */
+    /** Build type (0=production, 'c'=release candidate, 'b'=beta, 'a'=alpha, 'd'=developer, 's'=snapshot, '^'=dirty) */
     uint8_t         buildType;
     
     /** Build date year - 2000 */
