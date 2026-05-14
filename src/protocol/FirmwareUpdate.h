@@ -284,7 +284,7 @@ namespace fwUpdate {
             uint8_t buildHash[4];   //!< Git hash
             uint32_t buildNumber;   //!< Build number
 
-            uint8_t buildType;      //!< Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=debug)
+            uint8_t buildType;      //!< Build type (0=production, 'c'=release candidate, 'b'=beta, 'a'=alpha, 'd'=developer, '^'=dirty)
             uint8_t buildYear;      //!< Build date year - 2000
             uint8_t buildMonth;     //!< Build date month
             uint8_t buildDay;       //!< Build date day
@@ -293,6 +293,8 @@ namespace fwUpdate {
             uint8_t buildMinute;    //!< Build time minute
             uint8_t buildSecond;    //!< Build time second
             uint8_t buildMillis;    //!< Build time millisecond
+
+            uint8_t buildFlags;     //!< Build flags (preserves debug/dirty and related build-state flags)
         } version_resp;
 
     } msg_data_t;
