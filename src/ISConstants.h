@@ -913,6 +913,7 @@ typedef f_t         ixMatrix5[25];
 typedef double      ixMatrix3d[9];
 
 typedef enum {
+    IS_OP_IN_PROGRESS = 1,      //!< operation not started; a prior operation is still running
     IS_OP_OK = 0,
     IS_OP_ERROR = -1,
     IS_OP_CANCELLED = -2,
