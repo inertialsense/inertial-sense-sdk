@@ -1958,10 +1958,14 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 
     // uint8_t         build type;
     if (ptr < a + aSize) {
-        info.buildType = (uint8_t)*ptr;
-        ptr = ASCII_find_next_field(ptr);
+        if (std::isdigit((unsigned char)*ptr)) {
+            ptr = ASCII_to_u8(&info.buildType, ptr);
+        }
+        else {
+            info.buildType = (uint8_t)*ptr;
+            ptr = ASCII_find_next_field(ptr);
+        }
     }
-    if (info.buildType==0) { info.buildType = ' '; }
 
     // uint8_t         buildFlags;
     if (ptr < a + aSize) {
