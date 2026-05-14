@@ -1966,6 +1966,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
             ptr = ASCII_find_next_field(ptr);
         }
     }
+    if (info.buildType == ' ' || info.buildType == 'r') { info.buildType = 0; }  // normalize legacy/encoded production values
 
     // uint8_t         buildFlags;
     if (ptr < a + aSize) {

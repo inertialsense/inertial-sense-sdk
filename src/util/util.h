@@ -235,8 +235,8 @@ namespace utils {
 
     /// Parse a firmware version string (inverse of getFirmwareAsString). Accepts optional "fw" prefix followed by
     /// "<M>.<m>.<p>" and an optional build-type suffix "-alpha|-beta|-rc|-devel|-snap" with optional ".<build>".
-    /// Populates devInfo.firmwareVer[0..3] and buildType ('a'|'b'|'c'|'d'|'s'|'r' for release/no suffix).
-    /// Returns false on malformed input.
+    /// Populates devInfo.firmwareVer[0..3] and buildType ('a'|'b'|'c'|'d'|'s'|0 for production/no suffix).
+    /// The legacy "-r" suffix and unknown suffixes are normalized to 0 (production). Returns false on malformed input.
     bool parseFirmwareFromString(const std::string& s, dev_info_t& devInfo);
     // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
 

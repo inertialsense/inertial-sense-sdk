@@ -671,7 +671,7 @@ typedef struct PACKED
     /** Manufacturer name */
     char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
 
-    /** Build type (0=production, 'c'=release candidate, 'b'=beta, 'a'=alpha, 'd'=developer, '^'=dirty) */
+    /** Build type (0=production, 'c'=release candidate, 'b'=beta, 'a'=alpha, 'd'=developer, 's'=snapshot, '^'=dirty) */
     uint8_t         buildType;
     
     /** Build date year - 2000 */

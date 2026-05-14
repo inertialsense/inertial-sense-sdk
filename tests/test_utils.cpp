@@ -180,7 +180,7 @@ TEST(test_utils, parseFirmwareFromString_roundtrip) {
     EXPECT_EQ(devInfo.firmwareVer[1], 0);
     EXPECT_EQ(devInfo.firmwareVer[2], 0);
     EXPECT_EQ(devInfo.firmwareVer[3], 0);
-    EXPECT_EQ(devInfo.buildType, 'r');
+    EXPECT_EQ(devInfo.buildType, 0);
 
     ASSERT_TRUE(utils::parseFirmwareFromString("fw3.0.0-devel.175", devInfo));
     EXPECT_EQ(devInfo.firmwareVer[0], 3);
