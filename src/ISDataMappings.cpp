@@ -2287,7 +2287,7 @@ static void PopulateMapRosCovariancePoseTwist(data_set_t data_set[DID_COUNT], ui
 #if PLATFORM_IS_EMBEDDED
 cISDataMappings* cISDataMappings::s_map;
 #else
-cISDataMappings cISDataMappings::s_map;
+cISDataMappings* cISDataMappings::s_map = nullptr;
 #endif
 
 const char* const cISDataMappings::m_dataIdNames[] =
@@ -2579,11 +2579,14 @@ data_set_t* cISDataMappings::DataSet(uint32_t did)
     {
         s_map = new cISDataMappings();
     }
+#else
+    if (s_map == nullptr)
+    {
+        s_map = new cISDataMappings();
+    }
+#endif
 
     return &(s_map->m_data_set[did]);
-#else
-    return &(s_map.m_data_set[did]);
-#endif
 }
 
 const char* cISDataMappings::DataName(uint32_t did)

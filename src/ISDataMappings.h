@@ -789,7 +789,10 @@ protected:
     // on embedded we cannot new up C++ runtime until after free rtos has started
     static cISDataMappings* s_map;
 #else
-    static cISDataMappings s_map;
+    // Heap-allocated pointer (never deleted) to avoid static destruction order fiasco:
+    // other static objects (e.g. cDeviceLog containers) may call NameToInfoMap() during
+    // their own destructors, after a value-typed s_map would have already been destroyed.
+    static cISDataMappings* s_map;
 #endif
 
 private:
