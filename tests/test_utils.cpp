@@ -207,6 +207,14 @@ TEST(test_utils, parseFirmwareFromString_roundtrip) {
     EXPECT_EQ(parsed.firmwareVer[3], src.firmwareVer[3]);
     EXPECT_EQ(parsed.buildType, src.buildType);
 
+    // Legacy '-r' production suffix: must normalise to buildType == 0 (same as no suffix).
+    ASSERT_TRUE(utils::parseFirmwareFromString("fw3.0.0-r", devInfo));
+    EXPECT_EQ(devInfo.firmwareVer[0], 3);
+    EXPECT_EQ(devInfo.firmwareVer[1], 0);
+    EXPECT_EQ(devInfo.firmwareVer[2], 0);
+    EXPECT_EQ(devInfo.firmwareVer[3], 0);
+    EXPECT_EQ(devInfo.buildType, 0);
+
     // ISBL "firmware_ver" like "ISbl.v6j **BOOTLOADER**" is not parseable — helper returns false,
     // caller leaves fields at whatever they were.
     EXPECT_FALSE(utils::parseFirmwareFromString("ISbl.v6j **BOOTLOADER**", parsed));
