@@ -311,7 +311,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
     {
         data_holder_t td = {};
         ins_1_t ins1 = { 0 };
-        gps_pos_t gps = { 0 };
+        gnss_pos_t gps = { 0 };
 
         int j = i % 17;
         switch (j)
@@ -384,10 +384,10 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                 else
                 {   // Binary
                     #if TEST_PROTO_ISB
-                        td.did = DID_GPS1_POS;
+                        td.did = DID_GNSS1_POS;
                         td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
                         td.data.set.gpsPos = gps;
-                        td.size = sizeof(gps_pos_t);
+                        td.size = sizeof(gnss_pos_t);
                     #endif
                 }
                 break;

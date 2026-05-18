@@ -107,6 +107,14 @@ bool ISDevice::step() {
 
     if (was_connected != (bool)portIsOpened(port)) {
         was_connected = isConnected();
+        if (!isConnected() && m_calibration) {
+            // Port went away mid-upload. Drop the cal data and surface IS_OP_CLOSED so the
+            // caller can distinguish this from a protocol-layer failure.
+            log_warn(IS_LOG_ISDEVICE, "[%s] Async calibration upload aborted: port closed mid-upload at step %d.", getIdAsString().c_str(), m_calUploadState);
+            m_calibration.reset();
+            m_calUploadState = -1;
+            m_calUploadResult = IS_OP_CLOSED;
+        }
         DeviceManager::getInstance().notifyListeners(shared_from_this(), isConnected() ? DeviceManager::DEVICE_CONNECTED : DeviceManager::DEVICE_DISCONNECTED);
     }
 
@@ -125,10 +133,19 @@ bool ISDevice::step() {
     }
 
     if (m_calibration && m_calUploadState != -1) {
-        if (ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo) != ASYNC_STATE__PENDING) {
-            m_calibration = nullptr;
+        const int stepResult = ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo, m_calibration->uploadCtx);
+        if (stepResult != ASYNC_STATE__PENDING) {
+            if (stepResult == ASYNC_STATE__SUCCESS) {
+                m_calUploadResult = IS_OP_OK;
+                log_info(IS_LOG_ISDEVICE, "[%s] Async calibration upload complete.", getIdAsString().c_str());
+            } else {
+                m_calUploadResult = IS_OP_ERROR;
+                log_error(IS_LOG_ISDEVICE, "[%s] Async calibration upload failed at step %d.", getIdAsString().c_str(), m_calUploadState);
+            }
+            m_calibration.reset();
             m_calUploadState = -1;
         }
+        didStuff = true;
     }
 
     if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
@@ -145,11 +162,18 @@ is_operation_result ISDevice::updateFirmware(fwUpdate::target_t targetDevice, st
     if (!lock.owns_lock())
         return IS_OP_ERROR;
 
-    fwUpdateState.resetState();
-
-    if (!fwUpdater) {
-        fwUpdater = new ISFirmwareUpdater(shared_from_this(), fwUpdateState);
+    // If a prior updater exists and is still running, refuse to overwrite it.
+    // If it's done or cancelled, clean it up and start fresh — the IOManager tick
+    // would do the same cleanup, but may not have run yet.
+    if (fwUpdater) {
+        if (!fwUpdater->fwUpdate_isDone())
+            return IS_OP_IN_PROGRESS;
+        delete fwUpdater;
+        fwUpdater = nullptr;
     }
+
+    fwUpdateState.resetState();
+    fwUpdater = new ISFirmwareUpdater(shared_from_this(), fwUpdateState);
 
     fwUpdater->setInfoProgressCb(infoProgress);
     fwUpdater->setTarget(targetDevice);
@@ -1348,17 +1372,22 @@ bool ISDevice::LoadGpxFlashConfigFromFile(std::string path)
 }
 
 /**
- * @brief Uploads sensor calibration data to a device in steps.
- * @param port The communication port handle.
- * @param calUploadState The current state of the upload process. This is updated by the function.
- * @param cal The sensor_cal_t structure containing the calibration data to upload.
- * @return 1 if the upload is complete, 0 if it's in progress, -1 on error.
+ * @brief Initiates an asynchronous calibration upload. Ownership of the supplied
+ * calibration object transfers to the device on accept; subsequent step() ticks drive
+ * the per-step protocol until completion. See header for full result vocabulary.
  */
-int ISDevice::UploadImxCalibrationAsync(ISDeviceCal& cal) {
+is_operation_result ISDevice::UploadImxCalibrationAsync(std::unique_ptr<ISDeviceCal> cal) {
     if (!isConnected())
-        return ASYNC_STATE__FAILURE;   // nothing to do, if we aren't connected
+        return IS_OP_CLOSED;
 
-    return ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, cal, devInfo);
+    if (m_calUploadResult == IS_OP_IN_PROGRESS || m_calibration)
+        return IS_OP_IN_PROGRESS;
+
+    m_calibration = std::move(cal);
+    m_calUploadState = 0;
+    m_calUploadResult = IS_OP_IN_PROGRESS;
+    log_info(IS_LOG_ISDEVICE, "[%s] Async calibration upload initiated.", getIdAsString().c_str());
+    return IS_OP_OK;
 }
 
 
@@ -1370,8 +1399,9 @@ bool ISDevice::UploadImxCalibration(ISDeviceCal& cal)
     int result = 0;
     try {
         int calUploadState = 0;
+        ISDeviceCal::cal_upload_ctx_t ctx;
         do {
-            result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, cal, devInfo);
+            result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, cal, devInfo, ctx);
             SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
         } while (result == ASYNC_STATE__PENDING);
     } catch (const std::exception& e) {
@@ -1436,7 +1466,7 @@ int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
 bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
-    if (!isConnected() || (nextResetTime && (nextResetTime - current_timeMs() > 0)))
+    if (!isConnected() || isResetPending())
         return false;
 
     log_info(IS_LOG_ISDEVICE, "[%s] Requesting Software Reset", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
@@ -1446,7 +1476,7 @@ bool ISDevice::softwareReset() {
         SLEEP_MS(5)
     }
     disconnect();
-    nextResetTime = current_timeMs() + resetRequestThreshold;
+    lastResetTime = current_timeMs();
     return true;
 }
 
@@ -1539,14 +1569,14 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 
         // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
         //  this seems to be for RTK RTCM3/NTrip Correction services, to republish the device's current position as NMEA GGA
-        case DID_GPS1_POS:
+        case DID_GNSS1_POS:
             static time_t lastTime;
             time_t currentTime = time(NULLPTR);
             if (abs(currentTime - lastTime) > 5) 
             {   // Update every 5 seconds
                 lastTime = currentTime;
-                gps_pos_t &gps = *((gps_pos_t*)data->ptr);
-                if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D) {
+                gnss_pos_t &gps = *((gnss_pos_t*)data->ptr);
+                if ((gps.status&GNSS_STATUS_FIX_MASK) >= GNSS_STATUS_FIX_3D) {
                     // *s_cm_state->clientBytesToSend = nmea_gga(s_cm_state->clientBuffer, s_cm_state->clientBufferSize, gps);
                 }
             }
@@ -1827,23 +1857,23 @@ double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
         case DID_MAGNETOMETER:      stat.sample( ((magnetometer_t*)data.ptr)->time );       break;
         case DID_BAROMETER:         stat.sample( ((barometer_t*)data.ptr)->time );          break;
         case DID_SYS_SENSORS:       stat.sample( ((sys_sensors_t*)data.ptr)->time );        break;
-        case DID_GPS1_POS:
-        case DID_GPS2_POS:          stat.sample( ((gps_pos_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
-        case DID_GPS1_VEL:
-        case DID_GPS2_VEL:          stat.sample( ((gps_vel_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
-        case DID_GPS1_SAT:
-        case DID_GPS2_SAT:          stat.sample( ((gps_sat_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
-        case DID_GPS1_SIG:
-        case DID_GPS2_SIG:          stat.sample( ((gps_sig_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
-        case DID_GPS1_RTK_POS_REL:
-        case DID_GPS2_RTK_CMP_REL:
-            if (((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
-                stat.sample( ((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs * 0.001 );
+        case DID_GNSS1_POS:
+        case DID_GNSS2_POS:          stat.sample( ((gnss_pos_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GNSS1_VEL:
+        case DID_GNSS2_VEL:          stat.sample( ((gnss_vel_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GNSS1_SAT:
+        case DID_GNSS2_SAT:          stat.sample( ((gnss_sat_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GNSS1_SIG:
+        case DID_GNSS2_SIG:          stat.sample( ((gnss_sig_t*)data.ptr)->timeOfWeekMs * 0.001 );    break;
+        case DID_GNSS1_RTK_POS_REL:
+        case DID_GNSS2_RTK_CMP_REL:
+            if (((gnss_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
+                stat.sample( ((gnss_rtk_rel_t*)data.ptr)->timeOfWeekMs * 0.001 );
             break;
-        case DID_GPS1_RTK_POS_MISC:
-        case DID_GPS2_RTK_CMP_MISC:
-            if (((gps_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
-                stat.sample( ((gps_rtk_misc_t*)data.ptr)->timeOfWeekMs * 0.001 );
+        case DID_GNSS1_RTK_POS_MISC:
+        case DID_GNSS2_RTK_CMP_MISC:
+            if (((gnss_rtk_rel_t*)data.ptr)->timeOfWeekMs != 0)
+                stat.sample( ((gnss_rtk_misc_t*)data.ptr)->timeOfWeekMs * 0.001 );
             break;
         default:                    stat.sample();  break;
     }

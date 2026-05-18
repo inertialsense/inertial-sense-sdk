@@ -112,9 +112,9 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
     return true;
 }
 
-bool NtripCorrectionService::updatePosition(const gps_pos_t& gps) {
+bool NtripCorrectionService::updatePosition(const gnss_pos_t& gps) {
     char rxBuf[512];
-    int n = nmea_gga(rxBuf, sizeof(rxBuf), (gps_pos_t &)gps);
+    int n = nmea_gga(rxBuf, sizeof(rxBuf), (gnss_pos_t &)gps);
     return (portWrite(source, (uint8_t*)rxBuf, n) == n);
 }
 

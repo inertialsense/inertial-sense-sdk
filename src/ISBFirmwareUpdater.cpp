@@ -1255,6 +1255,8 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
                     writeState = WRITE_ERROR;
                     session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
                     return writeState;
+                default:
+                    break;
             }
             break;
         }

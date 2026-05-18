@@ -319,8 +319,15 @@ namespace fwUpdate {
 
         //target_t target_masked = (target_t)((uint32_t)msg_payload.hdr.target_device & 0xFFFF0);
         target_t target_masked = payload.hdr.target_device;
-        if (target_masked != session_target)
+        if (target_masked != session_target) {
+#ifdef __ZEPHYR__
+            // SN-7981 diagnostic: distinguish target-mismatch (true forwarding case) from
+            // handler-internal failures so we can tell why the LED-blink/forwarding fires.
+            printk("[FwUpdate] processMessage REJECT target_mismatch: msg_target=0x%x session_target=0x%x msg_type=%d\n",
+                   (unsigned)target_masked, (unsigned)session_target, (int)payload.hdr.msg_type);
+#endif
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
+        }
 
         char *msgStr = fwUpdate_payloadToString(&payload);
         if (msgStr)
@@ -517,20 +524,51 @@ namespace fwUpdate {
      * @param payload the DID payload
      * @return
      */
-    bool FirmwareUpdateDevice::fwUpdate_handleChunk(const payload_t& payload) {
-        if (payload.hdr.msg_type != MSG_UPDATE_CHUNK)
+    bool FirmwareUpdateDevice::
+    fwUpdate_handleChunk(const payload_t& payload) {
+#ifdef __ZEPHYR__
+        // SN-7981 entry trace: print ONLY "interesting" chunks (early ones, any
+        // duplicate/out-of-order). Printing every chunk overflows the RTT buffer
+        // and drops the diagnostic messages we actually care about.
+        bool _trace_early = (payload.data.chunk.chunk_id < 6);
+        bool _trace_dup   = (payload.data.chunk.chunk_id <= (uint16_t)last_chunk_id);
+        if (_trace_early || _trace_dup) {
+            printk("[FwUpdate] handleChunk ENTRY chunk_id=%u session=%u last=%d data_len=%u\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)payload.data.chunk.session_id,
+                   (int)last_chunk_id, (unsigned)payload.data.chunk.data_len);
+        }
+#endif
+        if (payload.hdr.msg_type != MSG_UPDATE_CHUNK) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk REJECT wrong_msg_type: msg_type=%d\n", (int)payload.hdr.msg_type);
+#endif
             return false;
+        }
 
         // if the session id doesn't match our current session id, then ignore this message.
-        if (payload.data.chunk.session_id != session_id)
+        if (payload.data.chunk.session_id != session_id) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk REJECT session_mismatch: msg_session=%u my_session=%u chunk_id=%u\n",
+                   (unsigned)payload.data.chunk.session_id, (unsigned)session_id, (unsigned)payload.data.chunk.chunk_id);
+#endif
             return false;
+        }
 
         // safely ignore receipt of previously received chunks
-        if (payload.data.chunk.chunk_id <= last_chunk_id)
+        if (payload.data.chunk.chunk_id <= last_chunk_id) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk DUPLICATE chunk_id=%u last=%u (returning true)\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)last_chunk_id);
+#endif
             return true;
+        }
 
         // if the chunk id does match the next expected chunk id, then send an resend for the correct/missing chunk
         if (payload.data.chunk.chunk_id != (uint16_t)(last_chunk_id + 1)) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk RETRY out_of_seq: chunk_id=%u expected=%u (last=%u)\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)(last_chunk_id + 1), (unsigned)last_chunk_id);
+#endif
             fwUpdate_sendRetry(REASON_INVALID_SEQID);
             return false;
         }
@@ -539,12 +577,21 @@ namespace fwUpdate {
         uint16_t mod_size = (session_image_size % session_chunk_size);
         uint16_t expected_size = ((payload.data.chunk.chunk_id == session_total_chunks-1) && (mod_size != 0)) ? mod_size : session_chunk_size;
         if (payload.data.chunk.data_len != expected_size) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk RETRY wrong_size: chunk_id=%u data_len=%u expected=%u\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)payload.data.chunk.data_len, (unsigned)expected_size);
+#endif
             fwUpdate_sendRetry(REASON_INVALID_SIZE);
             return false;
         }
 
         uint32_t chnk_offset = payload.data.chunk.chunk_id * session_chunk_size;
-        if (fwUpdate_writeImageChunk((fwUpdate::target_t) payload.hdr.target_device, session_image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *) &payload.data.chunk.data) < NOT_STARTED) {
+        update_status_e write_st = fwUpdate_writeImageChunk((fwUpdate::target_t) payload.hdr.target_device, session_image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *) &payload.data.chunk.data);
+        if (write_st < NOT_STARTED) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk RETRY write_error: chunk_id=%u offset=0x%x len=%u writeImageChunk_status=%d\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)chnk_offset, (unsigned)payload.data.chunk.data_len, (int)write_st);
+#endif
             fwUpdate_sendRetry(REASON_WRITE_ERROR);
             return false;
         }

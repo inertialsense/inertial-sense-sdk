@@ -48,10 +48,10 @@ static void handleIns2Message(ins_2_t* ins)
 }
 
 /**
- * Simple custom handler for the DID_GPS1_POS message
- * @param ins the gps_pos_t message structure
+ * Simple custom handler for the DID_GNSS1_POS message
+ * @param ins the gnss_pos_t message structure
  */
-static void handleGpsMessage(gps_pos_t* pos)
+static void handleGpsMessage(gnss_pos_t* pos)
 {
     printf("GPS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", pos->timeOfWeekMs, pos->lla[0], pos->lla[1], pos->lla[2]);
 }
@@ -88,8 +88,8 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
          handleIns2Message((ins_2_t*)data->ptr);
          break;
 
-     case DID_GPS1_POS:
-         handleGpsMessage((gps_pos_t*)data->ptr);
+     case DID_GNSS1_POS:
+         handleGpsMessage((gnss_pos_t*)data->ptr);
          break;
 
      case DID_IMU:
