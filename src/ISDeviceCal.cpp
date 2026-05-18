@@ -970,14 +970,8 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
     return jCal;
 }
 
-int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo)
+int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo, cal_upload_ctx_t &ctx)
 {
-    // Per-thread v1.3 staging buffer; built once on state==0 when target is IMX-5.
-    // Reused across the 8 send steps to avoid repeated conversion.
-    static thread_local sensor_cal_v1p3_t s_v1p3Buf;
-    // Per-thread retry counter; reset at the start of each new upload and after each successful step.
-    static thread_local int s_retryCount = 0;
-
     const int hwMajor = devInfo.hardwareVer[0];
     const bool sendV1p3 = (hwMajor == 5);
     const bool sendV1p4 = (hwMajor == 6);
@@ -990,18 +984,18 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     if (calUploadState == 0)
     {
-        s_retryCount = 0;   // Reset retry counter at the start of each new upload.
+        ctx.retryCount = 0;   // Reset retry counter at the start of each new upload.
         if (sendV1p3)
         {
             // Build v1.3 payload from in-memory v1.4 cal. Recomputes both checksums.
-            convert_sensor_cal_v1p4_to_v1p3(&cal, &s_v1p3Buf);
+            convert_sensor_cal_v1p4_to_v1p3(&cal, &ctx.v1p3StagingBuf);
         }
     }
 
     // Returns 0 (pending) on send failure; aborts with -1 after MAX_UPLOAD_SEND_RETRIES consecutive failures on the current step.
     auto sendFail = [&]() -> int {
-        if (++s_retryCount > MAX_UPLOAD_SEND_RETRIES) {
-            log_error(IS_LOG_CALIBRATION, "uploadSensorCalStep: send failed %d times on step %d; aborting upload.", s_retryCount, calUploadState);
+        if (++ctx.retryCount > MAX_UPLOAD_SEND_RETRIES) {
+            log_error(IS_LOG_CALIBRATION, "uploadSensorCalStep: send failed %d times on step %d; aborting upload.", ctx.retryCount, calUploadState);
             return -1;
         }
         return 0;
@@ -1011,7 +1005,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
     {
     case 0:     // General Info + Data Info (sent together since both are small and adjacent)
         if (sendV1p3) {
-            if (comManagerSendData(port, &(s_v1p3Buf.info), DID_CAL_SC, sizeof(sensor_cal_info_t) + sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return sendFail(); }
+            if (comManagerSendData(port, &(ctx.v1p3StagingBuf.info), DID_CAL_SC, sizeof(sensor_cal_info_t) + sizeof(sensor_data_info_t), offsetof(sensor_cal_v1p3_t, info)) != 0) { return sendFail(); }
         } else {
             if (comManagerSendData(port, &(cal.info), DID_CAL_SC, sizeof(sensor_cal_info_t) + sizeof(sensor_data_info_t), offsetof(sensor_cal_t, info)) != 0) { return sendFail(); }
         }
@@ -1019,7 +1013,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     case 1:     // Temp comp - Gyros
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR_V1P3) != 0) { return sendFail(); }
+            if (comManagerSendData(port, ctx.v1p3StagingBuf.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR_V1P3) != 0) { return sendFail(); }
         } else {
             if (comManagerSendData(port, cal.data.tcal.gyr, DID_CAL_TEMP_COMP_GYR, SIZE_OF_SENSOR_TCAL_GYR) != 0) { return sendFail(); }
         }
@@ -1027,7 +1021,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     case 2:     // Temp comp - Accelerometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC_V1P3) != 0) { return sendFail(); }
+            if (comManagerSendData(port, ctx.v1p3StagingBuf.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC_V1P3) != 0) { return sendFail(); }
         } else {
             if (comManagerSendData(port, cal.data.tcal.acc, DID_CAL_TEMP_COMP_ACC, SIZE_OF_SENSOR_TCAL_ACC) != 0) { return sendFail(); }
         }
@@ -1035,7 +1029,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     case 3:     // Temp comp - Magnetometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG_V1P3) != 0) { return sendFail(); }
+            if (comManagerSendData(port, ctx.v1p3StagingBuf.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG_V1P3) != 0) { return sendFail(); }
         } else {
             if (comManagerSendData(port, cal.data.tcal.mag, DID_CAL_TEMP_COMP_MAG, SIZE_OF_SENSOR_TCAL_MAG) != 0) { return sendFail(); }
         }
@@ -1043,7 +1037,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     case 4:     // Motion cal - Gyros
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR_V1P3) != 0) { return sendFail(); }
+            if (comManagerSendData(port, ctx.v1p3StagingBuf.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR_V1P3) != 0) { return sendFail(); }
         } else {
             if (comManagerSendData(port, cal.data.mcal.pqr, DID_CAL_MOTION_GYR, SIZE_OF_SENSOR_MCAL_GYR) != 0) { return sendFail(); }
         }
@@ -1051,7 +1045,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     case 5:     // Motion cal - Accelerometers
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC_V1P3) != 0) { return sendFail(); }
+            if (comManagerSendData(port, ctx.v1p3StagingBuf.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC_V1P3) != 0) { return sendFail(); }
         } else {
             if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC) != 0) { return sendFail(); }
         }
@@ -1059,11 +1053,11 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
 
     case 6:     // Motion cal - Magnetometers (last step)
         if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG_V1P3) != 0) { return sendFail(); }
+            if (comManagerSendData(port, ctx.v1p3StagingBuf.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG_V1P3) != 0) { return sendFail(); }
         } else {
             if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG) != 0) { return sendFail(); }
         }
-        s_retryCount = 0;
+        ctx.retryCount = 0;
         calUploadState++;   // Increment state to mark completion here in case any upload fails and we need to retry the last step.  We don't want to resend all previous steps if only the last one fails.
         return 1;    // Done
 
@@ -1071,7 +1065,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
         return -1;
     }
 
-    s_retryCount = 0;
+    ctx.retryCount = 0;
     calUploadState++;
     return 0;
 }
