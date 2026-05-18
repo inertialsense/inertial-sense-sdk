@@ -914,7 +914,7 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
     
-    /** Magnetometers (uT) */
+    /** Magnetometers in microtesla (uT) */
     float                   mag[3];
 } magnetometer_t;
 
