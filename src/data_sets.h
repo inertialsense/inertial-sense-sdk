@@ -43,32 +43,32 @@ typedef uint32_t eDataIDs;
 #define DID_PIMU                        (eDataIDs)3  /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
-#define DID_GNSS1_RCVR_POS               (eDataIDs)6  /** (gnss_pos_t) GPS 1 position data from GNSS receiver. */
+#define DID_GNSS1_RCVR_POS              (eDataIDs)6  /** (gnss_pos_t) GPS 1 position data from GNSS receiver. */
 #define DID_SYS_CMD                     (eDataIDs)7  /** (system_command_t) System commands. Both the command and invCommand fields must be set at the same time for a command to take effect. */
 #define DID_NMEA_BCAST_PERIOD           (eDataIDs)8  /** (nmea_msgs_t) Set broadcast periods for NMEA messages */
 #define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The RMC provides updates from various data sources (i.e. sensors) as soon as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. All RMC messages can be enabled using the standard Get Data packet format. */
 #define DID_SYS_PARAMS                  (eDataIDs)10 /** (sys_params_t) System parameters / info */
 #define DID_SYS_SENSORS                 (eDataIDs)11 /** (sys_sensors_t) System sensor information */
 #define DID_FLASH_CONFIG                (eDataIDs)12 /** (nvm_flash_cfg_t) Flash memory configuration */
-#define DID_GNSS1_POS                    (eDataIDs)13 /** (gnss_pos_t) GPS 1 position data.  This comes from DID_GNSS1_RCVR_POS or DID_GNSS1_RTK_POS, depending on whichever is more accurate. */
-#define DID_GNSS2_POS                    (eDataIDs)14 /** (gnss_pos_t) GPS 2 position data */
-#define DID_GNSS1_SAT                    (eDataIDs)15 /** (gnss_sat_t) GPS 1 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
-#define DID_GNSS2_SAT                    (eDataIDs)16 /** (gnss_sat_t) GPS 2 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
-#define DID_GNSS1_VERSION                (eDataIDs)17 /** (gnss_version_t) GPS 1 version info */
-#define DID_GNSS2_VERSION                (eDataIDs)18 /** (gnss_version_t) GPS 2 version info */
+#define DID_GNSS1_POS                   (eDataIDs)13 /** (gnss_pos_t) GPS 1 position data.  This comes from DID_GNSS1_RCVR_POS or DID_GNSS1_RTK_POS, depending on whichever is more accurate. */
+#define DID_GNSS2_POS                   (eDataIDs)14 /** (gnss_pos_t) GPS 2 position data */
+#define DID_GNSS1_SAT                   (eDataIDs)15 /** (gnss_sat_t) GPS 1 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
+#define DID_GNSS2_SAT                   (eDataIDs)16 /** (gnss_sat_t) GPS 2 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
+#define DID_GNSS1_VERSION               (eDataIDs)17 /** (gnss_version_t) GPS 1 version info */
+#define DID_GNSS2_VERSION               (eDataIDs)18 /** (gnss_version_t) GPS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
 #define DID_IMUS                        (eDataIDs)20 /** (imus_t) Multiple inertial measurement units data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  Enabled by using RMC preset "Allan Variance IMUs".  Enabling this message adds processing overhead to sensor RTOS task. */
-#define DID_GNSS1_RTK_POS_REL            (eDataIDs)21 /** (gnss_rtk_rel_t) RTK precision position base to rover relative info. */
-#define DID_GNSS1_RTK_POS_MISC           (eDataIDs)22 /** (gnss_rtk_misc_t) RTK precision position related data. */
+#define DID_GNSS1_RTK_POS_REL           (eDataIDs)21 /** (gnss_rtk_rel_t) RTK precision position base to rover relative info. */
+#define DID_GNSS1_RTK_POS_MISC          (eDataIDs)22 /** (gnss_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
 #define DID_SENSORS_UCAL                (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
 #define DID_SENSORS_TCAL                (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
-#define DID_GNSS2_TIMEPULSE              (eDataIDs)27 /** (gnss_timepulse_t) GNSS2 PPS time synchronization. */
+#define DID_GNSS2_TIMEPULSE             (eDataIDs)27 /** (gnss_timepulse_t) GNSS2 PPS time synchronization. */
 #define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SCOMP                       (eDataIDs)29 /** INTERNAL USE ONLY (sensor_compensation_t) */
-#define DID_GNSS1_VEL                    (eDataIDs)30 /** (gnss_vel_t) GPS 1 velocity data */
-#define DID_GNSS2_VEL                    (eDataIDs)31 /** (gnss_vel_t) GPS 2 velocity data */
+#define DID_GNSS1_VEL                   (eDataIDs)30 /** (gnss_vel_t) GPS 1 velocity data */
+#define DID_GNSS2_VEL                   (eDataIDs)31 /** (gnss_vel_t) GPS 2 velocity data */
 #define DID_HDW_PARAMS                  (eDataIDs)32 /** INTERNAL USE ONLY (hdw_params_t) */
 #define DID_NVR_MANAGE_USERPAGE         (eDataIDs)33 /** INTERNAL USE ONLY (nvr_manage_t) */
 #define DID_NVR_USERPAGE_SN             (eDataIDs)34 /** INTERNAL USE ONLY (nvm_group_sn_t) */
@@ -78,11 +78,11 @@ typedef uint32_t eDataIDs;
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
-#define DID_GNSS1_TIMEPULSE              (eDataIDs)41 /** (gnss_timepulse_t) GNSS1 PPS time synchronization. */
+#define DID_GNSS1_TIMEPULSE             (eDataIDs)41 /** (gnss_timepulse_t) GNSS1 PPS time synchronization. */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_UNUSED_43                   (eDataIDs)43 /** unused */
 #define DID_UNUSED_44                   (eDataIDs)44 /** unused */
-#define DID_GNSS1_SIG                    (eDataIDs)45 /** (gnss_sig_t) GPS 1 GNSS signal information. */
+#define DID_GNSS1_SIG                   (eDataIDs)45 /** (gnss_sig_t) GPS 1 GNSS signal information. */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
 #define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) INS Extended Kalman Filter (EKF) states */
@@ -91,14 +91,14 @@ typedef uint32_t eDataIDs;
 #define DID_INL2_MISC                   (eDataIDs)51 /** (inl2_misc_t) */
 #define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
-#define DID_GNSS1_RTK_POS                (eDataIDs)54 /** (gnss_pos_t) GPS RTK position data */
+#define DID_GNSS1_RTK_POS               (eDataIDs)54 /** (gnss_pos_t) GPS RTK position data */
 #define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_IMUS_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imus_t) Uncalibrated multiple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
-#define DID_GNSS_BASE_RAW                (eDataIDs)60 /** (gnss_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
-#define DID_GNSS_RTK_OPT                 (eDataIDs)61 /** (gnss_rtk_opt_t) RTK options - requires little endian CPU. */
+#define DID_GNSS_BASE_RAW               (eDataIDs)60 /** (gnss_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
+#define DID_GNSS_RTK_OPT                (eDataIDs)61 /** (gnss_rtk_opt_t) RTK options - requires little endian CPU. */
 #define DID_REFERENCE_PIMU              (eDataIDs)62 /** (pimu_t) Reference or truth IMU used for manufacturing calibration and testing */
 #define DID_MANUFACTURING_INFO          (eDataIDs)63 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
 #define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
@@ -106,8 +106,8 @@ typedef uint32_t eDataIDs;
 #define DID_INS_4                       (eDataIDs)66 /** (ins_4_t) INS output: quaternion rotation w/ respect to ECEF, ECEF position. */
 #define DID_INL2_NED_SIGMA              (eDataIDs)67 /** (inl2_ned_sigma_t) Standard deviation of INL2 EKF estimates in the NED frame. */
 #define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe. */
-#define DID_GNSS1_RAW                    (eDataIDs)69 /** (gnss_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
-#define DID_GNSS2_RAW                    (eDataIDs)70 /** (gnss_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
+#define DID_GNSS1_RAW                   (eDataIDs)69 /** (gnss_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
+#define DID_GNSS2_RAW                   (eDataIDs)70 /** (gnss_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) Wheel encoder data to be fused with GPS-INS measurements, set DID_GROUND_VEHICLE for configuration before sending this message */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
 #define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. Base correction output cannot run during a survey and will be automatically disabled if a survey is started. */
@@ -121,15 +121,15 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_FLASH_CFG               (eDataIDs)81 /** (evb_flash_cfg_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-#define DID_GNSS2_SIG                    (eDataIDs)84 /** (gnss_sig_t) GPS 2 GNSS signal information. */
+#define DID_GNSS2_SIG                   (eDataIDs)84 /** (gnss_sig_t) GPS 2 GNSS signal information. */
 #define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
 #define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
 #define DID_GROUND_VEHICLE              (eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
 #define DID_POSITION_MEASUREMENT        (eDataIDs)88 /** (pos_measurement_t) External position estimate */
 #define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
 #define DID_CAN_CONFIG                  (eDataIDs)90 /** (can_config_t) Addresses for CAN messages*/
-#define DID_GNSS2_RTK_CMP_REL            (eDataIDs)91 /** (gnss_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
-#define DID_GNSS2_RTK_CMP_MISC           (eDataIDs)92 /** (gnss_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
+#define DID_GNSS2_RTK_CMP_REL           (eDataIDs)91 /** (gnss_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
+#define DID_GNSS2_RTK_CMP_MISC          (eDataIDs)92 /** (gnss_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
 #define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
@@ -142,7 +142,6 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_TEMP_COMP_MAG           (eDataIDs)102 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION_GYR              (eDataIDs)103 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_ACC              (eDataIDs)104 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
-#define DID_CAL_MOTION_MAG              (eDataIDs)105 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
 
 #define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (did_event_t)*/
 
@@ -202,9 +201,11 @@ typedef uint32_t eDataIDs;
 // Version 1.3 of sensor calibration format supports up to 3 IMUs and 2 mags, with separate orthonormalization and bias calibration for each device
 #define NUM_IMU_DEVICES_V1P3    3
 #define NUM_MAG_DEVICES_V1P3    2
-// Version 1.4 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
+// Version 1.4 and 1.5 of sensor calibration format supports up to 5 IMUs and 1 mag, with separate orthonormalization and bias calibration for each device
 #define NUM_IMU_DEVICES_V1P4    5
 #define NUM_MAG_DEVICES_V1P4    1
+#define NUM_IMU_DEVICES_V1P5    NUM_IMU_DEVICES_V1P4
+#define NUM_MAG_DEVICES_V1P5    NUM_MAG_DEVICES_V1P4
 // Per-build-target native counts. SN-7966: IMX-5 hardware is permanently Cal v1.3,
 // IMX-6 (and host SDK) is permanently Cal v1.4. Host code (no IMX_5/IMX_6 define) uses v1.4.
 #define MAX_IMU_DEVICES         NUM_IMU_DEVICES_V1P4

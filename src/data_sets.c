@@ -370,7 +370,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 102: DID_CAL_TEMP_COMP_MAG
         0,                      // 103: DID_CAL_MOTION_GYR
         0,                      // 104: DID_CAL_MOTION_ACC
-        0,                      // 105: DID_CAL_MOTION_MAG
+        0,                      // 105: 
         0,                      // 106: 
         0,                      // 107: 
         0,                      // 108: 
@@ -560,7 +560,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 102: DID_CAL_TEMP_COMP_MAG
         0,                      // 103: DID_CAL_MOTION_GYR
         0,                      // 104: DID_CAL_MOTION_ACC
-        0,                      // 105: DID_CAL_MOTION_MAG
+        0,                      // 105: 
         0,                      // 106: 
         0,                      // 107: 
         0,                      // 108: 

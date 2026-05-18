@@ -66,7 +66,6 @@ enum eScompStatus
     SC_STATUS_MOTION_CAL_VALID_MASK = 0x00600000,
     SC_STATUS_MOTION_CAL_VALID_OFFSET = 21,
     SC_STATUS_MOTION_CAL_VALID_IMU  = 0x00200000,
-    SC_STATUS_MOTION_CAL_VALID_MAG  = 0x00400000,
 };
 typedef struct PACKED
 {
@@ -131,6 +130,8 @@ typedef struct PACKED
     nvm_sensor_tcal_3axis_t mag[NUM_MAG_DEVICES_V1P4];          // Mag temperature calibration
 } sensor_tcal_group_v1p4_t;
 
+typedef sensor_tcal_group_v1p4_t sensor_tcal_group_v1p5_t;      // v1.5 is the same as v1.4 for temperature calibration
+
 // 1/3 of sensor_tcal_group_t used for uploading calibration
 typedef struct PACKED
 {
@@ -185,6 +186,12 @@ typedef struct PACKED
     sensor_motion_cal_t     mag[NUM_MAG_DEVICES_V1P4];          // Magnetometers
 } sensor_mcal_group_v1p4_t;
 
+typedef struct PACKED
+{
+    sensor_motion_cal_t     pqr[NUM_IMU_DEVICES_V1P4];          // Gyros (x5 IMUs)
+    sensor_motion_cal_t     acc[NUM_IMU_DEVICES_V1P4];          // Accelerometers (x5 IMUs)
+} sensor_mcal_group_v1p5_t;
+
 ////////////////////////////////////////////////
 // v1.3
 typedef struct PACKED
@@ -209,11 +216,26 @@ typedef struct PACKED
     sensor_mcal_group_v1p4_t    mcal;                       // Motion calibration
 } sensor_cal_v1p4_data_t;
 
+////////////////////////////////////////////////
+// v1.5
+typedef struct PACKED
+{
+    sensor_data_info_t          dinfo;                      // Size and checksum
+    sensor_tcal_group_v1p5_t    tcal;                       // Temperature compensation
+    sensor_mcal_group_v1p5_t    mcal;                       // Motion calibration
+} sensor_cal_v1p5_data_t;
+
 typedef struct PACKED
 {
     sensor_cal_info_t           info;
     sensor_cal_v1p4_data_t      data;
 } sensor_cal_v1p4_t;
+
+typedef struct PACKED
+{
+    sensor_cal_info_t           info;
+    sensor_cal_v1p5_data_t      data;
+} sensor_cal_v1p5_t;
 
 // Per-build-target native calibration types. SN-7966: IMX-5 hardware is permanently Cal v1.3,
 // IMX-6 (and host SDK) is permanently Cal v1.4. Host code (no IMX_5/IMX_6 define) sees v1.4 so
@@ -224,10 +246,10 @@ typedef sensor_mcal_group_v1p3_t    sensor_mcal_group_t;
 typedef sensor_cal_v1p3_data_t      sensor_cal_data_t;
 typedef sensor_cal_v1p3_t           sensor_cal_t;
 #else
-typedef sensor_tcal_group_v1p4_t    sensor_tcal_group_t;
-typedef sensor_mcal_group_v1p4_t    sensor_mcal_group_t;
-typedef sensor_cal_v1p4_data_t      sensor_cal_data_t;
-typedef sensor_cal_v1p4_t           sensor_cal_t;
+typedef sensor_tcal_group_v1p5_t    sensor_tcal_group_t;
+typedef sensor_mcal_group_v1p5_t    sensor_mcal_group_t;
+typedef sensor_cal_v1p5_data_t      sensor_cal_data_t;
+typedef sensor_cal_v1p5_t           sensor_cal_t;
 #endif
 
 #define SIZE_OF_SENSOR_TCAL_GYR_V1P3    (NUM_IMU_DEVICES_V1P3*sizeof(nvm_sensor_tcal_3axis_t))
@@ -244,6 +266,13 @@ typedef sensor_cal_v1p4_t           sensor_cal_t;
 #define SIZE_OF_SENSOR_MCAL_ACC_V1P4    (NUM_IMU_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
 #define SIZE_OF_SENSOR_MCAL_MAG_V1P4    (NUM_MAG_DEVICES_V1P4*sizeof(sensor_motion_cal_t))
 
+#define SIZE_OF_SENSOR_TCAL_GYR_V1P5    (NUM_IMU_DEVICES_V1P5*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_ACC_V1P5    (NUM_IMU_DEVICES_V1P5*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_TCAL_MAG_V1P5    (NUM_MAG_DEVICES_V1P5*sizeof(nvm_sensor_tcal_3axis_t))
+#define SIZE_OF_SENSOR_MCAL_GYR_V1P5    (NUM_IMU_DEVICES_V1P5*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_ACC_V1P5    (NUM_IMU_DEVICES_V1P5*sizeof(sensor_motion_cal_t))
+#define SIZE_OF_SENSOR_MCAL_MAG_V1P5    (NUM_MAG_DEVICES_V1P5*sizeof(sensor_motion_cal_t))
+
 #if defined(IMX_5)
 #define SIZE_OF_SENSOR_TCAL_GYR         SIZE_OF_SENSOR_TCAL_GYR_V1P3
 #define SIZE_OF_SENSOR_TCAL_ACC         SIZE_OF_SENSOR_TCAL_ACC_V1P3
@@ -252,12 +281,12 @@ typedef sensor_cal_v1p4_t           sensor_cal_t;
 #define SIZE_OF_SENSOR_MCAL_ACC         SIZE_OF_SENSOR_MCAL_ACC_V1P3
 #define SIZE_OF_SENSOR_MCAL_MAG         SIZE_OF_SENSOR_MCAL_MAG_V1P3
 #else
-#define SIZE_OF_SENSOR_TCAL_GYR         SIZE_OF_SENSOR_TCAL_GYR_V1P4
-#define SIZE_OF_SENSOR_TCAL_ACC         SIZE_OF_SENSOR_TCAL_ACC_V1P4
-#define SIZE_OF_SENSOR_TCAL_MAG         SIZE_OF_SENSOR_TCAL_MAG_V1P4
-#define SIZE_OF_SENSOR_MCAL_GYR         SIZE_OF_SENSOR_MCAL_GYR_V1P4
-#define SIZE_OF_SENSOR_MCAL_ACC         SIZE_OF_SENSOR_MCAL_ACC_V1P4
-#define SIZE_OF_SENSOR_MCAL_MAG         SIZE_OF_SENSOR_MCAL_MAG_V1P4
+#define SIZE_OF_SENSOR_TCAL_GYR         SIZE_OF_SENSOR_TCAL_GYR_V1P5
+#define SIZE_OF_SENSOR_TCAL_ACC         SIZE_OF_SENSOR_TCAL_ACC_V1P5
+#define SIZE_OF_SENSOR_TCAL_MAG         SIZE_OF_SENSOR_TCAL_MAG_V1P5
+#define SIZE_OF_SENSOR_MCAL_GYR         SIZE_OF_SENSOR_MCAL_GYR_V1P5
+#define SIZE_OF_SENSOR_MCAL_ACC         SIZE_OF_SENSOR_MCAL_ACC_V1P5
+#define SIZE_OF_SENSOR_MCAL_MAG         SIZE_OF_SENSOR_MCAL_MAG_V1P5
 #endif
 
 #ifdef __cplusplus

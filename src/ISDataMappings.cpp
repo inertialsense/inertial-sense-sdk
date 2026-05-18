@@ -2145,16 +2145,6 @@ static void PopulateMapSensorMCalAccGroup(data_set_t data_set[DID_COUNT], uint32
     }
 }
 
-static void PopulateMapSensorMCalMagGroup(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<sensor_mcal_mag_group_t> mapper(data_set, did);
-    for (int i=0; i<MAX_MAG_DEVICES; i++)
-    {
-        mapper.AddArray2("sensor" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_mag_group_t, sensor[0].orth), DATA_TYPE_F32, 9, {""}, {"Mag ortho-normalization (cross-axis scalars)"});
-        mapper.AddArray2("sensor" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_mag_group_t, sensor[0].bias), DATA_TYPE_F32, 3, {""}, {"Mag biases (additive to temp comp)"});
-    }
-}
-
 static void PopulateMapSensorCompensation(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<sensor_compensation_t> mapper(data_set, did);
@@ -2397,7 +2387,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_CAL_TEMP_COMP_MAG",            // 102
     "DID_CAL_MOTION_GYR",               // 103
     "DID_CAL_MOTION_ACC",               // 104
-    "DID_CAL_MOTION_MAG",               // 105
+    "UNUSED_105",                       // 105
     "UNUSED_106",                       // 106
     "UNUSED_107",                       // 107
     "UNUSED_108",                       // 108
@@ -2557,7 +2547,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorTCalMagGroup(   m_data_set, DID_CAL_TEMP_COMP_MAG);
     PopulateMapSensorMCalGyrGroup(   m_data_set, DID_CAL_MOTION_GYR);
     PopulateMapSensorMCalAccGroup(   m_data_set, DID_CAL_MOTION_ACC);
-    PopulateMapSensorMCalMagGroup(   m_data_set, DID_CAL_MOTION_MAG);
     PopulateMapSensorCompensation(   m_data_set, DID_SCOMP);
 
     // This must come last
@@ -2707,7 +2696,6 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_CAL_TEMP_COMP_MAG:
     case DID_CAL_MOTION_GYR:
     case DID_CAL_MOTION_ACC:
-    case DID_CAL_MOTION_MAG:
     case DID_RTOS_INFO:
     case DID_SYS_CMD:
     case DID_NMEA_BCAST_PERIOD:

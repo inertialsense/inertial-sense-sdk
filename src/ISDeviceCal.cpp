@@ -1055,14 +1055,6 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
         } else {
             if (comManagerSendData(port, cal.data.mcal.acc, DID_CAL_MOTION_ACC, SIZE_OF_SENSOR_MCAL_ACC) != 0) { return sendFail(); }
         }
-        break;
-
-    case 6:     // Motion cal - Magnetometers (last step)
-        if (sendV1p3) {
-            if (comManagerSendData(port, s_v1p3Buf.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG_V1P3) != 0) { return sendFail(); }
-        } else {
-            if (comManagerSendData(port, cal.data.mcal.mag, DID_CAL_MOTION_MAG, SIZE_OF_SENSOR_MCAL_MAG) != 0) { return sendFail(); }
-        }
         s_retryCount = 0;
         calUploadState++;   // Increment state to mark completion here in case any upload fails and we need to retry the last step.  We don't want to resend all previous steps if only the last one fails.
         return 1;    // Done
