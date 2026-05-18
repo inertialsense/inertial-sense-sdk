@@ -3,8 +3,8 @@
 InertialSense SPI DID_PIMU Example - Raspberry Pi 5
 
 Sends PKT_TYPE_GET_DATA for DID_PIMU once per second (Strategy A — fixed-size
-polling, no Data Ready pin required), reads a fixed block of SPI bytes each
-loop tick, parses any ISB DATA packets that arrive, and prints the pimu_t
+polling, no Data Ready pin required), reads 200 bytes of SPI data once every
+250 ms, parses any ISB DATA packets that arrive, and prints the pimu_t
 fields.  Runs continuously until the user presses Q.
 
 ISB packet format used (protocol version 2):
@@ -52,8 +52,7 @@ SPI_DEVICE   = 0            # SPI device (chip-select index)
 SPI_MODE     = 3            # CPOL=1, CPHA=1  required by the IMX
 SPI_SPEED_HZ = 1_000_000   # 1 MHz; Strategy A (no DR) is limited to 3 MHz max
 
-SPI_READ_SIZE = 512         # bytes to read each poll tick — large enough to
-                            # hold several PIMU packets (one packet = 48 bytes)
+SPI_READ_SIZE = 200         # bytes to read each poll tick
 
 NAV_DT_MS     = 7          # IMX-5 nav period in ms; adjust to 4 for IMX-6
 PIMU_PERIOD_MS = 1000       # desired DID_PIMU broadcast period in ms (~1 Hz)
@@ -261,7 +260,7 @@ def main() -> None:
             if check_exit():
                 break
 
-            time.sleep(0.001)
+            time.sleep(0.250)
 
     except KeyboardInterrupt:
         pass    # Ctrl+C handled by the finally block
