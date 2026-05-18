@@ -455,7 +455,8 @@ TEST(ISDeviceCalUpload, RefusesUnknownHardwareVersion)
     devInfo.hardwareVer[0] = 0; // unresolved (e.g. bootloader / unconnected)
 
     int state = 0;
-    int result = ISDeviceCal::uploadSensorCalStep(/*port=*/nullptr, state, cal, devInfo);
+    ISDeviceCal::cal_upload_ctx_t ctx;
+    int result = ISDeviceCal::uploadSensorCalStep(/*port=*/nullptr, state, cal, devInfo, ctx);
     EXPECT_EQ(result, -1) << "Upload must refuse when hardware version is unresolved";
 }
 
@@ -471,10 +472,12 @@ TEST(ISDeviceCalUpload, AcceptsImx5AndImx6HardwareVersions)
     dev_info_t imx5 = {};
     imx5.hardwareVer[0] = 5;
     int state5 = 0;
-    EXPECT_NE(-1, ISDeviceCal::uploadSensorCalStep(nullptr, state5, cal, imx5));
+    ISDeviceCal::cal_upload_ctx_t ctx5;
+    EXPECT_NE(-1, ISDeviceCal::uploadSensorCalStep(nullptr, state5, cal, imx5, ctx5));
 
     dev_info_t imx6 = {};
     imx6.hardwareVer[0] = 6;
     int state6 = 0;
-    EXPECT_NE(-1, ISDeviceCal::uploadSensorCalStep(nullptr, state6, cal, imx6));
+    ISDeviceCal::cal_upload_ctx_t ctx6;
+    EXPECT_NE(-1, ISDeviceCal::uploadSensorCalStep(nullptr, state6, cal, imx6, ctx6));
 }
