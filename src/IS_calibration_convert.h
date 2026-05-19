@@ -35,10 +35,12 @@ static inline void set_sensor_motion_cal_data_defaults(sensor_cal_data_t *data)
 void convert_tcal_v1p3_to_v1p4(const sensor_tcal_group_v1p3_t *v1p3, sensor_tcal_group_v1p4_t *v1p4);
 void convert_mcal_v1p3_to_v1p4(const sensor_mcal_group_v1p3_t *v1p3, sensor_mcal_group_v1p4_t *v1p4);
 void convert_sensor_cal_v1p3_to_v1p4(const sensor_cal_v1p3_t *v1p3, sensor_cal_v1p4_t *v1p4);
+void convert_scomp_v1p3_to_v1p4(const sensor_compensation_v1p3_t *v1p3, sensor_compensation_v1p4_t *v1p4);
 
 void convert_tcal_v1p4_to_v1p3(const sensor_tcal_group_v1p4_t *v1p4, sensor_tcal_group_v1p3_t *v1p3);
 void convert_mcal_v1p4_to_v1p3(const sensor_mcal_group_v1p4_t *v1p4, sensor_mcal_group_v1p3_t *v1p3);
 void convert_sensor_cal_v1p4_to_v1p3(const sensor_cal_v1p4_t *v1p4, sensor_cal_v1p3_t *v1p3);
+void convert_scomp_v1p4_to_v1p3(const sensor_compensation_v1p4_t *v1p4, sensor_compensation_v1p3_t *v1p3);
 
 #ifdef __cplusplus
 }
