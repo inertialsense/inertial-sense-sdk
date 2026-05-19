@@ -107,6 +107,14 @@ bool ISDevice::step() {
 
     if (was_connected != (bool)portIsOpened(port)) {
         was_connected = isConnected();
+        if (!isConnected() && m_calibration) {
+            // Port went away mid-upload. Drop the cal data and surface IS_OP_CLOSED so the
+            // caller can distinguish this from a protocol-layer failure.
+            log_warn(IS_LOG_ISDEVICE, "[%s] Async calibration upload aborted: port closed mid-upload at step %d.", getIdAsString().c_str(), m_calUploadState);
+            m_calibration.reset();
+            m_calUploadState = -1;
+            m_calUploadResult = IS_OP_CLOSED;
+        }
         DeviceManager::getInstance().notifyListeners(shared_from_this(), isConnected() ? DeviceManager::DEVICE_CONNECTED : DeviceManager::DEVICE_DISCONNECTED);
     }
 
@@ -125,10 +133,19 @@ bool ISDevice::step() {
     }
 
     if (m_calibration && m_calUploadState != -1) {
-        if (ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo) != ASYNC_STATE__PENDING) {
-            m_calibration = nullptr;
+        const int stepResult = ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo, m_calibration->uploadCtx);
+        if (stepResult != ASYNC_STATE__PENDING) {
+            if (stepResult == ASYNC_STATE__SUCCESS) {
+                m_calUploadResult = IS_OP_OK;
+                log_info(IS_LOG_ISDEVICE, "[%s] Async calibration upload complete.", getIdAsString().c_str());
+            } else {
+                m_calUploadResult = IS_OP_ERROR;
+                log_error(IS_LOG_ISDEVICE, "[%s] Async calibration upload failed at step %d.", getIdAsString().c_str(), m_calUploadState);
+            }
+            m_calibration.reset();
             m_calUploadState = -1;
         }
+        didStuff = true;
     }
 
     if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
@@ -1355,17 +1372,22 @@ bool ISDevice::LoadGpxFlashConfigFromFile(std::string path)
 }
 
 /**
- * @brief Uploads sensor calibration data to a device in steps.
- * @param port The communication port handle.
- * @param calUploadState The current state of the upload process. This is updated by the function.
- * @param cal The sensor_cal_t structure containing the calibration data to upload.
- * @return 1 if the upload is complete, 0 if it's in progress, -1 on error.
+ * @brief Initiates an asynchronous calibration upload. Ownership of the supplied
+ * calibration object transfers to the device on accept; subsequent step() ticks drive
+ * the per-step protocol until completion. See header for full result vocabulary.
  */
-int ISDevice::UploadImxCalibrationAsync(ISDeviceCal& cal) {
+is_operation_result ISDevice::UploadImxCalibrationAsync(std::unique_ptr<ISDeviceCal> cal) {
     if (!isConnected())
-        return ASYNC_STATE__FAILURE;   // nothing to do, if we aren't connected
+        return IS_OP_CLOSED;
 
-    return ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, cal, devInfo);
+    if (m_calUploadResult == IS_OP_IN_PROGRESS || m_calibration)
+        return IS_OP_IN_PROGRESS;
+
+    m_calibration = std::move(cal);
+    m_calUploadState = 0;
+    m_calUploadResult = IS_OP_IN_PROGRESS;
+    log_info(IS_LOG_ISDEVICE, "[%s] Async calibration upload initiated.", getIdAsString().c_str());
+    return IS_OP_OK;
 }
 
 
@@ -1377,8 +1399,9 @@ bool ISDevice::UploadImxCalibration(ISDeviceCal& cal)
     int result = 0;
     try {
         int calUploadState = 0;
+        ISDeviceCal::cal_upload_ctx_t ctx;
         do {
-            result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, cal, devInfo);
+            result = ISDeviceCal::uploadSensorCalStep(port, calUploadState, cal, devInfo, ctx);
             SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);
         } while (result == ASYNC_STATE__PENDING);
     } catch (const std::exception& e) {
