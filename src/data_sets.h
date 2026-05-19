@@ -188,7 +188,7 @@ typedef uint32_t eDataIDs;
 
 // Increment w/ breaking changes (in ISComm.cpp) that prevent backwards compatibility with older protocols. 
 // #define PROTOCOL_VERSION_CHAR0   .   // Breaking changes (Packet)        (defined in ISComm.h) 
-#define PROTOCOL_VERSION_CHAR1      1   // Breaking changes (Payload)
+#define PROTOCOL_VERSION_CHAR1      2   // Breaking changes (Payload)
 
 // Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
 // #define PROTOCOL_VERSION_CHAR2   .   // Non-breaking changes (Packet):   (defined in ISComm.h)
@@ -631,8 +631,8 @@ enum eHdwRunStates {
 };
 
 enum eBuildFlags {
-    BUILD_FLAG_DEBUG = 0x1,
-    BUILD_FLAG_DIRTY = 0x2,
+    BUILD_FLAGS_DEBUG = 0x1,
+    BUILD_FLAGS_DIRTY = 0x2,
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -1609,6 +1609,8 @@ enum eGenFaultCodes
     GFC_GNSS_GENERAL_FAULT                  = 0x08000000,
     /** Fault: Invalid IMU input rejected by EKF */
     GFC_EKF_INPUT_INVALID_IMU               = 0x10000000,
+    /** Fault: GPS RTOS error */
+    GFC_GNSS_RTOS_ERROR                     = 0x20000000,
 
     /** IMX GFC flags that relate to GPX status flags */
     GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,
@@ -4826,6 +4828,8 @@ enum eGpxStatus
 
     /** GNSS receiver time fault **/
     GPX_STATUS_FAULT_GNSS_RCVR_TIME                     = (int)0x00100000,
+    /** RTOS task period overrun **/
+    GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN           = (int)0x00200000,
     /** DMA Fault detected **/
     GPX_STATUS_FAULT_DMA                                = (int)0x00800000,
 
