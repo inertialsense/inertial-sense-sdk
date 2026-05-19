@@ -1820,20 +1820,42 @@ typedef struct PACKED
     float                   dtTemp;                 // (°C) Temperature from last calibration point
 } sensor_comp_unit_t;
 
-/** (DID_SCOMP) INTERNAL USE ONLY */
+// Explicit wire-format variants of the DID_SCOMP payload. IMX-5 firmware sends v1.3
+// (3 IMU + 2 mag), IMX-6 firmware sends v1.4 (5 IMU + 1 mag). Host SDK keeps
+// sensor_compensation_t at the v1.4 shape (MAX_IMU_DEVICES / MAX_MAG_DEVICES) and
+// converts v1.3 payloads on receive via convert_scomp_v1p3_to_v1p4() in
+// IS_calibration_convert.h.
 typedef struct PACKED
-{                                                   // Sensor temperature compensation
-    uint32_t                timeMs;                 // (ms) Time since boot up.
-    sensor_comp_unit_t      pqr[MAX_IMU_DEVICES];
-    sensor_comp_unit_t      acc[MAX_IMU_DEVICES];
-    sensor_comp_unit_t      mag[MAX_MAG_DEVICES];
-    imui_t                  referenceImu;           // External reference IMU
-    float                   referenceMag[3];        // External reference magnetometer (heading reference)
-    uint32_t                sampleCount;            // Number of samples collected
-    uint32_t                calState;               // state machine (see eScompCalState)
-    uint32_t                status;                 // Status used to control LED and indicate valid sensor samples (see eScompStatus)
-    float                   alignAccel[3];          // Alignment acceleration
-} sensor_compensation_t;
+{
+    uint32_t                timeMs;
+    sensor_comp_unit_t      pqr[NUM_IMU_DEVICES_V1P3];
+    sensor_comp_unit_t      acc[NUM_IMU_DEVICES_V1P3];
+    sensor_comp_unit_t      mag[NUM_MAG_DEVICES_V1P3];
+    imui_t                  referenceImu;
+    float                   referenceMag[3];
+    uint32_t                sampleCount;
+    uint32_t                calState;
+    uint32_t                status;
+    float                   alignAccel[3];
+} sensor_compensation_v1p3_t;
+
+typedef struct PACKED
+{
+    uint32_t                timeMs;
+    sensor_comp_unit_t      pqr[NUM_IMU_DEVICES_V1P4];
+    sensor_comp_unit_t      acc[NUM_IMU_DEVICES_V1P4];
+    sensor_comp_unit_t      mag[NUM_MAG_DEVICES_V1P4];
+    imui_t                  referenceImu;
+    float                   referenceMag[3];
+    uint32_t                sampleCount;
+    uint32_t                calState;
+    uint32_t                status;
+    float                   alignAccel[3];
+} sensor_compensation_v1p4_t;
+
+/** (DID_SCOMP) INTERNAL USE ONLY - aliased to sensor_compensation_v1p4_t since
+ * MAX_IMU_DEVICES / MAX_MAG_DEVICES are unconditionally v1.4 on every build target. */
+typedef sensor_compensation_v1p4_t  sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS    4
 
