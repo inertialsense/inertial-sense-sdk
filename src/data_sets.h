@@ -188,7 +188,7 @@ typedef uint32_t eDataIDs;
 
 // Increment w/ breaking changes (in ISComm.cpp) that prevent backwards compatibility with older protocols. 
 // #define PROTOCOL_VERSION_CHAR0   .   // Breaking changes (Packet)        (defined in ISComm.h) 
-#define PROTOCOL_VERSION_CHAR1      1   // Breaking changes (Payload)
+#define PROTOCOL_VERSION_CHAR1      2   // Breaking changes (Payload)
 
 // Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
 // #define PROTOCOL_VERSION_CHAR2   .   // Non-breaking changes (Packet):   (defined in ISComm.h)
@@ -631,8 +631,8 @@ enum eHdwRunStates {
 };
 
 enum eBuildFlags {
-    BUILD_FLAG_DEBUG = 0x1,
-    BUILD_FLAG_DIRTY = 0x2,
+    BUILD_FLAGS_DEBUG = 0x1,
+    BUILD_FLAGS_DIRTY = 0x2,
 };
 
 /** (DID_DEV_INFO) Device information */
