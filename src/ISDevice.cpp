@@ -710,6 +710,8 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
         }
         if (devInfo.firmwareVer[3] != 0)
             out += utils::string_format(".%u", devInfo.firmwareVer[3]);
+        if (devInfo.buildFlags & BUILD_FLAGS_DEBUG) 
+            out += "-debug";
 
         if (devInfo.repoRevision && !(flags & OMIT_COMMIT_HASH)) {
             out += utils::string_format(" %08x", devInfo.repoRevision);
