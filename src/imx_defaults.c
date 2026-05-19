@@ -261,16 +261,16 @@ uint32_t imxMinNavOutputMs(nvm_flash_cfg_t *cfg)
     else if (!(cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_GNSS1_FUSION) ||
              !(cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_GNSS2_FUSION))
     {   // Nav: GPS enabled
-        return tNAV_MIN_PERIOD_MS_NAV_MODE;
+        return tNAV_MIN_OUTPUT_PERIOD_MS_NAV_MODE;
     }
     else if (!(cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION) ||
              !(cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES))
     {   // AHRS: no GPS, magnetometer enabled
-        return tNAV_MIN_PERIOD_MS_AHRS_MODE;
+        return tNAV_MIN_OUTPUT_PERIOD_MS_AHRS_MODE;
     }
     else
     {   // VRS: no GPS or magnetometer
-        return tNAV_MIN_PERIOD_MS_VRS_MODE;
+        return tNAV_MIN_OUTPUT_PERIOD_MS_VRS_MODE;
     }
 }
 
