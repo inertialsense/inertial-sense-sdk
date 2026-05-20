@@ -42,7 +42,7 @@ SPI_MODE     = 3            # CPOL=1, CPHA=1  required by the IMX
 SPI_SPEED_HZ = 1_000_000   # 1 MHz
 
 READ_SIZE    = 250          # bytes to read each tick
-READ_INTERVAL_S = 2.0       # seconds between reads
+READ_INTERVAL_S = 10.0       # seconds between reads
 
 EXIT_KEY = "q"
 
