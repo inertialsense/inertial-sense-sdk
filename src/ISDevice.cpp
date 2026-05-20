@@ -563,7 +563,7 @@ std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
         case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
         default: typeName = "\?\?\?"; break;
     }
-    return utils::string_format("%s-%d.%d::SN%ld", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
+    return utils::string_format("%s-%d.%d::SN%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
 }
 
 std::string ISDevice::getIdAsString() const {
