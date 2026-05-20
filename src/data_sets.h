@@ -3267,7 +3267,7 @@ enum eIoConfig
     IO_CFG_GNSS1_PPS_SOURCE_G15                 = (int)1,
     IO_CFG_GNSS1_PPS_SOURCE_G2                  = (int)3,
     IO_CFG_GNSS1_PPS_SOURCE_G5                  = (int)4,
-    IO_CFG_GNSS1_PPS_SOURCE_G8                  = (int)5,
+    IO_CFG_GNSS1_PPS_SOURCE_G12                 = (int)5,
     IO_CFG_GNSS1_PPS_SOURCE_G9                  = (int)6,
 
  #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)    { (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }    
@@ -3384,12 +3384,12 @@ enum eIoConfig2
     IO_CFG2_GNSS2_PPS_SOURCE_MASK           = (int)0x03,
     IO_CFG2_GNSS2_PPS_SOURCE_BITMASK        = (int)(IO_CFG2_GNSS2_PPS_SOURCE_MASK<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET),    
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED       = (int)0,
-    IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)1,
-    IO_CFG2_GNSS2_PPS_SOURCE_G12            = (int)2,
+    IO_CFG2_GNSS2_PPS_SOURCE_G8             = (int)1,
+    IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)2,
     IO_CFG2_GNSS2_PPS_SOURCE_G13            = (int)3,    
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED_val   = (int)0x00,
-    IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x04,
-    IO_CFG2_GNSS2_PPS_SOURCE_G12_val        = (int)0x80,
+    IO_CFG2_GNSS2_PPS_SOURCE_G8_val         = (int)0x04,
+    IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x80,
     IO_CFG2_GNSS2_PPS_SOURCE_G13_val        = (int)0xC0,
 };
 
