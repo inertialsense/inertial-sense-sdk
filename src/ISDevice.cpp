@@ -134,6 +134,7 @@ bool ISDevice::step() {
 
     if (m_calibration && m_calUploadState != -1) {
         const int stepResult = ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo, m_calibration->uploadCtx);
+        SLEEP_MS(50);   // Keep it snappy, but give the device a break between steps, important for uploads over UART.
         if (stepResult != ASYNC_STATE__PENDING) {
             if (stepResult == ASYNC_STATE__SUCCESS) {
                 m_calUploadResult = IS_OP_OK;
