@@ -133,9 +133,11 @@ bool ISDevice::step() {
     }
 
     if (m_calibration && m_calUploadState != -1) {
-        const int stepResult = ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo, m_calibration->uploadCtx);
-        if (stepResult != ASYNC_STATE__PENDING) {
-            if (stepResult == ASYNC_STATE__SUCCESS) {
+        const ISDeviceCal::AsyncState stepResult = ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo, m_calibration->uploadCtx);
+         if (stepResult == ISDeviceCal::ASYNC_STATE__PENDING) {
+             SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);   // Give the device a break between upload steps, important for uploads over UART.
+         } else {
+            if (stepResult == ISDeviceCal::ASYNC_STATE__SUCCESS) {
                 m_calUploadResult = IS_OP_OK;
                 log_info(IS_LOG_ISDEVICE, "[%s] Async calibration upload complete.", getIdAsString().c_str());
             } else {
