@@ -142,16 +142,31 @@ def print_dev_info(info: dict) -> None:
     fw    = info["firmwareVer"]
     hw    = info["hardwareVer"]
     proto = info["protocolVer"]
-    print(f"  Serial Number : {info['serialNumber']}")
-    print(f"  Firmware Ver  : {fw[0]}.{fw[1]}.{fw[2]}.{fw[3]}")
-    print(f"  Hardware Ver  : {hw[0]}.{hw[1]}.{hw[2]}.{hw[3]}")
-    print(f"  Build Number  : {info['buildNumber']}")
-    print(f"  Protocol Ver  : {proto[0]}.{proto[1]}.{proto[2]}.{proto[3]}")
-    print(f"  Repo Revision : {info['repoRevision']}")
-    print(f"  Manufacturer  : {info['manufacturer']}")
-    print(f"  Build Date    : {info['buildDate']}")
-    print(f"  Build Time    : {info['buildTime']}")
-    print(f"  Add Info      : {info['addInfo']}")
+
+    fw_str    = f"{fw[0]}.{fw[1]}.{fw[2]}.{fw[3]}"
+    hw_str    = f"{hw[0]}.{hw[1]}.{hw[2]}.{hw[3]}"
+    proto_str = f"{proto[0]}.{proto[1]}.{proto[2]}.{proto[3]}"
+
+    sep = "+" + "-" * 38 + "+"
+    def row(label, value):
+        line = f"  {label:<16} {value}"
+        print(f"| {line:<36} |")
+
+    print(sep)
+    print("|  Device Information                  |")
+    print(sep)
+    row("Manufacturer:",  info["manufacturer"])
+    row("Serial Number:", str(info["serialNumber"]))
+    row("Hardware Ver:",  hw_str)
+    row("Firmware Ver:",  fw_str)
+    row("Build Number:",  str(info["buildNumber"]))
+    row("Build Date:",    info["buildDate"])
+    row("Build Time:",    info["buildTime"])
+    row("Protocol Ver:",  proto_str)
+    row("Repo Revision:", str(info["repoRevision"]))
+    if info["addInfo"]:
+        row("Add Info:",  info["addInfo"])
+    print(sep)
 
 # ---------------------------------------------------------------------------
 # Main
@@ -190,7 +205,6 @@ def main() -> None:
                 print(f"[!] Short payload ({len(payload)} < {DEV_INFO_SIZE} bytes)")
                 continue
             found = True
-            print("DID_DEV_INFO:")
             print_dev_info(info)
 
         if not found:
