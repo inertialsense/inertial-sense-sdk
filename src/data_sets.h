@@ -3267,7 +3267,7 @@ enum eIoConfig
     IO_CFG_GNSS1_PPS_SOURCE_G15                 = (int)1,
     IO_CFG_GNSS1_PPS_SOURCE_G2                  = (int)3,
     IO_CFG_GNSS1_PPS_SOURCE_G5                  = (int)4,
-    IO_CFG_GNSS1_PPS_SOURCE_G8                  = (int)5,
+    IO_CFG_GNSS1_PPS_SOURCE_G12                 = (int)5,
     IO_CFG_GNSS1_PPS_SOURCE_G9                  = (int)6,
 
  #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)    { (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }    
@@ -3384,12 +3384,12 @@ enum eIoConfig2
     IO_CFG2_GNSS2_PPS_SOURCE_MASK           = (int)0x03,
     IO_CFG2_GNSS2_PPS_SOURCE_BITMASK        = (int)(IO_CFG2_GNSS2_PPS_SOURCE_MASK<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET),    
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED       = (int)0,
-    IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)1,
-    IO_CFG2_GNSS2_PPS_SOURCE_G12            = (int)2,
+    IO_CFG2_GNSS2_PPS_SOURCE_G8             = (int)1,
+    IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)2,
     IO_CFG2_GNSS2_PPS_SOURCE_G13            = (int)3,    
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED_val   = (int)0x00,
-    IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x04,
-    IO_CFG2_GNSS2_PPS_SOURCE_G12_val        = (int)0x80,
+    IO_CFG2_GNSS2_PPS_SOURCE_G8_val         = (int)0x40,
+    IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x80,
     IO_CFG2_GNSS2_PPS_SOURCE_G13_val        = (int)0xC0,
 };
 
@@ -3401,22 +3401,22 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
     PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  PPS disabled (no GNSS1 PPS timepulse configured)
-    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
-    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.         PPS disabled
+    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "                    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "                    PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,          
-    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3 (excluding TBED-3.0) PPS1 on G5 (pin 9)
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  PPS1 on G8
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  PPS1 on G15 (pin 20)
-    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 and IS-IMX-GPX-DEV-1 (w/ IMX-5 and GPX-1)
+    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3:           PPS1 on  G5 (pin  9), PPS2 on G8 (pin 8)
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // IG-1.0:              PPS1 on  G8 (pin  8)
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // IG-1.1 and later:    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,          // IG-1.1 and later:    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2:                PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,          // "
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
-    PLATFORM_CFG_TYPE_TBED3_3                   = (int)21,          // Testbed-3.3 and later.  PPS1 on G5 (pin 9), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_RUG4_G2                   = (int)22,          // PCB RUG-4.x.  PPS1 on G15 (default), PPS2 on G11 (pin 16)
-    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later.  PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_IMX_BRK_1                 = (int)21,          // IS-IMX-GPX-DEV-1:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_RUG4_G2                   = (int)22,          // PCB RUG-4.x:         PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
     PLATFORM_CFG_TYPE_COUNT                     = (int)24,
 
     // Presets
