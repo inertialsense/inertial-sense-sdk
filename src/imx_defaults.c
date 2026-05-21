@@ -201,10 +201,10 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     case PLATFORM_CFG_TYPE_TBED3_3:
         *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G5<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
         break;
-        // G8
-    case PLATFORM_CFG_TYPE_EVB2_G2:
-        *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G12<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
-        break;
+        // G12
+    // case PLATFORM_CFG_TYPE_EVB2_G2:
+    //     *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G12<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+    //     break;
         // G15
     default:
         *ioConfig |= IO_CFG_GNSS1_PPS_SOURCE_G15<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
@@ -215,7 +215,7 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     *ioConfig2 = 0;
     switch (type)
     {
-        
+        // G8
     case PLATFORM_CFG_TYPE_TBED3:
         *ioConfig2 |= IO_CFG2_GNSS2_PPS_SOURCE_G8<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
         break;

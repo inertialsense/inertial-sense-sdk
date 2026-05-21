@@ -3388,7 +3388,7 @@ enum eIoConfig2
     IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)2,
     IO_CFG2_GNSS2_PPS_SOURCE_G13            = (int)3,    
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED_val   = (int)0x00,
-    IO_CFG2_GNSS2_PPS_SOURCE_G8_val         = (int)0x04,
+    IO_CFG2_GNSS2_PPS_SOURCE_G8_val         = (int)0x40,
     IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x80,
     IO_CFG2_GNSS2_PPS_SOURCE_G13_val        = (int)0xC0,
 };
