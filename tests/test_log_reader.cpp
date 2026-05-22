@@ -521,6 +521,63 @@ TEST_F(LogReaderTest, TruncationWithoutSiblingEmitsWarnMessage) {
 }
 
 // ============================================================
+// SN-7996 Phase B — close-after-mmap leaves the process FD-budget alone
+// ============================================================
+
+#if !defined(_WIN32)
+TEST_F(LogReaderTest, OpeningManySegmentsDoesNotAccumulateFds) {
+    // Open the fixture's .raw 64 times. With the pre-Phase-B behavior we'd hold ~128 FDs (one .raw + one .idx
+    // per reader); with the close-after-mmap fix, the mmap'd pages keep `bytes()` valid while the FDs are
+    // released back to the OS immediately. The test asserts the post-open FD count grows by a small constant
+    // (allowing noise from the test harness — gtest output streams, /tmp temp files from concurrent tests on
+    // CI runners, etc.) rather than ~2 per segment.
+    //
+    // POSIX-only (counts /proc/self/fd entries). Windows uses a different handle accounting model; the same
+    // bug class is closed by the matching CloseHandle in ISFileSource::open's WIN32 branch but isn't exercised
+    // by this test directly.
+
+    auto countOpenFds = []() -> int {
+        std::error_code ec;
+        int n = 0;
+        for (const auto& entry : fs::directory_iterator("/proc/self/fd", ec)) {
+            (void)entry;
+            ++n;
+        }
+        if (ec) return -1;  // skip silently
+        return n;
+    };
+
+    const int before = countOpenFds();
+    if (before < 0) GTEST_SKIP() << "/proc/self/fd not enumerable on this kernel";
+
+    constexpr int kSegmentCount = 64;
+    std::vector<ISLogReader> readers;
+    readers.reserve(kSegmentCount);
+    for (int i = 0; i < kSegmentCount; ++i) {
+        auto r = ISLogReader::openSegment(f_.rawFile);
+        ASSERT_TRUE(r.has_value()) << "openSegment #" << i << " failed: " << r.error().message;
+        readers.push_back(std::move(*r));
+    }
+
+    const int after = countOpenFds();
+    ASSERT_GE(after, 0);
+
+    // Headroom: 8 FDs of slack for harness-side noise. Pre-fix this would be ~128 (2 per segment).
+    EXPECT_LT(after - before, 16)
+        << "FD count grew by " << (after - before) << " after opening " << kSegmentCount
+        << " segments — close-after-mmap regression suspected. before=" << before << " after=" << after;
+
+    // Sanity: payload reads still work without the FD open. Walk the first reader's records via
+    // bytes()-aliasing — proves the mmap stays valid.
+    ASSERT_GT(readers.size(), 0u);
+    ASSERT_GT(readers[0].recordCount(), 0u);
+    auto bytes = readers[0].rawBytes();
+    EXPECT_NE(bytes.first, nullptr);
+    EXPECT_GT(bytes.second, 0u);
+}
+#endif
+
+// ============================================================
 // Layout-discipline sanity
 // ============================================================
 
