@@ -9,15 +9,27 @@ extern "C" {
 
 #include "data_sets.h"
 
-#define tNAV_MIN_PERIOD_IMX5_MS_NAV_MODE    7       // W/ GPS
-#define tNAV_MIN_PERIOD_IMX5_MS_AHRS_MODE   5       // No GPS
-#define tNAV_MIN_PERIOD_IMX5_MS_VRS_MODE    4       // No GPS or magnetometer
+#define tNAV_MIN_OUTPUT_PERIOD_IMX5_MS_NAV_MODE    7       // W/ GPS
+#define tNAV_MIN_OUTPUT_PERIOD_IMX5_MS_AHRS_MODE   5       // No GPS
+#define tNAV_MIN_OUTPUT_PERIOD_IMX5_MS_VRS_MODE    4       // No GPS or magnetometer
 
-#define tNAV_MIN_PERIOD_MS_NAV_MODE         tNAV_MIN_PERIOD_IMX5_MS_NAV_MODE        // W/ GPS
-#define tNAV_MIN_PERIOD_MS_AHRS_MODE        tNAV_MIN_PERIOD_IMX5_MS_AHRS_MODE       // No GPS
-#define tNAV_MIN_PERIOD_MS_VRS_MODE         tNAV_MIN_PERIOD_IMX5_MS_VRS_MODE        // No GPS or magnetometer
-#define tMAINT_MAX_RUN_TIME_US              100000  // Used to increment gap count and indicate error
-#define tNAV_DEFAULT_PERIOD_MS              tNAV_MIN_PERIOD_MS_NAV_MODE      // Reliable / safe period for operation
+#define tNAV_MIN_OUTPUT_PERIOD_IMX6_MS_NAV_MODE    2       // W/ GPS
+#define tNAV_MIN_OUTPUT_PERIOD_IMX6_MS_AHRS_MODE   2       // No GPS
+#define tNAV_MIN_OUTPUT_PERIOD_IMX6_MS_VRS_MODE    2       // No GPS or magnetometer
+
+#if defined(IMX_5)
+#define tNAV_MIN_OUTPUT_PERIOD_MS_NAV_MODE      tNAV_MIN_OUTPUT_PERIOD_IMX5_MS_NAV_MODE     // W/ GPS
+#define tNAV_MIN_OUTPUT_PERIOD_MS_AHRS_MODE     tNAV_MIN_OUTPUT_PERIOD_IMX5_MS_AHRS_MODE    // No GPS
+#define tNAV_MIN_OUTPUT_PERIOD_MS_VRS_MODE      tNAV_MIN_OUTPUT_PERIOD_IMX5_MS_VRS_MODE     // No GPS or magnetometer
+#define tNAV_DEFAULT_PERIOD_MS                  tNAV_MIN_OUTPUT_PERIOD_MS_NAV_MODE          // Reliable / safe period for operation
+#else   // IMX_6
+#define tNAV_MIN_OUTPUT_PERIOD_MS_NAV_MODE      tNAV_MIN_OUTPUT_PERIOD_IMX6_MS_NAV_MODE     // W/ GPS
+#define tNAV_MIN_OUTPUT_PERIOD_MS_AHRS_MODE     tNAV_MIN_OUTPUT_PERIOD_IMX6_MS_AHRS_MODE    // No GPS
+#define tNAV_MIN_OUTPUT_PERIOD_MS_VRS_MODE      tNAV_MIN_OUTPUT_PERIOD_IMX6_MS_VRS_MODE     // No GPS or magnetometer
+#define tNAV_DEFAULT_PERIOD_MS                  5                                           // Reliable / safe period for operation
+#endif
+
+#define tMAINT_MAX_RUN_TIME_US                  100000                                      // Used to increment gap count and indicate error
 
 
 int imxPlatformConfigTypeValid(uint32_t platformConfig);
