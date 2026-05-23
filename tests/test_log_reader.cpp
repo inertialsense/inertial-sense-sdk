@@ -427,7 +427,7 @@ TEST_F(LogReaderTest, GpsRawTimestampDoesNotTriggerPoisonRebuild) {
 
     auto* recPtr = reinterpret_cast<uint8_t*>(bytes.data() + IS_LOG_IDX_HEADER_SIZE);
     is_log_idx_record_v2_t r = parseRecord(recPtr);
-    r.did       = DID_GPS1_RAW;
+    r.did       = DID_GNSS1_RAW;
     r.timestamp = 1'700'000'000'000ULL;   // 2023-ish Unix-epoch-ms
     serializeRecord(recPtr, r);
 

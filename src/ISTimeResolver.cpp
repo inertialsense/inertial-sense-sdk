@@ -30,7 +30,7 @@ namespace {
 /// which the detection loop treats as "not a sync anchor").
 constexpr std::array<uint32_t, 6> kToWBearingDids = {
     DID_INS_1, DID_INS_2, DID_INS_3, DID_INS_4,
-    DID_GPS1_POS, DID_GPS2_POS,
+    DID_GNSS1_POS, DID_GNSS2_POS,
 };
 
 inline bool isToWBearing(uint32_t did) noexcept {

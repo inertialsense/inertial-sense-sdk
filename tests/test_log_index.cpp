@@ -400,7 +400,7 @@ TEST(IdxIntegration, EndToEndViaDeviceLogApi) {
 
     p_data_hdr_t h1 = makeHdr(DID_DEV_INFO,    sizeof(dev_info_t));
     p_data_hdr_t h2 = makeHdr(DID_INS_1,       128);
-    p_data_hdr_t h3 = makeHdr(DID_GPS1_POS,    64);
+    p_data_hdr_t h3 = makeHdr(DID_GNSS1_POS,    64);
 
     log.addIndexRecord(&h1, fakeBuf);
     log.addIndexRecord(&h2, fakeBuf);
@@ -433,7 +433,7 @@ TEST(IdxIntegration, EndToEndViaDeviceLogApi) {
 
     auto rec3 = readRecord(in);
     ASSERT_TRUE(rec3.has_value());
-    EXPECT_EQ(rec3->did, static_cast<uint32_t>(DID_GPS1_POS));
+    EXPECT_EQ(rec3->did, static_cast<uint32_t>(DID_GNSS1_POS));
 
     std::remove((baseNoExt + ".idx").c_str());
 }

@@ -49,7 +49,7 @@ static_assert(std::is_same_v<DIDTraits<DID_BAROMETER>::type, barometer_t>,
 static_assert(DIDTraits<DID_INS_2>::expected_size == sizeof(ins_2_t));
 static_assert(has_traits_v<DID_INS_2>);
 static_assert(has_traits_v<DID_IMU>);
-static_assert(has_traits_v<DID_GPS1_POS>);
+static_assert(has_traits_v<DID_GNSS1_POS>);
 
 // Helper to assemble a fixture .raw with a hand-built sequence of records.
 struct FixturePaths {
@@ -132,7 +132,7 @@ TEST(DIDTraitsRuntime, NamesAndSizes) {
     EXPECT_EQ(DIDTraits<DID_INS_2>::expected_size,    sizeof(ins_2_t));
     EXPECT_EQ(DIDTraits<DID_IMU>::expected_size,      sizeof(imu_t));
     EXPECT_EQ(DIDTraits<DID_PIMU>::expected_size,     sizeof(pimu_t));
-    EXPECT_EQ(DIDTraits<DID_GPS1_POS>::expected_size, sizeof(gps_pos_t));
+    EXPECT_EQ(DIDTraits<DID_GNSS1_POS>::expected_size, sizeof(gnss_pos_t));
 }
 
 // ---------------------------------------------------------------------------
@@ -206,7 +206,7 @@ TEST_F(DIDTraitsTest, RangeForYieldsConstRef) {
 // Empty range when the DID is absent.
 // ---------------------------------------------------------------------------
 TEST_F(DIDTraitsTest, EmptyRangeForAbsentDid) {
-    // Fixture only contains DID_IMU; querying DID_GPS1_POS returns empty.
+    // Fixture only contains DID_IMU; querying DID_GNSS1_POS returns empty.
     std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
     imu_t s{};
     recs.emplace_back(DID_IMU, bytesOf(s));
@@ -215,7 +215,7 @@ TEST_F(DIDTraitsTest, EmptyRangeForAbsentDid) {
     auto reader = ISLogReader::openSegment(f.rawFile);
     ASSERT_TRUE(reader.has_value());
 
-    auto gpsRange = reader->records<DID_GPS1_POS>();
+    auto gpsRange = reader->records<DID_GNSS1_POS>();
     EXPECT_TRUE(gpsRange.empty());
     EXPECT_EQ(gpsRange.size(), 0u);
 
