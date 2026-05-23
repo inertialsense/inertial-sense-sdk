@@ -28,7 +28,7 @@ RtkBaseProvider::base_gps_source RtkBaseProvider::gpsSourceParamToEnum(YAML::Nod
 
     ph_.nodeParam(n, v, param, d);
     std::transform(param.begin(), param.end(), param.begin(), ::tolower);
-    return (param == "gps1" ? GPS1 : (param == "gps2" ? GPS2 : OFF));
+    return (param == "gps1" ? GNSS1 : (param == "gps2" ? GNSS2 : OFF));
 }
 
 void RtkBaseProvider::configure(YAML::Node& node) {

@@ -30,8 +30,8 @@ class NtripRover : public ISDevice {
 public:
     std::string ntripUrl;
     NtripCorrectionService ntrip;
-    gps_pos_t       gps = {};
-    gps_rtk_rel_t   rel = {};
+    gnss_pos_t       gps = {};
+    gnss_rtk_rel_t   rel = {};
     double lastImxUptime = 0;
     double lastGpxUptime = 0;
 
@@ -58,14 +58,14 @@ public:
         // Enable message broadcasting
         GetData(DID_SYS_PARAMS, 0, 0, 100);         // Request SYS_PARAMS every 100 ms (SYS_PARAMS is ran on the 1ms "Maintenance Task")
         GetData(DID_GPX_STATUS, 0, 0, 100);         // Request GPX_STATUS every 100 ms (GPX_STATUS is ran on the 1ms "Maintenance Task")
-        GetData(DID_GPS1_POS, 0, 0, 1);             // Request GPS1_POS every nvm_flash_cfg_t.startupGPSDtMs * 1 period
-        GetData(DID_GPS1_RTK_POS_REL, 0, 0, 1);     // Request GPS1_RTK_POS_REL every nvm_flash_cfg_t.startupGPSDtMs * 1 period
+        GetData(DID_GNSS1_POS, 0, 0, 1);             // Request GPS1_POS every nvm_flash_cfg_t.startupGnssDtMs * 1 period
+        GetData(DID_GNSS1_RTK_POS_REL, 0, 0, 1);     // Request GPS1_RTK_POS_REL every nvm_flash_cfg_t.startupGnssDtMs * 1 period
 
         return true;
     }
 
     bool step() override {
-        if ((GPS_STATUS_FIX_MASK & gps.status) >= GPS_STATUS_FIX_3D) {
+        if ((GNSS_STATUS_FIX_MASK & gps.status) >= GNSS_STATUS_FIX_3D) {
             // Once we have a GNSS position, we can start to do NTRIP things...
             if (!ntrip.isConnected())
                 ntrip.connect(ntripUrl);    // if we're not connected, connect
@@ -95,21 +95,21 @@ public:
                 lastGpxUptime = gpxStatus.upTime;
                 break;
 
-            case DID_GPS1_RTK_POS_REL:
-                rel = *(gps_rtk_rel_t*)data->ptr;
+            case DID_GNSS1_RTK_POS_REL:
+                rel = *(gnss_rtk_rel_t*)data->ptr;
                 break;
 
-            case DID_GPS1_POS:
-                gps = *(gps_pos_t*)data->ptr;
+            case DID_GNSS1_POS:
+                gps = *(gnss_pos_t*)data->ptr;
 
                 std::string fix;
-                switch (gps.status&GPS_STATUS_FIX_MASK)
+                switch (gps.status&GNSS_STATUS_FIX_MASK)
                 {
                     default:                        fix = "None      ";        break;
-                    case GPS_STATUS_FIX_3D:         fix = "3D        ";        break;
-                    case GPS_STATUS_FIX_RTK_SINGLE: fix = "RTK-Single";        break;
-                    case GPS_STATUS_FIX_RTK_FLOAT:  fix = "RTK-Float ";        break;
-                    case GPS_STATUS_FIX_RTK_FIX:    fix = "RTK       ";        break;
+                    case GNSS_STATUS_FIX_3D:         fix = "3D        ";        break;
+                    case GNSS_STATUS_FIX_RTK_SINGLE: fix = "RTK-Single";        break;
+                    case GNSS_STATUS_FIX_RTK_FLOAT:  fix = "RTK-Float ";        break;
+                    case GNSS_STATUS_FIX_RTK_FIX:    fix = "RTK       ";        break;
                 }
 
                 auto stats = ntrip.getMessageStats();
@@ -124,7 +124,7 @@ public:
                        gps.hAcc,
                        rel.differentialAge,    // time since last base message
                        fix.c_str(),
-                       (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING ? "BASE: No data" : (std::string("BASE: ")+std::to_string(baseMsgCount).c_str())).c_str()
+                       (gps.status&GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING ? "BASE: No data" : (std::string("BASE: ")+std::to_string(baseMsgCount).c_str())).c_str()
                 );
 
                 // Forward our position via GGA every 5 seconds to the RTK base.
@@ -133,7 +133,7 @@ public:
                 if (abs(currentTime - lastTime) > 5)
                 {   // Update every 5 seconds
                     lastTime = currentTime;
-                    if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
+                    if ((gps.status&GNSS_STATUS_FIX_MASK) >= GNSS_STATUS_FIX_3D)
                     {   // GPS position is valid
                         ntrip.updatePosition(gps);
                         // printf("Sending position to Base: \n%s\n", std::string(rxBuf,n).c_str());

@@ -128,6 +128,12 @@ public:
     }
 
     virtual ~ISDevice() {
+        if (m_calibration) {
+            // Log silent failures on shutdown; unique_ptr frees the cal data.
+            log_warn(IS_LOG_ISDEVICE, "[%s] ISDevice destroyed with async calibration upload still in flight at step %d.", getIdAsString().c_str(), m_calUploadState);
+            m_calUploadResult = IS_OP_CLOSED;
+        }
+
         devInfo = {};
 
         if (port) {
@@ -372,7 +378,7 @@ public:
     /**
      * @returns true if reset() was called recently, and we are waiting for the device to return.
      */
-    bool isResetPending() { return current_timeMs() < nextResetTime; }
+    bool isResetPending() { return (current_timeMs() - lastResetTime) < resetRequestThreshold; }
 
     /**
      * Fetches (if not previously fetched), the devices manufacturing info and populates it into the passed reference.
@@ -580,17 +586,30 @@ public:
     bool LoadGpxFlashConfigFromFile(std::string path);
 
     /**
-     * Asynchronously loads the referenced Device calibration.
-     * It is expected that this function will be called periodically from the step()
-     * function, if a calibration upload is in progress.
-     * @param cal a reference to the calibration data to load on the device
-     * @return one of ASYNC_STATE__* indicating if an upload is in progress or not.
-     *      ASYNC_STATE__TIMEOUT if the calibration failed to upload or an issue occurred.
-     *      ASYNC_STATE__PENDING if the calibration upload is still being performed. step()
-     *      should continue to call this function as long as this value is being returned.
-     *      ASYNC_STATE__SUCCESS if the calibration was successfully uploaded.
+     * Initiates an asynchronous calibration upload. The device takes ownership of the
+     * supplied calibration object; subsequent step() ticks drive the per-step protocol
+     * until completion. Poll getCalibrationUploadResult() (or isCalibrationUploadInProgress())
+     * for status.
+     * @param cal heap-allocated calibration data; ownership transfers to the device on IS_OP_OK.
+     *            On any other return value the caller retains ownership.
+     * @return IS_OP_OK on accept (upload kicked off);
+     *         IS_OP_IN_PROGRESS if a prior upload is still in flight on this device (caller retains ownership);
+     *         IS_OP_CLOSED if the device is not connected (caller retains ownership).
      */
-    int UploadImxCalibrationAsync(ISDeviceCal& cal);
+    is_operation_result UploadImxCalibrationAsync(std::unique_ptr<ISDeviceCal> cal);
+
+    /**
+     * @return result of the most recent (or currently in-flight) async calibration upload.
+     *         IS_OP_NONE if no upload has ever been initiated on this device.
+     *         IS_OP_IN_PROGRESS if an upload is in flight.
+     *         IS_OP_OK if the last upload completed successfully.
+     *         IS_OP_ERROR if the last upload failed at the protocol layer.
+     *         IS_OP_CLOSED if the last upload was aborted because the port closed mid-upload.
+     */
+    is_operation_result getCalibrationUploadResult() const { return m_calUploadResult; }
+
+    /** @return true if an async calibration upload is currently in flight on this device. */
+    bool isCalibrationUploadInProgress() const { return m_calUploadResult == IS_OP_IN_PROGRESS; }
 
     bool UploadImxCalibration(ISDeviceCal& cal);
 
@@ -660,7 +679,7 @@ public:
 
     uint32_t                    lastResetRequest = 0;                //!< system time when the last reset requests was sent
     uint32_t                    resetRequestThreshold = 5000;        //!< Don't allow to send reset requests more frequently than this...
-    uint32_t                    nextResetTime = 0;                   //!< used to throttle reset requests
+    uint32_t                    lastResetTime = 0;                   //!< used to throttle reset requests
 
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb infoProgress, void (*waitAction)());
     bool fwUpdateInProgress();
@@ -708,8 +727,9 @@ private:
     pfnIsCommHandler            externalAllHandler = nullptr;        //!< A user-implemented handler for all packet/message types
     pfnIsCommIsbDataHandler     defaultISBHandler = nullptr;
 
-    int                         m_calUploadState = -1;               //!< step indicator for calibration uploads
-    ISDeviceCal*                m_calibration = nullptr;             //!< pointer to a calibration object that is currently being uploaded
+    int                         m_calUploadState = -1;               //!< step indicator for calibration uploads (-1 = idle, 0..7 = active step)
+    std::unique_ptr<ISDeviceCal> m_calibration;                       //!< calibration object owned by the device while an async upload is in flight (nullptr otherwise)
+    is_operation_result         m_calUploadResult = IS_OP_NONE;      //!< result of the most recent (or currently in-flight) async calibration upload
 
     static int processPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     static int processIsbMsgs(void* ctx, p_data_t* data, port_handle_t port);

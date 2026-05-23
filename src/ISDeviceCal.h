@@ -295,6 +295,21 @@ public:
                                    sensor_mcal_group_t *mcal);
 
     /**
+     * @brief Per-upload context for the step machine.
+     *
+     * Holds state that must persist across step() invocations for a single device's upload,
+     * but must NOT be shared across concurrent uploads to different devices. Previously held
+     * in thread_local storage, which was correct under a one-task-per-worker-thread model but
+     * unsafe under main-thread-driven concurrent uploads. Callers either store one of these
+     * per in-flight upload (async path: ISDevice::m_calibration owns this via ISDeviceCal),
+     * or stack-allocate one for the duration of a synchronous upload.
+     */
+    struct cal_upload_ctx_t {
+        sensor_cal_v1p3_t v1p3StagingBuf = {};  //!< downgrade staging buffer for IMX-5 (v1.3) targets
+        int retryCount = 0;                      //!< consecutive send failures on the current step
+    };
+
+    /**
      * @brief Uploads sensor calibration to a device in steps, with version-aware conversion.
      *
      * Resolves the on-device cal version from devInfo.hardwareVer[0] (5 -> v1.3, 6 -> v1.4)
@@ -306,11 +321,14 @@ public:
      * @param calUploadState State machine cursor (caller-owned, init to 0)
      * @param cal In-memory calibration (v1.4 format)
      * @param devInfo Target device info; hardwareVer[0] selects v1.3 vs v1.4 transmission
+     * @param ctx Per-upload context (caller-owned; one per concurrent upload)
      * @return ASYNC_STATE__PENDING (in progress), ASYNC_STATE__SUCCESS (done), ASYNC_STATE__FAILURE (error)
      */
-    static int uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo);
+    static int uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo, cal_upload_ctx_t &ctx);
 
     static const int CAL_UPLOAD_SLEEP_MS = 150;
+
+    cal_upload_ctx_t uploadCtx = {};    //!< per-upload state; owned by ISDeviceCal so async owners (ISDevice::m_calibration) have stable storage
 
 protected:
     sOrthoCal ocal = {};                //!< orthonormalization calibration data
