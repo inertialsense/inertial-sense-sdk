@@ -42,7 +42,7 @@ struct ISSyncPoint {
     /// Source device's serial number.
     uint64_t deviceId;
 
-    /// DID that supplied the sync (e.g. `DID_INS_2`, `DID_GPS1_POS`).
+    /// DID that supplied the sync (e.g. `DID_INS_2`, `DID_GNSS1_POS`).
     uint32_t sourceDid;
 };
 

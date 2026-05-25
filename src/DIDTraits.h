@@ -91,10 +91,10 @@ IS_DEFINE_DID_TRAITS(DID_IMU,               imu_t,          "DID_IMU");
 IS_DEFINE_DID_TRAITS(DID_PIMU,              pimu_t,         "DID_PIMU");
 
 // GPS position + velocity (1- and 2-receiver variants).
-IS_DEFINE_DID_TRAITS(DID_GPS1_POS,          gps_pos_t,      "DID_GPS1_POS");
-IS_DEFINE_DID_TRAITS(DID_GPS2_POS,          gps_pos_t,      "DID_GPS2_POS");
-IS_DEFINE_DID_TRAITS(DID_GPS1_VEL,          gps_vel_t,      "DID_GPS1_VEL");
-IS_DEFINE_DID_TRAITS(DID_GPS2_VEL,          gps_vel_t,      "DID_GPS2_VEL");
+IS_DEFINE_DID_TRAITS(DID_GNSS1_POS,          gnss_pos_t,      "DID_GNSS1_POS");
+IS_DEFINE_DID_TRAITS(DID_GNSS2_POS,          gnss_pos_t,      "DID_GNSS2_POS");
+IS_DEFINE_DID_TRAITS(DID_GNSS1_VEL,          gnss_vel_t,      "DID_GNSS1_VEL");
+IS_DEFINE_DID_TRAITS(DID_GNSS2_VEL,          gnss_vel_t,      "DID_GNSS2_VEL");
 
 // Standalone sensor outputs.
 IS_DEFINE_DID_TRAITS(DID_MAGNETOMETER,      magnetometer_t, "DID_MAGNETOMETER");

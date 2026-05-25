@@ -100,11 +100,12 @@ public:
 
     ISFwUpdaterCmd(const std::string& _step, const std::string& _cmd, const std::string& _args, std::deque<std::string> _keyNames = {}) : ISFwUpdaterCmd(_step, _cmd) {
         static std::map<std::string, std::vector<std::string>> defaultKeys = {
-                {"target", {"target","timeout", "interval", "on-timeout"}},
-                {"waitfor", {"timeout", "interval", "force", "on-timeout"}},
-                {"upload", {"filename", "slot", "force", "interval"}},
-                {"reset", {"type"}},
-                {"policy", {"policy", "target"}},
+                {"target",     {"target","timeout", "interval", "on-timeout"}},
+                {"waitfor",    {"timeout", "interval", "force", "on-timeout"}},
+                {"upload",     {"filename", "slot", "force", "interval"}},
+                {"reset",      {"type"}},
+                {"policy",     {"policy", "target"}},
+                {"depends-on", {"step"}},
         };
 
         auto tmpArgs = utils::split_string(_args, ",");

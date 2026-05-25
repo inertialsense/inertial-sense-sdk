@@ -388,7 +388,7 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                             //
                             // @note D-112 / SN-7999 (introduced) + SN-8004 (GPS_RAW exclusion).
                             auto isGpsRawDid = [](uint32_t did) noexcept {
-                                return did == DID_GPS1_RAW || did == DID_GPS2_RAW || did == DID_GPS_BASE_RAW;
+                                return did == DID_GNSS1_RAW || did == DID_GNSS2_RAW || did == DID_GNSS_BASE_RAW;
                             };
                             constexpr uint64_t kPoisonThresholdMs = 1'000'000'000'000ULL;
                             std::size_t poisonedCount = 0;

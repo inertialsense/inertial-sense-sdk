@@ -76,8 +76,8 @@ template TypedRange<ins_3_t>          extractTypedRange<ins_3_t>(const ISLogRead
 template TypedRange<ins_4_t>          extractTypedRange<ins_4_t>(const ISLogReader&, did_t);
 template TypedRange<imu_t>            extractTypedRange<imu_t>          (const ISLogReader&, did_t);
 template TypedRange<pimu_t>           extractTypedRange<pimu_t>         (const ISLogReader&, did_t);
-template TypedRange<gps_pos_t>        extractTypedRange<gps_pos_t>      (const ISLogReader&, did_t);
-template TypedRange<gps_vel_t>        extractTypedRange<gps_vel_t>      (const ISLogReader&, did_t);
+template TypedRange<gnss_pos_t>        extractTypedRange<gnss_pos_t>      (const ISLogReader&, did_t);
+template TypedRange<gnss_vel_t>        extractTypedRange<gnss_vel_t>      (const ISLogReader&, did_t);
 template TypedRange<magnetometer_t>   extractTypedRange<magnetometer_t> (const ISLogReader&, did_t);
 template TypedRange<barometer_t>      extractTypedRange<barometer_t>    (const ISLogReader&, did_t);
 template TypedRange<dev_info_t>       extractTypedRange<dev_info_t>     (const ISLogReader&, did_t);

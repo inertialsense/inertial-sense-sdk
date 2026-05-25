@@ -354,8 +354,8 @@ int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
     }
 
     // If correctionInputs are on, and we've received an updated GNSS position, pass it on to the correction service, if needed.
-    if (g_correctionInput && (data->hdr.id == DID_GPS1_POS)) {
-        gps_pos_t gnssPos = *(gps_pos_t*)data->ptr;
+    if (g_correctionInput && (data->hdr.id == DID_GNSS1_POS)) {
+        gnss_pos_t gnssPos = *(gnss_pos_t*)data->ptr;
         if (std::shared_ptr<NtripCorrectionService> ntripPtr = std::dynamic_pointer_cast<NtripCorrectionService>(g_correctionInput)) {
             static uint32_t lastUpdate = current_timeMs();
             if (lastUpdate + 5000 < current_timeMs()) {     // Let's not flood the NTRIP caster with every position update...
@@ -595,14 +595,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         bool manfUnlock = false;
         switch(g_commandLineOptions.sysCommand)
         {
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1:
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GNSS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GNSS2:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2:
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1:
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1:
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GNSS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GNSS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GNSS2:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1:
