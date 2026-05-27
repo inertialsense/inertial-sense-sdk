@@ -3312,8 +3312,10 @@ enum eIoConfig
     IO_CONFIG_GNSS_TYPE_GPX                      = (int)3,
     /** GPS type - Septentrio */
     IO_CONFIG_GNSS_TYPE_SEPTENTRIO               = (int)4,
+    /** GPS type - Host (pass-through from connected IMX host) */
+    IO_CONFIG_GNSS_TYPE_ISB                     = (int)5,
     /** GPS type - last type */
-    IO_CONFIG_GNSS_TYPE_LAST                     = IO_CONFIG_GNSS_TYPE_SEPTENTRIO,		// Set to last type
+    IO_CONFIG_GNSS_TYPE_LAST                     = IO_CONFIG_GNSS_TYPE_ISB,		// Set to last type
 
 #define IO_CONFIG_GNSS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GNSS1_SOURCE_OFFSET)&IO_CONFIG_GNSS_SOURCE_MASK)
 #define IO_CONFIG_GNSS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GNSS2_SOURCE_OFFSET)&IO_CONFIG_GNSS_SOURCE_MASK)
