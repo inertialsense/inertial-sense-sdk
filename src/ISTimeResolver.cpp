@@ -121,10 +121,10 @@ void scanSegmentForSyncs(const ISLogReader& reader,
     is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
     is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
 
-    //! SN-8107 / D0066: most recent non-sync host-uptime observed during
-    //! the scan. Updated on every non-ToW-bearing record whose payload
-    //! exposes a timestamp; carried onto each subsequent sync point until
-    //! a newer non-sync time arrives.
+    // SN-8107 / D0066: most recent non-sync host-uptime observed during
+    // the scan. Updated on every non-ToW-bearing record whose payload
+    // exposes a timestamp; carried onto each subsequent sync point until
+    // a newer non-sync time arrives.
     uint64_t lastNonSyncHostTimeMs = 0;
 
     for (std::size_t i = 0; i < bytes.second; ++i) {
@@ -134,44 +134,43 @@ void scanSegmentForSyncs(const ISLogReader& reader,
         }
         const auto& hdr = comm.rxPkt.dataHdr;
 
-        //! Probe every record for a payload-side timestamp. ToW-bearing
-        //! records use this for the sync's payloadToW; non-ToW-bearing
-        //! records' values feed `lastNonSyncHostTimeMs`.
+        // Probe every record for a payload-side timestamp. ToW-bearing
+        // records use this for the sync's payloadToW; non-ToW-bearing
+        // records' values feed lastNonSyncHostTimeMs.
         const double tsSec = cISDataMappings::Timestamp(&hdr, comm.rxPkt.data.ptr);
 
         if (!isToWBearing(hdr.id)) {
-            //! Non-sync candidate: if the payload carries a usable time
-            //! field, snapshot it. The vast majority of non-sync DIDs
-            //! (`DID_PIMU`, `DID_IMU`, etc.) carry a host-uptime time
-            //! field in seconds; cISDataMappings::Timestamp converts.
+            // Non-sync candidate: if the payload carries a usable time
+            // field, snapshot it. Most non-sync DIDs (DID_PIMU, DID_IMU,
+            // etc.) carry a host-uptime time field in seconds;
+            // cISDataMappings::Timestamp converts.
             if (tsSec > 0.0) {
                 lastNonSyncHostTimeMs = static_cast<uint64_t>(tsSec * 1000.0);
             }
             continue;
         }
 
-        if (tsSec <= 0.0) continue;  //!< payload's ToW field is zero / absent.
+        if (tsSec <= 0.0) continue;  // payload's ToW field is zero / absent.
 
         const uint64_t towMs = static_cast<uint64_t>(tsSec * 1000.0);
         ISSyncPoint sp{};
-        //! v2 `.idx` schema collapse: the writer's `rec.timestamp` for
-        //! HAS_TOW records is also the ToW (no separate host-time
-        //! stored in the .idx). Carry the same value in both fields;
-        //! the .raw-recovered host-time at sync rides on
-        //! `actualHostTimeMs` (set below from the byte scan's
-        //! `lastNonSyncHostTimeMs` tracker).
+        // v2 .idx schema collapse: the writer's rec.timestamp for
+        // HAS_TOW records is also the ToW (no separate host-time stored
+        // in the .idx). Carry the same value in both fields; the
+        // .raw-recovered host-time at sync rides on actualHostTimeMs
+        // (set below from the byte scan's lastNonSyncHostTimeMs tracker).
         sp.hostTimeMs        = towMs;
         sp.payloadToWMs      = towMs;
         sp.deviceId          = deviceId;
         sp.sourceDid         = hdr.id;
-        //! SN-8107 / D0066: recovered host-uptime at sync time.
+        // SN-8107 / D0066: recovered host-uptime at sync time.
         sp.actualHostTimeMs  = lastNonSyncHostTimeMs;
-        //! SN-8107 / D0066: GPS week from payload. All ToW-bearing DIDs
-        //! (`ins_1_t`, `ins_2_t`, `ins_3_t`, `ins_4_t`, `gnss_pos_t`)
-        //! start with `uint32_t week` — read it from the first 4 bytes
-        //! of the payload. Zero means the device hasn't established a
-        //! GPS week yet (still searching); we keep the sync point but
-        //! the resolver won't epoch-anchor against it.
+        // SN-8107 / D0066: GPS week from payload. All ToW-bearing DIDs
+        // (ins_1_t, ins_2_t, ins_3_t, ins_4_t, gnss_pos_t) start with a
+        // uint32_t week — read it from the first 4 bytes of the payload.
+        // Zero means the device hasn't established a GPS week yet (still
+        // searching); we keep the sync point but the resolver won't
+        // epoch-anchor against it.
         if (comm.rxPkt.data.ptr && comm.rxPkt.dataHdr.size >= sizeof(uint32_t)) {
             uint32_t weekRaw = 0;
             std::memcpy(&weekRaw, comm.rxPkt.data.ptr, sizeof(weekRaw));
@@ -263,12 +262,12 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
         return TimeStamp::fromSessionOnly(hostTimeMs, deviceId);
     }
 
-    //! SN-8107 / D0066: select a representative GPS week for the epoch
-    //! anchor. We use the first sync point's week; for the common
-    //! single-week log this is correct. A log spans < 1 hour typically,
-    //! well inside one GPS week. If `gpsWeek == 0` (week field invalid
-    //! or not yet established), we don't epoch-anchor — resolved
-    //! values stay in ToW domain (pre-D0066 behavior).
+    // SN-8107 / D0066: select a representative GPS week for the epoch
+    // anchor. We use the first sync point's week; for the common
+    // single-week log this is correct. A log spans < 1 hour typically,
+    // well inside one GPS week. If gpsWeek == 0 (week field invalid or
+    // not yet established), we don't epoch-anchor — resolved values stay
+    // in ToW domain (pre-D0066 behavior).
     const ISSyncPoint& firstSync = syncPoints_.front();
     const uint32_t anchorWeek = firstSync.gpsWeek;
     const bool     epochAnchor = (anchorWeek != 0);
@@ -276,14 +275,14 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
         return epochAnchor ? gpsToUnixMs(anchorWeek, towMs) : towMs;
     };
 
-    //! SN-8107 / D0066: cross-domain bridge. v2 .idx puts sync records'
-    //! `timestamp` field in the GPS-ToW domain (hundreds of millions of
-    //! ms into the GPS week) while non-sync records' `timestamp` field
-    //! is host uptime (small ms since session start). An input
-    //! `hostTimeMs` that's dramatically smaller than the first sync's
-    //! ToW is a session-uptime query — translate it into the ToW frame
-    //! using the recovered `actualHostTimeMs` of the first sync, then
-    //! epoch-anchor the result if GPS week is known.
+    // SN-8107 / D0066: cross-domain bridge. v2 .idx puts sync records'
+    // timestamp field in the GPS-ToW domain (hundreds of millions of ms
+    // into the GPS week) while non-sync records' timestamp field is host
+    // uptime (small ms since session start). An input hostTimeMs that's
+    // dramatically smaller than the first sync's ToW is a session-uptime
+    // query — translate it into the ToW frame using the recovered
+    // actualHostTimeMs of the first sync, then epoch-anchor the result
+    // if GPS week is known.
     if (firstSync.actualHostTimeMs > 0 &&
         hostTimeMs < firstSync.payloadToWMs / 2) {
         const int64_t offset =

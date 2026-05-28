@@ -223,7 +223,7 @@ TEST_F(TimeResolverTest, ResolveExactAtSyncPoint) {
     auto t = resolver->resolve(110000, kFixtureSerial);
     EXPECT_EQ(t.source, TimeSource::PayloadToW);
     EXPECT_EQ(t.confidence, TimeConfidence::Exact);
-    //! SN-8107 / D0066: epoch-anchored output (gpsWeek=2300 in makeIns2).
+    // SN-8107 / D0066: epoch-anchored output (gpsWeek=2300 in makeIns2).
     EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(110000));
 }
 
