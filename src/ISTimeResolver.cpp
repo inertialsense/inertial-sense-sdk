@@ -134,9 +134,10 @@ void scanSegmentForSyncs(const ISLogReader& reader,
         ISSyncPoint sp{};
         //! v2 `.idx` schema collapse: the writer's `rec.timestamp` for
         //! HAS_TOW records is also the ToW (no separate host-time
-        //! recorded). Carry the same value in both fields so a future
-        //! v3 schema with a distinct host-time can populate `hostTimeMs`
-        //! independently without touching the resolver's API.
+        //! stored in the .idx). Carry the same value in both fields;
+        //! the .raw-recovered host-time at sync rides on
+        //! `actualHostTimeMs` (set below from the byte scan's
+        //! `lastNonSyncHostTimeMs` tracker).
         sp.hostTimeMs        = towMs;
         sp.payloadToWMs      = towMs;
         sp.deviceId          = deviceId;

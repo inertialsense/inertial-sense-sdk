@@ -287,13 +287,14 @@ TEST_F(TimeResolverTest, ResolveExtrapolated) {
 TEST_F(TimeResolverTest, DiscontinuityFromUnevenGaps) {
     std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
     // ToW sequence: 100, 110, 130, 130.0001.
-    // For v2-schema sync points, host==ToW, so the slope between any
-    // two non-zero-spaced sync points is exactly 1.0. The detector's
-    // ratio metric only fires on slope CHANGES — same slope = no
-    // discontinuity. To produce a slope change we need at least one
-    // pair with a non-1.0 slope, which v2's collapsed schema can't
-    // express. Instead we exercise the "no discontinuities" path here
-    // and document the v3-required test case in JOURNAL.
+    // Sync points have host==ToW per the .idx schema, so the slope
+    // between any two non-zero-spaced sync points is exactly 1.0.
+    // The detector's ratio metric only fires on slope CHANGES — same
+    // slope = no discontinuity. Producing a true slope-change scenario
+    // requires sync points with distinct host vs ToW values (i.e. the
+    // .raw-recovered actualHostTimeMs disagreeing with payloadToWMs),
+    // which we don't synthesize here. We exercise the "no
+    // discontinuities" path on uniform-slope syncs.
     for (double tow : { 100.0, 110.0, 130.0, 130.0001 }) {
         recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
     }

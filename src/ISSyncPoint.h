@@ -20,20 +20,19 @@ namespace inertial_sense {
  * @brief One sync anchor — a record carrying both a host-side timestamp
  *        and a payload-derived GPS time-of-week.
  *
- * **v2 `.idx` schema note.** In the current writer (`cDeviceLog`), a
- * record with the `IS_LOG_IDX_REC_FLAG_HAS_TOW` bit set has its `.idx`
+ * **v2 `.idx` schema note.** In the writer (`cDeviceLog`), a record
+ * with the `IS_LOG_IDX_REC_FLAG_HAS_TOW` bit set has its `.idx`
  * `timestamp` field overwritten with the payload ToW (in ms) — the
- * host-side capture time isn't stored separately. So for v2-produced
- * sync points, `hostTimeMs == payloadToWMs`. This is documented in
- * the resolver's header (`ISTimeResolver.h`) since it constrains
- * what the slope-fit / discontinuity-detection algorithms can do
- * meaningfully on v2 logs. A future `.idx` v3 may add an explicit
- * host-time field; sync points adopt it transparently when it lands.
+ * host-side capture time isn't stored separately in the .idx. So for
+ * .idx-only readers, `hostTimeMs == payloadToWMs`. The host-time at
+ * sync is recovered from the .raw byte stream during scan and carried
+ * on `actualHostTimeMs` (SN-8107 / D0066); the resolver uses that to
+ * bridge session-uptime queries into the ToW frame.
  */
 struct ISSyncPoint {
-    /// Host-side timestamp of the record, in ms. For v2 `.idx` HAS_TOW
-    /// records this equals `payloadToWMs`; for hypothetical v3 schemas
-    /// with a separate host field it carries the distinct host clock.
+    /// Host-side timestamp of the record, in ms. For HAS_TOW records
+    /// this equals `payloadToWMs` (the .idx-stored value); the
+    /// `.raw`-recovered host-time at sync is on `actualHostTimeMs`.
     uint64_t hostTimeMs;
 
     /// Payload's GPS time-of-week, in ms.

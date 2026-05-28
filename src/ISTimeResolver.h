@@ -7,10 +7,10 @@
  * payload ToW. Sync points are records that carry HAS_TOW; queries
  * outside the sync-anchored region are extrapolated forward / backward.
  *
- * **v2 `.idx` constraint.** The current writer overwrites a record's
- * stored `.idx` timestamp with the payload ToW when the HAS_TOW flag
- * is set — host-side capture time isn't preserved alongside ToW for
- * sync points. The resolver therefore models a single time axis (the
+ * **v2 `.idx` constraint.** The writer overwrites a record's stored
+ * `.idx` timestamp with the payload ToW when the HAS_TOW flag is set —
+ * host-side capture time isn't preserved alongside ToW for sync points
+ * in the .idx itself. The resolver models a single time axis (the
  * `.idx` `timestamp` field) where:
  *   - **Sync records** (HAS_TOW=1): stored timestamp = payload ToW
  *     (ms). These are the anchor points.
@@ -18,14 +18,13 @@
  *     uptime delta (ms since logger session start).
  * These two clusters typically don't overlap on the same numeric
  * axis (host uptime is a few seconds; ToW is ~hundreds of millions
- * of ms into the GPS week). The resolver classifies a query by which
- * cluster it falls into and applies the appropriate confidence tier.
- * A v3 `.idx` with explicit host-time would let the model fit a real
- * slope between sync points; until then the slope between sync
- * points in v2 is identity (host==ToW for them) and pre-fix records
- * resolve with `ExtrapolatedBackward` — their numeric value is best-
- * effort and consumers (UI per D-58) treat that confidence tier with
- * dashed-line / icon decoration.
+ * of ms into the GPS week). The host-side timestamp at sync time is
+ * recovered at scan time from the .raw byte stream — the writer emits
+ * records in arrival order on one host thread, so a sync record's
+ * host-time is ms-adjacent to the most recent non-sync record's
+ * payload timestamp. `ISSyncPoint::actualHostTimeMs` carries that
+ * recovered host-time, and `resolve()` uses it to bridge session-uptime
+ * queries into the ToW frame (SN-8107 / D0066).
  *
  * **Pure C++17.** No Qt, no exceptions; fallible paths return
  * `ISExpected<T>`.
@@ -104,8 +103,8 @@ public:
      *             snapshotted into the resolver's owned vector).
      * @return     A fully-built resolver, or `ISError` on internal
      *             failure (none expected at v1 — kept as the API
-     *             shape so future v3 schemas with fallible parses
-     *             have a place to surface errors).
+     *             shape so future fallible-parse scenarios have a
+     *             place to surface errors).
      */
     static ISExpected<ISTimeResolver> build(const ISDeviceLog& log);
 
