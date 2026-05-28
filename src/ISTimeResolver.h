@@ -7,10 +7,10 @@
  * payload ToW. Sync points are records that carry HAS_TOW; queries
  * outside the sync-anchored region are extrapolated forward / backward.
  *
- * **v2 `.idx` constraint.** The current writer overwrites a record's
- * stored `.idx` timestamp with the payload ToW when the HAS_TOW flag
- * is set — host-side capture time isn't preserved alongside ToW for
- * sync points. The resolver therefore models a single time axis (the
+ * **v2 `.idx` constraint.** The writer overwrites a record's stored
+ * `.idx` timestamp with the payload ToW when the HAS_TOW flag is set —
+ * host-side capture time isn't preserved alongside ToW for sync points
+ * in the .idx itself. The resolver models a single time axis (the
  * `.idx` `timestamp` field) where:
  *   - **Sync records** (HAS_TOW=1): stored timestamp = payload ToW
  *     (ms). These are the anchor points.
@@ -18,14 +18,13 @@
  *     uptime delta (ms since logger session start).
  * These two clusters typically don't overlap on the same numeric
  * axis (host uptime is a few seconds; ToW is ~hundreds of millions
- * of ms into the GPS week). The resolver classifies a query by which
- * cluster it falls into and applies the appropriate confidence tier.
- * A v3 `.idx` with explicit host-time would let the model fit a real
- * slope between sync points; until then the slope between sync
- * points in v2 is identity (host==ToW for them) and pre-fix records
- * resolve with `ExtrapolatedBackward` — their numeric value is best-
- * effort and consumers (UI per D-58) treat that confidence tier with
- * dashed-line / icon decoration.
+ * of ms into the GPS week). The host-side timestamp at sync time is
+ * recovered at scan time from the .raw byte stream — the writer emits
+ * records in arrival order on one host thread, so a sync record's
+ * host-time is ms-adjacent to the most recent non-sync record's
+ * payload timestamp. `ISSyncPoint::actualHostTimeMs` carries that
+ * recovered host-time, and `resolve()` uses it to bridge session-uptime
+ * queries into the ToW frame (SN-8107 / D0066).
  *
  * **Pure C++17.** No Qt, no exceptions; fallible paths return
  * `ISExpected<T>`.
@@ -48,10 +47,12 @@ namespace inertial_sense {
 
 class ISTimeResolver {
 public:
-    /// Default discontinuity threshold: 1000 ppm clock-drift equivalent
-    /// (per D0024). If the slope between two adjacent sync-point pairs
-    /// differs by more than this fraction, the boundary is reported via
-    /// `discontinuities()`.
+    //! Default discontinuity threshold: 1000 ppm clock-drift equivalent.
+    //! If the slope between two adjacent sync-point pairs differs by
+    //! more than this fraction, the boundary is reported via
+    //! `discontinuities()`.
+    //!
+    //! @note D0024.
     static constexpr double kDefaultDiscontinuityThreshold = 1.0e-3;
 
     /**
@@ -62,13 +63,13 @@ public:
      * honestly rather than smoothing over a real jump.
      */
     struct Discontinuity {
-        /// Host-time of the boundary (the second sync point's host).
+        //! Host-time of the boundary (the second sync point's host).
         uint64_t hostTimeMs;
-        /// Slope (ToW-ms per host-ms) over the segment ending at
-        /// `hostTimeMs`. Identity (1.0) for v2 .idx HAS_TOW-only logs.
+        //! Slope (ToW-ms per host-ms) over the segment ending at
+        //! `hostTimeMs`. Identity (1.0) for .idx HAS_TOW-only logs.
         double   slopeBefore;
-        /// Slope (ToW-ms per host-ms) over the segment starting at
-        /// `hostTimeMs`.
+        //! Slope (ToW-ms per host-ms) over the segment starting at
+        //! `hostTimeMs`.
         double   slopeAfter;
     };
 
@@ -80,11 +81,11 @@ public:
      * log's total record count.
      */
     struct Stats {
-        std::size_t exact          = 0;  ///< Confidence::Exact (PayloadToW).
-        std::size_t interpolated   = 0;  ///< Between sync points.
-        std::size_t extrapFwd      = 0;  ///< Past last sync.
-        std::size_t extrapBack     = 0;  ///< Before first sync.
-        std::size_t unknown        = 0;  ///< No sync points at all.
+        std::size_t exact          = 0;  //!< Confidence::Exact (PayloadToW).
+        std::size_t interpolated   = 0;  //!< Between sync points.
+        std::size_t extrapFwd      = 0;  //!< Past last sync.
+        std::size_t extrapBack     = 0;  //!< Before first sync.
+        std::size_t unknown        = 0;  //!< No sync points at all.
     };
 
     // -----------------------------------------------------------------
@@ -104,8 +105,8 @@ public:
      *             snapshotted into the resolver's owned vector).
      * @return     A fully-built resolver, or `ISError` on internal
      *             failure (none expected at v1 — kept as the API
-     *             shape so future v3 schemas with fallible parses
-     *             have a place to surface errors).
+     *             shape so future fallible-parse scenarios have a
+     *             place to surface errors).
      */
     static ISExpected<ISTimeResolver> build(const ISDeviceLog& log);
 
