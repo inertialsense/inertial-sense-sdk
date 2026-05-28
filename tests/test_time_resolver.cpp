@@ -73,6 +73,19 @@ ins_2_t makeIns2(double towSec) {
     return s;
 }
 
+// SN-8107 / D0066: Unix-epoch ms for (gpsWeek=2300, towMs). The resolver
+// epoch-anchors all output when ANY sync point's gpsWeek != 0, so tests
+// assert against this anchored value rather than the raw ToW.
+//   GPS_EPOCH_UNIX_MS = 315,964,800,000 (1980-01-06 00:00:00 UTC)
+//   WEEK_MS           = 604,800,000
+//   unix_ms = gpsWeek * WEEK_MS + GPS_EPOCH_UNIX_MS + towMs
+inline uint64_t expectedUnixMsForFixtureWeek(uint64_t towMs,
+                                             uint32_t gpsWeek = 2300) {
+    constexpr uint64_t kGpsEpochUnixMs = 315'964'800'000ULL;
+    constexpr uint64_t kWeekMs         = 604'800'000ULL;
+    return static_cast<uint64_t>(gpsWeek) * kWeekMs + kGpsEpochUnixMs + towMs;
+}
+
 // IMU's `time` field is "seconds since boot" — `cISDataMappings::Timestamp`
 // returns it for DID_IMU but DID_IMU is NOT in the resolver's ToW-bearing
 // allowlist. So IMU records are non-sync (host_uptime_delta in their
@@ -210,7 +223,8 @@ TEST_F(TimeResolverTest, ResolveExactAtSyncPoint) {
     auto t = resolver->resolve(110000, kFixtureSerial);
     EXPECT_EQ(t.source, TimeSource::PayloadToW);
     EXPECT_EQ(t.confidence, TimeConfidence::Exact);
-    EXPECT_EQ(t.value, 110000u);
+    //! SN-8107 / D0066: epoch-anchored output (gpsWeek=2300 in makeIns2).
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(110000));
 }
 
 // ---------------------------------------------------------------------------
@@ -231,11 +245,12 @@ TEST_F(TimeResolverTest, ResolveInterpolated) {
 
     // 105_000 ms is halfway between syncs 100_000 and 110_000.
     // Slope is identity (host==ToW for v2 sync points), so the result
-    // value equals the input.
+    // ToW value equals the input; we then assert against the
+    // epoch-anchored output (SN-8107 / D0066).
     auto t = resolver->resolve(105000, kFixtureSerial);
     EXPECT_EQ(t.source, TimeSource::ResolvedViaSync);
     EXPECT_EQ(t.confidence, TimeConfidence::Interpolated);
-    EXPECT_EQ(t.value, 105000u);
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(105000));
 }
 
 // ---------------------------------------------------------------------------
@@ -363,30 +378,34 @@ TEST_F(TimeResolverTest, CrossDomainBridgeUnifiesPimuIntoTowFrame) {
 
     // Sanity: two sync points (411500, 411700), both anchored with
     // actualHostTimeMs == 150 (the IMU host uptime right before the
-    // first sync).
+    // first sync). Each sync also carries the GPS week (2300, from
+    // makeIns2) so the resolver epoch-anchors all output.
     const auto& syncs = resolver->syncPoints();
     ASSERT_EQ(syncs.size(), 2u);
     EXPECT_EQ(syncs[0].payloadToWMs, 411500u);
     EXPECT_EQ(syncs[0].actualHostTimeMs, 150u);
+    EXPECT_EQ(syncs[0].gpsWeek, 2300u);
 
     // Cross-domain bridge: resolve a session-uptime query (e.g. 100 ms).
-    // Expected: offset = 411500 - 150 = 411350; bridged = 100 + 411350 = 411450.
+    // Expected ToW: offset = 411500 - 150 = 411350; bridged ToW = 411450.
+    // Expected epoch-anchored: bridged ToW + (2300 * 604800000) + 315964800000.
     const TimeStamp bridged = resolver->resolve(100u, kFixtureSerial);
     EXPECT_EQ(bridged.source, TimeSource::ResolvedViaSync);
     EXPECT_EQ(bridged.confidence, TimeConfidence::ExtrapolatedBackward);
-    EXPECT_EQ(bridged.value, 411450u);
+    EXPECT_EQ(bridged.value, expectedUnixMsForFixtureWeek(411450));
 
     // A larger session-uptime query (e.g. 150 ms = exactly the captured
-    // actualHostTimeMs) bridges to the sync's ToW.
+    // actualHostTimeMs) bridges to the sync's ToW, epoch-anchored.
     const TimeStamp atSync = resolver->resolve(150u, kFixtureSerial);
-    EXPECT_EQ(atSync.value, 411500u);
+    EXPECT_EQ(atSync.value, expectedUnixMsForFixtureWeek(411500));
 
     // ToW-domain query (already in the resolver's anchor frame) falls
-    // through the non-bridge path: 411500 = first sync, Exact match.
+    // through the non-bridge path: 411500 = first sync, Exact match,
+    // epoch-anchored.
     const TimeStamp exact = resolver->resolve(411500u, kFixtureSerial);
     EXPECT_EQ(exact.source, TimeSource::PayloadToW);
     EXPECT_EQ(exact.confidence, TimeConfidence::Exact);
-    EXPECT_EQ(exact.value, 411500u);
+    EXPECT_EQ(exact.value, expectedUnixMsForFixtureWeek(411500));
 }
 
 // ---------------------------------------------------------------------------
@@ -414,10 +433,12 @@ TEST_F(TimeResolverTest, CrossDomainBridgeSkippedWhenNoPreSyncNonSync) {
 
     // resolve(100ms): legacy extrapolate-backward path with slope=1,
     // hostTimeMs - s0.hostTimeMs = 100 - 411500 = -411400; tow falls
-    // below zero and clamps to 0. NOT bridged into ToW.
+    // below zero and clamps to 0. Result IS epoch-anchored though,
+    // since the sync's gpsWeek=2300 — so the resolved value is exactly
+    // the GPS-epoch + 2300 weeks (no ToW added).
     const TimeStamp legacy = resolver->resolve(100u, kFixtureSerial);
     EXPECT_EQ(legacy.confidence, TimeConfidence::ExtrapolatedBackward);
-    EXPECT_LT(legacy.value, 411500u);  // legacy path, not bridged.
+    EXPECT_EQ(legacy.value, expectedUnixMsForFixtureWeek(0));
 }
 
 // ---------------------------------------------------------------------------

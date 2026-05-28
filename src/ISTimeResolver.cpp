@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstring>
 
 namespace inertial_sense {
 
@@ -32,6 +33,18 @@ constexpr std::array<uint32_t, 6> kToWBearingDids = {
     DID_INS_1, DID_INS_2, DID_INS_3, DID_INS_4,
     DID_GNSS1_POS, DID_GNSS2_POS,
 };
+
+/// SN-8107 / D0066: GPS epoch (1980-01-06 00:00:00 UTC) expressed as
+/// milliseconds-since-Unix-epoch. Used together with `gpsWeek` and
+/// `payloadToWMs` to anchor resolver output to Unix epoch so QDateTime
+/// can render wall-clock dates directly.
+constexpr uint64_t kGpsEpochUnixMs = 315'964'800'000ULL;
+constexpr uint64_t kGpsWeekMs      = 604'800'000ULL;  //!< 7 days in ms
+
+/// Convert (gpsWeek, towMs) into a Unix-epoch ms timestamp.
+inline uint64_t gpsToUnixMs(uint32_t gpsWeek, uint64_t towMs) noexcept {
+    return static_cast<uint64_t>(gpsWeek) * kGpsWeekMs + kGpsEpochUnixMs + towMs;
+}
 
 inline bool isToWBearing(uint32_t did) noexcept {
     for (auto d : kToWBearingDids) if (d == did) return true;
@@ -130,6 +143,17 @@ void scanSegmentForSyncs(const ISLogReader& reader,
         sp.sourceDid         = hdr.id;
         //! SN-8107 / D0066: recovered host-uptime at sync time.
         sp.actualHostTimeMs  = lastNonSyncHostTimeMs;
+        //! SN-8107 / D0066: GPS week from payload. All ToW-bearing DIDs
+        //! (`ins_1_t`, `ins_2_t`, `ins_3_t`, `ins_4_t`, `gnss_pos_t`)
+        //! start with `uint32_t week` — read it from the first 4 bytes
+        //! of the payload. Zero means the device hasn't established a
+        //! GPS week yet (still searching); we keep the sync point but
+        //! the resolver won't epoch-anchor against it.
+        if (comm.rxPkt.data.ptr && comm.rxPkt.dataHdr.size >= sizeof(uint32_t)) {
+            uint32_t weekRaw = 0;
+            std::memcpy(&weekRaw, comm.rxPkt.data.ptr, sizeof(weekRaw));
+            sp.gpsWeek = weekRaw;
+        }
         out.push_back(sp);
     }
 }
@@ -216,30 +240,35 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
         return TimeStamp::fromSessionOnly(hostTimeMs, deviceId);
     }
 
+    //! SN-8107 / D0066: select a representative GPS week for the epoch
+    //! anchor. We use the first sync point's week; for the common
+    //! single-week log this is correct. A log spans < 1 hour typically,
+    //! well inside one GPS week. If `gpsWeek == 0` (week field invalid
+    //! or not yet established), we don't epoch-anchor — resolved
+    //! values stay in ToW domain (pre-D0066 behavior).
+    const ISSyncPoint& firstSync = syncPoints_.front();
+    const uint32_t anchorWeek = firstSync.gpsWeek;
+    const bool     epochAnchor = (anchorWeek != 0);
+    auto unixOrToW = [&](uint64_t towMs) -> uint64_t {
+        return epochAnchor ? gpsToUnixMs(anchorWeek, towMs) : towMs;
+    };
+
     //! SN-8107 / D0066: cross-domain bridge. v2 .idx puts sync records'
     //! `timestamp` field in the GPS-ToW domain (hundreds of millions of
     //! ms into the GPS week) while non-sync records' `timestamp` field
     //! is host uptime (small ms since session start). An input
     //! `hostTimeMs` that's dramatically smaller than the first sync's
     //! ToW is a session-uptime query — translate it into the ToW frame
-    //! using the recovered `actualHostTimeMs` of the first sync.
-    //!
-    //! The threshold: any non-sync query whose value is less than half
-    //! the first sync's ToW. In practice this means anything under tens
-    //! of millions of ms (a single session is at most a few hours).
-    //! ToW values are hundreds of millions of ms (GPS week scale).
-    const ISSyncPoint& firstSync = syncPoints_.front();
+    //! using the recovered `actualHostTimeMs` of the first sync, then
+    //! epoch-anchor the result if GPS week is known.
     if (firstSync.actualHostTimeMs > 0 &&
         hostTimeMs < firstSync.payloadToWMs / 2) {
-        //! Session-uptime input. Bridge to ToW using the offset
-        //! between the first sync's payload-ToW and the host-uptime we
-        //! captured at sync time.
         const int64_t offset =
             static_cast<int64_t>(firstSync.payloadToWMs) -
             static_cast<int64_t>(firstSync.actualHostTimeMs);
         const int64_t bridged = static_cast<int64_t>(hostTimeMs) + offset;
-        const uint64_t value = (bridged < 0) ? 0u : static_cast<uint64_t>(bridged);
-        return TimeStamp::fromResolvedViaSync(value, deviceId,
+        const uint64_t towMs = (bridged < 0) ? 0u : static_cast<uint64_t>(bridged);
+        return TimeStamp::fromResolvedViaSync(unixOrToW(towMs), deviceId,
                                               TimeConfidence::ExtrapolatedBackward);
     }
 
@@ -250,7 +279,7 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
 
     if (it != syncPoints_.end() && it->hostTimeMs == hostTimeMs) {
         // Exact match against a sync point.
-        return TimeStamp::fromPayloadToW(it->payloadToWMs, deviceId);
+        return TimeStamp::fromPayloadToW(unixOrToW(it->payloadToWMs), deviceId);
     }
 
     if (it == syncPoints_.begin()) {
@@ -263,8 +292,8 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
         }
         const double delta = static_cast<double>(hostTimeMs) - static_cast<double>(s0.hostTimeMs);
         const double tow   = static_cast<double>(s0.payloadToWMs) + slope * delta;
-        const uint64_t value = (tow < 0.0) ? 0u : static_cast<uint64_t>(tow);
-        return TimeStamp::fromResolvedViaSync(value, deviceId,
+        const uint64_t towMs = (tow < 0.0) ? 0u : static_cast<uint64_t>(tow);
+        return TimeStamp::fromResolvedViaSync(unixOrToW(towMs), deviceId,
                                               TimeConfidence::ExtrapolatedBackward);
     }
 
@@ -279,8 +308,8 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
         }
         const double delta = static_cast<double>(hostTimeMs) - static_cast<double>(sLast.hostTimeMs);
         const double tow   = static_cast<double>(sLast.payloadToWMs) + slope * delta;
-        const uint64_t value = (tow < 0.0) ? 0u : static_cast<uint64_t>(tow);
-        return TimeStamp::fromResolvedViaSync(value, deviceId,
+        const uint64_t towMs = (tow < 0.0) ? 0u : static_cast<uint64_t>(tow);
+        return TimeStamp::fromResolvedViaSync(unixOrToW(towMs), deviceId,
                                               TimeConfidence::ExtrapolatedForward);
     }
 
@@ -293,7 +322,7 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
                       ? 0.0
                       : (static_cast<double>(hostTimeMs) - static_cast<double>(prev.hostTimeMs)) / hostSpan;
     const double tow  = static_cast<double>(prev.payloadToWMs) + frac * towSpan;
-    return TimeStamp::fromResolvedViaSync(static_cast<uint64_t>(tow),
+    return TimeStamp::fromResolvedViaSync(unixOrToW(static_cast<uint64_t>(tow)),
                                           deviceId,
                                           TimeConfidence::Interpolated);
 }

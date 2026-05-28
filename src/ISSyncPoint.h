@@ -67,6 +67,26 @@ struct ISSyncPoint {
     /// degenerate case the resolver falls back to the legacy
     /// classify-only behavior.
     uint64_t actualHostTimeMs = 0;
+
+    /// **SN-8107 / D0066.** GPS week number from the payload (e.g.
+    /// `ins_2_t::week`, `gnss_pos_t::week`). Used together with
+    /// `payloadToWMs` to compute an absolute Unix-epoch wall-clock ms:
+    /// `unix_ms = (gpsWeek × 604,800,000) + GPS_EPOCH_UNIX_MS + payloadToWMs`,
+    /// where `GPS_EPOCH_UNIX_MS = 315,964,800,000` (1980-01-06 UTC).
+    ///
+    /// When ANY sync point in the resolver's vector has `gpsWeek != 0`,
+    /// `ISTimeResolver::resolve()` anchors all output values to Unix
+    /// epoch so they're directly suitable for
+    /// `QDateTime::fromMSecsSinceEpoch` / wall-clock display. When all
+    /// sync points have `gpsWeek == 0` (logs from devices without a
+    /// usable week field), the resolver returns ToW-domain values
+    /// (pre-D0066 behavior).
+    ///
+    /// All ToW-bearing DID payload structs (`ins_1_t`, `ins_2_t`,
+    /// `ins_3_t`, `ins_4_t`, `gnss_pos_t`) start with a `uint32_t week`
+    /// field, so the scanner reads it from the first 4 bytes of the
+    /// payload.
+    uint32_t gpsWeek = 0;
 };
 
 } // namespace inertial_sense
