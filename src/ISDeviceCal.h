@@ -162,6 +162,12 @@ struct sOrthoCal
 class ISDeviceCal : public sensor_cal_t
 {
 public:
+    enum AsyncState {
+        ASYNC_STATE__FAILURE     = -1,          //!< general failure state indicating an error condition, but otherwise a completed async cycle
+        ASYNC_STATE__PENDING     = 0,           //!< indicates that the async operation is still in progress, and should be called again soon
+        ASYNC_STATE__SUCCESS     = 1,           //!< indicates that the async operation was successful, and no further actions are necessary
+    };
+
     /**
      * Creates an empty calibration object - this will need to be populated
      */
@@ -324,7 +330,7 @@ public:
      * @param ctx Per-upload context (caller-owned; one per concurrent upload)
      * @return ASYNC_STATE__PENDING (in progress), ASYNC_STATE__SUCCESS (done), ASYNC_STATE__FAILURE (error)
      */
-    static int uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo, cal_upload_ctx_t &ctx);
+    static AsyncState uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo, cal_upload_ctx_t &ctx);
 
     static const int CAL_UPLOAD_SLEEP_MS = 150;
 

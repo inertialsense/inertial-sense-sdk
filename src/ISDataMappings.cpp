@@ -534,6 +534,8 @@ std::string renderGpxStatus_status(const data_info_t& info, std::any value, int 
 
     /** GNSS receiver time fault **/
         BIT_MSG(status, GPX_STATUS_FAULT_GNSS_RCVR_TIME          , "0x00100000 - GNSS receiver time fault");
+    /** RTOS task period overrun **/
+        BIT_MSG(status, GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN, "0x00200000 - RTOS task period overrun");
     /** DMA Fault detected **/
         BIT_MSG(status, GPX_STATUS_FAULT_DMA                     , "0x00800000 - DMA fault");
 

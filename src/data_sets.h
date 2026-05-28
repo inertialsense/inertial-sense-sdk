@@ -188,7 +188,7 @@ typedef uint32_t eDataIDs;
 
 // Increment w/ breaking changes (in ISComm.cpp) that prevent backwards compatibility with older protocols. 
 // #define PROTOCOL_VERSION_CHAR0   .   // Breaking changes (Packet)        (defined in ISComm.h) 
-#define PROTOCOL_VERSION_CHAR1      1   // Breaking changes (Payload)
+#define PROTOCOL_VERSION_CHAR1      2   // Breaking changes (Payload)
 
 // Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
 // #define PROTOCOL_VERSION_CHAR2   .   // Non-breaking changes (Packet):   (defined in ISComm.h)
@@ -631,8 +631,8 @@ enum eHdwRunStates {
 };
 
 enum eBuildFlags {
-    BUILD_FLAG_DEBUG = 0x1,
-    BUILD_FLAG_DIRTY = 0x2,
+    BUILD_FLAGS_DEBUG = 0x1,
+    BUILD_FLAGS_DIRTY = 0x2,
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -1609,6 +1609,8 @@ enum eGenFaultCodes
     GFC_GNSS_GENERAL_FAULT                  = 0x08000000,
     /** Fault: Invalid IMU input rejected by EKF */
     GFC_EKF_INPUT_INVALID_IMU               = 0x10000000,
+    /** Fault: GPS RTOS error */
+    GFC_GNSS_RTOS_ERROR                     = 0x20000000,
 
     /** IMX GFC flags that relate to GPX status flags */
     GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,
@@ -1818,20 +1820,42 @@ typedef struct PACKED
     float                   dtTemp;                 // (°C) Temperature from last calibration point
 } sensor_comp_unit_t;
 
-/** (DID_SCOMP) INTERNAL USE ONLY */
+// Explicit wire-format variants of the DID_SCOMP payload. IMX-5 firmware sends v1.3
+// (3 IMU + 2 mag), IMX-6 firmware sends v1.4 (5 IMU + 1 mag). Host SDK keeps
+// sensor_compensation_t at the v1.4 shape (MAX_IMU_DEVICES / MAX_MAG_DEVICES) and
+// converts v1.3 payloads on receive via convert_scomp_v1p3_to_v1p4() in
+// IS_calibration_convert.h.
 typedef struct PACKED
-{                                                   // Sensor temperature compensation
-    uint32_t                timeMs;                 // (ms) Time since boot up.
-    sensor_comp_unit_t      pqr[MAX_IMU_DEVICES];
-    sensor_comp_unit_t      acc[MAX_IMU_DEVICES];
-    sensor_comp_unit_t      mag[MAX_MAG_DEVICES];
-    imui_t                  referenceImu;           // External reference IMU
-    float                   referenceMag[3];        // External reference magnetometer (heading reference)
-    uint32_t                sampleCount;            // Number of samples collected
-    uint32_t                calState;               // state machine (see eScompCalState)
-    uint32_t                status;                 // Status used to control LED and indicate valid sensor samples (see eScompStatus)
-    float                   alignAccel[3];          // Alignment acceleration
-} sensor_compensation_t;
+{
+    uint32_t                timeMs;
+    sensor_comp_unit_t      pqr[NUM_IMU_DEVICES_V1P3];
+    sensor_comp_unit_t      acc[NUM_IMU_DEVICES_V1P3];
+    sensor_comp_unit_t      mag[NUM_MAG_DEVICES_V1P3];
+    imui_t                  referenceImu;
+    float                   referenceMag[3];
+    uint32_t                sampleCount;
+    uint32_t                calState;
+    uint32_t                status;
+    float                   alignAccel[3];
+} sensor_compensation_v1p3_t;
+
+typedef struct PACKED
+{
+    uint32_t                timeMs;
+    sensor_comp_unit_t      pqr[NUM_IMU_DEVICES_V1P4];
+    sensor_comp_unit_t      acc[NUM_IMU_DEVICES_V1P4];
+    sensor_comp_unit_t      mag[NUM_MAG_DEVICES_V1P4];
+    imui_t                  referenceImu;
+    float                   referenceMag[3];
+    uint32_t                sampleCount;
+    uint32_t                calState;
+    uint32_t                status;
+    float                   alignAccel[3];
+} sensor_compensation_v1p4_t;
+
+/** (DID_SCOMP) INTERNAL USE ONLY - aliased to sensor_compensation_v1p4_t since
+ * MAX_IMU_DEVICES / MAX_MAG_DEVICES are unconditionally v1.4 on every build target. */
+typedef sensor_compensation_v1p4_t  sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS    4
 
@@ -3243,7 +3267,7 @@ enum eIoConfig
     IO_CFG_GNSS1_PPS_SOURCE_G15                 = (int)1,
     IO_CFG_GNSS1_PPS_SOURCE_G2                  = (int)3,
     IO_CFG_GNSS1_PPS_SOURCE_G5                  = (int)4,
-    IO_CFG_GNSS1_PPS_SOURCE_G8                  = (int)5,
+    IO_CFG_GNSS1_PPS_SOURCE_G12                 = (int)5,
     IO_CFG_GNSS1_PPS_SOURCE_G9                  = (int)6,
 
  #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)    { (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }    
@@ -3288,8 +3312,10 @@ enum eIoConfig
     IO_CONFIG_GNSS_TYPE_GPX                      = (int)3,
     /** GPS type - Septentrio */
     IO_CONFIG_GNSS_TYPE_SEPTENTRIO               = (int)4,
+    /** GPS type - Host (pass-through from connected IMX host) */
+    IO_CONFIG_GNSS_TYPE_ISB                     = (int)5,
     /** GPS type - last type */
-    IO_CONFIG_GNSS_TYPE_LAST                     = IO_CONFIG_GNSS_TYPE_SEPTENTRIO,		// Set to last type
+    IO_CONFIG_GNSS_TYPE_LAST                     = IO_CONFIG_GNSS_TYPE_ISB,		// Set to last type
 
 #define IO_CONFIG_GNSS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GNSS1_SOURCE_OFFSET)&IO_CONFIG_GNSS_SOURCE_MASK)
 #define IO_CONFIG_GNSS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GNSS2_SOURCE_OFFSET)&IO_CONFIG_GNSS_SOURCE_MASK)
@@ -3360,12 +3386,12 @@ enum eIoConfig2
     IO_CFG2_GNSS2_PPS_SOURCE_MASK           = (int)0x03,
     IO_CFG2_GNSS2_PPS_SOURCE_BITMASK        = (int)(IO_CFG2_GNSS2_PPS_SOURCE_MASK<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET),    
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED       = (int)0,
-    IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)1,
-    IO_CFG2_GNSS2_PPS_SOURCE_G12            = (int)2,
+    IO_CFG2_GNSS2_PPS_SOURCE_G8             = (int)1,
+    IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)2,
     IO_CFG2_GNSS2_PPS_SOURCE_G13            = (int)3,    
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED_val   = (int)0x00,
-    IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x04,
-    IO_CFG2_GNSS2_PPS_SOURCE_G12_val        = (int)0x80,
+    IO_CFG2_GNSS2_PPS_SOURCE_G8_val         = (int)0x40,
+    IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x80,
     IO_CFG2_GNSS2_PPS_SOURCE_G13_val        = (int)0xC0,
 };
 
@@ -3377,22 +3403,22 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
     PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  PPS disabled (no GNSS1 PPS timepulse configured)
-    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
-    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.         PPS disabled
+    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "                    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "                    PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,          
-    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3 (excluding TBED-3.0) PPS1 on G5 (pin 9)
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  PPS1 on G8
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  PPS1 on G15 (pin 20)
-    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 and IS-IMX-GPX-DEV-1 (w/ IMX-5 and GPX-1)
+    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3:           PPS1 on  G5 (pin  9), PPS2 on G8 (pin 8)
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // IG-1.0:              PPS1 on  G8 (pin  8)
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // IG-1.1 and later:    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,          // IG-1.1 and later:    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2:                PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,          // "
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
-    PLATFORM_CFG_TYPE_TBED3_3                   = (int)21,          // Testbed-3.3 and later.  PPS1 on G5 (pin 9), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_RUG4_G2                   = (int)22,          // PCB RUG-4.x.  PPS1 on G15 (default), PPS2 on G11 (pin 16)
-    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later.  PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_IMX_BRK_1                 = (int)21,          // IS-IMX-GPX-DEV-1:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_RUG4_G2                   = (int)22,          // PCB RUG-4.x:         PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
     PLATFORM_CFG_TYPE_COUNT                     = (int)24,
 
     // Presets
@@ -4829,6 +4855,8 @@ enum eGpxStatus
 
     /** GNSS receiver time fault **/
     GPX_STATUS_FAULT_GNSS_RCVR_TIME                     = (int)0x00100000,
+    /** RTOS task period overrun **/
+    GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN           = (int)0x00200000,
     /** DMA Fault detected **/
     GPX_STATUS_FAULT_DMA                                = (int)0x00800000,
 

@@ -3981,8 +3981,8 @@ class logPlot:
             else:
                 towOffset = 0
 
-            deltaTimestamp = 0
-            timeImu  = 0
+            deltaTimestamp = np.array([])
+            timeImu  = np.array([])
             timePimu = self.getData(d, DID_PIMU, 'time')
             timeIMU  = self.getData(d, DID_IMU, 'time')
             timeImus = self.getData(d, DID_IMUS_RAW, 'time')
