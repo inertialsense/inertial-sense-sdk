@@ -34,14 +34,24 @@ constexpr std::array<uint32_t, 6> kToWBearingDids = {
     DID_GNSS1_POS, DID_GNSS2_POS,
 };
 
-/// SN-8107 / D0066: GPS epoch (1980-01-06 00:00:00 UTC) expressed as
-/// milliseconds-since-Unix-epoch. Used together with `gpsWeek` and
-/// `payloadToWMs` to anchor resolver output to Unix epoch so QDateTime
-/// can render wall-clock dates directly.
+//! GPS epoch (1980-01-06 00:00:00 UTC) expressed as
+//! milliseconds-since-Unix-epoch. Used together with `gpsWeek` and
+//! `payloadToWMs` to anchor resolver output to Unix epoch so QDateTime
+//! can render wall-clock dates directly.
+//!
+//! @note SN-8107 / D0066.
 constexpr uint64_t kGpsEpochUnixMs = 315'964'800'000ULL;
 constexpr uint64_t kGpsWeekMs      = 604'800'000ULL;  //!< 7 days in ms
 
-/// Convert (gpsWeek, towMs) into a Unix-epoch ms timestamp.
+/**
+ * @brief Convert `(gpsWeek, towMs)` into a Unix-epoch ms timestamp.
+ *
+ * @param gpsWeek GPS week number (weeks since 1980-01-06).
+ * @param towMs   Time-of-week in milliseconds.
+ * @return        Milliseconds since Unix epoch (1970-01-01 UTC).
+ *
+ * @note SN-8107 / D0066.
+ */
 inline uint64_t gpsToUnixMs(uint32_t gpsWeek, uint64_t towMs) noexcept {
     return static_cast<uint64_t>(gpsWeek) * kGpsWeekMs + kGpsEpochUnixMs + towMs;
 }
@@ -61,33 +71,39 @@ double slopeBetween(const ISSyncPoint& a, const ISSyncPoint& b) noexcept {
     return towDelta / hostDelta;
 }
 
-/// Walk one segment's `.raw` bytes via `is_comm_parse_byte`, emitting
-/// a sync point for every ToW-bearing-DID packet whose payload carries
-/// a non-zero ToW. The walk per segment matches the writer's per-
-/// packet emission pattern (`cDeviceLogRaw::SaveData`), so we recover
-/// the same anchors the writer would have flagged with `HAS_TOW`.
-///
-/// **SN-8107 / D0066:** the walker also tracks the most recent
-/// non-sync record's payload-side timestamp (when the payload happens
-/// to carry a `tsSec` value but the record is NOT ToW-bearing) so each
-/// emitted sync point can carry an `actualHostTimeMs` approximation
-/// (see `ISSyncPoint::actualHostTimeMs` doc). For records whose
-/// payload doesn't expose a timestamp field at all we just leave
-/// `actualHostTimeMs == 0` for those syncs that don't see a non-sync
-/// predecessor.
-///
-/// NOTE on the host-time recovery heuristic: the writer (`cDeviceLog`)
-/// emits records in arrival order on one host thread, so the
-/// host-uptime of a sync record is millisecond-adjacent to the
-/// host-uptime of the most recently emitted non-sync record. The
-/// `.idx` writer stores non-sync records' raw host uptime in the
-/// `timestamp` field — we don't have direct .idx access in this scan
-/// (the byte walk only sees payload bytes), so we approximate via
-/// `cISDataMappings::Timestamp` which reads the payload's own time
-/// field. For DIDs like `DID_PIMU` the payload's `time` field IS the
-/// host uptime; that's the value we capture. For DIDs whose payload
-/// timestamp is in a different domain (rare in v2) the approximation
-/// degrades but the bridge stays usable.
+/**
+ * @brief Walk one segment's `.raw` bytes via `is_comm_parse_byte`,
+ *        emitting a sync point for every ToW-bearing-DID packet whose
+ *        payload carries a non-zero ToW.
+ *
+ * The walk per segment matches the writer's per-packet emission
+ * pattern (`cDeviceLogRaw::SaveData`), so we recover the same anchors
+ * the writer would have flagged with `HAS_TOW`.
+ *
+ * The walker also tracks the most recent non-sync record's payload-side
+ * timestamp (when the payload happens to carry a `tsSec` value but the
+ * record is NOT ToW-bearing) so each emitted sync point can carry an
+ * `actualHostTimeMs` approximation (see `ISSyncPoint::actualHostTimeMs`
+ * doc). For records whose payload doesn't expose a timestamp field at
+ * all we leave `actualHostTimeMs == 0` for syncs that don't see a
+ * non-sync predecessor.
+ *
+ * @param reader   Segment reader yielding `.raw` bytes.
+ * @param deviceId Source device ID baked into each emitted sync point.
+ * @param out      Sync points appended to (caller's vector).
+ *
+ * @note Host-time recovery heuristic: the writer (`cDeviceLog`) emits
+ *       records in arrival order on one host thread, so the host-uptime
+ *       of a sync record is millisecond-adjacent to the host-uptime of
+ *       the most recently emitted non-sync record. The byte walk only
+ *       sees payload bytes (no direct .idx access here), so we
+ *       approximate via `cISDataMappings::Timestamp` which reads the
+ *       payload's own time field. For DIDs like `DID_PIMU` the
+ *       payload's `time` field IS the host uptime — that's the value
+ *       we capture.
+ *
+ * @note SN-8107 / D0066.
+ */
 void scanSegmentForSyncs(const ISLogReader& reader,
                          uint64_t deviceId,
                          std::vector<ISSyncPoint>& out) {
