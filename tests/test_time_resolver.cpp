@@ -331,6 +331,96 @@ TEST_F(TimeResolverTest, StatsAddUpToRecordCount) {
 }
 
 // ---------------------------------------------------------------------------
+// SN-8107 / D0066: cross-domain bridge. A v2-.idx log mixes records in two
+// numeric domains (sync records carry GPS-ToW ms ≈ hundreds of millions;
+// non-sync records carry host uptime ms ≈ thousands). The resolver MUST
+// translate session-uptime queries into the ToW frame using the
+// `actualHostTimeMs` recovered during the byte scan from the most recent
+// non-sync record's payload-side timestamp.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, CrossDomainBridgeUnifiesPimuIntoTowFrame) {
+    // Build a fixture mimicking the IMX-6 fw3.0.0 layout: several IMU
+    // records (small host uptime, non-sync) followed by an INS_2 sync
+    // record carrying a large ToW. The cross-domain bridge should detect
+    // session-uptime queries and translate them into the ToW frame.
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // Three IMU records at host uptimes 0.100s, 0.123s, 0.150s.
+    recs.emplace_back(DID_IMU, bytesOf(makeImu(0.100)));
+    recs.emplace_back(DID_IMU, bytesOf(makeImu(0.123)));
+    recs.emplace_back(DID_IMU, bytesOf(makeImu(0.150)));
+    // First sync at ToW 411.500s (411500 ms). The scan should capture
+    // 150 ms as `actualHostTimeMs` (the most recent IMU's host time).
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(411.500)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(411.700)));
+
+    f = buildFixture("bridge", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // Sanity: two sync points (411500, 411700), both anchored with
+    // actualHostTimeMs == 150 (the IMU host uptime right before the
+    // first sync).
+    const auto& syncs = resolver->syncPoints();
+    ASSERT_EQ(syncs.size(), 2u);
+    EXPECT_EQ(syncs[0].payloadToWMs, 411500u);
+    EXPECT_EQ(syncs[0].actualHostTimeMs, 150u);
+
+    // Cross-domain bridge: resolve a session-uptime query (e.g. 100 ms).
+    // Expected: offset = 411500 - 150 = 411350; bridged = 100 + 411350 = 411450.
+    const TimeStamp bridged = resolver->resolve(100u, kFixtureSerial);
+    EXPECT_EQ(bridged.source, TimeSource::ResolvedViaSync);
+    EXPECT_EQ(bridged.confidence, TimeConfidence::ExtrapolatedBackward);
+    EXPECT_EQ(bridged.value, 411450u);
+
+    // A larger session-uptime query (e.g. 150 ms = exactly the captured
+    // actualHostTimeMs) bridges to the sync's ToW.
+    const TimeStamp atSync = resolver->resolve(150u, kFixtureSerial);
+    EXPECT_EQ(atSync.value, 411500u);
+
+    // ToW-domain query (already in the resolver's anchor frame) falls
+    // through the non-bridge path: 411500 = first sync, Exact match.
+    const TimeStamp exact = resolver->resolve(411500u, kFixtureSerial);
+    EXPECT_EQ(exact.source, TimeSource::PayloadToW);
+    EXPECT_EQ(exact.confidence, TimeConfidence::Exact);
+    EXPECT_EQ(exact.value, 411500u);
+}
+
+// ---------------------------------------------------------------------------
+// SN-8107: when no non-sync record precedes the first sync point in the
+// byte stream, actualHostTimeMs stays 0 and the bridge branch is skipped
+// — falls back to legacy classify-only behavior.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, CrossDomainBridgeSkippedWhenNoPreSyncNonSync) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // No IMU records before the first sync. Bridge should NOT engage.
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(411.500)));
+    recs.emplace_back(DID_IMU,   bytesOf(makeImu(0.200)));
+
+    f = buildFixture("no_presync_nonsync", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    const auto& syncs = resolver->syncPoints();
+    ASSERT_EQ(syncs.size(), 1u);
+    EXPECT_EQ(syncs[0].actualHostTimeMs, 0u);  // no recovery possible
+
+    // resolve(100ms): legacy extrapolate-backward path with slope=1,
+    // hostTimeMs - s0.hostTimeMs = 100 - 411500 = -411400; tow falls
+    // below zero and clamps to 0. NOT bridged into ToW.
+    const TimeStamp legacy = resolver->resolve(100u, kFixtureSerial);
+    EXPECT_EQ(legacy.confidence, TimeConfidence::ExtrapolatedBackward);
+    EXPECT_LT(legacy.value, 411500u);  // legacy path, not bridged.
+}
+
+// ---------------------------------------------------------------------------
 // Single-sync-point case: resolves backward / forward with slope 1.0.
 // ---------------------------------------------------------------------------
 TEST_F(TimeResolverTest, SingleSyncPointDegenerateSlope) {

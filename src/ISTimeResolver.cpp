@@ -53,6 +53,28 @@ double slopeBetween(const ISSyncPoint& a, const ISSyncPoint& b) noexcept {
 /// a non-zero ToW. The walk per segment matches the writer's per-
 /// packet emission pattern (`cDeviceLogRaw::SaveData`), so we recover
 /// the same anchors the writer would have flagged with `HAS_TOW`.
+///
+/// **SN-8107 / D0066:** the walker also tracks the most recent
+/// non-sync record's payload-side timestamp (when the payload happens
+/// to carry a `tsSec` value but the record is NOT ToW-bearing) so each
+/// emitted sync point can carry an `actualHostTimeMs` approximation
+/// (see `ISSyncPoint::actualHostTimeMs` doc). For records whose
+/// payload doesn't expose a timestamp field at all we just leave
+/// `actualHostTimeMs == 0` for those syncs that don't see a non-sync
+/// predecessor.
+///
+/// NOTE on the host-time recovery heuristic: the writer (`cDeviceLog`)
+/// emits records in arrival order on one host thread, so the
+/// host-uptime of a sync record is millisecond-adjacent to the
+/// host-uptime of the most recently emitted non-sync record. The
+/// `.idx` writer stores non-sync records' raw host uptime in the
+/// `timestamp` field — we don't have direct .idx access in this scan
+/// (the byte walk only sees payload bytes), so we approximate via
+/// `cISDataMappings::Timestamp` which reads the payload's own time
+/// field. For DIDs like `DID_PIMU` the payload's `time` field IS the
+/// host uptime; that's the value we capture. For DIDs whose payload
+/// timestamp is in a different domain (rare in v2) the approximation
+/// degrades but the bridge stays usable.
 void scanSegmentForSyncs(const ISLogReader& reader,
                          uint64_t deviceId,
                          std::vector<ISSyncPoint>& out) {
@@ -64,28 +86,50 @@ void scanSegmentForSyncs(const ISLogReader& reader,
     is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
     is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
 
+    //! SN-8107 / D0066: most recent non-sync host-uptime observed during
+    //! the scan. Updated on every non-ToW-bearing record whose payload
+    //! exposes a timestamp; carried onto each subsequent sync point until
+    //! a newer non-sync time arrives.
+    uint64_t lastNonSyncHostTimeMs = 0;
+
     for (std::size_t i = 0; i < bytes.second; ++i) {
         protocol_type_t p = is_comm_parse_byte(&comm, bytes.first[i]);
         if (p != _PTYPE_INERTIAL_SENSE_DATA && p != _PTYPE_INERTIAL_SENSE_CMD) {
             continue;
         }
         const auto& hdr = comm.rxPkt.dataHdr;
-        if (!isToWBearing(hdr.id)) continue;
 
+        //! Probe every record for a payload-side timestamp. ToW-bearing
+        //! records use this for the sync's payloadToW; non-ToW-bearing
+        //! records' values feed `lastNonSyncHostTimeMs`.
         const double tsSec = cISDataMappings::Timestamp(&hdr, comm.rxPkt.data.ptr);
-        if (tsSec <= 0.0) continue;  // payload's ToW field is zero / absent.
+
+        if (!isToWBearing(hdr.id)) {
+            //! Non-sync candidate: if the payload carries a usable time
+            //! field, snapshot it. The vast majority of non-sync DIDs
+            //! (`DID_PIMU`, `DID_IMU`, etc.) carry a host-uptime time
+            //! field in seconds; cISDataMappings::Timestamp converts.
+            if (tsSec > 0.0) {
+                lastNonSyncHostTimeMs = static_cast<uint64_t>(tsSec * 1000.0);
+            }
+            continue;
+        }
+
+        if (tsSec <= 0.0) continue;  //!< payload's ToW field is zero / absent.
 
         const uint64_t towMs = static_cast<uint64_t>(tsSec * 1000.0);
         ISSyncPoint sp{};
-        // v2 `.idx` schema collapse: the writer's `rec.timestamp` for
-        // HAS_TOW records is also the ToW (no separate host-time
-        // recorded). Carry the same value in both fields so a future
-        // v3 schema with a distinct host-time can populate `hostTimeMs`
-        // independently without touching the resolver's API.
-        sp.hostTimeMs   = towMs;
-        sp.payloadToWMs = towMs;
-        sp.deviceId     = deviceId;
-        sp.sourceDid    = hdr.id;
+        //! v2 `.idx` schema collapse: the writer's `rec.timestamp` for
+        //! HAS_TOW records is also the ToW (no separate host-time
+        //! recorded). Carry the same value in both fields so a future
+        //! v3 schema with a distinct host-time can populate `hostTimeMs`
+        //! independently without touching the resolver's API.
+        sp.hostTimeMs        = towMs;
+        sp.payloadToWMs      = towMs;
+        sp.deviceId          = deviceId;
+        sp.sourceDid         = hdr.id;
+        //! SN-8107 / D0066: recovered host-uptime at sync time.
+        sp.actualHostTimeMs  = lastNonSyncHostTimeMs;
         out.push_back(sp);
     }
 }
@@ -170,6 +214,33 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
         // No anchors. Best we can do is a SessionOnly tag with the
         // input value passed through.
         return TimeStamp::fromSessionOnly(hostTimeMs, deviceId);
+    }
+
+    //! SN-8107 / D0066: cross-domain bridge. v2 .idx puts sync records'
+    //! `timestamp` field in the GPS-ToW domain (hundreds of millions of
+    //! ms into the GPS week) while non-sync records' `timestamp` field
+    //! is host uptime (small ms since session start). An input
+    //! `hostTimeMs` that's dramatically smaller than the first sync's
+    //! ToW is a session-uptime query — translate it into the ToW frame
+    //! using the recovered `actualHostTimeMs` of the first sync.
+    //!
+    //! The threshold: any non-sync query whose value is less than half
+    //! the first sync's ToW. In practice this means anything under tens
+    //! of millions of ms (a single session is at most a few hours).
+    //! ToW values are hundreds of millions of ms (GPS week scale).
+    const ISSyncPoint& firstSync = syncPoints_.front();
+    if (firstSync.actualHostTimeMs > 0 &&
+        hostTimeMs < firstSync.payloadToWMs / 2) {
+        //! Session-uptime input. Bridge to ToW using the offset
+        //! between the first sync's payload-ToW and the host-uptime we
+        //! captured at sync time.
+        const int64_t offset =
+            static_cast<int64_t>(firstSync.payloadToWMs) -
+            static_cast<int64_t>(firstSync.actualHostTimeMs);
+        const int64_t bridged = static_cast<int64_t>(hostTimeMs) + offset;
+        const uint64_t value = (bridged < 0) ? 0u : static_cast<uint64_t>(bridged);
+        return TimeStamp::fromResolvedViaSync(value, deviceId,
+                                              TimeConfidence::ExtrapolatedBackward);
     }
 
     // Binary search for the first sync point whose hostTimeMs >= input.

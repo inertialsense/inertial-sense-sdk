@@ -44,6 +44,29 @@ struct ISSyncPoint {
 
     /// DID that supplied the sync (e.g. `DID_INS_2`, `DID_GNSS1_POS`).
     uint32_t sourceDid;
+
+    /// **SN-8107 / D0066.** Recovered host-uptime at which this sync
+    /// record was written, captured from the most recent non-sync
+    /// record observed before this sync during the segment byte scan.
+    /// On v2 `.idx`, sync records' own `.idx` timestamp field is
+    /// overwritten with the payload ToW, so the "real" host clock at
+    /// sync time isn't stored — but the adjacent non-sync record's
+    /// host-uptime is an excellent approximation (the writer emits
+    /// records in arrival order on one host thread, so consecutive
+    /// records are millisecond-adjacent in host time).
+    ///
+    /// `ISTimeResolver::resolve` uses this to bridge session-uptime
+    /// queries into the ToW frame: any non-sync record's stored
+    /// host-uptime `H` resolves to `payloadToWMs + (H - actualHostTimeMs)`
+    /// where the sync point used is the nearest one (typically the
+    /// first sync, since pre-fix records dominate the session-uptime
+    /// query population).
+    ///
+    /// `0` means "no pre-sync non-sync record observed" — e.g. the
+    /// very first record in the segment is the sync point. In that
+    /// degenerate case the resolver falls back to the legacy
+    /// classify-only behavior.
+    uint64_t actualHostTimeMs = 0;
 };
 
 } // namespace inertial_sense
