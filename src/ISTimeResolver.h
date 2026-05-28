@@ -47,10 +47,12 @@ namespace inertial_sense {
 
 class ISTimeResolver {
 public:
-    /// Default discontinuity threshold: 1000 ppm clock-drift equivalent
-    /// (per D0024). If the slope between two adjacent sync-point pairs
-    /// differs by more than this fraction, the boundary is reported via
-    /// `discontinuities()`.
+    //! Default discontinuity threshold: 1000 ppm clock-drift equivalent.
+    //! If the slope between two adjacent sync-point pairs differs by
+    //! more than this fraction, the boundary is reported via
+    //! `discontinuities()`.
+    //!
+    //! @note D0024.
     static constexpr double kDefaultDiscontinuityThreshold = 1.0e-3;
 
     /**
@@ -61,13 +63,13 @@ public:
      * honestly rather than smoothing over a real jump.
      */
     struct Discontinuity {
-        /// Host-time of the boundary (the second sync point's host).
+        //! Host-time of the boundary (the second sync point's host).
         uint64_t hostTimeMs;
-        /// Slope (ToW-ms per host-ms) over the segment ending at
-        /// `hostTimeMs`. Identity (1.0) for v2 .idx HAS_TOW-only logs.
+        //! Slope (ToW-ms per host-ms) over the segment ending at
+        //! `hostTimeMs`. Identity (1.0) for .idx HAS_TOW-only logs.
         double   slopeBefore;
-        /// Slope (ToW-ms per host-ms) over the segment starting at
-        /// `hostTimeMs`.
+        //! Slope (ToW-ms per host-ms) over the segment starting at
+        //! `hostTimeMs`.
         double   slopeAfter;
     };
 
@@ -79,11 +81,11 @@ public:
      * log's total record count.
      */
     struct Stats {
-        std::size_t exact          = 0;  ///< Confidence::Exact (PayloadToW).
-        std::size_t interpolated   = 0;  ///< Between sync points.
-        std::size_t extrapFwd      = 0;  ///< Past last sync.
-        std::size_t extrapBack     = 0;  ///< Before first sync.
-        std::size_t unknown        = 0;  ///< No sync points at all.
+        std::size_t exact          = 0;  //!< Confidence::Exact (PayloadToW).
+        std::size_t interpolated   = 0;  //!< Between sync points.
+        std::size_t extrapFwd      = 0;  //!< Past last sync.
+        std::size_t extrapBack     = 0;  //!< Before first sync.
+        std::size_t unknown        = 0;  //!< No sync points at all.
     };
 
     // -----------------------------------------------------------------

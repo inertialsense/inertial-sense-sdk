@@ -24,11 +24,11 @@ namespace inertial_sense {
 
 namespace {
 
-/// DIDs whose payloads carry a usable GPS time-of-week field. Used by
-/// `detectSyncPoints` as the candidate set when scanning a segment.
-/// `cISDataMappings::Timestamp(...)` is consulted on each candidate to
-/// extract the actual ToW (returns 0 if the field is absent / zero,
-/// which the detection loop treats as "not a sync anchor").
+//! DIDs whose payloads carry a usable GPS time-of-week field. Used by
+//! `detectSyncPoints` as the candidate set when scanning a segment.
+//! `cISDataMappings::Timestamp(...)` is consulted on each candidate to
+//! extract the actual ToW (returns 0 if the field is absent / zero,
+//! which the detection loop treats as "not a sync anchor").
 constexpr std::array<uint32_t, 6> kToWBearingDids = {
     DID_INS_1, DID_INS_2, DID_INS_3, DID_INS_4,
     DID_GNSS1_POS, DID_GNSS2_POS,
@@ -61,9 +61,15 @@ inline bool isToWBearing(uint32_t did) noexcept {
     return false;
 }
 
-/// Slope between two sync points in ToW-ms per host-ms. Returns 1.0
-/// when the host distance is zero (degenerate / colocated points) so
-/// downstream comparisons don't divide-by-zero.
+/**
+ * @brief Slope between two sync points in ToW-ms per host-ms.
+ *
+ * @param a Earlier sync point.
+ * @param b Later sync point.
+ * @return  ToW-delta divided by host-delta; returns 1.0 when the host
+ *          distance is zero (degenerate / colocated points) so
+ *          downstream comparisons don't divide by zero.
+ */
 double slopeBetween(const ISSyncPoint& a, const ISSyncPoint& b) noexcept {
     if (b.hostTimeMs == a.hostTimeMs) return 1.0;
     const double hostDelta = static_cast<double>(b.hostTimeMs) - static_cast<double>(a.hostTimeMs);
