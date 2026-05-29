@@ -8,7 +8,7 @@
 // #define ENASBS
 
 #define NUMSATSOL   30      // Max number of observations used in the solution
-#define MAXOBS      56      // Max number of observations used in pre-buffer
+#define MAXOBS      55      // Max number of observations used in pre-buffer
 #define NFREQ       2       // Number of carrier frequencies
 #define NEXOBS      0       // Number of extended obs codes
 
