@@ -433,13 +433,14 @@ TEST_F(TimeResolverTest, CrossDomainBridgeSkippedWhenNoPreSyncNonSync) {
     EXPECT_EQ(syncs[0].actualHostTimeMs, 0u);  // no recovery possible
 
     // resolve(100ms): legacy extrapolate-backward path with slope=1,
-    // hostTimeMs - s0.hostTimeMs = 100 - 411500 = -411400; tow falls
-    // below zero and clamps to 0. Result IS epoch-anchored though,
-    // since the sync's gpsWeek=2300 — so the resolved value is exactly
-    // the GPS-epoch + 2300 weeks (no ToW added).
+    // tow = s0.payloadToWMs + 1.0 * (100 - s0.hostTimeMs)
+    //     = 411500 + (100 - 411500) = 100 (stays positive; no clamp).
+    // Result IS epoch-anchored (sync's gpsWeek=2300), so the value is
+    // GPS-epoch + 2300 weeks + 100 ms.
+    // SN-8107/D0066: prior expectation (ToW-0) predated epoch anchoring.
     const TimeStamp legacy = resolver->resolve(100u, kFixtureSerial);
     EXPECT_EQ(legacy.confidence, TimeConfidence::ExtrapolatedBackward);
-    EXPECT_EQ(legacy.value, expectedUnixMsForFixtureWeek(0));
+    EXPECT_EQ(legacy.value, expectedUnixMsForFixtureWeek(100));
 }
 
 // ---------------------------------------------------------------------------
@@ -459,12 +460,66 @@ TEST_F(TimeResolverTest, SingleSyncPointDegenerateSlope) {
 
     auto t = resolver->resolve(105000, kFixtureSerial);
     EXPECT_EQ(t.confidence, TimeConfidence::ExtrapolatedForward);
-    // Slope defaults to 1.0 with a single sync point: 100_000 + (105_000 - 100_000) = 105_000.
-    EXPECT_EQ(t.value, 105000u);
+    // Slope defaults to 1.0 with a single sync point: ToW = 100_000 +
+    // (105_000 - 100_000) = 105_000, then epoch-anchored (gpsWeek=2300).
+    // SN-8107/D0066: prior expectation (raw ToW) predated epoch anchoring.
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(105000));
 
     auto bwd = resolver->resolve(95000, kFixtureSerial);
     EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
-    EXPECT_EQ(bwd.value, 95000u);
+    EXPECT_EQ(bwd.value, expectedUnixMsForFixtureWeek(95000));
+}
+
+// ---------------------------------------------------------------------------
+// SN-8115: an input that is ALREADY an absolute Unix-ms timestamp (at or
+// beyond the GPS Unix epoch, 1980) is returned unchanged — never re-anchored.
+// This is the guard against the year-2082 double-anchor seen on the 16-device
+// compass fixture, where a wall-clock-poisoned spanEnd (~1.78e12) fed into
+// resolve() had the epoch + week offset added on top (-> ~3.55e12).
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, AlreadyAnchoredInputPassesThroughUnchanged) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(100.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200.0)));
+    f = buildFixture("already_anchored", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // A real 2026 wall-clock value (the compass fixture's poisoned spanEnd
+    // sat right here). It is >> any ToW (< 1 week) or session-uptime, so the
+    // resolver must treat it as already-anchored and return it verbatim, NOT
+    // run gpsToUnixMs on it (which would yield ~2x = year 2082).
+    constexpr uint64_t kAnchored2026 = 1779821742200ULL;
+    const TimeStamp t = resolver->resolve(kAnchored2026, kFixtureSerial);
+    EXPECT_EQ(t.value, kAnchored2026);
+    EXPECT_LT(t.value, 2ULL * kAnchored2026);  // explicitly: not doubled
+}
+
+// resolve() is idempotent for already-resolved values: feeding a resolved
+// (epoch-anchored) output back in returns the same value. Guarantees
+// `resolve(resolve(x)) == resolve(x)`.
+TEST_F(TimeResolverTest, ResolveIsIdempotent) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(411.500)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(411.700)));
+    f = buildFixture("idempotent", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // First pass: a raw ToW query resolves to an epoch-anchored Unix-ms value.
+    const TimeStamp once = resolver->resolve(411500u, kFixtureSerial);
+    EXPECT_EQ(once.value, expectedUnixMsForFixtureWeek(411500));
+    // Second pass on the already-resolved value is a no-op.
+    const TimeStamp twice = resolver->resolve(once.value, kFixtureSerial);
+    EXPECT_EQ(twice.value, once.value);
 }
 
 // ---------------------------------------------------------------------------
