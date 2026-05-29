@@ -256,6 +256,22 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
 // ============================================================
 
 TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const {
+    // SN-8115: idempotency / already-anchored guard. Legitimate raw inputs are
+    // either a GPS time-of-week (always < one week, 604,800,000 ms) or a
+    // session-uptime (ms since session start — at most hours). Neither can
+    // reach the GPS Unix epoch (1980-01-06 = 315,964,800,000 ms). An input at
+    // or beyond that is therefore ALREADY an absolute Unix-ms timestamp — a
+    // value that previously went through `resolve()` (re-resolving it must be a
+    // no-op for `resolve(resolve(x)) == resolve(x)` to hold), or a
+    // wall-clock-poisoned `.idx` span endpoint. Re-anchoring it would
+    // double-add the epoch + week offset via `gpsToUnixMs`, producing ~2x the
+    // wall-clock (the year-2082 spanEnd seen on the 16-device compass fixture).
+    // Pass it through unchanged.
+    if (hostTimeMs >= kGpsEpochUnixMs) {
+        return TimeStamp::fromResolvedViaSync(hostTimeMs, deviceId,
+                                              TimeConfidence::Exact);
+    }
+
     if (syncPoints_.empty()) {
         // No anchors. Best we can do is a SessionOnly tag with the
         // input value passed through.
