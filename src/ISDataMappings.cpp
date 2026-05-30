@@ -193,16 +193,13 @@ std::string renderSysStatus(const data_info_t& info, std::any value, int arrayId
     if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sysStatus"))
         return "";
 
+    // SN-7919 (D-53): delegates to the sysStatus decode table (ISStatusDecode.cpp).
     try {
-        std::stringstream buff;
         uint32_t sysStatus = std::any_cast<uint32_t>(value);
-
-#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
-        BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
-        BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
-
-        return buff.str();
+        const status_field_decode_t* dec = GetStatusDecodeByField("sysStatus");
+        return dec ? RenderStatusFromDecode(*dec, sysStatus) : std::string();
     } catch (std::bad_any_cast& e) {
+        (void)e;
         return "";
     }
 }
@@ -211,43 +208,13 @@ std::string renderGenFaultCode(const data_info_t& info, std::any value, int arra
     if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "genFaultCode"))
         return "";
 
+    // SN-7919 (D-53): delegates to the genFaultCode decode table (ISStatusDecode.cpp).
     try {
-        std::stringstream buff;
         uint32_t genFault = std::any_cast<uint32_t>(value);
-
-#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
-
-        BIT_MSG(genFault, GFC_INS_STATE_ORUN_UVW        , "0x00000001 - INS state limit overrun - UVW.");
-        BIT_MSG(genFault, GFC_INS_STATE_ORUN_LAT        , "0x00000002 - INS state limit overrun - Latitude.");
-        BIT_MSG(genFault, GFC_INS_STATE_ORUN_ALT        , "0x00000004 - INS state limit overrun - Altitude.");
-        BIT_MSG(genFault, GFC_UNHANDLED_INTERRUPT       , "0x00000010 - Unhandled interrupt.");
-        BIT_MSG(genFault, GFC_GNSS_CRITICAL_FAULT       , "0x00000020 - GNSS receiver critical fault (See the corresponding GPS status fault flags).");
-        BIT_MSG(genFault, GFC_GNSS_TX_LIMITED           , "0x00000040 - GNSS Tx limited.");
-        BIT_MSG(genFault, GFC_GNSS_RX_OVERRUN           , "0x00000080 - GNSS Rx overrun.");
-        BIT_MSG(genFault, GFC_INIT_SENSORS              , "0x00000100 - Fault: sensor initialization.");
-        BIT_MSG(genFault, GFC_INIT_SPI                  , "0x00000200 - Fault: SPI bus initialization.");
-        BIT_MSG(genFault, GFC_CONFIG_SPI                , "0x00000400 - Fault: SPI configuration.");
-        BIT_MSG(genFault, GFC_GNSS1_INIT                , "0x00000800 - Fault: GNSS1 init.");
-        BIT_MSG(genFault, GFC_GNSS2_INIT                , "0x00001000 - Fault: GNSS2 init>");
-        BIT_MSG(genFault, GFC_FLASH_INVALID_VALUES      , "0x00002000 - Flash failed to load valid values.");
-        BIT_MSG(genFault, GFC_FLASH_CHECKSUM_FAILURE    , "0x00004000 - Flash checksum failure.");
-        BIT_MSG(genFault, GFC_FLASH_WRITE_FAILURE       , "0x00008000 - Flash write failure.");
-        BIT_MSG(genFault, GFC_SYS_FAULT_GENERAL         , "0x00010000 - System Fault: general.");
-        BIT_MSG(genFault, GFC_SYS_FAULT_CRITICAL        , "0x00020000 - System Fault: CRITICAL system fault (see DID_SYS_FAULT).");
-        BIT_MSG(genFault, GFC_SENSOR_SATURATION         , "0x00040000 - Sensor(s) saturated.");
-        BIT_MSG(genFault, GFC_EKF_STATES_INVALID        , "0x00080000 - EKF states invalid.");
-        BIT_MSG(genFault, GFC_INIT_IMU                  , "0x00100000 - Fault: IMU initialization.");
-        BIT_MSG(genFault, GFC_INIT_BAROMETER            , "0x00200000 - Fault: Barometer initialization.");
-        BIT_MSG(genFault, GFC_INIT_MAGNETOMETER         , "0x00400000 - Fault: Magnetometer initialization.");
-        BIT_MSG(genFault, GFC_INIT_I2C                  , "0x00800000 - Fault: I2C initialization.");
-        BIT_MSG(genFault, GFC_CHIP_ERASE_INVALID        , "0x01000000 - Fault: Chip erase line toggled but did not meet required hold time.");
-        BIT_MSG(genFault, GFC_EKF_GNSS_TIME_FAULT       , "0x02000000 - Fault: EKF GPS time fault.");
-        BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GPS receiver time fault.");
-        BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GPS status fault flags).");
-        BIT_MSG(genFault, GFC_EKF_INPUT_INVALID_IMU     , "0x10000000 - Fault: Invalid IMU input rejected by EKF.");
-
-        return buff.str();
+        const status_field_decode_t* dec = GetStatusDecodeByField("genFaultCode");
+        return dec ? RenderStatusFromDecode(*dec, genFault) : std::string();
     } catch (std::bad_any_cast& e) {
+        (void)e;
         return "";
     }
 }

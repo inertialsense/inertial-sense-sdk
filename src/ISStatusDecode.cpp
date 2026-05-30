@@ -265,13 +265,101 @@ status_field_decode_t buildHdwStatusDecode()
     return d;
 }
 
+/** @brief sysStatus decode table (eSysStatusFlags). Two informational bits; no error states. */
+status_field_decode_t buildSysStatusDecode()
+{
+    status_field_decode_t d;
+    d.fieldName = "sysStatus";
+    d.errorMask = 0;
+    d.subfields.push_back(bitField("Testbed-3 LEDs enabled", SYS_STATUS_TBED3_LEDS_ENABLED, false,
+        "0x00000001 - IMX to drive Testbed-3 status LEDs."));
+    d.subfields.push_back(bitField("Primary GNSS source is GNSS2", SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2, false,
+        "0x00000004 - NMEA source is GNSS2."));
+    return d;
+}
+
+/**
+ * @brief genFaultCode decode table (eGenFaultCodes). All defined bits are fault conditions, so
+ *        every subfield isError=true and errorMask = OR of all bits. Note the verbatim legacy
+ *        text quirk on GNSS2 init ("init>").
+ */
+status_field_decode_t buildGenFaultCodeDecode()
+{
+    status_field_decode_t d;
+    d.fieldName = "genFaultCode";
+
+    d.subfields.push_back(bitField("INS state overrun: UVW", GFC_INS_STATE_ORUN_UVW, true,
+        "0x00000001 - INS state limit overrun - UVW."));
+    d.subfields.push_back(bitField("INS state overrun: Latitude", GFC_INS_STATE_ORUN_LAT, true,
+        "0x00000002 - INS state limit overrun - Latitude."));
+    d.subfields.push_back(bitField("INS state overrun: Altitude", GFC_INS_STATE_ORUN_ALT, true,
+        "0x00000004 - INS state limit overrun - Altitude."));
+    d.subfields.push_back(bitField("Unhandled interrupt", GFC_UNHANDLED_INTERRUPT, true,
+        "0x00000010 - Unhandled interrupt."));
+    d.subfields.push_back(bitField("GNSS critical fault", GFC_GNSS_CRITICAL_FAULT, true,
+        "0x00000020 - GNSS receiver critical fault (See the corresponding GPS status fault flags)."));
+    d.subfields.push_back(bitField("GNSS Tx limited", GFC_GNSS_TX_LIMITED, true,
+        "0x00000040 - GNSS Tx limited."));
+    d.subfields.push_back(bitField("GNSS Rx overrun", GFC_GNSS_RX_OVERRUN, true,
+        "0x00000080 - GNSS Rx overrun."));
+    d.subfields.push_back(bitField("Sensor init fault", GFC_INIT_SENSORS, true,
+        "0x00000100 - Fault: sensor initialization."));
+    d.subfields.push_back(bitField("SPI bus init fault", GFC_INIT_SPI, true,
+        "0x00000200 - Fault: SPI bus initialization."));
+    d.subfields.push_back(bitField("SPI config fault", GFC_CONFIG_SPI, true,
+        "0x00000400 - Fault: SPI configuration."));
+    d.subfields.push_back(bitField("GNSS1 init fault", GFC_GNSS1_INIT, true,
+        "0x00000800 - Fault: GNSS1 init."));
+    d.subfields.push_back(bitField("GNSS2 init fault", GFC_GNSS2_INIT, true,
+        "0x00001000 - Fault: GNSS2 init>"));
+    d.subfields.push_back(bitField("Flash invalid values", GFC_FLASH_INVALID_VALUES, true,
+        "0x00002000 - Flash failed to load valid values."));
+    d.subfields.push_back(bitField("Flash checksum failure", GFC_FLASH_CHECKSUM_FAILURE, true,
+        "0x00004000 - Flash checksum failure."));
+    d.subfields.push_back(bitField("Flash write failure", GFC_FLASH_WRITE_FAILURE, true,
+        "0x00008000 - Flash write failure."));
+    d.subfields.push_back(bitField("System fault: general", GFC_SYS_FAULT_GENERAL, true,
+        "0x00010000 - System Fault: general."));
+    d.subfields.push_back(bitField("System fault: critical", GFC_SYS_FAULT_CRITICAL, true,
+        "0x00020000 - System Fault: CRITICAL system fault (see DID_SYS_FAULT)."));
+    d.subfields.push_back(bitField("Sensor saturation", GFC_SENSOR_SATURATION, true,
+        "0x00040000 - Sensor(s) saturated."));
+    d.subfields.push_back(bitField("EKF states invalid", GFC_EKF_STATES_INVALID, true,
+        "0x00080000 - EKF states invalid."));
+    d.subfields.push_back(bitField("IMU init fault", GFC_INIT_IMU, true,
+        "0x00100000 - Fault: IMU initialization."));
+    d.subfields.push_back(bitField("Barometer init fault", GFC_INIT_BAROMETER, true,
+        "0x00200000 - Fault: Barometer initialization."));
+    d.subfields.push_back(bitField("Magnetometer init fault", GFC_INIT_MAGNETOMETER, true,
+        "0x00400000 - Fault: Magnetometer initialization."));
+    d.subfields.push_back(bitField("I2C init fault", GFC_INIT_I2C, true,
+        "0x00800000 - Fault: I2C initialization."));
+    d.subfields.push_back(bitField("Chip erase invalid", GFC_CHIP_ERASE_INVALID, true,
+        "0x01000000 - Fault: Chip erase line toggled but did not meet required hold time."));
+    d.subfields.push_back(bitField("EKF GPS time fault", GFC_EKF_GNSS_TIME_FAULT, true,
+        "0x02000000 - Fault: EKF GPS time fault."));
+    d.subfields.push_back(bitField("GPS receiver time fault", GFC_GNSS_RECEIVER_TIME, true,
+        "0x04000000 - Fault: GPS receiver time fault."));
+    d.subfields.push_back(bitField("GNSS general fault", GFC_GNSS_GENERAL_FAULT, true,
+        "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GPS status fault flags)."));
+    d.subfields.push_back(bitField("EKF invalid IMU input", GFC_EKF_INPUT_INVALID_IMU, true,
+        "0x10000000 - Fault: Invalid IMU input rejected by EKF."));
+
+    // No single error-mask symbol exists; every defined bit is a fault, so the roll-up is their OR.
+    d.errorMask = 0;
+    for (const auto& sf : d.subfields) d.errorMask |= sf.mask;
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by field name. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
     static const std::map<std::string, status_field_decode_t> r = [] {
         std::map<std::string, status_field_decode_t> m;
-        m.emplace("insStatus", buildInsStatusDecode());
-        m.emplace("hdwStatus", buildHdwStatusDecode());
+        m.emplace("insStatus",    buildInsStatusDecode());
+        m.emplace("hdwStatus",    buildHdwStatusDecode());
+        m.emplace("sysStatus",    buildSysStatusDecode());
+        m.emplace("genFaultCode", buildGenFaultCodeDecode());
         return m;
     }();
     return r;

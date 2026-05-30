@@ -143,6 +143,54 @@ std::string legacyRenderHdwStatusReference(uint32_t hdwStatus)
     return buff.str();
 }
 
+/** @brief Oracle: faithful copy of the original `renderSysStatus` body. */
+std::string legacyRenderSysStatusReference(uint32_t sysStatus)
+{
+    std::stringstream buff;
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+    BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
+    BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
+#undef BIT_MSG
+    return buff.str();
+}
+
+/** @brief Oracle: faithful copy of the original `renderGenFaultCode` body. */
+std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
+{
+    std::stringstream buff;
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+    BIT_MSG(genFault, GFC_INS_STATE_ORUN_UVW        , "0x00000001 - INS state limit overrun - UVW.");
+    BIT_MSG(genFault, GFC_INS_STATE_ORUN_LAT        , "0x00000002 - INS state limit overrun - Latitude.");
+    BIT_MSG(genFault, GFC_INS_STATE_ORUN_ALT        , "0x00000004 - INS state limit overrun - Altitude.");
+    BIT_MSG(genFault, GFC_UNHANDLED_INTERRUPT       , "0x00000010 - Unhandled interrupt.");
+    BIT_MSG(genFault, GFC_GNSS_CRITICAL_FAULT       , "0x00000020 - GNSS receiver critical fault (See the corresponding GPS status fault flags).");
+    BIT_MSG(genFault, GFC_GNSS_TX_LIMITED           , "0x00000040 - GNSS Tx limited.");
+    BIT_MSG(genFault, GFC_GNSS_RX_OVERRUN           , "0x00000080 - GNSS Rx overrun.");
+    BIT_MSG(genFault, GFC_INIT_SENSORS              , "0x00000100 - Fault: sensor initialization.");
+    BIT_MSG(genFault, GFC_INIT_SPI                  , "0x00000200 - Fault: SPI bus initialization.");
+    BIT_MSG(genFault, GFC_CONFIG_SPI                , "0x00000400 - Fault: SPI configuration.");
+    BIT_MSG(genFault, GFC_GNSS1_INIT                , "0x00000800 - Fault: GNSS1 init.");
+    BIT_MSG(genFault, GFC_GNSS2_INIT                , "0x00001000 - Fault: GNSS2 init>");
+    BIT_MSG(genFault, GFC_FLASH_INVALID_VALUES      , "0x00002000 - Flash failed to load valid values.");
+    BIT_MSG(genFault, GFC_FLASH_CHECKSUM_FAILURE    , "0x00004000 - Flash checksum failure.");
+    BIT_MSG(genFault, GFC_FLASH_WRITE_FAILURE       , "0x00008000 - Flash write failure.");
+    BIT_MSG(genFault, GFC_SYS_FAULT_GENERAL         , "0x00010000 - System Fault: general.");
+    BIT_MSG(genFault, GFC_SYS_FAULT_CRITICAL        , "0x00020000 - System Fault: CRITICAL system fault (see DID_SYS_FAULT).");
+    BIT_MSG(genFault, GFC_SENSOR_SATURATION         , "0x00040000 - Sensor(s) saturated.");
+    BIT_MSG(genFault, GFC_EKF_STATES_INVALID        , "0x00080000 - EKF states invalid.");
+    BIT_MSG(genFault, GFC_INIT_IMU                  , "0x00100000 - Fault: IMU initialization.");
+    BIT_MSG(genFault, GFC_INIT_BAROMETER            , "0x00200000 - Fault: Barometer initialization.");
+    BIT_MSG(genFault, GFC_INIT_MAGNETOMETER         , "0x00400000 - Fault: Magnetometer initialization.");
+    BIT_MSG(genFault, GFC_INIT_I2C                  , "0x00800000 - Fault: I2C initialization.");
+    BIT_MSG(genFault, GFC_CHIP_ERASE_INVALID        , "0x01000000 - Fault: Chip erase line toggled but did not meet required hold time.");
+    BIT_MSG(genFault, GFC_EKF_GNSS_TIME_FAULT       , "0x02000000 - Fault: EKF GPS time fault.");
+    BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GPS receiver time fault.");
+    BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GPS status fault flags).");
+    BIT_MSG(genFault, GFC_EKF_INPUT_INVALID_IMU     , "0x10000000 - Fault: Invalid IMU input rejected by EKF.");
+#undef BIT_MSG
+    return buff.str();
+}
+
 /** @brief Deterministic xorshift32 so the sweep is reproducible across runs/platforms. */
 uint32_t xorshift32(uint32_t& s)
 {
@@ -370,4 +418,53 @@ TEST(ISStatusDecode, HdwStatus_StructuredDecode)
     for (const auto& vl : bit->values)
         if (vl.label == "Failed") failedIsError = vl.isError;
     EXPECT_TRUE(failedIsError);
+}
+
+// ---- sysStatus / genFaultCode -------------------------------------------------
+
+TEST(ISStatusDecode, SysStatus_RoundTrip)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysStatus");
+    ASSERT_NE(dec, nullptr);
+    for (int b = 0; b < 32; ++b) {
+        const uint32_t v = (1u << b);
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderSysStatusReference(v)) << "bit " << b;
+    }
+    EXPECT_EQ(dec->errorMask, 0u);   // sysStatus has no error states
+}
+
+TEST(ISStatusDecode, GenFaultCode_RoundTrip_EverySingleBit)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("genFaultCode");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), legacyRenderGenFaultCodeReference(0u));
+    for (int b = 0; b < 32; ++b) {
+        const uint32_t v = (1u << b);
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGenFaultCodeReference(v)) << "bit " << b;
+    }
+}
+
+TEST(ISStatusDecode, GenFaultCode_RoundTrip_RandomSweep)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("genFaultCode");
+    ASSERT_NE(dec, nullptr);
+    uint32_t s = 0xFEEDFACEu;
+    for (int i = 0; i < 20000; ++i) {
+        const uint32_t v = xorshift32(s);
+        ASSERT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGenFaultCodeReference(v))
+            << "iteration " << i << " value 0x" << std::hex << v;
+    }
+}
+
+TEST(ISStatusDecode, GenFaultCode_AllBitsAreErrors)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("genFaultCode");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_FALSE(dec->subfields.empty());
+    uint32_t orMask = 0;
+    for (const auto& sf : dec->subfields) {
+        EXPECT_TRUE(sf.isError) << sf.name;
+        orMask |= sf.mask;
+    }
+    EXPECT_EQ(dec->errorMask, orMask);   // roll-up = OR of all fault bits
 }
