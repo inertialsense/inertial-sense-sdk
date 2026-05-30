@@ -672,9 +672,11 @@ status_field_decode_t buildGnssFwUpdateStateDecode()
         "InjectWait", "InjectFinish", "ProgramExecutionWait", "ProgramExecutionFinish",
         "WriteNvmWait", "WriteNvmFinish", "Done",
     };
-    // Legacy bound is `msgIdx < cxdRst_Max` (13) — a latent SDK bug: values 13..16 (the array has
-    // 17 entries) never decode. Reproduced here for byte-identity; flagged as a follow-up.
-    return makeScalarEnum("gnssFwUpdateState", fwStates, 13);
+    // SN-7919: the original renderer bounded the index by `cxdRst_Max` (13) — a copy-paste bug
+    // that left fwStates 13..16 (ProgramExecutionFinish..Done) undecoded. Fixed here to the array
+    // size (17) so every state decodes. This is the one intentional behavior change vs the
+    // original renderer (all other fields stay byte-identical).
+    return makeScalarEnum("gnssFwUpdateState", fwStates, 17);
 }
 
 status_field_decode_t buildGnssLastResetCauseDecode()

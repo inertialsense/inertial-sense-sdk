@@ -368,7 +368,7 @@ std::string legacyRenderGnssFwUpdateStateReference(uint8_t v)
         "InjectWait", "InjectFinish", "ProgramExecutionWait", "ProgramExecutionFinish",
         "WriteNvmWait", "WriteNvmFinish", "Done",
     };
-    if (v < cxdRst_Max) return std::string(fwStates[v]);   // legacy bug: bound is cxdRst_Max, not 17
+    if (v < 17) return std::string(fwStates[v]);   // SN-7919: corrected bound (array size), was cxdRst_Max
     return "";
 }
 
@@ -938,15 +938,16 @@ TEST(ISStatusDecode, GnssStateEnums_RoundTrip_FullByteRange)
     }
 }
 
-TEST(ISStatusDecode, GnssFwUpdateState_BoundBugReproduced)
+TEST(ISStatusDecode, GnssFwUpdateState_AllStatesDecode)
 {
-    // Latent SDK bug: fwUpdateState is bounded by cxdRst_Max (13), so values 13..16 never decode
-    // even though the name array has 17 entries. We reproduce it byte-for-byte.
+    // SN-7919 fix: the original renderer's `cxdRst_Max` (13) bound left states 13..16 undecoded;
+    // now bounded by the array size (17) so every firmware-update state decodes.
     const status_field_decode_t* fw = GetStatusDecodeByField("gnssFwUpdateState");
     ASSERT_NE(fw, nullptr);
-    EXPECT_EQ(RenderStatusFromDecode(*fw, 12u), "ProgramExecutionWait");   // last decodable
-    EXPECT_EQ(RenderStatusFromDecode(*fw, 13u), "");                       // bug: would be ProgramExecutionFinish
-    EXPECT_EQ(RenderStatusFromDecode(*fw, 16u), "");                       // bug: would be Done
+    EXPECT_EQ(RenderStatusFromDecode(*fw, 12u), "ProgramExecutionWait");
+    EXPECT_EQ(RenderStatusFromDecode(*fw, 13u), "ProgramExecutionFinish");   // fixed (was empty)
+    EXPECT_EQ(RenderStatusFromDecode(*fw, 16u), "Done");                     // fixed (was empty)
+    EXPECT_EQ(RenderStatusFromDecode(*fw, 17u), "");                         // genuinely out of range
 }
 
 // ---- IMX / GPX built-in-test fields -------------------------------------------
