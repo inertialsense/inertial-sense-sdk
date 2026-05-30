@@ -87,6 +87,62 @@ std::string legacyRenderInsStatusReference(uint32_t insStatus)
     return buff.str();
 }
 
+/** @brief Oracle: faithful copy of the original (pre-SN-7919) `renderHdwStatus` body. */
+std::string legacyRenderHdwStatusReference(uint32_t hdwStatus)
+{
+    std::stringstream buff;
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+    BIT_MSG(hdwStatus, HDW_STATUS_MOTION_GYR                       , "0x00000001 - Gyro motion detected.");
+    BIT_MSG(hdwStatus, HDW_STATUS_MOTION_ACC                       , "0x00000002 - Accelerometer motion detected.");
+    BIT_MSG(hdwStatus, HDW_STATUS_IMU_FAULT_REJECT_GYR             , "0x00000004 - IMU gyro fault rejection. A Gyro sensor is divergent and being excluded.");
+    BIT_MSG(hdwStatus, HDW_STATUS_IMU_FAULT_REJECT_ACC             , "0x00000008 - IMU accelerometer fault rejection. An accelerometer sensors is divergent and being excluded.");
+    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_SATELLITE_RX_VALID          , "0x00000010 - GPS satellite signals are being received (antenna and cable are good).");
+    BIT_MSG(hdwStatus, HDW_STATUS_STROBE_IN_EVENT                  , "0x00000020 - Event occurred on strobe input pin.");
+    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_TIME_OF_WEEK_VALID          , "0x00000040 - GPS time of week is valid and reported.");
+    BIT_MSG(hdwStatus, HDW_STATUS_REFERENCE_IMU_RX                 , "0x00000080 - Reference IMU data being received.");
+    BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_GYR                   , "0x00000100 - Sensor saturation on gyro.");
+    BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_ACC                   , "0x00000200 - Sensor saturation on accelerometer.");
+    BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_MAG                   , "0x00000400 - Sensor saturation on magnetometer.");
+    BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_BARO                  , "0x00000800 - Sensor saturation on barometric pressure.");
+    BIT_MSG(hdwStatus, HDW_STATUS_SYSTEM_RESET_REQUIRED            , "0x00001000 - System Reset is required for proper function.");
+    BIT_MSG(hdwStatus, HDW_STATUS_ERR_GNSS_PPS_NOISE               , "0x00002000 - GPS PPS timepulse signal has noise and occurred too frequently.");
+    BIT_MSG(hdwStatus, HDW_STATUS_MAG_RECAL_COMPLETE              , "0x00004000 - Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).");
+    BIT_MSG(hdwStatus, HDW_STATUS_FLASH_WRITE_PENDING              , "0x00008000 - System flash write staging or occurring now.");
+    BIT_MSG(hdwStatus, HDW_STATUS_ERR_COM_TX_LIMITED              , "0x00010000 - Communications Tx buffer limited.");
+    BIT_MSG(hdwStatus, HDW_STATUS_ERR_COM_RX_OVERRUN             , "0x00020000 - Communications Rx buffer overrun.");
+    BIT_MSG(hdwStatus, HDW_STATUS_ERR_NO_GNSS_PPS                 , "0x00040000 - GPS PPS timepulse signal has not been received or is in error.");
+    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_PPS_TIMESYNC               , "0x00080000 - Time synchronized by GPS PPS.");
+
+    uint8_t parseErrCount = (uint8_t)HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus);
+    if (parseErrCount) {
+        char b[256];
+        std::snprintf(b, sizeof(b), "0x00F00000 - Communications parse errors (%d).", parseErrCount);
+        buff << b << std::endl;
+    }
+
+    switch (hdwStatus & HDW_STATUS_BIT_MASK) {
+        case HDW_STATUS_BIT_RUNNING:  buff << "0x01000000 - (BIT) Built-in self-test is running." << std::endl; break;
+        case HDW_STATUS_BIT_PASSED:   buff << "0x02000000 - (BIT) Built-in self-test passed." << std::endl; break;
+        case HDW_STATUS_BIT_FAILED:   buff << "0x03000000 - (BIT) Built-in self-test failed." << std::endl; break;
+    }
+
+    BIT_MSG(hdwStatus, HDW_STATUS_ERR_TEMPERATURE                 , "0x04000000 - Temperature outside operating range.");
+    BIT_MSG(hdwStatus, HDW_STATUS_SPI_INTERFACE_ENABLED          , "0x08000000 - IMX pins G5-G8 are configure for SPI use.");
+
+    switch (hdwStatus & HDW_STATUS_RESET_CAUSE_MASK) {
+        case HDW_STATUS_RESET_CAUSE_BACKUP_MODE:    buff << "0x10000000 - Reset from backup mode (low-power state w/ CPU off)." << std::endl; break;
+        case HDW_STATUS_RESET_CAUSE_WATCHDOG_FAULT: buff << "0x20000000 - Reset from watchdog fault." << std::endl; break;
+        case HDW_STATUS_RESET_CAUSE_SOFT:           buff << "0x30000000 - Reset from software." << std::endl; break;
+        case HDW_STATUS_RESET_CAUSE_HDW:            buff << "0x40000000 - Reset from hardware." << std::endl; break;
+    }
+
+    BIT_MSG(hdwStatus, HDW_STATUS_FAULT_SYS_CRITICAL             , "0x80000000 - Critical System Fault, CPU error (see DID_SYS_FAULT.status).");
+
+#undef BIT_MSG
+    return buff.str();
+}
+
 /** @brief Deterministic xorshift32 so the sweep is reproducible across runs/platforms. */
 uint32_t xorshift32(uint32_t& s)
 {
@@ -228,4 +284,90 @@ TEST(ISStatusDecode, InsStatus_ErrorRollup)
     EXPECT_EQ(okVal & dec->errorMask, 0u);
     // A general fault trips the error roll-up.
     EXPECT_NE((uint32_t)(INS_STATUS_GENERAL_FAULT) & dec->errorMask, 0u);
+}
+
+// ---- hdwStatus ----------------------------------------------------------------
+
+TEST(ISStatusDecode, HdwStatus_RoundTrip_EverySingleBit)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("hdwStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), legacyRenderHdwStatusReference(0u));
+    for (int b = 0; b < 32; ++b) {
+        const uint32_t v = (1u << b);
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderHdwStatusReference(v)) << "bit " << b;
+    }
+}
+
+TEST(ISStatusDecode, HdwStatus_RoundTrip_BitStateEnum)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("hdwStatus");
+    ASSERT_NE(dec, nullptr);
+    for (uint32_t st = 0; st <= 3; ++st) {
+        const uint32_t v = (st << 24);   // HDW_STATUS_BIT_MASK = 0x03000000
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderHdwStatusReference(v)) << "bit-state " << st;
+    }
+}
+
+TEST(ISStatusDecode, HdwStatus_RoundTrip_ResetCauseEnum)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("hdwStatus");
+    ASSERT_NE(dec, nullptr);
+    for (uint32_t rc = 0; rc <= 7; ++rc) {
+        const uint32_t v = (rc << 28);   // HDW_STATUS_RESET_CAUSE_MASK = 0x70000000
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderHdwStatusReference(v)) << "reset-cause " << rc;
+    }
+}
+
+TEST(ISStatusDecode, HdwStatus_RoundTrip_ParseErrorCounts)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("hdwStatus");
+    ASSERT_NE(dec, nullptr);
+    for (uint32_t c = 0; c <= 15; ++c) {
+        const uint32_t v = (c << 20);    // HDW_STATUS_COM_PARSE_ERR_COUNT_MASK = 0x00F00000
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderHdwStatusReference(v)) << "parse-count " << c;
+    }
+}
+
+TEST(ISStatusDecode, HdwStatus_RoundTrip_AllBits)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("hdwStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0xFFFFFFFFu), legacyRenderHdwStatusReference(0xFFFFFFFFu));
+}
+
+TEST(ISStatusDecode, HdwStatus_RoundTrip_RandomSweep)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("hdwStatus");
+    ASSERT_NE(dec, nullptr);
+    uint32_t s = 0xBADF00Du;
+    for (int i = 0; i < 20000; ++i) {
+        const uint32_t v = xorshift32(s);
+        ASSERT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderHdwStatusReference(v))
+            << "iteration " << i << " value 0x" << std::hex << v;
+    }
+}
+
+TEST(ISStatusDecode, HdwStatus_StructuredDecode)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("hdwStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, (uint32_t)HDW_STATUS_ERROR_MASK);
+
+    const status_subfield_t* count = nullptr;
+    const status_subfield_t* bit   = nullptr;
+    for (const auto& sf : dec->subfields) {
+        if (sf.name == "COM parse error count") count = &sf;
+        if (sf.name == "Built-in test (BIT)")   bit   = &sf;
+    }
+    ASSERT_NE(count, nullptr);
+    EXPECT_EQ(count->kind, eStatusSubfieldKind::Count);
+    EXPECT_EQ(count->mask, (uint32_t)HDW_STATUS_COM_PARSE_ERR_COUNT_MASK);
+
+    ASSERT_NE(bit, nullptr);
+    EXPECT_EQ(bit->kind, eStatusSubfieldKind::Enum);
+    bool failedIsError = false;
+    for (const auto& vl : bit->values)
+        if (vl.label == "Failed") failedIsError = vl.isError;
+    EXPECT_TRUE(failedIsError);
 }
