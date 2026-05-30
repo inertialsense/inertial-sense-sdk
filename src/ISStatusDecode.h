@@ -57,16 +57,19 @@ struct status_subfield_t
     bool                              isError  = false;                        //!< Bit: this flag is an error. Enum/Count: sub-field is error-bearing (per-value override via `values`).
     uint32_t                          gateMask = 0;                            //!< If non-zero, only decode/emit when `(raw & gateMask) != 0` (hybrid pattern). 0 = always.
     bool                              emitZero = false;                        //!< Count: emit a line even when the extracted value is 0 (e.g. GNSS satellite count). Default: skip zero.
+    bool                              modeHexDec = false;                      //!< Count: format args are `(masked, shifted)` instead of `(value, value)` — for "hex(masked) ... dec(shifted)" lines (the BIT-mode pattern).
     std::string                       legacyText;                              //!< Bit/Count verbose line for byte-identical render*; a Count line may contain printf conversions (the value is supplied up to twice). Empty -> use `name`.
+    std::string                       defaultLegacyText;                       //!< Enum only: catch-all format (may contain one `%d` for the raw value) emitted when no value matches (e.g. "UNKNOWN(%d)"). Empty -> emit nothing on no match.
     std::vector<status_value_label_t> values;                                  //!< Enum only: the value table.
 };
 
 /** @brief Structured decode for one named status field. */
 struct status_field_decode_t
 {
-    std::string                    fieldName;   //!< e.g. `"insStatus"`.
-    uint32_t                       errorMask;   //!< `(raw & errorMask) != 0` => field is in an error state.
-    std::vector<status_subfield_t> subfields;   //!< In legacy emission order.
+    std::string                    fieldName;          //!< e.g. `"insStatus"`.
+    uint32_t                       errorMask = 0;      //!< `(raw & errorMask) != 0` => field is in an error state.
+    bool                           scalarEnum = false; //!< Whole field is a single enum value rendered as a bare label (no hex prefix, no trailing newline); empty when out of range. Uses `subfields[0]`'s value table. For the GPX-GNSS state enums.
+    std::vector<status_subfield_t> subfields;          //!< In legacy emission order.
 };
 
 /**

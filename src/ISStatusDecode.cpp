@@ -618,18 +618,250 @@ status_field_decode_t buildGpxHdwStatusDecode()
     return d;
 }
 
+/**
+ * @brief Build a scalar-enum decode (single UINT8 value -> bare label, no newline) from a name
+ *        array. `count` may be fewer than the array length to reproduce a legacy bound.
+ */
+status_field_decode_t makeScalarEnum(const char* fieldName, const char* const* names, uint32_t count)
+{
+    status_field_decode_t d;
+    d.fieldName  = fieldName;
+    d.scalarEnum = true;
+    status_subfield_t s;
+    s.name  = fieldName;
+    s.kind  = eStatusSubfieldKind::Enum;
+    s.mask  = 0xFFu;
+    s.shift = 0;
+    for (uint32_t i = 0; i < count; ++i)
+        s.values.push_back({ i, names[i], std::string(), false });
+    d.subfields.push_back(std::move(s));
+    return d;
+}
+
+// --- GPX-GNSS per-receiver state enums (gpx_status_t.gnssStatus[N].*) --------------------------
+// These render as a bare state name (no hex prefix / newline). Registered under semantic keys;
+// the array-indexed field names ("gnssStatus0.initState", ...) resolve via GetStatusDecode.
+
+status_field_decode_t buildGnssInitStateDecode()
+{
+    static const char* const initStates[] = {
+        "Bootup", "UartSetting", "UartWait", "UartDone",
+        "VersionCheck", "StopPos", "SetL5", "SetSats",
+        "SetSatLimits", "SetOutput", "SetAlgo", "SetPeriod",
+        "SetRtcmMsgs", "SetRtcmTimeMode", "SetPinningMode", "SetVelocitySmoothing",
+        "SetAltituedSmoothing", "SetEphmOutputPeriod", "StartPos", "Done"
+    };
+    return makeScalarEnum("gnssInitState", initStates, 20);   // legacy bound: msgIdx <= 19
+}
+
+status_field_decode_t buildGnssRunStateDecode()
+{
+    static const char* const runStates[] = {
+        "Reset", "Initializing", "Running", "Passthrough",
+        "FwUpdate Init", "FwUpdate", "Error", "Shutdown",
+        "ReInit", "Hard Reset"
+    };
+    return makeScalarEnum("gnssRunState", runStates, 10);     // legacy bound: msgIdx <= kHardReset(9)
+}
+
+status_field_decode_t buildGnssFwUpdateStateDecode()
+{
+    static const char* const fwStates[] = {
+        "LockoutWait", "ResetSet", "ResetWait", "StartSet", "StartWait",
+        "BootModeSet", "BootModeWait", "BaudSet", "BaudWait", "BaudFinish",
+        "InjectWait", "InjectFinish", "ProgramExecutionWait", "ProgramExecutionFinish",
+        "WriteNvmWait", "WriteNvmFinish", "Done",
+    };
+    // Legacy bound is `msgIdx < cxdRst_Max` (13) — a latent SDK bug: values 13..16 (the array has
+    // 17 entries) never decode. Reproduced here for byte-identity; flagged as a follow-up.
+    return makeScalarEnum("gnssFwUpdateState", fwStates, 13);
+}
+
+status_field_decode_t buildGnssLastResetCauseDecode()
+{
+    static const char* const rstReasons[] = {
+        "Power On", "Watchdog", "ErrOpCode", "ErrorOpCode_FwUp",
+        "ErrorOpCode_init", "UserRequested", "FWUpdate", "SysCmd",
+        "InitTimeout", "Status5", "StatusNot0", "flashUpdate",
+        "RTKEphMissing"
+    };
+    return makeScalarEnum("gnssLastResetCause", rstReasons, 13);  // legacy bound: msgIdx < cxdRst_Max(13)
+}
+
+// --- IMX built-in-test fields (DID_BIT) -------------------------------------------------------
+
+status_field_decode_t buildImxHdwBitDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "hdwBitStatus";
+
+    d.subfields.push_back(bitField("Passed all", HDW_BIT_PASSED_ALL, false,
+        "0x00000001 - Passed all tests"));
+    d.subfields.push_back(bitField("Passed without GPS", HDW_BIT_PASSED_NO_GNSS, false,
+        "0x00000002 - Passed without valid GPS signal"));
+    {
+        const uint32_t mask = (uint32_t)HDW_BIT_MODE_MASK;
+        status_subfield_t s;
+        s.name       = "BIT mode";
+        s.kind       = K::Count;
+        s.mask       = mask;
+        s.shift      = maskShift(mask);
+        s.modeHexDec = true;
+        s.legacyText = "0x000000%x - BIT mode: %d";
+        d.subfields.push_back(s);
+    }
+    d.subfields.push_back(bitField("FAULT: gyro noise", HDW_BIT_FAULT_NOISE_PQR, true,
+        "0x00000100 - FAULT: Gyro noise"));
+    d.subfields.push_back(bitField("FAULT: accel noise", HDW_BIT_FAULT_NOISE_ACC, true,
+        "0x00000200 - FAULT: Accelerometer noise"));
+    d.subfields.push_back(bitField("FAULT: magnetometer", HDW_BIT_FAULT_MAGNETOMETER, true,
+        "0x00000400 - FAULT: Magnetometer"));
+    d.subfields.push_back(bitField("FAULT: barometer", HDW_BIT_FAULT_BAROMETER, true,
+        "0x00000800 - FAULT: Barometer"));
+    d.subfields.push_back(bitField("FAULT: no GPS comms", HDW_BIT_FAULT_GNSS_NO_COM, true,
+        "0x00001000 - FAULT: No GPS serial communications"));
+    d.subfields.push_back(bitField("FAULT: poor GPS C/No", HDW_BIT_FAULT_GNSS_POOR_CNO, true,
+        "0x00002000 - FAULT: Poor GPS signal strength"));
+    d.subfields.push_back(bitField("FAULT: poor GPS accuracy", HDW_BIT_FAULT_GNSS_POOR_ACCURACY, true,
+        "0x00004000 - FAULT: GPS poor accuracy"));
+    d.subfields.push_back(bitField("FAULT: GPS noise", HDW_BIT_FAULT_GNSS_NOISE, true,
+        "0x00008000 - FAULT: GPS noise"));
+    d.subfields.push_back(bitField("FAULT: IMU fault rejection", HDW_BIT_FAULT_IMU_FAULT_REJECTION, true,
+        "0x00010000 - FAULT: IMU fault rejection failure"));
+    d.subfields.push_back(bitField("FAULT: wrong hardware type", HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE, true,
+        "0x01000000 - FAULT: Hardware type does not match firmware"));
+
+    for (const auto& sf : d.subfields) if (sf.isError) d.errorMask |= sf.mask;
+    return d;
+}
+
+status_field_decode_t buildImxCalBitDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "calBitStatus";
+
+    d.subfields.push_back(bitField("Passed all", CAL_BIT_PASSED_ALL, false,
+        "0x00000001 - Passed all calibration tests"));
+    {
+        const uint32_t mask = (uint32_t)CAL_BIT_MODE_MASK;
+        status_subfield_t s;
+        s.name       = "CAL BIT mode";
+        s.kind       = K::Count;
+        s.mask       = mask;
+        s.shift      = maskShift(mask);
+        s.modeHexDec = true;
+        s.legacyText = "0x000000%x - CAL BIT mode: %d";
+        d.subfields.push_back(s);
+    }
+    d.subfields.push_back(bitField("FAULT: temp cal absent", CAL_BIT_FAULT_TCAL_EMPTY, true,
+        "0x00000100 - FAULT: Temperature calibration not present"));
+    d.subfields.push_back(bitField("FAULT: temp cal range", CAL_BIT_FAULT_TCAL_TSPAN, true,
+        "0x00000200 - FAULT: Temperature calibration range inadequate"));
+    d.subfields.push_back(bitField("FAULT: temp cal inconsistent", CAL_BIT_FAULT_TCAL_INCONSISTENT, true,
+        "0x00000400 - FAULT: Temperature calibration inconsistent"));
+    d.subfields.push_back(bitField("FAULT: temp cal corrupt", CAL_BIT_FAULT_TCAL_CORRUPT, true,
+        "0x00000800 - FAULT: Temperature calibration corrupt"));
+    d.subfields.push_back(bitField("FAULT: gyro bias temp cal", CAL_BIT_FAULT_TCAL_PQR_BIAS, true,
+        "0x00001000 - FAULT: Gyro bias temp cal"));
+    d.subfields.push_back(bitField("FAULT: gyro slope temp cal", CAL_BIT_FAULT_TCAL_PQR_SLOPE, true,
+        "0x00002000 - FAULT: Gyro slope temp cal"));
+    d.subfields.push_back(bitField("FAULT: gyro linearity temp cal", CAL_BIT_FAULT_TCAL_PQR_LIN, true,
+        "0x00004000 - FAULT: Gyro linearity temp cal"));
+    d.subfields.push_back(bitField("FAULT: accel bias temp cal", CAL_BIT_FAULT_TCAL_ACC_BIAS, true,
+        "0x00008000 - FAULT: Accel bias temp cal"));
+    d.subfields.push_back(bitField("FAULT: accel slope temp cal", CAL_BIT_FAULT_TCAL_ACC_SLOPE, true,
+        "0x00010000 - FAULT: Accel slope temp cal"));
+    d.subfields.push_back(bitField("FAULT: accel linearity temp cal", CAL_BIT_FAULT_TCAL_ACC_LIN, true,
+        "0x00020000 - FAULT: Accel linearity temp cal"));
+    d.subfields.push_back(bitField("FAULT: cal serial mismatch", CAL_BIT_FAULT_CAL_SERIAL_NUM, true,
+        "0x00040000 - FAULT: Calibration serial number mismatch"));
+    d.subfields.push_back(bitField("FAULT: mag alignment invalid", CAL_BIT_FAULT_MCAL_MAG_INVALID, true,
+        "0x00080000 - FAULT: Magnetometer cross-axis alignment invalid"));
+    d.subfields.push_back(bitField("FAULT: motion cal absent", CAL_BIT_FAULT_MCAL_EMPTY, true,
+        "0x00100000 - FAULT: Motion calibration not present"));
+    d.subfields.push_back(bitField("FAULT: IMU alignment invalid", CAL_BIT_FAULT_MCAL_IMU_INVALID, true,
+        "0x00200000 - FAULT: IMU cross-axis alignment invalid"));
+    d.subfields.push_back(bitField("FAULT: motion on gyros", CAL_BIT_FAULT_MOTION_PQR, true,
+        "0x00400000 - FAULT: Motion detected on gyros"));
+    d.subfields.push_back(bitField("FAULT: motion on accels", CAL_BIT_FAULT_MOTION_ACC, true,
+        "0x00800000 - FAULT: Motion detected on accelerometers"));
+    d.subfields.push_back(bitField("NOTICE: IMU1 gyro bias", CAL_BIT_NOTICE_IMU1_PQR_BIAS, false,
+        "0x01000000 - NOTICE: IMU 1 gyro bias offset detected"));
+    d.subfields.push_back(bitField("NOTICE: IMU2 gyro bias", CAL_BIT_NOTICE_IMU2_PQR_BIAS, false,
+        "0x02000000 - NOTICE: IMU 2 gyro bias offset detected"));
+    d.subfields.push_back(bitField("NOTICE: IMU1 accel bias", CAL_BIT_NOTICE_IMU1_ACC_BIAS, false,
+        "0x10000000 - NOTICE: IMU 1 accel bias offset detected"));
+    d.subfields.push_back(bitField("NOTICE: IMU2 accel bias", CAL_BIT_NOTICE_IMU2_ACC_BIAS, false,
+        "0x20000000 - NOTICE: IMU 2 accel bias offset detected"));
+
+    for (const auto& sf : d.subfields) if (sf.isError) d.errorMask |= sf.mask;
+    return d;
+}
+
+// --- GPX built-in-test fields (DID_GPX_BIT) ---------------------------------------------------
+
+status_field_decode_t buildGpxBitResultsDecode()
+{
+    status_field_decode_t d;
+    d.fieldName = "results";   // registry key "gpxBitResults"
+    d.subfields.push_back(bitField("PPS1 passed", GPXBit_resultsBit_PPS1, false,     "0x01 - PPS1 test passed"));
+    d.subfields.push_back(bitField("PPS2 passed", GPXBit_resultsBit_PPS2, false,     "0x02 - PPS2 test passed"));
+    d.subfields.push_back(bitField("UART passed", GPXBit_resultsBit_UART, false,     "0x04 - UART test passed"));
+    d.subfields.push_back(bitField("IO passed",   GPXBit_resultsBit_IO,   false,     "0x08 - IO test passed"));
+    d.subfields.push_back(bitField("GPS passed",  GPXBit_resultsBit_GNSS, false,     "0x10 - GPS test passed"));
+    d.subfields.push_back(bitField("Finished",    GPXBit_resultsBit_FINISHED, false, "0x20 - Test finished"));
+    d.subfields.push_back(bitField("Canceled",    GPXBit_resultsBit_CANCELED, false, "0x40 - Test canceled"));
+    d.subfields.push_back(bitField("Error",       GPXBit_resultsBit_ERROR, true,     "0x80 - Test error"));
+    d.errorMask = (uint32_t)GPXBit_resultsBit_ERROR;
+    return d;
+}
+
+status_field_decode_t buildGpxBitStateDecode()
+{
+    status_field_decode_t d;
+    d.fieldName = "state";   // registry key "gpxBitState"
+    status_subfield_t s;
+    s.name              = "BIT state";
+    s.kind              = eStatusSubfieldKind::Enum;
+    s.mask              = 0xFFu;
+    s.shift             = 0;
+    s.defaultLegacyText = "UNKNOWN(%d)";
+    s.values = {
+        { 0, "Not running", "NOT_RUNNING",  false },
+        { 1, "Manuf init",  "MANUF_INIT",   false },
+        { 2, "Manuf blink", "MANUF_BLINK",  false },
+        { 3, "Manuf UART",  "MANUF_UART",   false },
+        { 4, "Manuf IO",    "MANUF_IO",     false },
+        { 5, "Manuf PPS",   "MANUF_PPS",    false },
+        { 6, "Manuf GPS",   "MANUF_GPS",    false },
+        { 7, "Manuf report","MANUF_REPORT", false },
+    };
+    d.subfields.push_back(std::move(s));
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
     static const std::map<std::string, status_field_decode_t> r = [] {
         std::map<std::string, status_field_decode_t> m;
-        m.emplace("insStatus",    buildInsStatusDecode());
-        m.emplace("hdwStatus",    buildHdwStatusDecode());
-        m.emplace("sysStatus",    buildSysStatusDecode());
-        m.emplace("genFaultCode", buildGenFaultCodeDecode());
-        m.emplace("gnssStatus",   buildGnssStatusDecode());
-        m.emplace("gpxStatus",    buildGpxStatusDecode());
-        m.emplace("gpxHdwStatus", buildGpxHdwStatusDecode());
+        m.emplace("insStatus",          buildInsStatusDecode());
+        m.emplace("hdwStatus",          buildHdwStatusDecode());
+        m.emplace("sysStatus",          buildSysStatusDecode());
+        m.emplace("genFaultCode",       buildGenFaultCodeDecode());
+        m.emplace("gnssStatus",         buildGnssStatusDecode());
+        m.emplace("gpxStatus",          buildGpxStatusDecode());
+        m.emplace("gpxHdwStatus",       buildGpxHdwStatusDecode());
+        m.emplace("gnssInitState",      buildGnssInitStateDecode());
+        m.emplace("gnssRunState",       buildGnssRunStateDecode());
+        m.emplace("gnssFwUpdateState",  buildGnssFwUpdateStateDecode());
+        m.emplace("gnssLastResetCause", buildGnssLastResetCauseDecode());
+        m.emplace("hdwBitStatus",       buildImxHdwBitDecode());
+        m.emplace("calBitStatus",       buildImxCalBitDecode());
+        m.emplace("gpxBitResults",      buildGpxBitResultsDecode());
+        m.emplace("gpxBitState",        buildGpxBitStateDecode());
         return m;
     }();
     return r;
@@ -639,6 +871,21 @@ const std::map<std::string, status_field_decode_t>& registry()
 
 std::string RenderStatusFromDecode(const status_field_decode_t& dec, uint32_t value)
 {
+    // Scalar-enum fields render as a single bare label (no hex prefix, no trailing newline),
+    // and an empty string when the value is out of range — matching the GPX-GNSS state renderers.
+    if (dec.scalarEnum)
+    {
+        if (!dec.subfields.empty())
+        {
+            const auto& sf = dec.subfields.front();
+            const uint32_t raw = (value & sf.mask) >> sf.shift;
+            for (const auto& vl : sf.values)
+                if (vl.value == raw)
+                    return vl.legacyText.empty() ? vl.label : vl.legacyText;
+        }
+        return std::string();
+    }
+
     std::stringstream buff;
     for (const auto& sf : dec.subfields)
     {
@@ -654,14 +901,18 @@ std::string RenderStatusFromDecode(const status_field_decode_t& dec, uint32_t va
         case eStatusSubfieldKind::Enum:
         {
             const uint32_t raw = (value & sf.mask) >> sf.shift;
+            bool matched = false;
             for (const auto& vl : sf.values)
             {
                 if (vl.value == raw)
                 {
                     buff << (vl.legacyText.empty() ? vl.label : vl.legacyText) << std::endl;
+                    matched = true;
                     break;
                 }
             }
+            if (!matched && !sf.defaultLegacyText.empty())
+                buff << utils::string_format(sf.defaultLegacyText, raw) << std::endl;
             break;
         }
 
@@ -673,9 +924,13 @@ std::string RenderStatusFromDecode(const status_field_decode_t& dec, uint32_t va
                 const std::string& fmt = sf.legacyText.empty() ? sf.name : sf.legacyText;
                 if (fmt.find('%') != std::string::npos)
                 {
-                    // Supply the value up to twice so single- and dual-substitution formats both
-                    // work (a single-conversion format harmlessly ignores the extra argument).
-                    buff << utils::string_format(fmt, cnt, cnt) << std::endl;
+                    // modeHexDec: format the masked value (hex) and the shifted value (dec).
+                    // Otherwise supply the value up to twice so single- and dual-substitution
+                    // formats both work (a single-conversion format ignores the extra argument).
+                    if (sf.modeHexDec)
+                        buff << utils::string_format(fmt, (value & sf.mask), cnt) << std::endl;
+                    else
+                        buff << utils::string_format(fmt, cnt, cnt) << std::endl;
                 }
                 else
                 {
@@ -698,13 +953,28 @@ const status_field_decode_t* GetStatusDecodeByField(const std::string& fieldName
 
 const status_field_decode_t* GetStatusDecode(uint32_t did, const std::string& fieldName)
 {
-    // The on-wire field names "status" and "hdwStatus" are shared across device variants
-    // (GNSS pos/vel vs GPX; IMX vs GPX), so disambiguate by DID. Unambiguous field names
-    // (insStatus, sysStatus, genFaultCode, ...) fall through to a direct key lookup.
+    // The on-wire field names "status"/"hdwStatus"/"results"/"state" are shared across device
+    // variants, so disambiguate by DID. Unambiguous names fall through to a direct key lookup.
+    auto ends = [&](const char* suffix) {
+        const std::string s(suffix);
+        return fieldName.size() >= s.size() &&
+               fieldName.compare(fieldName.size() - s.size(), s.size(), s) == 0;
+    };
+
     if (did == DID_GPX_STATUS)
     {
         if (fieldName == "status")    return GetStatusDecodeByField("gpxStatus");
         if (fieldName == "hdwStatus") return GetStatusDecodeByField("gpxHdwStatus");
+        // Per-receiver array fields: "gnssStatus<N>.<state>".
+        if (ends("initState"))        return GetStatusDecodeByField("gnssInitState");
+        if (ends("runState"))         return GetStatusDecodeByField("gnssRunState");
+        if (ends("fwUpdateState"))    return GetStatusDecodeByField("gnssFwUpdateState");
+        if (ends("lastRstCause"))     return GetStatusDecodeByField("gnssLastResetCause");
+    }
+    if (did == DID_GPX_BIT)
+    {
+        if (fieldName == "results")   return GetStatusDecodeByField("gpxBitResults");
+        if (fieldName == "state")     return GetStatusDecodeByField("gpxBitState");
     }
     if (fieldName == "status")
         return GetStatusDecodeByField("gnssStatus");   // GNSS pos/vel status (DIDs 13/14/6/30/31/54)
