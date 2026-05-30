@@ -24,6 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sstream>
 
 #include "ISDataMappings.h"
+#include "ISStatusDecode.h"
 #include "DataJSON.h"
 #include "ISUtilities.h"
 #include "ISConstants.h"
@@ -153,93 +154,21 @@ std::string renderVariableAndStatsToString(const data_info_t& info, std::any val
  * @return
  */
 std::string renderInsStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
     if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "insStatus"))
         return "";
 
-/*
-    // In dead reckoning mode.  The GPS is not aiding the solution while the position is being estimated.
-    #define INS_STATUS_DEAD_RECKONING(insStatus)    (((insStatus)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE)) && (((insStatus)&INS_STATUS_GNSS_AIDING_POS)==0))
-
-    INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
-
-    INS_STATUS_SOLUTION_MASK                    = (int)0x000F0000,
-    INS_STATUS_SOLUTION_OFFSET                  = 16,
-    #define INS_STATUS_SOLUTION(insStatus)          (((insStatus)&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
-
-    INS_STATUS_SOLUTION_OFF                     = 0,    // System is off
-    INS_STATUS_SOLUTION_ALIGNING                = 1,    // System is in alignment mode
-    INS_STATUS_SOLUTION_NAV                     = 3,    // System is in navigation mode and solution is good.
-    INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE       = 4,    // System is in navigation mode but the attitude uncertainty has exceeded the threshold.
-    INS_STATUS_SOLUTION_AHRS                    = 5,    // System is in AHRS mode and solution is good.
-    INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,    // System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
-    INS_STATUS_SOLUTION_VRS                     = 7,    // System is in VRS mode (no earth relative heading) and roll and pitch are good.
-    INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE       = 8,    // System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold.
-
-    // GPS navigation fix type (see eGnssNavFixStatus)
-    INS_STATUS_GNSS_NAV_FIX_MASK                 = (int)0x03000000,
-    INS_STATUS_GNSS_NAV_FIX_OFFSET               = 24,
-    #define INS_STATUS_NAV_FIX_STATUS(insStatus)    (((insStatus)&INS_STATUS_GNSS_NAV_FIX_MASK)>>INS_STATUS_GNSS_NAV_FIX_OFFSET)
-***/
-
+    // SN-7919 (D-53): insStatus bit semantics now live in a single structural source of truth —
+    // the decode table in ISStatusDecode.cpp. This renderer delegates to the table-driven
+    // RenderStatusFromDecode so the human prose and the structured decode the status-ribbon
+    // chart consumes can never drift. test_ISStatusDecode.cpp asserts this produces output
+    // byte-identical to the original hand-written renderer across a value sweep.
     try {
-        std::stringstream buff;
         uint32_t insStatus = std::any_cast<uint32_t>(value);
-
-#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
-
-     // BIT_MSG(insStatus, INS_STATUS_ALIGN_COARSE_MASK                    ,"0x00000007 - Estimate is COARSE mask (usable but outside spec)");
-        BIT_MSG(insStatus, INS_STATUS_HDG_ALIGN_COARSE                       ,"0x00000001 - Heading estimate is usable but outside spec (COARSE)");
-        BIT_MSG(insStatus, INS_STATUS_VEL_ALIGN_COARSE                       ,"0x00000002 - Velocity estimate is usable but outside spec (COARSE)");
-        BIT_MSG(insStatus, INS_STATUS_POS_ALIGN_COARSE                       ,"0x00000004 - Position estimate is usable but outside spec (COARSE)");
-        BIT_MSG(insStatus, INS_STATUS_WHEEL_AIDING_VEL                       ,"0x00000008 - Velocity aided by wheel sensor");
-     // BIT_MSG(insStatus, INS_STATUS_ALIGN_FINE_MASK                        ,"0x00000007 - Estimate is FINE mask");
-        BIT_MSG(insStatus, INS_STATUS_HDG_ALIGN_FINE                         ,"0x00000010 - Heading estimate is within spec (FINE).");
-        BIT_MSG(insStatus, INS_STATUS_VEL_ALIGN_FINE                         ,"0x00000020 - Velocity estimate is within spec (FINE)");
-        BIT_MSG(insStatus, INS_STATUS_POS_ALIGN_FINE                         ,"0x00000040 - Position estimate is within spec (FINE)");
-        BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_HEADING                     ,"0x00000080 - Heading aided by GPS");
-        BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_POS                         ,"0x00000100 - Position aided by GPS position");
-        BIT_MSG(insStatus, INS_STATUS_GNSS_UPDATE_IN_SOLUTION                 ,"0x00000200 - GPS update event occurred in solution, potentially causing discontinuity in position path");
-        BIT_MSG(insStatus, INS_STATUS_EKF_USING_REFERENCE_IMU                ,"0x00000400 - Reference IMU used in EKF");
-        BIT_MSG(insStatus, INS_STATUS_MAG_AIDING_HEADING                     ,"0x00000800 - Heading aided by magnetic heading");
-        BIT_MSG(insStatus, INS_STATUS_NAV_MODE                               ,"0x00001000 - Nav Mode - estimating velocity and position.");
-        BIT_MSG(insStatus, INS_STATUS_STATIONARY_MODE                        ,"0x00002000 - INS in stationary mode.");
-        BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_VEL                         ,"0x00004000 - Velocity aided by GPS velocity");
-        BIT_MSG(insStatus, INS_STATUS_KINEMATIC_CAL_GOOD                     ,"0x00008000 - Vehicle kinematic calibration is good");
-
-        uint32_t insSol = INS_STATUS_SOLUTION(insStatus);
-        switch (insSol) {
-            case INS_STATUS_SOLUTION_OFF:                     buff << "0x000(0)0000 - System is off" << std::endl; break;
-            case INS_STATUS_SOLUTION_ALIGNING:                buff << "0x000(1)0000 - System is in alignment mode" << std::endl; break;
-            case INS_STATUS_SOLUTION_NAV:                     buff << "0x000(3)0000 - System is in navigation mode" << std::endl; break;
-            case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:       buff << "0x000(4)0000 - System is in navigation mode but the attitude uncertainty has exceeded the threshold." << std::endl; break;
-            case INS_STATUS_SOLUTION_AHRS:                    buff << "0x000(5)0000 - System is in AHRS mode and solution is good." << std::endl; break;
-            case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:      buff << "0x000(6)0000 - System is in AHRS mode but the attitude uncertainty has exceeded the threshold." << std::endl; break;
-            case INS_STATUS_SOLUTION_VRS:                     buff << "0x000(7)0000 - System is in VRS mode (no earth relative heading) and roll and pitch are good." << std::endl; break;
-            case INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE:       buff << "0x000(8)0000 - System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold." << std::endl; break;
-        }
-
-        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_UNSET          ,"0x00100000 - GPS compassing antenna offsets are not set in flashCfg.");
-        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_BAD            ,"0x00200000 - GPS antenna baseline specified in flashCfg and measured by GPS do not match.");
-        BIT_MSG(insStatus, INS_STATUS_MAG_RECALIBRATING                      ,"0x00400000 - Magnetometer is being recalibrated.");
-        BIT_MSG(insStatus, INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL  ,"0x00800000 - Magnetometer is experiencing interference or calibration is bad.");
-        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_VALID                   ,"0x04000000 - RTK compassing heading is accurate and aiding INS heading.");
-        BIT_MSG(insStatus, INS_STATUS_RTK_RAW_GNSS_DATA_ERROR                 ,"0x08000000 - RTK error: Observations invalid or not received.");
-
-        if (insStatus & INS_STATUS_RTK_ERROR_MASK) {
-            uint32_t rtkErr = (insStatus & INS_STATUS_RTK_ERR_BASE_MASK);
-            switch (rtkErr) {
-                case 0:                                               buff << "0x(0)0000000 - RTK error: NO base position received." << std::endl; break;
-                case INS_STATUS_RTK_ERR_BASE_DATA_MISSING:            buff << "0x(1)0000000 - RTK error: Either base observations or antenna position have not been received." << std::endl; break;
-                case INS_STATUS_RTK_ERR_BASE_POSITION_MOVING:         buff << "0x(2)0000000 - RTK error: base position moved when it should be stationary." << std::endl; break;
-                case INS_STATUS_RTK_ERR_BASE_POSITION_INVALID:        buff << "0x(3)0000000 - RTK error: base position invalid or not surveyed." << std::endl; break;
-            }
-        }
-
-        BIT_MSG(insStatus, INS_STATUS_RTOS_TASK_PERIOD_OVERRUN               ,"0x40000000 - RTOS task ran longer than allotted period.");
-        BIT_MSG(insStatus, INS_STATUS_GENERAL_FAULT                          ,"0x80000000 - General fault (see sys_params_t.genFaultCode).");
-
-        return buff.str();
+        const status_field_decode_t* dec = GetStatusDecodeByField("insStatus");
+        return dec ? RenderStatusFromDecode(*dec, insStatus) : std::string();
     } catch (std::bad_any_cast& e) {
+        (void)e;
         return "";
     }
 }
