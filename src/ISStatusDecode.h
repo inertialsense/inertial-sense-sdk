@@ -50,14 +50,15 @@ struct status_value_label_t
 /** @brief One decodable sub-field of a status field. */
 struct status_subfield_t
 {
-    std::string                       name;       //!< Clean row label (status-ribbon row title).
-    eStatusSubfieldKind               kind;       //!< Bit / Enum / Count.
-    uint32_t                          mask;       //!< Bit(s) this sub-field occupies in the raw value.
-    uint32_t                          shift;      //!< Right-shift for Enum/Count extraction; 0 for Bit.
-    bool                              isError;    //!< Bit: this flag is an error. Enum/Count: sub-field is error-bearing (per-value override via `values`).
-    uint32_t                          gateMask;   //!< If non-zero, only decode/emit when `(raw & gateMask) != 0` (hybrid pattern). 0 = always.
-    std::string                       legacyText; //!< Bit/Count verbose line for byte-identical render*; a Count line may contain one `%d`. Empty -> use `name`.
-    std::vector<status_value_label_t> values;     //!< Enum only: the value table.
+    std::string                       name;                                    //!< Clean row label (status-ribbon row title).
+    eStatusSubfieldKind               kind     = eStatusSubfieldKind::Bit;     //!< Bit / Enum / Count.
+    uint32_t                          mask     = 0;                            //!< Bit(s) this sub-field occupies in the raw value.
+    uint32_t                          shift    = 0;                            //!< Right-shift for Enum/Count extraction; 0 for Bit.
+    bool                              isError  = false;                        //!< Bit: this flag is an error. Enum/Count: sub-field is error-bearing (per-value override via `values`).
+    uint32_t                          gateMask = 0;                            //!< If non-zero, only decode/emit when `(raw & gateMask) != 0` (hybrid pattern). 0 = always.
+    bool                              emitZero = false;                        //!< Count: emit a line even when the extracted value is 0 (e.g. GNSS satellite count). Default: skip zero.
+    std::string                       legacyText;                              //!< Bit/Count verbose line for byte-identical render*; a Count line may contain printf conversions (the value is supplied up to twice). Empty -> use `name`.
+    std::vector<status_value_label_t> values;                                  //!< Enum only: the value table.
 };
 
 /** @brief Structured decode for one named status field. */

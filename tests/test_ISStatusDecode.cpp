@@ -191,6 +191,67 @@ std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
     return buff.str();
 }
 
+/** @brief Oracle: faithful copy of the original `renderGnssStatusBits` body. */
+std::string legacyRenderGnssStatusBitsReference(uint32_t gpsStatusBits)
+{
+    std::stringstream buff;
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+    uint8_t satCount = (gpsStatusBits & GNSS_STATUS_NUM_SATS_USED_MASK);
+    {
+        char b[256];
+        std::snprintf(b, sizeof(b), "0x000000%02X - %d satellites used in solution (deprecated)", satCount, satCount);
+        buff << b << std::endl;
+    }
+
+    switch (gpsStatusBits & GNSS_STATUS_FIX_MASK) {
+        case GNSS_STATUS_FIX_NONE                : buff << "0x00000000 - No GNSS" << std::endl; break;
+        case GNSS_STATUS_FIX_DEAD_RECKONING_ONLY : buff << "0x00000100 - GNSS Dead Reckoning Only" << std::endl; break;
+        case GNSS_STATUS_FIX_2D                  : buff << "0x00000200 - 2D Fix" << std::endl; break;
+        case GNSS_STATUS_FIX_3D                  : buff << "0x00000300 - 3D Fix" << std::endl; break;
+        case GNSS_STATUS_FIX_GPS_PLUS_DEAD_RECK  : buff << "0x00000400 - 3D Fix + Dead Reckoning" << std::endl; break;
+        case GNSS_STATUS_FIX_TIME_ONLY           : buff << "0x00000500 - Time-Only Fix" << std::endl; break;
+        case GNSS_STATUS_FIX_REF_LLA             : buff << "0x00000600 - Usign Reference LLA" << std::endl; break;
+        case GNSS_STATUS_FIX_UNUSED2             : buff << "0x00000700 - << UNUSED >>" << std::endl; break;
+        case GNSS_STATUS_FIX_DGPS                : buff << "0x00000800 - Using DGPS" << std::endl; break;
+        case GNSS_STATUS_FIX_SBAS                : buff << "0x00000900 - Using SBAS" << std::endl; break;
+        case GNSS_STATUS_FIX_RTK_SINGLE          : buff << "0x00000A00 - RTK Single" << std::endl; break;
+        case GNSS_STATUS_FIX_RTK_FLOAT           : buff << "0x00000B00 - RTK Float" << std::endl; break;
+        case GNSS_STATUS_FIX_RTK_FIX             : buff << "0x00000C00 - RTK Fix" << std::endl; break;
+    }
+
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_FIX_OK                          , "0x00010000 - within limits (e.g. DOP & accuracy)");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_DGPS_USED                       , "0x00020000 - Differential GPS (DGPS) used.");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD                , "0x00040000 - RTK feedback on the integer solutions to drive the float biases towards the resolved integers");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_1                        , "0x00080000 - << UNUSED >>");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED       , "0x00100000 - GNSS1 RTK precision positioning mode enabled");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_STATIC_MODE                     , "0x00200000 - Static mode");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED        , "0x00400000 - GNSS2 RTK moving base mode enabled");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR     , "0x00800000 - GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)");
+
+    uint32_t rtkError = (gpsStatusBits & GNSS_STATUS_FLAGS_ERROR_MASK);
+    switch (rtkError) {
+        case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING        : buff << "0x01000000 - GNSS1 RTK error: Either base observations or antenna position have not been received." << std::endl; break;
+        case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING     : buff << "0x02000000 - GNSS1 RTK error: base position moved when it should be stationary" << std::endl; break;
+        case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID    : buff << "0x03000000 - GNSS1 RTK error: base position is invalid or not surveyed well" << std::endl; break;
+    }
+
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID         , "0x04000000 - GNSS1 RTK precision position and carrier phase range solution with fixed ambiguities.");
+    if (gpsStatusBits & GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK) {
+        BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID          , "0x08000000 - GNSS2 RTK moving base heading valid and available in DID_GNSS2_RTK_CMP_REL.");
+        BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD   , "0x00002000 - GNSS2 RTK Compassing Baseline distance is invalid");
+        BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET , "0x00004000 - GNSS2 RTK Compassing Baseline distance is unset (must be > 0)");
+    }
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                   , "0x00008000 - Data from NMEA message. GPS velocity is NED (not ECEF).");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC                , "0x10000000 - Time is synchronized by GPS PPS.");
+
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_2                        , "0x20000000 - <<UNUSED>>");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_3                        , "0x40000000 - <<UNUSED>>");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_4                        , "0x80000000 - <<UNUSED>>");
+#undef BIT_MSG
+    return buff.str();
+}
+
 /** @brief Deterministic xorshift32 so the sweep is reproducible across runs/platforms. */
 uint32_t xorshift32(uint32_t& s)
 {
@@ -467,4 +528,119 @@ TEST(ISStatusDecode, GenFaultCode_AllBitsAreErrors)
         orMask |= sf.mask;
     }
     EXPECT_EQ(dec->errorMask, orMask);   // roll-up = OR of all fault bits
+}
+
+// ---- GNSS status --------------------------------------------------------------
+
+TEST(ISStatusDecode, GnssStatus_RoundTrip_EverySingleBit)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), legacyRenderGnssStatusBitsReference(0u));
+    for (int b = 0; b < 32; ++b) {
+        const uint32_t v = (1u << b);
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGnssStatusBitsReference(v)) << "bit " << b;
+    }
+}
+
+TEST(ISStatusDecode, GnssStatus_RoundTrip_FixTypes)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
+    ASSERT_NE(dec, nullptr);
+    for (uint32_t fix = 0; fix <= 0x1F; ++fix) {        // covers defined (0..C) + undefined (D..1F)
+        const uint32_t v = (fix << 8);                  // GNSS_STATUS_FIX_MASK = 0x1F00
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGnssStatusBitsReference(v)) << "fix " << fix;
+    }
+}
+
+TEST(ISStatusDecode, GnssStatus_RoundTrip_SatCounts)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
+    ASSERT_NE(dec, nullptr);
+    for (uint32_t n = 0; n <= 255; ++n) {               // always-emitted, dual-format count
+        EXPECT_EQ(RenderStatusFromDecode(*dec, n), legacyRenderGnssStatusBitsReference(n)) << "sats " << n;
+    }
+}
+
+TEST(ISStatusDecode, GnssStatus_RoundTrip_RtkErrorMaskQuirk)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
+    ASSERT_NE(dec, nullptr);
+    // Exercise the legacy quirk: the base-error switch keys on (value & FLAGS_ERROR_MASK), so when
+    // the raw-data-error bit is also set, no base-error line is emitted.
+    const uint32_t cases[] = {
+        GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING,
+        GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING,
+        GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID,
+        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR,
+        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR | GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING,
+        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR | GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID,
+    };
+    for (uint32_t v : cases) {
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGnssStatusBitsReference(v))
+            << "rtk combo 0x" << std::hex << v;
+    }
+}
+
+TEST(ISStatusDecode, GnssStatus_RoundTrip_CompassGate)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
+    ASSERT_NE(dec, nullptr);
+    // Baseline-bad bit alone is gated off (compass mask not set) unless a compass-mask bit is set.
+    const uint32_t cases[] = {
+        GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD,                                                  // gated OFF
+        GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED | GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD,    // gate open
+        GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID,                                                         // gate open (valid is in mask)
+    };
+    for (uint32_t v : cases) {
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGnssStatusBitsReference(v))
+            << "compass combo 0x" << std::hex << v;
+    }
+}
+
+TEST(ISStatusDecode, GnssStatus_RoundTrip_RandomSweep)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
+    ASSERT_NE(dec, nullptr);
+    uint32_t s = 0x5A7C0DEu;
+    for (int i = 0; i < 40000; ++i) {                   // larger sweep — this field has the most quirks
+        const uint32_t v = xorshift32(s);
+        ASSERT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGnssStatusBitsReference(v))
+            << "iteration " << i << " value 0x" << std::hex << v;
+    }
+}
+
+TEST(ISStatusDecode, GnssStatus_StructuredDecode)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, (uint32_t)GNSS_STATUS_FLAGS_ERROR_MASK);
+
+    const status_subfield_t* sats = nullptr;
+    const status_subfield_t* fix  = nullptr;
+    for (const auto& sf : dec->subfields) {
+        if (sf.kind == eStatusSubfieldKind::Count) sats = &sf;
+        if (sf.name == "Fix type")                 fix  = &sf;
+    }
+    ASSERT_NE(sats, nullptr);
+    EXPECT_TRUE(sats->emitZero);                       // satellite count always shown
+    ASSERT_NE(fix, nullptr);
+    EXPECT_EQ(fix->shift, 8u);
+    // 13 defined fix states (0..0xC).
+    EXPECT_EQ(fix->values.size(), 13u);
+}
+
+// ---- DID-aware lookup ---------------------------------------------------------
+
+TEST(ISStatusDecode, DidAwareLookup_StatusFieldDisambiguation)
+{
+    // "status" on a GNSS DID resolves to the gnssStatus table.
+    const status_field_decode_t* gnss = GetStatusDecodeByField("gnssStatus");
+    ASSERT_NE(gnss, nullptr);
+    EXPECT_EQ(GetStatusDecode(DID_GNSS1_POS, "status"), gnss);
+    EXPECT_EQ(GetStatusDecode(DID_GNSS2_VEL, "status"), gnss);
+    // GPX "status"/"hdwStatus" resolve to GPX keys (not yet registered -> nullptr for now, but must
+    // NOT return the GNSS/IMX tables).
+    EXPECT_NE(GetStatusDecode(DID_GPX_STATUS, "status"), gnss);
+    EXPECT_NE(GetStatusDecode(DID_GPX_STATUS, "hdwStatus"), GetStatusDecodeByField("hdwStatus"));
 }

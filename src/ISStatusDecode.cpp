@@ -10,8 +10,8 @@
 #include "ISStatusDecode.h"
 
 #include "data_sets.h"
+#include "util/util.h"
 
-#include <cstdio>
 #include <map>
 #include <sstream>
 
@@ -351,7 +351,132 @@ status_field_decode_t buildGenFaultCodeDecode()
     return d;
 }
 
-/** @brief Process-wide registry of decode tables, keyed by field name. Built once. */
+/**
+ * @brief GNSS pos/vel `status` decode table (eGnssStatus). Registered under the unambiguous key
+ *        "gnssStatus" (the on-wire field name "status" is shared with GPX — see GetStatusDecode).
+ *        Sub-fields in legacy `renderGnssStatusBits` emission order.
+ */
+status_field_decode_t buildGnssStatusDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "status";   // on-wire field name (the registry key is "gnssStatus")
+    d.errorMask = (uint32_t)GNSS_STATUS_FLAGS_ERROR_MASK;
+
+    // Deprecated satellite count (low byte) — always emitted, dual-substitution format.
+    {
+        status_subfield_t s;
+        s.name       = "Satellites used (deprecated)";
+        s.kind       = K::Count;
+        s.mask       = (uint32_t)GNSS_STATUS_NUM_SATS_USED_MASK;
+        s.shift      = 0;
+        s.isError    = false;
+        s.emitZero   = true;
+        s.legacyText = "0x000000%02X - %d satellites used in solution (deprecated)";
+        d.subfields.push_back(s);
+    }
+
+    // Fix type (Enum). Includes value 0 ("No GNSS"); only 0..0xC are defined.
+    {
+        const uint32_t mask  = (uint32_t)GNSS_STATUS_FIX_MASK;
+        const uint32_t shift = maskShift(mask);
+        auto fix = [&](uint32_t sym, const char* label, const char* legacy) {
+            return status_value_label_t{ ((uint32_t)sym & mask) >> shift, label, legacy, false };
+        };
+        status_subfield_t s;
+        s.name  = "Fix type";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            fix(GNSS_STATUS_FIX_NONE,                "No fix",               "0x00000000 - No GNSS"),
+            fix(GNSS_STATUS_FIX_DEAD_RECKONING_ONLY, "Dead reckoning only",  "0x00000100 - GNSS Dead Reckoning Only"),
+            fix(GNSS_STATUS_FIX_2D,                  "2D fix",               "0x00000200 - 2D Fix"),
+            fix(GNSS_STATUS_FIX_3D,                  "3D fix",               "0x00000300 - 3D Fix"),
+            fix(GNSS_STATUS_FIX_GPS_PLUS_DEAD_RECK,  "3D + dead reckoning",  "0x00000400 - 3D Fix + Dead Reckoning"),
+            fix(GNSS_STATUS_FIX_TIME_ONLY,           "Time only",            "0x00000500 - Time-Only Fix"),
+            fix(GNSS_STATUS_FIX_REF_LLA,             "Reference LLA",        "0x00000600 - Usign Reference LLA"),
+            fix(GNSS_STATUS_FIX_UNUSED2,             "Unused",               "0x00000700 - << UNUSED >>"),
+            fix(GNSS_STATUS_FIX_DGPS,                "DGPS",                 "0x00000800 - Using DGPS"),
+            fix(GNSS_STATUS_FIX_SBAS,                "SBAS",                 "0x00000900 - Using SBAS"),
+            fix(GNSS_STATUS_FIX_RTK_SINGLE,          "RTK single",           "0x00000A00 - RTK Single"),
+            fix(GNSS_STATUS_FIX_RTK_FLOAT,           "RTK float",            "0x00000B00 - RTK Float"),
+            fix(GNSS_STATUS_FIX_RTK_FIX,             "RTK fix",              "0x00000C00 - RTK Fix"),
+        };
+        d.subfields.push_back(s);
+    }
+
+    d.subfields.push_back(bitField("Fix OK", GNSS_STATUS_FLAGS_FIX_OK, false,
+        "0x00010000 - within limits (e.g. DOP & accuracy)"));
+    d.subfields.push_back(bitField("DGPS used", GNSS_STATUS_FLAGS_DGPS_USED, false,
+        "0x00020000 - Differential GPS (DGPS) used."));
+    d.subfields.push_back(bitField("RTK fix and hold", GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD, false,
+        "0x00040000 - RTK feedback on the integer solutions to drive the float biases towards the resolved integers"));
+    d.subfields.push_back(bitField("Unused 1", GNSS_STATUS_FLAGS_UNUSED_1, false,
+        "0x00080000 - << UNUSED >>"));
+    d.subfields.push_back(bitField("GNSS1 RTK positioning enabled", GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED, false,
+        "0x00100000 - GNSS1 RTK precision positioning mode enabled"));
+    d.subfields.push_back(bitField("Static mode", GNSS_STATUS_FLAGS_STATIC_MODE, false,
+        "0x00200000 - Static mode"));
+    d.subfields.push_back(bitField("GNSS2 RTK compassing enabled", GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED, false,
+        "0x00400000 - GNSS2 RTK moving base mode enabled"));
+    d.subfields.push_back(bitField("GNSS1 RTK raw data error", GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR, true,
+        "0x00800000 - GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)"));
+
+    // RTK base error (Enum). Legacy switches on (value & FLAGS_ERROR_MASK), which folds in the
+    // raw-data-error bit — so when that bit is also set, no case matches and nothing emits. Using
+    // mask=FLAGS_ERROR_MASK reproduces that exactly: only raw values {2,4,6} resolve to a label.
+    {
+        const uint32_t mask  = (uint32_t)GNSS_STATUS_FLAGS_ERROR_MASK;
+        const uint32_t shift = maskShift(mask);
+        auto be = [&](uint32_t sym, const char* label, const char* legacy) {
+            return status_value_label_t{ ((uint32_t)sym & mask) >> shift, label, legacy, true };
+        };
+        status_subfield_t s;
+        s.name    = "RTK base error";
+        s.kind    = K::Enum;
+        s.mask    = mask;
+        s.shift   = shift;
+        s.isError = true;
+        s.values = {
+            be(GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING,     "Base data missing", "0x01000000 - GNSS1 RTK error: Either base observations or antenna position have not been received."),
+            be(GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING,  "Base moving",       "0x02000000 - GNSS1 RTK error: base position moved when it should be stationary"),
+            be(GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID, "Base invalid",      "0x03000000 - GNSS1 RTK error: base position is invalid or not surveyed well"),
+        };
+        d.subfields.push_back(s);
+    }
+
+    d.subfields.push_back(bitField("GNSS1 RTK position valid", GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID, false,
+        "0x04000000 - GNSS1 RTK precision position and carrier phase range solution with fixed ambiguities."));
+
+    // GNSS2 compass block — only emitted when any compass bit is set (gated on COMPASS_MASK).
+    {
+        const uint32_t gate = (uint32_t)GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK;
+        auto compassBit = [&](const char* name, uint32_t mask, const char* legacy) {
+            status_subfield_t s = bitField(name, mask, false, legacy);
+            s.gateMask = gate;
+            return s;
+        };
+        d.subfields.push_back(compassBit("GNSS2 RTK compassing valid", GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID,
+            "0x08000000 - GNSS2 RTK moving base heading valid and available in DID_GNSS2_RTK_CMP_REL."));
+        d.subfields.push_back(compassBit("GNSS2 compassing baseline bad", GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD,
+            "0x00002000 - GNSS2 RTK Compassing Baseline distance is invalid"));
+        d.subfields.push_back(compassBit("GNSS2 compassing baseline unset", GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET,
+            "0x00004000 - GNSS2 RTK Compassing Baseline distance is unset (must be > 0)"));
+    }
+
+    d.subfields.push_back(bitField("NMEA data", GNSS_STATUS_FLAGS_GNSS_NMEA_DATA, false,
+        "0x00008000 - Data from NMEA message. GPS velocity is NED (not ECEF)."));
+    d.subfields.push_back(bitField("PPS timesync", GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC, false,
+        "0x10000000 - Time is synchronized by GPS PPS."));
+    d.subfields.push_back(bitField("Unused 2", GNSS_STATUS_FLAGS_UNUSED_2, false, "0x20000000 - <<UNUSED>>"));
+    d.subfields.push_back(bitField("Unused 3", GNSS_STATUS_FLAGS_UNUSED_3, false, "0x40000000 - <<UNUSED>>"));
+    d.subfields.push_back(bitField("Unused 4", GNSS_STATUS_FLAGS_UNUSED_4, false, "0x80000000 - <<UNUSED>>"));
+
+    return d;
+}
+
+/** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
     static const std::map<std::string, status_field_decode_t> r = [] {
@@ -360,6 +485,7 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("hdwStatus",    buildHdwStatusDecode());
         m.emplace("sysStatus",    buildSysStatusDecode());
         m.emplace("genFaultCode", buildGenFaultCodeDecode());
+        m.emplace("gnssStatus",   buildGnssStatusDecode());
         return m;
     }();
     return r;
@@ -398,17 +524,18 @@ std::string RenderStatusFromDecode(const status_field_decode_t& dec, uint32_t va
         case eStatusSubfieldKind::Count:
         {
             const uint32_t cnt = (value & sf.mask) >> sf.shift;
-            if (cnt)
+            if (cnt || sf.emitZero)
             {
-                if (!sf.legacyText.empty() && sf.legacyText.find("%d") != std::string::npos)
+                const std::string& fmt = sf.legacyText.empty() ? sf.name : sf.legacyText;
+                if (fmt.find('%') != std::string::npos)
                 {
-                    char line[256];
-                    std::snprintf(line, sizeof(line), sf.legacyText.c_str(), cnt);
-                    buff << line << std::endl;
+                    // Supply the value up to twice so single- and dual-substitution formats both
+                    // work (a single-conversion format harmlessly ignores the extra argument).
+                    buff << utils::string_format(fmt, cnt, cnt) << std::endl;
                 }
                 else
                 {
-                    buff << (sf.legacyText.empty() ? sf.name : sf.legacyText) << std::endl;
+                    buff << fmt << std::endl;
                 }
             }
             break;
@@ -425,9 +552,17 @@ const status_field_decode_t* GetStatusDecodeByField(const std::string& fieldName
     return (it == r.end()) ? nullptr : &it->second;
 }
 
-const status_field_decode_t* GetStatusDecode(uint32_t /*did*/, const std::string& fieldName)
+const status_field_decode_t* GetStatusDecode(uint32_t did, const std::string& fieldName)
 {
-    // v1: status semantics are DID-independent for shared fields (insStatus on DIDs 4/5/10/65/66
-    // all decode identically). The `did` parameter is reserved for future DID-specific variants.
+    // The on-wire field names "status" and "hdwStatus" are shared across device variants
+    // (GNSS pos/vel vs GPX; IMX vs GPX), so disambiguate by DID. Unambiguous field names
+    // (insStatus, sysStatus, genFaultCode, ...) fall through to a direct key lookup.
+    if (did == DID_GPX_STATUS)
+    {
+        if (fieldName == "status")    return GetStatusDecodeByField("gpxStatus");
+        if (fieldName == "hdwStatus") return GetStatusDecodeByField("gpxHdwStatus");
+    }
+    if (fieldName == "status")
+        return GetStatusDecodeByField("gnssStatus");   // GNSS pos/vel status (DIDs 13/14/6/30/31/54)
     return GetStatusDecodeByField(fieldName);
 }
