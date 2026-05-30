@@ -372,6 +372,10 @@ status_field_decode_t buildGnssStatusDecode()
         s.shift      = 0;
         s.isError    = false;
         s.emitZero   = true;
+        // Gauge, not an error count: 0 sats = bad (red), many = good (green).
+        // Ramp saturates to green at ~25 used satellites (a strong fix).
+        s.countRampMax    = 25;
+        s.countRampInvert = true;
         s.legacyText = "0x000000%02X - %d satellites used in solution (deprecated)";
         d.subfields.push_back(s);
     }
