@@ -476,6 +476,148 @@ status_field_decode_t buildGnssStatusDecode()
     return d;
 }
 
+/** @brief GPX status decode table (eGpxStatus). Registered under key "gpxStatus" (field "status"). */
+status_field_decode_t buildGpxStatusDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "status";   // registry key is "gpxStatus"
+    d.errorMask = (uint32_t)GPX_STATUS_GENERAL_FAULT_MASK;
+
+    auto gerr = [](const char* name, uint32_t mask, const char* legacy) {
+        return bitField(name, mask, (mask & (uint32_t)GPX_STATUS_GENERAL_FAULT_MASK) != 0, legacy);
+    };
+
+    // Parse-error count is rendered by the legacy code as a presence flag (any of the low nibble),
+    // not a number — model it as a Bit on the count mask.
+    d.subfields.push_back(gerr("COM parse errors", GPX_STATUS_COM_PARSE_ERR_COUNT_MASK,
+        "0x0000000F - Communications parse error count"));
+    d.subfields.push_back(gerr("COM0 RX traffic lost", GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED,
+        "0x00000010 - COM0 RX traffic not dectected in last 30 seconds."));
+    d.subfields.push_back(gerr("COM1 RX traffic lost", GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED,
+        "0x00000020 - COM1 RX traffic not dectected in last 30 seconds."));
+    d.subfields.push_back(gerr("COM2 RX traffic lost", GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED,
+        "0x00000040 - COM2 RX traffic not dectected in last 30 seconds."));
+    d.subfields.push_back(gerr("USB RX traffic lost", GPX_STATUS_USB_RX_TRAFFIC_NOT_DECTECTED,
+        "0x00000080 - USB RX traffic not dectected in last 30 seconds."));
+    d.subfields.push_back(gerr("RTK buffer overflow", GPX_STATUS_FAULT_RTK_QUEUE_LIMITED,
+        "0x00010000 - RTK buffer overflow."));
+    d.subfields.push_back(gerr("GNSS receiver time fault", GPX_STATUS_FAULT_GNSS_RCVR_TIME,
+        "0x00100000 - GNSS receiver time fault"));
+    d.subfields.push_back(gerr("DMA fault", GPX_STATUS_FAULT_DMA,
+        "0x00800000 - DMA fault"));
+
+    // Fatal reset cause (Enum). Value 0 emits nothing.
+    {
+        const uint32_t mask  = (uint32_t)GPX_STATUS_FATAL_MASK;
+        const uint32_t shift = maskShift(mask);
+        auto fv = [](uint32_t v, const char* label, const char* legacy) {
+            return status_value_label_t{ v, label, legacy, true };
+        };
+        status_subfield_t s;
+        s.name    = "Fatal reset";
+        s.kind    = K::Enum;
+        s.mask    = mask;
+        s.shift   = shift;
+        s.isError = true;
+        s.values = {
+            fv(GPX_STATUS_FATAL_RESET_LOW_POW,       "Low power",          "0x01000000 - Reset from low power"),
+            fv(GPX_STATUS_FATAL_RESET_BROWN,         "Brown out",          "0x02000000 - Reset from brown out"),
+            fv(GPX_STATUS_FATAL_RESET_WATCHDOG,      "Watchdog",           "0x03000000 - Reset from watchdog"),
+            fv(GPX_STATUS_FATAL_CPU_EXCEPTION,       "CPU exception",      "0x04000000 - CPU exception"),
+            fv(GPX_STATUS_FATAL_UNHANDLED_INTERRUPT, "Unhandled interrupt","0x05000000 - Unhandled interrupt"),
+            fv(GPX_STATUS_FATAL_STACK_OVERFLOW,      "Stack overflow",     "0x06000000 - Stack overflow"),
+            fv(GPX_STATUS_FATAL_KERNEL_OOPS,         "Kernel oops",        "0x07000000 - Kernel oops"),
+            fv(GPX_STATUS_FATAL_KERNEL_PANIC,        "Kernel panic",       "0x08000000 - Kernel panic"),
+            fv(GPX_STATUS_FATAL_UNALIGNED_ACCESS,    "Unaligned access",   "0x09000000 - Unaligned access"),
+            fv(GPX_STATUS_FATAL_MEMORY_ERROR,        "Memory error",       "0x0A000000 - Memory error"),
+            fv(GPX_STATUS_FATAL_BUS_ERROR,           "Bus error",          "0x0B000000 - Bus error"),
+            fv(GPX_STATUS_FATAL_USAGE_ERROR,         "Usage error",        "0x0C000000 - Usage error"),
+            fv(GPX_STATUS_FATAL_DIV_ZERO,            "Division by zero",   "0x0D000000 - Division by zero"),
+            fv(GPX_STATUS_FATAL_SER0_REINIT,         "SER0 reinit",        "0x0E000000 - SER0 reinit"),
+            fv(GPX_STATUS_FATAL_UNKNOWN,             "Unknown",            "0x1F000000 - Unknown"),
+        };
+        d.subfields.push_back(s);
+    }
+
+    d.subfields.push_back(gerr("RP fault", GPX_STATUS_FAULT_RP, "0x20000000 - RP fault"));
+    return d;
+}
+
+/**
+ * @brief GPX hdwStatus decode table (eGPXHdwStatusFlags). Registered under key "gpxHdwStatus".
+ *        All flat bits in legacy order — including the BIT running/passed/fault and reset-cause,
+ *        which the legacy renderer tests individually (not as switches). isError is derived from
+ *        GPX_HDW_STATUS_ERROR_MASK, with BIT_FAULT forced true (a failed self-test is an error
+ *        even though the BIT bits aren't in the SDK error mask).
+ */
+status_field_decode_t buildGpxHdwStatusDecode()
+{
+    status_field_decode_t d;
+    d.fieldName = "hdwStatus";   // registry key is "gpxHdwStatus"
+    d.errorMask = (uint32_t)GPX_HDW_STATUS_ERROR_MASK;
+
+    auto gbit = [](const char* name, uint32_t mask, const char* legacy) {
+        return bitField(name, mask, (mask & (uint32_t)GPX_HDW_STATUS_ERROR_MASK) != 0, legacy);
+    };
+
+    d.subfields.push_back(gbit("GNSS1 satellite RX", GPX_HDW_STATUS_GNSS1_SATELLITE_RX,
+        "0x00000001 - GNSS1 satellite signals are being received (antenna and cable are good)"));
+    d.subfields.push_back(gbit("GNSS2 satellite RX", GPX_HDW_STATUS_GNSS2_SATELLITE_RX,
+        "0x00000002 - GNSS2 satellite signals are being received (antenna and cable are good)"));
+    d.subfields.push_back(gbit("GNSS1 ToW valid", GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID,
+        "0x00000004 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time."));
+    d.subfields.push_back(gbit("GNSS2 ToW valid", GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID,
+        "0x00000008 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time."));
+    d.subfields.push_back(gbit("GNSS1 init fault", GPX_HDW_STATUS_FAULT_GNSS1_INIT,
+        "0x00000080 - Failed to communicate or setup GNSS receiver 1"));
+    d.subfields.push_back(gbit("GNSS2 init fault", GPX_HDW_STATUS_FAULT_GNSS2_INIT,
+        "0x00000800 - Failed to communicate or setup GNSS receiver 2"));
+    d.subfields.push_back(gbit("GNSS FW update required", GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED,
+        "0x00001000 - GNSS is faulting firmware update REQUIRED"));
+    d.subfields.push_back(gbit("LED enabled", GPX_HDW_STATUS_LED_ENABLED,
+        "0x00002000 - Enables LED in Manufacturing TBed"));
+    d.subfields.push_back(gbit("System reset required", GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED,
+        "0x00004000 - System Reset is Required for proper function"));
+    d.subfields.push_back(gbit("Flash write pending", GPX_HDW_STATUS_FLASH_WRITE_PENDING,
+        "0x00008000 - System flash write staging or occuring now."));
+    d.subfields.push_back(gbit("COM Tx limited", GPX_HDW_STATUS_ERR_COM_TX_LIMITED,
+        "0x00010000 - Communications Tx buffer limited"));
+    d.subfields.push_back(gbit("COM Rx overrun", GPX_HDW_STATUS_ERR_COM_RX_OVERRUN,
+        "0x00020000 - Communications Rx buffer overrun"));
+    d.subfields.push_back(gbit("GNSS1 no PPS", GPX_HDW_STATUS_ERR_NO_GNSS1_PPS,
+        "0x00040000 - GNSS1 PPS timepulse signal has not been received or is in error"));
+    d.subfields.push_back(gbit("GNSS2 no PPS", GPX_HDW_STATUS_ERR_NO_GNSS2_PPS,
+        "0x00080000 - GNSS2 PPS timepulse signal has not been received or is in error"));
+    d.subfields.push_back(gbit("GNSS1 low C/No", GPX_HDW_STATUS_ERR_LOW_CNO_GNSS1,
+        "0x00100000 - GNSS1 signal strength low (<20)"));
+    d.subfields.push_back(gbit("GNSS2 low C/No", GPX_HDW_STATUS_ERR_LOW_CNO_GNSS2,
+        "0x00200000 - GNSS2 signal strength low (<20)"));
+    d.subfields.push_back(gbit("GNSS1 C/No irregular", GPX_HDW_STATUS_ERR_CNO_GNSS1_IR,
+        "0x00400000 - GNSS1 signal irregular. High Cno standard deviation over 5 second period detected."));
+    d.subfields.push_back(gbit("GNSS2 C/No irregular", GPX_HDW_STATUS_ERR_CNO_GNSS2_IR,
+        "0x00800000 - GNSS2 signal irregular. High Cno standard deviation over 5 second period detected."));
+    d.subfields.push_back(gbit("BIT running", GPX_HDW_STATUS_BIT_RUNNING,
+        "0x01000000 - (BIT) Built-in self-test running"));
+    d.subfields.push_back(gbit("BIT passed", GPX_HDW_STATUS_BIT_PASSED,
+        "0x02000000 - (BIT) Built-in self-test passed"));
+    d.subfields.push_back(bitField("BIT fault", GPX_HDW_STATUS_BIT_FAULT, true,
+        "0x03000000 - (BIT) Built-in self-test failure"));
+    d.subfields.push_back(gbit("Temperature error", GPX_HDW_STATUS_ERR_TEMPERATURE,
+        "0x04000000 - Temperature outside spec'd operating range"));
+    d.subfields.push_back(gbit("GNSS PPS timesync", GPX_HDW_STATUS_GNSS_PPS_TIMESYNC,
+        "0x08000000 - Time synchronized by GPS PPS"));
+    d.subfields.push_back(gbit("Reset cause: backup mode", GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE,
+        "0x10000000 - Reset from Backup mode (low-power state w/ CPU off)"));
+    d.subfields.push_back(gbit("Reset cause: software", GPX_HDW_STATUS_RESET_CAUSE_SOFT,
+        "0x20000000 - Reset from Software"));
+    d.subfields.push_back(gbit("Reset cause: hardware", GPX_HDW_STATUS_RESET_CAUSE_HDW,
+        "0x40000000 - Reset from Hardware (NRST pin low)"));
+    d.subfields.push_back(gbit("Critical system fault", GPX_HDW_STATUS_FAULT_SYS_CRITICAL,
+        "0x80000000 - Critical System Fault, CPU error."));
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
@@ -486,6 +628,8 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("sysStatus",    buildSysStatusDecode());
         m.emplace("genFaultCode", buildGenFaultCodeDecode());
         m.emplace("gnssStatus",   buildGnssStatusDecode());
+        m.emplace("gpxStatus",    buildGpxStatusDecode());
+        m.emplace("gpxHdwStatus", buildGpxHdwStatusDecode());
         return m;
     }();
     return r;

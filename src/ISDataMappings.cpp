@@ -303,62 +303,13 @@ std::string renderGpxStatus_status(const data_info_t& info, std::any value, int 
     if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "status"))
         return "";
 
+    // SN-7919 (D-53): delegates to the GPX status decode table (key "gpxStatus").
     try {
-        std::stringstream buff;
         uint32_t status = std::any_cast<uint32_t>(value);
-
-#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
-    /** Communications parse error count */
-        BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_MASK      , "0x0000000F - Communications parse error count");
-        // BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET    , ""           = 0,
-
-#define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
-
-    /** Rx communications not dectected in last 30 seconds */
-        BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED , "0x00000010 - COM0 RX traffic not dectected in last 30 seconds.");
-        BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED , "0x00000020 - COM1 RX traffic not dectected in last 30 seconds.");
-        BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED , "0x00000040 - COM2 RX traffic not dectected in last 30 seconds.");
-        BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DECTECTED  , "0x00000080 - USB RX traffic not dectected in last 30 seconds.");
-
-    /** General Fault mask */
-        // BIT_MSG(status, GPX_STATUS_GENERAL_FAULT_MASK            , "0xFFFF0000 -
-
-    /** RTK buffer filled causing data loss */
-        BIT_MSG(status, GPX_STATUS_FAULT_RTK_QUEUE_LIMITED       , "0x00010000 - RTK buffer overflow.");
-
-    /** GNSS receiver time fault **/
-        BIT_MSG(status, GPX_STATUS_FAULT_GNSS_RCVR_TIME          , "0x00100000 - GNSS receiver time fault");
-    /** DMA Fault detected **/
-        BIT_MSG(status, GPX_STATUS_FAULT_DMA                     , "0x00800000 - DMA fault");
-
-    /** Fatal faults - critical failure resulting in CPU reset */
-        //BIT_MSG(status, GPX_STATUS_FATAL_MASK                    , 0x1F000000,
-        //BIT_MSG(status, GPX_STATUS_FATAL_OFFSET                  ,           = 24,
-
-        uint32_t fatalStatus = ((status & GPX_STATUS_FATAL_MASK) >> GPX_STATUS_FATAL_OFFSET);
-        switch (fatalStatus) {
-            case GPX_STATUS_FATAL_RESET_LOW_POW:                buff << "0x01000000 - Reset from low power" << std::endl; break;
-            case GPX_STATUS_FATAL_RESET_BROWN:                  buff << "0x02000000 - Reset from brown out" << std::endl; break;
-            case GPX_STATUS_FATAL_RESET_WATCHDOG:               buff << "0x03000000 - Reset from watchdog" << std::endl; break;
-            case GPX_STATUS_FATAL_CPU_EXCEPTION:                buff << "0x04000000 - CPU exception" << std::endl; break;
-            case GPX_STATUS_FATAL_UNHANDLED_INTERRUPT:          buff << "0x05000000 - Unhandled interrupt" << std::endl; break;
-            case GPX_STATUS_FATAL_STACK_OVERFLOW:               buff << "0x06000000 - Stack overflow" << std::endl; break;
-            case GPX_STATUS_FATAL_KERNEL_OOPS:                  buff << "0x07000000 - Kernel oops" << std::endl; break;
-            case GPX_STATUS_FATAL_KERNEL_PANIC:                 buff << "0x08000000 - Kernel panic" << std::endl; break;
-            case GPX_STATUS_FATAL_UNALIGNED_ACCESS:             buff << "0x09000000 - Unaligned access" << std::endl; break;
-            case GPX_STATUS_FATAL_MEMORY_ERROR:                 buff << "0x0A000000 - Memory error" << std::endl; break;
-            case GPX_STATUS_FATAL_BUS_ERROR:                    buff << "0x0B000000 - Bus error" << std::endl; break;
-            case GPX_STATUS_FATAL_USAGE_ERROR:                  buff << "0x0C000000 - Usage error" << std::endl; break;
-            case GPX_STATUS_FATAL_DIV_ZERO:                     buff << "0x0D000000 - Division by zero" << std::endl; break;
-            case GPX_STATUS_FATAL_SER0_REINIT:                  buff << "0x0E000000 - SER0 reinit" << std::endl; break;
-            case GPX_STATUS_FATAL_UNKNOWN:                      buff << "0x1F000000 - Unknown" << std::endl; break;
-        }
-
-    /** Internal use */
-        BIT_MSG(status, GPX_STATUS_FAULT_RP                     , "0x20000000 - RP fault");
-
-        return buff.str();
+        const status_field_decode_t* dec = GetStatusDecodeByField("gpxStatus");
+        return dec ? RenderStatusFromDecode(*dec, status) : std::string();
     } catch (std::bad_any_cast& e) {
+        (void)e;
         return "";
     }
 }
@@ -367,69 +318,13 @@ std::string renderGpxStatus_hdwStatus(const data_info_t& info, std::any value, i
     if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "hdwStatus"))
         return "";
 
+    // SN-7919 (D-53): delegates to the GPX hardware-status decode table (key "gpxHdwStatus").
     try {
-        std::stringstream buff;
         uint32_t hdwStatus = std::any_cast<uint32_t>(value);
-
-#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
-
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_SATELLITE_RX            , "0x00000001 - GNSS1 satellite signals are being received (antenna and cable are good)");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_SATELLITE_RX            , "0x00000002 - GNSS2 satellite signals are being received (antenna and cable are good)");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID      , "0x00000004 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID      , "0x00000008 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
-
-    /** GNSS 1 reset required count */
-    // GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x00000070,
-    // GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
-#define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
-
-    /** Failed to communicate or setup GNSS receiver 1 */
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS1_INIT              , "0x00000080 - Failed to communicate or setup GNSS receiver 1");
-        // BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
-
-    /** GNSS 2 reset required count */
-    // GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000700,
-    // GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
-#define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
-
-    /** Failed to communicate or setup GNSS receiver 2 */
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS2_INIT              , "0x00000800 - Failed to communicate or setup GNSS receiver 2");
-        // BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
-
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED       , "0x00001000 - GNSS is faulting firmware update REQUIRED");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_LED_ENABLED                   , "0x00002000 - Enables LED in Manufacturing TBed");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED         , "0x00004000 - System Reset is Required for proper function");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FLASH_WRITE_PENDING           , "0x00008000 - System flash write staging or occuring now.");
-
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_COM_TX_LIMITED            , "0x00010000 - Communications Tx buffer limited");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_COM_RX_OVERRUN            , "0x00020000 - Communications Rx buffer overrun");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_NO_GNSS1_PPS               , "0x00040000 - GNSS1 PPS timepulse signal has not been received or is in error");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_NO_GNSS2_PPS               , "0x00080000 - GNSS2 PPS timepulse signal has not been received or is in error");
-
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_LOW_CNO_GNSS1              , "0x00100000 - GNSS1 signal strength low (<20)");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_LOW_CNO_GNSS2              , "0x00200000 - GNSS2 signal strength low (<20)");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_CNO_GNSS1_IR               , "0x00400000 - GNSS1 signal irregular. High Cno standard deviation over 5 second period detected.");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_CNO_GNSS2_IR               , "0x00800000 - GNSS2 signal irregular. High Cno standard deviation over 5 second period detected.");
-
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_RUNNING                   , "0x01000000 - (BIT) Built-in self-test running");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_PASSED                    , "0x02000000 - (BIT) Built-in self-test passed");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_FAULT                     , "0x03000000 - (BIT) Built-in self-test failure");
-        // GPX_HDW_STATUS_BIT_MASK                              = 0x03000000
-        // GPX_HDW_STATUS_BIT_OFFSET                            = 24,
-
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_TEMPERATURE               , "0x04000000 - Temperature outside spec'd operating range");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_PPS_TIMESYNC              , "0x08000000 - Time synchronized by GPS PPS");
-
-    /** Cause of system reset */
-        // GPX_HDW_STATUS_RESET_CAUSE_MASK                     = (int)0x70000000,
-
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE       , "0x10000000 - Reset from Backup mode (low-power state w/ CPU off)");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_SOFT              , "0x20000000 - Reset from Software");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_HDW               , "0x40000000 - Reset from Hardware (NRST pin low)");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_SYS_CRITICAL            , "0x80000000 - Critical System Fault, CPU error.");
-
-        return buff.str();
+        const status_field_decode_t* dec = GetStatusDecodeByField("gpxHdwStatus");
+        return dec ? RenderStatusFromDecode(*dec, hdwStatus) : std::string();
     } catch (std::bad_any_cast& e) {
+        (void)e;
         return "";
     }
 }

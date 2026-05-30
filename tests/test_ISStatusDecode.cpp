@@ -252,6 +252,78 @@ std::string legacyRenderGnssStatusBitsReference(uint32_t gpsStatusBits)
     return buff.str();
 }
 
+/** @brief Oracle: faithful copy of the original `renderGpxStatus_status` body. */
+std::string legacyRenderGpxStatusReference(uint32_t status)
+{
+    std::stringstream buff;
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+    BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_MASK      , "0x0000000F - Communications parse error count");
+    BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED , "0x00000010 - COM0 RX traffic not dectected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED , "0x00000020 - COM1 RX traffic not dectected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED , "0x00000040 - COM2 RX traffic not dectected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DECTECTED  , "0x00000080 - USB RX traffic not dectected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_FAULT_RTK_QUEUE_LIMITED       , "0x00010000 - RTK buffer overflow.");
+    BIT_MSG(status, GPX_STATUS_FAULT_GNSS_RCVR_TIME          , "0x00100000 - GNSS receiver time fault");
+    BIT_MSG(status, GPX_STATUS_FAULT_DMA                     , "0x00800000 - DMA fault");
+    uint32_t fatalStatus = ((status & GPX_STATUS_FATAL_MASK) >> GPX_STATUS_FATAL_OFFSET);
+    switch (fatalStatus) {
+        case GPX_STATUS_FATAL_RESET_LOW_POW:        buff << "0x01000000 - Reset from low power" << std::endl; break;
+        case GPX_STATUS_FATAL_RESET_BROWN:          buff << "0x02000000 - Reset from brown out" << std::endl; break;
+        case GPX_STATUS_FATAL_RESET_WATCHDOG:       buff << "0x03000000 - Reset from watchdog" << std::endl; break;
+        case GPX_STATUS_FATAL_CPU_EXCEPTION:        buff << "0x04000000 - CPU exception" << std::endl; break;
+        case GPX_STATUS_FATAL_UNHANDLED_INTERRUPT:  buff << "0x05000000 - Unhandled interrupt" << std::endl; break;
+        case GPX_STATUS_FATAL_STACK_OVERFLOW:       buff << "0x06000000 - Stack overflow" << std::endl; break;
+        case GPX_STATUS_FATAL_KERNEL_OOPS:          buff << "0x07000000 - Kernel oops" << std::endl; break;
+        case GPX_STATUS_FATAL_KERNEL_PANIC:         buff << "0x08000000 - Kernel panic" << std::endl; break;
+        case GPX_STATUS_FATAL_UNALIGNED_ACCESS:     buff << "0x09000000 - Unaligned access" << std::endl; break;
+        case GPX_STATUS_FATAL_MEMORY_ERROR:         buff << "0x0A000000 - Memory error" << std::endl; break;
+        case GPX_STATUS_FATAL_BUS_ERROR:            buff << "0x0B000000 - Bus error" << std::endl; break;
+        case GPX_STATUS_FATAL_USAGE_ERROR:          buff << "0x0C000000 - Usage error" << std::endl; break;
+        case GPX_STATUS_FATAL_DIV_ZERO:             buff << "0x0D000000 - Division by zero" << std::endl; break;
+        case GPX_STATUS_FATAL_SER0_REINIT:          buff << "0x0E000000 - SER0 reinit" << std::endl; break;
+        case GPX_STATUS_FATAL_UNKNOWN:              buff << "0x1F000000 - Unknown" << std::endl; break;
+    }
+    BIT_MSG(status, GPX_STATUS_FAULT_RP                     , "0x20000000 - RP fault");
+#undef BIT_MSG
+    return buff.str();
+}
+
+/** @brief Oracle: faithful copy of the original `renderGpxStatus_hdwStatus` body. */
+std::string legacyRenderGpxHdwStatusReference(uint32_t hdwStatus)
+{
+    std::stringstream buff;
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_SATELLITE_RX            , "0x00000001 - GNSS1 satellite signals are being received (antenna and cable are good)");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_SATELLITE_RX            , "0x00000002 - GNSS2 satellite signals are being received (antenna and cable are good)");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID      , "0x00000004 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID      , "0x00000008 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS1_INIT              , "0x00000080 - Failed to communicate or setup GNSS receiver 1");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS2_INIT              , "0x00000800 - Failed to communicate or setup GNSS receiver 2");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED       , "0x00001000 - GNSS is faulting firmware update REQUIRED");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_LED_ENABLED                   , "0x00002000 - Enables LED in Manufacturing TBed");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED         , "0x00004000 - System Reset is Required for proper function");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_FLASH_WRITE_PENDING           , "0x00008000 - System flash write staging or occuring now.");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_COM_TX_LIMITED            , "0x00010000 - Communications Tx buffer limited");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_COM_RX_OVERRUN            , "0x00020000 - Communications Rx buffer overrun");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_NO_GNSS1_PPS              , "0x00040000 - GNSS1 PPS timepulse signal has not been received or is in error");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_NO_GNSS2_PPS              , "0x00080000 - GNSS2 PPS timepulse signal has not been received or is in error");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_LOW_CNO_GNSS1             , "0x00100000 - GNSS1 signal strength low (<20)");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_LOW_CNO_GNSS2             , "0x00200000 - GNSS2 signal strength low (<20)");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_CNO_GNSS1_IR             , "0x00400000 - GNSS1 signal irregular. High Cno standard deviation over 5 second period detected.");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_CNO_GNSS2_IR             , "0x00800000 - GNSS2 signal irregular. High Cno standard deviation over 5 second period detected.");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_RUNNING                   , "0x01000000 - (BIT) Built-in self-test running");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_PASSED                    , "0x02000000 - (BIT) Built-in self-test passed");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_FAULT                     , "0x03000000 - (BIT) Built-in self-test failure");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_TEMPERATURE               , "0x04000000 - Temperature outside spec'd operating range");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_PPS_TIMESYNC             , "0x08000000 - Time synchronized by GPS PPS");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE       , "0x10000000 - Reset from Backup mode (low-power state w/ CPU off)");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_SOFT              , "0x20000000 - Reset from Software");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_HDW               , "0x40000000 - Reset from Hardware (NRST pin low)");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_SYS_CRITICAL            , "0x80000000 - Critical System Fault, CPU error.");
+#undef BIT_MSG
+    return buff.str();
+}
+
 /** @brief Deterministic xorshift32 so the sweep is reproducible across runs/platforms. */
 uint32_t xorshift32(uint32_t& s)
 {
@@ -643,4 +715,65 @@ TEST(ISStatusDecode, DidAwareLookup_StatusFieldDisambiguation)
     // NOT return the GNSS/IMX tables).
     EXPECT_NE(GetStatusDecode(DID_GPX_STATUS, "status"), gnss);
     EXPECT_NE(GetStatusDecode(DID_GPX_STATUS, "hdwStatus"), GetStatusDecodeByField("hdwStatus"));
+    // GPX variants now registered: (DID_GPX_STATUS, status/hdwStatus) resolve to the GPX tables.
+    EXPECT_EQ(GetStatusDecode(DID_GPX_STATUS, "status"),    GetStatusDecodeByField("gpxStatus"));
+    EXPECT_EQ(GetStatusDecode(DID_GPX_STATUS, "hdwStatus"), GetStatusDecodeByField("gpxHdwStatus"));
+}
+
+// ---- GPX status / hdwStatus ---------------------------------------------------
+
+TEST(ISStatusDecode, GpxStatus_RoundTrip_EverySingleBit)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), legacyRenderGpxStatusReference(0u));
+    for (int b = 0; b < 32; ++b) {
+        const uint32_t v = (1u << b);
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGpxStatusReference(v)) << "bit " << b;
+    }
+}
+
+TEST(ISStatusDecode, GpxStatus_RoundTrip_FatalResets)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxStatus");
+    ASSERT_NE(dec, nullptr);
+    for (uint32_t f = 0; f <= 0x1F; ++f) {
+        const uint32_t v = (f << 24);   // GPX_STATUS_FATAL_MASK = 0x1F000000
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGpxStatusReference(v)) << "fatal " << f;
+    }
+}
+
+TEST(ISStatusDecode, GpxStatus_RoundTrip_RandomSweep)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxStatus");
+    ASSERT_NE(dec, nullptr);
+    uint32_t s = 0x60B5A1u;
+    for (int i = 0; i < 20000; ++i) {
+        const uint32_t v = xorshift32(s);
+        ASSERT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGpxStatusReference(v))
+            << "iteration " << i << " value 0x" << std::hex << v;
+    }
+}
+
+TEST(ISStatusDecode, GpxHdwStatus_RoundTrip_EverySingleBit)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxHdwStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), legacyRenderGpxHdwStatusReference(0u));
+    for (int b = 0; b < 32; ++b) {
+        const uint32_t v = (1u << b);
+        EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGpxHdwStatusReference(v)) << "bit " << b;
+    }
+}
+
+TEST(ISStatusDecode, GpxHdwStatus_RoundTrip_RandomSweep)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxHdwStatus");
+    ASSERT_NE(dec, nullptr);
+    uint32_t s = 0x9D7E11u;
+    for (int i = 0; i < 20000; ++i) {
+        const uint32_t v = xorshift32(s);
+        ASSERT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGpxHdwStatusReference(v))
+            << "iteration " << i << " value 0x" << std::hex << v;
+    }
 }
