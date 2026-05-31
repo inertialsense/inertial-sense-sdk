@@ -800,20 +800,21 @@ namespace
         return { (uint64_t)slot, "[" + std::to_string(slot) + "]", true };
     }
 
-    // GNSS constellation single-letter prefix (u-blox gnssId convention).
+    // GNSS constellation single-letter prefix. Uses the Inertial Sense eSatSvGnssId
+    // enum (data_sets.h) — NOT the u-blox numbering.
     inline const char* gnssConstellationPrefix(uint8_t gnssId)
     {
         switch (gnssId)
         {
-            case 0:  return "G";    // GPS
-            case 1:  return "S";    // SBAS
-            case 2:  return "E";    // Galileo
-            case 3:  return "C";    // BeiDou
-            case 4:  return "I";    // IMES
-            case 5:  return "J";    // QZSS
-            case 6:  return "R";    // GLONASS
-            case 7:  return "N";    // NavIC / IRNSS
-            default: return "?";
+            case SAT_SV_GNSS_ID_GPS:  return "G";    // 1 GPS
+            case SAT_SV_GNSS_ID_SBS:  return "S";    // 2 SBAS
+            case SAT_SV_GNSS_ID_GAL:  return "E";    // 3 Galileo
+            case SAT_SV_GNSS_ID_BEI:  return "C";    // 4 BeiDou
+            case SAT_SV_GNSS_ID_QZS:  return "J";    // 5 QZSS
+            case SAT_SV_GNSS_ID_GLO:  return "R";    // 6 GLONASS
+            case SAT_SV_GNSS_ID_IRN:  return "I";    // 7 IRNSS / NavIC
+            case SAT_SV_GNSS_ID_IME:  return "M";    // 8 IMES
+            default:                  return "U";    // 0 unknown / multi-constellation
         }
     }
 
@@ -956,7 +957,7 @@ static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
                              (uint32_t)offsetof(gnss_sat_sv_t, gnssId), (uint32_t)offsetof(gnss_sat_sv_t, svId),
                              (uint32_t)offsetof(gnss_sat_t, numSats)),
         {
-            { "gnssId", (uint32_t)offsetof(gnss_sat_sv_t, gnssId), DATA_TYPE_UINT8,  "",     "GNSS constellation id (0 GPS,2 GAL,3 BDS,5 QZSS,6 GLO,...)", DATA_FLAGS_READ_ONLY },
+            { "gnssId", (uint32_t)offsetof(gnss_sat_sv_t, gnssId), DATA_TYPE_UINT8,  "",     "GNSS constellation id (eSatSvGnssId: 1 GPS,2 SBAS,3 GAL,4 BDS,5 QZSS,6 GLO,7 IRN,8 IMES)", DATA_FLAGS_READ_ONLY },
             { "svId",   (uint32_t)offsetof(gnss_sat_sv_t, svId),   DATA_TYPE_UINT8,  "",     "Satellite vehicle id (PRN)",          DATA_FLAGS_READ_ONLY },
             { "elev",   (uint32_t)offsetof(gnss_sat_sv_t, elev),   DATA_TYPE_INT8,   "deg",  "Elevation (-90..90)",                 DATA_FLAGS_READ_ONLY },
             { "azim",   (uint32_t)offsetof(gnss_sat_sv_t, azim),   DATA_TYPE_INT16,  "deg",  "Azimuth (0..360)",                    DATA_FLAGS_READ_ONLY },
