@@ -589,24 +589,8 @@ static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
 }
 
-void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<port_monitor_t> mapper(data_set, did);
-    mapper.AddMember("activePorts", &port_monitor_t::activePorts, DATA_TYPE_UINT8, "", "Number of active ports", DATA_FLAGS_READ_ONLY);    
-    for (int i=0; i<NUM_COM_PORTS; i++)
-    {
-        mapper.AddMember2("[" + std::to_string(i) + "].portInfo",           i*sizeof(port_stats_t) + offsetof(port_stats_t, portInfo), DATA_TYPE_UINT8, "", "High nib port type (see ePortMonPortType) low nib index.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-        mapper.AddMember2("[" + std::to_string(i) + "].status",             i*sizeof(port_stats_t) + offsetof(port_stats_t, status), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
-        mapper.AddMember2("[" + std::to_string(i) + "].txBytesPerSec",      i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Tx data rate", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("[" + std::to_string(i) + "].rxBytesPerSec",      i*sizeof(port_stats_t) + offsetof(port_stats_t, rxBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Rx data rate", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("[" + std::to_string(i) + "].txBytes",            i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytes), DATA_TYPE_UINT32, "bytes", "Tx byte count");
-        mapper.AddMember2("[" + std::to_string(i) + "].rxBytes",            i*sizeof(port_stats_t) + offsetof(port_stats_t, rxBytes), DATA_TYPE_UINT32, "bytes", "Rx byte count");
-        mapper.AddMember2("[" + std::to_string(i) + "].txDataDrops",        i*sizeof(port_stats_t) + offsetof(port_stats_t, txDataDrops), DATA_TYPE_UINT32, "", "Tx buffer data drop occurrences");
-        mapper.AddMember2("[" + std::to_string(i) + "].rxOverflows",        i*sizeof(port_stats_t) + offsetof(port_stats_t, rxOverflows), DATA_TYPE_UINT32, "", "Rx buffer overflow occurrences");
-        mapper.AddMember2("[" + std::to_string(i) + "].txBytesDropped",     i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytesDropped), DATA_TYPE_UINT32, "bytes", "Tx number of bytes that were not sent");
-        mapper.AddMember2("[" + std::to_string(i) + "].rxChecksumErrors",   i*sizeof(port_stats_t) + offsetof(port_stats_t, rxChecksumErrors), DATA_TYPE_UINT32, "", "Rx number of checksum failures");
-    }
-}
+// PopulateMapPortMonitor is defined below, after the SN-8068 array-of-struct helper block
+// (it calls registerArrayStruct / makePortIdentityFn which are defined there).
 
 void PopulateMapNmeaMsgs(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -777,21 +761,208 @@ static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("status", &gnss_vel_t::status, DATA_TYPE_UINT32, "", "GNSS status: NMEA input if status flag GNSS_STATUS_FLAGS_GNSS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGnssStatusBits;;
 }
 
+// ===== SN-8068: array-of-struct element model + generic per-DID element identity =====
+//
+// Registry of array-of-struct descriptors keyed by DID. Populated once during
+// cISDataMappings construction (singleton); read by the static accessors below.
+// Additive: existing nameToInfo entries, indexToInfo, and ElementCount iteration
+// order are untouched — the "<struct>.<field>" views go into nameToInfo only.
+static std::map<uint32_t, std::vector<array_struct_info_t>> s_arrayStructInfo;
+
+namespace
+{
+    // One inner-struct field to expose as "<struct>.<field>".
+    struct StructArrayFieldDecl
+    {
+        const char* name;
+        uint32_t    offsetInElement;    // byte offset of the field within the inner element struct
+        eDataType   type;
+        const char* units;
+        const char* description;
+        int         flags;
+    };
+
+    inline uint32_t readCount(const uint8_t* buf, uint32_t off, eDataType type)
+    {
+        switch (type)
+        {
+            case DATA_TYPE_UINT8:  return buf[off];
+            case DATA_TYPE_UINT16: { uint16_t v; memcpy(&v, buf + off, 2); return v; }
+            case DATA_TYPE_INT32:  { int32_t  v; memcpy(&v, buf + off, 4); return (v < 0 ? 0u : (uint32_t)v); }
+            case DATA_TYPE_UINT32: default: { uint32_t v; memcpy(&v, buf + off, 4); return v; }
+        }
+    }
+
+    // Default identity: a slot whose identity is simply its array index. Used for any
+    // array-of-struct DID that does not register a semantic decoder.
+    element_identity_t defaultElementIdentity(const uint8_t* /*buf*/, uint32_t slot)
+    {
+        return { (uint64_t)slot, "[" + std::to_string(slot) + "]", true };
+    }
+
+    // GNSS constellation single-letter prefix (u-blox gnssId convention).
+    inline const char* gnssConstellationPrefix(uint8_t gnssId)
+    {
+        switch (gnssId)
+        {
+            case 0:  return "G";    // GPS
+            case 1:  return "S";    // SBAS
+            case 2:  return "E";    // Galileo
+            case 3:  return "C";    // BeiDou
+            case 4:  return "I";    // IMES
+            case 5:  return "J";    // QZSS
+            case 6:  return "R";    // GLONASS
+            case 7:  return "N";    // NavIC / IRNSS
+            default: return "?";
+        }
+    }
+
+    // Identity decoder for GNSS SAT/SIG: a satellite's identity is (constellation, svId/PRN),
+    // stable across messages even as it migrates between sat[]/sig[] slots. Live slots are the
+    // first `count` (numSats / numSigs); an svId of 0 is treated as an empty sentinel.
+    ElementIdentityFn makeGnssSvIdentityFn(uint32_t base, uint32_t stride,
+                                           uint32_t gnssIdOff, uint32_t svIdOff,
+                                           uint32_t countOff)
+    {
+        return [=](const uint8_t* buf, uint32_t slot) -> element_identity_t
+        {
+            uint32_t n = readCount(buf, countOff, DATA_TYPE_UINT32);
+            const uint8_t* e = buf + base + (size_t)slot * stride;
+            uint8_t gnssId = e[gnssIdOff];
+            uint8_t svId   = e[svIdOff];
+            element_identity_t id;
+            id.keyId = ((uint64_t)gnssId << 8) | svId;
+            id.label = std::string(gnssConstellationPrefix(gnssId)) + std::to_string(svId);
+            id.valid = (slot < n) && (svId != 0);
+            return id;
+        };
+    }
+
+    inline const char* portTypeName(uint8_t typeNibbleHi)   // (portInfo & 0xF0)
+    {
+        switch (typeNibbleHi)
+        {
+            case PORT_MON_PORT_TYPE_UART: return "ser";
+            case PORT_MON_PORT_TYPE_USB:  return "usb";
+            case PORT_MON_PORT_TYPE_SPI:  return "spi";
+            case PORT_MON_PORT_TYPE_I2C:  return "i2c";
+            case PORT_MON_PORT_TYPE_CAN:  return "can";
+            default:                      return "port";
+        }
+    }
+
+    // Identity decoder for port_monitor_t: a port's identity is encoded in portInfo
+    // (high nibble = type per ePortMonPortType, low nibble = index) -> "ser0", "usb1", etc.
+    // Port slots are fixed, but a slot with no decodable type is treated as unpopulated.
+    ElementIdentityFn makePortIdentityFn(uint32_t base, uint32_t stride, uint32_t portInfoOff)
+    {
+        return [=](const uint8_t* buf, uint32_t slot) -> element_identity_t
+        {
+            const uint8_t* e = buf + base + (size_t)slot * stride;
+            uint8_t portInfo = e[portInfoOff];
+            uint8_t typeHi = portInfo & 0xF0;
+            uint8_t idx    = portInfo & 0x0F;
+            element_identity_t id;
+            id.keyId = portInfo;        // type+index byte is the stable port identity
+            id.label = std::string(portTypeName(typeHi)) + std::to_string(idx);
+            id.valid = (typeHi != 0) && (typeHi < PORT_MON_PORT_TYPE_MAX);
+            return id;
+        };
+    }
+
+    // Register the inner fields of an array-of-struct member as "<struct>.<field>" views in
+    // nameToInfo (offset = base + fieldOffset, elementSize = struct stride, arraySize = max),
+    // and record an array_struct_info_t (with identity decoder) for variable-count, identity-
+    // keyed consumers. Does NOT touch indexToInfo / elementToInfo / elementCount, so existing
+    // ElementCount()/ElementToInfo() iteration is unaffected.
+    void registerArrayStruct(data_set_t& ds, uint32_t did,
+                             const std::string& structName,
+                             uint32_t arrayBaseOffset, uint32_t elementStride, uint32_t maxElements,
+                             uint32_t countOffset, eDataType countType,
+                             ElementIdentityFn identity,
+                             const std::vector<StructArrayFieldDecl>& fields)
+    {
+        // Idempotent against accidental re-registration of the same struct on a DID.
+        auto& vec = s_arrayStructInfo[did];
+        for (const auto& existing : vec)
+            if (existing.structName == structName) return;
+
+        for (const auto& f : fields)
+        {
+            const std::string name = structName + "." + f.name;
+            data_info_t info{};
+            info.offset      = arrayBaseOffset + f.offsetInElement;
+            info.size        = elementStride * maxElements;     // total span of the array region
+            info.type        = f.type;
+            info.arraySize   = maxElements;
+            info.elementSize = elementStride;                   // STRIDE: offset + slot*elementSize addresses element `slot`
+            info.flags       = eDataFlags(f.flags);
+            info.name        = name;
+            info.units       = { f.units ? f.units : "" };
+            info.description = { f.description ? f.description : "" };
+            info.conversion  = 1.0;
+            info.renderBasic    = renderVariableToString;
+            info.renderExtended = renderVariableAndStatsToString;
+            ds.nameToInfo[name] = info;
+        }
+
+        array_struct_info_t asi;
+        asi.structName      = structName;
+        asi.arrayBaseOffset = arrayBaseOffset;
+        asi.elementStride   = elementStride;
+        asi.maxElements     = maxElements;
+        asi.countOffset     = countOffset;
+        asi.countType       = countType;
+        asi.identity        = identity ? std::move(identity) : ElementIdentityFn(defaultElementIdentity);
+        vec.push_back(std::move(asi));
+    }
+} // namespace
+
+const std::vector<array_struct_info_t>* cISDataMappings::ArrayStructFields(uint32_t did)
+{
+    DataSet(did);   // ensure the singleton (and thus the array-struct registry) has been built
+    auto it = s_arrayStructInfo.find(did);
+    return (it != s_arrayStructInfo.end()) ? &it->second : nullptr;
+}
+
+uint32_t cISDataMappings::ElementCountForRecord(const array_struct_info_t& info, const uint8_t* recordBuf)
+{
+    if (!recordBuf || info.maxElements == 0) return 0;
+    uint32_t n = readCount(recordBuf, info.countOffset, info.countType);
+    return (n > info.maxElements) ? info.maxElements : n;
+}
+
+element_identity_t cISDataMappings::ElementIdentity(const array_struct_info_t& info, const uint8_t* recordBuf, uint32_t slot)
+{
+    if (!recordBuf || slot >= info.maxElements || !info.identity)
+        return {};
+    return info.identity(recordBuf, slot);
+}
+
 static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_sat_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_sat_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("numSats", &gnss_sat_t::numSats, DATA_TYPE_UINT32, "", "Number of satellites in sky", DATA_FLAGS_READ_ONLY);
+    // Account the per-satellite array region for the DataMapper size check; the inner fields
+    // are exposed individually below as "sat.<field>" (SN-8068 array-of-struct model) rather
+    // than as ~300 flat sat0..sat49 entries.
+    mapper.AddMember2("sat", offsetof(gnss_sat_t, sat), DATA_TYPE_BINARY, "", "Per-satellite array; expanded as sat.<field> across all tracked satellites", DATA_FLAGS_READ_ONLY, 1.0, (uint32_t)(MAX_NUM_SATELLITES * sizeof(gnss_sat_sv_t)));
 
-    for (int n=0; n<MAX_NUM_SATELLITES; n++)
-    {
-        mapper.AddMember2("sat" + std::to_string(n) + ".gnssId",    n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].gnssId),    DATA_TYPE_UINT8);
-        mapper.AddMember2("sat" + std::to_string(n) + ".svId",      n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].svId),      DATA_TYPE_UINT8);
-        mapper.AddMember2("sat" + std::to_string(n) + ".elev",      n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].elev),      DATA_TYPE_INT8);
-        mapper.AddMember2("sat" + std::to_string(n) + ".azim",      n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].azim),      DATA_TYPE_INT16);
-        mapper.AddMember2("sat" + std::to_string(n) + ".cno",       n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].cno),       DATA_TYPE_UINT8);
-        mapper.AddMember2("sat" + std::to_string(n) + ".status",    n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].status),    DATA_TYPE_UINT16);
-    }
+    registerArrayStruct(data_set[did], did, "sat",
+        (uint32_t)offsetof(gnss_sat_t, sat), (uint32_t)sizeof(gnss_sat_sv_t), (uint32_t)MAX_NUM_SATELLITES,
+        (uint32_t)offsetof(gnss_sat_t, numSats), DATA_TYPE_UINT32,
+        makeGnssSvIdentityFn((uint32_t)offsetof(gnss_sat_t, sat), (uint32_t)sizeof(gnss_sat_sv_t),
+                             (uint32_t)offsetof(gnss_sat_sv_t, gnssId), (uint32_t)offsetof(gnss_sat_sv_t, svId),
+                             (uint32_t)offsetof(gnss_sat_t, numSats)),
+        {
+            { "gnssId", (uint32_t)offsetof(gnss_sat_sv_t, gnssId), DATA_TYPE_UINT8,  "",     "GNSS constellation id (0 GPS,2 GAL,3 BDS,5 QZSS,6 GLO,...)", DATA_FLAGS_READ_ONLY },
+            { "svId",   (uint32_t)offsetof(gnss_sat_sv_t, svId),   DATA_TYPE_UINT8,  "",     "Satellite vehicle id (PRN)",          DATA_FLAGS_READ_ONLY },
+            { "elev",   (uint32_t)offsetof(gnss_sat_sv_t, elev),   DATA_TYPE_INT8,   "deg",  "Elevation (-90..90)",                 DATA_FLAGS_READ_ONLY },
+            { "azim",   (uint32_t)offsetof(gnss_sat_sv_t, azim),   DATA_TYPE_INT16,  "deg",  "Azimuth (0..360)",                    DATA_FLAGS_READ_ONLY },
+            { "cno",    (uint32_t)offsetof(gnss_sat_sv_t, cno),    DATA_TYPE_UINT8,  "dBHz", "Carrier-to-noise density ratio",      DATA_FLAGS_READ_ONLY },
+            { "status", (uint32_t)offsetof(gnss_sat_sv_t, status), DATA_TYPE_UINT16, "",     "Satellite status flags (eSatSvStatus)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX },
+        });
 }
 
 static void PopulateMapGpsSig(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -799,16 +970,63 @@ static void PopulateMapGpsSig(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<gnss_sig_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_sig_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("numSigs", &gnss_sig_t::numSigs, DATA_TYPE_UINT32, "", "Number of signals in sky", DATA_FLAGS_READ_ONLY);
+    // See PopulateMapGpsSat: the per-signal array is exposed as "sig.<field>" rather than flat.
+    mapper.AddMember2("sig", offsetof(gnss_sig_t, sig), DATA_TYPE_BINARY, "", "Per-signal array; expanded as sig.<field> across all tracked signals", DATA_FLAGS_READ_ONLY, 1.0, (uint32_t)(MAX_NUM_SAT_SIGNALS * sizeof(gnss_sig_sv_t)));
 
-    for (int n=0; n<MAX_NUM_SAT_SIGNALS; n++)
+    registerArrayStruct(data_set[did], did, "sig",
+        (uint32_t)offsetof(gnss_sig_t, sig), (uint32_t)sizeof(gnss_sig_sv_t), (uint32_t)MAX_NUM_SAT_SIGNALS,
+        (uint32_t)offsetof(gnss_sig_t, numSigs), DATA_TYPE_UINT32,
+        makeGnssSvIdentityFn((uint32_t)offsetof(gnss_sig_t, sig), (uint32_t)sizeof(gnss_sig_sv_t),
+                             (uint32_t)offsetof(gnss_sig_sv_t, gnssId), (uint32_t)offsetof(gnss_sig_sv_t, svId),
+                             (uint32_t)offsetof(gnss_sig_t, numSigs)),
+        {
+            { "gnssId",  (uint32_t)offsetof(gnss_sig_sv_t, gnssId),  DATA_TYPE_UINT8,  "",     "GNSS constellation id",               DATA_FLAGS_READ_ONLY },
+            { "svId",    (uint32_t)offsetof(gnss_sig_sv_t, svId),    DATA_TYPE_UINT8,  "",     "Satellite vehicle id (PRN)",          DATA_FLAGS_READ_ONLY },
+            { "sigId",   (uint32_t)offsetof(gnss_sig_sv_t, sigId),   DATA_TYPE_UINT8,  "",     "Signal id / frequency band",          DATA_FLAGS_READ_ONLY },
+            { "cno",     (uint32_t)offsetof(gnss_sig_sv_t, cno),     DATA_TYPE_UINT8,  "dBHz", "Carrier-to-noise density ratio",      DATA_FLAGS_READ_ONLY },
+            { "quality", (uint32_t)offsetof(gnss_sig_sv_t, quality), DATA_TYPE_UINT8,  "",     "Signal quality indicator (eSatSigQuality)", DATA_FLAGS_READ_ONLY },
+            { "status",  (uint32_t)offsetof(gnss_sig_sv_t, status),  DATA_TYPE_UINT16, "",     "Signal status flags (eSatSigStatus)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX },
+        });
+}
+
+// Relocated from above so it follows the SN-8068 array-of-struct helper block.
+void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<port_monitor_t> mapper(data_set, did);
+    mapper.AddMember("activePorts", &port_monitor_t::activePorts, DATA_TYPE_UINT8, "", "Number of active ports", DATA_FLAGS_READ_ONLY);
+    for (int i=0; i<NUM_COM_PORTS; i++)
     {
-        mapper.AddMember2("sig" + std::to_string(n) + ".gnssId",    n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].gnssId),    DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".svId",      n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].svId),      DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".sigId",     n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].sigId),     DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".cno",       n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].cno),       DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".quality",   n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].quality),   DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".status",    n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].status),    DATA_TYPE_UINT16);
+        mapper.AddMember2("[" + std::to_string(i) + "].portInfo",           i*sizeof(port_stats_t) + offsetof(port_stats_t, portInfo), DATA_TYPE_UINT8, "", "High nib port type (see ePortMonPortType) low nib index.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+        mapper.AddMember2("[" + std::to_string(i) + "].status",             i*sizeof(port_stats_t) + offsetof(port_stats_t, status), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+        mapper.AddMember2("[" + std::to_string(i) + "].txBytesPerSec",      i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Tx data rate", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("[" + std::to_string(i) + "].rxBytesPerSec",      i*sizeof(port_stats_t) + offsetof(port_stats_t, rxBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Rx data rate", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("[" + std::to_string(i) + "].txBytes",            i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytes), DATA_TYPE_UINT32, "bytes", "Tx byte count");
+        mapper.AddMember2("[" + std::to_string(i) + "].rxBytes",            i*sizeof(port_stats_t) + offsetof(port_stats_t, rxBytes), DATA_TYPE_UINT32, "bytes", "Rx byte count");
+        mapper.AddMember2("[" + std::to_string(i) + "].txDataDrops",        i*sizeof(port_stats_t) + offsetof(port_stats_t, txDataDrops), DATA_TYPE_UINT32, "", "Tx buffer data drop occurrences");
+        mapper.AddMember2("[" + std::to_string(i) + "].rxOverflows",        i*sizeof(port_stats_t) + offsetof(port_stats_t, rxOverflows), DATA_TYPE_UINT32, "", "Rx buffer overflow occurrences");
+        mapper.AddMember2("[" + std::to_string(i) + "].txBytesDropped",     i*sizeof(port_stats_t) + offsetof(port_stats_t, txBytesDropped), DATA_TYPE_UINT32, "bytes", "Tx number of bytes that were not sent");
+        mapper.AddMember2("[" + std::to_string(i) + "].rxChecksumErrors",   i*sizeof(port_stats_t) + offsetof(port_stats_t, rxChecksumErrors), DATA_TYPE_UINT32, "", "Rx number of checksum failures");
     }
+
+    // SN-8068: additionally expose the per-port fields once as "port.<field>", fanned out
+    // across all ports and labeled by port identity (ser0/usb1/...). The flat "[i].field"
+    // entries above are kept for backward compatibility (cltool/EvalTool name lookups).
+    registerArrayStruct(data_set[did], did, "port",
+        0u, (uint32_t)sizeof(port_stats_t), (uint32_t)NUM_COM_PORTS,
+        (uint32_t)offsetof(port_monitor_t, activePorts), DATA_TYPE_UINT8,
+        makePortIdentityFn(0u, (uint32_t)sizeof(port_stats_t), (uint32_t)offsetof(port_stats_t, portInfo)),
+        {
+            { "portInfo",         (uint32_t)offsetof(port_stats_t, portInfo),         DATA_TYPE_UINT8,  "",        "High nib port type (see ePortMonPortType) low nib index", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX },
+            { "status",           (uint32_t)offsetof(port_stats_t, status),           DATA_TYPE_UINT32, "",        "Status",                          DATA_FLAGS_DISPLAY_HEX },
+            { "txBytesPerSec",    (uint32_t)offsetof(port_stats_t, txBytesPerSec),    DATA_TYPE_UINT32, "bytes/s", "Tx data rate",                    DATA_FLAGS_READ_ONLY },
+            { "rxBytesPerSec",    (uint32_t)offsetof(port_stats_t, rxBytesPerSec),    DATA_TYPE_UINT32, "bytes/s", "Rx data rate",                    DATA_FLAGS_READ_ONLY },
+            { "txBytes",          (uint32_t)offsetof(port_stats_t, txBytes),          DATA_TYPE_UINT32, "bytes",   "Tx byte count",                   0 },
+            { "rxBytes",          (uint32_t)offsetof(port_stats_t, rxBytes),          DATA_TYPE_UINT32, "bytes",   "Rx byte count",                   0 },
+            { "txDataDrops",      (uint32_t)offsetof(port_stats_t, txDataDrops),      DATA_TYPE_UINT32, "",        "Tx buffer data drop occurrences", 0 },
+            { "rxOverflows",      (uint32_t)offsetof(port_stats_t, rxOverflows),      DATA_TYPE_UINT32, "",        "Rx buffer overflow occurrences",  0 },
+            { "txBytesDropped",   (uint32_t)offsetof(port_stats_t, txBytesDropped),   DATA_TYPE_UINT32, "bytes",   "Tx bytes not sent",               0 },
+            { "rxChecksumErrors", (uint32_t)offsetof(port_stats_t, rxChecksumErrors), DATA_TYPE_UINT32, "",        "Rx checksum failures",            0 },
+        });
 }
 
 static void PopulateMapGpsVersion(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -2078,12 +2296,14 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpsVel(m_data_set, DID_GNSS2_VEL);
     PopulateMapGpsPos(m_data_set, DID_GNSS1_RCVR_POS);
 
-#if 0    // Too much data, we don't want to log this. WHJ
+    // SN-8068: SAT/SIG are array-of-struct DIDs. Previously disabled ("too much data") because
+    // the old flat model emitted ~300/600 entries per DID; the array-of-struct model exposes
+    // each inner field once as "sat.<field>"/"sig.<field>" (6 entries/DID) and fans out across
+    // satellites at plot time, keyed by PRN identity.
     PopulateMapGpsSat(m_data_set, DID_GNSS1_SAT);
     PopulateMapGpsSat(m_data_set, DID_GNSS2_SAT);
     PopulateMapGpsSig(m_data_set, DID_GNSS1_SIG);
     PopulateMapGpsSig(m_data_set, DID_GNSS2_SIG);
-#endif
 
     PopulateMapGpsVersion(m_data_set, DID_GNSS1_VERSION);
     PopulateMapGpsVersion(m_data_set, DID_GNSS2_VERSION);
