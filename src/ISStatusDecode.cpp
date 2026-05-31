@@ -848,12 +848,51 @@ status_field_decode_t buildGpxBitStateDecode()
     return d;
 }
 
+/**
+ * @brief imu_t / pimu_t `status` decode table (eImuStatus). Registered under the key "imuStatus";
+ *        the on-wire field name "status" is shared across many DIDs, so GetStatusDecode routes the
+ *        IMU/PIMU DIDs here explicitly. All masks derive from the data_sets.h symbols.
+ */
+status_field_decode_t buildImuStatusDecode()
+{
+    status_field_decode_t d;
+    d.fieldName = "status";   // on-wire field name (registry key is "imuStatus")
+    d.errorMask = (uint32_t)(IMU_STATUS_GYR_FAULT_REJECT | IMU_STATUS_ACC_FAULT_REJECT |
+                             IMU_STATUS_SATURATION_GYR   | IMU_STATUS_SATURATION_ACC);
+
+    // Per-axis sensor-OK bits (set = healthy; not errors).
+    d.subfields.push_back(bitField("Gyro X OK", IMU_STATUS_GYR_X_OK, false, "0x00000001 - Gyro X sensor OK"));
+    d.subfields.push_back(bitField("Gyro Y OK", IMU_STATUS_GYR_Y_OK, false, "0x00000002 - Gyro Y sensor OK"));
+    d.subfields.push_back(bitField("Gyro Z OK", IMU_STATUS_GYR_Z_OK, false, "0x00000004 - Gyro Z sensor OK"));
+    d.subfields.push_back(bitField("Accel X OK", IMU_STATUS_ACC_X_OK, false, "0x00000008 - Accel X sensor OK"));
+    d.subfields.push_back(bitField("Accel Y OK", IMU_STATUS_ACC_Y_OK, false, "0x00000010 - Accel Y sensor OK"));
+    d.subfields.push_back(bitField("Accel Z OK", IMU_STATUS_ACC_Z_OK, false, "0x00000020 - Accel Z sensor OK"));
+
+    d.subfields.push_back(bitField("Shock present", IMU_STATUS_SHOCK_PRESENT, false,
+        "0x00000040 - Sensor saturation / shock event present in this sample window"));
+    d.subfields.push_back(bitField("Mag update", IMU_STATUS_MAG_UPDATE, false,
+        "0x00000100 - Magnetometer sample updated"));
+    d.subfields.push_back(bitField("Reference IMU present", IMU_STATUS_REFERENCE_IMU_PRESENT, false,
+        "0x00000200 - Reference IMU data present"));
+
+    d.subfields.push_back(bitField("Gyro fault reject", IMU_STATUS_GYR_FAULT_REJECT, true,
+        "0x01000000 - Gyro sample(s) rejected by fault detection"));
+    d.subfields.push_back(bitField("Accel fault reject", IMU_STATUS_ACC_FAULT_REJECT, true,
+        "0x02000000 - Accel sample(s) rejected by fault detection"));
+    d.subfields.push_back(bitField("Gyro saturation", IMU_STATUS_SATURATION_GYR, true,
+        "0x40000000 - Gyro saturation occurred"));
+    d.subfields.push_back(bitField("Accel saturation", IMU_STATUS_SATURATION_ACC, true,
+        "0x80000000 - Accel saturation occurred"));
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
     static const std::map<std::string, status_field_decode_t> r = [] {
         std::map<std::string, status_field_decode_t> m;
         m.emplace("insStatus",          buildInsStatusDecode());
+        m.emplace("imuStatus",          buildImuStatusDecode());
         m.emplace("hdwStatus",          buildHdwStatusDecode());
         m.emplace("sysStatus",          buildSysStatusDecode());
         m.emplace("genFaultCode",       buildGenFaultCodeDecode());
@@ -982,6 +1021,12 @@ const status_field_decode_t* GetStatusDecode(uint32_t did, const std::string& fi
         if (fieldName == "results")   return GetStatusDecodeByField("gpxBitResults");
         if (fieldName == "state")     return GetStatusDecodeByField("gpxBitState");
     }
+    // IMU / PIMU `status` decodes via eImuStatus (shared on-wire name "status"); route these
+    // explicitly so they don't fall into the GNSS catch-all below.
+    if (fieldName == "status" &&
+        (did == DID_IMU || did == DID_PIMU ||
+         did == DID_REFERENCE_IMU || did == DID_REFERENCE_PIMU))
+        return GetStatusDecodeByField("imuStatus");
     if (fieldName == "status")
         return GetStatusDecodeByField("gnssStatus");   // GNSS pos/vel status (DIDs 13/14/6/30/31/54)
     return GetStatusDecodeByField(fieldName);
