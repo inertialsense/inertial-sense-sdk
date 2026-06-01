@@ -143,7 +143,7 @@ static struct {
 static ins_1_t    g_lastIns1    = {};
 static pimu_t     g_lastPimu    = {};
 static dev_info_t g_lastDevInfo = {};
-static gps_pos_t  g_lastGps1Pos = {};
+static gnss_pos_t  g_lastGps1Pos = {};
 
 static bool g_hasIns1    = false;
 static bool g_hasPimu    = false;
@@ -186,7 +186,7 @@ static void printStatus()
     printf("  DID_INS_1    @ ~14 ms  (~71 Hz)   received: %10u\n", g_stats.ins1Count);
     printf("  DID_PIMU     @ ~14 ms  (~71 Hz)   received: %10u\n", g_stats.pimuCount);
     printf("  DID_DEV_INFO @ ~2 s    (0.5 Hz)   received: %10u\n", g_stats.devInfoCount);
-    printf("  DID_GPS1_POS @ ~504 ms (~2 Hz)    received: %10u\n\n", g_stats.gps1PosCount);
+    printf("  DID_GNSS1_POS @ ~504 ms (~2 Hz)    received: %10u\n\n", g_stats.gps1PosCount);
 
     printf("Runtime: %7.1f s    Bytes TX: %10llu    Bytes RX: %10llu\n\n",
            elapsedSeconds(),
@@ -228,8 +228,8 @@ static void printStatus()
 
     if (g_hasGps1Pos)
     {
-        uint32_t fixType = g_lastGps1Pos.status & GPS_STATUS_FIX_MASK;
-        uint32_t numSats = g_lastGps1Pos.status & GPS_STATUS_NUM_SATS_USED_MASK;
+        uint32_t fixType = g_lastGps1Pos.status & GNSS_STATUS_FIX_MASK;
+        uint32_t numSats = g_lastGps1Pos.status & GNSS_STATUS_NUM_SATS_USED_MASK;
         printf("[GPS1_POS] towMs=%-10u ms   LLA=%11.7f, %11.7f, %8.2f m"
                "   fix=%u   sats=%u\n",
             g_lastGps1Pos.timeOfWeekMs,
@@ -270,12 +270,12 @@ static void handleDevInfo(dev_info_t* info)
     g_stats.bytesRx += sizeof(dev_info_t) + ISB_OVERHEAD_BYTES;
 }
 
-static void handleGps1Pos(gps_pos_t* pos)
+static void handleGps1Pos(gnss_pos_t* pos)
 {
     g_lastGps1Pos = *pos;
     g_hasGps1Pos  = true;
     g_stats.gps1PosCount++;
-    g_stats.bytesRx += sizeof(gps_pos_t) + ISB_OVERHEAD_BYTES;
+    g_stats.bytesRx += sizeof(gnss_pos_t) + ISB_OVERHEAD_BYTES;
 }
 
 // =============================================================================
@@ -295,7 +295,7 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port)
     case DID_INS_1:    handleIns1    ((ins_1_t*)    data->ptr);  break;
     case DID_PIMU:     handlePimu    ((pimu_t*)     data->ptr);  break;
     case DID_DEV_INFO: handleDevInfo ((dev_info_t*) data->ptr);  break;
-    case DID_GPS1_POS: handleGps1Pos ((gps_pos_t*)  data->ptr);  break;
+    case DID_GNSS1_POS: handleGps1Pos ((gnss_pos_t*)  data->ptr);  break;
     // Add additional DID cases here as needed
     }
 
@@ -425,13 +425,13 @@ int main()
     //   DID_INS_1     MS_TO_PERIOD(14)   = 2  -> 2 * 7ms =  14 ms  (~71 Hz)
     //   DID_PIMU      MS_TO_PERIOD(14)   = 2  -> 2 * 7ms =  14 ms  (~71 Hz)
     //   DID_DEV_INFO  MS_TO_PERIOD(2000) = 286 -> 286 * 7ms ~= 2 s  (0.5 Hz)
-    //   DID_GPS1_POS  MS_TO_PERIOD(500)  = 72  -> 72 * 7ms = 504 ms (~2 Hz)
+    //   DID_GNSS1_POS  MS_TO_PERIOD(500)  = 72  -> 72 * 7ms = 504 ms (~2 Hz)
     // -------------------------------------------------------------------------
 
     is_comm_get_data(port, DID_INS_1,    0, 0, MS_TO_PERIOD(14));
     is_comm_get_data(port, DID_PIMU,     0, 0, MS_TO_PERIOD(14));
     is_comm_get_data(port, DID_DEV_INFO, 0, 0, MS_TO_PERIOD(2000));
-    is_comm_get_data(port, DID_GPS1_POS, 0, 0, MS_TO_PERIOD(500));
+    is_comm_get_data(port, DID_GNSS1_POS, 0, 0, MS_TO_PERIOD(500));
 
     // Each is_comm_get_data call sends a small request packet (~20 bytes on the wire).
     g_stats.bytesTx += 4 * 20;
