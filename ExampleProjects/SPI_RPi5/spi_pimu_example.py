@@ -50,11 +50,11 @@ import spidev
 SPI_BUS      = 0            # SPI bus number -> /dev/spidevBUS.DEVICE
 SPI_DEVICE   = 0            # SPI device (chip-select index)
 SPI_MODE     = 3            # CPOL=1, CPHA=1  required by the IMX
-SPI_SPEED_HZ = 1_000_000   # 1 MHz; Strategy A (no DR) is limited to 3 MHz max
+SPI_SPEED_HZ = 1_000_000    # 1 MHz; Strategy A (no DR) is limited to 3 MHz max
 
-SPI_READ_SIZE = 200         # bytes to read each poll tick
+SPI_READ_SIZE = 250         # bytes to read each poll tick
 
-NAV_DT_MS     = 7          # IMX-5 nav period in ms; adjust to 4 for IMX-6
+NAV_DT_MS     = 7           # IMX-5 nav period in ms; adjust to 4 for IMX-6
 PIMU_PERIOD_MS = 1000       # desired DID_PIMU broadcast period in ms (~1 Hz)
 SEND_INTERVAL_S = 1.0       # how often to (re)send the GET_DATA command (seconds)
 
@@ -260,7 +260,7 @@ def main() -> None:
             if check_exit():
                 break
 
-            time.sleep(0.250)
+            time.sleep(0.050)
 
     except KeyboardInterrupt:
         pass    # Ctrl+C handled by the finally block
