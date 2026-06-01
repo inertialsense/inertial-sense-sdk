@@ -153,14 +153,31 @@ private:
 };
 
 
+/**
+ * PortFactory implementation for Linux SPI character devices (spidev kernel driver).
+ *
+ * Port names accepted by this factory:
+ *   - Plain device path:  "/dev/spidev0.0"
+ *   - URL with options:   "//spi/dev/spidev0.0[b<hz>,d<gpio>,m<mode>]"
+ *
+ * Bracket options (all optional, comma-separated):
+ *   b<HZ>    — SPI clock speed in Hz  (default: SPI_PORT_DEFAULT_SPEED_HZ)
+ *   d<GPIO>  — data-ready GPIO number (default: -1, disabled)
+ *   m<MODE>  — SPI mode 0-3 (CPOL/CPHA) (default: SPI_PORT_DEFAULT_MODE = 3)
+ *
+ * Options embedded in the port name override portOptions defaults on a per-port basis,
+ * so multiple SPI devices with different speeds can be opened from a single factory instance.
+ */
 class SpiPortFactory : public PortFactory {
 public:
+    /** Default SPI parameters applied when binding a new port. Per-port bracket opts override these. */
     struct {
-        uint32_t defaultSpeedHz  = SPI_PORT_DEFAULT_SPEED_HZ;
-        uint8_t  defaultMode     = SPI_PORT_DEFAULT_MODE;
-        int      dataReadyGpio   = -1;  // GPIO number for data-ready input, -1 = disabled
+        uint32_t defaultSpeedHz  = SPI_PORT_DEFAULT_SPEED_HZ; ///< SPI clock speed in Hz
+        uint8_t  defaultMode     = SPI_PORT_DEFAULT_MODE;     ///< SPI mode 0-3 (CPOL/CPHA)
+        int      dataReadyGpio   = -1;                        ///< data-ready GPIO number, -1 = disabled
     } portOptions = {};
 
+    /** Returns the process-wide singleton SpiPortFactory instance. */
     static SpiPortFactory& getInstance() {
         static SpiPortFactory instance;
         return instance;
@@ -169,24 +186,68 @@ public:
     SpiPortFactory(SpiPortFactory const&)            = delete;
     SpiPortFactory& operator=(SpiPortFactory const&) = delete;
 
+    /**
+     * Scans for SPI devices matching @p pattern and invokes @p portCallback for each match.
+     * Accepts bare device paths or "//spi<devpath>[opts]" URLs; bracket opts are stripped for
+     * matching but reconstructed in the name forwarded to bindPort so options are not lost.
+     */
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback,
                      const std::string& pattern, uint16_t pType) override;
 
+    /**
+     * Returns true if @p pName refers to an existing SPI character device (stat + S_ISCHR check).
+     * @p pName must be a plain device path — the "//spi" prefix and bracket opts must be stripped first.
+     */
     bool validatePort(const std::string& pName, uint16_t pType = 0) override;
 
+    /**
+     * Allocates and initialises a spi_port_t for the given port name.
+     * @p pName may be a plain device path or a "//spi<devpath>[opts]" URL; bracket opts override
+     * portOptions defaults for this port only. Does NOT open the device.
+     * @return allocated port handle, or nullptr if validatePort fails.
+     */
     port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
 
+    /**
+     * Frees the spi_port_t allocated by bindPort. Does NOT flush or close the device first.
+     * @return true if @p port was non-null and successfully freed.
+     */
     bool releasePort(port_handle_t port) override;
 
+    /** Sets the default SPI clock speed (Hz) used when no 'b' bracket opt is present. */
     SpiPortFactory& setSpeedHz(uint32_t hz)    { portOptions.defaultSpeedHz = hz;   return *this; }
+    /** Sets the default SPI mode 0-3 (CPOL/CPHA) used when no 'm' bracket opt is present. */
     SpiPortFactory& setMode(uint8_t mode)      { portOptions.defaultMode    = mode; return *this; }
+    /** Sets the default data-ready GPIO number used when no 'd' bracket opt is present. -1 disables. */
     SpiPortFactory& setDataReady(int gpio)     { portOptions.dataReadyGpio  = gpio; return *this; }
 
 private:
     SpiPortFactory()  = default;
     ~SpiPortFactory() = default;
 
+    /** Cached list of SPI device paths, refreshed on each locatePorts() call. */
+    std::vector<std::string> portNames = {};
+
+    /**
+     * Parses a "//spi<devpath>[b<hz>,d<gpio>,m<mode>]" port string into a plain device path.
+     * Out-params @p speedHz, @p mode, and @p dataReadyGpio are updated from bracket opts;
+     * if a key is absent the caller's existing value (typically from portOptions) is preserved.
+     * @return plain device path with the "//spi" prefix and brackets removed.
+     */
+    static std::string parseSpiPortString(const std::string& portStr, uint32_t& speedHz, uint8_t& mode, int& dataReadyGpio);
+
+    /**
+     * Static port-callback wrapper that routes base.portValidate calls back through the
+     * factory's validatePort(), mirroring the SerialPortFactory pattern so PortManager
+     * always uses factory-level OS existence checks rather than the spiPortValidate default.
+     */
+    static int validate_port(port_handle_t port) { return SpiPortFactory::getInstance().validatePort(portName(port), portType(port)); }
+
 #if PLATFORM_IS_LINUX
+    /**
+     * Enumerates SPI character devices under /dev, populating @p names with their full paths.
+     * Clears @p names before scanning. Returns the number of devices found.
+     */
     static int getSpiDevices(std::vector<std::string>& names);
 #endif
 };

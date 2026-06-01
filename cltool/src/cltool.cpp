@@ -391,44 +391,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             // Supports: single port (e.g., "COM5"), comma-separated ports (e.g., "COM2,COM4,COM5"),
             // wildcard (e.g., "*" for all ports, "*4" for first 4 ports).
-            // SPI: "//spi/dev/spi0.0[b<hz>,d<gpio>,m<mode>]"  (bracket opts are optional)
+            // SPI: "//spi/dev/spidev0.0[b<hz>,d<gpio>,m<mode>]" — parsed by SpiPortFactory.
             std::string portArg = argv[++i];
-            if (portArg.size() > 6 && portArg.substr(0, 6) == "//spi/")
-            {
+            if (portArg.size() > 5 && portArg.substr(0, 5) == "//spi")
                 g_commandLineOptions.useSpi = true;
-                std::string devWithOpts = portArg.substr(5); // keep leading '/', e.g. /dev/spi0.0[...]
-                size_t bracket = devWithOpts.find('[');
-                if (bracket != std::string::npos)
-                {
-                    g_commandLineOptions.comPort = devWithOpts.substr(0, bracket);
-                    std::string opts = devWithOpts.substr(bracket + 1);
-                    size_t close = opts.find(']');
-                    if (close != std::string::npos) opts.resize(close);
-                    size_t pos = 0;
-                    while (pos < opts.size())
-                    {
-                        size_t comma = opts.find(',', pos);
-                        std::string tok = opts.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
-                        pos = (comma == std::string::npos) ? opts.size() : comma + 1;
-                        if (tok.size() < 2) continue;
-                        const char* val = tok.c_str() + 1;
-                        switch (tok[0])
-                        {
-                        case 'b': g_commandLineOptions.spiSpeedHz       = (uint32_t)strtoul(val, NULL, 10); break;
-                        case 'd': g_commandLineOptions.spiDataReadyGpio  = (int)strtol(val, NULL, 10);      break;
-                        case 'm': g_commandLineOptions.spiMode           = (uint8_t)strtoul(val, NULL, 10); break;
-                        }
-                    }
-                }
-                else
-                {
-                    g_commandLineOptions.comPort = devWithOpts;
-                }
-            }
-            else
-            {
-                g_commandLineOptions.comPort = portArg;
-            }
+            g_commandLineOptions.comPort = portArg;
         }
         else if (startsWith(a, "-dboc"))
         {
