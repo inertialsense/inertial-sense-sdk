@@ -390,29 +390,45 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (matches(a, "-c") && (i + 1) < argc)
         {
             // Supports: single port (e.g., "COM5"), comma-separated ports (e.g., "COM2,COM4,COM5"),
-            // wildcard (e.g., "*" for all ports, "*4" for first 4 ports)
-            g_commandLineOptions.comPort = argv[++i];   // use next argument
-        }
-        else if (matches(a, "-spi") && (i + 1) < argc)
-        {   // SPI device port, e.g. /dev/spi0.0
-            g_commandLineOptions.comPort = argv[++i];
-            g_commandLineOptions.useSpi  = true;
-        }
-        else if (startsWith(a, "-spi-speed="))
-        {
-            g_commandLineOptions.spiSpeedHz = (uint32_t)strtoul(&a[11], NULL, 10);
-        }
-        else if (startsWith(a, "-spi-mode="))
-        {
-            g_commandLineOptions.spiMode = (uint8_t)strtoul(&a[10], NULL, 10);
-        }
-        else if (startsWith(a, "-spi-dr="))
-        {
-            g_commandLineOptions.spiDataReadyGpio = (int)strtol(&a[8], NULL, 10);
-        }
-        else if (matches(a, "-spi-dr") && (i + 1) < argc)
-        {
-            g_commandLineOptions.spiDataReadyGpio = (int)strtol(argv[++i], NULL, 10);
+            // wildcard (e.g., "*" for all ports, "*4" for first 4 ports).
+            // SPI: "//spi/dev/spi0.0[b<hz>,d<gpio>,m<mode>]"  (bracket opts are optional)
+            std::string portArg = argv[++i];
+            if (portArg.size() > 6 && portArg.substr(0, 6) == "//spi/")
+            {
+                g_commandLineOptions.useSpi = true;
+                std::string devWithOpts = portArg.substr(5); // keep leading '/', e.g. /dev/spi0.0[...]
+                size_t bracket = devWithOpts.find('[');
+                if (bracket != std::string::npos)
+                {
+                    g_commandLineOptions.comPort = devWithOpts.substr(0, bracket);
+                    std::string opts = devWithOpts.substr(bracket + 1);
+                    size_t close = opts.find(']');
+                    if (close != std::string::npos) opts.resize(close);
+                    size_t pos = 0;
+                    while (pos < opts.size())
+                    {
+                        size_t comma = opts.find(',', pos);
+                        std::string tok = opts.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+                        pos = (comma == std::string::npos) ? opts.size() : comma + 1;
+                        if (tok.size() < 2) continue;
+                        const char* val = tok.c_str() + 1;
+                        switch (tok[0])
+                        {
+                        case 'b': g_commandLineOptions.spiSpeedHz       = (uint32_t)strtoul(val, NULL, 10); break;
+                        case 'd': g_commandLineOptions.spiDataReadyGpio  = (int)strtol(val, NULL, 10);      break;
+                        case 'm': g_commandLineOptions.spiMode           = (uint8_t)strtoul(val, NULL, 10); break;
+                        }
+                    }
+                }
+                else
+                {
+                    g_commandLineOptions.comPort = devWithOpts;
+                }
+            }
+            else
+            {
+                g_commandLineOptions.comPort = portArg;
+            }
         }
         else if (startsWith(a, "-dboc"))
         {
@@ -1260,6 +1276,8 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGnssDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1    "        << EXAMPLE_SPACE_2 << " # connect to multiple ports (comma-separated)" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c //spi/dev/spi0.0 -did DID_INS_1         "                            << " # SPI device, mode 3 default" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c //spi/dev/spi0.0[b2000000,d18] -did DID_INS_1 "                      << " # SPI: 2 MHz, data-ready on GPIO 18" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GNSS1_POS                                    # Return specific DIDs" << endlbOff;
@@ -1274,10 +1292,10 @@ void cltool_outputUsage()
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port(s). Options: single port (e.g., COM5 or /dev/ttyUSB0), multiple ports separated by ',' (e.g., COM2,COM4,COM5), \"*\" for all ports, or \"*4\" for first four ports." << endlbOn;
-    cout << "    -spi " << boldOff << "DEVICE_PATH  Select SPI device (e.g., /dev/spi0.0). Registers the SPI port factory instead of serial." << endlbOn;
-    cout << "    -spi-speed=" << boldOff << "HZ   SPI clock speed in Hz (default: " << SPI_PORT_DEFAULT_SPEED_HZ << " Hz = 1 MHz)." << endlbOn;
-    cout << "    -spi-mode=" << boldOff << "N     SPI clock/phase mode 0-3 (default: " << (int)SPI_PORT_DEFAULT_MODE << ")." << endlbOn;
-    cout << "    -spi-dr " << boldOff << "GPIO_NUM  GPIO number of the data-ready line driven by the SPI slave (e.g. 18). Read is gated until the pin goes high." << endlbOn;
+    cout << "    -c " << boldOff << "//spi/DEVICE_PATH[OPTS]  Select SPI device (e.g., //spi/dev/spi0.0). Optional comma-separated OPTS in brackets:" << endlbOn;
+    cout << "         " << boldOff << "  b<HZ>     SPI clock speed in Hz (default: " << SPI_PORT_DEFAULT_SPEED_HZ << " Hz = 1 MHz)." << endlbOn;
+    cout << "         " << boldOff << "  d<GPIO>   GPIO number for data-ready input (omit to disable)." << endlbOn;
+    cout << "         " << boldOff << "  m<MODE>   SPI clock/phase mode 0-3 (default: 3)." << endlbOn;
 	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
 	cout << "    -device " << boldOff << "TYPE    Discover all devices and open only those matching TYPE. Options: imx, imx5, imx6, gpx. Implies -c * if no -c port is given." << endlbOn;
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;

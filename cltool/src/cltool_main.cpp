@@ -1058,6 +1058,7 @@ static int cltool_dataStreaming()
         SpiPortFactory& spif = SpiPortFactory::getInstance();
         if (g_commandLineOptions.spiSpeedHz) spif.setSpeedHz(g_commandLineOptions.spiSpeedHz);
         spif.setMode(g_commandLineOptions.spiMode);
+        if (g_commandLineOptions.spiDataReadyGpio >= 0) spif.setDataReady(g_commandLineOptions.spiDataReadyGpio);
         portFactories.push_back(&spif);
     }
     if (g_commandLineOptions.useMdns) {
@@ -1417,6 +1418,7 @@ static bool cltool_resolveDeviceTarget()
         SpiPortFactory& spif = SpiPortFactory::getInstance();
         if (g_commandLineOptions.spiSpeedHz) spif.setSpeedHz(g_commandLineOptions.spiSpeedHz);
         spif.setMode(g_commandLineOptions.spiMode);
+        if (g_commandLineOptions.spiDataReadyGpio >= 0) spif.setDataReady(g_commandLineOptions.spiDataReadyGpio);
         portFactories.push_back(&spif);
     }
     if (g_commandLineOptions.useMdns) {

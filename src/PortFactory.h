@@ -180,6 +180,7 @@ public:
 
     SpiPortFactory& setSpeedHz(uint32_t hz)    { portOptions.defaultSpeedHz = hz;   return *this; }
     SpiPortFactory& setMode(uint8_t mode)      { portOptions.defaultMode    = mode; return *this; }
+    SpiPortFactory& setDataReady(int gpio)     { portOptions.dataReadyGpio  = gpio; return *this; }
 
 private:
     SpiPortFactory()  = default;
