@@ -970,7 +970,7 @@ json ISDeviceCal::saveMcToJsonObj(const std::string& filePath, int pose, sOrthoC
     return jCal;
 }
 
-int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo, cal_upload_ctx_t &ctx)
+ISDeviceCal::AsyncState ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo, cal_upload_ctx_t &ctx)
 {
     const int hwMajor = devInfo.hardwareVer[0];
     const bool sendV1p3 = (hwMajor == 5);
@@ -979,7 +979,7 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
     if (!sendV1p3 && !sendV1p4)
     {
         log_error(IS_LOG_CALIBRATION, "uploadSensorCalStep: unresolved hardware version (hardwareVer[0]=%d); refusing upload. Device must be in app mode.", hwMajor);
-        return -1;
+        return ASYNC_STATE__FAILURE;
     }
 
     if (calUploadState == 0)
@@ -993,12 +993,12 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
     }
 
     // Returns 0 (pending) on send failure; aborts with -1 after MAX_UPLOAD_SEND_RETRIES consecutive failures on the current step.
-    auto sendFail = [&]() -> int {
+    auto sendFail = [&]() -> AsyncState {
         if (++ctx.retryCount > MAX_UPLOAD_SEND_RETRIES) {
             log_error(IS_LOG_CALIBRATION, "uploadSensorCalStep: send failed %d times on step %d; aborting upload.", ctx.retryCount, calUploadState);
-            return -1;
+            return ASYNC_STATE__FAILURE;
         }
-        return 0;
+        return ASYNC_STATE__PENDING;
     };
 
     switch (calUploadState)
@@ -1059,15 +1059,15 @@ int ISDeviceCal::uploadSensorCalStep(port_handle_t port, int &calUploadState, se
         }
         ctx.retryCount = 0;
         calUploadState++;   // Increment state to mark completion here in case any upload fails and we need to retry the last step.  We don't want to resend all previous steps if only the last one fails.
-        return 1;    // Done
+        return ASYNC_STATE__SUCCESS;    // Done
 
     default:
-        return -1;
+        return ASYNC_STATE__FAILURE;
     }
 
     ctx.retryCount = 0;
     calUploadState++;
-    return 0;
+    return ASYNC_STATE__PENDING;
 }
 
 

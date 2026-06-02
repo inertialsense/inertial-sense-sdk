@@ -508,6 +508,8 @@ status_field_decode_t buildGpxStatusDecode()
         "0x00010000 - RTK buffer overflow."));
     d.subfields.push_back(gerr("GNSS receiver time fault", GPX_STATUS_FAULT_GNSS_RCVR_TIME,
         "0x00100000 - GNSS receiver time fault"));
+    d.subfields.push_back(gerr("RTOS task period overrun", GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN,
+        "0x00200000 - RTOS task period overrun"));   // added from SDK develop merge
     d.subfields.push_back(gerr("DMA fault", GPX_STATUS_FAULT_DMA,
         "0x00800000 - DMA fault"));
 

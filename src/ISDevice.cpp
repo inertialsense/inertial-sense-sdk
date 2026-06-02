@@ -133,9 +133,11 @@ bool ISDevice::step() {
     }
 
     if (m_calibration && m_calUploadState != -1) {
-        const int stepResult = ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo, m_calibration->uploadCtx);
-        if (stepResult != ASYNC_STATE__PENDING) {
-            if (stepResult == ASYNC_STATE__SUCCESS) {
+        const ISDeviceCal::AsyncState stepResult = ISDeviceCal::uploadSensorCalStep(port, m_calUploadState, *m_calibration, devInfo, m_calibration->uploadCtx);
+         if (stepResult == ISDeviceCal::ASYNC_STATE__PENDING) {
+             SLEEP_MS(ISDeviceCal::CAL_UPLOAD_SLEEP_MS);   // Give the device a break between upload steps, important for uploads over UART.
+         } else {
+            if (stepResult == ISDeviceCal::ASYNC_STATE__SUCCESS) {
                 m_calUploadResult = IS_OP_OK;
                 log_info(IS_LOG_ISDEVICE, "[%s] Async calibration upload complete.", getIdAsString().c_str());
             } else {
@@ -563,7 +565,7 @@ std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
         case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
         default: typeName = "\?\?\?"; break;
     }
-    return utils::string_format("%s-%d.%d::SN%ld", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
+    return utils::string_format("%s-%d.%d::SN%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
 }
 
 std::string ISDevice::getIdAsString() const {
@@ -710,6 +712,8 @@ std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
         }
         if (devInfo.firmwareVer[3] != 0)
             out += utils::string_format(".%u", devInfo.firmwareVer[3]);
+        if (devInfo.buildFlags & BUILD_FLAGS_DEBUG) 
+            out += "-debug";
 
         if (devInfo.repoRevision && !(flags & OMIT_COMMIT_HASH)) {
             out += utils::string_format(" %08x", devInfo.repoRevision);

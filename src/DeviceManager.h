@@ -95,26 +95,36 @@ public:
      * @return true if a device was discovered on the specified port, otherwise false
      */
     bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
-        std::lock_guard<std::recursive_mutex> lock(mutex);
         options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
         options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
 
         if (!portIsValid(port))
             return false;
 
-        // first check if this port is already associated with another device
-        for (auto d: *this) {
-            if (d && d->hasDeviceInfo() && (d->port == port)) {
-                if ((options & DISCOVERY__FORCE_REVALIDATION)) {
-                    // Invalidate the device, which will force a rediscovery, without losing the identity of the device itself.
-                    d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
-                    memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
-                } else {
-                    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
-                        portClose(port);
-                    return true;    // this is a success (rediscovered an existing device), without a FORCE_VALIDATION
+        // Narrow the manager lock to only the parts that touch knownDevices/factories.
+        // factory->locateDevice() below can block up to timeoutMs doing port I/O and
+        // invokes user packet callbacks; holding the manager mutex across it causes
+        // AB-BA deadlock with locks taken by those callbacks (SN-8057).
+        std::vector<DeviceFactory*> factoriesSnapshot;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+
+            // first check if this port is already associated with another device
+            for (auto d: *this) {
+                if (d && d->hasDeviceInfo() && (d->port == port)) {
+                    if ((options & DISCOVERY__FORCE_REVALIDATION)) {
+                        // Invalidate the device, which will force a rediscovery, without losing the identity of the device itself.
+                        d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+                        memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
+                    } else {
+                        if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+                            portClose(port);
+                        return true;    // this is a success (rediscovered an existing device), without a FORCE_VALIDATION
+                    }
                 }
             }
+
+            factoriesSnapshot = factories;
         }
 
         // open the port, if needed - if we can't open it, fail.
@@ -123,7 +133,7 @@ public:
             return false;
 
 
-        for (auto l : factories) {
+        for (auto l : factoriesSnapshot) {
             std::function<bool(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, options);
             if (l->locateDevice(cb, port, hdwId, timeoutMs)) {
                 if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)  // locateDevice should already handle this, but just in case.

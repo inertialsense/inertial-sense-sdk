@@ -120,6 +120,48 @@ void convert_sensor_cal_v1p3_to_v1p4(const sensor_cal_v1p3_t *v1p3, sensor_cal_v
     v1p4->data.dinfo.checksum = flashChecksum32(&v1p4->data, v1p4->data.dinfo.size);
 }
 
+void convert_scomp_v1p3_to_v1p4(const sensor_compensation_v1p3_t *v1p3, sensor_compensation_v1p4_t *v1p4)
+{
+    memset(v1p4, 0, sizeof(*v1p4));
+    v1p4->timeMs = v1p3->timeMs;
+    for (int d = 0; d < _MIN(NUM_IMU_DEVICES_V1P3, NUM_IMU_DEVICES_V1P4); d++)
+    {
+        v1p4->pqr[d] = v1p3->pqr[d];
+        v1p4->acc[d] = v1p3->acc[d];
+    }
+    for (int d = 0; d < _MIN(NUM_MAG_DEVICES_V1P3, NUM_MAG_DEVICES_V1P4); d++)
+    {
+        v1p4->mag[d] = v1p3->mag[d];
+    }
+    v1p4->referenceImu = v1p3->referenceImu;
+    memcpy(v1p4->referenceMag, v1p3->referenceMag, sizeof(v1p4->referenceMag));
+    v1p4->sampleCount = v1p3->sampleCount;
+    v1p4->calState = v1p3->calState;
+    v1p4->status = v1p3->status;
+    memcpy(v1p4->alignAccel, v1p3->alignAccel, sizeof(v1p4->alignAccel));
+}
+
+void convert_scomp_v1p4_to_v1p3(const sensor_compensation_v1p4_t *v1p4, sensor_compensation_v1p3_t *v1p3)
+{
+    memset(v1p3, 0, sizeof(*v1p3));
+    v1p3->timeMs = v1p4->timeMs;
+    for (int d = 0; d < _MIN(NUM_IMU_DEVICES_V1P3, NUM_IMU_DEVICES_V1P4); d++)
+    {
+        v1p3->pqr[d] = v1p4->pqr[d];
+        v1p3->acc[d] = v1p4->acc[d];
+    }
+    for (int d = 0; d < _MIN(NUM_MAG_DEVICES_V1P3, NUM_MAG_DEVICES_V1P4); d++)
+    {
+        v1p3->mag[d] = v1p4->mag[d];
+    }
+    v1p3->referenceImu = v1p4->referenceImu;
+    memcpy(v1p3->referenceMag, v1p4->referenceMag, sizeof(v1p3->referenceMag));
+    v1p3->sampleCount = v1p4->sampleCount;
+    v1p3->calState = v1p4->calState;
+    v1p3->status = v1p4->status;
+    memcpy(v1p3->alignAccel, v1p4->alignAccel, sizeof(v1p3->alignAccel));
+}
+
 void convert_tcal_v1p4_to_v1p3(const sensor_tcal_group_v1p4_t *v1p4, sensor_tcal_group_v1p3_t *v1p3)
 {
     for (int d = 0; d < _MIN(NUM_IMU_DEVICES_V1P3, NUM_IMU_DEVICES_V1P4); d++)
