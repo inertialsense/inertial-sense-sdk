@@ -83,7 +83,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include "ISPose.h"
 #include "ISUtilities.h"
 #include "PortFactory.h"      // SpiPortFactory
-#include "core/spiPort.h"     // spiPortSetDataReady, SPI_PORT_DEFAULT_MODE
+#include "core/spiPort.h"     // SPI_PORT_DEFAULT_MODE constant
 
 // =============================================================================
 // Configuration - adjust to match your hardware
@@ -313,75 +313,52 @@ int main()
     clock_gettime(CLOCK_MONOTONIC, &g_startTime);
 
     // -------------------------------------------------------------------------
-    // STEP 2: Configure the SPI port factory
+    // STEP 2: Bind (allocate) the SPI port
     //
-    // SpiPortFactory is a singleton.  Set the SPI clock speed and mode before
-    // calling bindPort().  The IMX requires SPI Mode 3 (CPOL=1, CPHA=1).
+    // Pass a spi:// URL so the factory parses the device path and all options
+    // in one call.  Format: spi://<device>[b<hz>,d<gpio>,m<mode>]
+    //   b — SPI clock speed in Hz
+    //   d — data-ready GPIO number (active-high; omit to disable DR gating)
+    //   m — SPI mode 0-3 (CPOL/CPHA); IMX requires mode 3
+    //
+    // bindPort() allocates the spi_port_t, applies the options (including
+    // exporting and configuring the DR GPIO via Linux sysfs), and returns a
+    // handle.  It does NOT open the device yet.
+    //
+    // DR gating (Strategy B): portAvailable() returns non-zero only while the
+    // DR GPIO is HIGH, so is_comm_port_parse_messages() will block until the
+    // IMX signals a complete packet is ready — avoiding unnecessary SPI
+    // transfers when the bus is idle and allowing clock speeds up to 5 MHz.
+    // Without a 'd' option the driver falls back to continuous polling
+    // (Strategy A, up to 3 MHz).
+    //
+    // NOTE - DR early deassert: per the IS SPI spec, DR goes inactive 1-2 bytes
+    // before the last byte of the packet is clocked out.  Those trailing bytes
+    // remain in the IMX's internal buffer and are delivered at the next
+    // transaction.  The ISB parser handles this correctly across calls.
     // -------------------------------------------------------------------------
 
     SpiPortFactory& spif = SpiPortFactory::getInstance();
-    spif.setSpeedHz(SPI_SPEED_HZ);
-    spif.setMode(SPI_PORT_DEFAULT_MODE);    // Mode 3 - required by IMX
 
-    // -------------------------------------------------------------------------
-    // STEP 3: Bind (allocate) the SPI port
-    //
-    // bindPort() allocates the internal spi_port_t structure and records the
-    // device path and configuration.  It does NOT open the device yet.
-    // -------------------------------------------------------------------------
+    std::string spiUrl = std::string("spi://") + SPI_DEVICE +
+                         "[b" + std::to_string(SPI_SPEED_HZ)         +
+                         ",d" + std::to_string(DR_GPIO_NUM)           +
+                         ",m" + std::to_string(SPI_PORT_DEFAULT_MODE) + "]";
 
-    port_handle_t port = spif.bindPort(SPI_DEVICE);
+    port_handle_t port = spif.bindPort(spiUrl);
     if (port == nullptr)
     {
         printf("ERROR: Failed to allocate SPI port '%s'.\n"
-               "       Verify the device node exists:  ls /dev/spidev*\n",
+               "       Verify the device node exists:  ls /dev/spi*\n",
                SPI_DEVICE);
         return -1;
     }
 
     // -------------------------------------------------------------------------
-    // STEP 4: Configure the Data Ready (DR) GPIO
-    //
-    // The IMX drives the DR line HIGH when a complete ISB packet is available
-    // on MISO, and LOW after the last byte is clocked out.
-    //
-    // spiPortSetDataReady() exports the GPIO via the Linux sysfs interface,
-    // configures it as an input with rising-edge detection, and stores the fd.
-    //
-    // After this call:
-    //   - portAvailable(port) returns non-zero only while DR is HIGH
-    //   - is_comm_port_parse_messages() blocks on the DR edge before each read,
-    //     avoiding unnecessary SPI transfers when the bus is idle.
-    //
-    // This is "Strategy B: Data Ready gated" from the IS SPI protocol spec and
-    // allows bus speeds up to 5 MHz.  Without DR gating the device would be
-    // continuously polled (Strategy A, up to 3 MHz).
-    //
-    // NOTE - DR early deassert: per the IS SPI spec, DR goes inactive 1-2 bytes
-    // BEFORE the last byte of the packet is clocked out.  Those trailing bytes
-    // remain in the IMX's 4096-byte internal buffer and will be delivered at the
-    // start of the next SPI transaction.  The ISB parser handles this correctly
-    // because it accumulates bytes across calls; no data is lost, but there is
-    // one parse-cycle of latency on the final bytes of each packet.  If your
-    // application is sensitive to this, implement a "one extra read after DR
-    // drops" loop similar to the Atmel IS_SPI_Dev_Example.
-    // -------------------------------------------------------------------------
-
-    if (spiPortSetDataReady(port, DR_GPIO_NUM) != 0)
-    {
-        printf("WARNING: Could not configure Data Ready GPIO %d.\n"
-               "         Falling back to continuous polling (Strategy A).\n"
-               "         Check:  /sys/class/gpio/gpio%d exists after export,\n"
-               "                 or your user is in the 'gpio' group.\n",
-               DR_GPIO_NUM, DR_GPIO_NUM);
-        // Non-fatal: SPI communication will still work, just without DR gating.
-    }
-
-    // -------------------------------------------------------------------------
-    // STEP 5: Open the SPI device
+    // STEP 3: Open the SPI device
     //
     // portOpen() issues ioctl calls to set the SPI mode, bits-per-word, and
-    // clock speed on the /dev/spidevX.Y file descriptor.
+    // clock speed on the device file descriptor.
     // -------------------------------------------------------------------------
 
     if (!portIsOpened(port) && portOpen(port) != PORT_ERROR__NONE)
@@ -389,14 +366,14 @@ int main()
         printf("ERROR: Failed to open '%s'.\n"
                "       Enable SPI in /boot/firmware/config.txt:\n"
                "         dtoverlay=spi0-1cs\n"
-               "       then reboot and verify:  ls /dev/spidev0.*\n",
+               "       then reboot and verify:  ls /dev/spi0.*\n",
                SPI_DEVICE);
         spif.releasePort(port);
         return -2;
     }
 
     // -------------------------------------------------------------------------
-    // STEP 6: Stop all existing device broadcasts
+    // STEP 4: Stop all existing device broadcasts
     //
     // Sends the stop-broadcast command to the IMX so it stops streaming any
     // messages left over from a previous session.  Always do this before
