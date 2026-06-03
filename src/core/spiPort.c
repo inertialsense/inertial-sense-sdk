@@ -142,7 +142,7 @@ int spiPortAvailable(port_handle_t port)
 #if PLATFORM_IS_LINUX
     spi_port_t* p = SPI_PORT(port);
     if (!spi_has_dr(p))
-        return PORT_ERROR__NOT_SUPPORTED;
+        return 1;   // No DR pin — polling mode (Strategy A): always attempt a read
 
     // Read the current GPIO level from sysfs
     char val = '0';
