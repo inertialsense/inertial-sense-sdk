@@ -1243,8 +1243,9 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGnssDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1    "        << EXAMPLE_SPACE_2 << " # connect to multiple ports (comma-separated)" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c //spi/dev/spi0.0 -did DID_INS_1         "                            << " # SPI device, mode 3 default" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c //spi/dev/spi0.0[b2000000,d18] -did DID_INS_1 "                      << " # SPI: 2 MHz, data-ready on GPIO 18" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c spi:///dev/spi0.0 -did DID_INS_1              "                       << " # SPI device, mode 3 default" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c spi:///dev/spi0.0[b2000000,d18] -did DID_INS_1 "                     << " # SPI: 2 MHz, data-ready on GPIO 18" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c /dev/spi0.0[b2000000,d18] -did DID_INS_1       "                     << " # SPI: bare device path with opts" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GNSS1_POS                                    # Return specific DIDs" << endlbOff;
