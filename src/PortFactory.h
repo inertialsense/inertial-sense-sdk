@@ -158,7 +158,7 @@ private:
  *
  * Port names accepted by this factory:
  *   - Plain device path:  "/dev/spidev0.0"
- *   - URL with options:   "//spi/dev/spidev0.0[b<hz>,d<gpio>,m<mode>]"
+ *   - URL with options:   "spi:///dev/spidev0.0[b<hz>,d<gpio>,m<mode>]"
  *
  * Bracket options (all optional, comma-separated):
  *   b<HZ>    — SPI clock speed in Hz  (default: SPI_PORT_DEFAULT_SPEED_HZ)
@@ -188,7 +188,7 @@ public:
 
     /**
      * Scans for SPI devices matching @p pattern and invokes @p portCallback for each match.
-     * Accepts bare device paths or "//spi<devpath>[opts]" URLs; bracket opts are stripped for
+     * Accepts bare device paths or "spi://<devpath>[opts]" URLs; bracket opts are stripped for
      * matching but reconstructed in the name forwarded to bindPort so options are not lost.
      */
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback,
@@ -196,13 +196,13 @@ public:
 
     /**
      * Returns true if @p pName refers to an existing SPI character device (stat + S_ISCHR check).
-     * @p pName must be a plain device path — the "//spi" prefix and bracket opts must be stripped first.
+     * @p pName must be a plain device path — the "spi://" prefix and bracket opts must be stripped first.
      */
     bool validatePort(const std::string& pName, uint16_t pType = 0) override;
 
     /**
      * Allocates and initialises a spi_port_t for the given port name.
-     * @p pName may be a plain device path or a "//spi<devpath>[opts]" URL; bracket opts override
+     * @p pName may be a plain device path or a "spi://<devpath>[opts]" URL; bracket opts override
      * portOptions defaults for this port only. Does NOT open the device.
      * @return allocated port handle, or nullptr if validatePort fails.
      */
@@ -229,10 +229,10 @@ private:
     std::vector<std::string> portNames = {};
 
     /**
-     * Parses a "//spi<devpath>[b<hz>,d<gpio>,m<mode>]" port string into a plain device path.
+     * Parses a "spi://<devpath>[b<hz>,d<gpio>,m<mode>]" port string into a plain device path.
      * Out-params @p speedHz, @p mode, and @p dataReadyGpio are updated from bracket opts;
      * if a key is absent the caller's existing value (typically from portOptions) is preserved.
-     * @return plain device path with the "//spi" prefix and brackets removed.
+     * @return plain device path with the "spi://" prefix and brackets removed.
      */
     static std::string parseSpiPortString(const std::string& portStr, uint32_t& speedHz, uint8_t& mode, int& dataReadyGpio);
 

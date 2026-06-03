@@ -370,15 +370,15 @@ void SerialPortFactory::probe_serial8250_comports__linux(std::vector<std::string
 // =======================================================================
 
 /**
- * Parses a "//spi<devpath>[b<hz>,d<gpio>,m<mode>]" port string into a plain device path.
+ * Parses a "spi://<devpath>[b<hz>,d<gpio>,m<mode>]" port string into a plain device path.
  * Bracket key-value pairs update the corresponding out-params; absent keys leave the caller's
  * value unchanged so portOptions defaults flow through unmodified.
  */
 std::string SpiPortFactory::parseSpiPortString(const std::string& portStr, uint32_t& speedHz, uint8_t& mode, int& dataReadyGpio)
 {
     std::string dev = portStr;
-    if (dev.size() > 5 && dev.substr(0, 5) == "//spi")
-        dev = dev.substr(5); // strip "//spi", leaving "/dev/spidev0.0[...]"
+    if (dev.size() > 6 && dev.substr(0, 6) == "spi://")
+        dev = dev.substr(6); // strip "spi://", leaving "/dev/spi0.0[...]"
 
     size_t bracket = dev.find('[');
     if (bracket != std::string::npos)
@@ -458,7 +458,7 @@ bool SpiPortFactory::releasePort(port_handle_t port)
 /**
  * Returns true if @p pName exists in the filesystem and is a character device.
  * @p pName must be a plain device path — call parseSpiPortString() first if the
- * caller may have a "//spi..." URL.
+ * caller may have a "spi://..." URL.
  */
 bool SpiPortFactory::validatePort(const std::string& pName, uint16_t pType)
 {
@@ -473,29 +473,30 @@ bool SpiPortFactory::validatePort(const std::string& pName, uint16_t pType)
 
 /**
  * Enumerates SPI devices and invokes @p portCallback for each one matching @p pattern.
- * If @p pattern carries the "//spi" prefix, it is stripped for device-path matching and
+ * If @p pattern carries the "spi://" prefix, it is stripped for device-path matching and
  * then reconstructed on the matched name before the callback fires, so bindPort receives
  * the full URL (including bracket opts) and can parse per-port parameters itself.
- * If @p pattern is a bare device path (no prefix) it is used as-is for regex matching.
+ * If @p pattern is a bare device path with brackets (e.g. "/dev/spi0.0[opts]") the brackets
+ * are stripped before regex matching and the opts are still forwarded to bindPort.
+ * A plain device path with no brackets is used as-is for regex matching.
  */
 void SpiPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback,
                                   const std::string& pattern, uint16_t pType)
 {
 #if PLATFORM_IS_LINUX
-    // Detect the //spi prefix and preserve the bracket opts so bindPort receives them.
     static const std::string SPI_PREFIX = "spi://";
     bool hasSpiPrefix = (pattern.size() > SPI_PREFIX.size() && pattern.substr(0, SPI_PREFIX.size()) == SPI_PREFIX);
-    std::string devPattern = pattern;
+    std::string devPattern = hasSpiPrefix ? pattern.substr(SPI_PREFIX.size()) : pattern;
     std::string spiOpts;
-    if (hasSpiPrefix)
+
+    // Bracket opts are never part of a device path; strip them unconditionally.
+    // This also handles bare "/dev/spi0.0[opts]" passed without the spi:// prefix.
+    size_t bracket = devPattern.find('[');
+    if (bracket != std::string::npos)
     {
-        devPattern = pattern.substr(SPI_PREFIX.size()); // strip "//spi", leaving "/dev/spidev0.0[...]"
-        size_t bracket = devPattern.find('[');
-        if (bracket != std::string::npos)
-        {
-            spiOpts    = devPattern.substr(bracket); // "[b<hz>,d<gpio>,m<mode>]"
-            devPattern = devPattern.substr(0, bracket);
-        }
+        spiOpts    = devPattern.substr(bracket);
+        devPattern = devPattern.substr(0, bracket);
+        hasSpiPrefix = true; // ensure fullName is reconstructed for bindPort
     }
 
     std::regex matchPattern(devPattern.empty() ? ".*" : devPattern);
@@ -504,7 +505,7 @@ void SpiPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std:
     {
         if (validatePort(name, PORT_TYPE__SPI) && std::regex_match(name, matchPattern))
         {
-            // Preserve the full //spi string so bindPort can parse the opts.
+            // Preserve the full spi:// string so bindPort can parse the opts.
             std::string fullName = hasSpiPrefix ? (SPI_PREFIX + name + spiOpts) : name;
             portCallback(this, PORT_TYPE__SPI, fullName);
         }
