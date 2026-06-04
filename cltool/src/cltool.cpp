@@ -393,8 +393,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             // wildcard (e.g., "*" for all ports, "*4" for first 4 ports).
             // SPI: "spi:///dev/spi0.0[b<hz>,d<gpio>,m<mode>]" — parsed by SpiPortFactory.
             std::string portArg = argv[++i];
-            if ((portArg.size() > 6 && portArg.substr(0, 6) == "spi://") || portArg.find('[') != std::string::npos)
-                g_commandLineOptions.useSpi = true;
             g_commandLineOptions.comPort = portArg;
         }
         else if (startsWith(a, "-dboc"))
@@ -1260,7 +1258,7 @@ void cltool_outputUsage()
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port(s). Options: single port (e.g., COM5 or /dev/ttyUSB0), multiple ports separated by ',' (e.g., COM2,COM4,COM5), \"*\" for all ports, or \"*4\" for first four ports." << endlbOn;
-    cout << "    -c " << boldOff << "//spi/DEVICE_PATH[OPTS]  Select SPI device (e.g., //spi/dev/spi0.0). Optional comma-separated OPTS in brackets:" << endlbOn;
+    cout << "    -c " << boldOff << "spi:///DEVICE_PATH[OPTS]  Select SPI device (e.g., spi:///dev/spi0.0). Optional comma-separated OPTS in brackets:" << endlbOn;
     cout << "         " << boldOff << "  b<HZ>     SPI clock speed in Hz (default: " << SPI_PORT_DEFAULT_SPEED_HZ << " Hz = 1 MHz)." << endlbOn;
     cout << "         " << boldOff << "  d<GPIO>   GPIO number for data-ready input (omit to disable)." << endlbOn;
     cout << "         " << boldOff << "  m<MODE>   SPI clock/phase mode 0-3 (default: 3)." << endlbOn;

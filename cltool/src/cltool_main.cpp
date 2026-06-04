@@ -1054,13 +1054,6 @@ static int cltool_dataStreaming()
     tpf.portOptions.defaultBlocking = false;
 
     std::vector<PortFactory*> portFactories = {&spf, &tpf};
-    if (g_commandLineOptions.useSpi) {
-        SpiPortFactory& spif = SpiPortFactory::getInstance();
-        if (g_commandLineOptions.spiSpeedHz) spif.setSpeedHz(g_commandLineOptions.spiSpeedHz);
-        spif.setMode(g_commandLineOptions.spiMode);
-        if (g_commandLineOptions.spiDataReadyGpio >= 0) spif.setDataReady(g_commandLineOptions.spiDataReadyGpio);
-        portFactories.push_back(&spif);
-    }
     if (g_commandLineOptions.useMdns) {
         ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
         mdpf.portOptions.defaultBlocking = false;
@@ -1414,13 +1407,6 @@ static bool cltool_resolveDeviceTarget()
     tpf.portOptions.defaultBlocking = false;
 
     std::vector<PortFactory*> portFactories = {&spf, &tpf};
-    if (g_commandLineOptions.useSpi) {
-        SpiPortFactory& spif = SpiPortFactory::getInstance();
-        if (g_commandLineOptions.spiSpeedHz) spif.setSpeedHz(g_commandLineOptions.spiSpeedHz);
-        spif.setMode(g_commandLineOptions.spiMode);
-        if (g_commandLineOptions.spiDataReadyGpio >= 0) spif.setDataReady(g_commandLineOptions.spiDataReadyGpio);
-        portFactories.push_back(&spif);
-    }
     if (g_commandLineOptions.useMdns) {
         ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
         mdpf.portOptions.defaultBlocking = false;
