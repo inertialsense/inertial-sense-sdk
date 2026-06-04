@@ -390,9 +390,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (matches(a, "-c") && (i + 1) < argc)
         {
             // Supports: single port (e.g., "COM5"), comma-separated ports (e.g., "COM2,COM4,COM5"),
-            // wildcard (e.g., "*" for all ports, "*4" for first 4 ports).
-            std::string portArg = argv[++i];
-            g_commandLineOptions.comPort = portArg;
+            // wildcard (e.g., "*" for all ports, "*4" for first 4 ports)
+            g_commandLineOptions.comPort = argv[++i];   // use next argument
         }
         else if (startsWith(a, "-dboc"))
         {
