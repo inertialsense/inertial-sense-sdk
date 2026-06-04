@@ -391,7 +391,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             // Supports: single port (e.g., "COM5"), comma-separated ports (e.g., "COM2,COM4,COM5"),
             // wildcard (e.g., "*" for all ports, "*4" for first 4 ports).
-            // SPI: "spi:///dev/spi0.0[b<hz>,d<gpio>,m<mode>]" — parsed by SpiPortFactory.
             std::string portArg = argv[++i];
             g_commandLineOptions.comPort = portArg;
         }
