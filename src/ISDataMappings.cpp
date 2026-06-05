@@ -525,6 +525,7 @@ std::string renderGpxStatus_status(const data_info_t& info, std::any value, int 
         BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED , "0x00000020 - COM1 RX traffic not dectected in last 30 seconds.");
         BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED , "0x00000040 - COM2 RX traffic not dectected in last 30 seconds.");
         BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DECTECTED  , "0x00000080 - USB RX traffic not dectected in last 30 seconds.");
+        BIT_MSG(status, GPX_STATUS_UPDATE_CONFIRMED              , "0x00000100 - Update confirmed.");
 
     /** General Fault mask */
         // BIT_MSG(status, GPX_STATUS_GENERAL_FAULT_MASK            , "0xFFFF0000 -
