@@ -971,7 +971,9 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate, uint16_t fi
 
     SerialPortFactory::getInstance().setBaudRate(m_baudRate);
 
-    if (portPattern == NULLPTR || validateBaudRate(baudRate) != 0)
+    // baudRate == 0 means the caller has no baud-rate concept (e.g. SPI); skip the
+    // serial-specific validation so non-UART transports are not incorrectly rejected.
+    if (portPattern == NULLPTR || (baudRate != 0 && validateBaudRate(baudRate) != 0))
     {
         return false;
     }
@@ -1005,12 +1007,23 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate, uint16_t fi
     }
     else
     {
-        // comma separated list of serial ports
-        if (splitString(portPattern, ',', portNames) > 0) {
-            for (auto p: portNames) {
-                portManager.discoverPorts(p);
+        // Comma-separated list of ports. Commas inside [...] are option separators
+        // (e.g. spi:///dev/spi0.0[b2000000,d18,m3]) and must not be treated as
+        // port separators, so we use a bracket-aware split instead of splitString.
+        {
+            int depth = 0;
+            std::string cur;
+            for (char c : std::string(portPattern))
+            {
+                if      (c == '[')             { depth++; cur += c; }
+                else if (c == ']')             { depth--; cur += c; }
+                else if (c == ',' && depth == 0) { if (!cur.empty()) portNames.push_back(cur); cur.clear(); }
+                else                           { cur += c; }
             }
+            if (!cur.empty()) portNames.push_back(cur);
         }
+        for (auto& p : portNames)
+            portManager.discoverPorts(p);
     }
 
     if (m_enableDeviceValidation) {

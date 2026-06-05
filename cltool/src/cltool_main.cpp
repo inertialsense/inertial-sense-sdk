@@ -45,6 +45,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "TcpPortFactory.h"
 #include "ISmDnsPortFactory.h"
 #include "RelayPortFactory.h"
+#include "PortFactory.h"
 #include "util/natsort.h"
 #include "util/uri.hpp"
 
