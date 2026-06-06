@@ -2553,12 +2553,11 @@ class logPlot:
                 ax[7].plot(t, LLI[1, k, :])
 
             handles, labels = ax[0].get_legend_handles_labels()
-            fig.legend(handles, labels, loc='upper center', ncol=8, bbox_to_anchor=(0.5, 0.95))
-            fig.subplots_adjust(top=0.85)
+            fig.legend(handles, labels, loc='center left', bbox_to_anchor=(0.9, 0.5), ncol=1, borderaxespad=0.)
+            fig.subplots_adjust(right=0.88)
 
         for a in ax:
             a.grid(True)
-
         self.setup_and_wire_legend()
 
         return self.saveFigJoinAxes(ax, axs, fig, 'rtk' + name + 'obs')
@@ -2722,13 +2721,10 @@ class logPlot:
             ax[7].plot(t, snr2[1, k, :] * 0.25)
 
         handles, labels = ax[0].get_legend_handles_labels()
-
-        fig.legend(handles, labels, loc='upper center', ncol=6)
-        fig.subplots_adjust(top=0.85)
-
+        fig.legend(handles, labels, loc='center left', bbox_to_anchor=(0.9, 0.5), ncol=1, borderaxespad=0.)
+        fig.subplots_adjust(right=0.88)
         for a in ax:
             a.grid(True)
-
         self.setup_and_wire_legend()
 
         return self.saveFigJoinAxes(ax, axs, fig, 'rtk' + name + 'obs_dd')
