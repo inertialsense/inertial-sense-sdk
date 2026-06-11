@@ -225,10 +225,12 @@ class SuperNPP():
             build_dir_name = 'build-release'
         npp_build_folder = None
         search_dir = Path(__file__).resolve().parent
-        while search_dir != search_dir.parent:
+        while True:
             candidate = search_dir / 'cpp' / 'NavPostProcess' / build_dir_name
             if candidate.is_dir():
                 npp_build_folder = str(candidate)
+                break
+            if search_dir == search_dir.parent:
                 break
             search_dir = search_dir.parent
         if npp_build_folder is None:
