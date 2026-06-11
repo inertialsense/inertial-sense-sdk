@@ -17,6 +17,10 @@
 #include "TcpPortFactory.h"
 #include "PortManager.h"
 #include <iostream>
+#include <chrono>
+#include <mutex>
+#include <string>
+#include <unordered_map>
 #include <util/uri.hpp>
 #include <util/util.h>
 
@@ -26,6 +30,89 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #endif
+
+namespace {
+
+/// Cache host -> resolved address (port intentionally left zero) with a short TTL.
+///
+/// A relay host serving many device ports hands out URIs that all share one hostname
+/// (e.g. tcp://golden-planet-ce38.local:34663, :34664, ...). Resolving a `.local` name
+/// goes through nss-mdns and blocks on a socket read. Without caching, validatePort and
+/// bindPort each resolve, and every one of N same-host ports re-resolves every discovery
+/// pass — tens of blocking syscalls per pass. Collapsing those to one resolve per host
+/// per TTL keeps discovery responsive (SN-8175). Numeric literals bypass the cache.
+struct ResolvedHost {
+    sockaddr_storage addr;   ///< family + address; sin_port / sin6_port left zero
+    int              family;
+    std::chrono::steady_clock::time_point when;
+};
+
+std::mutex                                  g_resolveCacheMutex;
+std::unordered_map<std::string, ResolvedHost> g_resolveCache;
+constexpr auto                              RESOLVE_CACHE_TTL = std::chrono::seconds(30);
+
+/// Resolve `host` (no service/port) into `out` (family + address only; caller sets the
+/// port). Returns true on success. Thread-safe; numeric addresses skip getaddrinfo.
+bool resolveHostCached(const std::string& host, sockaddr_storage& out, int& family) {
+    sockaddr_storage tmp = {};
+    if (inet_pton(AF_INET, host.c_str(), &reinterpret_cast<sockaddr_in*>(&tmp)->sin_addr) == 1) {
+        out = {};
+        out.ss_family = AF_INET;
+        reinterpret_cast<sockaddr_in*>(&out)->sin_addr = reinterpret_cast<sockaddr_in*>(&tmp)->sin_addr;
+        family = AF_INET;
+        return true;
+    }
+    if (inet_pton(AF_INET6, host.c_str(), &reinterpret_cast<sockaddr_in6*>(&tmp)->sin6_addr) == 1) {
+        out = {};
+        out.ss_family = AF_INET6;
+        reinterpret_cast<sockaddr_in6*>(&out)->sin6_addr = reinterpret_cast<sockaddr_in6*>(&tmp)->sin6_addr;
+        family = AF_INET6;
+        return true;
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+    {
+        std::lock_guard<std::mutex> lock(g_resolveCacheMutex);
+        auto it = g_resolveCache.find(host);
+        if (it != g_resolveCache.end() && (now - it->second.when) < RESOLVE_CACHE_TTL) {
+            out    = it->second.addr;
+            family = it->second.family;
+            return true;
+        }
+    }
+
+    struct addrinfo hints = {}, *dns_addr = nullptr;
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    if (getaddrinfo(host.c_str(), nullptr, &hints, &dns_addr) != 0 || !dns_addr) {
+        return false;
+    }
+
+    sockaddr_storage resolved = {};
+    resolved.ss_family = dns_addr->ai_family;
+    if (dns_addr->ai_family == AF_INET) {
+        *reinterpret_cast<sockaddr_in*>(&resolved)  = *reinterpret_cast<sockaddr_in*>(dns_addr->ai_addr);
+        reinterpret_cast<sockaddr_in*>(&resolved)->sin_port = 0;
+    } else if (dns_addr->ai_family == AF_INET6) {
+        *reinterpret_cast<sockaddr_in6*>(&resolved) = *reinterpret_cast<sockaddr_in6*>(dns_addr->ai_addr);
+        reinterpret_cast<sockaddr_in6*>(&resolved)->sin6_port = 0;
+    } else {
+        freeaddrinfo(dns_addr);
+        return false;
+    }
+    family = dns_addr->ai_family;
+    freeaddrinfo(dns_addr);
+
+    {
+        std::lock_guard<std::mutex> lock(g_resolveCacheMutex);
+        g_resolveCache[host] = ResolvedHost{resolved, family, now};
+    }
+    out = resolved;
+    return true;
+}
+
+} // namespace
 
 /**
  * This function parses and creates a new port_handle_t repersenting a TCP Port
@@ -50,40 +137,18 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     }
     std::string uriPort {url.get_port()};
 
+    // Reuse the cached resolution from validatePort() above (same host, same TTL window)
+    // so we don't re-run a blocking .local getaddrinfo here. resolveHostCached fills the
+    // address only; set the port from this URI.
     sockaddr_storage addr = {};
-    sockaddr_storage ipaddr = {};
-    struct addrinfo hints = {}, *dns_addr;
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    if (inet_pton(AF_INET, uriHost.c_str(), &ipaddr)) {
-        addr.ss_family = AF_INET;
-        auto* ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
-        ipv4->sin_port = htons(std::stoi(uriPort));
-        ipv4->sin_addr = *reinterpret_cast<in_addr*>(&ipaddr);
-    } else if (inet_pton(AF_INET6, uriHost.c_str(), &ipaddr)) {
-        addr.ss_family = AF_INET6;
-        auto* ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
-        ipv6->sin6_port = htons(std::stoi(uriPort));
-        ipv6->sin6_addr = *reinterpret_cast<in6_addr*>(&ipaddr);
-    } else if (getaddrinfo(uriHost.c_str(), uriPort.c_str(), &hints, &dns_addr) == 0) {
-        addr.ss_family = dns_addr->ai_family;
-        if (addr.ss_family == AF_INET) {
-            auto* ipv4 = reinterpret_cast<sockaddr_in*>(&addr);
-            auto* ipv4_from_dns = reinterpret_cast<sockaddr_in*>(dns_addr->ai_addr);
-            ipv4->sin_family = ipv4_from_dns->sin_family;
-            ipv4->sin_port = ipv4_from_dns->sin_port;
-            ipv4->sin_addr = ipv4_from_dns->sin_addr;
-        } else if (addr.ss_family == AF_INET6) {
-            auto* ipv6 = reinterpret_cast<sockaddr_in6*>(&addr);
-            auto* ipv6_from_dns = reinterpret_cast<sockaddr_in6*>(dns_addr->ai_addr);
-            ipv6->sin6_family = ipv6_from_dns->sin6_family;
-            ipv6->sin6_port = ipv6_from_dns->sin6_port;
-            ipv6->sin6_flowinfo = ipv6_from_dns->sin6_flowinfo;
-            ipv6->sin6_addr = ipv6_from_dns->sin6_addr;
-            ipv6->sin6_scope_id = ipv6_from_dns->sin6_scope_id;
-        }
-        freeaddrinfo(dns_addr);
+    int family = 0;
+    if (!resolveHostCached(uriHost, addr, family)) {
+        return nullptr;
+    }
+    if (family == AF_INET) {
+        reinterpret_cast<sockaddr_in*>(&addr)->sin_port = htons(static_cast<uint16_t>(std::stoi(uriPort)));
+    } else if (family == AF_INET6) {
+        reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port = htons(static_cast<uint16_t>(std::stoi(uriPort)));
     } else {
         return nullptr;
     }
@@ -129,28 +194,16 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
         uriHost = uriHost.substr(1, uriHost.size() - 2);
     }
-    std::string uriPort {url.get_port()};
 
     if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) {
         return false;
     }
 
+    // Resolvability is the validation. Cached so a host shared by many device ports
+    // resolves once per TTL window, and so bindPort() reuses this result (SN-8175).
     sockaddr_storage addr = {};
-    if (inet_pton(AF_INET, uriHost.c_str(), &addr)) {
-        return true;
-    }
-    if (inet_pton(AF_INET6, uriHost.c_str(), &addr)) {
-        return true;
-    }
-    struct addrinfo hints = {}, *dns_addr;
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    if (getaddrinfo(uriHost.c_str(), uriPort.c_str(), &hints, &dns_addr) == 0) {
-        return true;
-    }
-
-    return false;
+    int family = 0;
+    return resolveHostCached(uriHost, addr, family);
 }
 
 /**

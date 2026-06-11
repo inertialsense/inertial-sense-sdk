@@ -167,6 +167,16 @@ public:
     /// the host falls back to polling transport for the remainder of its enabled lifetime.
     static constexpr uint32_t DEFAULT_MAX_SSE_RETRIES = 3;
 
+    /// SN-8177: a host with no contact (no SSE bytes incl. keepalive, no successful poll)
+    /// for this long is considered offline — its ports are evicted (PortManager closes +
+    /// removes them on its next sweep). Ports reappear from the next snapshot if it returns.
+    static constexpr int64_t OFFLINE_EVICT_MS = 30000;
+
+    /// SN-8177: escalating reconnect backoff for a "lost" manually-configured host. The probe
+    /// interval grows roughly each minute the host has been silent, capping here (~10 min in).
+    /// Keeps a dead-but-maybe-returning relay from being hammered (and blocking the IO thread).
+    static constexpr int64_t LOST_BACKOFF_MAX_MS = 60000;
+
     /// mDNS query interval (ms) — matches ISmDnsPortFactory's rate
     static constexpr int64_t MDNS_QUERY_INTERVAL_MS = 200;
 
@@ -186,6 +196,10 @@ private:
                                                                     ///< survive device resets (WaitRecover keeps the listener open).
         std::chrono::steady_clock::time_point lastPollTime = {};    ///< last successful poll (Polling mode)
         std::chrono::steady_clock::time_point lastEventTime = {};   ///< last SSE event received (SSE mode)
+        std::chrono::steady_clock::time_point lastContact = {};     ///< last contact of ANY kind: SSE bytes (incl. keepalive) or a
+                                                                    ///< successful poll. Drives offline port eviction + reconnect backoff.
+                                                                    ///< Seeded to "now" on enable so a never-reachable host starts its grace then.
+        std::chrono::steady_clock::time_point lastAttemptTime = {}; ///< last poll ATTEMPT (success or failure) — gates the backoff cadence.
         std::string  lastError;
         uint32_t     consecutiveFailures = 0;                       ///< polling failure counter (resets on success)
 
@@ -217,8 +231,20 @@ private:
     std::chrono::milliseconds pollInterval_ = std::chrono::seconds(1);
     std::chrono::steady_clock::time_point lastMdnsQueryTime_ = {}; ///< rate-limit mDNS queries
 
-    /// Rate-limited mDNS host discovery (reads from shared mdns:: cache).
-    void discoverRelayHostsViaMdns();
+    /// Rate-limited mDNS host discovery (reads from shared mdns:: cache). Adds newly-seen
+    /// hosts and reaps viaMdns hosts whose announcement has aged out of the cache. Reaped
+    /// hosts are moved into @p reaped (kept alive until their worker is joined) with their
+    /// abort hooks pushed to @p abortHooks; the caller signals + joins OUTSIDE mutex_ so a
+    /// worker blocked acquiring mutex_ can make progress (see SN-8177 / the dtor pattern).
+    /// Call with mutex_ held.
+    void discoverRelayHostsViaMdns(std::vector<std::unique_ptr<RelayHost>>& reaped,
+                                   std::vector<std::function<void()>>& abortHooks);
+
+    /// Compute the next reconnect/poll interval for a host based on how long it's been silent:
+    /// the normal poll interval while healthy/recently-lost, escalating toward LOST_BACKOFF_MAX_MS
+    /// the longer it stays lost. Call with mutex_ held.
+    std::chrono::milliseconds reconnectInterval(const RelayHost& host,
+                                                std::chrono::steady_clock::time_point now) const;
 
     /// Poll a single relay host's /api/availableDevices endpoint (fallback transport).
     void pollRelayHost(RelayHost& host);

@@ -86,8 +86,33 @@ std::pair<std::string, int> splitBaseUrl(const std::string& baseUrl, uint16_t de
     return {host, port};
 }
 
+/// Rewrite the host component of a device URI to `newHost`, preserving scheme + port.
+///
+/// A bridgeboard relays its OWN locally-attached devices, so every device URI it reports
+/// is on the same host we already connected to for the relay's HTTP/SSE API. The relayed
+/// URIs, however, frequently use the bridgeboard's mDNS `.local` name, which is only
+/// resolvable on the bridgeboard's own link. A client reaching the relay over routed/VPN
+/// transport (e.g. Tailscale) connected via the relay's configured host but cannot resolve
+/// the `.local` form at all — so binding those ports blocks in nss-mdns and then fails,
+/// and no ports ever surface (SN-8175). Substituting the relay's known-reachable host (the
+/// one normalizeBaseUrl already validated and the SSE/poll client connected to) makes the
+/// device ports resolvable exactly the way the relay itself was reached. Returns the input
+/// unchanged if it can't be parsed or newHost is empty.
+std::string rewriteUriHost(const std::string& uri, const std::string& newHost) {
+    if (newHost.empty()) return uri;
+    const FIX8::uri parsed{uri};
+    std::string scheme{parsed.get_scheme()};
+    std::string port{parsed.get_port()};
+    if (scheme.empty()) return uri;
+    std::string out = scheme + "://" + newHost;
+    if (!port.empty()) out += ":" + port;
+    return out;
+}
+
 /// HTTP timeouts (seconds)
-static constexpr int HTTP_CONNECT_TIMEOUT_S = 3;
+/// SN-8177: keep the connect timeout short — a dead/unreachable relay must not block the
+/// IO thread for long per attempt (a powered-off host over VPN won't RST; it just hangs).
+static constexpr int HTTP_CONNECT_TIMEOUT_S = 2;
 static constexpr int HTTP_READ_TIMEOUT_S    = 5;
 /// SSE read timeout — generous enough to outlive server keepalive (15 s per SN-7804)
 static constexpr int SSE_READ_TIMEOUT_S     = 30;
@@ -123,7 +148,7 @@ void parseRepoRevision(const std::string& s, dev_info_t& hint) {
 /// Populates every dev_info_t field the relay can supply so consumers don't need to
 /// issue a follow-up DID_DEV_INFO query: hardwareType/Ver, serialNumber, full
 /// protocolVer[], firmwareVer, manufacturer, build date/time, repo revision.
-bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
+bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out, const std::string& relayHost) {
     if (!dev.is_object()) return false;
 
     std::string state = dev.value("state", "none");
@@ -171,7 +196,9 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out) {
     // so we hard-code a sane default. This matches what real devices report.
     std::strncpy(hint.manufacturer, "Inertial Sense", sizeof(hint.manufacturer) - 1);
 
-    out.portUrl = std::move(uri);
+    // Device URIs from the relay often carry the bridgeboard's .local host, which a
+    // routed/VPN client can't resolve. Rebind to the relay's reachable host (SN-8175).
+    out.portUrl = rewriteUriHost(uri, relayHost);
     out.hint = hint;
     return true;
 }
@@ -185,7 +212,7 @@ struct SnapshotResult {
     std::vector<RelayPortFactory::DeviceRecord> devices;
 };
 
-bool parseSnapshotJson(const json& doc, SnapshotResult& out) {
+bool parseSnapshotJson(const json& doc, SnapshotResult& out, const std::string& relayHost) {
     if (!doc.is_object()) return false;
 
     out.serverInstanceId = doc.value("server_instance_id", "");
@@ -198,7 +225,7 @@ bool parseSnapshotJson(const json& doc, SnapshotResult& out) {
     out.devices.reserve(doc["devices"].size());
     for (const auto& dev : doc["devices"]) {
         RelayPortFactory::DeviceRecord rec;
-        if (parseDeviceJson(dev, rec))
+        if (parseDeviceJson(dev, rec, relayHost))
             out.devices.push_back(std::move(rec));
     }
     return true;
@@ -323,6 +350,10 @@ void RelayPortFactory::setRelayHostEnabled(const std::string& url, bool enabled)
             host.activeTransport = RelayFeedType::Auto;
             host.sseConsecutiveFailures = 0;
             host.consecutiveFailures = 0;
+            // Start the offline-eviction / backoff clock now: an enabled host that never
+            // makes contact begins its grace period here (SN-8177).
+            host.lastContact = std::chrono::steady_clock::now();
+            host.lastAttemptTime = {};
             host.stopRequested.store(false);
             startSseWorker(host);
         } else {
@@ -375,7 +406,6 @@ std::vector<RelayPortFactory::RelayHostStatus> RelayPortFactory::getRelayHosts()
 void RelayPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback,
                                     const std::string& pattern, uint16_t pType) {
     tick();
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
 
     std::regex regexPattern;
     try {
@@ -384,15 +414,29 @@ void RelayPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, st
         return;
     }
 
-    for (const auto& [url, hostPtr] : relayHosts_) {
-        const RelayHost& host = *hostPtr;
-        if (!host.enabled)
-            continue;
-        for (const auto& portUrl : host.knownPortUrls) {
-            if (std::regex_match(portUrl, regexPattern)) {
-                portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM | pType, portUrl);
+    // Snapshot the matching port URLs under mutex_, then invoke portCallback OUTSIDE the
+    // lock. portCallback -> PortManager::portHandler -> bindPort -> TcpPortFactory resolves
+    // the port's host via getaddrinfo(); for a relay serving .local device URIs that drops
+    // into nss-mdns and can block for seconds. Holding mutex_ across that starves the UI
+    // thread's getRelayHosts() and freezes the Port Options dialog (SN-8175). Same
+    // "collect under lock, act outside" pattern used by the dtor and setRelayHostEnabled.
+    std::vector<std::string> toEmit;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        for (const auto& [url, hostPtr] : relayHosts_) {
+            const RelayHost& host = *hostPtr;
+            if (!host.enabled)
+                continue;
+            for (const auto& portUrl : host.knownPortUrls) {
+                if (std::regex_match(portUrl, regexPattern)) {
+                    toEmit.push_back(portUrl);
+                }
             }
         }
+    }
+
+    for (const auto& portUrl : toEmit) {
+        portCallback(this, PORT_TYPE__TCP | PORT_TYPE__COMM | pType, portUrl);
     }
 }
 
@@ -453,36 +497,92 @@ bool RelayPortFactory::releasePort(port_handle_t port) {
 
 void RelayPortFactory::tick() {
     auto& self = getInstance();
-    std::lock_guard<std::recursive_mutex> lock(self.mutex_);
 
-    auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - self.lastMdnsQueryTime_);
-    if (elapsed.count() > MDNS_QUERY_INTERVAL_MS) {
-        mdns::sendQuery(MDNS_RECORDTYPE_PTR, "_inertialsense-discovery._tcp.local");
-        self.lastMdnsQueryTime_ = now;
-    }
-    mdns::tick();
+    // Teardown collected under the lock, executed OUTSIDE it: reaped mDNS hosts (whose
+    // announcements aged out) keep their RelayHost alive in `reaped` until their SSE worker
+    // is joined, so a worker currently blocked acquiring mutex_ can finish first. Mirrors
+    // the dtor / removeRelayHost pattern; joining under the lock would deadlock (SN-8177).
+    std::vector<std::unique_ptr<RelayHost>> reaped;
+    std::vector<std::function<void()>> abortHooks;
 
-    self.discoverRelayHostsViaMdns();
+    {
+        std::lock_guard<std::recursive_mutex> lock(self.mutex_);
 
-    // Only poll hosts that have fallen back to Polling transport.
-    // SSE hosts drive their own state via the worker thread.
-    for (auto& [url, hostPtr] : self.relayHosts_) {
-        RelayHost& host = *hostPtr;
-        if (!host.enabled) continue;
-        if (host.activeTransport != RelayFeedType::Polling) continue;
-        auto sincePoll = std::chrono::duration_cast<std::chrono::milliseconds>(now - host.lastPollTime);
-        if (sincePoll >= self.pollInterval_ || host.lastPollTime == std::chrono::steady_clock::time_point{}) {
-            self.pollRelayHost(host);
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - self.lastMdnsQueryTime_);
+        if (elapsed.count() > MDNS_QUERY_INTERVAL_MS) {
+            mdns::sendQuery(MDNS_RECORDTYPE_PTR, "_inertialsense-discovery._tcp.local");
+            self.lastMdnsQueryTime_ = now;
+        }
+        mdns::tick();
+
+        self.discoverRelayHostsViaMdns(reaped, abortHooks);
+
+        // SN-8177: evict ports for any enabled host gone silent past the grace window
+        // (no SSE bytes incl. keepalive, no successful poll). Clearing devices +
+        // knownPortUrls makes validatePort() fail for those ports, so PortManager's next
+        // sweep removes them and closes their sockets — including ports the user had open.
+        // They reappear from the next snapshot if the host comes back.
+        for (auto& [url, hostPtr] : self.relayHosts_) {
+            RelayHost& host = *hostPtr;
+            if (!host.enabled) continue;
+            auto silentMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - host.lastContact).count();
+            if (silentMs > OFFLINE_EVICT_MS && (!host.devices.empty() || !host.knownPortUrls.empty())) {
+                log_warn(IS_LOG_PORT_FACTORY,
+                         "RelayPortFactory: relay '%s' silent %lldms; evicting %zu port(s)",
+                         host.url.c_str(), (long long)silentMs, host.knownPortUrls.size());
+                host.devices.clear();
+                host.knownPortUrls.clear();
+                if (host.lastError.empty()) host.lastError = "relay offline; ports evicted";
+            }
+        }
+
+        // Poll hosts on the Polling transport, gated by an escalating backoff while lost
+        // (SN-8177) so a dead host isn't hammered. SSE hosts drive their own reconnect on
+        // the worker thread; the eviction pass above still drops their ports when silent.
+        for (auto& [url, hostPtr] : self.relayHosts_) {
+            RelayHost& host = *hostPtr;
+            if (!host.enabled) continue;
+            if (host.activeTransport != RelayFeedType::Polling) continue;
+            auto interval = self.reconnectInterval(host, now);
+            auto sinceAttempt = std::chrono::duration_cast<std::chrono::milliseconds>(now - host.lastAttemptTime);
+            if (host.lastAttemptTime == std::chrono::steady_clock::time_point{} || sinceAttempt >= interval) {
+                self.pollRelayHost(host);
+            }
         }
     }
+
+    // Signal + join reaped mDNS workers outside the lock.
+    for (auto& hook : abortHooks) if (hook) hook();
+    for (auto& host : reaped) {
+        if (host && host->streamThread && host->streamThread->joinable())
+            host->streamThread->join();
+    }
+}
+
+// Escalating reconnect/poll cadence for a host based on how long it's been silent.
+std::chrono::milliseconds RelayPortFactory::reconnectInterval(
+        const RelayHost& host, std::chrono::steady_clock::time_point now) const {
+    auto silentMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - host.lastContact).count();
+    // Healthy / recently-lost (still inside the eviction grace): normal cadence so a brief
+    // blip recovers quickly.
+    if (silentMs < OFFLINE_EVICT_MS) {
+        return pollInterval_;
+    }
+    // Lost: grow ~ one step per minute, capped at LOST_BACKOFF_MAX_MS (reached by ~10 min).
+    int64_t minutesLost = silentMs / 60000;
+    int64_t backoffMs = 6000 * (minutesLost + 1);   // 6s, 12s, ... -> 60s
+    if (backoffMs > LOST_BACKOFF_MAX_MS) backoffMs = LOST_BACKOFF_MAX_MS;
+    return std::chrono::milliseconds(backoffMs);
 }
 
 // ============================================================
 // mDNS relay-host discovery (honors SN-7804 http_port TXT key)
 // ============================================================
 
-void RelayPortFactory::discoverRelayHostsViaMdns() {
+void RelayPortFactory::discoverRelayHostsViaMdns(
+        std::vector<std::unique_ptr<RelayHost>>& reaped,
+        std::vector<std::function<void()>>& abortHooks) {
     // mutex_ is already held by tick()
 
     auto ptrRecords = mdns::getRecords([](const mdns::mdns_record_cpp_t& r) {
@@ -490,6 +590,7 @@ void RelayPortFactory::discoverRelayHostsViaMdns() {
     });
 
     std::set<std::string> seenHostnames;
+    std::set<std::string> advertisedUrls;   // canonical URLs currently announced via mDNS
     for (const auto& ptr : ptrRecords) {
         auto srvRecords = mdns::getRecords([&ptr](const mdns::mdns_record_cpp_t& r) {
             return r.type == MDNS_RECORDTYPE_SRV && r.name == ptr.data.ptr.name;
@@ -519,6 +620,7 @@ void RelayPortFactory::discoverRelayHostsViaMdns() {
         }
 
         std::string url = "http://" + hostname + ":" + std::to_string(httpPort);
+        advertisedUrls.insert(url);
         if (relayHosts_.find(url) == relayHosts_.end()) {
             auto host = std::make_unique<RelayHost>();
             host->url = url;
@@ -526,6 +628,33 @@ void RelayPortFactory::discoverRelayHostsViaMdns() {
             host->viaMdns = true;
             relayHosts_[url] = std::move(host);
             log_info(IS_LOG_PORT_FACTORY, "RelayPortFactory: discovered relay host via mDNS: '%s'", url.c_str());
+        }
+    }
+
+    // SN-8177: reap mDNS-discovered hosts whose announcement has aged out of the cache.
+    // mDNS is link-local, so a vanished announcement means the host is genuinely gone —
+    // drop it and stop reconnecting (it re-adds itself if it reappears). Guards:
+    //   * only viaMdns hosts (manual hosts persist and keep retrying with backoff);
+    //   * not while a stream is still connected (reachable by IP despite no mDNS) —
+    //     let it be reaped when the connection also drops, not kill a live link;
+    //   * only once it's also been silent past the eviction grace, so a transient mDNS
+    //     cache gap can't wipe a host that's still in contact.
+    // Reaped hosts are moved out (kept alive) and joined OUTSIDE mutex_ by the caller.
+    auto now = std::chrono::steady_clock::now();
+    for (auto it = relayHosts_.begin(); it != relayHosts_.end(); ) {
+        RelayHost& host = *it->second;
+        const bool recordGone = host.viaMdns && advertisedUrls.find(host.url) == advertisedUrls.end();
+        auto silentMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - host.lastContact).count();
+        if (recordGone && !host.streamConnected.load() && silentMs > OFFLINE_EVICT_MS) {
+            log_info(IS_LOG_PORT_FACTORY,
+                     "RelayPortFactory: mDNS relay host '%s' announcement expired; dropping (%zu port(s))",
+                     host.url.c_str(), host.knownPortUrls.size());
+            host.stopRequested.store(true);
+            if (host.sseAbortHook) abortHooks.push_back(host.sseAbortHook);
+            if (host.streamThread) reaped.push_back(std::move(it->second));
+            it = relayHosts_.erase(it);
+        } else {
+            ++it;
         }
     }
 }
@@ -536,6 +665,9 @@ void RelayPortFactory::discoverRelayHostsViaMdns() {
 
 void RelayPortFactory::pollRelayHost(RelayHost& host) {
     // mutex_ is held by tick() (caller).
+    // Stamp the attempt time up front (success or fail) so the backoff cadence in tick()
+    // advances even when the host is unreachable (SN-8177).
+    host.lastAttemptTime = std::chrono::steady_clock::now();
     auto [hostname, port] = splitBaseUrl(host.url, DEFAULT_HTTP_PORT);
 
     httplib::Client client(hostname, port);
@@ -565,7 +697,7 @@ void RelayPortFactory::pollRelayHost(RelayHost& host) {
     }
 
     SnapshotResult snap;
-    if (!parseSnapshotJson(doc, snap)) {
+    if (!parseSnapshotJson(doc, snap, hostname)) {
         host.consecutiveFailures++;
         host.lastError = "Expected SN-7804 availableDevices envelope (missing 'devices' array)";
         return;
@@ -584,6 +716,7 @@ void RelayPortFactory::pollRelayHost(RelayHost& host) {
 
     host.devices = std::move(snap.devices);
     host.lastPollTime = std::chrono::steady_clock::now();
+    host.lastContact = host.lastPollTime;   // successful poll counts as contact (SN-8177)
     host.lastError.clear();
     host.consecutiveFailures = 0;
 
@@ -670,6 +803,10 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
 
             std::lock_guard<std::recursive_mutex> lock(mutex_);
 
+            // Relay-reachable host for rewriting device URIs off their (possibly unresolvable)
+            // .local form — see rewriteUriHost / SN-8175. host.url is fixed at creation.
+            const std::string relayHost = splitBaseUrl(host.url, DEFAULT_HTTP_PORT).first;
+
             // server_instance_id change → force fresh snapshot state on all events
             if (!evtInstance.empty() && !host.serverInstanceId.empty() &&
                 evtInstance != host.serverInstanceId) {
@@ -682,13 +819,14 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
             if (!evtInstance.empty())      host.serverInstanceId = evtInstance;
             if (evtSnapshotId > host.lastSnapshotId) host.lastSnapshotId = evtSnapshotId;
             host.lastEventTime = std::chrono::steady_clock::now();
+            host.lastContact = host.lastEventTime;   // event = contact (SN-8177)
             host.lastError.clear();
             // First byte received → SSE connection confirmed
             host.activeTransport = RelayFeedType::SSE;
 
             if (evt == EVT_SNAPSHOT) {
                 SnapshotResult snap;
-                if (parseSnapshotJson(payload, snap)) {
+                if (parseSnapshotJson(payload, snap, relayHost)) {
                     // Replace devices; rebuild knownPortUrls from snapshot (authoritative resync)
                     host.knownPortUrls.clear();
                     host.devices = std::move(snap.devices);
@@ -696,7 +834,7 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
                 }
             } else if (evt == EVT_DEVICE_ADDED || evt == EVT_DEVICE_CHANGED) {
                 DeviceRecord rec;
-                if (parseDeviceJson(payload, rec)) {
+                if (parseDeviceJson(payload, rec, relayHost)) {
                     // Replace any prior record for the same URI (device.changed), then upsert.
                     auto it = std::find_if(host.devices.begin(), host.devices.end(),
                         [&](const DeviceRecord& d) { return d.portUrl == rec.portUrl; });
@@ -716,6 +854,8 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
                 }
             } else if (evt == EVT_DEVICE_REMOVED) {
                 std::string uri = payload.is_object() ? payload.value("uri", std::string{}) : std::string{};
+                // Rewrite to match the stored (relay-host-rebound) portUrls — see SN-8175.
+                uri = rewriteUriHost(uri, relayHost);
                 if (!uri.empty()) {
                     host.devices.erase(std::remove_if(host.devices.begin(), host.devices.end(),
                                         [&](const DeviceRecord& d) { return d.portUrl == uri; }),
@@ -733,6 +873,13 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
             if (firstChunk) {
                 log_debug(IS_LOG_PORT_FACTORY, "RelayPortFactory: SSE stream connected to '%s' (%zu bytes first chunk)",
                           host.url.c_str(), size);
+            }
+
+            // Any bytes — including SSE `:` keepalive comments that never reach applyFrame —
+            // count as contact, so a healthy idle stream isn't falsely evicted (SN-8177).
+            {
+                std::lock_guard<std::recursive_mutex> lock(mutex_);
+                host.lastContact = std::chrono::steady_clock::now();
             }
 
             buffer.append(data, size);
