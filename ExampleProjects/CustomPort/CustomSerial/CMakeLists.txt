@@ -1,0 +1,27 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
+
+project(CustomSerial)
+
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../../..")
+include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
+
+# Include InertialSenseSDK header files
+include_directories(
+    ${IS_SDK_DIR}/src
+    ${IS_SDK_DIR}/src/libusb/libusb
+)
+
+# Define the executable
+add_executable(${PROJECT_NAME}
+    CustomSerialExample.cpp
+    CustomSerialPortFactory.cpp
+    #${IS_SDK_DIR}/src/serialPort.c
+)
+
+# Build using C11 and CXX20
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# Link IS-SDK libraries to the executable
+include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)
