@@ -260,7 +260,8 @@ int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
     // Populate the vector using index into global test port array
     int i = 0;
     
-    // Generate each string with the unique identifying names the underlying test port implementation dictates
+    // Generate each string with the unique identifying names the underlying test port implementation dictates;
+    // won't assume the test port names are null-terminated
     for (auto& str : portNames) {
         str = std::string( reinterpret_cast<const char*>(g_testPorts[i].name), nlen );
         printf("  --: %s\r\n", str.c_str());
