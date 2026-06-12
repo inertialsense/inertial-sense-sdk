@@ -164,6 +164,9 @@ typedef enum    // Internal only, can change as needed
     DFU_ERROR_INVALID_ARG = -6,
     DFU_ERROR_FILE_NOTFOUND = -7,
     DFU_ERROR_FILE_INVALID = -8,
+    DFU_ERROR_RDP_LOCKED = -9,              // SN-8043: chip at RDP Level 1 (RDP > 0xAA); flash writes are silently dropped. Recoverable via erase/RDP-regress.
+    DFU_ERROR_RDP_PERMANENT_LOCKED = -10,   // SN-8043: chip at RDP Level 2 (RDP == 0xCC); permanently locked, cannot be recovered.
+    DFU_ERROR_WRITE_VERIFY_FAILED = -11,    // SN-8043: post-write readback did not match the source image; the write did not land.
 } dfu_error;
 
 typedef enum {
@@ -227,7 +230,16 @@ public:
     void setProgressCb(fwUpdate::pfnProgressCb cbProgress){ progressCb = cbProgress;}
     void setStatusCb(fwUpdate::pfnStatusCb cbStatus) { statusCb = cbStatus;}
 
-    const char* getErrorName(int errNo) { return dfuDeviceErrors[errNo]; }
+    static const char* getErrorName(int errNo);
+
+    /**
+     * Maps a raw STM32 FLASH_OPTR RDP (read-protection) byte to a dfu_error verdict.
+     * Pure decision logic, separated so it can be unit-tested without USB hardware (SN-8043).
+     *   RDP == 0xAA -> DFU_ERROR_NONE (Level 0, unprotected; flash programming allowed)
+     *   RDP == 0xCC -> DFU_ERROR_RDP_PERMANENT_LOCKED (Level 2, permanent)
+     *   otherwise   -> DFU_ERROR_RDP_LOCKED (Level 1; flash writes silently dropped by the ROM bootloader)
+     */
+    static dfu_error rdpVerdict(uint8_t rdpByte);
 
     int fillDeviceInfo(dev_info_t &devInfo);
 
@@ -241,6 +253,23 @@ protected:
     dfu_error eraseFlash(const dfu_memory_t& mem, uint32_t& address, uint32_t data_len);
 
     dfu_error writeFlash(const dfu_memory_t& mem, uint32_t& address, uint32_t data_len, uint8_t *data);
+
+    /**
+     * SN-8043: Pre-flight read-protection (RDP) check. STM32U5 only (IMX-6 / GPX-1); a no-op (returns
+     * DFU_ERROR_NONE) for other processors. Reads FLASH_OPTR via the DFU OPTIONS segment (which works
+     * regardless of RDP level) and returns rdpVerdict() of the RDP byte. At RDP Level 1 the ROM
+     * bootloader ACKs every DNLOAD but silently drops the underlying flash programming, so we must
+     * refuse to proceed rather than report a false success.
+     */
+    dfu_error checkReadProtection();
+
+    /**
+     * SN-8043: Post-write readback verification. Uploads the first verifyLen bytes of the just-written
+     * region and compares them against the source image. Returns DFU_ERROR_WRITE_VERIFY_FAILED on
+     * mismatch (the classic RDP-silent-drop signature is an all-0xFF / all-0x00 readback). A readback
+     * transport failure is logged but NOT treated as fatal, to avoid false negatives on good devices.
+     */
+    dfu_error verifyFlashWrite(uint32_t address, const uint8_t *expected, uint32_t verifyLen);
 
 private:
     libusb_device *usbDevice = nullptr;

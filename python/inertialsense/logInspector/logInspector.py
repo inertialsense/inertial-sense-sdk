@@ -919,8 +919,9 @@ class LogInspectorWindow(QMainWindow):
         
         # Select post_processed directory in file tree view
         for row in range(index.model().rowCount(index)):
-            if self.fileTree.model().fileName(index.child(row, 0)) == "post_processed":
-                self.fileTree.setCurrentIndex(index.child(row, 0))
+            child_index = index.model().index(row, 0, index)
+            if self.fileTree.model().fileName(child_index) == "post_processed":
+                self.fileTree.setCurrentIndex(child_index)
                 QtCore.QCoreApplication.processEvents() # refresh UI
                 self.handleTreeViewClick()
                 continue
