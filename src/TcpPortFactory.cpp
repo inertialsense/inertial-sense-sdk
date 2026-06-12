@@ -33,16 +33,18 @@
 
 namespace {
 
-/// Cache host -> resolved address (port intentionally left zero) with a short TTL.
-///
-/// A relay host serving many device ports hands out URIs that all share one hostname
-/// (e.g. tcp://golden-planet-ce38.local:34663, :34664, ...). Resolving a `.local` name
-/// goes through nss-mdns and blocks on a socket read. Without caching, validatePort and
-/// bindPort each resolve, and every one of N same-host ports re-resolves every discovery
-/// pass — tens of blocking syscalls per pass. Collapsing those to one resolve per host
-/// per TTL keeps discovery responsive (SN-8175). Numeric literals bypass the cache.
+/**
+ * Cache host -> resolved address (port intentionally left zero) with a short TTL.
+ *
+ * A relay host serving many device ports hands out URIs that all share one hostname
+ * (e.g. tcp://golden-planet-ce38.local:34663, :34664, ...). Resolving a `.local` name
+ * goes through nss-mdns and blocks on a socket read. Without caching, validatePort and
+ * bindPort each resolve, and every one of N same-host ports re-resolves every discovery
+ * pass — tens of blocking syscalls per pass. Collapsing those to one resolve per host
+ * per TTL keeps discovery responsive (SN-8175). Numeric literals bypass the cache.
+ */
 struct ResolvedHost {
-    sockaddr_storage addr;   ///< family + address; sin_port / sin6_port left zero
+    sockaddr_storage addr;   //!< family + address; sin_port / sin6_port left zero
     int              family;
     std::chrono::steady_clock::time_point when;
 };
@@ -51,8 +53,15 @@ std::mutex                                  g_resolveCacheMutex;
 std::unordered_map<std::string, ResolvedHost> g_resolveCache;
 constexpr auto                              RESOLVE_CACHE_TTL = std::chrono::seconds(30);
 
-/// Resolve `host` (no service/port) into `out` (family + address only; caller sets the
-/// port). Returns true on success. Thread-safe; numeric addresses skip getaddrinfo.
+/**
+ * Resolve @p host (no service/port) into @p out (family + address only; caller sets the
+ * port). Thread-safe; numeric addresses skip getaddrinfo and the cache.
+ *
+ * @param host        hostname or numeric IP literal to resolve
+ * @param[out] out     filled with the resolved address (port left zero)
+ * @param[out] family  the resolved address family (AF_INET / AF_INET6)
+ * @return true on success, false if the host could not be resolved
+ */
 bool resolveHostCached(const std::string& host, sockaddr_storage& out, int& family) {
     sockaddr_storage tmp = {};
     if (inet_pton(AF_INET, host.c_str(), &reinterpret_cast<sockaddr_in*>(&tmp)->sin_addr) == 1) {

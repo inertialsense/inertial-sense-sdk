@@ -31,7 +31,12 @@ using json = nlohmann::json;
 
 namespace {
 
-/// Map bridgeboard's module "state" string to a full encoded is_hardware_t (type + major + minor).
+/**
+ * Map bridgeboard's module "state" string to a full encoded is_hardware_t (type + major + minor).
+ *
+ * @param state  bridgeboard module state ("imx5", "imx6", "gpx", "isbl", ...)
+ * @return the encoded hardware id, or IS_HARDWARE_NONE if unrecognized
+ */
 is_hardware_t stateToHardwareId(const std::string& state) {
     if (state == "imx5") return IS_HARDWARE_IMX_5_0;
     if (state == "imx6") return IS_HARDWARE_IMX_6_0;
@@ -40,17 +45,21 @@ is_hardware_t stateToHardwareId(const std::string& state) {
     return IS_HARDWARE_NONE;
 }
 
-/// Canonicalize any relay input (bare hostname, IP, full URL, URL-with-path) into
-/// the factory's storage key form: "http://<host>:<port>" with no trailing slash and no path.
-///
-/// Examples:
-///   "http://host.local:8080/api/status"   -> "http://host.local:8080"
-///   "http://host.local:9090/"             -> "http://host.local:9090"
-///   "http://host.local"                   -> "http://host.local:8080"   (default port applied)
-///   "host.local:9090"                     -> "http://host.local:9090"   (scheme defaulted)
-///   "10.1.2.3"                            -> "http://10.1.2.3:8080"
-///
-/// Returns an empty string on unparseable input.
+/**
+ * Canonicalize any relay input (bare hostname, IP, full URL, URL-with-path) into
+ * the factory's storage key form: "http://<host>:<port>" with no trailing slash and no path.
+ *
+ * Examples:
+ *   "http://host.local:8080/api/status"   -> "http://host.local:8080"
+ *   "http://host.local:9090/"             -> "http://host.local:9090"
+ *   "http://host.local"                   -> "http://host.local:8080"   (default port applied)
+ *   "host.local:9090"                     -> "http://host.local:9090"   (scheme defaulted)
+ *   "10.1.2.3"                            -> "http://10.1.2.3:8080"
+ *
+ * @param input        relay address in any of the accepted forms
+ * @param defaultPort  port to apply when the input omits one
+ * @return the canonical "http://host:port", or an empty string on unparseable input
+ */
 std::string normalizeBaseUrl(const std::string& input, uint16_t defaultPort) {
     std::string s = input;
     while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front()))) s.erase(s.begin());
@@ -74,7 +83,13 @@ std::string normalizeBaseUrl(const std::string& input, uint16_t defaultPort) {
     return "http://" + host + ":" + std::to_string(port);
 }
 
-/// Split a canonical "http://host:port" URL into hostname + port. Returns {"", defaultPort} on failure.
+/**
+ * Split a canonical "http://host:port" URL into hostname + port.
+ *
+ * @param baseUrl      canonical relay base URL
+ * @param defaultPort  port returned when the URL omits or has an invalid port
+ * @return {hostname, port}; {"", defaultPort} on failure
+ */
 std::pair<std::string, int> splitBaseUrl(const std::string& baseUrl, uint16_t defaultPort) {
     const FIX8::uri parsed{baseUrl};
     std::string host = std::string{parsed.get_host()};
@@ -86,18 +101,23 @@ std::pair<std::string, int> splitBaseUrl(const std::string& baseUrl, uint16_t de
     return {host, port};
 }
 
-/// Rewrite the host component of a device URI to `newHost`, preserving scheme + port.
-///
-/// A bridgeboard relays its OWN locally-attached devices, so every device URI it reports
-/// is on the same host we already connected to for the relay's HTTP/SSE API. The relayed
-/// URIs, however, frequently use the bridgeboard's mDNS `.local` name, which is only
-/// resolvable on the bridgeboard's own link. A client reaching the relay over routed/VPN
-/// transport (e.g. Tailscale) connected via the relay's configured host but cannot resolve
-/// the `.local` form at all — so binding those ports blocks in nss-mdns and then fails,
-/// and no ports ever surface (SN-8175). Substituting the relay's known-reachable host (the
-/// one normalizeBaseUrl already validated and the SSE/poll client connected to) makes the
-/// device ports resolvable exactly the way the relay itself was reached. Returns the input
-/// unchanged if it can't be parsed or newHost is empty.
+/**
+ * Rewrite the host component of a device URI to @p newHost, preserving scheme + port.
+ *
+ * A bridgeboard relays its OWN locally-attached devices, so every device URI it reports
+ * is on the same host we already connected to for the relay's HTTP/SSE API. The relayed
+ * URIs, however, frequently use the bridgeboard's mDNS `.local` name, which is only
+ * resolvable on the bridgeboard's own link. A client reaching the relay over routed/VPN
+ * transport (e.g. Tailscale) connected via the relay's configured host but cannot resolve
+ * the `.local` form at all — so binding those ports blocks in nss-mdns and then fails,
+ * and no ports ever surface (SN-8175). Substituting the relay's known-reachable host (the
+ * one normalizeBaseUrl already validated and the SSE/poll client connected to) makes the
+ * device ports resolvable exactly the way the relay itself was reached.
+ *
+ * @param uri      the relayed device URI (e.g. "tcp://host.local:34663")
+ * @param newHost  the relay's reachable host to substitute in
+ * @return the rewritten URI, or @p uri unchanged if it can't be parsed or @p newHost is empty
+ */
 std::string rewriteUriHost(const std::string& uri, const std::string& newHost) {
     if (newHost.empty()) return uri;
     const FIX8::uri parsed{uri};
@@ -109,19 +129,26 @@ std::string rewriteUriHost(const std::string& uri, const std::string& newHost) {
     return out;
 }
 
-/// HTTP timeouts (seconds)
-/// SN-8177: keep the connect timeout short — a dead/unreachable relay must not block the
-/// IO thread for long per attempt (a powered-off host over VPN won't RST; it just hangs).
+/**
+ * HTTP timeouts (seconds).
+ * SN-8177: keep the connect timeout short — a dead/unreachable relay must not block the
+ * IO thread for long per attempt (a powered-off host over VPN won't RST; it just hangs).
+ */
 static constexpr int HTTP_CONNECT_TIMEOUT_S = 2;
 static constexpr int HTTP_READ_TIMEOUT_S    = 5;
-/// SSE read timeout — generous enough to outlive server keepalive (15 s per SN-7804)
+/** SSE read timeout — generous enough to outlive server keepalive (15 s per SN-7804) */
 static constexpr int SSE_READ_TIMEOUT_S     = 30;
-/// SSE reconnect backoff (ms) — bounded exponential
+/** SSE reconnect backoff (ms) — bounded exponential */
 static constexpr int SSE_RECONNECT_INITIAL_MS = 250;
 static constexpr int SSE_RECONNECT_MAX_MS     = 2000;
 
-/// Parse a "YYYY-MM-DD HH:MM:SS" timestamp (as bridgeboard's build_date field) into
-/// the dev_info_t date/time byte fields. Missing or malformed input leaves everything zero.
+/**
+ * Parse a "YYYY-MM-DD HH:MM:SS" timestamp (as bridgeboard's build_date field) into
+ * the dev_info_t date/time byte fields. Missing or malformed input leaves everything zero.
+ *
+ * @param s          the build_date string
+ * @param[out] hint  dev_info_t whose build* fields are populated
+ */
 void parseBuildDate(const std::string& s, dev_info_t& hint) {
     int y = 0, mo = 0, d = 0, h = 0, mi = 0, se = 0;
     if (std::sscanf(s.c_str(), "%d-%d-%d %d:%d:%d", &y, &mo, &d, &h, &mi, &se) < 3)
@@ -134,20 +161,33 @@ void parseBuildDate(const std::string& s, dev_info_t& hint) {
     if (se >= 0 && se < 60) hint.buildSecond = static_cast<uint8_t>(se);
 }
 
-/// Parse the first hex word of bridgeboard's firmware_commit ("deadbeef abc123.0") into
-/// repoRevision. Non-hex input leaves it zero.
+/**
+ * Parse the first hex word of bridgeboard's firmware_commit ("deadbeef abc123.0") into
+ * repoRevision. Non-hex input leaves it zero.
+ *
+ * @param s          the firmware_commit string
+ * @param[out] hint  dev_info_t whose repoRevision is populated
+ */
 void parseRepoRevision(const std::string& s, dev_info_t& hint) {
     try {
         hint.repoRevision = static_cast<uint32_t>(std::stoul(s, nullptr, 16));
     } catch (...) {}
 }
 
-/// Parse a single device entry from the SN-7804 `/api/availableDevices` schema
-/// (or from a `device.added` / `device.changed` SSE event payload — same shape).
-///
-/// Populates every dev_info_t field the relay can supply so consumers don't need to
-/// issue a follow-up DID_DEV_INFO query: hardwareType/Ver, serialNumber, full
-/// protocolVer[], firmwareVer, manufacturer, build date/time, repo revision.
+/**
+ * Parse a single device entry from the SN-7804 `/api/availableDevices` schema
+ * (or from a `device.added` / `device.changed` SSE event payload — same shape).
+ *
+ * Populates every dev_info_t field the relay can supply so consumers don't need to
+ * issue a follow-up DID_DEV_INFO query: hardwareType/Ver, serialNumber, full
+ * protocolVer[], firmwareVer, manufacturer, build date/time, repo revision.
+ *
+ * @param dev        the JSON device object to parse
+ * @param[out] out   the populated DeviceRecord; its portUrl is rebased onto @p relayHost
+ * @param relayHost  the relay's reachable host, substituted for the device URI's (often
+ *                   `.local`) host so the port resolves off-link (see rewriteUriHost / SN-8175)
+ * @return true if the entry is a usable device, false if it should be skipped
+ */
 bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out, const std::string& relayHost) {
     if (!dev.is_object()) return false;
 
@@ -203,15 +243,26 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out, const
     return true;
 }
 
-/// Parse the SN-7804 snapshot envelope (shared between `/api/availableDevices` HTTP response
-/// and SSE `snapshot` event payload). Expected shape:
-/// `{ "server_instance_id": "...", "snapshot_id": N, "devices": [ ... ] }`
+/**
+ * Parsed form of the SN-7804 snapshot envelope (shared between the `/api/availableDevices`
+ * HTTP response and the SSE `snapshot` event payload). Expected shape:
+ * `{ "server_instance_id": "...", "snapshot_id": N, "devices": [ ... ] }`
+ */
 struct SnapshotResult {
     std::string serverInstanceId;
     uint64_t    snapshotId = 0;
     std::vector<RelayPortFactory::DeviceRecord> devices;
 };
 
+/**
+ * Parse the SN-7804 snapshot envelope into a SnapshotResult.
+ *
+ * @param doc        the snapshot JSON (HTTP response body or SSE `snapshot` payload)
+ * @param[out] out   the parsed envelope: server instance id, snapshot id, and devices
+ * @param relayHost  the relay's reachable host, propagated to each device's portUrl
+ *                   (see parseDeviceJson / SN-8175)
+ * @return true if the envelope was well-formed (had a `devices` array), false otherwise
+ */
 bool parseSnapshotJson(const json& doc, SnapshotResult& out, const std::string& relayHost) {
     if (!doc.is_object()) return false;
 
@@ -231,8 +282,12 @@ bool parseSnapshotJson(const json& doc, SnapshotResult& out, const std::string& 
     return true;
 }
 
-/// Split a composite SSE id "<instance_uuid>:<snapshot_id>" into its parts.
-/// Returns {instance, snapshotId}; instance is empty and snapshotId is 0 on malformed input.
+/**
+ * Split a composite SSE id "<instance_uuid>:<snapshot_id>" into its parts.
+ *
+ * @param id  the composite event id
+ * @return {instance, snapshotId}; {"", 0} on malformed input
+ */
 std::pair<std::string, uint64_t> splitEventId(const std::string& id) {
     auto colon = id.find(':');
     if (colon == std::string::npos) return {"", 0};
@@ -242,11 +297,11 @@ std::pair<std::string, uint64_t> splitEventId(const std::string& id) {
     return {std::move(inst), snap};
 }
 
-/// HTTP paths on a relay host (appended to the stored base URL).
+/** HTTP paths on a relay host (appended to the stored base URL). */
 static constexpr const char* PATH_AVAILABLE_DEVICES = "/api/availableDevices";
 static constexpr const char* PATH_EVENTS_DEVICES    = "/api/events/devices";
 
-/// SSE event type names emitted by bridgeboard per SN-7804.
+/** SSE event type names emitted by bridgeboard per SN-7804. */
 static constexpr const char* EVT_SNAPSHOT        = "snapshot";
 static constexpr const char* EVT_DEVICE_ADDED    = "device.added";
 static constexpr const char* EVT_DEVICE_CHANGED  = "device.changed";
