@@ -95,6 +95,13 @@ private:
      */
     static int getComPorts(std::vector<std::string>& portNames);
 
+    /**
+     * @param pName name of the port the application is trying to locate and reference
+     * @param pType the type of said port (loopback, USB, SPI, etc)
+     * TBD:  @return pointer to the port instance that matches this name and type?
+     */
+    void portHandler(const std::string& pName, uint16_t pType);
+    
 
     // THESE ARE LOCALIZED HELPER FUNCTIONS to provide basic functionality that is not normally provided by the original SerialPort/SerialPortPlatform implementation
     // TODO: at some point, these should be moved into the implementation directly, and removed from the factory

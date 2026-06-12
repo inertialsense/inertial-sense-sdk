@@ -89,8 +89,7 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
 
 
     printf("testPort name: %s\r\n", testPort->name);
-
-    
+        
     //tms not linking log_more_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
     return port;
 }
@@ -140,10 +139,16 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
 void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
     std::regex matchPattern(pattern);
     getComPorts(portNames);
+
+    printf("locating ports with regex pattern %s\r\n", pattern.c_str());
+
     for (auto& name : portNames) {
+        printf("test name %s\r\n", name.c_str());
         auto match = std::regex_match(name, matchPattern);
-        if (validatePort(name, PORT_TYPE__LOOPBACK) && match)
-            portCallback(this, PORT_TYPE__LOOPBACK, name);
+        if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {
+            printf("port of pattern %s located! \r\n", pattern.c_str());
+            portCallback(this, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM), name);
+        }
     }
 }
 
@@ -245,17 +250,27 @@ int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
     portNames.clear();
     portNames.resize(NUM_COM_PORTS);
 
-    // Populate the vector using a generator
+    /** The size of the test_port_t name is a magic number in the declaration; we'll derive it rather than
+     * insert the same number in case it changes
+     */
+    size_t nlen = sizeof( ((test_port_t*)0)->name );
+
+    printf("testPort name len: %lu\r\n", nlen);
+        
+    // Populate the vector using index into global test port array
     int i = 0;
     
-    // Generate each string with arbitrary but unique identifying names
+    // Generate each string with the unique identifying names the underlying test port implementation dictates
     for (auto& str : portNames) {
-        str = "tp" + std::to_string(i) + "\0";
+        str = std::string( reinterpret_cast<const char*>(g_testPorts[i].name), nlen );
+        printf("  --: %s\r\n", str.c_str());
         ++i;
     }
 
     return portNames.size();
-}
+} //getComPorts
+
+
 
 
 #if PLATFORM_IS_LINUX

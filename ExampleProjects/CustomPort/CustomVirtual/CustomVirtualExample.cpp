@@ -32,6 +32,9 @@
 //#include "protocol_nmea.h"
 //#include "msg_logger.h"
 
+/** Function declarations for this file */
+void portHandler(PortFactory* factory, uint16_t pType, const std::string& pName);
+
 /**
  * Uses arg for com port to connect to IS physical (or virtual?) device in a 
  * "minimal" example of setting up a custom serial port connection.  Bind a 
@@ -132,5 +135,26 @@ int main(int argc, char* argv[])
         }
     } //while
 
+    /** Demonstrate the locatePorts function, which is given a callback to help target a different port among
+     * those available, using a name search pattern in regex
+     */
+    auto cb = std::bind(portHandler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    vpf.locatePorts(cb, R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK );
+
+    
 } //main
 
+
+
+/**
+ * @brief User function to do something when a port has been located by the Port Factory locatePorts
+ * @param pName name of the port the application is trying to locate and reference
+ * @param pType the type of said port (loopback, USB, SPI, etc)
+ * TBD:  @return pointer to the port instance that matches this name and type?
+ */
+void portHandler(PortFactory* factory, uint16_t pType, const std::string& pName)
+{
+    //TBD
+    printf("portHandler call success\r\n");
+    
+} //portHandler
