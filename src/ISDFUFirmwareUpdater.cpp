@@ -47,7 +47,34 @@ const char *DFUDevice::dfuDeviceErrors[] = {
         "INVALID_ARGUMENT",
         "FILE_NOT_FOUND",
         "INVALID_IMAGE",
+        "RDP_LOCKED",               // -DFU_ERROR_RDP_LOCKED (9)
+        "RDP_PERMANENT_LOCKED",     // -DFU_ERROR_RDP_PERMANENT_LOCKED (10)
+        "WRITE_VERIFY_FAILED",      // -DFU_ERROR_WRITE_VERIFY_FAILED (11)
 };
+
+/**
+ * Returns the human-readable name for an error index. The expected argument is the positive index
+ * (i.e. -dfu_error); callers conventionally pass getErrorName(-result). Out-of-range values (including
+ * packed libusb errors that don't map to a base code) return "UNKNOWN" rather than reading out of bounds.
+ */
+const char *DFUDevice::getErrorName(int errNo) {
+    static const int errCount = (int)(sizeof(dfuDeviceErrors) / sizeof(dfuDeviceErrors[0]));
+    if (errNo < 0 || errNo >= errCount)
+        return "UNKNOWN";
+    return dfuDeviceErrors[errNo];
+}
+
+/**
+ * SN-8043: pure RDP-byte -> verdict mapping. See header for semantics. Kept free of any USB/device
+ * state so it can be exercised directly by unit tests (tests/test_ISDFUFirmwareUpdater.cpp).
+ */
+dfu_error DFUDevice::rdpVerdict(uint8_t rdpByte) {
+    if (rdpByte == 0xAA)
+        return DFU_ERROR_NONE;                  // Level 0 - unprotected, programming allowed
+    if (rdpByte == 0xCC)
+        return DFU_ERROR_RDP_PERMANENT_LOCKED;  // Level 2 - permanent, unrecoverable
+    return DFU_ERROR_RDP_LOCKED;                // Level 1 - flash writes silently dropped
+}
 
 
 /**
@@ -699,6 +726,71 @@ dfu_error DFUDevice::open() {
  * @param baseAddress this is the actual memory location which the firmware should be written to.
  * @return
  */
+/**
+ * SN-8043: Pre-flight read-protection check. See header. STM32U5 only; no-op otherwise.
+ */
+dfu_error DFUDevice::checkReadProtection() {
+    if (processorType != IS_PROCESSOR_STM32U5)
+        return DFU_ERROR_NONE;
+
+    if (!isConnected()) {
+        dfu_error ret = open();
+        if (ret != DFU_ERROR_NONE)
+            return ret;
+    }
+
+    // FLASH_OPTR is exposed through the DFU OPTIONS segment, which the ROM bootloader allows reading
+    // regardless of RDP level. The RDP byte is OPTR[7:0].
+    uint8_t optr[8] = { 0 };
+    const dfu_memory_t& options = segments[STM32_DFU_INTERFACE_OPTIONS];
+    int read = readMemory(static_cast<uint32_t>(options.address), optr, sizeof(optr));
+    if (read < (int)sizeof(uint32_t)) {
+        // Couldn't read the option bytes. Don't block the update on this (avoid false failures); the
+        // post-write readback verification is the backstop if writes are actually being dropped.
+        if (statusCb)
+            statusCb(this, IS_LOG_LEVEL_WARN, "(%s) RDP pre-flight: could not read FLASH_OPTR (ret=%d); skipping RDP gate", getDescription(), read);
+        return DFU_ERROR_NONE;
+    }
+
+    uint8_t rdp = optr[0];
+    dfu_error verdict = rdpVerdict(rdp);
+    if (verdict != DFU_ERROR_NONE && statusCb) {
+        statusCb(this, IS_LOG_LEVEL_ERROR,
+                 "(%s) Read protection active (RDP=0x%02X): flash programming will be silently dropped. Erase/recover the module before provisioning.",
+                 getDescription(), rdp);
+    }
+    return verdict;
+}
+
+/**
+ * SN-8043: Post-write readback verification. See header. STM32U5 only; no-op otherwise.
+ */
+dfu_error DFUDevice::verifyFlashWrite(uint32_t address, const uint8_t *expected, uint32_t verifyLen) {
+    if (processorType != IS_PROCESSOR_STM32U5)
+        return DFU_ERROR_NONE;
+    if (expected == nullptr || verifyLen == 0)
+        return DFU_ERROR_NONE;
+
+    if (verifyLen > 64)
+        verifyLen = 64;   // first 64 bytes (vector table: initial SP + reset vector) are never all-0xFF on a real image
+
+    uint8_t readback[64] = { 0 };
+    int read = readMemory(address, readback, verifyLen);
+    if (read < (int)verifyLen) {
+        // Could not read back; log but don't fail (avoid false negatives on otherwise-good devices).
+        if (statusCb)
+            statusCb(this, IS_LOG_LEVEL_WARN, "(%s) Write verify: readback failed (ret=%d) @ 0x%08X; skipping verify", getDescription(), read, address);
+        return DFU_ERROR_NONE;
+    }
+
+    if (memcmp(readback, expected, verifyLen) != 0) {
+        if (statusCb)
+            statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Write verify FAILED @ 0x%08X: flash readback does not match source (writes were dropped).", getDescription(), address);
+        return DFU_ERROR_WRITE_VERIFY_FAILED;
+    }
+    return DFU_ERROR_NONE;
+}
+
 dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) {
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
     size_t image_sections;
@@ -712,6 +804,12 @@ dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) 
         if (ret_dfu != DFU_ERROR_NONE)
             return ret_dfu;
     }
+
+    // SN-8043: refuse to proceed when the chip is read-protected (RDP > 0xAA). At RDP Level 1 the ROM
+    // bootloader ACKs every flash DNLOAD but silently drops the programming, which previously produced
+    // a false DFU_ERROR_NONE and a bricked, empty-flash unit. STM32U5 only; no-op for other processors.
+    if ((ret_dfu = checkReadProtection()) != DFU_ERROR_NONE)
+        return ret_dfu;
 
     std::string ext = ".hex";
     if (filename.compare(filename.length() - ext.length(), ext.length(), ext) == 0) {
@@ -785,6 +883,11 @@ dfu_error DFUDevice::updateFirmware(std::string filename, uint64_t baseAddress) 
                 return ret_dfu;
             }
         }
+
+        // SN-8043: verify the write actually landed. Catches the RDP-silent-drop (all-0xFF readback)
+        // and any other "bootloader ACK'd but flash didn't take" failure. verifyFlashWrite() logs.
+        if ((ret_dfu = verifyFlashWrite(image[0].address, image[0].image, image[0].len)) != DFU_ERROR_NONE)
+            return ret_dfu;
     }
 
     // Unload the firmware image
@@ -818,6 +921,12 @@ dfu_error DFUDevice::updateFirmware(std::istream& stream, uint64_t baseAddress) 
         if (ret_dfu != DFU_ERROR_NONE)
             return ret_dfu;
     }
+
+    // SN-8043: refuse to proceed when the chip is read-protected (RDP > 0xAA). At RDP Level 1 the ROM
+    // bootloader ACKs every flash DNLOAD but silently drops the programming, which previously produced
+    // a false DFU_ERROR_NONE and a bricked, empty-flash unit. STM32U5 only; no-op for other processors.
+    if ((ret_dfu = checkReadProtection()) != DFU_ERROR_NONE)
+        return ret_dfu;
 
     {
         if (!stream)
@@ -873,6 +982,11 @@ dfu_error DFUDevice::updateFirmware(std::istream& stream, uint64_t baseAddress) 
                 return ret_dfu;
             }
         }
+
+        // SN-8043: verify the write actually landed. Catches the RDP-silent-drop (all-0xFF readback)
+        // and any other "bootloader ACK'd but flash didn't take" failure. verifyFlashWrite() logs.
+        if ((ret_dfu = verifyFlashWrite(image[0].address, image[0].image, image[0].len)) != DFU_ERROR_NONE)
+            return ret_dfu;
     }
 
     // Unload the firmware image
