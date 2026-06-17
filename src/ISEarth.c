@@ -631,8 +631,8 @@ int llaDegValid(double lla[3])
 {
     return 
         (fabs(lla[0]) <= 90.0) &&           // Lat
-        (fabs(lla[1]) <= 180.0) &&          // Lon
-        (fabs(lla[2]) <= INS_MAX_ALTITUDE); // Alt: -10 to 50 km
+        (fabs(lla[1]) <= 180.0);            // Lon
+        //(fabs(lla[2]) <= INS_MAX_ALTITUDE); // Alt: -10 to 50 km
 }
 
 
