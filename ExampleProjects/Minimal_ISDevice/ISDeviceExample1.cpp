@@ -25,6 +25,16 @@ cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::D
 device_handle_t device;
 std::atomic<bool> stop(false);
 
+void fwUpdateCb(const std::any& obj, eLogLevel level, const char* fmt, ...) {
+    char buf[256];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+    std::cout << "[FW] " << buf << std::endl;
+}
+
+
 /**
  * This is a callback handler that we will register with the ISDevice once its created, and which will be called every time data arrives from the device
  * @param ctx this is an opaque context pointer for this message - in this example, it will be the ISDevice* that received it the message - the ISDevice
@@ -43,7 +53,7 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
 }
 
 void step_thread() {
-    while (!stop.load() && portIsOpened(device->port)) {
+    while (!stop.load() && (portIsOpened(device->port) || (device->getUpdateStatus() >= 0))) {
         device->step();
         SLEEP_MS(1);
     }
@@ -140,7 +150,7 @@ int main_explained(const char* portStr) {
 
     std::vector<std::string> cmds;
     cmds.push_back("force=true");
-    cmds.push_back("package=C:/Users/tmcd2/Downloads/IS-firmware_r3.0.0+2026-05-25-213644.fpkg");
+    cmds.push_back("package=/home/kylemallory/Downloads/Inertial Sense Firmware/r3.0.1-rc.8+2026-06-08-192125/IS-firmware_r3.0.1-rc.8+2026-06-08-192125.fpkg");
 
     PortManager& portManager = PortManager::getInstance();
     DeviceManager& deviceManager = DeviceManager::getInstance();
@@ -152,28 +162,8 @@ int main_explained(const char* portStr) {
     // the device reboots into ISbl bootloader mode or back to APP mode.
     deviceManager.registerDevice(device);
 
-    // Port listener: when the device re-enumerates on a new COM port after rebooting
-    // into ISbl bootloader mode, discover it so ISBFirmwareUpdater can find it.
-    auto plHandle = portManager.addPortListener(
-        [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
-            if (event == PortManager::PORT_ADDED) {
-                deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
-            }
-        }
-    );
-
-    // Status callback — prints progress messages from the firmware updater.
-    auto fwStatusCb = [](const std::any& obj, eLogLevel level, const char* fmt, ...) {
-        char buf[256];
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(buf, sizeof(buf), fmt, ap);
-        va_end(ap);
-        std::cout << "[FW] " << buf << std::endl;
-    };
-
     // Use TARGET_UNKNOWN so the manifest's "target:" command selects the actual target.
-    if (device->updateFirmware(fwUpdate::TARGET_UNKNOWN, cmds, fwStatusCb, NULL) == IS_OP_OK) {
+    if (device->updateFirmware(fwUpdate::TARGET_UNKNOWN, cmds, fwUpdateCb, NULL) == IS_OP_OK) {
         std::cout << "Starting Update" << std::endl;
     }
 
@@ -211,7 +201,7 @@ int main_explained(const char* portStr) {
         SLEEP_MS(1);
     }
 
-    portManager.removePortListener(plHandle);
+    // portManager.removePortListener(plHandle);
     status = device->getUpdateStatus();
 
     if (status != fwUpdate::FINISHED) {
@@ -258,22 +248,13 @@ int main_minimal(const char* portStr) {
 
     std::vector<std::string> cmds;
     cmds.push_back("force=true");
-    cmds.push_back("package=C:/Users/tmcd2/Downloads/IS-firmware_r3.0.0+2026-05-25-213644.fpkg");
+    cmds.push_back("package=is-common/firmware.pkg/IS-firmware_DEVELOP.fpkg");
 
     DeviceManager& deviceManager = DeviceManager::getInstance();
     deviceManager.addDeviceFactory(&ImxDeviceFactory::getInstance());
     deviceManager.registerDevice(device);
 
-    auto fwStatusCb = [](const std::any& obj, eLogLevel level, const char* fmt, ...) {
-        char buf[256];
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(buf, sizeof(buf), fmt, ap);
-        va_end(ap);
-        std::cout << "[FW] " << buf << std::endl;
-    };
-
-    if (device->updateFirmware(fwUpdate::TARGET_UNKNOWN, cmds, fwStatusCb, NULL) == IS_OP_OK) {
+    if (device->updateFirmware(fwUpdate::TARGET_UNKNOWN, cmds, fwUpdateCb, NULL) == IS_OP_OK) {
         std::cout << "Starting Update" << std::endl;
     }
 
