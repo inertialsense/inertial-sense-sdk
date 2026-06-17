@@ -1,23 +1,23 @@
-# SDK: Binary Communications Example Project
+# SDK: Port Factory Custom Virtual Communications Port Example Project
 
-This [ISCommExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISComm) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (IMX and GPX) using the Inertial Sense SDK.
+This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual) project demonstrates the creation of a custom Port Factory child class built upon an SDK virtual test port as the base_port implementation using the Inertial Sense SDK.
 
 ## Files
 
 #### Project Files
 
-* [ISCommExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISComm/ISCommExample.cpp)
+* [CustomVirtualExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualExample.cpp)
+* [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp)
+* [CustomVirtualPortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.h)
 
 #### SDK Files
 
-* [data_sets.c](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/data_sets.c)
-* [data_sets.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/data_sets.h)
-* [ISComm.c](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISComm.c)
-* [ISComm.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISComm.h)
-* [serialPort.c](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/serialPort.c)
-* [serialPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/serialPort.h)
-* [serialPortPlatform.c](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/serialPortPlatform.c)
-* [serialPortPlatform.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/serialPortPlatform.h)
+* [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h)
+* [core/msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h)
+* [ISUtilities.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISUtilities.h)
+* [PortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/PortFactory.h)
+* [test_serial_utils.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.cpp)
+* [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
 
 
 ## Implementation
@@ -166,7 +166,7 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
    ```
 2. Create build directory
    ``` bash
-   cd inertial-sense-sdk/ExampleProjects/ISComm
+   cd inertial-sense-sdk/ExampleProjects/CustomPort/CustomVirtual
    mkdir build
    ```
 3. Run cmake from within build directory

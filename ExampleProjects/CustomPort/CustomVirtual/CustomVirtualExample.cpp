@@ -4,7 +4,7 @@
  * 
  * @remark Based upon the SDK ExampleProjects/ISComm/ISCommExample.cpp
  *
- * @details This demonstrates an example application using the custom port factory implementation
+ * @details This demonstrates an example application creating a custom port factory 
  * with a virtual port implemented by the test_serial_utils code
  *
  * @author TylerS
@@ -26,9 +26,6 @@
 
 /** The port factory child class the user creates, inheriting from PortFactory.h definition */
 #include "CustomVirtualPortFactory.h"
-
-//#include "protocol_nmea.h"
-#include "msg_logger.h"
 
 /** Function declarations for this file */
 void portHandler(PortFactory* factory, uint16_t pType, const std::string& pName);
@@ -144,12 +141,12 @@ int main(int argc, char* argv[])
 
 
 /**
- * @brief User function to do something when a port has been located by the Port Factory locatePorts
+ * @brief User function to do something like manage a change of ports when a port has been located by the Port Factory locatePorts
  * @param pType the type of said port (loopback, USB, SPI, etc)
  * @param pName name of the port the application is trying to locate and reference
  */
 void portHandler(PortFactory* factory, uint16_t pType, const std::string& pName)
 {
-    log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "portHandler call success: use this callback for managing a change of ports, for example");
+    log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "portHandler call success");
     
 } //portHandler

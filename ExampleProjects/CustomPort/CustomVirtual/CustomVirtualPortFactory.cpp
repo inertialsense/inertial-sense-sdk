@@ -25,7 +25,7 @@
 
 /** Include utility functions for use by your custom port class member functions defined here
  */
-#include "util/util.h"
+//for example, #include "util/util.h"
 #include "ISUtilities.h"
 
 /**
@@ -42,17 +42,16 @@
 
 
 /**
- * @brief Required minimum method, validates name and type, locates and instantiates new port
+ * @brief Required minimum method, validates name and type, locates and/or instantiates new port
  * 
  */
 port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType) {
     if (!validatePort(pName, pType))
         return nullptr;
    
-    /** In this example we use a virtual port, so there is no baud rate or blocking to set
+    /** In this example we use a virtual port, so there is no baud rate or blocking to set; our port is defined by
+     *  test_serial_utils; defined g_testPorts given by TESTn_PORT is an array of test_port_t, 0 and 1 are loopback ports
      */
-    
-    //test_serial_utils defined g_testPorts given by TESTn_PORT is an array of test_port_t, 0 and 1 are loopback ports
     test_port_t* testPort;
     if (pName == "TEST0") {
         testPort = TEST0_PORT;
@@ -63,8 +62,7 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
     else
         return nullptr;
             
-    port_handle_t port = (port_handle_t) testPort;
-    
+    port_handle_t port = (port_handle_t) testPort;   
     *testPort = {};
 
     /** This init routine assigns the base port functions of the underlying port implementation
@@ -98,7 +96,7 @@ bool CustomVirtualPortFactory::releasePort(port_handle_t port) {
     /** If you allocated your port object on the heap, free the memory (delete) here;
      * In this example we use a virtual port with the static object, so there is no memory to free, only clear
      */
-    //delete (serial_port_t*)port;
+    //for example, delete (serial_port_t*)port;
     memset(port, 0, sizeof(test_port_t));
 
     return true;
@@ -113,12 +111,10 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
      */
     if (pType != (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) )           
             return false;   // we can only validate this port type - all others fail
-
-    log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port type validated");
         
     /** Add here any other custom validation that could/should be done on this port type
      */
-
+     
     return true;
 }
 

@@ -20,9 +20,10 @@
 
 /** Include IS core and other needed SDK header files here
  */
+//for example, #include "ISConstants.h"
 #include "core/base_port.h"
 #include "core/msg_logger.h"
-#include "ISConstants.h"
+
 
 /**
  * Include any of your own custom application port definition headers, the lower-level
