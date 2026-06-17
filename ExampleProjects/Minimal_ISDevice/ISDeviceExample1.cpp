@@ -7,14 +7,23 @@
  */
 
 #include <iostream>
+#include <vector>
+#include <string>
+#include <thread>
+#include <atomic>
 
 #include "PortFactory.h"
 #include "ISDevice.h"
 #include "ISDisplay.h"
+#include "PortManager.h"
+#include "DeviceManager.h"
+#include "DeviceFactory.h"
 
 
 /** this is a global instance of a utility class that handles printing/formatting of various data sets received from the device */
 cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::DMODE_PRETTY);
+device_handle_t device;
+std::atomic<bool> stop(false);
 
 /**
  * This is a callback handler that we will register with the ISDevice once its created, and which will be called every time data arrives from the device
@@ -33,6 +42,13 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
     return 0;
 }
 
+void step_thread() {
+    while (!stop.load() && portIsOpened(device->port)) {
+        device->step();
+        SLEEP_MS(1);
+    }
+}
+
 /**
  * This is the "explained" example, it exposes a few more aspects of the SDK but is essentially functionally equivalent to the
  * "minimal" example below.  Both usages bind a port_handle_t to the named port. With the handle, the port is opened, and an
@@ -41,11 +57,15 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
  */
 int main_explained(const char* portStr) {
 
+    IS_SET_LOG_LEVEL(IS_LOG_LEVEL_BOMBASTIC);
+    IS_LOG_OUTPUT(stdout);
+    log_info(IS_LOG_ISDEVICE, "This is my main function");
     // First, we need to get a port_handle_t that the Device is connected to...
 
     // Assuming we know the name of the port we want to use, we will create a port_handle_t from its name.
     // PortFactory::bindPort() is used to allocate and initialize the underlying port_handle_t.
     // Note that here we are using SerialPortFactory because we KNOW we want a serial port
+    SerialPortFactory::getInstance().setBaudRate(BAUDRATE_115200);
     port_handle_t port = SerialPortFactory::getInstance().bindPort(portStr);
 
     // For the sake of demonstration, let's check that the port is valid...
@@ -65,7 +85,8 @@ int main_explained(const char* portStr) {
     }
 
     // With a valid, opened port, we can instance an ISDevice - in this case, an IMX-5.0 and associate the port to it.
-    ISDevice* device = new ISDevice(IS_HARDWARE_IMX_5_0, port);
+    device = std::make_shared<ISDevice>(IS_HARDWARE_IMX_5_0, port);
+    std::thread t(step_thread);
 
     if (!device->isConnected())
         exit(3); // this is another way we can confirm the connected status of the device
@@ -106,14 +127,103 @@ int main_explained(const char* portStr) {
 
     // Next, we need to indicate the specific data that we are interested in receiving, and how frequently we'd like to receive it.
     // Let's get the System Status (SYS_PARAMS) including uptime
-    device->BroadcastBinaryData(DID_SYS_PARAMS, 5000);   // DID_SYS_PARAMS has a normal period of 1ms, so every 5000 * 1ms (5 seconds)
-
+    // device->BroadcastBinaryData(DID_SYS_PARAMS, 5000);   // DID_SYS_PARAMS has a normal period of 1ms, so every 5000 * 1ms (5 seconds)
+    
     // Finally, operate in a communications loop (this could be a thread, etc) and call ISDevice::step() periodically (ideally about every 1ms),
     // allowing the SDK to exchange and parse data with the connected device.
-    while (portIsOpened(device->port)) {
-        device->step();
+    // while (portIsOpened(device->port)) {
+    //     device->step();
+    //     SLEEP_MS(1);
+    // }
+
+    SLEEP_MS(100);
+
+    std::vector<std::string> cmds;
+    cmds.push_back("force=true");
+    cmds.push_back("package=C:/Users/tmcd2/Downloads/IS-firmware_r3.0.0+2026-05-25-213644.fpkg");
+
+    PortManager& portManager = PortManager::getInstance();
+    DeviceManager& deviceManager = DeviceManager::getInstance();
+
+    // Register a factory so discoverDevice() can identify re-enumerated devices.
+    deviceManager.addDeviceFactory(&ImxDeviceFactory::getInstance());
+
+    // Register this device so ISBFirmwareUpdater can locate it (by serial number) when
+    // the device reboots into ISbl bootloader mode or back to APP mode.
+    deviceManager.registerDevice(device);
+
+    // Port listener: when the device re-enumerates on a new COM port after rebooting
+    // into ISbl bootloader mode, discover it so ISBFirmwareUpdater can find it.
+    auto plHandle = portManager.addPortListener(
+        [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
+            if (event == PortManager::PORT_ADDED) {
+                deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+            }
+        }
+    );
+
+    // Status callback — prints progress messages from the firmware updater.
+    auto fwStatusCb = [](const std::any& obj, eLogLevel level, const char* fmt, ...) {
+        char buf[256];
+        va_list ap;
+        va_start(ap, fmt);
+        vsnprintf(buf, sizeof(buf), fmt, ap);
+        va_end(ap);
+        std::cout << "[FW] " << buf << std::endl;
+    };
+
+    // Use TARGET_UNKNOWN so the manifest's "target:" command selects the actual target.
+    if (device->updateFirmware(fwUpdate::TARGET_UNKNOWN, cmds, fwStatusCb, NULL) == IS_OP_OK) {
+        std::cout << "Starting Update" << std::endl;
+    }
+
+    fwUpdate::update_status_e status = device->getUpdateStatus();
+    uint32_t nextPortCheck = 0;
+    uint32_t portInvalidatedAt = 0;
+    while (device->fwUpdateInProgress()) 
+    {
+        // When rebootToISB() fires, it calls device->disconnect(true) which permanently destroys
+        // the port's checksum. ISBFirmwareUpdater::INITIALIZING needs portIsValid(device->port)==true
+        // to call device->connect(). Detect the invalidation, wait 3s for ISbl settle, then bind a
+        // fresh port handle so INITIALIZING can reconnect and advance to READY.
+        if (!portIsValid(device->port)) {
+            if (portInvalidatedAt == 0)
+                portInvalidatedAt = current_timeMs();
+            else if (current_timeMs() - portInvalidatedAt > 3000) {
+                port_handle_t newPort = SerialPortFactory::getInstance().bindPort(portStr);
+                if (portIsValid(newPort)) {
+                    device->assignPort(newPort);
+                    portInvalidatedAt = 0;
+                }
+            }
+        } else {
+            portInvalidatedAt = 0;
+        }
+
+        status = device->getUpdateStatus();
+        // Periodically discover ports so the port listener fires when the device
+        // re-enumerates after entering ISB bootloader mode.
+        if (current_timeMs() > nextPortCheck) 
+        {            
+            portManager.discoverPorts();
+            nextPortCheck = current_timeMs() + 1500;
+        }
         SLEEP_MS(1);
     }
+
+    portManager.removePortListener(plHandle);
+    status = device->getUpdateStatus();
+
+    if (status != fwUpdate::FINISHED) {
+        std::cout << "failed update " << std::endl;
+        std::cout << status << std::endl;
+    } else {
+        std::cout << "finished update" << std::endl;
+    }
+
+    stop.store(true);
+    t.join();
+
     return 0;
 }
 
@@ -128,7 +238,7 @@ int main_minimal(const char* portStr) {
     port_handle_t port = SerialPortFactory::getInstance().bindPort(portStr);
 
     // create a new IMX-5.0 device and bind the associated port
-    ISDevice* device = new ISDevice(IS_HARDWARE_IMX_5_0, port);
+    device = std::make_shared<ISDevice>(IS_HARDWARE_IMX_5_0, port);
 
     // connect to the device
     if (!device->connect()) {
@@ -137,15 +247,55 @@ int main_minimal(const char* portStr) {
     }
 
     device->validate();
-    device->StopBroadcasts(true);                       // stop all other messages
-    device->registerIsbDataHandler(isbDataHandler);     // register our data handler
-    device->BroadcastBinaryData(DID_SYS_PARAMS, 500);   // request the data of interest at the specified interval
-    while (portIsOpened(device->port)) {                // and then spin as long as the port is open
-        device->step();                                 // this processes all incoming data, and calls out handler, etc
+    device->StopBroadcasts(false);                       // stop all other messages
+    //device->registerIsbDataHandler(isbDataHandler);     // register our data handler
+    //device->BroadcastBinaryData(DID_SYS_PARAMS, 500);   // request the data of interest at the specified interval
+    //while (portIsOpened(device->port)) {                // and then spin as long as the port is open
+    //    device->step();                                 // this processes all incoming data, and calls out handler, etc
+    //    SLEEP_MS(1);
+    //}
+    SLEEP_MS(100);
+
+    std::vector<std::string> cmds;
+    cmds.push_back("force=true");
+    cmds.push_back("package=C:/Users/tmcd2/Downloads/IS-firmware_r3.0.0+2026-05-25-213644.fpkg");
+
+    DeviceManager& deviceManager = DeviceManager::getInstance();
+    deviceManager.addDeviceFactory(&ImxDeviceFactory::getInstance());
+    deviceManager.registerDevice(device);
+
+    auto fwStatusCb = [](const std::any& obj, eLogLevel level, const char* fmt, ...) {
+        char buf[256];
+        va_list ap;
+        va_start(ap, fmt);
+        vsnprintf(buf, sizeof(buf), fmt, ap);
+        va_end(ap);
+        std::cout << "[FW] " << buf << std::endl;
+    };
+
+    if (device->updateFirmware(fwUpdate::TARGET_UNKNOWN, cmds, fwStatusCb, NULL) == IS_OP_OK) {
+        std::cout << "Starting Update" << std::endl;
+    }
+
+    fwUpdate::update_status_e status = device->getUpdateStatus();
+    while (device->fwUpdateInProgress()) {
+        device->step();
+        status = device->getUpdateStatus();
         SLEEP_MS(1);
     }
+    status = device->getUpdateStatus();
+
+    if (status != fwUpdate::FINISHED) {
+        std::cout << "failed update " << std::endl;
+        std::cout << status << std::endl;
+    } else {
+        std::cout << "finished update" << std::endl;
+    }
+
     return 0;
 }
+
+#define EXPLAINED
 
 /**
  * The main entry point for the application - note that this calls one of two examples, both do the same thing with slight differences.
@@ -156,7 +306,7 @@ int main_minimal(const char* portStr) {
 int main(int argc, const char** argv) {
 
 #if PLATFORM_IS_LINUX
-    const char* portArg = "/dev/ttyACM0";
+    const char* portArg = "/dev/ttyAMA0";
 #else
     const char* portArg = "COMM1";
 #endif
