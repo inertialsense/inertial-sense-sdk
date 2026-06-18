@@ -223,6 +223,15 @@ public:
     uint16_t getHardwareId() { return hardwareId; }
     uint32_t getSerialNo() { return sn; }
 
+    /**
+     * SN-8193: the raw libusb error code captured the last time this device produced a
+     * DFU_ERROR_LIBUSB. The dfu_error return value only carries the DFU_ERROR_LIBUSB tag, so the
+     * specific libusb code is preserved here for diagnostics. Returns LIBUSB_SUCCESS (0) if no
+     * libusb error has occurred on this device.
+     */
+    int getLastLibusbError() const { return lastLibusbError; }
+    const char* getLastLibusbErrorName() const { return libusb_error_name(lastLibusbError); }
+
     eProcessorType getProcessorType() const { return processorType; }
     uint32_t getTotalFlashSize() const;
     static const char* getDeviceTypeName(eProcessorType procType, uint32_t totalFlashSize);
@@ -252,9 +261,24 @@ public:
      */
     static bool isExpectedOptionByteResetError(int libusbError);
 
+    /**
+     * SN-8193: human-readable name for a libusb error code (thin wrapper over libusb's own
+     * libusb_error_name()). Pure, so it is unit-testable without USB hardware.
+     */
+    static const char* libusbErrorName(int libusbCode);
+
     int fillDeviceInfo(dev_info_t &devInfo);
 
 protected:
+    /**
+     * SN-8193: records `libusbCode` as this device's last libusb error and returns the
+     * DFU_ERROR_LIBUSB tag. Replaces the old `(dfu_error)(DFU_ERROR_LIBUSB | (code << 16))` packing,
+     * which silently discarded the libusb code: DFU_ERROR_LIBUSB (-4) is sign-extended to all-ones in
+     * the high bits, so OR-ing the shifted code never changed any bit and the result was always -4.
+     * The code is now retrievable via getLastLibusbError() / getLastLibusbErrorName().
+     */
+    dfu_error libusbError(int libusbCode);
+
     dfu_error fetchDeviceInfo();
 
     int get_string_descriptor_ascii(uint8_t desc_index, char *data, int length);
@@ -285,6 +309,7 @@ protected:
 private:
     libusb_device *usbDevice = nullptr;
     libusb_device_handle *usbHandle = nullptr;  // if this is not null, then this should be a valid, open handle.
+    int lastLibusbError = LIBUSB_SUCCESS;       //!< SN-8193: raw libusb code from this device's most recent DFU_ERROR_LIBUSB
 
     uint16_t vid = 0;                           // the vendor id for this device (for filtering/selection)
     uint16_t pid = 0;                           // the product id for this device (for filtering/selection)

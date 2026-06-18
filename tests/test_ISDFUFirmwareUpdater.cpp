@@ -71,3 +71,21 @@ TEST(ISDFUFirmwareUpdater_Finalize, SuccessAndGenuineErrors_AreNotResetDisconnec
     EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_NO_MEM));
     EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_NOT_SUPPORTED));
 }
+
+// --- libusbErrorName(): the specific libusb sub-code is now preserved and nameable for
+//     diagnostics. Previously `DFU_ERROR_LIBUSB | (code << 16)` discarded it (the -4 tag is
+//     sign-extended to all-ones, so OR-ing the shifted code was a no-op and the result was
+//     always -4, regardless of the underlying libusb error). SN-8193. ---
+
+TEST(ISDFUFirmwareUpdater_Finalize, LibusbErrorName_NamesDistinctCodes) {
+    // The distinct disconnect-class codes that the old packing collapsed into an indistinguishable
+    // "-4" must now map to distinct, recognizable names.
+    EXPECT_STREQ("LIBUSB_ERROR_NO_DEVICE", DFUDevice::libusbErrorName(LIBUSB_ERROR_NO_DEVICE));
+    EXPECT_STREQ("LIBUSB_ERROR_IO",        DFUDevice::libusbErrorName(LIBUSB_ERROR_IO));
+    EXPECT_STREQ("LIBUSB_ERROR_PIPE",      DFUDevice::libusbErrorName(LIBUSB_ERROR_PIPE));
+    EXPECT_STREQ("LIBUSB_ERROR_TIMEOUT",   DFUDevice::libusbErrorName(LIBUSB_ERROR_TIMEOUT));
+
+    // They are genuinely distinct (regression guard against any future collapse to one code).
+    EXPECT_STRNE(DFUDevice::libusbErrorName(LIBUSB_ERROR_NO_DEVICE),
+                 DFUDevice::libusbErrorName(LIBUSB_ERROR_IO));
+}
