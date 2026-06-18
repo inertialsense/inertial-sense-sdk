@@ -12,11 +12,23 @@
 #include "DeviceManager.h"
 #include "CorrectionService.h"
 #include "TcpServerPortFactory.h"
+#include "util/util.h"
 
 class Rtcm3CorrectionServer : public CorrectionService, protected TcpServerPortFactory {
 public:
+    explicit Rtcm3CorrectionServer(const std::string& portUri, int max_connections = 10) : TcpServerPortFactory() {
+        // Parse the listen URI (e.g. "tcp://[IP]:port"); any omitted component falls back to the defaults.
+        const utils::UriParts uri = utils::parseUri(portUri, "tcp://127.0.0.1:7777");
+        configure(uri.port, uri.host, max_connections);
+        startListening();
+    }
+
     explicit Rtcm3CorrectionServer(int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : TcpServerPortFactory(port, listenAddr, max_connections) {
         startListening();
+    }
+
+    explicit Rtcm3CorrectionServer(const device_handle_t srcDevice, const std::string& portUri, int max_connections = 10) : Rtcm3CorrectionServer(portUri, max_connections) {
+        setSourceDevice(srcDevice);
     }
 
     explicit Rtcm3CorrectionServer(const device_handle_t srcDevice, int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : Rtcm3CorrectionServer(port, listenAddr, max_connections) {

@@ -8,7 +8,7 @@
 
 #include "ISHttpRequest.h"
 #include "ISUtilities.h"
-#include "uri.hpp"
+#include "util/util.h"
 #include "TcpPortFactory.h"
 #include "core/msg_logger.h"
 
@@ -209,23 +209,18 @@ ISHttpRequest::Response ISHttpRequest::sendRequest(const std::string& url, const
 {
     Response resp;
 
-    // Parse URL
-    FIX8::basic_uri uri(url);
-    uri.parse();
+    // Parse URL; HTTP defaults to port 80 when the URL omits one
+    const utils::UriParts uri = utils::parseUri(url, "http://:80");
 
-    std::string host(uri.get_host());
-    std::string portStr(uri.get_port());
-    std::string path(uri.get_path());
-
-    if (host.empty())
+    if (!uri.hasHost())
     {
         log_error(IS_LOG_HTTP_REQUEST, "Failed to parse host from URL: %s", url.c_str());
         return resp;
     }
 
-    int port = portStr.empty() ? 80 : std::strtol(portStr.c_str(), nullptr, 10);
-    if (path.empty())
-        path = "/";
+    const std::string& host = uri.host;
+    const int port = uri.port;
+    const std::string path = uri.path.empty() ? "/" : uri.path;
 
     log_info(IS_LOG_HTTP_REQUEST, "%s %s (host=%s, port=%d, path=%s)", method.c_str(), url.c_str(), host.c_str(), port, path.c_str());
 

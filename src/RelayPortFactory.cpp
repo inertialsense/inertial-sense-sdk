@@ -25,7 +25,6 @@
 // cpp-httplib and nlohmann/json — used only in this .cpp, not exposed via the header.
 #include "httplib.h"
 #include "json.hpp"
-#include <util/uri.hpp>
 
 using json = nlohmann::json;
 
@@ -70,17 +69,11 @@ std::string normalizeBaseUrl(const std::string& input, uint16_t defaultPort) {
         s = "http://" + s;
     }
 
-    const FIX8::uri parsed{s};
-    std::string host = std::string{parsed.get_host()};
-    std::string portStr = std::string{parsed.get_port()};
-    if (host.empty()) return {};
+    const utils::UriParts parsed = utils::parseUri(s);
+    if (!parsed.hasHost()) return {};
 
-    uint16_t port = defaultPort;
-    if (!portStr.empty()) {
-        try { port = static_cast<uint16_t>(std::stoi(portStr)); } catch (...) { return {}; }
-    }
-
-    return "http://" + host + ":" + std::to_string(port);
+    int port = parsed.hasPort() ? parsed.port : defaultPort;
+    return "http://" + parsed.host + ":" + std::to_string(port);
 }
 
 /**
@@ -91,14 +84,9 @@ std::string normalizeBaseUrl(const std::string& input, uint16_t defaultPort) {
  * @return {hostname, port}; {"", defaultPort} on failure
  */
 std::pair<std::string, int> splitBaseUrl(const std::string& baseUrl, uint16_t defaultPort) {
-    const FIX8::uri parsed{baseUrl};
-    std::string host = std::string{parsed.get_host()};
-    std::string portStr = std::string{parsed.get_port()};
-    int port = defaultPort;
-    if (!portStr.empty()) {
-        try { port = std::stoi(portStr); } catch (...) { port = defaultPort; }
-    }
-    return {host, port};
+    const utils::UriParts parsed = utils::parseUri(baseUrl);
+    int port = parsed.hasPort() ? parsed.port : defaultPort;
+    return {parsed.host, port};
 }
 
 /**
@@ -120,12 +108,10 @@ std::pair<std::string, int> splitBaseUrl(const std::string& baseUrl, uint16_t de
  */
 std::string rewriteUriHost(const std::string& uri, const std::string& newHost) {
     if (newHost.empty()) return uri;
-    const FIX8::uri parsed{uri};
-    std::string scheme{parsed.get_scheme()};
-    std::string port{parsed.get_port()};
-    if (scheme.empty()) return uri;
-    std::string out = scheme + "://" + newHost;
-    if (!port.empty()) out += ":" + port;
+    const utils::UriParts parsed = utils::parseUri(uri);
+    if (!parsed.hasScheme()) return uri;
+    std::string out = parsed.scheme + "://" + newHost;
+    if (parsed.hasPort()) out += ":" + std::to_string(parsed.port);
     return out;
 }
 
