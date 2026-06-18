@@ -76,6 +76,23 @@ dfu_error DFUDevice::rdpVerdict(uint8_t rdpByte) {
     return DFU_ERROR_RDP_LOCKED;                // Level 1 - flash writes silently dropped
 }
 
+/**
+ * SN-8193: see header. Writing the FLASH Option Bytes makes the STM32 reset immediately, so the
+ * USB device drops off the bus mid-transfer; the resulting disconnect-class libusb error is the
+ * expected, successful end of finalize. Kept free of any USB/device state so it can be exercised
+ * directly by unit tests (tests/test_ISDFUFirmwareUpdater.cpp).
+ */
+bool DFUDevice::isExpectedOptionByteResetError(int libusbError) {
+    switch (libusbError) {
+        case LIBUSB_ERROR_NO_DEVICE:    // device left the bus (most common)
+        case LIBUSB_ERROR_IO:           // transfer torn down by the reset
+        case LIBUSB_ERROR_PIPE:         // endpoint stalled as the device went away
+            return true;
+        default:
+            return false;
+    }
+}
+
 
 /**
  * Adds all discovered DFU devices, which match the specified VID/PID (if != 0) to the referenced devices vector.
@@ -1173,12 +1190,17 @@ dfu_error DFUDevice::finalizeFirmware() {
         if (ret_libusb < LIBUSB_SUCCESS)
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
 
-        // STM32 DFU specs will reset the device immediately after writing to the Option Bytes
+        // STM32 DFU specs will reset the device immediately after writing to the Option Bytes. That
+        // reset drops the USB device off the bus mid-transfer, so a disconnect-class libusb error here
+        // is the EXPECTED, successful outcome (SN-8193); only a non-disconnect error is a real failure.
         ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
-        if (ret_libusb < LIBUSB_SUCCESS)
+        if (ret_libusb < LIBUSB_SUCCESS && !isExpectedOptionByteResetError(ret_libusb))
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
 
-        // if there wasn't an error, the device just restarted, and we have no indication of an error, so it must be OK!
+        if ((ret_libusb < LIBUSB_SUCCESS) && statusCb)
+            statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Option bytes written; device reset as expected (libusb=%d)", getDescription(), ret_libusb);
+
+        // The device just restarted; we have no further indication of an error, so it is OK.
         return DFU_ERROR_NONE;
 
     } else if (processorType == IS_PROCESSOR_STM32U5) {
@@ -1212,12 +1234,17 @@ dfu_error DFUDevice::finalizeFirmware() {
         if (ret_libusb < LIBUSB_SUCCESS)
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
 
-        // STM32 DFU specs will reset the device immediately after writing to the Option Bytes
+        // STM32 DFU specs will reset the device immediately after writing to the Option Bytes. That
+        // reset drops the USB device off the bus mid-transfer, so a disconnect-class libusb error here
+        // is the EXPECTED, successful outcome (SN-8193); only a non-disconnect error is a real failure.
         ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
-        if (ret_libusb < LIBUSB_SUCCESS)
+        if (ret_libusb < LIBUSB_SUCCESS && !isExpectedOptionByteResetError(ret_libusb))
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
 
-        // if there wasn't an error, the device just restarted, and we have no indication of an error, so it must be OK!
+        if ((ret_libusb < LIBUSB_SUCCESS) && statusCb)
+            statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Option bytes written; device reset as expected (libusb=%d)", getDescription(), ret_libusb);
+
+        // The device just restarted; we have no further indication of an error, so it is OK.
         return DFU_ERROR_NONE;
     }
 

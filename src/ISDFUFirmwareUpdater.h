@@ -241,6 +241,17 @@ public:
      */
     static dfu_error rdpVerdict(uint8_t rdpByte);
 
+    /**
+     * SN-8193: classifies a libusb error returned by the Option-Bytes download() in finalizeFirmware().
+     * Writing the STM32 FLASH option bytes triggers a mandatory immediate device reset, so the USB
+     * device disconnects mid-transfer and libusb reports a disconnect-class error. That error is the
+     * EXPECTED successful outcome of finalize, not a failure. Returns true for the disconnect-class
+     * codes (LIBUSB_ERROR_NO_DEVICE / _IO / _PIPE); any other error (e.g. TIMEOUT, ACCESS) is a real
+     * failure and returns false. Pure decision logic, separated so it can be unit-tested without USB
+     * hardware (same pattern as rdpVerdict()).
+     */
+    static bool isExpectedOptionByteResetError(int libusbError);
+
     int fillDeviceInfo(dev_info_t &devInfo);
 
 protected:

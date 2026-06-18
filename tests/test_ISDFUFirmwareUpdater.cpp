@@ -46,3 +46,28 @@ TEST(ISDFUFirmwareUpdater_RDP, ErrorNames_OutOfRangeIsSafe) {
     EXPECT_STREQ("UNKNOWN", DFUDevice::getErrorName(9999));
     EXPECT_STREQ("UNKNOWN", DFUDevice::getErrorName(-100));
 }
+
+// --- isExpectedOptionByteResetError(): disconnect-class libusb error after the Option-Bytes
+//     write is the expected, successful end of finalize; everything else is a real failure (SN-8193) ---
+
+TEST(ISDFUFirmwareUpdater_Finalize, ExpectedResetDisconnects_AreSuccess) {
+    // Writing the Option Bytes triggers a mandatory immediate reset; the device drops off the bus
+    // mid-transfer. These are the disconnect-class codes libusb reports for that, and they must NOT
+    // be treated as finalize failures (the false "Complete (finalize warning: LIBUSB_ERROR)" bug).
+    EXPECT_TRUE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_NO_DEVICE));
+    EXPECT_TRUE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_IO));
+    EXPECT_TRUE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_PIPE));
+}
+
+TEST(ISDFUFirmwareUpdater_Finalize, SuccessAndGenuineErrors_AreNotResetDisconnects) {
+    // A successful transfer (>= 0) is not an error at all, and genuine fault codes must still fail
+    // finalize rather than being silently swallowed as an "expected reset".
+    EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_SUCCESS));
+    EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(40)); // positive = bytes transferred
+    EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_TIMEOUT));
+    EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_ACCESS));
+    EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_INVALID_PARAM));
+    EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_BUSY));
+    EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_NO_MEM));
+    EXPECT_FALSE(DFUDevice::isExpectedOptionByteResetError(LIBUSB_ERROR_NOT_SUPPORTED));
+}
