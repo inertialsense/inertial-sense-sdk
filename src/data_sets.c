@@ -1080,3 +1080,22 @@ unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
     return bits;
 }
 
+/**
+ * @brief Check if the manufacturing info meets the requirements for writing to flash.
+ * 
+ * @param newInfo 
+ * @return int 
+ */
+int manufacturing_info_checkRequirementsToWrite(manufacturing_info_t *newInfo)
+{
+    // Only valid lot numbers
+    if (newInfo->lotNumber == 0 || newInfo->lotNumber == 0xFFFF) return 0;
+
+    // Only valid hardware ids
+    if (newInfo->hardwareId == 0 || newInfo->hardwareId == 0xFFFF) return 0;
+
+    // Only valid date numbers
+    if (newInfo->date[0] == 0 || newInfo->date[0] == 0xFFFFFFFF) return 0;
+
+    return 1;
+}
