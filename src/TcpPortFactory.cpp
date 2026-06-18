@@ -21,7 +21,6 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
-#include <util/uri.hpp>
 #include <util/util.h>
 
 #if PLATFORM_IS_WINDOWS
@@ -136,28 +135,23 @@ port_handle_t TcpPortFactory::bindPort(const std::string& pName, uint16_t pType)
     }
 
     // Parse pName for address
-    const FIX8::uri url {pName};
-    if (url.get_scheme() != "tcp" || url.get_port().empty() || url.get_host().empty()) {
+    const utils::UriParts url = utils::parseUri(pName);
+    if (url.scheme != "tcp" || !url.hasPort() || !url.hasHost()) {
         return nullptr;
     }
-    std::string uriHost {url.get_host()};
-    if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
-        uriHost = uriHost.substr(1, uriHost.size() - 2);
-    }
-    std::string uriPort {url.get_port()};
 
     // Reuse the cached resolution from validatePort() above (same host, same TTL window)
     // so we don't re-run a blocking .local getaddrinfo here. resolveHostCached fills the
     // address only; set the port from this URI.
     sockaddr_storage addr = {};
     int family = 0;
-    if (!resolveHostCached(uriHost, addr, family)) {
+    if (!resolveHostCached(url.host, addr, family)) {
         return nullptr;
     }
     if (family == AF_INET) {
-        reinterpret_cast<sockaddr_in*>(&addr)->sin_port = htons(static_cast<uint16_t>(std::stoi(uriPort)));
+        reinterpret_cast<sockaddr_in*>(&addr)->sin_port = htons(static_cast<uint16_t>(url.port));
     } else if (family == AF_INET6) {
-        reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port = htons(static_cast<uint16_t>(std::stoi(uriPort)));
+        reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port = htons(static_cast<uint16_t>(url.port));
     } else {
         return nullptr;
     }
@@ -195,13 +189,9 @@ bool TcpPortFactory::releasePort(port_handle_t port) {
  * @return True if port can be created, false otherwise
  */
 bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
-    const FIX8::uri url {pName};
-    if (url.get_scheme() != "tcp" || url.get_port().empty() || url.get_host().empty()) {
+    const utils::UriParts url = utils::parseUri(pName);
+    if (url.scheme != "tcp" || !url.hasPort() || !url.hasHost()) {
         return false;
-    }
-    std::string uriHost {url.get_host()};
-    if (uriHost.rfind("[", 0) == 0 && uriHost.size() > 1 && uriHost[uriHost.size() - 1] == ']') {
-        uriHost = uriHost.substr(1, uriHost.size() - 2);
     }
 
     if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) {
@@ -212,7 +202,7 @@ bool TcpPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     // resolves once per TTL window, and so bindPort() reuses this result (SN-8175).
     sockaddr_storage addr = {};
     int family = 0;
-    return resolveHostCached(uriHost, addr, family);
+    return resolveHostCached(url.host, addr, family);
 }
 
 /**

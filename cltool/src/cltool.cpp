@@ -1378,10 +1378,10 @@ void cltool_outputUsage()
 	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777" << endl;
 	cout << "            -rover=TCP:UBLOX:192.168.1.100:7777" << endl;
 	cout << "            -rover=SERIAL:RTCM3:" << EXAMPLE_PORT << ":57600        (port, baud rate)" << endlbOn;
-	cout << "    -base=" << boldOff << "[IP]:[port]   As a Base (sever), send RTK corrections.  Examples:" << endl;
-	cout << "            -base=TCP::7777                             (IP is optional)" << endl;
-	cout << "            -base=TCP:192.168.1.43:7777" << endl;
-	cout << "            -base=SERIAL:" << EXAMPLE_PORT << ":921600" << endl;
+	cout << "    -base=" << boldOff << "TCP://[IP]:[port]   As a Base (server), send RTK corrections.  Examples:" << endl;
+	cout << "            -base=TCP://:7777                           (IP is optional)" << endl;
+	cout << "            -base=TCP://192.168.1.43:7777" << endl;
+	cout << "            -base=TCP://[::1]:7777                      (IPv6 host in brackets)" << endl;
 	cout << endlbOn;	
 	cout << "CLTool - " << boldOff << cltool_version() << endl;
 
