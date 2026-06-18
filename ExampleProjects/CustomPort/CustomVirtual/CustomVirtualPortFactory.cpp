@@ -13,9 +13,8 @@
  * example to guide users through the process of creating and using custom ports
  */
 
-/** Include C++ libraries for use by your custom port class member functions defined here
+/** STEP 1: Include C++ libraries for use by your custom port class member functions defined here
  */
-#include <string>
 #include <vector>
 #include <regex>
 
@@ -29,21 +28,13 @@
 #include "ISUtilities.h"
 
 /**
- * Include the PortManager for building and maintaining a list of all ports by name 
+ * Include the PortManager if desired for building and maintaining a list of all ports by name 
  */
 //#include "PortManager.h"
 
-/**
- * Include any of your own custom application port definition headers, the lower-level
- * code that defines the interface used by this custom port factory
- */
-//for example, #include "serialPort.h"
-//for example, #include "serialPortPlatform.h"
 
-
-/**
- * @brief Required minimum method, validates name and type, locates and/or instantiates new port
- * 
+/** STEP 2
+ * @brief  Required minimum method, validates name and type, locates and/or instantiates new port
  */
 port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType) {
     if (!validatePort(pName, pType))
@@ -61,7 +52,8 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
     }
     else
         return nullptr;
-            
+
+    /** Need a port_handle_t reference to our port to use for our own validation and to return from bind */
     port_handle_t port = (port_handle_t) testPort;   
     *testPort = {};
 
@@ -141,6 +133,9 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
     }
 }
 
+//
+// TBD to use this method for this example or not?
+//
 int CustomVirtualPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
     // const char* portStr = portName(port);
     // const char* safeErrMsg = errMsg ? errMsg : "";

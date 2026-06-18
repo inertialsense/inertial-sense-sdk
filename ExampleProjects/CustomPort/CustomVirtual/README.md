@@ -1,6 +1,6 @@
 # SDK: Port Factory Custom Virtual Communications Port Example Project
 
-This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual) project demonstrates the creation of a custom Port Factory child class built upon an SDK virtual test port as the base_port implementation using the Inertial Sense SDK.
+This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual) project demonstrates the creation of a custom Port Factory child class built upon an SDK virtual test port as the base_port implementation, using the Inertial Sense SDK.
 
 ## Files
 
@@ -21,6 +21,71 @@ This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-
 
 
 ## Implementation
+
+The following instructions identify some examples of similar code to that found under corresponding "STEP X" markings in the source files.  Please refer to the source file code directly and treat the code in this README as orientation only.
+
+### Step 1: Create New Project Files and Include Headers
+Create two new files, named something like YOURNAMEPortFactory.h and YOURNAMEPortFactory.cpp.  
+
+Example headers for .h file:
+```C++
+/**
+ * Include any of your own custom application port definition headers, the lower-level
+ * code that defines the interface used by this custom port factory
+ */
+#include "../tests/test_serial_utils.h"
+
+/** Include the header file for the abstract class PortFactory.h
+ */
+#include "PortFactory.h"
+
+// etc
+```
+
+Example headers for .cpp file:
+```C++
+/** Include C++ libraries for use by your custom port class member functions defined here
+ */
+#include <vector>
+#include <regex>
+
+/** Include utility functions for use by your custom port class member functions defined here
+ */
+#include "ISUtilities.h"
+
+//etc
+```
+
+
+### Step 2: Extend Port Factory for Custom Port
+
+The header file defines a child class that inherits from PortFactory, as in:
+```C++
+class CustomVirtualPortFactory : public PortFactory
+```
+
+See the CustomVirtualPortFactory.h file for configuration example of singleton port factory, optional class members and functions, etc.
+
+### Step 3: Define Custom Port Factory
+The .cpp file body will define at a minimum the following virtual PortFactory functions: bindPort, locatePorts, releasePort, validatePort:
+```C++
+port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType)
+bool CustomVirtualPortFactory::releasePort(port_handle_t port)
+bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t pType)
+void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType)
+```
+
+Add in additional support functions as needed for your application.
+```C++
+/**
+ * Populates a vector of string identifiers for all available virtual ports from test_serial_utils.
+ * For this example, it will be a number of virtual ports defined in the data_sets.h header used by the 
+ * test_serial_utils definitions.
+ * @param portNames a reference to a vector of strings, which will be populated with names identifiers of available ports
+ * @return the number of ports found on the host
+ */
+int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
+```
 
 ### Step 1: Add Includes
 
@@ -155,14 +220,12 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	}
 ```
 
-## Compile & Run (Linux/Mac)
+## Compile & Run (Linux)
 
 1. Install necessary dependencies
    ``` bash
    # For Debian/Ubuntu linux, install libusb-1.0-0-dev from packages
-   sudo apt update && sudo apt install libusb-1.0-0-dev
-   # For MacOS, install libusb using brew
-   brew install libusb
+   sudo apt update && sudo apt install libusb-1.0-0-dev   
    ```
 2. Create build directory
    ``` bash
@@ -178,16 +241,9 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
    ``` bash
    make
    ```
-5. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
-   ```bash
-   sudo usermod -a -G dialout $USER
-   sudo usermod -a -G plugdev $USER
-   sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
-   (reboot computer)
-   ```
-6. Run executable
+5. Run executable, with one argument identifying which virtual port to use
    ``` bash
-   ./bin/ISCommExample /dev/ttyUSB0
+   ./CustomVirtual TEST0
    ```
 ## Compile & Run (Windows MS Visual Studio)
 
@@ -200,4 +256,4 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 
 ## Summary
 
-That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/inertial-sense-sdk">inertial-sense-sdk</a> GitHub repository, and we will be happy to help.
+If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/inertial-sense-sdk">inertial-sense-sdk</a> GitHub repository, and we will be happy to help.
