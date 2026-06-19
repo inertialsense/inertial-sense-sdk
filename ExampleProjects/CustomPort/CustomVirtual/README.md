@@ -27,10 +27,32 @@ The following implementation instructions identify some examples of similar code
 ## Implementation
 
 ### Step 1: Choose Port Channel Implementation
-Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation extends the SDK base) is wrapped in the base_port C object functions, with definitions outlined for all kinds of different port types.  See the SDK [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
+Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation extends the SDK base_port C object, and base_port then provides an API for channel access using a set of function hooks for methods implemented in your channel code.  The base_port comes with definitions for all kinds of different port types.  See the SDK [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
+
 
 In this example we use the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
 , which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware.
+
+```C
+typedef struct test_port_s {
+    union {
+        base_port_t base;
+        comm_port_t comm;
+    };
+
+    rmci_t          rmci;
+    uint8_t         rmciUPMcnt[DID_COUNT];
+    uint8_t         rmciNMEAcnt[NMEA_MSG_ID_COUNT];
+
+    // Used to simulate serial ports
+    ring_buf_t      portRingBuf;
+    uint8_t         portBuffer[PORT_BUFFER_SIZE];
+    uint8_t         name[6];
+} test_port_t;
+
+```
+
+
 
 ### Step 1: Create New Project Files and Include Headers
 Create two new files, named something like YOURNAMEPortFactory.h and YOURNAMEPortFactory.cpp.  This example uses CustomVirtualPortFactory.*.  
@@ -129,6 +151,9 @@ while (portIsOpened(port) && run_cnt > 0) {
             rbytes = portRead(port, rbuf, PORT_BUFFER_SIZE);
 //...			
 ```   
+
+
+
 
 ### Step 1: Add Includes
 
