@@ -27,7 +27,7 @@ The following implementation instructions identify some examples of similar code
 ## Implementation
 
 ### Step 1: Choose Port Channel Implementation
-Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation is wrapped in the base_port C object functions, with definitions outlined for all kinds of different port types.  See the SDK [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
+Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation extends the SDK base) is wrapped in the base_port C object functions, with definitions outlined for all kinds of different port types.  See the SDK [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
 
 In this example we use the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
 , which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware.
