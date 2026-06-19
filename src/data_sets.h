@@ -2830,7 +2830,8 @@ enum eSysConfigBits
     /** Disable wheel encoder fusion */
     SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION           = (int)0x00100000,
 
-    SYS_CFG_BITS_UNUSED3                                = (int)0x00200000,
+    /** Enable rover GNSS antenna offset estimation in RTK compassing mode */
+    SYS_CFG_BITS_ENABLE_GNSS_ANTENNA_OFFSET_ESTIMATION  = (int)0x00200000,
 
     /** Brownout reset threshold voltage level */
     SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,  // 1.65 - 1.75 V  (default)
