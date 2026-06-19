@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
      * For this simple example, we pass an arbitrary string into a loopback virtual test port
      * underlying implementation for base_port from Inertial Sense, and compare the read back. 
      */
-    while (portIsOpened(port) && run_cnt > 0) {
+    while ( portIsOpened(port) && (run_cnt > 0) ) {
         run_cnt--;
         rbytes = 0;
         wbytes = 0;

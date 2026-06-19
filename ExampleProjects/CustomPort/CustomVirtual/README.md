@@ -16,13 +16,13 @@ This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-
 * [core/msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h)
 * [ISUtilities.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISUtilities.h)
 * [PortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/PortFactory.h)
-* [test_serial_utils.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.cpp)
-* [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
+* [tests/test_serial_utils.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.cpp)
+* [tests/test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
 
 ## Documentation
-Doxygen style comments are ubiquitous throughout the three example Project Files.  You may build the Doxygen HTML documentation by creating a Doxyfile and following standard Doxygen build instructions.
+Doxygen style comments are ubiquitous throughout the three example Project Files.  You may build the Doxygen HTML documentation by creating a Doxyfile and following standard Doxygen build instructions if that suits you, but all information is contained in this document plus the files listed above.  
 
-The following implementation instructions identify some examples of similar code to that found under corresponding "STEP X" markings in the source files.  Please refer to the source file code directly and treat the code in this README as orientation only.
+The following implementation instructions identify some examples of similar code to that found under corresponding "STEP X" markings in the source files.  Please refer to the source file code directly and **treat the code in this README as orientation only**.
 
 ## Implementation
 
@@ -106,7 +106,7 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
 void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType)
 ```
 
-Add in additional support functions as needed for your application.
+Add in additional support functions as needed for your application.  For example, in our virtual comm port code we use this function:
 ```C++
 /**
  * Populates a vector of string identifiers for all available virtual ports from test_serial_utils.
@@ -118,7 +118,7 @@ Add in additional support functions as needed for your application.
 int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
 ```
 
-### Step 3: Create Application
+### Step 3: Create Example Application
 Create a new file named something like YOURNAMEExample.cpp, like CustomVirtualExample.cpp in this example.
 
 Include headers for any desired Inertial Sense SDK utilities, user IO capabilities, etc.  Reference your new Port Factory class:
@@ -130,13 +130,13 @@ Include headers for any desired Inertial Sense SDK utilities, user IO capabiliti
 Add forward declarations for custom application functions, and then create main.
 
 ### Step 4: Create and Init the New Port Factory
-Initialize the port with bindPort, identifying the port type (from base_port.h definitions) which is virtual loopback comms in this case
+Initialize the port with bindPort, identifying the port type (from base_port.h definitions) which is virtual loopback comms in this case.
 ```C++
     CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
     port_handle_t port = vpf.bindPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
 ```
 
-This will also validate the port, per the validation method you specify in the CustomVirtualPortFactory.cpp validatePort definition.
+The bindPort implementation should also validate the port, per the validation method you specify in the CustomVirtualPortFactory.cpp validatePort definition.
 
 ### Step 5: Exercise the Loopback Port
 In a loop executed a fixed number of iterations, send to and receive a hard coded message on the loopback port.  Use the API of the SDK core/base_port.h C object, with hooked functions (such as portWrite) implemented by the underlying wrapped virtual test port.
@@ -152,8 +152,13 @@ while (portIsOpened(port) && run_cnt > 0) {
 //...			
 ```   
 
+### Step 6: Remaining Port Factory Functionality
+Show use of locatePorts() and releasePort() to complete the demonstration of Port Factory.
+
+**TODO** add orientation examples here
 
 
+# -------DISREGARD FROM HERE BELOW, borrowed stuff from ISComm example, here for reference--------
 
 ### Step 1: Add Includes
 
