@@ -1410,7 +1410,7 @@ void cltool_outputUsage()
 	cout << "    -presetGPS     " << boldOff << " Send RMC preset to enable GPS data stream" << endlbOn;
 	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (Logging to file)" << endl;
+	cout << "OPTIONS (Writing to data log file)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
 	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
@@ -1419,12 +1419,12 @@ void cltool_outputUsage()
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
 	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (Reading from file)" << endl;
+	cout << "OPTIONS (Reading from data log file)" << endl;
 	cout << "    -r" << boldOff << "              Replay data log from default path" << endlbOn;
 	cout << "    -rp " << boldOff << "PATH        Replay data log from PATH" << endlbOn;
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
-	cout << "    -list-dids  " << boldOff << "            List all DID messages found in replay log with occurrence counts (use with -rp)" << endlbOn;
-	cout << "                " << boldOff << "            Example: -rp " << EXAMPLE_LOG_DIR << " -list-dids" << endlbOn;
+	cout << "    -list-dids  " << boldOff << "    List all DID messages found in replay data log with occurrence counts (use with -rp)" << endlbOn;
+	cout << "                " << boldOff << "         Example: -rp logs/20170117_222549 -list-dids" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (READ flash config) - DEPRECATED, use `-get` instead" << endl;
 	cout << "    -imxFlashCfg" << boldOff  <<  "                                # List all \"keys\" and \"values\" in IMX" << endlbOn;
