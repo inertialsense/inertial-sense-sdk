@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <chrono>
 #include <ctime>
+#include <map>
 #include "ISDataMappings.h"
 #include "ISmDnsPortFactory.h"
 
@@ -680,6 +681,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
+        else if (startsWith(a, "-list-dids"))
+        {
+            g_commandLineOptions.listLogDids = true;
+            g_commandLineOptions.replayDataLog = true;  // implies log replay
+        }
         else if (startsWith(a, "-use-mdns"))
         {
             g_commandLineOptions.useMdns = true;
@@ -1042,25 +1048,90 @@ bool cltool_replayDataLog()
         return false;
     }
 
-    cout << "Replaying log files: " << g_commandLineOptions.logPath << endl;
+    if (g_commandLineOptions.listLogDids)
+    {
+        bool multiDevice = logger.DeviceCount() > 1;
+        p_data_buf_t *data;
+        for (auto dl : logger.DeviceLogs())
+        {
+            if (multiDevice)
+                printf("Device SN%u:\n", dl->SerialNumber());
+            std::map<uint32_t, uint32_t> didCounts;
+            while ((data = logger.ReadData(dl)) != NULL)
+                didCounts[data->hdr.id]++;
+            printf("    Count  DID  Name\n");
+            for (const auto& [did, count] : didCounts)
+                printf("%9u%5u  %s\n", count, did, cISDataMappings::DataName(did));
+        }
+        return true;
+    }
+
+    bool getMode = (!g_commandLineOptions.outputOnceDid.empty() &&
+                    g_commandLineOptions.getNode &&
+                    !g_commandLineOptions.getNode.IsNull() &&
+                    g_commandLineOptions.getNode.size() > 0);
+
+    if (!getMode)
+        cout << "Replaying log files: " << g_commandLineOptions.logPath << endl;
+
+    bool multiDevice = logger.DeviceCount() > 1;
     p_data_buf_t *data;
     // for (int d=0; d<logger.DeviceCount(); d++)
     for (auto dl : logger.DeviceLogs())
     {
-        if (logger.DeviceCount() > 1)
-        {
-            printf("Device SN%d: \n", dl->SerialNumber());
-        }
+        if (multiDevice)
+            printf("Device SN%u:\n", dl->SerialNumber());
+
+        // In get mode use a per-device copy so each device is searched independently
+        std::vector<uint32_t> remainingDids = getMode ? g_commandLineOptions.outputOnceDid : std::vector<uint32_t>{};
+
         while (((data = logger.ReadData(dl)) != NULL) && !g_inertialSenseDisplay.ExitProgram())
         {
             p_data_t d = {data->hdr, data->buf};
-            g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
-            g_inertialSenseDisplay.PrintData();
+
+            if (getMode)
+            {
+                for (auto it = remainingDids.begin(); it != remainingDids.end(); )
+                {
+                    if (d.hdr.id == *it)
+                    {
+                        YAML::Node output;
+                        if (!cISDataMappings::DataToYaml(d.hdr.id, d.ptr, output, g_commandLineOptions.getNode))
+                        {
+                            cout << "Error parsing: " << *it << "\n";
+                        }
+                        else
+                        {
+                            YAML::Emitter out;
+                            out << output;
+                            if (out.good())
+                                std::cout << out.c_str() << std::endl;
+                            else
+                                std::cerr << "YAML emitter error: " << out.GetLastError() << std::endl;
+                        }
+                        it = remainingDids.erase(it);
+                    }
+                    else
+                    {
+                        ++it;
+                    }
+                }
+                if (remainingDids.empty())
+                    break;  // All DIDs found for this device; advance to next device
+            }
+            else
+            {
+                g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+                g_inertialSenseDisplay.PrintData();
+            }
         }
     }
 
-    cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
-    g_inertialSenseDisplay.Goodbye();
+    if (!getMode)
+    {
+        cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
+        g_inertialSenseDisplay.Goodbye();
+    }
     return true;
 }
 
@@ -1237,11 +1308,13 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << " # edit DID_FLASH_CONFIG message" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGnssDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1    "        << EXAMPLE_SPACE_2 << " # connect to multiple ports (comma-separated)" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1"        << EXAMPLE_SPACE_2 << "# connect to multiple ports (comma-separated)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -rp logs/20170117_222549 -get 12        "                                 << " # show first DID_FLASH_CONFIG value from a log" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -rp logs/20170117_222549 -list-dids     "                                 << " # list all DIDs found in log files" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password          # Connect to RTK NTRIP base" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GNSS1_POS                                    # Return specific DIDs" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"   # Return portion of two DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"    # Return portion of two DIDs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
 	cout << endlbOn;
@@ -1337,7 +1410,7 @@ void cltool_outputUsage()
 	cout << "    -presetGPS     " << boldOff << " Send RMC preset to enable GPS data stream" << endlbOn;
 	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
+	cout << "OPTIONS (Logging to file)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
 	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
@@ -1345,9 +1418,13 @@ void cltool_outputUsage()
 	cout << "    -lms=" << boldOff << "PERCENT    File culling: Log drive space limit in percent of total drive, 0.0 to 1.0. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
 	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
+	cout << endlbOn;
+	cout << "OPTIONS (Reading from file)" << endl;
 	cout << "    -r" << boldOff << "              Replay data log from default path" << endlbOn;
 	cout << "    -rp " << boldOff << "PATH        Replay data log from PATH" << endlbOn;
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
+	cout << "    -list-dids  " << boldOff << "            List all DID messages found in replay log with occurrence counts (use with -rp)" << endlbOn;
+	cout << "                " << boldOff << "            Example: -rp " << EXAMPLE_LOG_DIR << " -list-dids" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (READ flash config) - DEPRECATED, use `-get` instead" << endl;
 	cout << "    -imxFlashCfg" << boldOff  <<  "                                # List all \"keys\" and \"values\" in IMX" << endlbOn;
