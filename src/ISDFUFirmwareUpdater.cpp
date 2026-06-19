@@ -76,6 +76,39 @@ dfu_error DFUDevice::rdpVerdict(uint8_t rdpByte) {
     return DFU_ERROR_RDP_LOCKED;                // Level 1 - flash writes silently dropped
 }
 
+/**
+ * SN-8193: see header. Writing the FLASH Option Bytes makes the STM32 reset immediately, so the
+ * USB device drops off the bus mid-transfer; the resulting disconnect-class libusb error is the
+ * expected, successful end of finalize. Kept free of any USB/device state so it can be exercised
+ * directly by unit tests (tests/test_ISDFUFirmwareUpdater.cpp).
+ */
+bool DFUDevice::isExpectedOptionByteResetError(int libusbError) {
+    switch (libusbError) {
+        case LIBUSB_ERROR_NO_DEVICE:    // device left the bus (most common)
+        case LIBUSB_ERROR_IO:           // transfer torn down by the reset
+        case LIBUSB_ERROR_PIPE:         // endpoint stalled as the device went away
+            return true;
+        default:
+            return false;
+    }
+}
+
+/**
+ * SN-8193: see header. Thin wrapper over libusb's own name lookup; pure so it can be unit-tested.
+ */
+const char *DFUDevice::libusbErrorName(int libusbCode) {
+    return libusb_error_name(libusbCode);
+}
+
+/**
+ * SN-8193: see header. Records the libusb code for diagnostics and returns the DFU_ERROR_LIBUSB tag.
+ * Replaces the old `DFU_ERROR_LIBUSB | (code << 16)` packing, which discarded the code entirely.
+ */
+dfu_error DFUDevice::libusbError(int libusbCode) {
+    lastLibusbError = libusbCode;
+    return DFU_ERROR_LIBUSB;
+}
+
 
 /**
  * Adds all discovered DFU devices, which match the specified VID/PID (if != 0) to the referenced devices vector.
@@ -1029,13 +1062,13 @@ dfu_error DFUDevice::eraseFlash(const dfu_memory_t& mem, uint32_t& offset, uint3
         ret_libusb = download(dlBlockNum, eraseCommand, 5);
         if (ret_libusb < LIBUSB_SUCCESS) {
             if (statusCb) statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Erase download failed at 0x%08X: libusb=%d", getDescription(), pageAddress, ret_libusb);
-            return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            return libusbError(ret_libusb);
         }
 
         ret_libusb = waitForState(DFU_STATE_DNLOAD_IDLE, &state);
         if (ret_libusb < LIBUSB_SUCCESS) {
             if (statusCb) statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Erase waitForState failed at 0x%08X: libusb=%d, state=%d", getDescription(), pageAddress, ret_libusb, state);
-            return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            return libusbError(ret_libusb);
         }
 
         byteInSection += mem.pageSize;
@@ -1093,7 +1126,7 @@ dfu_error DFUDevice::writeFlash(const dfu_memory_t& mem, uint32_t& offset, uint3
         // Set write address
         ret_libusb = setAddress(dlBlockNum, mem.address + offset);
         if (ret_libusb < LIBUSB_SUCCESS) {
-            return (dfu_error) (DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            return libusbError(ret_libusb);
         }
 
         // Copy image into buffer for transmission
@@ -1104,13 +1137,13 @@ dfu_error DFUDevice::writeFlash(const dfu_memory_t& mem, uint32_t& offset, uint3
 
         ret_libusb = download(dlBlockNum, payload, payloadLen);
         if (ret_libusb < LIBUSB_SUCCESS) {
-            ret_dfu = (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            ret_dfu = libusbError(ret_libusb);
             break;
         }
 
         ret_libusb = waitForState(DFU_STATE_DNLOAD_IDLE);
         if (ret_libusb < LIBUSB_SUCCESS) {
-            ret_dfu = (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            ret_dfu = libusbError(ret_libusb);
             break;
         }
 
@@ -1166,19 +1199,24 @@ dfu_error DFUDevice::finalizeFirmware() {
             abort(); // We were doing something else, but not any more... Cancel any existing operations, and return to a good, known state
             ret_libusb = waitForState(DFU_STATE_IDLE);
             if (ret_libusb < LIBUSB_SUCCESS)
-                return (dfu_error) (DFU_ERROR_LIBUSB | (ret_libusb << 16));
+                return libusbError(ret_libusb);
         }
 
         ret_libusb = setAddress(dlBlockNum, segments[STM32_DFU_INTERFACE_OPTIONS].address);
         if (ret_libusb < LIBUSB_SUCCESS)
-            return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            return libusbError(ret_libusb);
 
-        // STM32 DFU specs will reset the device immediately after writing to the Option Bytes
+        // STM32 DFU specs will reset the device immediately after writing to the Option Bytes. That
+        // reset drops the USB device off the bus mid-transfer, so a disconnect-class libusb error here
+        // is the EXPECTED, successful outcome (SN-8193); only a non-disconnect error is a real failure.
         ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
-        if (ret_libusb < LIBUSB_SUCCESS)
-            return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        if (ret_libusb < LIBUSB_SUCCESS && !isExpectedOptionByteResetError(ret_libusb))
+            return libusbError(ret_libusb);
 
-        // if there wasn't an error, the device just restarted, and we have no indication of an error, so it must be OK!
+        if ((ret_libusb < LIBUSB_SUCCESS) && statusCb)
+            statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Option bytes written; device reset as expected (libusb=%d)", getDescription(), ret_libusb);
+
+        // The device just restarted; we have no further indication of an error, so it is OK.
         return DFU_ERROR_NONE;
 
     } else if (processorType == IS_PROCESSOR_STM32U5) {
@@ -1200,24 +1238,29 @@ dfu_error DFUDevice::finalizeFirmware() {
         if ((getState(&state) == LIBUSB_SUCCESS) && (state != DFU_STATE_DNLOAD_IDLE)) {            // Cancel any existing operations
             ret_libusb = abort();
             if (ret_libusb < LIBUSB_SUCCESS)
-                return (dfu_error) (DFU_ERROR_LIBUSB | (ret_libusb << 16));
+                return libusbError(ret_libusb);
 
             // Reset status to good
             ret_libusb = waitForState(DFU_STATE_IDLE);
             if (ret_libusb < LIBUSB_SUCCESS)
-                return (dfu_error) (DFU_ERROR_LIBUSB | (ret_libusb << 16));
+                return libusbError(ret_libusb);
         }
 
         ret_libusb = setAddress(dlBlockNum, segments[STM32_DFU_INTERFACE_OPTIONS].address);
         if (ret_libusb < LIBUSB_SUCCESS)
-            return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            return libusbError(ret_libusb);
 
-        // STM32 DFU specs will reset the device immediately after writing to the Option Bytes
+        // STM32 DFU specs will reset the device immediately after writing to the Option Bytes. That
+        // reset drops the USB device off the bus mid-transfer, so a disconnect-class libusb error here
+        // is the EXPECTED, successful outcome (SN-8193); only a non-disconnect error is a real failure.
         ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
-        if (ret_libusb < LIBUSB_SUCCESS)
-            return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        if (ret_libusb < LIBUSB_SUCCESS && !isExpectedOptionByteResetError(ret_libusb))
+            return libusbError(ret_libusb);
 
-        // if there wasn't an error, the device just restarted, and we have no indication of an error, so it must be OK!
+        if ((ret_libusb < LIBUSB_SUCCESS) && statusCb)
+            statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Option bytes written; device reset as expected (libusb=%d)", getDescription(), ret_libusb);
+
+        // The device just restarted; we have no further indication of an error, so it is OK.
         return DFU_ERROR_NONE;
     }
 
@@ -1230,16 +1273,16 @@ dfu_error DFUDevice::finalizeFirmware() {
     }
 
     if (ret_libusb < LIBUSB_SUCCESS)
-        return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        return libusbError(ret_libusb);
 
     // Wait for the drop to the MANIFEST state
     ret_libusb = waitForState(DFU_STATE_MANIFEST, &state);
     if (ret_libusb < LIBUSB_SUCCESS)
-        return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        return libusbError(ret_libusb);
 
     ret_libusb = waitForState(DFU_STATE_MANIFEST_WAIT_RESET, &state);
     if (ret_libusb < LIBUSB_SUCCESS)
-        return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        return libusbError(ret_libusb);
 
     // At this point, there is nothing left to due but reset
     detach(100);
@@ -1263,12 +1306,12 @@ dfu_error DFUDevice::close() {
     // Cancel any existing operations
     ret_libusb = abort();
     if (ret_libusb < LIBUSB_SUCCESS) {
-        ret_dfu = (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+        ret_dfu = libusbError(ret_libusb);
     } else {
         // Reset status to good
         ret_libusb = waitForState(DFU_STATE_IDLE);
         if (ret_libusb < LIBUSB_SUCCESS)
-            ret_dfu = (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            ret_dfu = libusbError(ret_libusb);
     }
 
     libusb_release_interface(usbHandle, 0);
@@ -1317,7 +1360,7 @@ dfu_error DFUDevice::prepAndValidateBeforeDownload(uint32_t address, uint32_t da
         ret_libusb = abort();
         ret_libusb = waitForState(DFU_STATE_IDLE);
         if (ret_libusb < LIBUSB_SUCCESS) {
-            return (dfu_error) (DFU_ERROR_LIBUSB | (ret_libusb << 16));
+            return libusbError(ret_libusb);
         }
     }
 

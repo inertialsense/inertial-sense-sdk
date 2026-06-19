@@ -223,6 +223,20 @@ public:
     uint16_t getHardwareId() { return hardwareId; }
     uint32_t getSerialNo() { return sn; }
 
+    /**
+     * SN-8193: the raw libusb error code captured the last time this device produced a
+     * DFU_ERROR_LIBUSB. The dfu_error return value only carries the DFU_ERROR_LIBUSB tag, so the
+     * specific libusb code is preserved here for diagnostics.
+     * @return the most recent libusb error code for this device, or LIBUSB_SUCCESS (0) if none has occurred
+     */
+    int getLastLibusbError() const { return lastLibusbError; }
+
+    /**
+     * SN-8193: human-readable name of the most recent libusb error for this device (see getLastLibusbError()).
+     * @return the libusb error name from libusb_error_name() (e.g. "LIBUSB_ERROR_NO_DEVICE")
+     */
+    const char* getLastLibusbErrorName() const { return libusb_error_name(lastLibusbError); }
+
     eProcessorType getProcessorType() const { return processorType; }
     uint32_t getTotalFlashSize() const;
     static const char* getDeviceTypeName(eProcessorType procType, uint32_t totalFlashSize);
@@ -241,9 +255,41 @@ public:
      */
     static dfu_error rdpVerdict(uint8_t rdpByte);
 
+    /**
+     * SN-8193: classifies a libusb error returned by the Option-Bytes download() in finalizeFirmware().
+     * Writing the STM32 FLASH option bytes triggers a mandatory immediate device reset, so the USB
+     * device disconnects mid-transfer and libusb reports a disconnect-class error. That error is the
+     * EXPECTED successful outcome of finalize, not a failure. Pure decision logic, separated so it can
+     * be unit-tested without USB hardware (same pattern as rdpVerdict()).
+     * @param libusbError a libusb return/error code (e.g. LIBUSB_ERROR_NO_DEVICE)
+     * @return true for the disconnect-class codes (LIBUSB_ERROR_NO_DEVICE / _IO / _PIPE) that are the
+     *         expected result of the option-byte reset; false for success and all other errors
+     *         (e.g. TIMEOUT, ACCESS), which remain real finalize failures
+     */
+    static bool isExpectedOptionByteResetError(int libusbError);
+
+    /**
+     * SN-8193: human-readable name for a libusb error code (thin wrapper over libusb's own
+     * libusb_error_name()). Pure, so it is unit-testable without USB hardware.
+     * @param libusbCode a libusb return/error code
+     * @return the libusb error name (e.g. "LIBUSB_ERROR_NO_DEVICE"); never null
+     */
+    static const char* libusbErrorName(int libusbCode);
+
     int fillDeviceInfo(dev_info_t &devInfo);
 
 protected:
+    /**
+     * SN-8193: records `libusbCode` as this device's last libusb error and returns the
+     * DFU_ERROR_LIBUSB tag. Replaces the old `(dfu_error)(DFU_ERROR_LIBUSB | (code << 16))` packing,
+     * which silently discarded the libusb code: DFU_ERROR_LIBUSB (-4) is sign-extended to all-ones in
+     * the high bits, so OR-ing the shifted code never changed any bit and the result was always -4.
+     * The code is now retrievable via getLastLibusbError() / getLastLibusbErrorName().
+     * @param libusbCode the libusb error code to record for this device
+     * @return DFU_ERROR_LIBUSB
+     */
+    dfu_error libusbError(int libusbCode);
+
     dfu_error fetchDeviceInfo();
 
     int get_string_descriptor_ascii(uint8_t desc_index, char *data, int length);
@@ -274,6 +320,7 @@ protected:
 private:
     libusb_device *usbDevice = nullptr;
     libusb_device_handle *usbHandle = nullptr;  // if this is not null, then this should be a valid, open handle.
+    int lastLibusbError = LIBUSB_SUCCESS;       //!< SN-8193: raw libusb code from this device's most recent DFU_ERROR_LIBUSB
 
     uint16_t vid = 0;                           // the vendor id for this device (for filtering/selection)
     uint16_t pid = 0;                           // the product id for this device (for filtering/selection)
