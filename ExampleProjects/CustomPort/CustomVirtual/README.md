@@ -19,19 +19,28 @@ This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-
 * [test_serial_utils.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.cpp)
 * [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
 
+## Documentation
+Doxygen style comments are ubiquitous throughout the three example Project Files.  You may build the Doxygen HTML documentation by creating a Doxyfile and following standard Doxygen build instructions.
+
+The following implementation instructions identify some examples of similar code to that found under corresponding "STEP X" markings in the source files.  Please refer to the source file code directly and treat the code in this README as orientation only.
 
 ## Implementation
 
-The following instructions identify some examples of similar code to that found under corresponding "STEP X" markings in the source files.  Please refer to the source file code directly and treat the code in this README as orientation only.
+### Step 1: Choose Port Channel Implementation
+Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation is wrapped in the base_port C object functions, with definitions outlined for all kinds of different port types.  See the SDK [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
+
+In this example we use the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
+, which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware.
 
 ### Step 1: Create New Project Files and Include Headers
-Create two new files, named something like YOURNAMEPortFactory.h and YOURNAMEPortFactory.cpp.  
+Create two new files, named something like YOURNAMEPortFactory.h and YOURNAMEPortFactory.cpp.  This example uses CustomVirtualPortFactory.*.  
 
 Example headers for .h file:
 ```C++
 /**
  * Include any of your own custom application port definition headers, the lower-level
- * code that defines the interface used by this custom port factory
+ * code that defines the interface used by this custom port factory; in this case the SDK
+ * virtual test ports
  */
 #include "../tests/test_serial_utils.h"
 
@@ -57,21 +66,21 @@ Example headers for .cpp file:
 ```
 
 
-### Step 2: Extend Port Factory for Custom Port
+### Step 2: Extend/Define Port Factory for Custom Port
 
-The header file defines a child class that inherits from PortFactory, as in:
+See the CustomVirtualPortFactory.h file for configuration example of singleton port factory, optional class members and functions, etc.  The header file defines a child class that inherits from PortFactory, as in:
 ```C++
 class CustomVirtualPortFactory : public PortFactory
 ```
 
-See the CustomVirtualPortFactory.h file for configuration example of singleton port factory, optional class members and functions, etc.
-
-### Step 3: Define Custom Port Factory
 The .cpp file body will define at a minimum the following virtual PortFactory functions: bindPort, locatePorts, releasePort, validatePort:
 ```C++
-port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType)
-bool CustomVirtualPortFactory::releasePort(port_handle_t port)
-bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t pType)
+port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType);
+
+bool CustomVirtualPortFactory::releasePort(port_handle_t port);
+
+bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t pType);
+
 void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType)
 ```
 
@@ -86,6 +95,40 @@ Add in additional support functions as needed for your application.
  */
 int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
 ```
+
+### Step 3: Create Application
+Create a new file named something like YOURNAMEExample.cpp, like CustomVirtualExample.cpp in this example.
+
+Include headers for any desired Inertial Sense SDK utilities, user IO capabilities, etc.  Reference your new Port Factory class:
+```C++
+/** The port factory child class the user creates, inheriting from PortFactory.h definition */
+#include "CustomVirtualPortFactory.h"
+```
+
+Add forward declarations for custom application functions, and then create main.
+
+### Step 4: Create and Init the New Port Factory
+Initialize the port with bindPort, identifying the port type (from base_port.h definitions) which is virtual loopback comms in this case
+```C++
+    CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
+    port_handle_t port = vpf.bindPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
+```
+
+This will also validate the port, per the validation method you specify in the CustomVirtualPortFactory.cpp validatePort definition.
+
+### Step 5: Exercise the Loopback Port
+In a loop executed a fixed number of iterations, send to and receive a hard coded message on the loopback port.  Use the API of the SDK core/base_port.h C object, with hooked functions (such as portWrite) implemented by the underlying wrapped virtual test port.
+
+```C++
+while (portIsOpened(port) && run_cnt > 0) {
+//...
+        if (portFree(port) >= wlen) {
+            wbytes = portWrite(port, wbuf, wlen);
+//...   
+        if (portAvailable(port) > 0) {
+            rbytes = portRead(port, rbuf, PORT_BUFFER_SIZE);
+//...			
+```   
 
 ### Step 1: Add Includes
 

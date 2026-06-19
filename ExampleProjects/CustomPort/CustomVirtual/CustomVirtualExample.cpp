@@ -17,11 +17,11 @@
  * example to guide users through the process of creating and using custom ports
  */
 
-/** Include user IO capabilities for this demo so when run visual indicators appear */
+/** STEP 3: Include user IO capabilities for this demo so when run visual indicators appear */
 #include <stdio.h>
 
-// STEP 1: Add Includes
-// Change these include paths to the correct paths for your project
+/** Include utility functions for use by your custom port class member functions defined here
+ */
 #include "ISUtilities.h"
 
 /** The port factory child class the user creates, inheriting from PortFactory.h definition */
@@ -49,8 +49,7 @@ int main(int argc, char* argv[])
 
     printf("Attempting to allocate and open virtual port %s\r\n", argv[1]);
         
-    // STEP 2: Initialize and open comms port, which is virtual loopback in this case
-
+    /** STEP 4: Initialize and open comms port, which is virtual loopback in this case */
     CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
     port_handle_t port = vpf.bindPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
        
@@ -65,20 +64,10 @@ int main(int argc, char* argv[])
         return -3;
     }
 
-    // // STEP 3: Stop any message broadcasting
-    // is_comm_stop_broadcasts_all_ports(port);
-
-    // // STEP 4: Bind callbacks to the port
-    // // Any ISB protocol messages will call into this handler (defined above).
-    // is_comm_register_port_isb_handler(port, isbDataHandler);
-
-    // // STEP 5: Enable message broadcasting
-    // // Request INS1_1 message at 100x startupNavDtd (this should be about 100 x 7ms = 700ms)
-    // is_comm_get_data(port, DID_INS_1, 0, 0, 100);
-
-    // STEP 6: In a loop, send to and receive messages from the loopback port.
-    // This should run a fairly fast rate, (1ms is typical) to avoid data from filling
-    // the COMM buffer, which could lead to data drop.
+    /** STEP 5: In a loop, send to and receive messages from the loopback port.
+     * This should run a fairly fast rate, (1ms is typical) to avoid data from filling
+     * the COMM buffer, which could lead to data drop.
+     */
     const unsigned char wbuf[] = "IMPORTANT MESSAGE";
     unsigned int wlen = strlen(reinterpret_cast<const char*>(wbuf));
     unsigned char rbuf[PORT_BUFFER_SIZE];
@@ -122,7 +111,7 @@ int main(int argc, char* argv[])
         }
     } //while
 
-    /** Demonstrate the locatePorts function, which is given a callback to help target a different port among
+    /** STEP 6:  Demonstrate the locatePorts function, which is given a callback to help target a different port among
      * those available, using a name search pattern in regex
      */
     auto cb = std::bind(portHandler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);

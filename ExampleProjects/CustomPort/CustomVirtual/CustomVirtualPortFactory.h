@@ -30,7 +30,8 @@
 
 /**
  * Include any of your own custom application port definition headers, the lower-level
- * code that defines the interface used by this custom port factory
+ * code that defines the interface used by this custom port factory; in this case the SDK
+ * virtual test ports
  */
 //for example, #include "serialPort.h"
 #include "../tests/test_serial_utils.h"
