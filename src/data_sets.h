@@ -2830,7 +2830,8 @@ enum eSysConfigBits
     /** Disable wheel encoder fusion */
     SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION           = (int)0x00100000,
 
-    SYS_CFG_BITS_UNUSED3                                = (int)0x00200000,
+    /** Enable rover GNSS antenna offset estimation in RTK compassing mode */
+    SYS_CFG_BITS_ENABLE_GNSS_ANTENNA_OFFSET_ESTIMATION  = (int)0x00200000,
 
     /** Brownout reset threshold voltage level */
     SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,  // 1.65 - 1.75 V  (default)
@@ -3404,9 +3405,9 @@ enum ePlatformConfig
     // IMX Carrier Board
     PLATFORM_CFG_TYPE_MASK                                                          = (int)0x0000003F,
     PLATFORM_CFG_TYPE_FROM_MANF_OTP                                                 = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
-    PLATFORM_CFG_TYPE_NONE                                                          = (int)0,  // IMX-5 default
-    PLATFORM_CFG_TYPE_RUG3_G0                                                       = (int)8,  // PCB RUG-3.x.         PPS disabled
-    PLATFORM_CFG_TYPE_RUG3_G1                                                       = (int)9,  // "                    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_NONE                                                          = (int)0,   // IMX-5 default
+    PLATFORM_CFG_TYPE_RUG3_G0                                                       = (int)8,   // PCB RUG-3.x.         PPS disabled
+    PLATFORM_CFG_TYPE_RUG3_G1                                                       = (int)9,   // "                    PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G2                                                       = (int)10,  // "                    PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_EVB2_G2                                                       = (int)11,
     PLATFORM_CFG_TYPE_TBED3                                                         = (int)12,  // Testbed-3:           PPS1 on  G5 (pin  9), PPS2 on G8 (pin 8)
