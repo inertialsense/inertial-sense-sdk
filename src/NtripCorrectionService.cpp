@@ -8,18 +8,15 @@
 
 #include "NtripCorrectionService.h"
 
-#include "uri.hpp"
 #include "protocol_nmea.h"
 #include "TcpPortFactory.h"
+#include "util/util.h"
 
 bool NtripCorrectionService::connect(const std::string& connectUrl, std::string userAgent) {
-    FIX8::basic_uri uri(connectUrl);
-
-    // parse the URL
-    uri.parse();
-    std::string host(uri.get_host());
-    std::string portStr(uri.get_port());
-    int port = std::strtol(portStr.c_str(), NULL, 10);
+    // parse the URL; NTRIP defaults to port 2101 when the caster URL omits one
+    const utils::UriParts uri = utils::parseUri(connectUrl, "ntrip://:2101");
+    const std::string& host = uri.host;
+    const int port = uri.port;
 
     /***
      * One issue here is that connect() is not the same as portOpen(), because connect needs to do some talking
@@ -72,10 +69,10 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
     if (!source || (portOpen(source) != PORT_ERROR__NONE))
         return false;
 
-    std::string msg = "GET " + std::string(uri.get_path()) + " HTTP/1.1\r\n";
+    std::string msg = "GET " + uri.path + " HTTP/1.1\r\n";
     msg += "User-Agent: " + userAgent + "\r\n";
-    if (uri.has_userinfo()) {
-        std::string auth = std::string(uri.get_user()) + ":" + std::string(uri.get_password());
+    if (uri.hasUserinfo()) {
+        std::string auth = uri.user + ":" + uri.password;
         msg += "Authorization: Basic " + base64Encode((const unsigned char*)auth.data(), (int)auth.length()) + "\r\n";
     }
     msg += "Accept: */*\r\nConnection: close\r\n\r\n";
