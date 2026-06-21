@@ -6177,6 +6177,8 @@ void profiler_start(runtime_profile_t *p, uint32_t timeUs);
 void profiler_stop(runtime_profile_t *p, uint32_t timeUs);
 void profiler_maintenance_1s(runtime_profiler_t *p);
 
+int manufacturing_info_checkRequirementsToWrite(manufacturing_info_t *newInfo);
+
 
 #ifdef __cplusplus
 }
