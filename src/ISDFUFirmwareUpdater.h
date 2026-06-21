@@ -11,6 +11,7 @@
 
 #include "protocol/FirmwareUpdate.h"
 
+#include <functional>
 #include <mutex>
 #include <queue>
 
@@ -204,16 +205,33 @@ public:
     bool isConnected() { return (usbHandle != nullptr) && (libusb_get_device(usbHandle) != nullptr); }
 
     /**
-     * Connect and establish USB DFU status is IDLE
+     * Connect and establish USB DFU status is IDLE.
+     * @param resetDevice when true (default) issue a libusb_reset_device() after opening, forcing a clean
+     *                    USB re-enumeration before the DFU session -- wanted before programming. Pass false
+     *                    for read-only identification (descriptor/fingerprint/OTP reads during discovery):
+     *                    abort()+waitForState(IDLE) still establish a known DFU state, and skipping the
+     *                    reset avoids a ~100-200ms per-device USB re-enumeration on every scan.
      * @return
      */
-    dfu_error open();
+    dfu_error open(bool resetDevice = true);
     dfu_error updateFirmware(std::string filename, uint64_t baseAddress = 0);
     dfu_error updateFirmware(std::istream& stream, uint64_t baseAddress = 0);
     // dfu_error updateFirmware(std::queue<uint8_t>, uint32_t imgSize, uint64_t baseAddress = 0);
     dfu_error finalizeFirmware();
     dfu_error close();
     int reset();
+
+    /**
+     * Issues a single-byte DfuSe class-specific command to the device, sent as a DFU_DNLOAD with
+     * block number 0 (the mechanism ST's DfuSe bootloader uses for its special commands, e.g. the
+     * same transport the internal erase path uses). The caller supplies the command code; this method
+     * performs no interpretation of it. Some commands initiate a long internal operation and/or an
+     * immediate device reset, so a resulting USB disconnect (see isExpectedOptionByteResetError()) is
+     * treated as the expected, successful outcome rather than a failure.
+     * @param cmd the DfuSe command code to send
+     * @return DFU_ERROR_NONE on success (including the expected reset-disconnect); a libusb-tagged error otherwise
+     */
+    dfu_error sendDfuCommand(int cmd);
 
     const char *getDescription();
 
@@ -222,6 +240,16 @@ public:
     fwUpdate::target_t getTargetType();
     uint16_t getHardwareId() { return hardwareId; }
     uint32_t getSerialNo() { return sn; }
+
+    /**
+     * The USB DFU serial-number string from the device's iSerialNumber descriptor (the STM32
+     * factory unique-ID-derived serial). Unlike getSerialNo() (the Inertial Sense OTP serial), this
+     * is read from a plain USB string descriptor, so it is available even when the module's
+     * flash/OTP is read-protected, and it is stable across a flash erase/reprogram cycle. That makes
+     * it the reliable key for re-matching a specific physical module after it resets and re-enumerates.
+     * @return the DFU serial string (empty if the descriptor was unavailable)
+     */
+    const char *getUsbSerial() const { return dfuSerial.c_str(); }
 
     /**
      * SN-8193: the raw libusb error code captured the last time this device produced a
@@ -356,9 +384,9 @@ private:
 
     int detach(uint8_t timeout);
 
-    int download(uint16_t& wValue, uint8_t *buf, uint16_t len);
+    int download(uint16_t& wValue, uint8_t *buf, uint16_t len, uint32_t timeout_ms = 5000);
 
-    int upload(uint16_t& wValue, uint8_t *buf, uint16_t len);
+    int upload(uint16_t& wValue, uint8_t *buf, uint16_t len, uint32_t timeout_ms = 5000);
 
     int getStatus(dfu_status *status, uint32_t *delay, dfu_state *state, uint8_t *i_string);
 
@@ -370,9 +398,9 @@ private:
 
     int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr, uint32_t timeout_ms = 5000);
 
-    int setAddress(uint16_t& wValue, uint32_t address);
+    int setAddress(uint16_t& wValue, uint32_t address, uint32_t timeout_ms = 5000);
 
-    int readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen);
+    int readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen, uint32_t timeout_ms = 5000);
 
     static DFUDevice::otp_info_t *decodeOTPData(uint8_t *raw, int len);
 
@@ -399,7 +427,25 @@ public:
     /** Tear down the libusb context. Call once at application shutdown. */
     static void exitLibUSB();
 
-    static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
+    // Lightweight, value-type identity for a discovered DFU device -- safe to hand across threads
+    // (no libusb handles, no ownership). Built from a DFUDevice during enumeration.
+    struct DfuDeviceInfo {
+        std::string    description;                       // human-readable (DFUDevice::getDescription)
+        std::string    typeName;                          // "IMX-6"/"GPX-1"/"IMX-5"/"Unknown"
+        std::string    usbSerial;                         // USB DFU serial descriptor
+        uint32_t       serialNo = 0xFFFFFFFF;             // IS OTP serial (UINT32_MAX if unreadable)
+        uint16_t       hardwareId = 0xFFFF;
+        eProcessorType processorType = IS_PROCESSOR_UNKNOWN;
+        uint32_t       totalFlashSize = 0;
+    };
+
+    // Invoked once per successfully-enumerated device as it is identified (on the calling thread).
+    typedef std::function<void(const DfuDeviceInfo &info)> pfnDfuDeviceFoundCb;
+
+    // Enumerate connected DFU devices. If onDeviceFound is provided, it is called for each device as it
+    // is identified (enabling progressive/streaming UI when this is run on a worker thread).
+    static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000,
+                                      pfnDfuDeviceFoundCb onDeviceFound = nullptr);
 
     static int getNumDevices(uint16_t vid = 0x0000, uint16_t pid = 0x0000);
 
@@ -408,6 +454,41 @@ public:
     static size_t filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target);
 
     static bool isDFUDevice(libusb_device *usbDevice, uint16_t vid, uint16_t pid);
+
+    // ---- DFU discovery state machine (step-driven; no internal thread) ----------------------------
+    // Reports when the set of attached DFU devices has SETTLED, so a UI can wait for discovery to
+    // complete instead of reacting to the first device that appears (which yields a partial list with
+    // not-yet-enumerated "unknown" entries). Settle detection is COUNT-based (not identity-based): an
+    // unidentifiable DFU device simply contributes to the count being waited on, so it can never
+    // deadlock completion. The SDK keeps NO thread -- the caller drives discoveryStep() from its own
+    // loop/worker at whatever cadence it likes (single-thread-friendly).
+    enum eDfuDiscoveryState {
+        DFU_DISCOVERY_IDLE = 0,    // no DFU devices present
+        DFU_DISCOVERY_STARTED,     // one or more devices appeared; count not yet stable
+        DFU_DISCOVERY_COMPLETED,   // count held steady for >= the settle timeout
+    };
+
+    // Caller-owned discovery state. Set vid/pid/settleTimeoutMs once, then call discoveryStep() each
+    // tick; read state/count after. No clock or thread is used internally -- elapsedMs (passed to
+    // discoveryStep) supplies timing, so the cadence is entirely the caller's.
+    struct DfuDiscoveryContext {
+        // configuration (set by caller before first step):
+        uint16_t           vid = 0x0000;            // count filter (0 = any)
+        uint16_t           pid = 0x0000;
+        uint32_t           settleTimeoutMs = 1000;  // count must hold steady this long for COMPLETED
+        // observable result (read by caller):
+        eDfuDiscoveryState state = DFU_DISCOVERY_IDLE;
+        int                count = 0;               // device count from the most recent step
+        // internal:
+        int                lastCount = 0;           // the count currently being timed for stability
+        uint32_t           stableElapsedMs = 0;     // accumulated time the count has held steady
+    };
+
+    // Advances the discovery state machine by one poll: counts DFU devices (getNumDevices(vid,pid)),
+    // updates ctx.state/ctx.count, and returns true IFF the state changed this step (so the caller can
+    // emit/act on the transition). elapsedMs is the time since the previous call (e.g. the caller's poll
+    // interval). initLibUSB() must have been called first.
+    static bool discoveryStep(DfuDiscoveryContext &ctx, uint32_t elapsedMs);
 
 
     // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
