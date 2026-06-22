@@ -111,10 +111,11 @@ dfu_error DFUDevice::libusbError(int libusbCode) {
 
 
 /**
- * Adds all discovered DFU devices, which match the specified VID/PID (if != 0) to the referenced devices vector.
- * @param devices a vectorof DFUDevice which contains all available/matching DFU devices
- * @param vid
- * @param pid
+ * Adds all discovered DFU devices, which match the specified VID/PID (if != 0), to the referenced devices vector.
+ * @param devices       a vector of DFUDevice which receives all available/matching DFU devices
+ * @param vid           USB vendor id filter (0 = any)
+ * @param pid           USB product id filter (0 = any)
+ * @param onDeviceFound optional callback invoked per device as it is identified (see header)
  * @return the number of dfu devices discovered (devices.size())
  */
 size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid, uint16_t pid,
@@ -181,9 +182,15 @@ int ISDFUFirmwareUpdater::getNumDevices(uint16_t vid, uint16_t pid) {
 }
 
 // ---- DFU discovery state machine (step-driven; no internal thread) --------------------------------
-// One poll of the count-based settle state machine. The caller owns ctx and drives the cadence (passing
-// elapsedMs since the previous call), so the SDK keeps no thread and no clock. See header for the
-// contract. Returns true iff the state changed this step.
+
+/**
+ * One poll of the count-based settle state machine. The caller owns ctx and drives the cadence
+ * (passing elapsedMs since the previous call), so the SDK keeps no thread and no clock. See the header
+ * for the full contract.
+ * @param ctx       caller-owned discovery context (configuration in, state/count out)
+ * @param elapsedMs time since the previous call
+ * @return true iff the state changed this step
+ */
 bool ISDFUFirmwareUpdater::discoveryStep(DfuDiscoveryContext &ctx, uint32_t elapsedMs)
 {
     const int n = getNumDevices(ctx.vid, ctx.pid);
