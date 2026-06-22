@@ -309,7 +309,10 @@ class BuildTestManager:
                 # print(f"  DEBUG:: {command}")
 
                 candidate_vcvars_paths = [
+                    r"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat",
+                    r"C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat",
                     r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
+                    r"C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
                     r"C:\Program Files\Microsoft Visual Studio\2022\VC\Auxiliary\Build\vcvarsall.bat",
                 ]
                 vcvarsall_path = next((p for p in candidate_vcvars_paths if os.path.exists(p)), None)
