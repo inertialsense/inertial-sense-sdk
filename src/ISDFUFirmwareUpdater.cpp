@@ -123,43 +123,57 @@ size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devic
     libusb_device **device_list;
     libusb_device *dev;
 
-    std::lock_guard<std::mutex> lock(dfuMutex);
+    // Value-type identities collected under dfuMutex and dispatched to onDeviceFound *after* the lock is
+    // released (see below). One per enumerated DFU device, in enumeration order.
+    std::vector<DfuDeviceInfo> foundInfos;
 
-    size_t device_count = libusb_get_device_list(NULL, &device_list);
-    log_info(IS_LOG_FWUPDATE, "DFU getAvailableDevices: libusb found %zu USB device(s), filtering for VID=%04X PID=%04X",
-             device_count, vid, pid);
+    {
+        std::lock_guard<std::mutex> lock(dfuMutex);
 
-    int dfuCount = 0;
-    for (size_t i = 0; i < device_count; ++i) {
-        dev = device_list[i];
+        size_t device_count = libusb_get_device_list(NULL, &device_list);
+        log_info(IS_LOG_FWUPDATE, "DFU getAvailableDevices: libusb found %zu USB device(s), filtering for VID=%04X PID=%04X",
+                 device_count, vid, pid);
 
-        if (isDFUDevice(dev, vid, pid)) {
-            dfuCount++;
-            libusb_ref_device(dev);  // prevent dangling pointer after free_device_list
-            DFUDevice *dfuDevice = new DFUDevice(dev);
-            devices.push_back(dfuDevice);
+        int dfuCount = 0;
+        for (size_t i = 0; i < device_count; ++i) {
+            dev = device_list[i];
 
-            if (onDeviceFound) {
-                // Hand the caller a value-type identity (no handle/ownership) for each device as it's
-                // identified -- lets a UI populate progressively when this runs on a worker thread.
-                DfuDeviceInfo info;
-                const char *desc = dfuDevice->getDescription();
-                info.description    = desc ? desc : "";
-                info.typeName       = DFUDevice::getDeviceTypeName(dfuDevice->getProcessorType(), dfuDevice->getTotalFlashSize());
-                info.usbSerial      = dfuDevice->getUsbSerial();
-                info.serialNo       = dfuDevice->getSerialNo();
-                info.hardwareId     = dfuDevice->getHardwareId();
-                info.processorType  = dfuDevice->getProcessorType();
-                info.totalFlashSize = dfuDevice->getTotalFlashSize();
-                onDeviceFound(info);
+            if (isDFUDevice(dev, vid, pid)) {
+                dfuCount++;
+                libusb_ref_device(dev);  // prevent dangling pointer after free_device_list
+                DFUDevice *dfuDevice = new DFUDevice(dev);
+                devices.push_back(dfuDevice);
+
+                if (onDeviceFound) {
+                    // Snapshot a value-type identity (no handle/ownership) for each device as it's
+                    // identified -- lets a UI populate progressively when this runs on a worker thread.
+                    // Deferred to the dispatch loop below so the callback never runs under dfuMutex.
+                    DfuDeviceInfo info;
+                    const char *desc = dfuDevice->getDescription();
+                    info.description    = desc ? desc : "";
+                    info.typeName       = DFUDevice::getDeviceTypeName(dfuDevice->getProcessorType(), dfuDevice->getTotalFlashSize());
+                    info.usbSerial      = dfuDevice->getUsbSerial();
+                    info.serialNo       = dfuDevice->getSerialNo();
+                    info.hardwareId     = dfuDevice->getHardwareId();
+                    info.processorType  = dfuDevice->getProcessorType();
+                    info.totalFlashSize = dfuDevice->getTotalFlashSize();
+                    foundInfos.push_back(info);
+                }
             }
         }
+
+        libusb_free_device_list(device_list, 1);
+
+        log_info(IS_LOG_FWUPDATE, "DFU getAvailableDevices: found %d DFU device(s), %zu enumerated successfully",
+                 dfuCount, devices.size());
     }
 
-    libusb_free_device_list(device_list, 1);
-
-    log_info(IS_LOG_FWUPDATE, "DFU getAvailableDevices: found %d DFU device(s), %zu enumerated successfully",
-             dfuCount, devices.size());
+    // Invoke onDeviceFound OUTSIDE dfuMutex. The callback runs arbitrary caller code and, on a UI worker
+    // thread, may re-enter DFU APIs that take this same (non-recursive) mutex -- holding the lock across
+    // it would risk deadlock and tie the mutex hold time to callback latency. The identities are value
+    // snapshots, safe to deliver after the libusb device list has been freed.
+    for (const DfuDeviceInfo &info : foundInfos)
+        onDeviceFound(info);
 
     return devices.size();
 }
@@ -717,7 +731,7 @@ dfu_error DFUDevice::fetchDeviceInfo() {
                 // Failed/short read here most likely means the module is read-protected (RDP-locked);
                 // SN/hwId stay at their unknown defaults and the device is still listed by type. The USB
                 // DFU serial (dfuSerial) remains valid for identifying the module.
-                log_warn(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: OTP readMemory failed (ret=%d, addr=0x%08X, size=%u); assuming read-protected (RDP-locked)",
+                log_warn(IS_LOG_FWUPDATE, "DFU fetchDeviceInfo [%d:%d]: OTP readMemory failed (ret=%d, addr=0x%08X, size=%u); likely read-protected (RDP-locked), though a transient USB error could also cause this -- SN/hwId left unknown",
                          busNum, devAddr, len, (uint32_t)otp.address, otp.pageSize);
             }
             delete [] rxBuf;
@@ -844,7 +858,10 @@ dfu_error DFUDevice::open(bool resetDevice) {
     const int   CLAIM_RETRY_MS     = 50;
     for (int attempt = 1; ; attempt++) {
         ret_libusb = libusb_claim_interface(usbHandle, 0);
-        if (ret_libusb >= LIBUSB_SUCCESS || attempt >= CLAIM_MAX_ATTEMPTS)
+        // Only LIBUSB_ERROR_BUSY is the transient case worth retrying (a prior handle or the kernel
+        // driver hasn't finished releasing). Any other failure (NO_DEVICE, ACCESS, ...) is terminal --
+        // retrying only adds latency and emits a misleading "busy" log, so bail immediately on those.
+        if (ret_libusb >= LIBUSB_SUCCESS || ret_libusb != LIBUSB_ERROR_BUSY || attempt >= CLAIM_MAX_ATTEMPTS)
             break;
         log_warn(IS_LOG_FWUPDATE, "DFU open: claim_interface busy (%s), retry %d/%d after %dms",
                  libusb_error_name(ret_libusb), attempt, CLAIM_MAX_ATTEMPTS - 1, CLAIM_RETRY_MS);
@@ -865,8 +882,14 @@ dfu_error DFUDevice::open(bool resetDevice) {
         }
     }
 
-    if (ret_dfu != DFU_ERROR_NONE)
+    if (ret_dfu != DFU_ERROR_NONE) {
+        // Don't leak the handle on a failed open. Release the interface (a no-op/harmless if the claim
+        // itself failed), then close and null usbHandle so isConnected() correctly reports the device as
+        // not open rather than appearing connected on a half-open handle.
         libusb_release_interface(usbHandle, 0);
+        libusb_close(usbHandle);
+        usbHandle = nullptr;
+    }
 
     return ret_dfu;
 }
@@ -1918,8 +1941,10 @@ int DFUDevice::upload(uint16_t& wValue, uint8_t *buf, uint16_t len, uint32_t tim
     int bytesRemain = len, bytesReceived = 0;
     do {
         int bytesToReceive = (bytesRemain > funcDescriptor.wTransferSize) ? funcDescriptor.wTransferSize : bytesRemain;
-        ret_libusb = libusb_control_transfer(usbHandle, 0b10100001, 0x02, wValue, 0, buf + bytesReceived, bytesToReceive, 100);
-        // ret_libusb = libusb_control_transfer(usbHandle, 0b00100001, 0x01, wValue, 0, buf + bytesSent, bytesToSend, 100);
+        // Honor timeout_ms on the transfer itself (not just the waitForState below) so the parameter
+        // bounds the whole per-block operation; a slow device producing UPLOAD data no longer trips a
+        // fixed 100ms transfer timeout.
+        ret_libusb = libusb_control_transfer(usbHandle, 0b10100001, 0x02, wValue, 0, buf + bytesReceived, bytesToReceive, timeout_ms);
         if (ret_libusb >= LIBUSB_SUCCESS) {
             bytesReceived += ret_libusb; // setup for next block transfer
             bytesRemain -= ret_libusb;
@@ -1946,7 +1971,9 @@ int DFUDevice::download(uint16_t& wValue, uint8_t *buf, uint16_t len, uint32_t t
     int bytesRemain = len, bytesSent = 0;
     do {
         int bytesToSend = (bytesRemain > funcDescriptor.wTransferSize) ? funcDescriptor.wTransferSize : bytesRemain;
-        ret_libusb = libusb_control_transfer(usbHandle, 0b00100001, 0x01, wValue, 0, buf + bytesSent, bytesToSend, 100);
+        // Honor timeout_ms on the transfer itself (not just the waitForState below) so the parameter
+        // bounds the whole per-block operation rather than a fixed 100ms transfer timeout.
+        ret_libusb = libusb_control_transfer(usbHandle, 0b00100001, 0x01, wValue, 0, buf + bytesSent, bytesToSend, timeout_ms);
         if (ret_libusb >= LIBUSB_SUCCESS) {
             bytesSent += ret_libusb; // setup for next block transfer
             bytesRemain -= ret_libusb;
