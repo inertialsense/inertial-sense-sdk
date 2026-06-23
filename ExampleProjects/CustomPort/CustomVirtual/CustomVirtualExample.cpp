@@ -128,7 +128,8 @@ int main(int argc, char* argv[])
 
 
 /**
- * @brief User function to do something like manage a change of ports when a port has been located by the Port Factory locatePorts
+ * @brief User function to do something like manage a change of ports when a port has been located by the
+ * Port Factory locatePorts, provided as a callback
  * @param pType the type of said port (loopback, USB, SPI, etc)
  * @param pName name of the port the application is trying to locate and reference
  */
