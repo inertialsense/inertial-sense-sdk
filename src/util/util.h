@@ -320,6 +320,57 @@ namespace utils {
     bool validDomainName(const std::string& domainName);
 
     /**
+     * @brief Normalized components of a parsed URI, ready for direct use by the SDK.
+     *
+     * Wraps FIX8::uri parsing and centralizes the conventions that were previously
+     * duplicated across the port factories and correction services: IPv6 literal hosts
+     * are returned with their surrounding brackets stripped (e.g. "::1", not "[::1]"),
+     * and the port is converted to a validated integer (1..65535) rather than a raw
+     * string, with -1 indicating an absent, malformed, or out-of-range port.
+     */
+    struct UriParts {
+        std::string scheme;     //!< URI scheme as provided (e.g. "tcp", "ntrip"); empty if absent
+        std::string host;       //!< host with IPv6 brackets stripped; empty if absent
+        int         port = -1;  //!< port number 1..65535, or -1 if absent/malformed/out-of-range
+        std::string user;       //!< userinfo username; empty if absent
+        std::string password;   //!< userinfo password; empty if absent
+        std::string path;       //!< path component (e.g. an NTRIP mountpoint); empty if absent
+        std::string query;      //!< query component; empty if absent
+
+        bool hasScheme() const { return !scheme.empty(); }     //!< true if a scheme was present
+        bool hasHost() const { return !host.empty(); }         //!< true if a host was present
+        bool hasPort() const { return port >= 0; }             //!< true if a valid port was present
+        bool hasUserinfo() const { return !user.empty() || !password.empty(); } //!< true if userinfo was present
+    };
+
+    /**
+     * @brief Parse a URI string into its normalized components.
+     *
+     * This is the single, codebase-wide entry point for breaking a URI into its parts; prefer it
+     * over calling FIX8::uri directly so the IPv6-bracket and port-validation conventions stay
+     * consistent. Note that FIX8::uri requires an authority introducer ("//") for the host/port
+     * to be parsed (e.g. "tcp://host:port", not "tcp:host:port").
+     *
+     * @param uriStr the URI to parse (e.g. "tcp://[::1]:7777", "ntrip://user:pass@host:2101/MOUNT")
+     * @return a UriParts with each present component populated; absent components are left empty (port == -1)
+     */
+    UriParts parseUri(const std::string& uriStr);
+
+    /**
+     * @brief Parse a URI, falling back to a second "defaults" URI for any component the primary omits.
+     *
+     * Each component absent from @p uriStr (scheme, host, port, user, password, path, query) is filled
+     * from the corresponding component of @p defaultsUri. This lets callers express their defaults as a
+     * URI string instead of patching individual fields — e.g. parseUri(arg, "tcp://127.0.0.1:7777")
+     * yields the host/port the caller wants whenever @p uriStr leaves them out.
+     *
+     * @param uriStr      the URI to parse
+     * @param defaultsUri a URI supplying default values for any component @p uriStr omits
+     * @return a UriParts with present components from @p uriStr and the remainder from @p defaultsUri
+     */
+    UriParts parseUri(const std::string& uriStr, const std::string& defaultsUri);
+
+    /**
      * Encodes the 3x uint32_t STM32 UID registers into the UUID format required by the calibration-db API.
      * Encoding: UID registers as LE uint32_t bytes, swapped to BE for UUID fields 1 & 2,
      * field 3 = 0x8EF4, field 4 prefix = 0x99 0x6B.

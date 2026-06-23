@@ -17,6 +17,7 @@
 // #include <acc_prof.h>
 
 #include "ISDataMappings.h"
+#include "util/uri.hpp"
 
 
 #ifdef PLATFORM_IS_WINDOWS
@@ -857,6 +858,60 @@ bool utils::validDomainName(const std::string& domainName) {
     static const std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
     std::smatch match;
     return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
+}
+
+utils::UriParts utils::parseUri(const std::string& uriStr) {
+    UriParts out;
+    const FIX8::uri uri{uriStr};
+
+    if (uri.has_scheme())
+        out.scheme.assign(uri.get_scheme());
+
+    if (uri.has_host()) {
+        std::string host{uri.get_host()};
+        // IPv6 literals are returned wrapped in brackets (e.g. "[::1]") - strip them
+        if (host.size() > 1 && host.front() == '[' && host.back() == ']')
+            host = host.substr(1, host.size() - 2);
+        out.host = std::move(host);
+    }
+
+    if (uri.has_port()) {
+        // FIX8::uri does not validate that the port is numeric, so guard against a
+        // malformed/out-of-range value (which would otherwise throw out of std::stoi).
+        try {
+            int parsed = std::stoi(std::string{uri.get_port()}, nullptr, 10);
+            if (parsed > 0 && parsed <= 65535)
+                out.port = parsed;
+        } catch (const std::exception&) {
+            // leaves out.port == -1
+        }
+    }
+
+    if (uri.has_user())
+        out.user.assign(uri.get_user());
+    if (uri.has_password())
+        out.password.assign(uri.get_password());
+    if (uri.has_path())
+        out.path.assign(uri.get_path());
+    if (uri.has_query())
+        out.query.assign(uri.get_query());
+
+    return out;
+}
+
+utils::UriParts utils::parseUri(const std::string& uriStr, const std::string& defaultsUri) {
+    UriParts out = parseUri(uriStr);
+    const UriParts def = parseUri(defaultsUri);
+
+    if (!out.hasScheme())       out.scheme = def.scheme;
+    if (!out.hasHost())         out.host = def.host;
+    if (!out.hasPort())         out.port = def.port;
+    if (out.user.empty())       out.user = def.user;
+    if (out.password.empty())   out.password = def.password;
+    if (out.path.empty())       out.path = def.path;
+    if (out.query.empty())      out.query = def.query;
+
+    return out;
 }
 
 std::string utils::encodeSTM32UID(const uint32_t uid[3]) {

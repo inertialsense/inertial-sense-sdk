@@ -178,6 +178,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t updateFirmwareSlot = 0;
     uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
     bool list_devices = false;              // if true, dumps results of findDevices() including port name.
+    bool listLogDids = false;              // -list-dids: scan replay log and print DID count table
     bool useMdns = false;                   // if true, registers ISmDnsPortFactory for mDNS network device discovery
     uint8_t mdnsResolvePreference = 0x07;  // bitmask of MdnsResolveFlags for address resolution preference (default: IPv4|IPv6|hostname)
     bool useRelay = false;                  // if true, registers RelayPortFactory for HTTP relay-based device discovery
