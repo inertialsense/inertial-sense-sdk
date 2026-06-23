@@ -494,24 +494,16 @@ status_field_decode_t buildGpxStatusDecode()
 
     // Parse-error count is rendered by the legacy code as a presence flag (any of the low nibble),
     // not a number — model it as a Bit on the count mask.
-    d.subfields.push_back(gerr("COM parse errors", GPX_STATUS_COM_PARSE_ERR_COUNT_MASK,
-        "0x0000000F - Communications parse error count"));
-    d.subfields.push_back(gerr("COM0 RX traffic lost", GPX_STATUS_COM0_RX_TRAFFIC_NOT_DECTECTED,
-        "0x00000010 - COM0 RX traffic not dectected in last 30 seconds."));
-    d.subfields.push_back(gerr("COM1 RX traffic lost", GPX_STATUS_COM1_RX_TRAFFIC_NOT_DECTECTED,
-        "0x00000020 - COM1 RX traffic not dectected in last 30 seconds."));
-    d.subfields.push_back(gerr("COM2 RX traffic lost", GPX_STATUS_COM2_RX_TRAFFIC_NOT_DECTECTED,
-        "0x00000040 - COM2 RX traffic not dectected in last 30 seconds."));
-    d.subfields.push_back(gerr("USB RX traffic lost", GPX_STATUS_USB_RX_TRAFFIC_NOT_DECTECTED,
-        "0x00000080 - USB RX traffic not dectected in last 30 seconds."));
-    d.subfields.push_back(gerr("RTK buffer overflow", GPX_STATUS_FAULT_RTK_QUEUE_LIMITED,
-        "0x00010000 - RTK buffer overflow."));
-    d.subfields.push_back(gerr("GNSS receiver time fault", GPX_STATUS_FAULT_GNSS_RCVR_TIME,
-        "0x00100000 - GNSS receiver time fault"));
-    d.subfields.push_back(gerr("RTOS task period overrun", GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN,
-        "0x00200000 - RTOS task period overrun"));   // added from SDK develop merge
-    d.subfields.push_back(gerr("DMA fault", GPX_STATUS_FAULT_DMA,
-        "0x00800000 - DMA fault"));
+    d.subfields.push_back(gerr("COM parse errors", GPX_STATUS_COM_PARSE_ERR_COUNT_MASK, "0x0000000F - Communications parse error count"));
+    d.subfields.push_back(gerr("COM0 RX traffic lost", GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED, "0x00000010 - COM0 RX traffic not dectected in last 30 seconds."));
+    d.subfields.push_back(gerr("COM1 RX traffic lost", GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED, "0x00000020 - COM1 RX traffic not dectected in last 30 seconds."));
+    d.subfields.push_back(gerr("COM2 RX traffic lost", GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED, "0x00000040 - COM2 RX traffic not dectected in last 30 seconds."));
+    d.subfields.push_back(gerr("USB RX traffic lost", GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED, "0x00000080 - USB RX traffic not dectected in last 30 seconds."));
+    d.subfields.push_back(gerr("Firmware image confirmed", GPX_STATUS_UPDATE_CONFIRMED, "0x00000100 - Update confirmed."));
+    d.subfields.push_back(gerr("RTK buffer overflow", GPX_STATUS_FAULT_RTK_QUEUE_LIMITED, "0x00010000 - RTK buffer overflow."));
+    d.subfields.push_back(gerr("GNSS receiver time fault", GPX_STATUS_FAULT_GNSS_RCVR_TIME, "0x00100000 - GNSS receiver time fault"));
+    d.subfields.push_back(gerr("RTOS task period overrun", GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN, "0x00200000 - RTOS task period overrun"));   // added from SDK develop merge
+    d.subfields.push_back(gerr("DMA fault", GPX_STATUS_FAULT_DMA, "0x00800000 - DMA fault"));
 
     // Fatal reset cause (Enum). Value 0 emits nothing.
     {
