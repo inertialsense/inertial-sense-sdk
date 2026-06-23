@@ -10,14 +10,18 @@ This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-
 * [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp)
 * [CustomVirtualPortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.h)
 
+Note these are local to this folder.
+
 #### SDK Files
 
 * [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h)
 * [core/msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h)
 * [ISUtilities.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISUtilities.h)
 * [PortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/PortFactory.h)
-* [tests/test_serial_utils.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.cpp)
-* [tests/test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
+* [../tests/test_serial_utils.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.cpp)
+* [../tests/test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
+
+Note paths relative to SDK src/ folder.
 
 ## Documentation
 Doxygen style comments are ubiquitous throughout the three example Project Files.  You may build the Doxygen HTML documentation by creating a Doxyfile and following standard Doxygen build instructions if that suits you, but all information is contained in this document plus the files listed above.  
@@ -27,7 +31,7 @@ The following implementation instructions identify some examples of similar code
 ## Implementation
 
 ### Step 1: Choose Port Channel Implementation
-Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation extends the SDK base_port C object, and base_port then provides an API for channel access using a set of function hooks for methods implemented in your channel code.  The base_port comes with definitions for all kinds of different port types.  See the SDK [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
+Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation extends the SDK base_port C object, and base_port then provides an API for channel access using a set of function hooks for methods implemented in your channel code.  The base_port comes with definitions for all kinds of different port types.  See the SDK [base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
 
 
 In this example we use the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h), which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware:
@@ -93,7 +97,7 @@ See the CustomVirtualPortFactory.h file for configuration example of singleton p
 class CustomVirtualPortFactory : public PortFactory
 ```
 
-The .cpp file body will define at a minimum the following virtual PortFactory functions: bindPort, locatePorts, releasePort, validatePort:
+The .cpp file body will define at a minimum the following virtual PortFactory functions, which we demonstrate in this example: bindPort, locatePorts, releasePort, validatePort:
 ```C++
 port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType);
 
@@ -104,7 +108,7 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
 void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType)
 ```
 
-In bindPort, you'll need to return a port_handle_t (that points to a base_port_t) to the caller after identifying or allocating your port's channel.  In this example, we use the test_serial_utils array of test ports.
+In bindPort, you'll need to return a port_handle_t (that points to a base_port_t) to the caller after identifying or allocating your port's channel.  In this example, we use the globally defined test_serial_utils array of test ports accessed via macro.
 
 ```C++
 test_port_t* testPort;
