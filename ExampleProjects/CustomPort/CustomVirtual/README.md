@@ -62,7 +62,7 @@ Example headers for .h file:
  * code that defines the interface used by this custom port factory; in this case the SDK
  * virtual test ports
  */
-#include "../tests/test_serial_utils.h"
+#include "test_serial_utils.h"
 
 /** Include the header file for the abstract class PortFactory.h
  */
@@ -82,7 +82,7 @@ Example headers for .cpp file:
  */
 #include "ISUtilities.h"
 
-//etc
+// etc
 ```
 
 
@@ -171,11 +171,12 @@ while (portIsOpened(port) && run_cnt > 0) {
 ```   
 
 ### Step 7: Show Remaining Port Factory Functionality
-Show use of locatePorts() and releasePort() to complete the demonstration of Port Factory.
+Show use of locatePorts() and releasePort() to complete the demonstration of Port Factory.  In this example, we give locatePorts() a string literal for a regex matching pattern of `R"(TEST\d\0?)"` to use in port name searching.  We also identify the port type flags for the virtual loopback comm ports we are using.
 
 ```C++
 auto cb = std::bind(portHandler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 vpf.locatePorts(cb, R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK );
+//...
 
 vpf.releasePort(port);
 
@@ -187,6 +188,9 @@ The core/msg_logger.h API provides multi-platform message logging with level con
 ```C++
 log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s'", portName(port));
    ```
+
+Facility definitions like `IS_LOG_PORT` or `IS_LOG_PORT_FACTORY` identify which module is logging.
+
 
 ## Compile & Run (Linux)
 
