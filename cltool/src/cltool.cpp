@@ -1309,14 +1309,10 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << " # edit DID_FLASH_CONFIG message" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGnssDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
-<<<<<<< HEAD
-	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1"        << EXAMPLE_SPACE_2 << "# connect to multiple ports (comma-separated)" << endlbOff;
-=======
 	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1    "        << EXAMPLE_SPACE_2 << " # connect to multiple ports (comma-separated)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c spi:///dev/spi0.0 -did DID_INS_1              "                       << " # SPI device, mode 3 default" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c spi:///dev/spi0.0[b2000000,d18] -did DID_INS_1 "                     << " # SPI: 2 MHz, data-ready on GPIO 18" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c /dev/spi0.0[b2000000,d18] -did DID_INS_1       "                     << " # SPI: bare device path with opts" << endlbOff;
->>>>>>> origin/develop
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp logs/20170117_222549 -get 12        "                                 << " # show first DID_FLASH_CONFIG value from a log" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp logs/20170117_222549 -list-dids     "                                 << " # list all DIDs found in log files" << endlbOff;
