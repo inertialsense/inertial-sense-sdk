@@ -30,8 +30,7 @@ The following implementation instructions identify some examples of similar code
 Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation extends the SDK base_port C object, and base_port then provides an API for channel access using a set of function hooks for methods implemented in your channel code.  The base_port comes with definitions for all kinds of different port types.  See the SDK [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
 
 
-In this example we use the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h)
-, which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware.
+In this example we use the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h), which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware:
 
 ```C
 typedef struct test_port_s {
@@ -53,8 +52,7 @@ typedef struct test_port_s {
 ```
 
 
-
-### Step 1: Create New Project Files and Include Headers
+### Step 2: Create New Project Files and Include Headers
 Create two new files, named something like YOURNAMEPortFactory.h and YOURNAMEPortFactory.cpp.  This example uses CustomVirtualPortFactory.*.  
 
 Example headers for .h file:
@@ -88,7 +86,7 @@ Example headers for .cpp file:
 ```
 
 
-### Step 2: Extend/Define Port Factory for Custom Port
+### Step 3: Extend/Define Port Factory for Custom Port
 
 See the CustomVirtualPortFactory.h file for configuration example of singleton port factory, optional class members and functions, etc.  The header file defines a child class that inherits from PortFactory, as in:
 ```C++
@@ -106,6 +104,23 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
 void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType)
 ```
 
+In bindPort, you'll need to return a port_handle_t (that points to a base_port_t) to the caller after identifying or allocating your port's channel.  In this example, we use the test_serial_utils array of test ports.
+
+```C++
+test_port_t* testPort;
+if (pName == "TEST0") {
+	testPort = TEST0_PORT;
+}
+else if (pName == "TEST1") {
+	testPort = TEST1_PORT;
+}
+else
+	return nullptr;
+
+port_handle_t port = (port_handle_t) testPort;   
+```
+Run intialization and validation routines on the new port.
+
 Add in additional support functions as needed for your application.  For example, in our virtual comm port code we use this function:
 ```C++
 /**
@@ -118,7 +133,8 @@ Add in additional support functions as needed for your application.  For example
 int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
 ```
 
-### Step 3: Create Example Application
+
+### Step 4: Create Example Application
 Create a new file named something like YOURNAMEExample.cpp, like CustomVirtualExample.cpp in this example.
 
 Include headers for any desired Inertial Sense SDK utilities, user IO capabilities, etc.  Reference your new Port Factory class:
@@ -129,169 +145,42 @@ Include headers for any desired Inertial Sense SDK utilities, user IO capabiliti
 
 Add forward declarations for custom application functions, and then create main.
 
-### Step 4: Create and Init the New Port Factory
+
+### Step 5: Create and Init the New Port Factory
 Initialize the port with bindPort, identifying the port type (from base_port.h definitions) which is virtual loopback comms in this case.
 ```C++
-    CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
-    port_handle_t port = vpf.bindPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
+CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
+port_handle_t port = vpf.bindPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
 ```
 
 The bindPort implementation should also validate the port, per the validation method you specify in the CustomVirtualPortFactory.cpp validatePort definition.
 
-### Step 5: Exercise the Loopback Port
+
+### Step 6: Exercise the Loopback Port
 In a loop executed a fixed number of iterations, send to and receive a hard coded message on the loopback port.  Use the API of the SDK core/base_port.h C object, with hooked functions (such as portWrite) implemented by the underlying wrapped virtual test port.
 
 ```C++
 while (portIsOpened(port) && run_cnt > 0) {
 //...
-        if (portFree(port) >= wlen) {
-            wbytes = portWrite(port, wbuf, wlen);
+	if (portFree(port) >= wlen) {
+		wbytes = portWrite(port, wbuf, wlen);
 //...   
-        if (portAvailable(port) > 0) {
-            rbytes = portRead(port, rbuf, PORT_BUFFER_SIZE);
+	if (portAvailable(port) > 0) {
+		rbytes = portRead(port, rbuf, PORT_BUFFER_SIZE);
 //...			
 ```   
 
-### Step 6: Remaining Port Factory Functionality
+### Step 7: Remaining Port Factory Functionality
 Show use of locatePorts() and releasePort() to complete the demonstration of Port Factory.
 
-**TODO** add orientation examples here
-
-
-# -------DISREGARD FROM HERE BELOW, borrowed stuff from ISComm example, here for reference--------
-
-### Step 1: Add Includes
-
 ```C++
-// Change these include paths to the correct paths for your project
-#include "../../src/ISComm.h"
-#include "../../src/serialPortPlatform.h"
+auto cb = std::bind(portHandler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+vpf.locatePorts(cb, R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK );
+
+vpf.releasePort(port);
+
 ```
 
-### Step 2: Init comm instance
-
-```C++
-	is_comm_instance_t comm;
-	uint8_t buffer[2048];
-
-	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer), NULL);
-    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
-    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
-
-### Step 3: Initialize and open serial port
-
-```C++
-	serial_port_t serialPort;
-
-	// Initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
-	//  you will need to handle the serial port creation, open and reads yourself. In this
-	//  case, you do not need to include serialPort.h/.c and serialPortPlatform.h/.c in your project.
-	serialPortPlatformInit(&serialPort);
-
-	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
-	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
-	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
-	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_921600, 1))
-	{
-		printf("Failed to open serial port on com port %s\r\n", argv[1]);
-		return -2;
-	}
-```
-
-### Step 4: Stop any message broadcasting
-
-```c++
-	// Stop all broadcasts on the device
-	int messageSize = is_comm_stop_broadcasts(comm);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-	{
-		printf("Failed to encode and write stop broadcasts message\r\n");
-	}
-```
-
-### Step 5: Set configuration (optional)
-
-```C++
-	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
-	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	int messageSize = is_comm_set_data_to_buf(comm, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-	{
-		printf("Failed to encode and write set INS rotation\r\n");
-	}
-```
-
-### Step 6: Enable message broadcasting
-
-This can be done either using the Realtime Message Controller (RMC) or the get data command.
-
-#### Realtime Message Controller (RMC)
-
-```c++
-// Enable broadcasts using RMC: DID_INS_1 @ 20Hz and DID_GPS_NAV @ 5Hz
-rmc_t rmc;
-rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS_NAV;
-rmc.insPeriodMs = 50;	// INS @ 20Hz
-rmc.options = 0;		// current port
-
-int messageSize = is_comm_set_data_to_buf(comm, DID_RMC, 0, 0, &rmc);
-if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-{
-	printf("Failed to encode and write RMC message\r\n");
-}
-```
-#### Get Data Command
-
-```C++
-	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
-	int messageSize = is_comm_get_data_to_buf(buffer, bufferSize, comm, DID_INS_1, 0, 0, 50);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-	{
-		printf("Failed to encode and write get INS message\r\n");
-	}
-
-#if 1
-	// Ask for gps message 5 times a second (period of 200 milliseconds) - size and offset can be left at 0 unless you want to just pull a specific field from a data set
-	messageSize = is_comm_get_data_to_buf(buffer, bufferSize, comm, _DID_GPS_NAV, 0, 0, 200);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-	{
-		printf("Failed to encode and write get GPS message\r\n");
-	}
-#endif
-```
-
-### Step 7: Handle received data 
-
-```C++
-	int count;
-	uint8_t inByte;
-
-	// You can set running to false with some other piece of code to break out of the loop and end the program
-	while (running)
-	{
-		// Read one byte with a 20 millisecond timeout
-		while ((count = serialPortReadCharTimeout(&serialPort, &inByte, 20)) > 0)
-		{
-			switch (is_comm_parse(&comm, inByte))
-			{
-			case DID_INS_1:
-				handleInsMessage((ins_1_t*)buffer);
-				break;
-
-			case _DID_GPS_NAV:
-				handleGpsMessage((gps_nav_t*)buffer);
-				break;
-
-			case DID_IMU:
-				handleImuMessage((imu_t*)buffer);
-				break;
-
-				// TODO: add other cases for other data ids that you care about
-			}
-		}
-	}
-```
 
 ## Compile & Run (Linux)
 
@@ -318,14 +207,15 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
    ``` bash
    ./CustomVirtual TEST0
    ```
-## Compile & Run (Windows MS Visual Studio)
-
-1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\Communications\VS_project\ISCommExample.sln)
+## Compile & Run (Windows MS Visual Studio) - Not Yet Implemented
+<strike>
+1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\CustomPort\CustomVirtual\VS_project\CustomVirtual.sln)
 2. Build (F7)
 3. Run executable
    ``` bash
-   C:\inertial-sense-sdk\ExampleProjects\Communications\VS_project\Release\ISCommExample.exe COM3
+   C:\inertial-sense-sdk\ExampleProjects\CustomPort\CustomVirtual\VS_project\Release\CustomVirtual.exe TEST0
    ```
+</strike>
 
 ## Summary
 

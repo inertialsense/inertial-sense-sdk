@@ -17,7 +17,7 @@
  * example to guide users through the process of creating and using custom ports
  */
 
-/** STEP 3: Include user IO capabilities for this demo so when run visual indicators appear */
+/** STEP 4: Include user IO capabilities for this demo so when run visual indicators appear */
 #include <stdio.h>
 
 /** Include utility functions for use by your custom port class member functions defined here
@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
     printf("Attempting to allocate and open virtual port %s\r\n", argv[1]);
         
-    /** STEP 4: Initialize and open comms port, which is virtual loopback in this case */
+    /** STEP 5: Initialize and open comms port, which is virtual loopback in this case */
     CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
     port_handle_t port = vpf.bindPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
        
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
         return -3;
     }
 
-    /** STEP 5: In a loop, send to and receive messages from the loopback port.
+    /** STEP 6: In a loop, send to and receive messages from the loopback port.
      * This should run a fairly fast rate, (1ms is typical) to avoid data from filling
      * the COMM buffer, which could lead to data drop.
      */
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
         }
     } //while
 
-    /** STEP 6:  Demonstrate the locatePorts function, which is given a callback to help target a different port among
+    /** STEP 7:  Demonstrate the locatePorts function, which is given a callback to help target a different port among
      * those available, using a name search pattern in regex
      */
     auto cb = std::bind(portHandler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);

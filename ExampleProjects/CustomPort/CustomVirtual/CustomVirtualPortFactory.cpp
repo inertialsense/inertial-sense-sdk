@@ -13,7 +13,7 @@
  * example to guide users through the process of creating and using custom ports
  */
 
-/** STEP 1: Include C++ libraries for use by your custom port class member functions defined here
+/** STEP 2: Include C++ libraries for use by your custom port class member functions defined here
  */
 #include <vector>
 #include <regex>
@@ -33,7 +33,7 @@
 //#include "PortManager.h"
 
 
-/** STEP 2
+/** STEP 3
  * @brief  Required minimum method, validates name and type, locates and/or instantiates new port
  */
 port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType) {
