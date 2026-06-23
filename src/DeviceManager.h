@@ -19,8 +19,10 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <functional>
+#include <unordered_set>
 
 #include "core/msg_logger.h"
 
@@ -33,6 +35,7 @@ typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_in
 typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 
 typedef std::function<void(uint8_t, device_handle_t)> device_listener;
+typedef std::shared_ptr<device_listener> device_listener_handle_t;
 
 // typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
@@ -191,17 +194,21 @@ public:
      * @param handler a function pointer to be called when a new device is discovered
      * @return the previously registered handler, if any
      */
-    void addDeviceListener(const device_listener& listener) { std::lock_guard<std::recursive_mutex> lock(mutex); listeners.push_back(listener); }
+    device_listener_handle_t addDeviceListener(const device_listener& listener) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        device_listener_handle_t listenerPtr = std::make_shared<device_listener>(listener);
+        listeners.insert(listenerPtr);
+        return listenerPtr;
+    }
 
     /**
      * Removes a previously registered device listener.
-     * @param handler a function pointer to be called when a new device is discovered
-     * @return the previously registered handler, if any
+     * @param listener the handle returned by addDeviceListener()
+     * @return true if the listener was found and removed, otherwise false
      */
-    bool removeDeviceListener(const device_listener& listener) {
-        (void)listener; // Suppress unused parameter warning
-        // TODO: locate the listener, and remove it if found and return true, otherwise return false
-        return false;
+    bool removeDeviceListener(const device_listener_handle_t& listener) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        return (listeners.erase(listener) != 0);
     }
 
     /**
@@ -239,12 +246,12 @@ public:
      * helpers that already take the same mutex.
      */
     void notifyListeners(device_handle_t device, uint8_t event) {
-        std::vector<device_listener> snapshot;
+        std::vector<device_listener_handle_t> snapshot;
         {
             std::lock_guard<std::recursive_mutex> lock(mutex);
-            snapshot = listeners;
+            snapshot.assign(listeners.begin(), listeners.end());
         }
-        for (auto& l : snapshot) l(event, device);
+        for (auto& l : snapshot) if (l) (*l)(event, device);
     }
 
 
@@ -400,7 +407,7 @@ private:
     PortManager& portManager = PortManager::getInstance();
 
     std::vector<DeviceFactory*> factories;                              //!< list of device factories responsible for detecting, allocating and freeing ports of different types. -- Note that DeviceFactories should always be static singletons, DO NOT FREE/DELETE the factory!
-    std::vector<device_listener> listeners;                             //!< list of listeners who should be notified when new devices are discovered, lost, opened, closed, etc
+    std::unordered_set<device_listener_handle_t> listeners;             //!< list of listeners who should be notified when new devices are discovered, lost, opened, closed, etc
     std::vector<device_entry_t> knownDevices;                           //!< vector of previously discovered devices, by factory & hdwid (bits 47-63) + serial (bits 0-31) - different than actual, allocated devices
     std::map<port_handle_t, device_handle_t> portToDeviceMap;           //!< map of port handles to device handles for fast lookups
 
