@@ -64,9 +64,6 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
     /** Open and validate and configure the port as needed for the port implementation here; in this virtual port
      * example, do not need to open or configure
      */
-    // // serialPort->base.portOpen = CustomSerialPortFactory::open_port;
-    // serialPort->base.portValidate = CustomSerialPortFactory::validate_port;
-    // serialPort->pfnError = CustomSerialPortFactory::onPortError;
     testPort->base.portValidate = CustomVirtualPortFactory::validate_port;
     portValidate(port);
        
@@ -133,92 +130,6 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
     }
 }
 
-//
-// TBD to use this method for this example or not?
-//
-int CustomVirtualPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
-    // const char* portStr = portName(port);
-    // const char* safeErrMsg = errMsg ? errMsg : "";
-
-    static int lastErrorCode = 0;       // the previous error code
-    static int repeatCount = 0;         // number of time the same code has repeated
-    static uint32_t lastErrorMs = 0;    // the time when the lastErrorCode changed to the current error code
-
-    if (errCode != lastErrorCode) {
-        repeatCount = 0;
-        lastErrorMs = current_timeMs();
-        lastErrorCode = errCode;
-
-        // General errors should already be reported by the underlying port implementation (if IS_LOG_PORT is configured)
-        // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
-    } else {
-        // Split the printf into two calls (helps avoid inlining inference)
-        // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
-
-        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount++ >= 10)){
-            // any error which repeats for more than 30 seconds, and more than 10 times, close & invalidate
-            portClose(port);
-            portInvalidate(port);
-            return 0;
-        }
-    }
-
-    // decide which of these should result in a port-closure, vs a port invalid, vs nothing...
-    switch (errCode) {
-        // close but don't invalidate
-        case EIO:       /* I/O error */
-        case ENXIO:     /* No such device or address */
-        case E2BIG:     /* Argument list too long */
-        case ENOEXEC:   /* Exec format error */
-        case EBADF:     /* Bad file number */
-        case ECHILD:    /* No child processes */
-        case ENOMEM:    /* Out of memory */
-        case EACCES:    /* Permission denied */
-        case EFAULT:    /* Bad address */
-        case ENFILE:    /* File table overflow */
-        case EMFILE:    /* Too many open files */
-        case EFBIG:     /* File too large */
-        case ENOSPC:    /* No space left on device */
-        case ESPIPE:    /* Illegal seek */
-        case EROFS:     /* Read-only file system */
-        case EMLINK:    /* Too many links */
-            portClose(port);
-            break;
-
-            // close and invalidate
-        case ENOENT:    /* No such file or directory */
-        case ESRCH:     /* No such process */
-        case ENODEV:    /* No such device */
-        case ENOTDIR:   /* Not a directory */
-        case EISDIR:    /* Is a directory */
-#if PLATFORM_IS_LINUX
-        case ENOTBLK:   /* Block device required */
-#endif
-        case EPIPE:     /* Broken pipe */
-            portClose(port);
-            portInvalidate(port);
-            break;
-
-
-        // ignore
-        case EBUSY:     /* Device or resource busy */
-        case EAGAIN:    /* Try again */
-        case EPERM:     /* Operation not permitted */
-        case EINTR:     /* Interrupted system call */
-
-        case EEXIST:    /* File exists */
-        case EXDEV:     /* Cross-device link */
-        case EINVAL:    /* Invalid argument */
-        case ENOTTY:    /* Not a typewriter */
-        case ETXTBSY:   /* Text file busy */
-        case EDOM:      /* Math argument out of domain of func */
-        case ERANGE:    /* Math result not representable */
-        default:
-            // do nothing (try again??)
-            break;
-    }
-    return 0;
-}
 
 /**
  * Populates a vector of string identifiers for all available virtual ports from test_serial_utils.
