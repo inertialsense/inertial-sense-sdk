@@ -175,7 +175,9 @@ while (portIsOpened(port) && run_cnt > 0) {
 ```   
 
 ### Step 7: Show Remaining Port Factory Functionality
-Show use of locatePorts() and releasePort() to complete the demonstration of Port Factory.  In this example, we give locatePorts() a string literal for a regex matching pattern of `R"(TEST\d\0?)"` to use in port name searching.  We also identify the port type flags for the virtual loopback comm ports we are using.
+Show use of locatePorts() and releasePort() to complete the demonstration of Port Factory.  We provide a callback function to locatePorts() which is portHandler(), defined in our application code.
+
+In this example, we give locatePorts() a string literal for a regex matching pattern of `R"(TEST\d\0?)"` to use in port name searching.  We also identify the port type flags for the virtual loopback comm ports we are using.
 
 ```C++
 auto cb = std::bind(portHandler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
