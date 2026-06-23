@@ -88,7 +88,7 @@ Example headers for .cpp file:
 
 ### Step 3: Extend/Define Port Factory for Custom Port
 
-See the CustomVirtualPortFactory.h file for configuration example of singleton port factory, optional class members and functions, etc.  The header file defines a child class that inherits from PortFactory, as in:
+See the CustomVirtualPortFactory.h file for configuration example of singleton port factory, required and optional class members and functions, etc.  The header file defines a child class that inherits from PortFactory, as in:
 ```C++
 class CustomVirtualPortFactory : public PortFactory
 ```
@@ -170,7 +170,7 @@ while (portIsOpened(port) && run_cnt > 0) {
 //...			
 ```   
 
-### Step 7: Remaining Port Factory Functionality
+### Step 7: Show Remaining Port Factory Functionality
 Show use of locatePorts() and releasePort() to complete the demonstration of Port Factory.
 
 ```C++
@@ -181,6 +181,12 @@ vpf.releasePort(port);
 
 ```
 
+### Step 8: Incorporate Logging
+The core/msg_logger.h API provides multi-platform message logging with level control, and printf-style format strings support.  Add log commands to your application code as desired, like so:
+
+```C++
+log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s'", portName(port));
+   ```
 
 ## Compile & Run (Linux)
 
@@ -207,6 +213,27 @@ vpf.releasePort(port);
    ``` bash
    ./CustomVirtual TEST0
    ```
+6. View logged results in the file called `inertial_sense.log` that is written local to the app executable.  You should see something like this:
+   ```
+   [09:53:34.817948] INFO   (IS_LOG_PORT_FACTORY) :: Allocated new comm port 'TEST0'
+   [09:53:35.818278] INFO   (IS_LOG_PORT) :: Loopback test good on comm port 'TEST0'
+   [09:53:36.818512] INFO   (IS_LOG_PORT) :: Loopback test good on comm port 'TEST0'
+   [09:53:36.818903] INFO   (IS_LOG_PORT_FACTORY) :: Locating ports with regex pattern 'TEST\d\0?'
+   [09:53:36.818918] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST0'
+   [09:53:36.818923] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST1'
+   [09:53:36.818926] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST2'
+   [09:53:36.818929] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST3'
+   [09:53:36.818932] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST4'
+   [09:53:36.818935] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST5'
+   [09:53:36.818957] INFO   (IS_LOG_PORT) :: portHandler call success
+   [09:53:36.818964] INFO   (IS_LOG_PORT) :: portHandler call success
+   [09:53:36.818970] INFO   (IS_LOG_PORT) :: portHandler call success
+   [09:53:36.818978] INFO   (IS_LOG_PORT) :: portHandler call success
+   [09:53:36.818988] INFO   (IS_LOG_PORT) :: portHandler call success
+   [09:53:36.819004] INFO   (IS_LOG_PORT) :: portHandler call success
+   [09:53:36.819015] INFO   (IS_LOG_PORT_FACTORY) :: Releasing comm port 'TEST0'
+   ```
+
 ## Compile & Run (Windows MS Visual Studio) - Not Yet Implemented
 <strike>
 1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\CustomPort\CustomVirtual\VS_project\CustomVirtual.sln)

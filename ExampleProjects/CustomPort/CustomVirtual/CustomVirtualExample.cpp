@@ -134,6 +134,7 @@ int main(int argc, char* argv[])
  */
 void portHandler(PortFactory* factory, uint16_t pType, const std::string& pName)
 {
+    /** STEP 8:  Demonstrate logging */
     log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "portHandler call success");
     
 } //portHandler
