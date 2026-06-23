@@ -311,7 +311,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
     {
         data_holder_t td = {};
         ins_1_t ins1 = { 0 };
-        gnss_pos_t gps = { 0 };
+        gnss_pos_t gnss = { 0 };
 
         int j = i % 17;
         switch (j)
@@ -357,28 +357,28 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                 break;
 
             case 4:
-            case 5: // GPS
-                gps.timeOfWeekMs = i * 1000;
-                gps.week = i * 10;
-                gps.status = i;
-                gps.ecef[0] = (double)i*1.234;
-                gps.ecef[1] = (double)i*2.345;
-                gps.ecef[2] = (double)i*3.456;
-                gps.lla[0] = (double)i*1.234;
-                gps.lla[1] = (double)i*2.345;
-                gps.lla[2] = (double)i*3.456;
-                gps.hAcc = (float)i;
-                gps.cnoMean = (float)i;
-                gps.hMSL = (float)i;
-                gps.pDop = (float)i;
-                gps.towOffset = (double)i*123.4;
-                gps.leapS = (uint8_t)i;
+            case 5: // GNSS
+                gnss.timeOfWeekMs = i * 1000;
+                gnss.week = i * 10;
+                gnss.status = i;
+                gnss.ecef[0] = (double)i*1.234;
+                gnss.ecef[1] = (double)i*2.345;
+                gnss.ecef[2] = (double)i*3.456;
+                gnss.lla[0] = (double)i*1.234;
+                gnss.lla[1] = (double)i*2.345;
+                gnss.lla[2] = (double)i*3.456;
+                gnss.hAcc = (float)i;
+                gnss.cnoMean = (float)i;
+                gnss.hMSL = (float)i;
+                gnss.pDop = (float)i;
+                gnss.towOffset = (double)i*123.4;
+                gnss.leapS = (uint8_t)i;
 
                 if ((j == 5 || TEST_PROTO_ISB == 0) && TEST_PROTO_NMEA)
                 {   // NMEA
                     #if TEST_PROTO_NMEA
                         td.ptype = _PTYPE_NMEA;
-                        td.size = nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gps);
+                        td.size = nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gnss);
                     #endif
                 }
                 else
@@ -386,7 +386,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
                     #if TEST_PROTO_ISB
                         td.did = DID_GNSS1_POS;
                         td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
-                        td.data.set.gpsPos = gps;
+                        td.data.set.gnssPos = gnss;
                         td.size = sizeof(gnss_pos_t);
                     #endif
                 }
