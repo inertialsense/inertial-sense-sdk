@@ -402,7 +402,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             std::string devType = argv[++i];
             std::transform(devType.begin(), devType.end(), devType.begin(), ::tolower);
-            if      (devType == "imx")                                                                           g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX;
+            if      (devType == "imx")                                                                          g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX;
             else if (devType == "imx-5" || devType == "imx5")                                                   g_commandLineOptions.filterHdwType = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, -1);
             else if (devType == "imx5.0" || devType == "imx-5.0")                                               g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX_5_0;
             else if (devType == "imx6.0" || devType == "imx-6.0" || devType == "imx6" || devType == "imx-6")    g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX_6_0;
@@ -1307,7 +1307,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << " # stream post processing data (PPD) with INS2" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << " # edit DID_FLASH_CONFIG message" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGnssDtMs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GNSS streamed at 10x startupGnssDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1    "        << EXAMPLE_SPACE_2 << " # connect to multiple ports (comma-separated)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c spi:///dev/spi0.0 -did DID_INS_1              "                       << " # SPI device, mode 3 default" << endlbOff;
@@ -1415,7 +1415,7 @@ void cltool_outputUsage()
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
 	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
 	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
-	cout << "    -presetGPS     " << boldOff << " Send RMC preset to enable GPS data stream" << endlbOn;
+	cout << "    -presetGPS     " << boldOff << " Send RMC preset to enable GNSS data stream" << endlbOn;
 	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Writing to data log file)" << endl;
