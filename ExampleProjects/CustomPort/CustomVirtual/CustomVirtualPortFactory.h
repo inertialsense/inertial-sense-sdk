@@ -34,7 +34,7 @@
  * virtual test ports
  */
 //for example, #include "serialPort.h"
-#include "../tests/test_serial_utils.h"
+#include "test_serial_utils.h"
 
 
 /** STEP 2: Create a custom child class that inherits from PortFactory 
