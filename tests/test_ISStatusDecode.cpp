@@ -259,13 +259,15 @@ std::string legacyRenderGpxStatusReference(uint32_t status)
     std::stringstream buff;
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
     BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_MASK     , "0x0000000F - Communications parse error count");
-    BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED , "0x00000010 - COM0 RX traffic not dectected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED , "0x00000020 - COM1 RX traffic not dectected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED , "0x00000040 - COM2 RX traffic not dectected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED  , "0x00000080 - USB RX traffic not dectected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED , "0x00000010 - COM0 RX traffic not detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED , "0x00000020 - COM1 RX traffic not detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED , "0x00000040 - COM2 RX traffic not detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED  , "0x00000080 - USB RX traffic not detected in last 30 seconds.");
     BIT_MSG(status, GPX_STATUS_UPDATE_CONFIRMED             , "0x00000100 - Update confirmed.");
     BIT_MSG(status, GPX_STATUS_FAULT_RTK_QUEUE_LIMITED      , "0x00010000 - RTK buffer overflow.");
     BIT_MSG(status, GPX_STATUS_FAULT_GNSS_RCVR_TIME         , "0x00100000 - GNSS receiver time fault");
+    BIT_MSG(status, GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN, "0x00200000 - RTOS task period overrun");
+
     BIT_MSG(status, GPX_STATUS_FAULT_DMA                    , "0x00800000 - DMA fault");
     uint32_t fatalStatus = ((status & GPX_STATUS_FATAL_MASK) >> GPX_STATUS_FATAL_OFFSET);
     switch (fatalStatus) {
